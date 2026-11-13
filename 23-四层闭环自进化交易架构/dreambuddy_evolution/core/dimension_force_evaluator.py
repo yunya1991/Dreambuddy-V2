@@ -461,23 +461,43 @@ class DimensionForceEvaluator:
             return self._neutral("d4-error")
 
     def _d4_from_put_call(self, fallback_degraded: str = "put-call-ratio") -> dict[str, Any]:
-        """从期权 put/call ratio 推导情绪方向（D4 中性区间增强）."""
+        """从期权 put/call ratio + 增强情绪资金流推导方向（D4 中性区间增强）.
+
+        信号1 (PCR): PCR > 1 → 看跌占优 → 空头; < 1 → 看涨占优 → 多头.
+        信号2 (capital_flow): fear_greed_enhanced 资金流分(0-100);
+          >50 → 资金流入 → 多头; <50 → 流出 → 空头.
+        两信号等权合成，缺一则退化为单信号.
+        """
         try:
             now = int(time.time())
+            parts: list[float] = []
+            out: dict[str, Any] = {}
+
             pcr = self._query_latest("options", "put_call_ratio")
-            if pcr is None or now - pcr[1] > _STALE_SEC:
+            if pcr is not None and now - pcr[1] < _STALE_SEC:
+                ratio = float(pcr[0])
+                raw_pcr = max(-1.0, min(1.0, (ratio - 1.0) / 0.5))
+                parts.append(raw_pcr)
+                out["put_call_ratio"] = round(ratio, 4)
+
+            cf = self._query_latest("fear_greed_enhanced", "capital_flow")
+            if cf is not None and now - cf[1] < _STALE_SEC:
+                cfv = float(cf[0])  # 0-100
+                # >50 资金流入 → 多头(raw 负); <50 流出 → 空头(raw 正)
+                raw_cf = max(-1.0, min(1.0, (50.0 - cfv) / 50.0))
+                parts.append(raw_cf)
+                out["capital_flow"] = round(cfv, 2)
+
+            if not parts:
                 return self._neutral(fallback_degraded)
-            ratio = float(pcr[0])
-            # PCR > 1 → 看跌期权多 → 空头; < 1 → 看涨多 → 多头
-            # 以 1.0 为中性轴，±0.5 映射到 ±1
-            raw = max(-1.0, min(1.0, (ratio - 1.0) / 0.5))
+            raw = sum(parts) / len(parts)
             direction = "short" if raw > 0.1 else ("long" if raw < -0.1 else "neutral")
             return {
                 "direction": direction,
                 "strength": round(self._clamp01(abs(raw)), 3),
                 "raw_z": round(raw, 3),
-                "put_call_ratio": round(ratio, 4),
                 "degraded": fallback_degraded,
+                **out,
             }
         except Exception:
             return self._neutral(fallback_degraded)
@@ -522,7 +542,9 @@ class DimensionForceEvaluator:
           总量上升 → 场外资金入场 → 多头; 下降 → 离场 → 空头.
         信号2（交易所BTC余额）: 交易所 BTC 余额 30 日变化率.
           余额下降 → 囤积(提币离场) → 多头; 上升 → 抛售压力 → 空头.
-        两信号等权合成.
+        信号3（LTH 供给）: 长期持有者供给占比相对历史的 z-score.
+          LTH 高于均值 → 囤积 → 多头; 低于均值 → 分发 → 空头.
+        三信号等权合成.
         """
         try:
             now = int(time.time())
@@ -576,6 +598,29 @@ class DimensionForceEvaluator:
                     "chg_pct": round(chg, 3),
                     "part": round(ex_part, 3),
                 }
+
+            # ── 信号3: 长期持有者供给占比 (LTH) ──
+            lth = self._query_latest("utxo_age_distribution", "long_term_holder_supply_pct")
+            if lth is not None and now - lth[1] < _STALE_SEC:
+                lth_val = float(lth[0])
+                hist_lth = [
+                    v
+                    for v, _ in self._query_history(
+                        "utxo_age_distribution",
+                        "long_term_holder_supply_pct",
+                        60 * 24 * 3600,
+                    )
+                ]
+                if len(hist_lth) >= 10:
+                    z = self._zscore(lth_val, hist_lth)
+                    # LTH 高于历史均值 → 囤积 → 多头(正); 低于 → 分发 → 空头(负)
+                    lth_part = max(-1.0, min(1.0, z))
+                    parts.append(lth_part)
+                    components["lth_supply_pct"] = {
+                        "value": round(lth_val, 2),
+                        "z": round(z, 3),
+                        "part": round(lth_part, 3),
+                    }
 
             if not parts:
                 return self._neutral("c7-insufficient-data")
