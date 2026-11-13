@@ -277,6 +277,7 @@ class DimensionForceEvaluator:
             components: dict[str, Any] = {}
             ls_part: float | None = None
             fr_part: float | None = None
+            taker_part: float | None = None
             oi_part: float | None = None
             liq_part: float | None = None
             ls_value: float | None = None
@@ -308,6 +309,19 @@ class DimensionForceEvaluator:
                     "annual_pct": round(fr_annual, 3),
                     "part": round(fr_part, 3),
                 }
+
+            # ── 主动买卖比（OKX taker_volume）──
+            taker = self._query_latest("okx_derivatives", "taker_buy_sell_ratio")
+            if taker is not None and now - taker[1] < _STALE_SEC:
+                ratio = float(taker[0])
+                # ratio > 1 → 主动买入占优 → 多头力量(负); < 1 → 主动卖出 → 空头(正)
+                taker_part = max(-1.0, min(1.0, -(ratio - 1.0) / 1.0))
+                components["taker_buy_sell_ratio"] = {
+                    "ratio": round(ratio, 4),
+                    "part": round(taker_part, 3),
+                }
+            else:
+                taker_part = None
 
             oi = self._query_open_interest(symbol)
             if (
@@ -344,11 +358,12 @@ class DimensionForceEvaluator:
                     (
                         ls_part is not None,
                         fr_part is not None,
+                        taker_part is not None,
                         oi_available,
                         liq_part is not None,
                     )
                 )
-                / 4.0,
+                / 5.0,
                 3,
             )
 
@@ -357,10 +372,11 @@ class DimensionForceEvaluator:
             if get_switch("enable_d2_oi_liq", False):
                 weighted = []
                 for part, weight in (
-                    (ls_part, 0.35),
-                    (fr_part, 0.25),
+                    (ls_part, 0.30),
+                    (fr_part, 0.20),
+                    (taker_part, 0.15),
                     (oi_part, 0.20),
-                    (liq_part, 0.20),
+                    (liq_part, 0.15),
                 ):
                     if part is not None:
                         weighted.append((part, weight))
@@ -371,7 +387,7 @@ class DimensionForceEvaluator:
                     else None
                 )
             else:
-                legacy = [part for part in (ls_part, fr_part) if part is not None]
+                legacy = [part for part in (ls_part, fr_part, taker_part) if part is not None]
                 raw = sum(legacy) / len(legacy) if legacy else None
 
             if raw is None:
@@ -409,20 +425,21 @@ class DimensionForceEvaluator:
     # D4 市场情绪维度
     # ------------------------------------------------------------------
     def evaluate_d4(self) -> dict[str, Any]:
-        """恐惧贪婪指数 → 极端情绪反转力量.
+        """市场情绪 → 极端情绪反转力量.
 
-        逻辑: <25 极度恐惧 → 反转多头力量; >75 极度贪婪 → 回调空头力量; 中性区间无力量
+        主信号: 恐惧贪婪指数（<25 极度恐惧→多头反转; >75 极度贪婪→空头回调）.
+        增强: 恐惧贪婪处于中性区间(25-75)时，用期权 put/call ratio 提供方向:
+          PCR > 1 → 看跌期权占优 → 空头; PCR < 1 → 看涨占优 → 多头.
         """
         try:
-            fg = self._query_latest("crypto_fear_greed", "value")
-            if fg is None:
-                return self._neutral("no-fear-greed")
             now = int(time.time())
-            if now - fg[1] > _STALE_SEC:
-                return self._neutral("fear-greed-stale")
+            fg = self._query_latest("crypto_fear_greed", "value")
+            if fg is None or now - fg[1] > _STALE_SEC:
+                # 恐惧贪婪缺失时，尝试 put/call ratio 独立提供方向
+                return self._d4_from_put_call()
             v = fg[0]  # 0-100
             if v < 25:
-                raw = (25 - v) / 25.0  # 恐惧越深多头反转力量越大 → 负=多头
+                raw = (25 - v) / 25.0
                 return {
                     "direction": "long",
                     "strength": round(self._clamp01(abs(raw)), 3),
@@ -437,10 +454,33 @@ class DimensionForceEvaluator:
                     "raw_z": round(raw, 3),
                     "degraded": None,
                 }
-            return self._neutral("fear-greed-mid-range")
+            # 中性区间 → 用 put/call ratio 提供方向
+            return self._d4_from_put_call(fallback_degraded="fear-greed-mid-range")
         except Exception as e:
             logger.debug("[DimensionForce] D4 fail: %s", e)
             return self._neutral("d4-error")
+
+    def _d4_from_put_call(self, fallback_degraded: str = "put-call-ratio") -> dict[str, Any]:
+        """从期权 put/call ratio 推导情绪方向（D4 中性区间增强）."""
+        try:
+            now = int(time.time())
+            pcr = self._query_latest("options", "put_call_ratio")
+            if pcr is None or now - pcr[1] > _STALE_SEC:
+                return self._neutral(fallback_degraded)
+            ratio = float(pcr[0])
+            # PCR > 1 → 看跌期权多 → 空头; < 1 → 看涨多 → 多头
+            # 以 1.0 为中性轴，±0.5 映射到 ±1
+            raw = max(-1.0, min(1.0, (ratio - 1.0) / 0.5))
+            direction = "short" if raw > 0.1 else ("long" if raw < -0.1 else "neutral")
+            return {
+                "direction": direction,
+                "strength": round(self._clamp01(abs(raw)), 3),
+                "raw_z": round(raw, 3),
+                "put_call_ratio": round(ratio, 4),
+                "degraded": fallback_degraded,
+            }
+        except Exception:
+            return self._neutral(fallback_degraded)
 
     # ------------------------------------------------------------------
     # C6 估值维度（第二阶段扩展）
@@ -476,50 +516,78 @@ class DimensionForceEvaluator:
     # C7 叙事维度（第二阶段扩展）
     # ------------------------------------------------------------------
     def evaluate_c7(self) -> dict[str, Any]:
-        """稳定币总流通量变化率 → 场内隐性资金流力量.
+        """隐性资金流/广度力量.
 
-        逻辑: 稳定币总量上升 → 场外资金入场（买方弹药增加）→ 多头力量;
-              稳定币总量下降 → 资金离场 → 空头力量.
-        数据: USDT + USDC 流通量（stablecoin_transparency，日度）.
+        信号1（稳定币）: USDT+USDC 流通量 7 日变化率.
+          总量上升 → 场外资金入场 → 多头; 下降 → 离场 → 空头.
+        信号2（交易所BTC余额）: 交易所 BTC 余额 30 日变化率.
+          余额下降 → 囤积(提币离场) → 多头; 上升 → 抛售压力 → 空头.
+        两信号等权合成.
         """
         try:
             now = int(time.time())
+            parts: list[float] = []
+            components: dict[str, Any] = {}
+
+            # ── 信号1: 稳定币流通量 7d 变化 ──
             usdt = self._query_latest("stablecoin_hist_usdt", "circulating_usd_bln")
             usdc = self._query_latest("stablecoin_hist_usdc", "circulating_usd_bln")
-            if usdt is None or usdc is None:
-                return self._neutral("stablecoin-missing")
-            if now - usdt[1] > _STALE_SEC or now - usdc[1] > _STALE_SEC:
-                return self._neutral("stablecoin-stale")
-            total_now = usdt[0] + usdc[0]
-            # 7 天前总量
-            cutoff = now - 7 * 24 * 3600
-            hist_usdt = [
-                (v, t)
-                for v, t in self._query_history(
-                    "stablecoin_hist_usdt", "circulating_usd_bln", 30 * 24 * 3600
-                )
-                if t <= cutoff
-            ]
-            hist_usdc = [
-                (v, t)
-                for v, t in self._query_history(
-                    "stablecoin_hist_usdc", "circulating_usd_bln", 30 * 24 * 3600
-                )
-                if t <= cutoff
-            ]
-            if not hist_usdt or not hist_usdc:
-                return self._neutral("stablecoin-insufficient-history")
-            total_7d_ago = hist_usdt[-1][0] + hist_usdc[-1][0]
-            if total_7d_ago <= 0:
-                return self._neutral("stablecoin-bad-data")
-            chg_pct = (total_now / total_7d_ago - 1.0) * 100  # 7 日变化率 %
-            raw = max(-1.0, min(1.0, chg_pct / 1.0))  # ±1%/周 满强度
+            if (
+                usdt is not None
+                and usdc is not None
+                and now - usdt[1] < _STALE_SEC
+                and now - usdc[1] < _STALE_SEC
+            ):
+                total_now = usdt[0] + usdc[0]
+                cutoff = now - 7 * 24 * 3600
+                hist_usdt = [
+                    (v, t)
+                    for v, t in self._query_history(
+                        "stablecoin_hist_usdt", "circulating_usd_bln", 30 * 24 * 3600
+                    )
+                    if t <= cutoff
+                ]
+                hist_usdc = [
+                    (v, t)
+                    for v, t in self._query_history(
+                        "stablecoin_hist_usdc", "circulating_usd_bln", 30 * 24 * 3600
+                    )
+                    if t <= cutoff
+                ]
+                if hist_usdt and hist_usdc and total_now > 0:
+                    total_7d_ago = hist_usdt[-1][0] + hist_usdc[-1][0]
+                    if total_7d_ago > 0:
+                        chg_pct = (total_now / total_7d_ago - 1.0) * 100
+                        sc_part = max(-1.0, min(1.0, chg_pct / 1.0))
+                        parts.append(sc_part)
+                        components["stablecoin_supply_7d"] = {
+                            "chg_pct": round(chg_pct, 3),
+                            "part": round(sc_part, 3),
+                        }
+
+            # ── 信号2: 交易所 BTC 余额 30d 变化 ──
+            ex_chg = self._query_latest("exchanges_whales", "ex_bal_BTC_chg30d_pct")
+            if ex_chg is not None and now - ex_chg[1] < _STALE_SEC:
+                chg = float(ex_chg[0])
+                # 余额下降 = 囤积 = 多头(正); 上升 = 抛售 = 空头(负)
+                ex_part = max(-1.0, min(1.0, -chg / 2.0))
+                parts.append(ex_part)
+                components["exchange_btc_balance_30d"] = {
+                    "chg_pct": round(chg, 3),
+                    "part": round(ex_part, 3),
+                }
+
+            if not parts:
+                return self._neutral("c7-insufficient-data")
+
+            raw = sum(parts) / len(parts)
             direction = "long" if raw > 0.1 else ("short" if raw < -0.1 else "neutral")
             return {
                 "direction": direction,
                 "strength": round(self._clamp01(abs(raw)), 3),
                 "raw_z": round(raw, 3),
                 "degraded": None,
+                "components": components,
             }
         except Exception as e:
             logger.debug("[DimensionForce] C7 fail: %s", e)
