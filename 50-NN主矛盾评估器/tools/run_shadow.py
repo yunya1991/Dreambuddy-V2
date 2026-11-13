@@ -38,7 +38,7 @@ from adapters.constraint_loader import load_constraints  # noqa: E402
 from adapters.execution_writer import is_kill_switch_on  # noqa: E402
 from adapters.prior_reader import load_priors_summary  # noqa: E402
 from core.decision import _extract_trigger, record_decision  # noqa: E402
-from core.shadow_decision import make_shadow_decision  # noqa: E402
+from core.shadow_decision import build_symbol_decisions, make_shadow_decision  # noqa: E402
 from core.trigger_flap import check_trigger_flap  # noqa: E402
 
 SHADOW_HISTORY_CAP = 500
@@ -114,6 +114,9 @@ def run(bus_state: Path, out_dir: Path) -> dict[str, Any]:
         if isinstance(payload, dict):
             payload["priors_40"] = priors_40
     result["decision"] = decision
+    # 40 域 decision_id 回写：组合级决策 symbol=MULTI 无法按标的索引，
+    # 这里额外产出 per-symbol 决策（同批 path 分组聚合，不新增推断）。
+    result["symbol_decisions"] = build_symbol_decisions(evidences, constraints, now=now)
     return result
 
 
@@ -147,6 +150,9 @@ def main() -> int:
                 "position_pct": payload.get("position_pct"),
             }
         )
+    # per-symbol 决策只入决策账本（供 40 域 decision_id 精确映射），不进审计主线
+    symbol_decisions = result.get("symbol_decisions") or []
+    summary["symbol_decisions"] = len(symbol_decisions)
     _append_history(out_dir / "shadow_history.jsonl", summary)
 
     if isinstance(decision, dict):
@@ -154,6 +160,12 @@ def main() -> int:
         try:
             record_decision(decision)
             log_decision(decision)
+        except Exception:  # noqa: BLE001
+            pass
+
+    for item in symbol_decisions:
+        try:
+            record_decision(item)
         except Exception:  # noqa: BLE001
             pass
 

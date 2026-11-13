@@ -50,13 +50,21 @@ def test_main_appends_decision_and_audit(tmp_path, monkeypatch):
     assert run_shadow.main() == 0
 
     decisions = [json.loads(x) for x in ledger.read_text(encoding="utf-8").splitlines()]
-    assert len(decisions) == 1
+    # 组合级 1 条 + per-symbol 1 条（BTC-USDT-SWAP 归一到 BTC，供 40 域 decision_id 映射）
+    assert len(decisions) == 2
+    aggregate = [d for d in decisions if d["symbol"] == "MULTI"]
+    per_symbol = [d for d in decisions if d["symbol"] == "BTC"]
+    assert len(aggregate) == 1
+    assert len(per_symbol) == 1
     assert decisions[0]["source"] == "50-nn"
     assert decisions[0]["mode"] == "shadow"
+    assert per_symbol[0]["payload"]["granularity"] == "per_symbol"
+    assert per_symbol[0]["direction"] == "long"
+    assert per_symbol[0]["expires_at"]
 
     audits = [json.loads(x) for x in audit.read_text(encoding="utf-8").splitlines()]
     assert len(audits) == 1
-    assert audits[0]["decision"]["signal_id"] == decisions[0]["signal_id"]
+    assert audits[0]["decision"]["signal_id"] == aggregate[0]["signal_id"]
 
     flaps = [json.loads(x) for x in flap.read_text(encoding="utf-8").splitlines()]
     assert len(flaps) == 1

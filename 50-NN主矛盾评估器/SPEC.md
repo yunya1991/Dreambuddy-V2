@@ -118,6 +118,7 @@
 - 双轨落盘（2026-11-13 起）：`mode="shadow"`（默认）决策写 `runtime/decisions.jsonl`；`mode="live"` 由 `tools/run_live.py` 过滤过期证据后写 `runtime/live/outbox.jsonl` + `runtime/live/latest.json`，供 22 `x1_live_executor.py` 消费。
 - 输出字段追加 `mode ∈ {shadow, live}` 与 `shadow = (mode != "live")`；live 决策额外携带 `mandate_id` 与 `execution.outcome/allowed/reason`。
 - live 三重前置（缺一即按 paper/跳过）：`execution_rights.outcome=live:50-bypass` + `mandate_id` 非空 + kill-switch 关闭；过期证据（`expires_at` 已过）不得进入 live 决策。
+- per-symbol 决策（2026-11-14 起）：组合级决策 `symbol=MULTI` 无法被 40 域按标的建索引（`decision_linked_today=0`），因此同批 path 再按 base asset 聚合产出 per-symbol 决策（`payload.granularity="per_symbol"`，`expires_at=ts+24h`，`signal_id="50-nn|shadow:{SYMBOL}|{ts}"`），只入 `runtime/decisions.jsonl` 账本、不进审计主线；组合级决策与 `latest.json` 语义不变。仅为分组聚合，不新增方向/置信度推断。
 
 ### 3.1 执行权与安全契约（M4 修复）
 
