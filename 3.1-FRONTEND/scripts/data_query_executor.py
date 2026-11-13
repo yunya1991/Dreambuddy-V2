@@ -578,12 +578,16 @@ def exec_event_analysis(message):
     }
 
 
-def settle_to_cognitive(intent, message, result):
+def settle_to_cognitive(intent, message, result, trace_id=""):
     """沉淀分流入口 (SPEC v1.0 §3.5): 成功→案例库；有价值的探索发现→认知系统。
 
     P1.3 起实现上收至 L0（core.l0_foundation.L0Foundation.settle），行为不变，FAIL-OPEN。
+    trace_id（执行链 SPEC §6.2）随 context 透传，案例库按 trace 关联，不用 task_id 冒充。
     """
-    get_l0().settle(result, {"intent": intent, "message": message})
+    context = {"intent": intent, "message": message}
+    if trace_id:
+        context["trace_id"] = trace_id
+    get_l0().settle(result, context)
 
 
 _RISK_STATE_DESC = {"IDLE": "待命", "ARMED": "已武装", "TRIGGERED": "已触发", "CLOSED": "已平仓"}

@@ -1,0 +1,185 @@
+# 三大业务闭环链 · 能力包登记表
+# 权威定义：1-ARCHITECTURE/SPEC-20261113-THREE-BUSINESS-CLOSED-LOOPS.md §8.1 / §8.1.1
+# 校验：47-MCP管理系统/registry/scripts/validate_mcp_registry.py V8（交叉引用，待实现）
+# 约束：
+#   1. 同一 chain_id 只能新增 version，禁止覆盖历史版本；
+#   2. status 与 SPEC §5.3 状态机一致；
+#   3. 本文件当前所有条目均为 draft，禁止手工改为 approved/published。
+
+schema_version: "0.1.0"
+spec_ref: "1-ARCHITECTURE/SPEC-20261113-THREE-BUSINESS-CLOSED-LOOPS.md@v0.3.2"
+updated_at: "2026-11-13"
+
+# MCP 投影交叉引用：chain_id → 47 registry 中的 shell_id 列表
+# 由 validate_mcp_registry.py V8 校验；not-exposed 的链不得出现在此表中
+mcp_projection:
+  trading.nn: [l1.trading.mcp]
+  emergence.d1: [l2.emergence.mcp]
+  emergence.d2: [l2.emergence.mcp]
+  execution.general: [l2.dreamos.mcp]
+
+packages:
+  - chain_id: trading.nn
+    version: v1
+    status: draft
+    entry: 50.FinalDecisionSignal
+    owner: "49"
+    nodes:
+      - { id: "40", version: TBD }
+      - { id: "43", version: TBD }
+      - { id: "42", version: TBD }
+      - { id: "50", version: TBD }
+      - { id: "13", version: TBD }
+      - { id: "16", version: TBD }
+      - { id: "22", version: TBD }
+    contracts:
+      inputs: ["49.SPEC#FinalDecisionSignal", "49.SPEC#execution_rights"]
+      outputs: ["49.SPEC#order", "49.SPEC#fill"]
+      feedback: ["48.TrainingEvent"]
+    authority:
+      decision: "50"
+      execution: "11"
+      publish: "49+50"
+    gates: [G-BCL-1, G-BCL-4, G-BCL-5]
+    observability:
+      trace_id: required
+      evidence: "TODO: 证据路径"
+    slo: "l1_route 8s；交易链路 Fail-Closed 不设超时降级"
+    exposure:
+      internal: in-process
+      mcp: readonly-observe
+    rollback: "TODO: 40/43/42/50 版本回滚入口"
+
+  - chain_id: trading.evolution
+    version: v1
+    status: draft
+    entry: 23.independent_decision
+    owner: "23"
+    nodes:
+      - { id: "23", version: TBD }
+    contracts:
+      inputs: ["40/43 版本化快照（只读）"]
+      outputs: ["23.SPEC#decision"]
+      feedback: ["48.TrainingEvent"]
+    authority:
+      decision: "23"
+      execution: "11"
+      publish: "23+49"
+    gates: [G-BCL-1, G-BCL-5]
+    observability:
+      trace_id: required
+      evidence: "TODO: 证据路径"
+    slo: "不进入 NN 在线热路径"
+    exposure:
+      internal: in-process
+      mcp: not-exposed
+    rollback: "TODO: 独立权重回滚入口"
+
+  - chain_id: emergence.d1
+    version: v1
+    status: draft
+    entry: 48.verdict
+    owner: "48"
+    nodes:
+      - { id: "34", version: TBD }
+      - { id: "48", version: TBD }
+      - { id: "45", version: TBD }
+    contracts:
+      inputs: ["48.SPEC-EMERGENCE-FULL-CHAIN"]
+      outputs: ["48.verdict"]
+      feedback: ["D1 join: decision_id→order→fill→pnl→training_event_id"]
+    authority:
+      decision: "48"
+      execution: "none"
+      publish: "48+45"
+    gates: [G-BCL-2, G-BCL-5]
+    observability:
+      trace_id: required
+      evidence: "48-涌现架构/registry/verdicts"
+    slo: "离线，无在线 SLO；不得影响生产交易"
+    exposure:
+      internal: ipc
+      mcp: readonly-observe
+    rollback: "撤回 candidate，不删除历史证据"
+
+  - chain_id: emergence.d2
+    version: v1
+    status: draft
+    entry: 33.rea_analyze
+    owner: "48"
+    nodes:
+      - { id: "33", version: TBD }
+      - { id: "45", version: TBD }
+      - { id: "0-系统文档管理", version: TBD }
+    contracts:
+      inputs: ["48.SPEC-EMERGENCE-D2-D3-CHAIN#D2"]
+      outputs: ["48.candidate", "requirement.resolved"]
+      feedback: ["45.gate_verdict", "45.blind_review"]
+    authority:
+      decision: "48"
+      execution: "none"
+      publish: "48+45"
+    gates: [G-BCL-2, G-BCL-5]
+    observability:
+      trace_id: required
+      evidence: "48-涌现架构/docs/tech/SPEC-EMERGENCE-D2-D3-CHAIN-v0.1.md"
+    slo: "离线，无在线 SLO"
+    exposure:
+      internal: ipc
+      mcp: readonly-observe
+    rollback: "候选物沙箱隔离，不进入生产仓库"
+
+  - chain_id: emergence.d3
+    version: v1
+    status: draft
+    entry: 35.intent_prediction
+    owner: "48"
+    nodes:
+      - { id: "35", version: TBD }
+      - { id: "47", version: TBD }
+      - { id: "46", version: TBD }
+    contracts:
+      inputs: [".cognitive/sessions"]
+      outputs: ["d3.intent_prediction", "d3.knowledge_combo"]
+      feedback: ["user_accept/edit/reject", "online_experiment_id"]
+    authority:
+      decision: "48"
+      execution: "none"
+      publish: "48+45"
+    gates: [G-BCL-2, G-BCL-3]
+    observability:
+      trace_id: required
+      evidence: "48-涌现架构/docs/tech/SPEC-EMERGENCE-D2-D3-CHAIN-v0.1.md"
+    slo: "召回侧不引入可感知延迟"
+    exposure:
+      internal: ipc
+      mcp: not-exposed
+    rollback: "回退到规则/上一版组合策略"
+
+  - chain_id: execution.general
+    version: v1
+    status: draft
+    entry: 3.1-FRONTEND/api/data/query
+    owner: "46"
+    nodes:
+      - { id: "L1 意图路由", version: TBD }
+      - { id: "46.Router", version: TBD }
+      - { id: "46.Worker", version: TBD }
+      - { id: "45", version: TBD }
+    contracts:
+      inputs: ["user.request", "l1_intent_hint"]
+      outputs: ["task.result", "acceptance.verdict"]
+      feedback: ["L0 settle", "D3 event"]
+    authority:
+      decision: "46.Router"
+      execution: "46.Worker"
+      publish: "46"
+    gates: [G-BCL-3, G-BCL-4]
+    observability:
+      trace_id: required
+      evidence: "TODO: trace 贯穿证据"
+    slo: "L1 路由 8s 超时 FAIL-OPEN 转 L2；交易风控 Fail-Closed"
+    exposure:
+      internal: in-process
+      mcp: async-submit-poll
+    rollback: "关闭 SKILL 编排开关，回退多轨路径"

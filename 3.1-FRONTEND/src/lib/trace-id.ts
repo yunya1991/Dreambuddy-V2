@@ -49,3 +49,12 @@ export function traceIdToDate(traceId: string): string | null {
   if (!m) return null;
   return `${m[1]}-${m[2]}-${m[3]}`;
 }
+
+/**
+ * 执行链入口 trace 生成器（执行链 SPEC §6.2）。
+ *
+ * 复用 L1 TRACE PILOT 的单一格式，禁止在链路里引入第二套 trace 格式。
+ */
+export function newTraceId(): string {
+  return generateTraceId('FE');
+}

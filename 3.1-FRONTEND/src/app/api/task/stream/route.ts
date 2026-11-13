@@ -8,6 +8,7 @@ import {
   RESULTS_DIR,
 } from '@/lib/task-manager';
 import { emitMonitorEvent } from '@/lib/monitor-bus';
+import { newTraceId, traceStage } from '@/lib/execution-trace';
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
@@ -17,24 +18,32 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /** P3b.1: L2 任务完成后认知 record_hook（fire-and-forget，FAIL-OPEN 不阻塞 SSE）。 */
-function settleL2ToCognitive(payload: Record<string, unknown>): void {
+function settleL2ToCognitive(
+  payload: Record<string, unknown>,
+  onResult?: (parsed: Record<string, unknown> | null, err: Error | null) => void,
+): void {
   try {
     const scriptPath = join(process.cwd(), 'scripts', 'l2_cognitive_settle.py');
     execFile('python3', [scriptPath, JSON.stringify(payload)], { timeout: 10000 }, (err, stdout) => {
       if (err) {
         console.warn('[TaskStream] L2 认知沉淀降级:', err.message);
+        onResult?.(null, err);
         return;
       }
       // 实测验收：stdout 最后一行应含 memory_id
       const lastLine = stdout.trim().split(/\r?\n/).pop() || '';
+      let parsed: Record<string, unknown> | null = null;
       try {
-        const parsed = JSON.parse(lastLine);
+        parsed = JSON.parse(lastLine) as Record<string, unknown>;
         if (parsed?.memory_id) {
           console.log(`[TaskStream] L2 认知沉淀成功: ${parsed.memory_id}`);
         }
       } catch { /* 输出非 JSON，忽略 */ }
+      onResult?.(parsed, null);
     });
-  } catch { /* FAIL-OPEN */ }
+  } catch (err) {
+    onResult?.(null, err as Error);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -73,7 +82,7 @@ export async function POST(request: NextRequest) {
   (async () => {
     try {
       const body = await request.json();
-      const { message, thinking_mode, session_id, llm_model, intent_method, lang, trading_mode, l1_intent_hint } = body;
+      const { message, thinking_mode, session_id, llm_model, intent_method, lang, trading_mode, l1_intent_hint, trace_id } = body;
 
       if (!message || typeof message !== 'string') {
         sendEvent('error', { error: 'message is required and must be a string' });
@@ -119,9 +128,10 @@ export async function POST(request: NextRequest) {
       // 清理过期任务
       cleanupOldTasks();
 
-      // 📡 监控埋点: 用户请求进入
+      // 📡 监控埋点: 用户请求进入（执行链 SPEC §6.2：入口 trace 贯穿全链路）
+      const requestTraceId = typeof trace_id === 'string' && trace_id ? trace_id : newTraceId();
       emitMonitorEvent({
-        trace_id: `stream_${Date.now()}_pending`,
+        trace_id: requestTraceId,
         uid: session_id || 'anonymous',
         layer: 'frontend',
         phase: 'user_input',
@@ -151,14 +161,43 @@ export async function POST(request: NextRequest) {
         trading_mode: trading_mode || 'ai_skill',
         // L2 交接协议：透传 L1 意图先验（落盘 task.metadata，供 S 层/C-drive 消费）
         l1_intent_hint: typeof l1_intent_hint === 'string' ? l1_intent_hint : undefined,
+        // 执行链 trace 贯穿：入口生成，L2 不重新生成
+        trace_id: requestTraceId,
         onProgress: (event) => {
           // 将Planner进度事件转发到SSE
           sendEvent('progress', event as unknown as Record<string, unknown>);
         },
       });
 
+      // 执行链 trace 台账（G-BCL-3）：created → route → execute → accept → settle
+      // 同一请求只允许一个 trace（task.trace_id 由入口透传，缺省由 createTask 生成）
+      const traceId = task.trace_id || requestTraceId;
+      traceStage({
+        task_id: task.task_id,
+        trace_id: traceId,
+        stage: 'created',
+        intent: task.intent.type,
+        meta: { created_at: task.created_at, session_id: task.session_id },
+      });
+      traceStage({
+        task_id: task.task_id,
+        trace_id: traceId,
+        stage: 'route',
+        intent: task.intent.type,
+        route_decision: task.metadata?.l1_intent_hint ? 'l2_handoff' : 'l2_direct',
+        meta: { l1_intent_hint: task.metadata?.l1_intent_hint || null },
+      });
+
       // 发送完成事件
       if (result) {
+        traceStage({
+          task_id: task.task_id,
+          trace_id: traceId,
+          stage: 'execute',
+          intent: task.intent.type,
+          duration_ms: result.execution_time_ms,
+          ...(result.status !== 'completed' ? { degraded_reason: `status=${result.status}` } : {}),
+        });
         // 构建 chain_trace 数据
         const plannerResult = (result.execution_summary as any)?.planner_result;
         
@@ -323,6 +362,21 @@ export async function POST(request: NextRequest) {
           };
         }
 
+        // 验收阶段：A 层/chain_trace 汇总结论作为 accept verdict（失败也必须落账，不静默丢弃）
+        const acceptQuality = (chain_trace?.final as Record<string, unknown> | undefined)?.quality_score;
+        traceStage({
+          task_id: task.task_id,
+          trace_id: traceId,
+          stage: 'accept',
+          intent: task.intent.type,
+          verdict: result.status === 'completed' ? 'pass' : 'fail',
+          meta: {
+            quality_score: acceptQuality ?? null,
+            grade: (chain_trace?.final as Record<string, unknown> | undefined)?.grade ?? null,
+          },
+          ...(result.status === 'completed' ? {} : { degraded_reason: `status=${result.status}` }),
+        });
+
         sendEvent('done', {
           task_id: task.task_id,
           status: result.status,
@@ -344,14 +398,58 @@ export async function POST(request: NextRequest) {
         if (result.status === 'completed') {
           settleL2ToCognitive({
             task_id: task.task_id,
+            trace_id: traceId,
             intent: task.intent.type,
             message: message.trim(),
             answer_preview: (result.content || '').slice(0, 200),
             quality_score: (chain_trace?.final as Record<string, unknown> | undefined)?.quality_score ?? 0.7,
             l1_intent_hint: task.metadata?.l1_intent_hint || '',
+          }, (parsed, err) => {
+            // settle 阶段落账：成功带 memory_id，失败必须写 degraded_reason
+            const settleOk = !err && parsed?.success === true;
+            traceStage({
+              task_id: task.task_id,
+              trace_id: traceId,
+              stage: 'settle',
+              intent: task.intent.type,
+              ...(settleOk
+                ? { meta: { memory_id: parsed?.memory_id ?? null } }
+                : { degraded_reason: err?.message?.slice(0, 200) || String(parsed?.reason || 'settle_failed') }),
+            });
+          });
+        } else {
+          traceStage({
+            task_id: task.task_id,
+            trace_id: traceId,
+            stage: 'settle',
+            intent: task.intent.type,
+            degraded_reason: `not_settled:status=${result.status}`,
           });
         }
       } else {
+        // 异步任务：本轮未产出结果，三阶段显式降级（不静默缺失）
+        traceStage({
+          task_id: task.task_id,
+          trace_id: traceId,
+          stage: 'execute',
+          intent: task.intent.type,
+          degraded_reason: 'async_pending',
+        });
+        traceStage({
+          task_id: task.task_id,
+          trace_id: traceId,
+          stage: 'accept',
+          intent: task.intent.type,
+          verdict: 'fail',
+          degraded_reason: 'deferred_to_poller',
+        });
+        traceStage({
+          task_id: task.task_id,
+          trace_id: traceId,
+          stage: 'settle',
+          intent: task.intent.type,
+          degraded_reason: 'not_settled_inline',
+        });
         sendEvent('done', {
           task_id: task.task_id,
           status: 'processing',

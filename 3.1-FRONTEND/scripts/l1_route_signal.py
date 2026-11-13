@@ -145,7 +145,7 @@ def extract_json(raw: str):
     return None
 
 
-def _unknown_result():
+def _unknown_result(trace_id: str = ""):
     return {
         "success": True,
         "intent": "unknown",
@@ -153,6 +153,7 @@ def _unknown_result():
         "answer": "",
         "data": None,
         "degraded": True,
+        "trace_id": trace_id,
         "route_signal": RouteConfidenceResult(
             route_confidence=0.0,
             decision=L2_HANDOFF,
@@ -166,13 +167,16 @@ def _unknown_result():
     }
 
 
-def route_query(message: str, intent: str = "") -> dict:
-    """门控主流程：意图 → recall → evaluate_route → L1 直答 / L2 交接（全程 FAIL-OPEN）。"""
+def route_query(message: str, intent: str = "", trace_id: str = "") -> dict:
+    """门控主流程：意图 → recall → evaluate_route → L1 直答 / L2 交接（全程 FAIL-OPEN）。
+
+    trace_id 由前端入口生成并透传（执行链 SPEC §6.2），L1 直答的 settle 案例落同一 trace。
+    """
     intent = (intent or "").strip()
     if intent not in EXECUTORS:
         intent = detect_intent(message)
     if not intent:
-        return _unknown_result()
+        return _unknown_result(trace_id)
 
     # 认知召回（L0 scope；异常/降级 → cognitive_available=False → evaluate_route 静态兜底）
     cognitive_available = True
@@ -208,6 +212,7 @@ def route_query(message: str, intent: str = "") -> dict:
         "data": None,
         "degraded": signal.degraded,
         "route_signal": signal.to_dict(),
+        "trace_id": trace_id,
     }
 
     if signal.decision != L1_DIRECT:
@@ -223,9 +228,9 @@ def route_query(message: str, intent: str = "") -> dict:
     out["data"] = result.get("data")
     out["degraded"] = bool(signal.degraded or result.get("degraded"))
 
-    # settle 沉淀（FAIL-OPEN，不阻塞返回）
+    # settle 沉淀（FAIL-OPEN，不阻塞返回）；trace_id 随案例落盘，供跨链关联
     try:
-        settle_to_cognitive(intent, message, result)
+        settle_to_cognitive(intent, message, result, trace_id=trace_id)
     except Exception:
         pass
     return out
@@ -241,11 +246,12 @@ def main():
         req = {}
     message = req.get("message", "") or ""
     intent = req.get("intent", "") or ""
+    trace_id = req.get("trace_id", "") or ""
     try:
-        result = route_query(message, intent)
+        result = route_query(message, intent, trace_id)
     except Exception as e:
         # 最终兜底：任何未预期异常都不阻塞前端（前端 FAIL-OPEN 转 L2）
-        result = _unknown_result()
+        result = _unknown_result(trace_id)
         result["answer"] = f"路由异常: {e}"
     # 保证 JSON 在最后一行输出（供 extract_json 穿透 stdout 噪音）
     print(json.dumps(result, ensure_ascii=False))

@@ -15,6 +15,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as child_process from 'child_process';
 import { emitMonitorEvent } from './monitor-bus';
+import { newTraceId } from './trace-id';
 import {
   recognizeIntent,
   evaluateShadowRules,
@@ -387,6 +388,8 @@ export type ThinkingMode = 'quick' | 'deep';
  */
 export interface TaskFile {
   task_id: string;
+  /** 跨链追踪主键（执行链 SPEC §6.2）；禁止用 task_id 冒充 */
+  trace_id: string;
   status: TaskStatus;
   created_at: string;
   updated_at: string;
@@ -643,6 +646,8 @@ export async function createTask(params: {
   intent_method?: string;
   trading_mode?: 'ai_skill';
   l1_intent_hint?: string;
+  /** 入口生成并透传；缺省时在此生成，保证全链路唯一 */
+  trace_id?: string;
 }): Promise<TaskFile> {
   ensureDir(TASKS_DIR);
   ensureDir(RESULTS_DIR);
@@ -703,6 +708,7 @@ export async function createTask(params: {
 
   const task: TaskFile = {
     task_id: taskId,
+    trace_id: params.trace_id || newTraceId(),
     status: 'pending',
     created_at: now,
     updated_at: now,
@@ -1071,7 +1077,7 @@ async function checkIntentAmbiguity(
     fs.writeFileSync(taskPath, JSON.stringify(task, null, 2), 'utf-8');
 
     emitMonitorEvent({
-      trace_id: task.task_id,
+      trace_id: task.trace_id,
       uid: task.session_id,
       layer: 'gateway',
       phase: 'clarification_requested',
@@ -2457,7 +2463,7 @@ export async function executeConversationTaskInline(
       : 'This system focuses only on finance / crypto market analysis. Your question is out of scope and has been skipped.';
 
     emitMonitorEvent({
-      trace_id: task.task_id,
+      trace_id: task.trace_id,
       uid: task.session_id,
       layer: 'gateway',
       phase: 'non_financial_skip',
@@ -2603,7 +2609,7 @@ export async function executeConversationTaskInline(
     );
 
     emitMonitorEvent({
-      trace_id: task.task_id,
+      trace_id: task.trace_id,
       uid: task.session_id,
       layer: 'gateway',
       phase: 'inline_exec_done',
@@ -2640,7 +2646,7 @@ export async function executeConversationTaskInline(
       fs.writeFileSync(plannerTaskPath, JSON.stringify(task, null, 2), 'utf-8');
 
       emitMonitorEvent({
-        trace_id: task.task_id,
+        trace_id: task.trace_id,
         uid: task.session_id,
         layer: 'gateway',
         phase: 'inline_exec_done',
@@ -2665,7 +2671,7 @@ export async function executeConversationTaskInline(
 
   // 📡 监控埋点: 内联执行开始
   emitMonitorEvent({
-    trace_id: task.task_id,
+    trace_id: task.trace_id,
     uid: task.session_id,
     layer: 'gateway',
     phase: 'inline_exec_start',
@@ -3117,7 +3123,7 @@ export async function executeConversationTaskInline(
 
   // 📡 监控埋点: 内联执行完成
   emitMonitorEvent({
-    trace_id: task.task_id,
+    trace_id: task.trace_id,
     uid: task.session_id,
     layer: 'gateway',
     phase: 'inline_exec_done',
@@ -3566,7 +3572,7 @@ export function generateTradePendingResult(task: TaskFile): ResultFile {
 
   // 📡 监控埋点: 交易任务待确认
   emitMonitorEvent({
-    trace_id: task.task_id,
+    trace_id: task.trace_id,
     uid: task.session_id,
     layer: 'gateway',
     phase: 'trade_pending',
@@ -3618,7 +3624,7 @@ export async function triggerWorkBuddyAsync(taskId: string): Promise<void> {
       message_history: [task.message],
     });
     emitMonitorEvent({
-      trace_id: taskId,
+      trace_id: task.trace_id,
       uid: task.session_id,
       layer: 'gateway',
       phase: 'async_spawned',
@@ -3859,6 +3865,8 @@ export async function createAndExecuteTask(params: {
   lang?: 'zh' | 'en';
   trading_mode?: 'ai_skill';
   l1_intent_hint?: string;
+  /** 入口生成并透传的跨链 trace（缺省由 createTask 生成） */
+  trace_id?: string;
   onProgress?: (event: PlannerProgressEvent) => void;
 }): Promise<{ task: TaskFile; result: ResultFile | null; needAsync: boolean }> {
   // ===== L1 组合意图拆分（spec v0.5 §4，P3）=====
@@ -4020,7 +4028,7 @@ export async function createAndExecuteTask(params: {
 
   // 📡 监控埋点: 任务创建
   emitMonitorEvent({
-    trace_id: task.task_id,
+    trace_id: task.trace_id,
     uid: task.session_id,
     layer: 'gateway',
     phase: 'task_created',
@@ -4761,7 +4769,7 @@ ${optionLines}
 ${hint}`;
 
   emitMonitorEvent({
-    trace_id: task.task_id,
+    trace_id: task.trace_id,
     uid: task.session_id,
     layer: 'gateway',
     phase: 'clarification_sent',

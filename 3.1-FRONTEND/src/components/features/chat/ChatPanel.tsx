@@ -11,6 +11,7 @@ import {
   fallbackIntent,
   type RouteConfidenceSignal,
 } from '@/lib/l1-intent-registry';
+import { newTraceId } from '@/lib/trace-id';
 
 // 9 个子组件
 import { MessageItem } from './MessageItem';
@@ -81,7 +82,7 @@ export function ChatPanel() {
   // 组件卸载不再关闭任务流：连接由 task-stream-manager 模块单例持有，切页不断流。
 
   // 发送消息到 /api/task/stream（连接生命周期由 task-stream-manager 管理）
-  const sendToTaskStream = useCallback((userContent: string, sessionId: string, l1IntentHint?: string) => {
+  const sendToTaskStream = useCallback((userContent: string, sessionId: string, l1IntentHint?: string, traceId?: string) => {
     // 重置链路状态
     resetChain();
 
@@ -93,6 +94,8 @@ export function ChatPanel() {
       trading_mode: 'ai_skill',
       // 交接协议 (SPEC v1.1 §4.2-3): L1 意图预测结果作为 L2 上下文
       ...(l1IntentHint ? { l1_intent_hint: l1IntentHint } : {}),
+      // 执行链 SPEC §6.2：入口生成、L1→L2 原样透传的跨链 trace
+      ...(traceId ? { trace_id: traceId } : {}),
     });
   }, [resetChain]);
 
@@ -159,6 +162,8 @@ export function ChatPanel() {
     //   否则转 /api/task/stream L2 SSE，并透传 l1_intent_hint 交接上下文。
     //   信号缺失/非法（FAIL-OPEN）→ canHandleL1WithSignal 内部退回 v2 静态特征校验。
     (async () => {
+      // 入口统一生成 trace（执行链 SPEC §6.2 / PLAN T2-2）：L1 与 L2 共用，禁止 L2 侧重新生成
+      const traceId = newTraceId();
       // L1 意图预测结果声明在 try 外，保证 L2 交接时可透传 l1_intent_hint
       let l1Intent: string | undefined;
       try {
@@ -167,7 +172,7 @@ export function ChatPanel() {
         const res = await fetch('/api/data/query', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: content, intent: predictedIntent || '' }),
+          body: JSON.stringify({ message: content, intent: predictedIntent || '', trace_id: traceId }),
         });
         if (res.ok) {
           const json = await res.json();
@@ -197,9 +202,9 @@ export function ChatPanel() {
       } catch {
         // FAIL-OPEN: 路由器异常，降级到 L2 SSE 链路
       }
-      // L1 未命中 → 走 L2 SSE 链路（交接协议: 携带 L1 意图预测上下文）
+      // L1 未命中 → 走 L2 SSE 链路（交接协议: 携带 L1 意图预测上下文 + 同一 trace）
       useSessionStore.getState().setStreaming(true, '');
-      sendToTaskStream(content, sessionId, l1Intent);
+      sendToTaskStream(content, sessionId, l1Intent, traceId);
     })();
   }, [inputValue, isStreaming, brainstormBusy, brainstormMode, sendToTaskStream]);
 

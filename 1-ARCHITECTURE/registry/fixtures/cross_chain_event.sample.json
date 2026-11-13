@@ -1,0 +1,95 @@
+{
+  "schema_version": "0.1.0",
+  "spec_ref": "1-ARCHITECTURE/SPEC-20261113-THREE-BUSINESS-CLOSED-LOOPS.md@v0.3.0",
+  "purpose": "跨链事件信封样例；供 bcl_gate_check.py 解析与各端对齐字段理解",
+  "derivation": "business_key = source_module + ':' + event_type + ':' + 业务主键；event_id = sha256(business_key)；dedupKey = event_id",
+  "rules": [
+    "occurred_at 不参与 event_id 计算",
+    "补录只更新 ingested_at，不生成新 event_id",
+    "event_type ↔ SignalType 映射归 36 域，见 36-通信系统层/signal_type_mapping.yaml"
+  ],
+  "events": [
+    {
+      "event_id": "7af784b7a68f76c22ccadf20a6744e0dc113aa4e4ee5957279ec8266eaabf73e",
+      "schema_version": "0.1.0",
+      "event_type": "trading.decision",
+      "business_key": "50:trading.decision:dec_20261113_0001",
+      "source_module": "50",
+      "occurred_at": "2026-11-13T09:31:00+08:00",
+      "ingested_at": "2026-11-13T09:31:02+08:00",
+      "trace_id": "tr_01JA0BCL0DECISION0001",
+      "decision_id": "dec_20261113_0001",
+      "input_snapshot_version": "snap_20261113_0930_v1",
+      "capability_versions": {
+        "40": "v1",
+        "43": "v1",
+        "42": "v1",
+        "50": "v1"
+      },
+      "provenance": {
+        "producer": "50-NN主矛盾评估器",
+        "mode": "shadow",
+        "execution_right": "none"
+      },
+      "evidence_ref": "TODO: 决策落盘路径",
+      "payload_hash": "sha256:<payload>"
+    },
+    {
+      "event_id": "e22ad3848d4b44cd9dde46d71e9a126c69d33a724bff25a7f4c9b0782ced39c1",
+      "schema_version": "0.1.0",
+      "event_type": "training.event",
+      "business_key": "48:training.event:te_20261113_0001",
+      "source_module": "48",
+      "occurred_at": "2026-11-13T15:05:00+08:00",
+      "ingested_at": "2026-11-13T15:05:01+08:00",
+      "trace_id": "tr_01JA0BCL0TRAINING0001",
+      "decision_id": "dec_20261113_0001",
+      "order_id": "ord_20261113_0001",
+      "fill_id": "fill_20261113_0001",
+      "provenance": {
+        "producer": "48-涌现架构",
+        "mode": "offline",
+        "origin_env": "cloud"
+      },
+      "evidence_ref": "TODO: TrainingEvent 落盘路径",
+      "payload_hash": "sha256:<payload>"
+    },
+    {
+      "event_id": "479d4a3fedac8ea0cf2b62ce260c39eceada7c5f604219c9198b338611fc5727",
+      "schema_version": "0.1.0",
+      "event_type": "gap.opened",
+      "business_key": "33:gap.opened:gap_d2_0001",
+      "source_module": "33",
+      "occurred_at": "2026-11-13T11:20:00+08:00",
+      "ingested_at": "2026-11-13T11:20:03+08:00",
+      "trace_id": "tr_01JA0BCL0GAP0001",
+      "gap_id": "gap_d2_0001",
+      "provenance": {
+        "producer": "33-REA",
+        "mode": "offline",
+        "execution_right": "none"
+      },
+      "evidence_ref": "registry/capability_gaps.jsonl",
+      "payload_hash": "sha256:<payload>"
+    },
+    {
+      "event_id": "0275b8635b84eab742f0bbca97be75ceeb74d07b3685fde969d443e0f0530c40",
+      "schema_version": "0.1.0",
+      "event_type": "task.completed",
+      "business_key": "46:task.completed:task_20261113_0001",
+      "source_module": "46",
+      "occurred_at": "2026-11-13T10:12:30+08:00",
+      "ingested_at": "2026-11-13T10:12:31+08:00",
+      "trace_id": "tr_01JA0BCL0TASK0001",
+      "task_id": "task_20261113_0001",
+      "session_id": "sess_01JA0BCL0",
+      "provenance": {
+        "producer": "46-DSH",
+        "mode": "online",
+        "degraded": false
+      },
+      "evidence_ref": "TODO: task settle 落盘路径",
+      "payload_hash": "sha256:<payload>"
+    }
+  ]
+}

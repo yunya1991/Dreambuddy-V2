@@ -29,17 +29,25 @@ from core.l0_foundation import get_l0  # noqa: E402
 QUALITY_B_MIN = 0.8  # quality_score ≥ 0.8 → B 级记忆，否则 C 级
 
 
-def settle_l2(task_id, intent, message, answer_preview, quality_score=0.7, l1_intent_hint=""):
-    """L2 执行结果沉淀为认知记忆，返回 {success, memory_id, ...}（FAIL-OPEN）。"""
+def settle_l2(
+    task_id, intent, message, answer_preview, quality_score=0.7, l1_intent_hint="", trace_id=""
+):
+    """L2 执行结果沉淀为认知记忆，返回 {success, memory_id, ...}（FAIL-OPEN）。
+
+    trace_id（执行链 SPEC §6.2）写入内容与标签，供跨链关联；不用 task_id 冒充。
+    """
     quality_score = float(quality_score or 0.0)
     quality = "B" if quality_score >= QUALITY_B_MIN else "C"
     hint_part = f"[l1_hint={l1_intent_hint}]" if l1_intent_hint else ""
+    trace_part = f"[trace={trace_id}]" if trace_id else ""
     content = (
-        f"[L2执行案例][{intent}]{hint_part} 用户: {(message or '')[:120]} | "
+        f"[L2执行案例][{intent}]{hint_part}{trace_part} 用户: {(message or '')[:120]} | "
         f"结果摘要: {(answer_preview or '')[:200]} | "
         f"quality={quality_score:.2f} | task={task_id}"
     )
     tags = f"L2执行案例,{intent or 'unknown'},P3b-record-hook"
+    if trace_id:
+        tags = f"{tags},trace:{trace_id}"
     try:
         cle = get_l0()._load_cle()
         resp = cle.record(content=content, quality_level=quality, tags=tags)
@@ -58,7 +66,7 @@ def settle_l2(task_id, intent, message, answer_preview, quality_score=0.7, l1_in
             "reason": "record_no_memory_id",
             "raw": str(resp)[:200],
         }
-    return {"success": True, "memory_id": memory_id, "quality_level": quality}
+    return {"success": True, "memory_id": memory_id, "quality_level": quality, "trace_id": trace_id}
 
 
 def main():
@@ -74,6 +82,7 @@ def main():
             answer_preview=req.get("answer_preview", ""),
             quality_score=req.get("quality_score") or 0.0,
             l1_intent_hint=req.get("l1_intent_hint", "") or "",
+            trace_id=req.get("trace_id", "") or "",
         )
     except Exception as e:
         out = {"success": False, "degraded": True, "reason": str(e)}

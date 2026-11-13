@@ -1,8 +1,8 @@
 # 全项目文档索引 — INDEX
 
-> **版本**: v2.16 | **更新日期**: 2026-11-13
+> **版本**: v2.17 | **更新日期**: 2026-11-13
 > **定位（视角 B）**: **文档导航中枢，不是架构内容本身**。由 0-系统文档管理 维护，告诉你「到哪里找什么文档」。
-> **架构唯一事实源（SSoT）**: 所有架构争议以 [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v4.0** 为准（L0/L1/L2 三层 + L2 内部新 SACG + 认知 C1-C4 + 置信度门控）。被取代的旧架构文档已加「已归档」横幅，禁止作为实现依据。
+> **架构唯一事实源（SSoT）**: 所有架构争议以 [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v4.2** 为准（L0/L1/L2 三层 + L2 内部新 SACG + 认知 C1-C4 + 置信度门控）。被取代的旧架构文档已加「已归档」横幅，禁止作为实现依据。
 > **维护**: 每次新增/删除文档时同步更新；由 `4-工具与自动化/doc_coverage.py` 自动校验（已建成）
 
 ---
@@ -16,7 +16,7 @@
 └── 告诉你「文档债有哪些、怎么治」  （DOC_DEBT_INDEX / DOC_LIFECYCLE / QUALITY_AUDIT）
 
 1-ARCHITECTURE/                    ← 架构主入口（SSoT 所在地）
-└── SYSTEM_ARCHITECTURE_OVERVIEW.md v4.0  ← ★ 唯一架构事实源
+└── SYSTEM_ARCHITECTURE_OVERVIEW.md v4.2  ← ★ 唯一架构事实源
     ├── L0/L1/L2 三层能力架构 + L2 内部新 SACG（S认知规划/A OKR验收/C执行驱动/G压缩沉淀）
     ├── 三大思维链 + 图结构压缩 BAC + 动态执行引擎
     ├── 认知系统 C1-C4 + 记忆进化 + 置信度门控
@@ -46,19 +46,24 @@
 
 | 文档 | 路径 | 职责 | 状态 |
 |------|------|------|------|
-| ★ **架构总览（SSoT）** | [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v4.0** | **架构唯一事实源**：L0/L1/L2 三层 + L2 内部新 SACG + 认知 C1-C4 + 置信度门控 + 文档权威性指引 | ✅ 定稿 |
-| （历史归档）旧模块化架构 | [1-ARCHITECTURE/WORKBUDDY_OS_MODULAR_ARCHITECTURE.md](../1-ARCHITECTURE/WORKBUDDY_OS_MODULAR_ARCHITECTURE.md) v1.1 | TS 视角早期设计，仅作迁移参考，**所有决策以 v4.0 为准** | 📦 已归档（已加横幅） |
-| （历史归档）旧总览 | [1-ARCHITECTURE/README.md](../1-ARCHITECTURE/README.md) | 描述旧"六大核心系统"，与实际子系统目录 10-16 不匹配 | 📦 已被 v4.0 取代（已加横幅） |
+| ★ **架构总览（SSoT）** | [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v4.2** | **架构唯一事实源**：L0/L1/L2 三层 + L2 内部新 SACG + 认知 C1-C4 + 置信度门控 + 文档权威性指引 | ✅ 定稿 |
+| ★ **三大业务闭环链 SPEC** | [1-ARCHITECTURE/SPEC-20261113-THREE-BUSINESS-CLOSED-LOOPS.md](../1-ARCHITECTURE/SPEC-20261113-THREE-BUSINESS-CLOSED-LOOPS.md) **v0.3.2** | 交易链/涌现链/执行链目标架构、权限矩阵、跨链事件与 join、能力包、MCP 投影、P0-P3 与 G-BCL-0—5；v0.2.0 关闭 4 项 P0，v0.3.0 补齐 P1-03~06，v0.3.1 登记 D1 缺口，v0.3.2 裁决 DEC-BCL-06=B+C 并落地契约 | 🔍 待复评 |
+| **链能力包登记表** | [1-ARCHITECTURE/registry/capability_packages.yaml](../1-ARCHITECTURE/registry/capability_packages.yaml) **v0.1.0** | 6 条链能力包（全部 draft）+ mcp_projection；配套 `scripts/bcl_gate_check.py`（G-BCL 判定）、`fixtures/cross_chain_event.sample.json`、`36-通信系统层/signal_type_mapping.yaml` | ✅ Phase 0 已验证 |
+| ★ **三大业务闭环链 评审** | [1-ARCHITECTURE/REVIEW-20261113-THREE-BUSINESS-CLOSED-LOOPS.md](../1-ARCHITECTURE/REVIEW-20261113-THREE-BUSINESS-CLOSED-LOOPS.md) **v1.0** | 条件通过；4 项 P0 阻断、10 项 P1、4 项 P2；DEC-BCL-01—05 裁决建议（3 接受 / 2 有条件接受） | 🔍 需复评 |
+| ★ **三大业务闭环链 施工计划** | [1-ARCHITECTURE/PLAN-20261113-THREE-BUSINESS-CLOSED-LOOPS.md](../1-ARCHITECTURE/PLAN-20261113-THREE-BUSINESS-CLOSED-LOOPS.md) **v0.4.0** | Phase 0—6、16 个任务卡、5 个放行检查点、8 项风险；Phase 0 完成，Phase 1 契约已打通（B+C），G-BCL-1 仍 FAIL（执行层停在 X0 无成交） | 🟡 施工中 |
+| **3+3 架构模块映射** | [1-ARCHITECTURE/3+3架构模块映射.md](../1-ARCHITECTURE/3+3架构模块映射.md) **v1.1** | L0/L1/L2 × 三大能力链模块归属，并链接三大业务闭环链编排 SPEC | 🟡 持续维护 |
+| （历史归档）旧模块化架构 | [1-ARCHITECTURE/WORKBUDDY_OS_MODULAR_ARCHITECTURE.md](../1-ARCHITECTURE/WORKBUDDY_OS_MODULAR_ARCHITECTURE.md) v1.1 | TS 视角早期设计，仅作迁移参考，**所有决策以 v4.2 为准** | 📦 已归档（已加横幅） |
+| （历史归档）旧总览 | [1-ARCHITECTURE/README.md](../1-ARCHITECTURE/README.md) | 描述旧"六大核心系统"，与实际子系统目录 10-16 不匹配 | 📦 已被 v4.2 取代（已加横幅） |
 | 治理章程 | [2-GOVERNANCE/GOVERNANCE_CHARTER.md](../2-GOVERNANCE/GOVERNANCE_CHARTER.md) | 系统根本大法（宪法级） | ✅ |
 | 治理系统 | [2-GOVERNANCE/GOVERNANCE_SYSTEM.md](../2-GOVERNANCE/GOVERNANCE_SYSTEM.md) | 六部门 + 双中台 + 四层合规体系设计 | 🟡 部分 |
 | 合规规则 | [2-GOVERNANCE/COMPLIANCE_RULES.md](../2-GOVERNANCE/COMPLIANCE_RULES.md) | 合规检查清单 | 🟡 部分 |
 | 审计日志 | [2-GOVERNANCE/AUDIT_LOGS.md](../2-GOVERNANCE/AUDIT_LOGS.md) | 审计记录 | ⚠️ |
 | 知识库入口 | [2-KNOWLEDGE/INDEX.md](../2-KNOWLEDGE/INDEX.md) | 交易/技术/理论领域知识库 | ✅ |
-| 记忆系统架构 | [4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md](../4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md) v5.0 · [4-MEMORY/6-应用记忆索引/MEMORY_INTERFACE_SPEC.md](../4-MEMORY/6-应用记忆索引/MEMORY_INTERFACE_SPEC.md) | 双层架构（总记忆+应用记忆）+ 7+2 接口契约 + 贝叶斯进化 v5 | 🟡 参考 SSoT v4.0 第7章（认知 C1-C4） |
+| 记忆系统架构 | [4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md](../4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md) v5.0 · [4-MEMORY/6-应用记忆索引/MEMORY_INTERFACE_SPEC.md](../4-MEMORY/6-应用记忆索引/MEMORY_INTERFACE_SPEC.md) | 双层架构（总记忆+应用记忆）+ 7+2 接口契约 + 贝叶斯进化 v5 | 🟡 参考 SSoT v4.2 第7章（认知 C1-C4） |
 | 业务管理 | [5-BUSINESS/BUSINESS_SYSTEM.md](../5-BUSINESS/BUSINESS_SYSTEM.md) | 业务运营系统设计 | ⚠️ |
 | 交易中台 | [6-TRADING/TRADING_SYSTEM.md](../6-TRADING/TRADING_SYSTEM.md) | A0-A9 交易流水线与 SKILL 引擎 | 🟡 |
 | 前端系统 (3.0) | ~~3-FRONTEND/FRONTEND_SYSTEM.md~~ v3.0 | 3.0 旧前端已删除（2026-11-13），替代为 3.1-FRONTEND | ❌ 已删除 |
-| ★ **前端系统 (3.1)** | [3.1-FRONTEND/docs/v3-frontend-architecture.md](../3.1-FRONTEND/docs/v3-frontend-architecture.md) **v3.1** | **3.1 前端技术文档**：L0/L1/L2 意图路由 + 56页面+100+组件+12Store+96+API+P0-P3已全部完成（§3.2 旧 SACG 已更新指向 SSoT v4.0） | ✅ 已实现 |
+| ★ **前端系统 (3.1)** | [3.1-FRONTEND/docs/v3-frontend-architecture.md](../3.1-FRONTEND/docs/v3-frontend-architecture.md) **v3.1** | **3.1 前端技术文档**：L0/L1/L2 意图路由 + 56页面+100+组件+12Store+96+API+P0-P3已全部完成（§3.2 旧 SACG 已更新指向 SSoT v4.2） | ✅ 已实现 |
 | 前端系统 README | [3.1-FRONTEND/README.md](../3.1-FRONTEND/README.md) | 3.1 项目说明、快速开始、目录结构 | ✅ |
 | ★ **3.1 前端改建 SPEC** | [3.1-FRONTEND/docs/SPEC-20261111-前端交互内核与设计系统改建.md](../3.1-FRONTEND/docs/SPEC-20261111-前端交互内核与设计系统改建.md) **v0.1.0** | 交互内核（part/ToolCard/PlanCard）+ 设计 token + 壳层合一，P0/P1/P2 与 A1-A10 验收 | 📝 待评审 |
 | ★ **SPEC-A 唯一壳收口与流式传输治理** | [3.1-FRONTEND/docs/SPEC-20261111-A-唯一壳收口与流式传输治理.md](../3.1-FRONTEND/docs/SPEC-20261111-A-唯一壳收口与流式传输治理.md) **v0.1.0** | Agent/Board 归位 + 任务流/monitor 流单例 + REST 传输统一 + 构建门禁，G1-G6/T-A1~T-A7 | 📝 待评审 |
@@ -261,7 +266,7 @@
 | 双决策链 | [49-交易框架协议/SPEC.md](../49-交易框架协议/SPEC.md) v0.14.2 · [50-NN主矛盾评估器/SPEC.md](../50-NN主矛盾评估器/SPEC.md) v0.2.0 · [ADR-0002](../49-交易框架协议/docs/adr/ADR-0002-dual-decision-chain.md) |
 | 辩论系统 | `.trae/documents/debate-engine-v2-spec.md` v2.0 · `.trae/documents/debate-adjudication-training-spec.md` v1.2 · **jev集成SPEC v1.1**（以上均为本地草稿，`.trae/` 不入库） |
 | Jev 决策模型 | `.trae/documents/debate-jev-integration-spec.md`（本地草稿） v1.1 · `1-ARCHITECTURE/dream-harness-bridge/packages/python-server/{debate_quality_gate,adjudication_validator,jev_score_supplement,jev_preference_judge}.py` |
-| 架构设计 | [ARCHITECTURE_MAP.md](./2-文档地图/ARCHITECTURE_MAP.md) v2.4 · [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v4.0 |
+| 架构设计 | [ARCHITECTURE_MAP.md](./2-文档地图/ARCHITECTURE_MAP.md) v2.4 · [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v4.2 |
 
 ---
 
@@ -269,11 +274,11 @@
 
 | 层级 | 模块数 | 文档齐全 | 部分完整 | 缺失 | 覆盖率 |
 |------|--------|----------|----------|------|--------|
-| L2 子系统 | 30 | 18 | 6 | 6 | 64% |
+| L2 子系统 | 29 | 17 | 6 | 6 | 63% |
 | L3 辅助模块 | 6 | 6 | 0 | 0 | 100% |
-| **合计** | **36** | **24** | **6** | **6** | **70%** |
+| **合计** | **35** | **23** | **6** | **6** | **69%** |
 
-> 统计由 `4-工具与自动化/doc_coverage.py` 生成（2026-11-11 实测：36 模块 / 24 齐全 / 6 部分 / 6 缺失 / 70%；`52-lobehub协议集成` 已补齐 `docs/` 四文档 + 根 README，5/5 纳入统计；`50-NN主矛盾评估器` 仍为 R0 阶段、无 `docs/`，未纳入）。断链校验：`link_checker.py` 2026-11-11 实测 `0-系统文档管理` 604 链接 / 2 断链（均在 `archive/trae-documents/classic-pipeline-c0-c8-node-spec.md`，存量归档，FAIL-OPEN 不阻塞）、`2-KNOWLEDGE` 287 链接 / 0 断链、`52-lobehub协议集成` 10 链接 / 0 断链。
+> 统计由 `4-工具与自动化/doc_coverage.py` 生成（2026-11-13 实测：35 模块 / 23 齐全 / 6 部分 / 6 缺失 / 69%；本 SPEC 属顶层架构文档，不纳入子系统五文档覆盖率）。断链校验：`0-系统文档管理` 595 链接 / 0 断链，`2-KNOWLEDGE` 287 链接 / 0 断链，`1-ARCHITECTURE` 505 链接 / 14 条存量断链（均不在本次变更文档，FAIL-OPEN 不阻塞）。`doc_lint.py` 对本次 3 个变更文档检查为 0 违规；管理目录全量扫描另有 44 项存量告警。
 
 ---
 
