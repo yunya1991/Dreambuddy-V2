@@ -1064,6 +1064,35 @@ class OKXSimulatedClient:
                 return {"ok": False, "error": f"无 {pos_side} 持仓可设置止盈止损"}
             sz = matched[0]["pos"]
 
+        # v3.1修复：algo 单 sz 必须对齐 lotSz，否则 OKX 返回
+        # sCode=51121 "Order quantity must be a multiple of the lot size"
+        try:
+            if sz and float(sz) > 0:
+                lot_sz = 0.0
+                _inst = self.get_instrument(inst_id)
+                if _inst.get("ok"):
+                    lot_sz = float(_inst.get("lot_sz", 0) or 0)
+                if lot_sz > 0:
+                    _aligned = math.floor(float(sz) / lot_sz) * lot_sz
+                    if lot_sz >= 1:
+                        _aligned = float(int(_aligned))
+                    elif lot_sz >= 0.1:
+                        _aligned = round(_aligned, 1)
+                    elif lot_sz >= 0.01:
+                        _aligned = round(_aligned, 2)
+                    elif lot_sz >= 0.001:
+                        _aligned = round(_aligned, 3)
+                    else:
+                        _aligned = round(_aligned, 4)
+                    if _aligned <= 0:
+                        return {
+                            "ok": False,
+                            "error": f"sz={sz} 对齐 lotSz={lot_sz} 后为 0，无法挂条件单",
+                        }
+                    sz = _aligned
+        except Exception as _e:
+            self._audit_log("algo_sz_align_error", {"inst_id": inst_id}, {"error": str(_e)})
+
         # OCO 单：止损和止盈必须同时设置，如果只有一个，用 conditional 单
         if stop_loss_px and take_profit_px:
             # OCO 类型
