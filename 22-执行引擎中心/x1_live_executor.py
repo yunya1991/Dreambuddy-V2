@@ -4,6 +4,7 @@
 
 职责边界（49 SPEC / execution_rights）：
 - 22 负责：执行权复核、kill-switch、标的/名义金额/杠杆/持仓数校验、幂等、审计
+- 13 负责：事前风控判定 + 真实权益 + 定容（经 risk_bridge，fail-closed）
 - 11 负责：持有 OKX 密钥并真实下单（经 live_order_bridge.py，22 不接触密钥）
 
 用法：
@@ -20,6 +21,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from risk_bridge import precheck  # noqa: E402
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _MODULE_DIR = Path(__file__).resolve().parent
@@ -164,12 +168,23 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
             result["skipped"] += 1
             continue
 
+        # P0-1/2/3：13 事前风控 + 真实权益 + 定容（fail-closed）
+        risk = precheck(decision)
+        if not risk.get("passed"):
+            code = str(risk.get("reason_code") or "RISK_BLOCKED")
+            processed[decision_id] = {"status": "risk_blocked", "reason": code, "ts": _now()}
+            result["skipped"] += 1
+            result.setdefault("risk_rejected", []).append(
+                {"decision_id": decision_id, "reason_code": code, "reason": risk.get("reason")}
+            )
+            continue
+
         payload = {
             "action": "order",
             "symbol": decision.get("symbol"),
             "direction": decision.get("direction"),
-            "notional_usdt": MAX_NOTIONAL_USDT,
-            "leverage": MAX_LEVERAGE,
+            "notional_usdt": risk.get("notional_usdt") or MAX_NOTIONAL_USDT,
+            "leverage": int(risk.get("leverage") or MAX_LEVERAGE),
             "sl_pct": DEFAULT_SL_PCT,
             "tp_pct": DEFAULT_TP_PCT,
             "decision_id": decision_id,
@@ -192,6 +207,7 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
             "order_id": outcome.get("order_id"),
             "fill_px": outcome.get("reference_px"),
             "request": payload,
+            "risk": risk,
             "result": outcome,
         }
         _append_ledger(record)
