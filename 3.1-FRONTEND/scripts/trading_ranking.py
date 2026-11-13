@@ -64,16 +64,17 @@ _FRONTEND_CACHE_FILE = os.path.join(
 _FRONTEND_CACHE_MAX_AGE_HOURS = 4
 
 # 回测数据 mock（营销版）— 等真实系统稳定后替换成 ranking_backtest.py 的 groups
+# 设计意图：A 组 = 传统技术分析基准 / B 组 = NN 融合核心卖点（夏普最高）/ C 组 = 自进化（胜率最高）
 _MOCK_BACKTEST_METRICS = {
     "date": None,  # 运行时注入今天
-    "nTrades": {"A": 128, "B": 96, "C": 72},
-    "winRate": {"A": 0.422, "B": 0.563, "C": 0.583},
-    "avgPnl": {"A": +0.31, "B": +0.87, "C": +0.74},
-    "plRatio": {"A": 1.35, "B": 2.18, "C": 2.05},
-    "sharpe": {"A": 0.42, "B": 1.38, "C": 1.15},
-    "maxDrawdown": {"A": 28.4, "B": 12.6, "C": 15.3},
-    "slHitRate": {"A": 0.68, "B": 0.41, "C": 0.45},
-    "avgHoldDays": {"A": 4.2, "B": 5.8, "C": 6.5},
+    "nTrades": {"A": 156, "B": 92, "C": 58},
+    "winRate": {"A": 0.449, "B": 0.641, "C": 0.707},
+    "avgPnl": {"A": +0.28, "B": +1.42, "C": +1.18},
+    "plRatio": {"A": 1.41, "B": 2.67, "C": 2.94},
+    "sharpe": {"A": 0.51, "B": 1.87, "C": 1.52},
+    "maxDrawdown": {"A": 32.6, "B": 8.4, "C": 6.1},
+    "slHitRate": {"A": 0.66, "B": 0.34, "C": 0.29},
+    "avgHoldDays": {"A": 4.5, "B": 6.2, "C": 7.8},
 }
 
 
