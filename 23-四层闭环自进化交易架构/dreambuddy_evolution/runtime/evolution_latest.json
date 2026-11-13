@@ -1,0 +1,38 @@
+{
+  "generated_at": "2026-11-13T03:47:28.916085+00:00",
+  "source": "23-evolution-pipeline",
+  "version": "1.0",
+  "symbols": [
+    {
+      "symbol": "BTC",
+      "status": "ok",
+      "action": "WAIT",
+      "level0_confidence": 0.8,
+      "regime": "RANGE",
+      "level0_costs": {
+        "long": 0.4221305377194317,
+        "short": 0.5778694622805682,
+        "wait": 0.25
+      },
+      "aligned": false,
+      "l4_v": -0.015999999999999997,
+      "l2_combo_id": "CB-GRID-024"
+    },
+    {
+      "symbol": "BNB",
+      "status": "ok",
+      "action": "WAIT",
+      "level0_confidence": 0.8,
+      "regime": "RANGE",
+      "level0_costs": {
+        "long": 0.4221305377194317,
+        "short": 0.5778694622805682,
+        "wait": 0.25
+      },
+      "aligned": false,
+      "l4_v": -0.015999999999999997,
+      "l2_combo_id": "CB-GRID-024"
+    }
+  ],
+  "errors": []
+}
