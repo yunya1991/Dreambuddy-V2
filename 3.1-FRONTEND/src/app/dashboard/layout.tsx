@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { V3StatusDot } from '@/components';
 import api from '@/lib/api-client';
 import GlobalSearchDialog from '@/components/features/search/GlobalSearchDialog';
-import { NAV_ITEMS, type NavItem } from '@/lib/navigation';
+import { NAV_ITEMS, SECTION_LABELS, type NavItem } from '@/lib/navigation';
 import { ToastProvider } from '@/components/feedback/ToastProvider';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import {
@@ -80,28 +80,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
           </div>
           <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
-            {NAV_ITEMS.map(item => {
+            {NAV_ITEMS.map((item, index) => {
+              const prev = NAV_ITEMS[index - 1];
+              const isNewSection = item.section !== prev?.section;
+              const groupLabel = SECTION_LABELS[item.section];
               const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
               const badge = badgeFor(item);
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs transition-colors ${isActive ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-300'}`}
-                >
-                  <span className="relative inline-flex">
-                    {item.icon}
-                    {badge > 0 && (
-                      <span className="absolute -top-1.5 -right-2 min-w-[14px] h-[14px] px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none ring-2 ring-slate-900">
-                        {badge > 99 ? '99+' : badge}
-                      </span>
-                    )}
-                  </span>
-                  {!collapsed && <span className="flex-1">{item.label}</span>}
-                  {!collapsed && badge > 0 && (
-                    <span className="text-[9px] text-red-400 font-bold">{badge}</span>
+                <Fragment key={item.href}>
+                  {isNewSection && groupLabel && !collapsed && (
+                    <p className="px-2.5 pt-3 pb-1 text-[10px] font-semibold tracking-wider text-slate-600">
+                      {groupLabel}
+                    </p>
                   )}
-                </Link>
+                  {item.section === 'settings' && (
+                    <div className="my-2 border-t border-slate-800" />
+                  )}
+                  <Link
+                    href={item.href}
+                    title={item.label}
+                    className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs whitespace-nowrap transition-colors ${isActive ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-300'}`}
+                  >
+                    <span className="relative inline-flex">
+                      {item.icon}
+                      {badge > 0 && (
+                        <span className="absolute -top-1.5 -right-2 min-w-[14px] h-[14px] px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none ring-2 ring-slate-900">
+                          {badge > 99 ? '99+' : badge}
+                        </span>
+                      )}
+                    </span>
+                    {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+                    {!collapsed && badge > 0 && (
+                      <span className="text-[9px] text-red-400 font-bold">{badge}</span>
+                    )}
+                  </Link>
+                </Fragment>
               );
             })}
           </nav>

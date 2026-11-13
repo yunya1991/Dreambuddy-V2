@@ -6,11 +6,11 @@ import { GovernanceFlow } from '@/components/features/classic/GovernanceFlow';
 import { IndicatorPanel } from '@/components/features/classic/IndicatorPanel';
 
 /**
- * 经典交易系统子 Tab 布局
+ * 策略构建（经典系统）子 Tab 布局
  *
  * 4 个子 Tab 对应后端模块 25/26/27/28：
  * - 策略生成（M25）
- * - 策略管理（M26）
+ * - 策略库（M26，原「策略管理」，避免与侧栏「策略管理」同名）
  * - 治理审批（M27）— 内嵌 C0-C8 阶段条
  * - 信号触发（M28）
  *
@@ -19,7 +19,7 @@ import { IndicatorPanel } from '@/components/features/classic/IndicatorPanel';
 
 const SUB_TABS = [
   { id: 'generation', label: '策略生成', module: 'M25' },
-  { id: 'management', label: '策略管理', module: 'M26' },
+  { id: 'management', label: '策略库', module: 'M26' },
   { id: 'governance', label: '治理审批', module: 'M27' },
   { id: 'signals', label: '信号触发', module: 'M28' },
 ] as const;
@@ -31,9 +31,9 @@ export default function ClassicLayout({ children }: { children: React.ReactNode 
   return (
     <div className="p-6 space-y-4">
       <div>
-        <h1 className="text-lg font-bold text-slate-200">经典交易系统</h1>
+        <h1 className="text-lg font-bold text-slate-200">策略构建</h1>
         <p className="text-xs text-slate-500">
-          策略生成 → 策略管理 → 治理审批 → 信号触发（对应模块 25/26/27/28）
+          策略生成 → 策略库 → 治理审批 → 信号触发（对应模块 25/26/27/28）
         </p>
       </div>
 

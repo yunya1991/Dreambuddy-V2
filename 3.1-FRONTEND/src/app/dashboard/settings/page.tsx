@@ -10,7 +10,7 @@ export default function SettingsPage() {
   return (
     <div className="p-6 space-y-4">
       <div>
-        <h1 className="text-lg font-bold text-slate-200">设置</h1>
+        <h1 className="text-lg font-bold text-slate-200">通用设置</h1>
         <p className="text-xs text-slate-500">API 配置 · 交易参数 · 频道 · 策略 · 完整度向导</p>
       </div>
       <div className="grid grid-cols-2 gap-4">

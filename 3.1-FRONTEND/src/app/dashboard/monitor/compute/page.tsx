@@ -14,7 +14,7 @@ export default function ComputePage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Link href="/dashboard/monitor" className="text-xs text-slate-500 hover:text-slate-300">
-          ← SACG 监控
+          ← Agent工作监控
         </Link>
       </div>
       <div>

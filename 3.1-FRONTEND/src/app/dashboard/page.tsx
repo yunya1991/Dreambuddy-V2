@@ -5,14 +5,14 @@ import { V3Card, V3Badge } from '@/components';
 import { LiveStatusPanel } from '@/components/features/dashboard/LiveStatusPanel';
 
 const quickLinks = [
-  { label: 'AI Skill 交易', href: '/dashboard/trade', desc: '自然语言驱动 SACG 链执行', color: 'border-blue-500/20 hover:border-blue-500/40' },
-  { label: '经典指标系统', href: '/dashboard/classic', desc: 'C0→C8 八阶段 + 治理审批流', color: 'border-emerald-500/20 hover:border-emerald-500/40' },
-  { label: '基本面分析', href: '/dashboard/fundamental', desc: '多维基本面评估与链上数据', color: 'border-purple-500/20 hover:border-purple-500/40' },
-  { label: '三屏交易系统', href: '/dashboard/three-screens', desc: '战略→战术→执行 方向约束传播', color: 'border-amber-500/20 hover:border-amber-500/40' },
-  { label: 'SACG 监控', href: '/dashboard/monitor', desc: '四层运行状态 / DAG / BAC 压缩', color: 'border-cyan-500/20 hover:border-cyan-500/40' },
+  { label: 'AI 交易', href: '/dashboard/trade', desc: '自然语言驱动 SACG 链执行', color: 'border-blue-500/20 hover:border-blue-500/40' },
+  { label: '策略构建', href: '/dashboard/classic', desc: 'C0→C8 八阶段 + 治理审批流', color: 'border-emerald-500/20 hover:border-emerald-500/40' },
+  { label: '基本面', href: '/dashboard/fundamental', desc: '多维基本面评估与链上数据', color: 'border-purple-500/20 hover:border-purple-500/40' },
+  { label: '三屏系统', href: '/dashboard/three-screens', desc: '战略→战术→执行 方向约束传播', color: 'border-amber-500/20 hover:border-amber-500/40' },
+  { label: 'Agent工作监控', href: '/dashboard/monitor', desc: '四层运行状态 / DAG / BAC 压缩', color: 'border-cyan-500/20 hover:border-cyan-500/40' },
   { label: '记忆管理', href: '/dashboard/memory', desc: 'D-Z-E 工程链 / BAC 压缩统计', color: 'border-pink-500/20 hover:border-pink-500/40' },
-  { label: '治理面板', href: '/dashboard/governance', desc: 'Draft→Gate→Approval→Apply→Audit', color: 'border-orange-500/20 hover:border-orange-500/40' },
-  { label: '产物中台', href: '/dashboard/reports', desc: '交易报告 / 数据产物 / 图表归档', color: 'border-teal-500/20 hover:border-teal-500/40' },
+  { label: '策略管理', href: '/dashboard/governance', desc: 'Draft→Gate→Approval→Apply→Audit', color: 'border-orange-500/20 hover:border-orange-500/40' },
+  { label: '报告', href: '/dashboard/reports', desc: '交易报告 / 数据产物 / 图表归档', color: 'border-teal-500/20 hover:border-teal-500/40' },
 ];
 
 export default function DashboardPage() {

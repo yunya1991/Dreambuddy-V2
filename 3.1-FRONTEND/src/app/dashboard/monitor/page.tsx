@@ -23,7 +23,7 @@ export default function MonitorPage() {
   return (
     <div className="p-6 space-y-4">
       <div>
-        <h1 className="text-lg font-bold text-slate-200">SACG 监控</h1>
+        <h1 className="text-lg font-bold text-slate-200">Agent工作监控</h1>
         <p className="text-xs text-slate-500">四层运行状态监控</p>
       </div>
       <div className="flex gap-1">
