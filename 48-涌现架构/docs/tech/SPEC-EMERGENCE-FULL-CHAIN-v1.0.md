@@ -169,8 +169,8 @@ flowchart TB
 | 信号字段 | ✅ | `signal_id/source=50-nn/ts/symbol/direction/confidence/horizon/position_pct/mode=shadow/shadow=true/trigger/regime_overlay/weight_profile/payload` |
 | 运行时产物 | ✅ | r4 修复 G12：`make_shadow_decision` 已接入 `validate_execution`（fail-closed），新 shadow 决策落盘含 `execution_rights=paper/kill_switch=false/mandate_id` 及 execution 摘要（2026-11-11 实测）；历史 51 条旧记录无该字段 |
 | 4 维裁决 / Dominance / intent | ✅ | `w4.py` / `dominance.py` / `path_synthesis.py`（paths 含 `dimension/horizon/intent`） |
-| live 执行 | ⬜ | 50 默认 shadow/paper；live 需 `execution_rights` + Mandate + `50_KILL_SWITCH` 关闭；shadow 路径已附 `execution_rights`（G12 已修复） |
-| 与 23 单出口 | ✅（文档） | `execution_rights.json` 明确 23 live 与 50 shadow/paper 并行时，50 分区不得声明 `live:50-bypass` |
+| live 执行 | 🟡 | 2026-11-13 起 `BTC-USDT-SWAP` 灰度 `live:50-bypass`（`mandate-20261113-50-live-btc`）：`tools/run_live.py` → `runtime/live/outbox.jsonl` → 22 `x1_live_executor.py` → 11 `live_order_bridge.py`；仍受 `execution_rights` + Mandate + kill-switch 三重前置，未全面放开 |
+| 与 23 单出口 | ✅（文档） | v0.2 起 50 分区可声明 `live:50-bypass`，但仍受“同标的同时刻单出口”约束：同标的不允许 23 live 与 50 live 并存 |
 
 ### L9 执行与回流
 

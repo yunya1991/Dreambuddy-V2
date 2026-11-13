@@ -1,8 +1,9 @@
 # 易经推理系统 工程索引（SSoT）
 
-> **版本**: v3.2 | **更新日期**: 2026-09-12
+> **版本**: v3.3 | **更新日期**: 2026-11-13
 > **定位**: 易经推理系统的工程入口索引（Single Source of Truth），包含所有子模块的文件级索引、入口锚点、依赖关系和快速导航
 > **维护原则**: 任何子系统变更影响入口、依赖关系、配置层级的，必须同步更新本文件
+> **v3.3 变更**: NN 链 live bypass 下单桥上线 — 新增 `scripts/memory_l4/live_order_bridge.py`（供 22 `x1_live_executor.py` 子进程调用；11 域独占交易所密钥；守卫：symbol allowlist / 名义 ≤100 USDT / 杠杆 ≤3 / 持仓 ≤3 / SL-TP 必带 / kill-switch；审计 `runtime/live_order_audit.jsonl`）；同时 `polling_trader` 启动占位状态不再落盘（避免覆盖日级 `five_domain_state.json`）
 > **v3.2 变更**: 战略层+策略层独立开仓 + war_state/direction_state 职责分离 — `polling_trader.py` 新增 `_compute_strategy_open_signal()` + `_strategy_independent_open()`，三层信号组合（战略层 war_state/direction_state + 策略层 select() + 技术信号 d_star/ri）产出独立买卖信号；开关 `enable_strategy_independent_open` 默认 False；**war_state（ALLOW/COOLDOWN/RESTRICT/FREEZE）只影响仓位 cap_pct 不拦截开仓，direction_state（LONG_ONLY/NEUTRAL/SHORT_ONLY/FREEZE）才控制是否开仓+方向**；详见 [CHANGELOG v4.4.5](./CHANGELOG.md) 与 [TECHNICAL_DESIGN L870-L874](./TECHNICAL_DESIGN.md)
 > **v3.1 变更**: evolution 路径 direction_state 闸门补齐 — `polling_trader.py` `_evolution_build_position` L9497-L9532 新增 direction_state 检查，与 BCRM2.0 路径（L13982）对齐，修复 evolution 绕过方向状态闸门的 bug；详见 [CHANGELOG v4.4.4](./CHANGELOG.md)
 > **v3.0 变更**: REGIME_FACTORS 三套命名体系兼容 — `strategy_algo_layer.py` REGIME_FACTORS 从 7 键扩展到 22 键，覆盖旧版4y大周期 + 弹簧力场分类器 + 八卦形态分类三套命名体系，修复精细市场形态分类在策略层校准公式中失效的 bug；详见 [CHANGELOG v4.4.3](./CHANGELOG.md)
@@ -40,6 +41,7 @@
 | 进程 | 入口文件 | 调度方式 | 说明 |
 |------|----------|----------|------|
 | 轮询交易器 | `scripts/memory_l4/polling_trader.py` | launchd | A0-A9决策链 + BCRM 2.0引擎 + 实盘交易 |
+| live 下单桥 | `scripts/memory_l4/live_order_bridge.py` | 被 22 `x1_live_executor.py` 子进程调用 | NN 链灰度 live bypass 下单（stdin JSON，action=status/order）；11 域独占 OKX 凭证；单笔 ≤100 USDT/3x/≤3 仓/SL-TP 必带；审计 `runtime/live_order_audit.jsonl` |
 | BCRM 2.0适配器 | `scripts/memory_l4/bcrm2_adapter.py` | 被 polling_trader 调用 | 封装BCRM 2.0训练/推理/缓存，兼容BCRM 1.0接口 |
 | 系统诊断 | `scripts/memory_l4/inspect.py` | 手动 / 启动时自检 | 系统健康检查（状态/持仓/模型/连接/风控/飞书） |
 | 多场景验证 | `multi_scenario_validation.py` | 手动运行 | 25个用例覆盖推理/离场/风控/反馈/异常五场景 |

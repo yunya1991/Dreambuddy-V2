@@ -1,6 +1,6 @@
 # 执行引擎中心 — 工程索引
 
-> **版本**：v1.0 | **更新日期**：2026-10-11
+> **版本**：v1.1 | **更新日期**：2026-11-13
 > **模块定位**：Dreambuddy 交易执行引擎（TEE）— 订单路由、执行算法、滑点估计、熔断与审计
 
 ## 1. 模块概览
@@ -49,7 +49,13 @@ TEE（Trading Execution Engine）是 Dreambuddy 的交易执行核心，负责�
 ├── trade_execution_gateway.py   # 统一执行入口（13 风控 → 22 下单，fail-closed）
 ├── x1_paper_executor.py         # X1 纸面成交记录器（意图 → 13→16→22 → 18 价格源撮合）
 ├── x1_paper_config.json         # 纸面成交配置（venue=paper，持仓周期/滑点/手续费）
-└── tests/                       # TDD 测试（Task 1-12）
+├── x1_live_executor.py          # NN 链 live 执行器（消费 50 runtime/live/outbox.jsonl → 复核 → 触发 11 live_order_bridge）
+├── runtime/
+│   └── x1_live_processed.json   # live 决策幂等去重（已处理 decision_id）
+├── audit/
+│   ├── x1_paper_fills.jsonl     # 纸面成交账本
+│   └── x1_live_fills.jsonl      # live 成交账本（venue/order_placed/order_id/fill_px 扁平字段）
+└── tests/                       # TDD 测试（Task 1-12 + live 执行器）
 ```
 
 ## 3. 核心能力
@@ -64,6 +70,7 @@ TEE（Trading Execution Engine）是 Dreambuddy 的交易执行核心，负责�
 | 审计 | core/auditor.py | 全链路审计日志 |
 | V15 集成 | integrations/v15_integration.py | V15 马丁策略执行 |
 | 易经集成 | integrations/yijing_integration.py | 易经推理系统对接 |
+| live 执行（NN 灰度） | x1_live_executor.py | 50 live 决策 → 执行权/额度/kill-switch/幂等复核 → 11 live_order_bridge 下单，审计落 `audit/x1_live_fills.jsonl` |
 
 ## 4. 测试覆盖
 

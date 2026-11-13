@@ -115,6 +115,9 @@
 - 输出前只做约束复核（更保守值），不重复相乘；保留 `constraint_id`。
 - 执行层路由：`source=50-nn` → paper（初期）；live 需 `execution_rights` 授权；同标的同时刻单出口。
 - 审计 JSONL：每条证据、去重、调制、主矛盾、约束钳位、最终决策均可追溯。
+- 双轨落盘（2026-11-13 起）：`mode="shadow"`（默认）决策写 `runtime/decisions.jsonl`；`mode="live"` 由 `tools/run_live.py` 过滤过期证据后写 `runtime/live/outbox.jsonl` + `runtime/live/latest.json`，供 22 `x1_live_executor.py` 消费。
+- 输出字段追加 `mode ∈ {shadow, live}` 与 `shadow = (mode != "live")`；live 决策额外携带 `mandate_id` 与 `execution.outcome/allowed/reason`。
+- live 三重前置（缺一即按 paper/跳过）：`execution_rights.outcome=live:50-bypass` + `mandate_id` 非空 + kill-switch 关闭；过期证据（`expires_at` 已过）不得进入 live 决策。
 
 ### 3.1 执行权与安全契约（M4 修复）
 
@@ -129,7 +132,7 @@
 | 审计 | `decision_id / constraint_id / evidence_id / mandate_id / execution_rights outcome / kill_switch 状态` |
 | live 灰度 | 仅 R5 评审通过后；50 live 与 23 live 不得同标的并存 |
 
-> 47 `execution_rights.json` 当前只有 `eleven_domain` 与 BTC/ETH，无 50 分区；R1c 需扩展 schema 并走双人审批（DEC-26）。
+> 47 `execution_rights.json` v0.2（2026-11-13）已扩展 `fifty_nn_domain`：`BTC-USDT-SWAP` = `live:50-bypass`（灰度 live，`mandate_id=mandate-20261113-50-live-btc`），其余标的仍为 `paper`。schema 扩展按 DEC-26 走双人审批；灰度首发参数：单笔 ≤100 USDT、3x、最多 3 仓、日内亏损 ≤50 USDT、SL/TP 必带。
 
 ---
 

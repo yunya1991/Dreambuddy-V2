@@ -81,3 +81,11 @@ TEE 采用分层架构：
 | 滑点超阈值 | 切换被动算法 → 熔断 |
 | 审计写入失败 | 内存缓冲 → 后台落盘 |
 | 配置缺失 | 使用默认值 → 告警 |
+
+## 5. NN 链 live 执行器（x1_live_executor.py，2026-11-13）
+
+- 输入：50 `runtime/live/outbox.jsonl`（仅 `source=50-nn`、`mode=live`、`shadow=false`、方向非 neutral 的决策）。
+- 复核（fail-closed，任一不过即跳过并落 `skips`）：kill-switch → 执行权 `live:50-bypass` → `mandate_id` 非空 → 标的 allowlist（`BTC-USDT-SWAP`）→ 单笔名义 ≤100 USDT、杠杆 ≤3 → 幂等 `runtime/x1_live_processed.json`。
+- 执行：以子进程调用 11 `scripts/memory_l4/live_order_bridge.py`（22 不持有交易所密钥），bridge 负责下单与 SL/TP（OCO）并写 `11/runtime/live_order_audit.jsonl`。
+- 账本：`audit/x1_live_fills.jsonl`，扁平字段 `ts/decision_id/source/mode/symbol/direction/confidence/position_pct/venue/order_placed/order_id/fill_px/request/result`。
+- dry-run 语义：`--dry-run` 只打印不落 processed，便于重放真实执行。

@@ -27,7 +27,10 @@
   ├── 信号接收器：消费 40 产出物，生成验证交易意图（含 decision_id）
   ├── 标的域过滤器：X2 实盘白名单 + VALIDATION_UNIVERSE（多板块纸面标的）
   ├── 风控红线检查器：单笔/总仓/日损三重上限（预注册）
-  ├── 意图流落盘：execution_trades.jsonl（order_placed=false，无 fill/pnl）
+  ├── 意图流落盘：execution/execution_trades.jsonl（order_placed=false，无 fill/pnl；
+  │   同目录另有 risk_violations.jsonl / execution_state.json / portfolio_executions.jsonl）
+  ├── decision_id 回写：按 config.json `decision_source`（默认 50 runtime/decisions.jsonl，≤24h）
+  │   只映射不推断，过期或无法解析一律写 null（DEC-BCL-06 路径 B）
   └── 反馈数据采集器：消费 22 成交账本 → 标注 → 训练样本池
         ↓
 【执行层·成交侧】22-执行引擎中心/x1_paper_executor.py
