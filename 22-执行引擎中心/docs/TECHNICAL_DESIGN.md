@@ -89,3 +89,39 @@ TEE 采用分层架构：
 - 执行：以子进程调用 11 `scripts/memory_l4/live_order_bridge.py`（22 不持有交易所密钥），bridge 负责下单与 SL/TP（OCO）并写 `11/runtime/live_order_audit.jsonl`。
 - 账本：`audit/x1_live_fills.jsonl`，扁平字段 `ts/decision_id/source/mode/symbol/direction/confidence/position_pct/venue/order_placed/order_id/fill_px/request/result`。
 - dry-run 语义：`--dry-run` 只打印不落 processed，便于重放真实执行。
+
+## 6. live 链路强化（P0-1/2/3 + P0-4，2026-11-14）
+
+### 6.1 13 事前风控接入（risk_bridge.py）
+
+执行器在 `_check()` 复核之后、调用 11 bridge 之前统一走 `risk_bridge.precheck(decision)`：
+
+1. `CapitalControlComponent().evaluate()` 取 `snapshot.total_equity`（真实权益；不可用才回落 `22_RISK_EQUITY_DEFAULT`，默认 10000）
+2. 13 `PreTradeGate.check(Signal, RiskContext(total_equity))` 判定；neutral 直接 `NO_DIRECTION`
+3. `CapitalAllocatorComponent.get_allocation_advice(base_symbol, "50-nn", equity)` 定容 → `position_usdt`
+4. 名义金额 = `min(position_usdt, 100)`；`< 10` 拒单（`SIZING_BELOW_MIN`）
+
+返回契约：`{passed, reason_code, reason, equity, equity_source, notional_usdt, leverage, position_pct, allocator_mode, source}`。
+13 模块加载失败 → `RISK_MODULE_LOAD_FAILED`，`reason` 携带真实异常。
+
+**包名隔离**：13/12/14/16/50 都存在顶层 `core` 包。加载 13 时临时把 13 与其 `risk_capital` 路径置顶、摘除并恢复 `core.*`、退出时恢复 `sys.path`，避免 `import core` 命中错误模块。
+
+### 6.2 决策幂等（P0-4）
+
+50 `run_live.py` 的 `decision_id` 由决策时刻改为**证据批次 sha1**（`50-nn|<16hex>`）：同一批 42 证据重复调度得到同一 id，证据集变化才产生新 id。22 的 `processed` 幂等因此生效。
+
+### 6.3 持仓守卫与冷静期
+
+| 守卫 | 触发点 | 行为 |
+|---|---|---|
+| 持仓守卫 | 真实下单前查 11 `status` | 同标的 `pos != 0` → `symbol_already_open`；查询失败 → `position_query_failed`（fail-closed） |
+| 冷静期 | `_check` 之后 | 距上次真实成功开仓不足 `COOLDOWN_HOURS`（默认 8h）→ `cooldown`，写 `last_entry[symbol]` 仅在真实下单成功后 |
+
+两类跳过都会写 `processed`，避免冷静期结束后补执行过期信号。
+
+### 6.4 云端运行
+
+- systemd：`dreambuddy-nn-live-chain.service/.timer`，`OnCalendar=*:02/5:00`，`User=luke`，`WorkingDirectory=/home/luke/dreambuddy`
+- 顺序：50 `tools/run_live.py` → 22 `x1_live_executor.py --limit 3`
+- 运维：`sudo systemctl start dreambuddy-nn-live-chain.service` 手动跑一轮；`journalctl -u` 查看日志；真实下单记录落 `audit/x1_live_fills.jsonl`
+- 回退：在 unit 的 ExecStart 加 `--dry-run` 即回到只读演练

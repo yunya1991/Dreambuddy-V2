@@ -188,7 +188,7 @@
 
 | 文档 | 路径 | 版本 |
 |------|------|------|
-| SPEC | [50-NN主矛盾评估器/SPEC.md](../50-NN主矛盾评估器/SPEC.md) | v0.2.0（R0 进行中；本地-only / paper-only） |
+| SPEC | [50-NN主矛盾评估器/SPEC.md](../50-NN主矛盾评估器/SPEC.md) | v0.2.0（R0 进行中；BTC-USDT-SWAP 灰度 `live:50-bypass`，其余 paper/shadow；live 决策稳定 id） |
 
 ### 52-LobeHub 协议集成
 

@@ -171,7 +171,7 @@ flowchart TB
 | 信号字段 | ✅ | `signal_id/source=50-nn/ts/symbol/direction/confidence/horizon/position_pct/mode=shadow/shadow=true/trigger/regime_overlay/weight_profile/payload` |
 | 运行时产物 | ✅ | r4 修复 G12：`make_shadow_decision` 已接入 `validate_execution`（fail-closed），新 shadow 决策落盘含 `execution_rights=paper/kill_switch=false/mandate_id` 及 execution 摘要（2026-11-11 实测）；历史 51 条旧记录无该字段 |
 | 4 维裁决 / Dominance / intent | ✅ | `w4.py` / `dominance.py` / `path_synthesis.py`（paths 含 `dimension/horizon/intent`） |
-| live 执行 | 🟡 | 2026-11-13 起 `BTC-USDT-SWAP` 灰度 `live:50-bypass`（`mandate-20261113-50-live-btc`）：`tools/run_live.py` → `runtime/live/outbox.jsonl` → 22 `x1_live_executor.py` → 11 `live_order_bridge.py`；仍受 `execution_rights` + Mandate + kill-switch 三重前置，未全面放开 |
+| live 执行 | ✅（单标的灰度实盘） | 2026-11-13 起 `BTC-USDT-SWAP` 灰度 `live:50-bypass`（`mandate-20261113-50-live-btc`）：`tools/run_live.py` → `runtime/live/outbox.jsonl` → 22 `x1_live_executor.py`（13 风控定容 + 持仓守卫 + 8h 冷静期）→ 11 `live_order_bridge.py`；云端 `dreambuddy-nn-live-chain.timer` 每 5 分钟调度。2026-11-14 01:39 首笔真实成交（short 0.1 张 / 73 USDT / 3x / OCO 成功），复跑幂等跳过；仍受 `execution_rights` + Mandate + kill-switch 三重前置，未全面放开 |
 | 与 23 单出口 | ✅（文档） | v0.2 起 50 分区可声明 `live:50-bypass`，但仍受“同标的同时刻单出口”约束：同标的不允许 23 live 与 50 live 并存 |
 
 ### L9 执行与回流
@@ -389,3 +389,4 @@ flowchart TB
 | v1.0-r7-fix | 2026-11-11 | r7 复核修正：G11/G1『无调度』回滚有误——luke 用户 crontab 实际有 40 管线 `2 0 * * *`（日志 11-11 00:02 已运行）与 training_ingest `30 0 * * *`（14:39 添加），r7 初查查了 ubuntu 用户空 crontab 属核查范围错误；G1 单测批评成立并修复（`48/tests/test_training_ingest.py` 入库 9/9 OK）；统计修正为 36✅/6🟡/1⬜ |
 | v1.0-r8 | 2026-11-14 | 运行时对齐：重跑 `training_ingest.py` 补齐 p3b（p3a 634 / p3b 500），A9 修正为 ✅；修正 G3/G4「无调度」旧述与 G6「live 未开放」旧述；TrainingEvent 口径更新为本地 180 条；新增 G13（网关产物未调度）；新增四泳道 drawio；统计 43 核查点 → 37✅/6🟡/0⬜ |
 | v1.0-r9 | 2026-11-14 | **G13 关闭**：新增 `40/scripts/refresh_48_feedback.py` 并插入 `run_daily_pipeline.sh` STEPS（先 refresh 后 consume）；本地实跑网关回填 92 条 → 272 事件，40 消费 `dual_read.consistent=true`；遗留 `join_coverage=0` 归 G2；统计 44 核查点 → 38✅/6🟡/0⬜；补 §9 r8/r9 验收块 |
+| v1.0-r10 | 2026-11-14 | **L8 live 链路闭环上云**：22 新增 `risk_bridge.py`（13 判定 + 真实权益 + PACA 定容）、下单前持仓守卫、8h 开仓冷静期；50 `run_live.py` 改为证据批次稳定 `decision_id`；云端 `dreambuddy-nn-live-chain.timer` 每 5 分钟调度；01:39 首笔真实成交并验证幂等/冷静期阻断 |

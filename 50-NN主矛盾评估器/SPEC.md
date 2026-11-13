@@ -119,6 +119,7 @@
 - 输出字段追加 `mode ∈ {shadow, live}` 与 `shadow = (mode != "live")`；live 决策额外携带 `mandate_id` 与 `execution.outcome/allowed/reason`。
 - live 三重前置（缺一即按 paper/跳过）：`execution_rights.outcome=live:50-bypass` + `mandate_id` 非空 + kill-switch 关闭；过期证据（`expires_at` 已过）不得进入 live 决策。
 - per-symbol 决策（2026-11-14 起）：组合级决策 `symbol=MULTI` 无法被 40 域按标的建索引（`decision_linked_today=0`），因此同批 path 再按 base asset 聚合产出 per-symbol 决策（`payload.granularity="per_symbol"`，`expires_at=ts+24h`，`signal_id="50-nn|shadow:{SYMBOL}|{ts}"`），只入 `runtime/decisions.jsonl` 账本、不进审计主线；组合级决策与 `latest.json` 语义不变。仅为分组聚合，不新增方向/置信度推断。
+- live 决策幂等（2026-11-14 起）：`run_live.py` 的 `decision_id` 不再取决策时刻，而是按证据批次 sha1 生成 `50-nn|<16hex>`（输入标识：该标的证据的 `signal_id`，缺失时用 `source|symbol|ts|direction|confidence`）。同一批 42 证据重复调度得到同一 id，证据集变化才产生新 id；22 侧 `processed` 幂等与持仓守卫、8h 冷静期共同保证不会重复开仓。
 
 ### 3.1 执行权与安全契约（M4 修复）
 

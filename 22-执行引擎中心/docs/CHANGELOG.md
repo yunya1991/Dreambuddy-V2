@@ -1,5 +1,27 @@
 # 执行引擎中心 — 变更记录
 
+## v1.3（2026-11-14）— NN live 链路接入 13 风控、去重、持仓守卫与冷静期
+
+### 新增
+- `risk_bridge.py`：13 `PreTradeGate` 判定 + `risk_capital` 真实权益 + PACA 定容，
+  名义金额 10~100 USDT、杠杆 3，任一环节异常 fail-closed（`RISK_MODULE_LOAD_FAILED` / `RISK_BLOCKED` / `SIZING_BELOW_MIN`）。
+- `x1_live_executor.py`：真实下单前持仓守卫（同标的已有仓位 → `symbol_already_open`，查询失败 fail-closed）。
+- `x1_live_executor.py`：开仓冷静期 8h（`COOLDOWN_HOURS`，`22_LIVE_COOLDOWN_HOURS` 可覆盖），
+  状态持久化 `runtime/x1_live_processed.json` 的 `last_entry`，仅真实成功开仓写入。
+- 云端 `dreambuddy-nn-live-chain.service/.timer`：每 5 分钟执行 50 live 决策 → 22 执行。
+
+### 变更
+- 50 `run_live.py` 的 `decision_id` 改为证据批次 sha1（`50-nn|<16hex>`），
+  修复时间戳 id 导致 22 `processed` 幂等失效的问题。
+
+### 修复
+- 加载 13 时顶层 `core` 包与 12/14/16/50 冲突（pytest 下 `No module named 'core.context'`）：
+  加载期间临时置顶 13 路径并隔离 `core.*`，退出恢复 `sys.path` 与模块缓存。
+
+### 验证
+- 22 全量 167 用例通过；云端真实首单 BTC-USDT-SWAP short 73 USDT / 3x / OCO 成功，
+  复跑幂等跳过；冷静期末期新决策被拦（`remaining_sec` 约 7.7h）。
+
 ## v1.2（2026-11-13）— 23 自进化域下单链路隔离
 
 ### 背景
