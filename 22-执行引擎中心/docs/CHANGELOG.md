@@ -9,7 +9,7 @@
 - 测试：类别上限、`position_scope` 计数、x1 指数类 floor 与 payload scope、risk_bridge floor 契约
 
 ### 修改
-- `config/live_symbols.json`：`max_positions_default` 6→12；新增 `max_notional_default` / `max_notional_by_class` / `notional_floor_by_class`
+- `config/live_symbols.json`：`max_positions_default` 6→12；新增 `max_notional_default` / `notional_floor_default=100` / `max_notional_by_class` / `notional_floor_by_class`（非指数类名义下限 100U，抵消 50 侧 20U 小额声明；指数类 150–300U）
 - `x1_live_executor`：`--limit` 默认 3→20；payload 携带 `position_scope=registry`
 - systemd `dreambuddy-nn-live-chain.service` ExecStart `--limit 20`
 

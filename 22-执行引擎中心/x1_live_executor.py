@@ -54,6 +54,7 @@ _SYMBOL_CLASS: dict[str, str] = {
 }
 ALLOWED_SYMBOLS = set(_SYMBOL_CLASS) or {"BTC-USDT-SWAP"}
 MAX_NOTIONAL_USDT = float(_REGISTRY.get("max_notional_default") or 100)
+NOTIONAL_FLOOR_DEFAULT = float(_REGISTRY.get("notional_floor_default") or 0)
 MAX_NOTIONAL_BY_CLASS: dict[str, float] = {
     str(k): float(v) for k, v in (_REGISTRY.get("max_notional_by_class") or {}).items()
 }
@@ -76,8 +77,8 @@ def _notional_cap(inst_id: str) -> float:
 
 
 def _notional_floor(inst_id: str) -> float:
-    """类别名义下限：指数/高价 ETF 73U 定容贴近最小张数，按类别抬到 150U。"""
-    return NOTIONAL_FLOOR_BY_CLASS.get(_class_of(inst_id), 0.0)
+    """类别名义下限：指数/高价 ETF 150U，其余类别按注册表默认 100U（低于 13 定容时抬回）。"""
+    return NOTIONAL_FLOOR_BY_CLASS.get(_class_of(inst_id), NOTIONAL_FLOOR_DEFAULT)
 
 
 def _now() -> str:
