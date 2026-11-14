@@ -49,7 +49,10 @@ _ARTIFACTS = {
     "sector_transmission": "sector_transmission.json",
     "washout_verdicts": "washout_verdicts.json",
     "cross_asset_matrix": "cross_asset_matrix.json",
+    "leader_resonance": "leader_resonance.json",
 }
+
+_GRANGER_ALPHA = 0.05
 
 
 @dataclass
@@ -97,6 +100,24 @@ def derive_regime_overlay(cycle_state: dict, sector_transmission: dict | None) -
     if tstate:
         return "range"
     return "unknown"
+
+
+def _t_arrive_from_lag(corr0: float, lag_profile: Any, granger_p: Any) -> float | None:
+    """lag_profile 中首个 |corr| < 0.5×|corr0| 的偏移日（Granger 显著才计入）。"""
+    try:
+        p = float(granger_p)
+    except (TypeError, ValueError):
+        return None
+    if p > _GRANGER_ALPHA or corr0 == 0 or not isinstance(lag_profile, list):
+        return None
+    half = 0.5 * abs(corr0)
+    for idx, c in enumerate(lag_profile[1:], start=1):
+        try:
+            if abs(float(c)) < half:
+                return float(idx)
+        except (TypeError, ValueError):
+            continue
+    return None
 
 
 class ResonanceSensor:
@@ -162,6 +183,47 @@ class ResonanceSensor:
             cross_forces = compute_cross_class_forces(cross, cycle_state)
             mf = forces.get(sym) or cross_forces.get(sym)
             regime_overlay = derive_regime_overlay(cycle_state, sector)
+
+            leader_entry = ((self._cache.get("leader_resonance") or {}).get("assets") or {}).get(
+                sym
+            )
+            if leader_entry:
+                # 类内龙头共振优先：R(s) 相对自己的类别龙头，而非 BTC
+                corr0 = float(leader_entry.get("corr0") or 1.0)
+                degraded = list(mf.degraded) if mf else list(leader_entry.get("degraded") or [])
+                return SensorSnapshot(
+                    symbol=sym,
+                    r={
+                        "corr0": corr0,
+                        "lag_profile": list(leader_entry.get("lag_profile") or []),
+                        "beta": float(leader_entry.get("beta") or 1.0),
+                        "down_corr": float(leader_entry.get("down_corr") or 1.0),
+                        "granger_p": leader_entry.get("granger_p"),
+                    },
+                    f_macro=(
+                        {
+                            "D1": mf.d1_trend,
+                            "D2": mf.d2_fund,
+                            "D4": mf.d4_sentiment,
+                            "washout": mf.washout,
+                        }
+                        if mf
+                        else {"D1": 0.0, "D2": 0.0, "D4": 0.0, "washout": 0.0}
+                    ),
+                    t_arrive=(
+                        mf.t_arrive_days
+                        if mf and mf.t_arrive_days is not None
+                        else _t_arrive_from_lag(
+                            corr0,
+                            leader_entry.get("lag_profile"),
+                            leader_entry.get("granger_p"),
+                        )
+                    ),
+                    regime_overlay=regime_overlay,
+                    layer=mf.layer if mf else str(leader_entry.get("class") or "unknown"),
+                    degraded=degraded,
+                    cache_age_sec=time.time() - self._cache_ts,
+                )
 
             if mf is None:
                 # 既不在加密层清单，也不在跨类矩阵 → 恒等传导 + 审计

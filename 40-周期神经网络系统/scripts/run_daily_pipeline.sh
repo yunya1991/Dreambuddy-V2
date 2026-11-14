@@ -33,6 +33,7 @@ STEPS=(
   p3_stovall_breadth.py
   p3_resonance_matrix.py
   p3_cross_asset_matrix.py
+  p3_leader_resonance.py
   p3_washout_integration.py
   p3_meme_platform_monitor.py
   p4_strategy_mapping.py

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 from core.resonance_sensor import ResonanceSensor, derive_regime_overlay
@@ -173,3 +174,33 @@ class TestSnapshot:
         os.utime(path, (future, future))
         snap = sensor.get_snapshot("ETH/USDT")
         assert snap.r["corr0"] == 0.5
+
+
+def test_leader_resonance_overrides_identity_for_member(data_dir):
+    """类内龙头共振优先：XAG 用相对 XAU 的 R，而非恒等传导。"""
+    _write(
+        Path(data_dir) / "leader_resonance.json",
+        {
+            "assets": {
+                "XAG": {
+                    "class": "precious_metal",
+                    "leader": "XAU",
+                    "inst_id": "XAG-USDT-SWAP",
+                    "corr0": 0.82,
+                    "lag_profile": [0.82, 0.5, 0.2],
+                    "beta": 1.4,
+                    "down_corr": 0.61,
+                    "granger_p": 0.02,
+                    "n_samples": 180,
+                    "degraded": [],
+                }
+            }
+        },
+    )
+    snap = ResonanceSensor(data_dir=data_dir).get_snapshot("XAG/USDT")
+    assert snap.r["corr0"] == 0.82
+    assert snap.r["down_corr"] == 0.61
+    assert snap.r["beta"] == 1.4
+    assert snap.layer == "precious_metal"
+    assert snap.degraded == []
+    assert snap.t_arrive == 2.0

@@ -39,7 +39,7 @@ OUT = Path(_DREAMBUDDY_ROOT) / "40-周期神经网络系统" / "resonance_matrix
 sys.path.insert(0, os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心"))
 from data_center.market import price_source  # noqa: E402
 
-# 龙头（上游）+ 下游标的清单（与 p3_sector_transmission LAYERS 对齐）
+# 龙头（上游）+ 下游标的清单（覆盖 22 域 live 注册表全部 crypto 标的）
 ANCHOR = "BTC/USDT"
 SYMBOLS = [
     "BTC/USDT",  # L1_anchor
@@ -51,6 +51,18 @@ SYMBOLS = [
     "DOGE/USDT",
     "PEPE/USDT",
     "WIF/USDT",  # L4_meme
+    "BNB/USDT",
+    "XRP/USDT",
+    "SUI/USDT",
+    "APT/USDT",
+    "DOT/USDT",
+    "ATOM/USDT",
+    "LTC/USDT",
+    "ARB/USDT",
+    "OP/USDT",
+    "UNI/USDT",
+    "AAVE/USDT",
+    "NEAR/USDT",
 ]
 
 DAY_MS = 86400000

@@ -22,7 +22,16 @@ ALPHA = float(os.environ.get("50_RESONANCE_ALPHA", "0.15"))
 MIN_CORR = float(os.environ.get("50_RESONANCE_MIN_CORR", "0.5"))
 MAX_LAG_DAYS = float(os.environ.get("50_RESONANCE_MAX_LAG_DAYS", "3"))
 
-_LEADER = {"crypto_usdt": "BTC", "precious_metal": "XAU", "us_stock": "US500"}
+_LEADER = {
+    "crypto_usdt": "BTC",
+    "crypto": "BTC",
+    "precious_metal": "XAU",
+    "us_stock": "NVDA",
+    "us_etf": "SPY",
+    "us_index": "US500",
+    "energy": "CL",
+    "apac_index": "JP225",
+}
 
 _SENSOR: ResonanceSensor | None = None
 
