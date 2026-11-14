@@ -15,6 +15,9 @@ recall(context="当前任务描述或问题关键词", top_k=5, min_quality="C")
 > **为什么必须用 C 级？** 当前记忆库 98% 是 C 级记忆，用 B 级阈值会返回空结果。
 > C 级记忆虽未验证，但包含有价值线索。按 score 排序优先看高分记忆。
 
+**长期分工口径（2026-11-14 用户确认，硬约束，认知库 VM-1794645392149-4d591ef0）**：
+云端 `43.160.201.117` 是**唯一生产数据写入口**——回填、覆盖体检、后续 MERS 周期任务一律在云端执行（DB 属主 `luke`，写入须 `sudo -u luke`，写前 `sqlite3 .backup` 到 `19-数据访问层/data/backups/`）；本地只写代码与测试，需真实样本时从云端 `dreambuddy-snapshot.timer` 快照拉只读副本（`com.dreambuddy.dbsync` LaunchAgent），**禁止在本地改生产表**；回填脚本必须幂等（`INSERT OR REPLACE`），保证云端可重复执行并可挂定时任务。
+
 ***
 
 本项目已接入**认知记忆系统**（cognitive memory system），具备"越用越聪明"能力。
