@@ -120,6 +120,9 @@
 - live 三重前置（缺一即按 paper/跳过）：`execution_rights.outcome=live:50-bypass` + `mandate_id` 非空 + kill-switch 关闭；过期证据（`expires_at` 已过）不得进入 live 决策。
 - per-symbol 决策（2026-11-14 起）：组合级决策 `symbol=MULTI` 无法被 40 域按标的建索引（`decision_linked_today=0`），因此同批 path 再按 base asset 聚合产出 per-symbol 决策（`payload.granularity="per_symbol"`，`expires_at=ts+24h`，`signal_id="50-nn|shadow:{SYMBOL}|{ts}"`），只入 `runtime/decisions.jsonl` 账本、不进审计主线；组合级决策与 `latest.json` 语义不变。仅为分组聚合，不新增方向/置信度推断。
 - live 决策幂等（2026-11-14 起）：`run_live.py` 的 `decision_id` 不再取决策时刻，而是按证据批次 sha1 生成 `50-nn|<16hex>`（输入标识：该标的证据的 `signal_id`，缺失时用 `source|symbol|ts|direction|confidence`）。同一批 42 证据重复调度得到同一 id，证据集变化才产生新 id；22 侧 `processed` 幂等与持仓守卫、8h 冷静期共同保证不会重复开仓。
+- 40 因子先验 overlay（2026-11-14 起，SPEC-M4 §9.1）：path 合成后、w4 裁决前叠加 `factor_contradiction_priors` 的方向先验（`factor = 1 + coef × Σ(w·sign)/Σw`，coef 默认 0.10，预注册上限 0.20）。开关 `ENABLE_50_FACTOR_PRIORS_OVERLAY`：shadow 默认关，live 由 `run_live.py --factor-priors`（默认 on）控制；文件陈旧 / 样本 <200 / 空因子时 FAIL-OPEN 原样返回。
+- overlay 审计与归因：`payload.factor_priors_overlay` 记录 `enabled/coef/coef_source/modulated_paths/modulation_rate/degraded`，并在启用时给出 `attribution`（用 overlay 前 path 复算的 `baseline{direction,confidence,position_pct}` + `delta` + `direction_flip`），供 `tools/live_attribution.py` 与成交台账 join 归因。
+- live 单笔名义上限（2026-11-14 起）：`decision.notional_usdt`（默认 100，`50_LIVE_NOTIONAL_USDT`）作为上限下传；22 取 `min(13 定容, 声明值)`，只降不升，最终仍受标的 `minSz` 约束（低于则 `size_zero` 拒单）。
 
 ### 3.1 执行权与安全契约（M4 修复）
 
@@ -134,7 +137,7 @@
 | 审计 | `decision_id / constraint_id / evidence_id / mandate_id / execution_rights outcome / kill_switch 状态` |
 | live 灰度 | 仅 R5 评审通过后；50 live 与 23 live 不得同标的并存 |
 
-> 47 `execution_rights.json` v0.7（2026-11-15）已把 `fifty_nn_domain` 扩到 22 域 `config/live_symbols.json` 注册表全量 72 标的 / 9 类（crypto 21 / precious_metal 4 / industrial_metal 1 / energy 4 / us_index 3 / us_etf 8 / apac_index 2 / us_stock 28 / rates_credit 1，与 40 `asset_classes` 的 G1/G2 可交易全集对齐；fx/DXY 无 USDT 永续故排除），统一 `mandate_id=mandate-20261114-50-live-multi`；`run_live` 的 allowlist 改为动态（总线 `confidence≥0.8` 且 `direction ∈ {long, short}` 且注册表内），并按资产类别做龙头共振传导（`core/resonance_propagator.py`，只调 confidence 不改方向）。参数：单笔 ≤100 USDT（`us_index`/`apac_index`/`us_etf` 类别上限 300 USDT、下限 150 USDT）、3x、最多 12 仓（50 域按 `position_scope=registry` 只统计注册表内标的）、日内亏损 ≤50 USDT、SL/TP 必带；回退单标的只需把该标的 outcome 改回 `paper`。
+> 47 `execution_rights.json` v0.7（2026-11-15）已把 `fifty_nn_domain` 扩到 22 域 `config/live_symbols.json` 注册表全量 72 标的 / 9 类（crypto 21 / precious_metal 4 / industrial_metal 1 / energy 4 / us_index 3 / us_etf 8 / apac_index 2 / us_stock 28 / rates_credit 1，与 40 `asset_classes` 的 G1/G2 可交易全集对齐；fx/DXY 无 USDT 永续故排除），统一 `mandate_id=mandate-20261114-50-live-multi`；`run_live` 的 allowlist 改为动态（总线 `confidence≥0.8` 且 `direction ∈ {long, short}` 且注册表内），并按资产类别做龙头共振传导（`core/resonance_propagator.py`，只调 confidence 不改方向）。参数：单笔名义非指数类 100 USDT（`notional_floor_default=100`，13 定容低于下限时抬回）、指数类 150–300 USDT（`us_index`/`apac_index`/`us_etf`）、3x、最多 12 仓（50 域按 `position_scope=registry` 只统计注册表内标的）、日内亏损 ≤50 USDT、SL/TP 必带；回退单标的只需把该标的 outcome 改回 `paper`。
 
 ---
 

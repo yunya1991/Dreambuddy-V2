@@ -57,8 +57,9 @@ DEFAULT_OUT_DIR = _50_ROOT / "runtime" / "live"
 DEFAULT_MANDATE = os.environ.get("50_LIVE_MANDATE", "mandate-20261114-50-live-multi")
 # 动态 allowlist：总线里置信度 ≥ 阈值的 long/short 且注册表内可交易标的
 MIN_CONFIDENCE = float(os.environ.get("50_LIVE_MIN_CONFIDENCE", "0.8"))
-# M4-4 小额验证：50 侧声明单笔名义上限（22 执行层只降不升，仍受 22 的 100 USDT 硬上限约束）
-DEFAULT_NOTIONAL_USDT = float(os.environ.get("50_LIVE_NOTIONAL_USDT", "20"))
+# M4-4 小额验证：50 侧声明单笔名义上限（22 执行层只降不升）。
+# 默认对齐 22 的非指数类下限 100 USDT：低于 minSz 的名义会被 live_order_bridge 判 size_zero。
+DEFAULT_NOTIONAL_USDT = float(os.environ.get("50_LIVE_NOTIONAL_USDT", "100"))
 # M4-4：live 通道默认开启因子先验 overlay（shadow 通道仍默认关闭）
 DEFAULT_FACTOR_PRIORS = os.environ.get("50_LIVE_FACTOR_PRIORS", "on")
 _SYMBOL_REGISTRY = _REPO_ROOT / "22-执行引擎中心" / "config" / "live_symbols.json"
@@ -340,7 +341,10 @@ def main() -> int:
             parser.error(f"--coef 必须属于预注册候选集 {sorted(COEF_CANDIDATES)}")
         os.environ[COEF_ENV] = str(args.coef)
     if not (0 < args.notional_usdt <= 100):
-        parser.error("--notional-usdt 必须落在 (0, 100] USDT（22 执行层硬上限 100）")
+        parser.error(
+            "--notional-usdt 必须落在 (0, 100] USDT（22 执行层：非指数类上限/下限 100；"
+            "指数类由 22 按类别抬到 150–300）"
+        )
 
     symbols = tuple(s for s in args.symbols.split(",") if s.strip())
     result = run(

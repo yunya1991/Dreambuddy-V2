@@ -86,7 +86,8 @@ TEE 采用分层架构：
 
 - 输入：50 `runtime/live/outbox.jsonl`（仅 `source=50-nn`、`mode=live`、`shadow=false`、方向非 neutral 的决策）。
 - 复核（fail-closed，任一不过即跳过并落 `skips`）：kill-switch → 执行权 `live:50-bypass` → `mandate_id` 非空 → 标的 allowlist（`config/live_symbols.json` 注册表 72 标的 / 9 类，与 40 `asset_classes.py` 的 G1/G2 可交易全集对齐；fx/DXY 无 USDT 永续故排除；文件缺失 fail-closed 仅 `BTC-USDT-SWAP`）→ 单笔名义 ≤ 类别上限（默认 100 USDT；`us_index`/`apac_index`/`us_etf` 300 USDT）、杠杆 ≤3 → 幂等 `runtime/x1_live_processed.json`。
-- 定容与仓位额度：13 定容（约权益 10%）经 `risk_bridge.precheck(notional_cap, notional_floor)` 按类别钳制——指数/高价 ETF 73U 贴近最小张数时抬到类别下限 150U（`notional_policy=class_floor`）；并发上限 `max_positions_default=12`，50 域请求携带 `position_scope=registry`，bridge 只统计注册表内标的，不被其他域持仓挤占。
+- 定容与仓位额度：13 定容（约权益 10%）经 `risk_bridge.precheck(notional_cap, notional_floor)` 按类别钳制——非指数类低于 100U 抬回（`notional_floor_default=100`），指数/高价 ETF 抬到 150U、上限 300U（`notional_policy=class_floor`）；并发上限 `max_positions_default=12`，50 域请求携带 `position_scope=registry`，bridge 只统计注册表内标的，不被其他域持仓挤占。
+- 50 侧声明名义上限（M4-4，2026-11-14）：决策可携带 `notional_usdt`（`run_live` 默认 100，`50_LIVE_NOTIONAL_USDT`）；执行器取 `min(risk_bridge 定容, 声明值)`，**只降不升**，仍受类别 cap 约束。声明值低于标的 `minSz` 时 `_usdt_to_sz` 向下取整为 0，bridge 以 `size_zero` fail-closed 拒单——因此 50 侧把默认对齐到 100U，而非更小的 20U。
 - 执行：以子进程调用 22 `executors/live_order_bridge.py`（凭据来自 22 域加密库 `executors/credentials.py`），bridge 负责下单与 SL/TP（OCO）并写 `22/runtime/live_order_audit.jsonl`。
 - 账本：`audit/x1_live_fills.jsonl`，扁平字段 `ts/decision_id/source/mode/symbol/direction/confidence/position_pct/venue/order_placed/order_id/fill_px/request/result`。
 - dry-run 语义：`--dry-run` 只打印不落 processed，便于重放真实执行。
@@ -123,6 +124,6 @@ TEE 采用分层架构：
 ### 6.4 云端运行
 
 - systemd：`dreambuddy-nn-live-chain.service/.timer`，`OnCalendar=*:02/5:00`，`User=luke`，`WorkingDirectory=/home/luke/dreambuddy`
-- 顺序：50 `tools/run_live.py` → 22 `x1_live_executor.py --limit 3`
+- 顺序：50 `tools/run_live.py` → 22 `x1_live_executor.py --limit 20`
 - 运维：`sudo systemctl start dreambuddy-nn-live-chain.service` 手动跑一轮；`journalctl -u` 查看日志；真实下单记录落 `audit/x1_live_fills.jsonl`
 - 回退：在 unit 的 ExecStart 加 `--dry-run` 即回到只读演练

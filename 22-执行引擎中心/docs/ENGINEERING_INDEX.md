@@ -84,10 +84,11 @@ TEE（Trading Execution Engine）是 Dreambuddy 的交易执行核心，负责�
 | V15 集成 | integrations/v15_integration.py | V15 马丁策略执行 |
 | 易经集成 | integrations/yijing_integration.py | 易经推理系统对接 |
 | live 执行（NN 灰度） | x1_live_executor.py | 50 live 决策 → 执行权/额度/kill-switch/幂等复核 → 22 `executors/live_order_bridge.py` 下单，审计落 `audit/x1_live_fills.jsonl` |
-| 事前风控 + 定容 | risk_bridge.py | 13 `PreTradeGate` 判定 + `risk_capital` 真实权益 + PACA `position_pct` 定容，名义金额 10~100 USDT、杠杆 3；任一环节异常 fail-closed |
+| 事前风控 + 定容 | risk_bridge.py | 13 `PreTradeGate` 判定 + `risk_capital` 真实权益 + PACA `position_pct` 定容，名义金额按类别 10~100 USDT（`us_index`/`apac_index`/`us_etf` 至 300 USDT）、下限见下、杠杆 3；任一环节异常 fail-closed |
+| 名义下限/上限 | config/live_symbols.json | `notional_floor_default=100`（非指数类低于此值抬回）、`notional_floor_by_class` 指数类 150、`max_notional_by_class` 指数类 300 |
 | 持仓守卫 | x1_live_executor.py | 真实下单前查 OKX 实盘持仓（经 22 下单桥），同标的已有仓位则跳过；查询失败 fail-closed |
 | 开仓冷静期 | x1_live_executor.py | 同标的距上次真实成功开仓不足 8h（`22_LIVE_COOLDOWN_HOURS` 可覆盖）不再建仓 |
-| 云端调度 | `dreambuddy-nn-live-chain.timer` | 每 5 分钟执行 50 `run_live.py` → 22 `x1_live_executor.py --limit 3` |
+| 云端调度 | `dreambuddy-nn-live-chain.timer` | 每 5 分钟执行 50 `run_live.py` → 22 `x1_live_executor.py --limit 20`（`position_scope=registry`，并发上限 12） |
 
 ## 4. 测试覆盖
 

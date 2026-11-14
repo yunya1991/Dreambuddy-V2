@@ -1,8 +1,8 @@
 # SPEC-M4: 48 信号消费与 40 因子先验接入（50-NN主矛盾评估器）
 
-> 版本：v0.6
+> 版本：v0.7
 > 日期：2026-11-14
-> 状态：🟢 Q1-Q7 裁决完成，M4-2 接线完成，M4-3 五快照验收通过（short 对称性受限）；M4-4 小额实盘灰度已接线（默认开启，live 单笔 ≤20 USDT）
+> 状态：🟢 Q1-Q7 裁决完成；M4-2 接线、M4-3 五快照验收、M4-4 小额实盘灰度**已部署云端并首轮验证**（coef 0.10 / 单笔 ≤100 USDT / attribution 归因）
 > 归属：50-NN主矛盾评估器（改动仅限 50 域）
 > 上游：48 涌现架构 `metrics/nn_feedback_gateway.py` → `events/nn_feedback/40_feedback.json` → 40 `factor_contradiction_priors.json`
 > 关联：SPEC-M1（神经传递打通）、SPEC-M2（宏观力传导）、SPEC-M3（调度器与共振传感器）、48 `SPEC-NN-FEEDBACK-GATEWAY-v0.1.md`、48 `SPEC-EMERGENCE-FULL-CHAIN-v1.0.md`
@@ -256,7 +256,7 @@ impact=0.874998 raw_position=82.1068  resonance=true  dominant=true
 | `FACTOR_PRIORS_COEF_CEILING` | `0.20` | 首轮生产上限 |
 | `MIN_N_SAMPLES` | `200` | 先验样本量下限，低于则 no-op（Q4 裁决） |
 | `MAX_COEF` | `0.50` | 代码绝对截断，非生产许可 |
-| `50_LIVE_NOTIONAL_USDT` | `20` | M4-4 小额验证：50 侧声明的单笔名义上限（22 取 min(13 定容, 本值)，22 硬上限 100） |
+| `50_LIVE_NOTIONAL_USDT` | `100` | M4-4 小额验证：50 侧声明的单笔名义上限（22 取 min(13 定容, 本值)，只降不升）。默认对齐 22 非指数类下限 100 USDT；低于 minSz 会产生 `size_zero` 拒单 |
 | `50_LIVE_FACTOR_PRIORS` | `on` | M4-4 live 通道 overlay 默认开启；`off` 等价回滚（shadow 通道仍默认关） |
 
 ### 5.2 规则
@@ -446,13 +446,13 @@ w4 = adjudicate(paths, reconciliation)
 
 ### 9.1 M4-4 小额实盘灰度方案（v0.6）
 
-**前提事实**：50 已有 live 通道（`tools/run_live.py` → `runtime/live/outbox.jsonl` → `22/x1_live_executor.py`），执行权注册表已为 32 标的配置 `live:50-bypass`（mandate `mandate-20261114-50-live-multi`）。M4-4 不是"新开 live"，而是在既有通道上开启 overlay 并收紧额度。
+**前提事实**：50 已有 live 通道（`tools/run_live.py` → `runtime/live/outbox.jsonl` → `22/x1_live_executor.py`），执行权注册表已为 72 标的 / 9 类配置 `live:50-bypass`（mandate `mandate-20261114-50-live-multi`，与 40 `asset_classes` 的 G1/G2 可交易全集对齐）。M4-4 不是"新开 live"，而是在既有通道上开启 overlay 并收紧额度。
 
 | 维度 | 落地 |
 |---|---|
 | 开关 | `run_live.py` 默认 `--factor-priors on`（源 `50_LIVE_FACTOR_PRIORS`），把 `ENABLE_50_FACTOR_PRIORS_OVERLAY=1` 注入进程环境；shadow 通道仍默认关闭 |
 | 系数 | `--coef` 只接受 §5.1 候选集，缺省 0.10（`FACTOR_PRIORS_COEF`），越界由 `resolve_coef()` 回落并审计 |
-| 小额 | `--notional-usdt` 默认 20（`50_LIVE_NOTIONAL_USDT`），写入决策 `notional_usdt`；22 执行层取 `min(13 定容, 声明值)`，只降不升；22 硬上限 100 |
+| 小额 | `--notional-usdt` 默认 100（`50_LIVE_NOTIONAL_USDT`），写入决策 `notional_usdt`；22 执行层取 `min(13 定容, 声明值)`，只降不升；22 按类别再有 100/150/300 USDT 的 cap 与 floor。低于标的 minSz 的声明会被 bridge 判 `size_zero`（fail-closed，不下单） |
 | 归因（决策侧） | `payload.factor_priors_overlay.attribution` = 用 overlay 前 path 复算的反事实基线 `{baseline.direction/confidence/position_pct, delta, direction_flip}`；同时保留 `enabled/coef/modulation_rate/degraded` |
 | 归因（成交侧） | `tools/live_attribution.py` 将 outbox × `22/audit/x1_live_fills.jsonl` 按 `decision_id` join，输出分标的/分系数的 Δ 与成交情况 |
 | 复现 | 每次 `run_live` 的 `latest.json` 记录 `overlay{enabled,coef,coef_source}` 与 `notional_usdt`，与 outbox 决策一一对应 |
@@ -468,6 +468,31 @@ w4 = adjudicate(paths, reconciliation)
 - 首轮观察 **≥20 笔已成交 live 决策**（或 5 个交易日，先到者为准），期间系数锁定 0.10，禁止调参。
 - 触发回滚的任一条件：出现 `direction_flip`；`|delta.confidence|` 均值 > 0.05；连续 3 笔同标的重复开仓被 `position_guard` 拦截；22 出现 `risk_blocked` 连续 3 次。
 - 观察结束输出：`live_attribution.py` 报告 + 是否维持 0.10 / 升 0.15 / 回滚至 0 的结论，写入本 SPEC 版本记录。
+
+### 9.2 云端部署与首轮验证（2026-11-14，v0.7）
+
+**部署事实**：云端 `43.160.201.117` 的 `origin/main = e5433117`（含 M4-4 提交 `f13c2c90d0`）。
+调度不新增、不改 unit：
+
+| 环节 | 云端现状 |
+|---|---|
+| 42 总线 | crontab `*/15 * * * * … run_bus.py`（`ENABLE_11_STATE_ADAPTER=1`），`generated_at` 持续刷新 |
+| 50→22 实盘链路 | `dreambuddy-nn-live-chain.timer`，`OnCalendar=*:02/5`，service 串联 `run_live.py` → `x1_live_executor.py --limit 20`（并发上限 12，`position_scope=registry`） |
+| 50 shadow | crontab 每 15 分钟（`:07/:22/:37/:52`）跑 `run_shadow.py` |
+
+**首轮证据（13:32:01 自动触发）**：
+
+```text
+latest.json : overlay={enabled:true, coef:0.1, coef_source:"default"}, notional_usdt=100
+outbox      : XAU-USDT-SWAP long, modulated_paths=3/5, degraded=[]
+attribution : baseline 0.706156 → 0.716805 (Δconf +0.010649), direction_flip=false
+归因摘要    : 251 决策 / overlay 生效 11 / coef=0.1 ×11 / 降级 0 / flip 0
+              mean Δconf +0.002369, mean Δposition +0.188918
+```
+
+**本地不设 live 调度**（硬约束）：本地与云端共用同一 OKX 账户，双跑会双开仓（各自 `position_guard` 只看本机 11 持仓）。本地仅保留 shadow / differential / 单测能力。
+
+**已知边界**：单笔名义低于标的 `minSz` 时 22 会 `size_zero` 拒单；首轮取 100 USDT 以覆盖 BTC 等 `lotSz` 较大的标的。
 
 ---
 
@@ -495,8 +520,8 @@ for sha in 7d97c0ed58 b285b501fc 5b46722ff4 bbf1dce103 3a3c1d6511; do
     --priors /tmp/priors_inverted.json --out "/tmp/m4_3/inv_$sha.json" >/dev/null
 done
 
-# M4-4 live 灰度（overlay 默认开，coef=0.10，单笔 ≤20 USDT）
-python3 tools/run_live.py --symbols BTC-USDT-SWAP --notional-usdt 20 --coef 0.10
+# M4-4 live 灰度（overlay 默认开，coef=0.10，单笔 ≤100 USDT）
+python3 tools/run_live.py --symbols BTC-USDT-SWAP --notional-usdt 100 --coef 0.10
 python3 tools/live_attribution.py   # outbox × 22 成交台账归因
 
 # M4-4 回滚（仅关 live overlay，不改代码）
@@ -514,4 +539,5 @@ python3 tools/run_live.py --factor-priors off
 | v0.3 | 2026-11-14 | M4-2 接线：新增 `adapters/factor_priors_provider.py`，接入 `make_decision` / `make_shadow_decision` / `build_symbol_decisions`；开关默认关闭；新增 §6.4 接线验证；登记 Q7（`onchain.*` 待裁决） |
 | v0.4 | 2026-11-14 | Q7 裁决：`onchain.*` 首轮不映射（丢弃 + 审计），禁止映射 C6/D1/D3；修正 v0.3 中“onchain→C6”的错误建议（C6 在 50 语义为估值维） |
 | v0.5 | 2026-11-14 | M4-3 五快照验收：coef=0.20 正向/反向全通过，max\|Δtotal\|=0.028377，零翻转；反向 0.30 已越界；新增 §7.3 结果与证据边界；审计补 `priors_schema_version`，`data_version` 标 null |
-| v0.6 | 2026-11-14 | M4-4 小额实盘灰度：run_live 默认开启 overlay（`--factor-priors on`）+ `--coef` 候选集校验 + `--notional-usdt`（默认 20）；决策 payload 增 `attribution` 反事实基线；22 执行层按 `min(13 定容, 声明值)` 只降不升；新增 `tools/live_attribution.py`；回滚三级写入 §7.5 |
+| v0.6 | 2026-11-14 | M4-4 小额实盘灰度：run_live 默认开启 overlay（`--factor-priors on`）+ `--coef` 候选集校验 + `--notional-usdt`；决策 payload 增 `attribution` 反事实基线；22 执行层按 `min(13 定容, 声明值)` 只降不升；新增 `tools/live_attribution.py`；回滚三级写入 §7.5 |
+| v0.7 | 2026-11-14 | M4-4 已部署云端（`origin/main=e5433117`）并首轮验证：overlay 生效、coef 0.10、无降级、零 flip；单笔名义默认对齐 22 下限 100 USDT（20 USDT 会因 minSz 触发 `size_zero`）；新增 §9.2 部署与验证证据、硬约束「本地不设 live 调度」 |

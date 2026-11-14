@@ -20,6 +20,8 @@
 
 ## 一 · 整体架构
 
+> **执行层现状（2026-11-15）**：40 自身仍是意图/纸面验证场（本 SPEC 的 X2 白名单为 40 自有阶段路径）；**实盘唯一出口是 22**，其 `config/live_symbols.json` 已覆盖本系统 `asset_classes.py` 的 G1/G2 可交易全集 **72 标的 / 9 类**（crypto 21 / precious_metal 4 / industrial_metal 1 / energy 4 / us_index 3 / us_etf 8 / apac_index 2 / us_stock 28 / rates_credit 1；fx/DXY 无 USDT 永续排除），经 47 `execution_rights.json` v0.7 授权 `live:50-bypass`。名义口径：非指数类 100 USDT、指数类 150–300 USDT、3x、并发 ≤12（`position_scope=registry`）。
+
 ```
 40 主链路输出（cycle_state / strategy_mapping）
         ↓
