@@ -189,6 +189,7 @@
 | 文档 | 路径 | 版本 |
 |------|------|------|
 | SPEC | [50-NN主矛盾评估器/SPEC.md](../50-NN主矛盾评估器/SPEC.md) | v0.2.0（R0 进行中；BTC-USDT-SWAP 灰度 `live:50-bypass`，其余 paper/shadow；live 决策稳定 id） |
+| SPEC-M4 | [50-NN主矛盾评估器/SPEC-M4-48信号消费与因子先验接入.md](../50-NN主矛盾评估器/SPEC-M4-48信号消费与因子先验接入.md) | v0.7（40 因子先验 overlay 已上线云端：coef 0.10 / 单笔 ≤100 USDT / attribution 归因） |
 
 ### 52-LobeHub 协议集成
 

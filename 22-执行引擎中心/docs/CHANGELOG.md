@@ -1,5 +1,14 @@
 # 执行引擎中心 — 变更记录
 
+## v1.9.1（2026-11-14）— 50 声明名义上限接入（M4-4 小额灰度）
+
+### 新增
+- `x1_live_executor`：读取决策 `notional_usdt`（或 `payload.notional_usdt`），与 13 定容取 `min(…, 声明值)`，**只降不升**；声明值仍受类别 cap 与标的 `minSz` 约束（`size_zero` fail-closed）
+
+### 说明
+- 不改变 v1.9 的类别 floor/cap 语义（floor 在 `risk_bridge.precheck` 完成）；50 侧默认声明 100U，与 `notional_floor_default` 对齐
+- 对账字段：`audit/x1_live_fills.jsonl` 的 `request.notional_usdt` 可反查实际下单名义，供 `50/tools/live_attribution.py` 归因
+
 ## v1.9（2026-11-15）— 方案 C：仓位额度分域 + 指数类名义抬升 + 吞吐恢复
 
 ### 新增
