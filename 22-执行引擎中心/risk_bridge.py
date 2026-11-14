@@ -114,8 +114,14 @@ def precheck(
     *,
     equity_override: float | None = None,
     gate: Any | None = None,
+    notional_cap: float | None = None,
+    notional_floor: float | None = None,
 ) -> dict[str, Any]:
-    """50 决策 → 13 风控判定 + 定容。返回 {passed, reason_code, notional_usdt, leverage, ...}。"""
+    """50 决策 → 13 风控判定 + 定容。返回 {passed, reason_code, notional_usdt, leverage, ...}。
+
+    notional_cap / notional_floor：按资产类别的名义上限/下限（22 注册表提供）。
+    指数/高价 ETF 的 13 定容（约权益 10%）会贴近合约最小张数，故用类别下限抬回。
+    """
     result: dict[str, Any] = {
         "passed": False,
         "reason_code": "",
@@ -195,7 +201,14 @@ def precheck(
     if notional is None or notional <= 0:
         notional = MAX_NOTIONAL_USDT
         result["sizing_fallback"] = True
-    notional = min(float(notional), MAX_NOTIONAL_USDT)
+    cap = float(notional_cap) if notional_cap else MAX_NOTIONAL_USDT
+    notional = min(float(notional), cap)
+    floor = float(notional_floor or 0)
+    if floor > 0 and notional < floor:
+        notional = min(floor, cap)
+        result["notional_policy"] = "class_floor"
+    else:
+        result["notional_policy"] = "allocator"
     if notional < MIN_NOTIONAL_USDT:
         result.update(
             reason_code="SIZING_BELOW_MIN",

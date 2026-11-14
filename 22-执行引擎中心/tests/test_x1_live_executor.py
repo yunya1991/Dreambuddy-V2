@@ -232,6 +232,106 @@ def test_cooldown_expires_after_8h_and_records_entry(monkeypatch, tmp_path):
     assert state["last_entry"]["BTC-USDT-SWAP"] >= before
 
 
+def test_check_uses_class_notional_cap():
+    """指数类上限 300U，crypto 仍 100U；未声明名义时按全局默认。"""
+    assert ex._notional_cap("US500-USDT-SWAP") == 300
+    assert ex._notional_floor("US500-USDT-SWAP") == 150
+    assert ex._notional_cap("BTC-USDT-SWAP") == 100
+    assert ex._notional_floor("BTC-USDT-SWAP") == 0
+    assert ex._check(_live_decision(notional_usdt=200)) == "notional_limit"
+    assert ex._check(_live_decision(symbol="US500-USDT-SWAP", notional_usdt=250)) is None
+
+
+def test_index_class_applies_floor_and_registry_scope(monkeypatch, tmp_path):
+    """指数类 13 定容 73U → 抬到类别下限 150U，并携带 position_scope=registry。"""
+    monkeypatch.setattr(ex, "_LEDGER", tmp_path / "fills.jsonl")
+    monkeypatch.setattr(ex, "_LEDGER_DIR", tmp_path)
+    monkeypatch.setattr(ex, "_STATE", tmp_path / "processed.json")
+    seen_kwargs = {}
+    monkeypatch.setattr(
+        ex,
+        "precheck",
+        lambda decision, **kw: (
+            seen_kwargs.update(kw)
+            or {
+                "passed": True,
+                "reason_code": "OK",
+                "reason": "stub",
+                "equity": 730.0,
+                "equity_source": "stub",
+                "notional_usdt": 73.0,
+                "leverage": 3,
+                "source": "13-pre-trade-gate",
+            }
+        ),
+    )
+    captured = {}
+
+    def fake_bridge(payload, timeout=90):
+        if payload.get("action") == "status":
+            return {"ok": True, "positions": []}
+        captured.update(payload)
+        return {"ok": True, "order_id": "ord-us500", "reference_px": 5000.0}
+
+    monkeypatch.setattr(ex, "_bridge_call", fake_bridge)
+    outbox = tmp_path / "outbox.jsonl"
+    outbox.write_text(
+        json.dumps(_live_decision(symbol="US500-USDT-SWAP"), ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+
+    result = ex.run(outbox, dry_run=False, limit=10)
+    assert result["executed"] == 1
+    assert seen_kwargs == {"notional_cap": 300.0, "notional_floor": 150.0}
+    assert captured["notional_usdt"] == 150.0
+    assert captured["position_scope"] == "registry"
+
+
+def test_crypto_keeps_allocator_notional(monkeypatch, tmp_path):
+    """非指数类不抬名义：13 定容 73U 原样下单。"""
+    monkeypatch.setattr(ex, "_LEDGER", tmp_path / "fills.jsonl")
+    monkeypatch.setattr(ex, "_LEDGER_DIR", tmp_path)
+    monkeypatch.setattr(ex, "_STATE", tmp_path / "processed.json")
+    monkeypatch.setattr(ex, "precheck", lambda decision, **kw: _stub_pass_risk())
+    captured = {}
+
+    def fake_bridge(payload, timeout=90):
+        if payload.get("action") == "status":
+            return {"ok": True, "positions": []}
+        captured.update(payload)
+        return {"ok": True, "order_id": "ord-btc", "reference_px": 100.0}
+
+    monkeypatch.setattr(ex, "_bridge_call", fake_bridge)
+    outbox = tmp_path / "outbox.jsonl"
+    outbox.write_text(json.dumps(_live_decision(), ensure_ascii=False) + "\n", encoding="utf-8")
+
+    result = ex.run(outbox, dry_run=False, limit=10)
+    assert result["executed"] == 1
+    assert captured["notional_usdt"] == 73.0
+    assert captured["position_scope"] == "registry"
+
+
+def test_risk_bridge_class_floor_contract():
+    """risk_bridge 支持类别下限：73U 定容 → 150U，并标注 notional_policy。"""
+    from risk_bridge import precheck
+
+    out = precheck(
+        {"symbol": "US500-USDT-SWAP", "direction": "long", "confidence": 0.9},
+        equity_override=730.0,
+        notional_cap=300,
+        notional_floor=150,
+    )
+    assert out["notional_usdt"] == 150
+    assert out["notional_policy"] == "class_floor"
+
+    base = precheck(
+        {"symbol": "BTC-USDT-SWAP", "direction": "long", "confidence": 0.9},
+        equity_override=730.0,
+    )
+    assert base["notional_usdt"] <= 100
+    assert base["notional_policy"] == "allocator"
+
+
 def test_risk_bridge_real_gate_contract():
     """真实加载 13：输入不合规方向必须 fail-closed，合规输入返回稳定契约。"""
     from risk_bridge import precheck

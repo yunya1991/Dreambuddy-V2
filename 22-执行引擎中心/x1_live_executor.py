@@ -37,25 +37,47 @@ _STATE = _MODULE_DIR / "runtime" / "x1_live_processed.json"
 _SYMBOL_REGISTRY = _MODULE_DIR / "config" / "live_symbols.json"
 
 
-def _load_allowed_symbols() -> set[str]:
-    """从 config/live_symbols.json 读取可交易 instId；文件缺失时 fail-closed 仅 BTC。"""
+def _load_registry() -> dict[str, Any]:
+    """读取标的注册表；文件缺失/损坏时返回空（调用方 fail-closed）。"""
     try:
         data = json.loads(_SYMBOL_REGISTRY.read_text(encoding="utf-8"))
-        return {
-            str(v.get("inst_id")).upper()
-            for v in (data.get("symbols") or {}).values()
-            if v.get("inst_id")
-        }
+        return data if isinstance(data, dict) else {}
     except (OSError, json.JSONDecodeError):
-        return {"BTC-USDT-SWAP"}
+        return {}
 
 
-ALLOWED_SYMBOLS = _load_allowed_symbols()
-MAX_NOTIONAL_USDT = 100.0
+_REGISTRY = _load_registry()
+_SYMBOL_CLASS: dict[str, str] = {
+    str(v.get("inst_id")).upper(): str(v.get("asset_class") or "")
+    for v in (_REGISTRY.get("symbols") or {}).values()
+    if v.get("inst_id")
+}
+ALLOWED_SYMBOLS = set(_SYMBOL_CLASS) or {"BTC-USDT-SWAP"}
+MAX_NOTIONAL_USDT = float(_REGISTRY.get("max_notional_default") or 100)
+MAX_NOTIONAL_BY_CLASS: dict[str, float] = {
+    str(k): float(v) for k, v in (_REGISTRY.get("max_notional_by_class") or {}).items()
+}
+NOTIONAL_FLOOR_BY_CLASS: dict[str, float] = {
+    str(k): float(v) for k, v in (_REGISTRY.get("notional_floor_by_class") or {}).items()
+}
 MAX_LEVERAGE = 3
 DEFAULT_SL_PCT = 1.5
 DEFAULT_TP_PCT = 3.0
 COOLDOWN_HOURS = float(os.environ.get("22_LIVE_COOLDOWN_HOURS", "8"))
+
+
+def _class_of(inst_id: str) -> str:
+    return _SYMBOL_CLASS.get(str(inst_id).upper(), "")
+
+
+def _notional_cap(inst_id: str) -> float:
+    """类别名义上限：注册表 max_notional_by_class，缺失回落全局上限。"""
+    return MAX_NOTIONAL_BY_CLASS.get(_class_of(inst_id), MAX_NOTIONAL_USDT)
+
+
+def _notional_floor(inst_id: str) -> float:
+    """类别名义下限：指数/高价 ETF 73U 定容贴近最小张数，按类别抬到 150U。"""
+    return NOTIONAL_FLOOR_BY_CLASS.get(_class_of(inst_id), 0.0)
 
 
 def _now() -> str:
@@ -131,7 +153,7 @@ def _check(decision: dict[str, Any]) -> str | None:
         )
     except (TypeError, ValueError):
         return "invalid_notional"
-    if not (0 < notional <= MAX_NOTIONAL_USDT):
+    if not (0 < notional <= _notional_cap(symbol)):
         return "notional_limit"
     return None
 
@@ -232,8 +254,12 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
             )
             continue
 
-        # P0-1/2/3：13 事前风控 + 真实权益 + 定容（fail-closed）
-        risk = precheck(decision)
+        # P0-1/2/3：13 事前风控 + 真实权益 + 定容（fail-closed）；指数类按类别抬名义下限
+        risk = precheck(
+            decision,
+            notional_cap=_notional_cap(symbol),
+            notional_floor=_notional_floor(symbol),
+        )
         if not risk.get("passed"):
             code = str(risk.get("reason_code") or "RISK_BLOCKED")
             processed[decision_id] = {"status": "risk_blocked", "reason": code, "ts": _now()}
@@ -259,7 +285,7 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
                 )
                 continue
 
-        # M4-4：50 侧可声明更小的单笔名义上限（只降不升；仍受 22 的 100 USDT 硬上限约束）
+        # M4-4：50 侧可声明更小的单笔名义上限（只降不升；仍受 22 的类别/全局硬上限约束）
         notional = float(risk.get("notional_usdt") or MAX_NOTIONAL_USDT)
         declared = decision.get("notional_usdt")
         if declared is None and isinstance(decision.get("payload"), dict):
@@ -269,6 +295,10 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
                 notional = min(notional, float(declared))
         except (TypeError, ValueError):
             pass
+        # 指数/高价 ETF：73U 定容贴近最小张数，按类别下限抬回（低于下限时仅此一类放宽）
+        floor = _notional_floor(symbol)
+        if floor and notional < floor:
+            notional = min(floor, _notional_cap(symbol))
 
         payload = {
             "action": "order",
@@ -280,6 +310,8 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
             "tp_pct": DEFAULT_TP_PCT,
             "decision_id": decision_id,
             "reason": f"50 live {decision.get('signal_id')}",
+            # 50 域仓位额度只统计注册表内标的，避免被其他域的持仓挤占
+            "position_scope": "registry",
         }
         if dry_run:
             outcome = {"ok": True, "dry_run": True, "payload": payload}
@@ -324,7 +356,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="22 live 执行器（触发 11 bypass）")
     parser.add_argument("--outbox", default=str(_DEFAULT_OUTBOX))
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--limit", type=int, default=10)
+    parser.add_argument("--limit", type=int, default=20)
     args = parser.parse_args()
 
     result = run(Path(args.outbox), args.dry_run, args.limit)

@@ -73,11 +73,51 @@ def _load_max_positions() -> int:
 
 
 ALLOWED_SYMBOLS = _load_allowed_symbols()
-MAX_NOTIONAL_USDT = 100.0
+
+
+def _load_max_notional() -> float:
+    try:
+        return float(_REGISTRY.get("max_notional_default") or 100)
+    except (TypeError, ValueError):
+        return 100.0
+
+
+MAX_NOTIONAL_USDT = _load_max_notional()
 MAX_LEVERAGE = 3
 MAX_POSITIONS = _load_max_positions()
+MAX_NOTIONAL_BY_CLASS: dict[str, float] = {
+    str(k): float(v) for k, v in (_REGISTRY.get("max_notional_by_class") or {}).items()
+}
+_SYMBOL_CLASS: dict[str, str] = {
+    str(v.get("inst_id")).upper(): str(v.get("asset_class") or "")
+    for v in (_REGISTRY.get("symbols") or {}).values()
+    if v.get("inst_id")
+}
 KILL_SWITCH_FILE = _MODULE_ROOT / "runtime" / "LIVE_KILL_SWITCH"
 AUDIT_PATH = _MODULE_ROOT / "runtime" / "live_order_audit.jsonl"
+
+
+def _max_notional_for(inst_id: str) -> float:
+    """类别名义上限（指数/高价 ETF 允许 300U），缺失回落全局上限。"""
+    cls = _SYMBOL_CLASS.get(str(inst_id).upper(), "")
+    return MAX_NOTIONAL_BY_CLASS.get(cls, MAX_NOTIONAL_USDT)
+
+
+def _count_positions(positions: dict[str, Any], scope: str) -> int:
+    """仓位计数：scope=registry 时只统计注册表内标的（50 域额度不被其他域挤占）。"""
+    rows = positions.get("positions") or []
+    if scope != "registry":
+        return int(positions.get("count") or 0)
+    count = 0
+    for row in rows:
+        if str(row.get("inst_id") or "").upper() not in ALLOWED_SYMBOLS:
+            continue
+        try:
+            if abs(float(row.get("pos") or 0)) > 0:
+                count += 1
+        except (TypeError, ValueError):
+            continue
+    return count
 
 
 def _audit(record: dict[str, Any]) -> None:
@@ -148,8 +188,11 @@ def _order(client: OKXSimulatedClient, req: dict[str, Any]) -> dict[str, Any]:
     except (TypeError, ValueError):
         return _reject("invalid numeric fields", "invalid_argument")
 
-    if not (0 < notional <= MAX_NOTIONAL_USDT):
-        return _reject(f"notional out of range: {notional}", "notional_limit")
+    if not (0 < notional <= _max_notional_for(symbol)):
+        return _reject(
+            f"notional out of range: {notional} (cap={_max_notional_for(symbol)})",
+            "notional_limit",
+        )
     if not (1 <= leverage <= MAX_LEVERAGE):
         return _reject(f"leverage out of range: {leverage}", "leverage_limit")
     if not (0 < sl_pct < 10) or not (0 < tp_pct < 20):
@@ -158,9 +201,13 @@ def _order(client: OKXSimulatedClient, req: dict[str, Any]) -> dict[str, Any]:
     positions = client.get_positions()
     if not positions.get("ok"):
         return _reject("positions query failed (fail-closed)", "positions_unavailable")
-    pos_count = int(positions.get("count") or 0)
+    scope = str(req.get("position_scope") or "all")
+    pos_count = _count_positions(positions, scope)
     if pos_count >= MAX_POSITIONS:
-        return _reject(f"max positions reached: {pos_count}/{MAX_POSITIONS}", "max_positions")
+        return _reject(
+            f"max positions reached: {pos_count}/{MAX_POSITIONS} (scope={scope})",
+            "max_positions",
+        )
 
     ticker = client.get_ticker(symbol)
     if not ticker.get("ok") or not ticker.get("last"):

@@ -2,7 +2,18 @@
   "version": 3,
   "description": "live 可交易标的单一事实源（22 执行器 + 11 bridge + 50 run_live 共用）；与 40 asset_classes.ASSET_CLASSES 的 G1/G2 全集对齐（fx/DXY 无 USDT 永续，不在此表）",
   "source_of_truth": "40-周期神经网络系统/asset_classes.py",
-  "max_positions_default": 6,
+  "max_positions_default": 12,
+  "max_notional_default": 100,
+  "max_notional_by_class": {
+    "us_index": 300,
+    "apac_index": 300,
+    "us_etf": 300
+  },
+  "notional_floor_by_class": {
+    "us_index": 150,
+    "apac_index": 150,
+    "us_etf": 150
+  },
   "classes": {
     "crypto": {
       "leader": "BTC",

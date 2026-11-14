@@ -1,5 +1,18 @@
 # 执行引擎中心 — 变更记录
 
+## v1.9（2026-11-15）— 方案 C：仓位额度分域 + 指数类名义抬升 + 吞吐恢复
+
+### 新增
+- `live_order_bridge._count_positions(positions, scope)`：`position_scope=registry` 时只统计注册表内标的，50 域额度不被其他域（AAOI/NBIS 等非注册表持仓）挤占
+- `live_order_bridge._max_notional_for()` / `x1._notional_cap()`：按类别名义上限（`us_index`/`apac_index`/`us_etf` 300U，其余 100U）
+- `risk_bridge.precheck(notional_cap, notional_floor)`：指数/高价 ETF 的 13 定容贴 minSz 时抬到类别下限 150U，返回 `notional_policy=class_floor`
+- 测试：类别上限、`position_scope` 计数、x1 指数类 floor 与 payload scope、risk_bridge floor 契约
+
+### 修改
+- `config/live_symbols.json`：`max_positions_default` 6→12；新增 `max_notional_default` / `max_notional_by_class` / `notional_floor_by_class`
+- `x1_live_executor`：`--limit` 默认 3→20；payload 携带 `position_scope=registry`
+- systemd `dreambuddy-nn-live-chain.service` ExecStart `--limit 20`
+
 ## v1.8（2026-11-15）— live 注册表对齐 40 G1/G2 全集（72 标的 / 9 类）
 
 ### 新增

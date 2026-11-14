@@ -119,6 +119,36 @@ def test_registry_drives_allowed_symbols_and_max_positions(monkeypatch):
     """多资产白名单与并发上限来自 config/live_symbols.json，环境变量可覆盖上限。"""
     assert {"BTC-USDT-SWAP", "XAU-USDT-SWAP", "NVDA-USDT-SWAP"} <= bridge.ALLOWED_SYMBOLS
     assert bridge._load_max_positions() == bridge._REGISTRY.get("max_positions_default")
+    assert bridge._load_max_positions() == 12
 
     monkeypatch.setenv("22_MAX_POSITIONS", "9")
     assert bridge._load_max_positions() == 9
+
+
+def test_registry_drives_class_notional_caps():
+    """指数/高价 ETF 名义上限抬到 300U，其余类别维持 100U。"""
+    assert bridge.MAX_NOTIONAL_USDT == 100
+    assert bridge._max_notional_for("BTC-USDT-SWAP") == 100
+    assert bridge._max_notional_for("CL-USDT-SWAP") == 100
+    assert bridge._max_notional_for("US500-USDT-SWAP") == 300
+    assert bridge._max_notional_for("JP225-USDT-SWAP") == 300
+    assert bridge._max_notional_for("SPY-USDT-SWAP") == 300
+
+
+def test_position_scope_registry_excludes_other_domains():
+    """仓位额度按 scope=registry 只统计注册表内标的，不被其他域持仓挤占。"""
+    positions = {
+        "ok": True,
+        "count": 10,
+        "positions": [
+            {"inst_id": "AAOI-USDT-SWAP", "pos": "5"},
+            {"inst_id": "NBIS-USDT-SWAP", "pos": "5"},
+            {"inst_id": "ETHFI-USDT-SWAP", "pos": "5"},
+            {"inst_id": "BERA-USDT-SWAP", "pos": "5"},
+            {"inst_id": "XAU-USDT-SWAP", "pos": "1"},
+            {"inst_id": "BTC-USDT-SWAP", "pos": "-0.1"},
+        ],
+    }
+    assert bridge._count_positions(positions, "all") == 10
+    assert bridge._count_positions(positions, "registry") == 2
+    assert bridge._count_positions({"ok": True, "positions": []}, "registry") == 0
