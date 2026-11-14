@@ -650,6 +650,34 @@ class TradeExecutionGateway:
         ledger = self._get_ledger()
         return ledger.list_positions() if ledger is not None else []
 
+    def reconcile_ledger(self, source: str = "22-reconciled") -> Dict[str, Any]:
+        """存量仓一次性对账回填：交易所持仓 → 22 账本（幂等，不覆盖真实流水）。"""
+        ledger = self._get_ledger()
+        if ledger is None:
+            return {"ok": False, "reason": "ledger_disabled"}
+        fn = getattr(self._okx, "get_positions", None)
+        if not callable(fn):
+            return {"ok": False, "reason": "okx_get_positions_missing"}
+        data = fn() or {}
+        rows = data.get("positions") or []
+        items = [
+            {
+                "inst_id": r.get("inst_id"),
+                "pos_side": r.get("pos_side"),
+                "qty": r.get("pos"),
+                "avg_entry": r.get("avg_px"),
+            }
+            for r in rows
+        ]
+        out = ledger.reconcile(items, source=source)
+        logger.info(
+            "[Gateway] 账本对账回填 source=%s inserted=%s skipped=%s",
+            source,
+            out.get("inserted"),
+            out.get("skipped"),
+        )
+        return out
+
     def cancel_algo_orders(self, inst_id: str = None, source: str = "11-yijing") -> Dict[str, Any]:
         """撤销未触发的 SL/TP 条件单（写操作唯一入口）。
 

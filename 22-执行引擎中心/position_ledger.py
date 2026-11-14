@@ -213,6 +213,61 @@ class PositionLedger:
             "ratio": _ratio,
         }
 
+    def reconcile(
+        self,
+        positions: List[Dict[str, Any]],
+        source: str = "22-reconciled",
+        ts: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """存量仓一次性对账回填（幂等）。
+
+        - 只补录账本缺失的持仓，绝不覆盖已有真实流水（含已知均价）；
+        - 无开仓流水时 realized_pnl 保持 0，不臆造盈亏；
+        - 每笔回填写一条 ``action=reconcile`` 的 fills 审计，重复执行不会再写。
+        """
+        _ts = ts or _utc_now()
+        written: List[Dict[str, Any]] = []
+        skipped: List[str] = []
+        for p in positions or []:
+            inst_id = str(p.get("inst_id") or "")
+            pos_side = str(p.get("pos_side") or "").lower()
+            qty = float(p.get("qty") or p.get("pos") or 0.0)
+            avg = float(p.get("avg_entry") or p.get("avg_px") or 0.0)
+            if not inst_id or pos_side not in ("long", "short") or qty <= _EPS:
+                skipped.append(f"{inst_id or '?'}:{pos_side or '?'}")
+                continue
+            with self._lock, self._connect() as conn:
+                row = conn.execute(
+                    "SELECT qty, entry_known FROM positions WHERE inst_id=? AND pos_side=?",
+                    (inst_id, pos_side),
+                ).fetchone()
+                # 已有真实持仓流水 → 以账本为准，不覆盖
+                if row is not None and float(row["qty"]) > _EPS:
+                    skipped.append(f"{inst_id}:{pos_side}")
+                    continue
+                conn.execute(
+                    "INSERT INTO positions (inst_id, pos_side, qty, avg_entry, entry_known,"
+                    " realized_pnl, source, opened_at, updated_at, closed_at)"
+                    " VALUES (?,?,?,?,?,0,?,?,?,NULL)"
+                    " ON CONFLICT(inst_id, pos_side) DO UPDATE SET qty=excluded.qty,"
+                    " avg_entry=excluded.avg_entry, entry_known=excluded.entry_known,"
+                    " source=excluded.source, updated_at=excluded.updated_at, closed_at=NULL",
+                    (inst_id, pos_side, qty, avg, 1 if avg > 0 else 0, source, _ts, _ts),
+                )
+                conn.execute(
+                    "INSERT INTO fills (ts, inst_id, pos_side, action, qty, px, fee, realized_pnl,"
+                    " ratio, source) VALUES (?,?,?,?,?,?,0,NULL,NULL,?)",
+                    (_ts, inst_id, pos_side, "reconcile", qty, avg, source),
+                )
+            written.append({"inst_id": inst_id, "pos_side": pos_side, "qty": qty, "avg_entry": avg})
+        return {
+            "ok": True,
+            "inserted": len(written),
+            "skipped": len(skipped),
+            "written": written,
+            "skipped_detail": skipped,
+        }
+
     # ── 读 ────────────────────────────────────────────────────────
     def get_position(self, inst_id: str, pos_side: str) -> Optional[Dict[str, Any]]:
         with self._lock, self._connect() as conn:

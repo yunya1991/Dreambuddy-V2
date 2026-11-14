@@ -120,3 +120,54 @@ def test_gateway_records_partial_close_automatically(tmp_path):
     assert last["action"] == "reduce"
     assert last["realized_pnl"] == 399.5  # 40*(110-100) - 0.5 fee
     assert last["decision_id"] == "dec-test-1"
+
+
+class _OkxWithPositions:
+    def get_positions(self, inst_id=None):
+        return {
+            "ok": True,
+            "positions": [
+                {"inst_id": "BTC-USDT-SWAP", "pos_side": "short", "pos": 0.1, "avg_px": 66804.3},
+                {"inst_id": "XAU-USDT-SWAP", "pos_side": "long", "pos": 18.0, "avg_px": 3879.4},
+            ],
+        }
+
+
+def test_reconcile_backfills_missing_positions_idempotently(tmp_path):
+    led = _ledger(tmp_path)
+    led.record_open("ETH-USDT-SWAP", "long", 100, 100.0)  # 已有真实流水，必须保留
+
+    first = led.reconcile(
+        [
+            {"inst_id": "ETH-USDT-SWAP", "pos_side": "long", "qty": 999, "avg_entry": 1.0},
+            {"inst_id": "BTC-USDT-SWAP", "pos_side": "short", "qty": 0.1, "avg_entry": 66804.3},
+        ]
+    )
+    second = led.reconcile(
+        [{"inst_id": "BTC-USDT-SWAP", "pos_side": "short", "qty": 0.1, "avg_entry": 66804.3}]
+    )
+
+    assert first["inserted"] == 1 and first["skipped"] == 1
+    assert second["inserted"] == 0 and second["skipped"] == 1
+    eth = led.get_position("ETH-USDT-SWAP", "long")
+    assert (eth["qty"], eth["avg_entry"], eth["source"]) == (100.0, 100.0, "")
+    btc = led.get_position("BTC-USDT-SWAP", "short")
+    assert (btc["qty"], btc["avg_entry"], btc["source"]) == (0.1, 66804.3, "22-reconciled")
+    assert btc["entry_known"] == 1 and btc["realized_pnl"] == 0.0
+    audits = [r for r in led.recent_fills(10) if r["action"] == "reconcile"]
+    assert len(audits) == 1
+
+
+def test_gateway_reconcile_ledger_reads_exchange_positions(tmp_path, monkeypatch):
+    monkeypatch.setenv("POSITION_LEDGER_PATH", str(tmp_path / "gw_ledger.db"))
+    gw = TradeExecutionGateway(
+        okx_client=_OkxWithPositions(),
+        audit_path=tmp_path / "audit.jsonl",
+    )
+
+    out = gw.reconcile_ledger()
+
+    assert out["ok"] is True and out["inserted"] == 2
+    rows = {p["inst_id"]: p for p in gw.list_positions()}
+    assert rows["BTC-USDT-SWAP"]["source"] == "22-reconciled"
+    assert rows["XAU-USDT-SWAP"]["avg_entry"] == 3879.4

@@ -284,6 +284,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--interval", type=int, default=60, help="巡检间隔秒")
     parser.add_argument("--once", action="store_true", help="只跑一轮")
     parser.add_argument("--dry-run", action="store_true", help="只读影子校验，不执行")
+    parser.add_argument(
+        "--reconcile-ledger",
+        action="store_true",
+        help="一次性存量仓对账回填到 22 账本（幂等，不下单）",
+    )
+    parser.add_argument("--reconcile-source", default="22-reconciled", help="回填来源标签")
     parser.add_argument("--log-level", default="INFO")
     args = parser.parse_args(argv)
     args.symbols = [s for s in str(args.symbols).split(",") if s.strip()]
@@ -295,6 +301,20 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     signal.signal(signal.SIGTERM, _on_signal)
     signal.signal(signal.SIGINT, _on_signal)
+
+    if args.reconcile_ledger:
+        try:
+            _loop, gateway, _okx = build_runtime(dry_run=True)
+            out = gateway.reconcile_ledger(source=args.reconcile_source)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("账本对账失败: %s", exc)
+            return 2
+        logger.info(
+            "对账回填完成 inserted=%s skipped=%s",
+            out.get("inserted"),
+            out.get("skipped"),
+        )
+        return 0 if out.get("ok") else 1
 
     try:
         loop, gateway, okx = build_runtime(args.dry_run)
