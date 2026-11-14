@@ -167,6 +167,37 @@ class KlineEventHandler:
             symbol, action, d_star, ess_dir, ri, position_mult
         )
 
+    @staticmethod
+    def _extract_price_atr_pct(kline_data: dict[str, Any]) -> tuple[float, float]:
+        """从 K 线提取最新价与 ATR%（14 周期 True Range 均值 / 价格）。
+
+        数据不足或异常时返回 (0.0, 0.0)，执行侧按自身行情兜底。
+        """
+        try:
+            closes = list(kline_data.get("close") or [])
+            highs = list(kline_data.get("high") or [])
+            lows = list(kline_data.get("low") or [])
+            if not closes:
+                return 0.0, 0.0
+            price = float(closes[-1] or 0.0)
+            if price <= 0:
+                return 0.0, 0.0
+            if len(highs) < 15 or len(lows) < 15 or len(closes) < 15:
+                return price, 0.0
+            trs = []
+            for i in range(len(closes) - 14, len(closes)):
+                tr = max(
+                    float(highs[i]) - float(lows[i]),
+                    abs(float(highs[i]) - float(closes[i - 1])),
+                    abs(float(lows[i]) - float(closes[i - 1])),
+                )
+                trs.append(tr)
+            atr = sum(trs) / len(trs)
+            return price, round(max(atr, 0.0) / price, 6)
+        except Exception as e:  # noqa: BLE001 — 提取失败不阻断交易
+            logger.debug("[FO] extract price/atr fail: %s", e)
+            return 0.0, 0.0
+
     def _trigger_build_position(
         self,
         symbol: str,
@@ -176,9 +207,19 @@ class KlineEventHandler:
         position_mult: float = 1.0,
         tier: str = "standard",
         source_tag: str | None = None,
+        price: float = 0.0,
+        atr_pct: float = 0.0,
     ) -> None:
         self._aggregator.trigger_build_position(
-            symbol, action, d_star, ri, position_mult, tier, source_tag
+            symbol,
+            action,
+            d_star,
+            ri,
+            position_mult,
+            tier,
+            source_tag,
+            price=price,
+            atr_pct=atr_pct,
         )
 
     def _apply_macro_event_filter(
@@ -558,6 +599,8 @@ class KlineEventHandler:
                 if aligned:
                     action = d_star
                     if self.mode == "Phase2":
+                        # 23 决策信号的价格锚点（供 SL/TP 定价，缺失时执行侧兜底）
+                        _signal_price, _signal_atr_pct = self._extract_price_atr_pct(kline_data)
                         auto_execute = True
                         self._store_pre_trade_snapshot(
                             symbol, action, d_star, ess_dir, ri, position_mult
@@ -570,6 +613,8 @@ class KlineEventHandler:
                             position_mult,
                             tier,
                             source_tag=_macro_source_tag,
+                            price=_signal_price,
+                            atr_pct=_signal_atr_pct,
                         )
                     if self.mode == "MVP" and ri >= 0.75:
                         pass

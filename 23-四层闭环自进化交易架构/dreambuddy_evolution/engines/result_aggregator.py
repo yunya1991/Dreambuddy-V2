@@ -69,11 +69,35 @@ class ResultAggregator:
         position_mult: float = 1.0,
         tier: str = "standard",
         source_tag: str | None = None,
+        price: float = 0.0,
+        atr_pct: float = 0.0,
     ) -> None:
-        """调用建仓回调（FAIL-OPEN）"""
+        """调用建仓回调（FAIL-OPEN）。
+
+        23 侧先构造 FinalDecisionSignal（source=23-evolution），随 params 透传；
+        执行侧只做机械转换与提交，决策权在 23。
+        """
         if self._build_position_callback is None:
             return
         try:
+            _signal = None
+            try:
+                from dreambuddy_evolution.execution import build_entry_decision
+
+                _signal = build_entry_decision(
+                    symbol=symbol,
+                    direction=action,
+                    confidence=ri,
+                    notional_usdt=0.0,
+                    tier=tier,
+                    price=price,
+                    atr_pct=atr_pct,
+                    source_tag=source_tag or "",
+                )
+                _signal["payload"]["position_mult"] = float(position_mult)
+            except Exception as _sig_e:  # noqa: BLE001 — 信号构造失败不阻断旧链路
+                logger.debug("[FO] build_entry_decision fail: %s", _sig_e)
+
             cb_kwargs = dict(  # noqa: C408
                 symbol=symbol,
                 action=action,
@@ -84,6 +108,8 @@ class ResultAggregator:
             )
             if source_tag is not None:
                 cb_kwargs["source_tag"] = source_tag
+            if _signal is not None:
+                cb_kwargs["signal"] = _signal
             self._build_position_callback(**cb_kwargs)
         except Exception as e:
             logger.warning("[FO] build_position_callback crash: %s", e)

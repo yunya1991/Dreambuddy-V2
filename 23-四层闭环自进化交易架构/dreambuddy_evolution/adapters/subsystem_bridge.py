@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +20,12 @@ logger = logging.getLogger(__name__)
 # 42 神经网络交易协调层 bus_state.json 路径（多源信号汇聚总线）
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _42_BUS_STATE_PATH = _REPO_ROOT / "42-神经网络交易协调层" / "runtime" / "bus_state.json"
+
+# 40 周期神经网络系统 strategy_mapping.json（体制 + 组合级仓位带）
+_40_STRATEGY_MAPPING_PATH = _REPO_ROOT / "40-周期神经网络系统" / "strategy_mapping.json"
+
+# 宏观弹性约束新鲜度上限（小时）；超时 → stale（只降一档，不转全禁）
+_MACRO_CONSTRAINT_FRESH_HOURS = float(os.getenv("MACRO_CONSTRAINT_FRESH_HOURS", "48"))
 
 # 43 战略承接推演层 strategic_extension_signal.json 路径（42 bus 不可用时的 fallback）
 _43_STRATEGIC_PATH = (
@@ -147,6 +155,111 @@ class SubSystemBridge:
         FAIL-OPEN → 1.0（不收紧）。
         """
         return self.get_position_band_upper_pct(cls)
+
+    # ---------------------------------------------------- 宏观弹性约束（40+43 合并）
+    def _load_40_strategy_mapping(self) -> dict:
+        """读 40 strategy_mapping.json（体制 + 组合级仓位带）。FAIL-OPEN → {}。"""
+        try:
+            if _40_STRATEGY_MAPPING_PATH.exists():
+                with open(_40_STRATEGY_MAPPING_PATH, "r", encoding="utf-8") as f:
+                    return json.load(f) or {}
+        except Exception as e:
+            logger.debug("[FO] load 40 strategy_mapping fail: %s", e)
+        return {}
+
+    def _load_43_signal(self) -> dict:
+        """42 bus → 43 直读文件，返回完整 signal（含 ts/expires_at/payload）。FAIL-OPEN → {}。"""
+        try:
+            for sig in self.get_bus_signals():
+                if str(sig.get("source", "")) == "strategic_extension":
+                    return sig or {}
+            if _43_STRATEGIC_PATH.exists():
+                with open(_43_STRATEGIC_PATH, "r", encoding="utf-8") as f:
+                    return json.load(f) or {}
+        except Exception as e:
+            logger.debug("[FO] load 43 signal fail: %s", e)
+        return {}
+
+    @staticmethod
+    def _age_hours(value: Any) -> float | None:
+        """ISO 时间串 → 距今小时数；解析失败 → None。"""
+        try:
+            if not value:
+                return None
+            dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return (datetime.now(timezone.utc) - dt).total_seconds() / 3600.0
+        except Exception:
+            return None
+
+    def get_macro_elastic_constraint(self, cls: str = "crypto_usdt") -> dict:
+        """40 strategy_mapping + 43 strategic_extension 合并 → 配比制配额约束视图（shadow）。
+
+        只读、不产交易信号。两源都不可用 → {}（调用方按 allow 放行）。
+        数据陈旧 → stale=True（配额侧只降 exposure 一档，不转全禁）。
+        """
+        m40 = self._load_40_strategy_mapping()
+        sig43 = self._load_43_signal()
+        payload43 = (sig43.get("payload") or {}) if sig43 else {}
+        sv = (payload43.get("strategic_elements") or {}).get("strategic_view") or {}
+        pac = (payload43.get("per_asset_class") or {}).get(cls) or {}
+
+        degraded: list[str] = []
+
+        # 40：仓位带上限 + 体制置信度 + 新鲜度
+        band_upper: float | None = None
+        band40 = (m40.get("strategy_suggestion") or {}).get("position_band_pct")
+        if isinstance(band40, (list, tuple)) and len(band40) == 2:
+            try:
+                band_upper = float(band40[1])
+            except (TypeError, ValueError):
+                band_upper = None
+        rg40 = m40.get("risk_guards") or {}
+        conf_level = str(rg40.get("effective_confidence") or "high").lower()
+        age40 = self._age_hours(m40.get("generated_at"))
+        stale40 = not m40 or age40 is None or age40 > _MACRO_CONSTRAINT_FRESH_HOURS
+        if not m40:
+            degraded.append("40_missing")
+        elif stale40:
+            degraded.append("40_stale")
+
+        # 43：exposure_hint / allocation / direction_bias + 过期判定
+        cap43 = sv.get("capital_posture") or {}
+        alloc43 = sv.get("asset_allocation") or {}
+        dir43 = sv.get("direction_bias") or {}
+        hint43 = cap43.get("exposure_hint")
+        age43_exp = self._age_hours(sig43.get("expires_at")) if sig43 else None
+        stale43 = bool(sig43) and age43_exp is not None and age43_exp > 0
+        if not sig43:
+            degraded.append("43_missing")
+        elif stale43:
+            degraded.append("43_stale")
+
+        # band 回退：40 缺失 → 43 "0-20%" 上限
+        if band_upper is None and pac.get("position_band"):
+            band_upper = self.get_position_band_upper_pct(cls) * 100.0
+
+        if band_upper is None and not sig43 and not m40:
+            return {}
+
+        hint = hint43 if isinstance(hint43, (int, float)) else 0.5
+        return {
+            "source": "merged" if (m40 and sig43) else ("40-cycle" if m40 else "43-strategic"),
+            "mode": "shadow",
+            "cls": cls,
+            "ts": m40.get("generated_at") or (sig43 or {}).get("ts"),
+            "expires_at": (sig43 or {}).get("expires_at"),
+            "band_upper_pct": round(float(band_upper), 4) if band_upper is not None else 100.0,
+            "exposure_hint": round(max(0.0, min(1.0, float(hint))), 4),
+            "confidence_level": conf_level,
+            "allocation": dict(alloc43.get("allocation") or {}),
+            "direction_bias": dict(dir43.get("per_class") or {}),
+            "war_state": pac.get("war_state"),
+            "tier": pac.get("tier"),
+            "stale": bool(stale40 or stale43),
+            "degraded": degraded,
+        }
 
     # ---------------------------------------------------------- war_state
     def get_war_state(self) -> str:
