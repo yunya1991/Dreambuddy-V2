@@ -50,6 +50,7 @@ _L1AGG_ROOT = os.path.join(
 if _L1AGG_ROOT not in sys.path:
     sys.path.insert(0, _L1AGG_ROOT)
 from l1agg.series_catalog import (  # noqa: E402
+    format_series_output,
     resolve_days,
     resolve_event_kind,
     resolve_metric,
@@ -340,49 +341,44 @@ def exec_metric_series(message: str):
     data = ctx.get("data") or {}
     meta = ctx.get("meta") or {}
     points = data.get("points") or []
-    unit = spec.get("unit") or ""
-    if not points:
-        return {
-            "success": True,
-            "answer": f"{spec['label']} 近 {days} 天暂无历史序列（{meta.get('reason', 'no_history')}）",
-            "data": {
-                "label": spec["label"],
-                "days": days,
-                "sample_n": 0,
-                "quality": meta.get("quality"),
-            },
-        }
-    values = [p["value"] for p in points]
-    first, last = values[0], values[-1]
-    change = last - first
-    answer = (
-        f"{spec['label']} 近 {days} 天（日频，{len(points)} 点）："
-        f"最新 {last:.4g}{unit}（{points[-1]['timestamp']}），"
-        f"区间 {min(values):.4g}~{max(values):.4g}{unit}，"
-        f"变化 {change:+.4g}{unit}；数据质量 {meta.get('quality')}"
+    quality = meta.get("quality") or ""
+    out = format_series_output(
+        series=spec,
+        points=points,
+        days=days,
+        quality=quality,
+        source=ctx.get("source") or "",
     )
-    return {
-        "success": True,
-        "answer": answer,
-        "data": {
-            "sub_category": spec["sub_category"],
-            "metric_name": spec["metric_name"],
-            "label": spec["label"],
-            "unit": unit,
-            "days": days,
-            "agg": data.get("agg"),
-            "sample_n": len(points),
-            "quality": meta.get("quality"),
-            "stats": {
-                "first": first,
-                "last": last,
-                "min": min(values),
-                "max": max(values),
-                "change": round(change, 6),
-            },
-            "points": points,
-        },
+    payload = {
+        "sub_category": spec["sub_category"],
+        "metric_name": spec["metric_name"],
+        "label": spec["label"],
+        "unit": spec.get("unit") or "",
+        "days": days,
+        "agg": data.get("agg"),
+        "sample_n": len(points),
+        "quality": quality,
+        "index": out,
+        "points": points,
     }
+    if points:
+        sign = spec.get("sign", 1.0) or 1.0
+        values = [float(p["value"]) * sign for p in points]
+        payload["stats"] = {
+            "first": values[0],
+            "last": values[-1],
+            "min": min(values),
+            "max": max(values),
+            "change": round(values[-1] - values[0], 6),
+        }
+    answer = out["text"]
+    # CPI 指数序列补同比口径（与 data_query 的财经日历口径一致）
+    if points and spec["sub_category"] == "CPIAUCSL":
+        cpi = _fetch_cpi_yoy()
+        if cpi and cpi.get("actual") is not None:
+            payload["yoy"] = cpi
+            answer += f"；同比 {cpi['actual']:+.2f}%（{cpi.get('period', '')} 观测）"
+    return {"success": True, "answer": answer, "data": payload}
 
 
 def _series_last(sub: str, metric: str, days: int):
@@ -431,23 +427,16 @@ def exec_whale_flow(message: str):
     meta = ctx.get("meta") or {}
     points = data.get("points") or []
     unit = spec["unit"]
-    scale = spec["scale"] or 1.0
-    if not points:
-        return {
-            "success": True,
-            "answer": f"{spec['label']} 近 {days} 天暂无历史数据（{meta.get('reason', 'no_history')}）",
-            "data": {"label": spec["label"], "days": days, "sample_n": 0},
-        }
-    values = [float(p["value"]) * spec["sign"] for p in points]
-    last = values[-1]
-    last_ts = int(points[-1].get("ts", 0))
-    prec = 0 if scale == 1.0 else 2
-    head = (
-        f"{spec['label']}（近 {days} 天，日频 {len(points)} 点）："
-        f"最新 {last / scale:+.{prec}f}{unit}（{_cst_hm(last_ts)} CST），"
-        f"区间 {min(values) / scale:.{prec}f}~{max(values) / scale:.{prec}f}{unit}，"
-        f"区间变化 {(last - values[0]) / scale:+.{prec}f}{unit}；数据质量 {meta.get('quality')}"
+    quality = meta.get("quality") or ""
+    out = format_series_output(
+        series=spec,
+        points=points,
+        days=days,
+        quality=quality,
+        source=ctx.get("source") or "",
     )
+    head = out["text"]
+    values = [float(p["value"]) * (spec.get("sign") or 1.0) for p in points]
     # 24h 转入/转出与大额转账笔数（同一 sub_category 的伴随单维，补充方向判断）
     extra = []
     for metric, label, sc in (
@@ -466,26 +455,25 @@ def exec_whale_flow(message: str):
         else:
             extra.append(f"{label} {val / sc:.2f} 亿美元（{_cst_hm(ts)}）")
     answer = head + ("；" + "，".join(extra) if extra else "")
-    return {
-        "success": True,
-        "answer": answer,
-        "data": {
-            "sub_category": spec["sub_category"],
-            "metric_name": spec["metric_name"],
-            "label": spec["label"],
-            "unit": unit,
-            "days": days,
-            "sample_n": len(points),
-            "quality": meta.get("quality"),
-            "stats": {
-                "last": last,
-                "min": min(values),
-                "max": max(values),
-                "change": round(last - values[0], 6),
-            },
-            "points": points,
-        },
+    payload = {
+        "sub_category": spec["sub_category"],
+        "metric_name": spec["metric_name"],
+        "label": spec["label"],
+        "unit": unit,
+        "days": days,
+        "sample_n": len(points),
+        "quality": quality,
+        "index": out,
+        "points": points,
     }
+    if values:
+        payload["stats"] = {
+            "last": values[-1],
+            "min": min(values),
+            "max": max(values),
+            "change": round(values[-1] - values[0], 6),
+        }
+    return {"success": True, "answer": answer, "data": payload}
 
 
 def exec_calendar_event(message: str):

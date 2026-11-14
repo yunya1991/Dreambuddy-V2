@@ -50,6 +50,12 @@ describe('l1-intent-registry v2 静态门控（零回归）', () => {
     expect(fallbackIntent('今天天气咋样')).toBe('');
   });
 
+  it('数据类实体让位 price_query（市值/余额/持币等非现货价）', () => {
+    expect(fallbackIntent('比特币市值多少')).not.toBe('price_query');
+    expect(fallbackIntent('交易所BTC余额多少')).not.toBe('price_query');
+    expect(fallbackIntent('黄金价格多少')).toBe('price_query');
+  });
+
   it('S1 单维关键词注册表：巨鲸 / 经济日历（与 l1_route_signal.py 对齐）', () => {
     expect(fallbackIntent('查询巨鲸动向')).toBe('whale_flow');
     expect(fallbackIntent('下一次议息会议是什么时候')).toBe('calendar_event');

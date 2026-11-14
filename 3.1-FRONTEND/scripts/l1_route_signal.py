@@ -42,6 +42,11 @@ _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
+# 54 模块指标注册表（S1 唯一事实源）：判断「注册表可命中的查询类问法」
+_L1AGG_ROOT = os.path.join(_SCRIPTS_DIR, "..", "..", "54-L1架构能力聚合层")
+if _L1AGG_ROOT not in sys.path:
+    sys.path.insert(0, _L1AGG_ROOT)
+
 from core.cognitive_router import evaluate_match  # noqa: E402
 from core.l0_foundation import get_l0  # noqa: E402
 from core.route_confidence import (  # noqa: E402
@@ -67,6 +72,7 @@ from data_query_executor import (  # noqa: E402
     resolve_source,
     settle_to_cognitive,
 )
+from l1agg.series_catalog import count_series_hits, resolve_metric  # noqa: E402
 
 # 十意图执行器（与 data_query_executor.main 分发一一对应；S1 新增 metric_series）
 EXECUTORS = {
@@ -91,6 +97,38 @@ EXECUTORS = {
 # 这样「巨鲸动向」「下一次议息会议」不会因 recall 空/密度不足被推给 L2。
 DETERMINISTIC_INTENTS = frozenset({"whale_flow", "calendar_event"})
 R_DETERMINISTIC_REGISTRY = "deterministic_keyword_registry"
+
+# 查询类判定：命中其一即「要数值/序列」，交给 metric_series 做索引输出
+_SERIES_QUERY_CUE = re.compile(
+    r"多少|几|查询|查一下|查下|查查|帮我查|看看|看一下|是多少|现在|当前|最新|今天|本周"
+    r"|近|过去|最近|走势|趋势|历史|数据|情况|怎么样|如何|显示|报一下"
+    r"|总量|规模|总额|余额|供应量|数量|市值|成交量|持仓量|命中数"
+)
+# 解读类护栏：出现解读/建议词时不走单维直答（保留给 data_insight / L2 语义层）
+_SERIES_INSIGHT_CUE = re.compile(
+    r"意味着|意味|说明|代表什么|什么影响|影响|怎么解读|解读|为什么|为何|怎么看|怎么理解"
+    r"|原因|建议|策略|怎么办|该不该|要不要|值不值|贵不贵|预测|后市|前景|分析"
+)
+
+
+def _is_deterministic_series(message: str) -> bool:
+    """查询类单维数据：注册表可命中 + 查询词 + 无解读词 → 索引输出直答。
+
+    与语义意图的 0.65 门控区分：这里命中的是「已注册的真实序列」，
+    执行器必然给出确定数值或显式无数据，不存在语义猜错风险。
+    """
+    if not message or _SERIES_INSIGHT_CUE.search(message):
+        return False
+    if not _SERIES_QUERY_CUE.search(message):
+        return False
+    try:
+        # 多维并列（如「链上数据与资金费率」）交回 data_query 组合口径，不做单维截断
+        if count_series_hits(message) and re.search(r"[与和及、]|同时|以及|还有", message):
+            return False
+        return bool(resolve_metric(message))
+    except Exception:
+        return False
+
 
 # ============================================================
 # 意图识别 — 对齐 TS l1-intent-registry.ts v3
@@ -205,9 +243,11 @@ _FALLBACK_PATTERNS = [
     ),
     (
         "price_query",
-        # 多实体并列（如"价格和资金费率"）交给 data_query，避免只答一半
+        # 多实体并列（如"价格和资金费率"）交给 data_query，避免只答一半；
+        # 已注册的数据类实体（市值/市占率/余额/持币等）不是"现货价格"，让位 metric_series
         re.compile(
-            r"^(?!.*(?:资金费率|费率|TVL|CPI|PCE|非农|未平仓|持仓量|成交量|算力|多空比|快讯|经济数据|宏观数据|合约|增发))"
+            r"^(?!.*(?:资金费率|费率|TVL|CPI|PCE|非农|未平仓|持仓量|成交量|算力|多空比|快讯|经济数据|宏观数据|合约|增发"
+            r"|市值|市占率|主导|余额|储备|持币|总量|规模|供应量))"
             r"(?:(?=.*(?:BTC|ETH|SOL|比特币|以太坊|大饼|狗狗币|黄金|原油|纳指|标普))"
             r"(?=.*(?:多少|啥价|什么价|几个钱))"
             r"|.*(?:什么价|价格|现价|实时价|最新价|多少钱|涨到多少|跌到多少|报价))"
@@ -250,6 +290,10 @@ def detect_intent(message: str) -> str:
     # data_insight 更具体（双条件），先于 data_query 判定
     if _DATA_INSIGHT_PATTERN.search(message):
         return "data_insight"
+    # 查询类单维数据（注册表命中 + 查询词）→ 索引输出统一模板，先于 data_query
+    # （data_query 走源级 latest 记录，多字段原始 JSON；单维指标应走序列索引输出）
+    if _is_deterministic_series(message):
+        return "metric_series"
     if resolve_source(message) or _DATA_QUERY_PATTERN.search(message):
         return "data_query"
     return ""
@@ -348,6 +392,9 @@ def route_query(message: str, intent: str = "", trace_id: str = "") -> dict:
 
     # 确定性关键词注册表：不依赖认知召回，直接单维检索直答（无 LLM、无猜测）
     if intent in DETERMINISTIC_INTENTS:
+        return _route_deterministic(intent, message, trace_id)
+    # 查询类单维序列：注册表可命中的指标查询同样跳过 recall 门控
+    if intent == "metric_series" and _is_deterministic_series(message):
         return _route_deterministic(intent, message, trace_id)
 
     # 认知召回（L0 scope；异常/降级 → cognitive_available=False → evaluate_route 静态兜底）

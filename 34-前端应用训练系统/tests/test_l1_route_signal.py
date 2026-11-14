@@ -106,8 +106,8 @@ class TestDetectIntent:
             ("美股和加密的跨资产趋势对比", "asset_class_trend"),
             ("这次FOMC事件分析", "event_analysis"),
             ("当前持仓风控和止损位", "risk_control"),
-            ("查一下最新CPI", "data_query"),
-            ("defillama TVL 查询", "data_query"),
+            ("查一下最新CPI", "metric_series"),
+            ("defillama TVL 查询", "metric_series"),
             (
                 "CPI超预期意味着什么",
                 "data_insight",
@@ -312,6 +312,46 @@ class TestDeterministicRegistry:
         assert out["handled"] is True
         assert out["degraded"] is True
         assert "执行异常" in out["answer"]
+
+    # ---- 查询类单维数据：注册表命中即索引输出（无需时间词的双条件）----
+
+    def test_series_query_without_period_detected(self):
+        # 旧实现要求「指标词 + 时间窗口」双条件，纯数值问法会被漏掉
+        assert lrs.detect_intent("稳定币总市值现在多少") == "metric_series"
+        assert lrs.detect_intent("RWA 规模多少") == "metric_series"
+        assert lrs.detect_intent("24小时爆仓金额多少") == "metric_series"
+        assert lrs.detect_intent("上市公司持币总量") == "metric_series"
+
+    def test_series_interpretation_not_hijacked(self):
+        assert lrs.detect_intent("MVRV 意味着什么") != "metric_series"
+        assert lrs.detect_intent("资金费率上升说明什么") != "metric_series"
+
+    def test_series_bypasses_empty_recall(self, monkeypatch):
+        fake_l0 = FakeL0(memories=[])
+        monkeypatch.setattr(lrs, "get_l0", lambda: fake_l0)
+        monkeypatch.setitem(
+            lrs.EXECUTORS,
+            "metric_series",
+            lambda m: {"success": True, "answer": "RWA 总规模：最新 34.70亿美元", "data": {}},
+        )
+
+        out = lrs.route_query("RWA 规模多少")
+
+        assert out["intent"] == "metric_series"
+        assert out["handled"] is True
+        sig = out["route_signal"]
+        assert sig["decision"] == "L1_DIRECT"
+        assert lrs.R_DETERMINISTIC_REGISTRY in sig["reasons"]
+
+    def test_unregistered_series_falls_through(self, monkeypatch):
+        # 注册表未命中的查询仍走 recall 门控（记忆为空 → L2_HANDOFF）
+        fake_l0 = FakeL0(memories=[])
+        monkeypatch.setattr(lrs, "get_l0", lambda: fake_l0)
+
+        out = lrs.route_query("帮我看看这个冷门指标现在多少")
+
+        assert out["handled"] is False
+        assert out["route_signal"]["decision"] == "L2_HANDOFF"
 
 
 class TestExtractJson:

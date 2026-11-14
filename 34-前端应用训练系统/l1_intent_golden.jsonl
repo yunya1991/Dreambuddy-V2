@@ -23,34 +23,34 @@
 {"message": "现在一枚比特币什么价", "intent": "price_query", "variant": "colloquial"}
 {"message": "BTC/USDT现在什么价格", "intent": "price_query", "variant": "formal"}
 {"message": "狗狗币现在什么价", "intent": "price_query", "variant": "formal"}
-{"message": "查一下今天CPI", "intent": "data_query", "variant": "formal"}
-{"message": "现在恐惧贪婪指数多少", "intent": "data_query", "variant": "formal"}
-{"message": "BTC资金费率是多少", "intent": "data_query", "variant": "formal"}
+{"message": "查一下今天CPI", "intent": "metric_series", "variant": "formal"}
+{"message": "现在恐惧贪婪指数多少", "intent": "metric_series", "variant": "formal"}
+{"message": "BTC资金费率是多少", "intent": "metric_series", "variant": "formal"}
 {"message": "查ETH链上TVL", "intent": "data_query", "variant": "formal"}
 {"message": "最新快讯有哪些", "intent": "data_query", "variant": "formal"}
-{"message": "稳定币数据", "intent": "data_query", "variant": "formal"}
-{"message": "现在多空比是多少", "intent": "data_query", "variant": "formal"}
+{"message": "稳定币数据", "intent": "metric_series", "variant": "formal"}
+{"message": "现在多空比是多少", "intent": "metric_series", "variant": "formal"}
 {"message": "查一下美股开盘数据", "intent": "data_query", "variant": "formal"}
 {"message": "本周非农数据出了吗", "intent": "data_query", "variant": "formal"}
-{"message": "现在期权持仓量多少", "intent": "data_query", "variant": "formal"}
-{"message": "BTC成交量现在多少", "intent": "data_query", "variant": "formal"}
-{"message": "查一下ETH的链上净流入", "intent": "data_query", "variant": "formal"}
+{"message": "现在期权持仓量多少", "intent": "metric_series", "variant": "formal"}
+{"message": "BTC成交量现在多少", "intent": "metric_series", "variant": "formal"}
+{"message": "查一下ETH的链上净流入", "intent": "metric_series", "variant": "formal"}
 {"message": "今天A股指数多少", "intent": "data_query", "variant": "formal"}
 {"message": "最近有哪些快讯", "intent": "data_query", "variant": "formal"}
-{"message": "现在全网算力多少", "intent": "data_query", "variant": "formal"}
+{"message": "现在全网算力多少", "intent": "metric_series", "variant": "formal"}
 {"message": "查一次资金费率", "intent": "data_query", "variant": "colloquial"}
-{"message": "恐惧贪婪指数现在是多少", "intent": "data_query", "variant": "formal"}
-{"message": "查下BTC市值", "intent": "data_query", "variant": "formal"}
-{"message": "查一下稳定币总市值", "intent": "data_query", "variant": "formal"}
+{"message": "恐惧贪婪指数现在是多少", "intent": "metric_series", "variant": "formal"}
+{"message": "查下BTC市值", "intent": "metric_series", "variant": "formal"}
+{"message": "查一下稳定币总市值", "intent": "metric_series", "variant": "formal"}
 {"message": "现在大盘指数多少", "intent": "data_query", "variant": "formal"}
-{"message": "BTC持仓量数据", "intent": "data_query", "variant": "formal"}
+{"message": "BTC持仓量数据", "intent": "metric_series", "variant": "formal"}
 {"message": "ETH链上活跃地址数", "intent": "data_query", "variant": "formal"}
 {"message": "本周有哪些经济数据", "intent": "data_query", "variant": "formal"}
 {"message": "查一下PCE数据", "intent": "data_query", "variant": "formal"}
-{"message": "现在交易所净流入多少", "intent": "data_query", "variant": "formal"}
-{"message": "黄金ETF持仓数据", "intent": "data_query", "variant": "formal"}
-{"message": "查下USDT增发情况", "intent": "data_query", "variant": "formal"}
-{"message": "BTC合约未平仓量多少", "intent": "data_query", "variant": "formal"}
+{"message": "现在交易所净流入多少", "intent": "metric_series", "variant": "formal"}
+{"message": "黄金ETF持仓数据", "intent": "metric_series", "variant": "formal"}
+{"message": "查下USDT增发情况", "intent": "metric_series", "variant": "formal"}
+{"message": "BTC合约未平仓量多少", "intent": "metric_series", "variant": "formal"}
 {"message": "今天有哪些宏观数据", "intent": "data_query", "variant": "formal"}
 {"message": "查一下SOL的链上数据与资金费率", "intent": "data_query", "variant": "multi_entity"}
 {"message": "CPI超预期意味着什么", "intent": "data_insight", "variant": "formal"}
@@ -342,7 +342,7 @@
 {"message": "CPI 文档在哪里", "intent": "doc_search", "variant": "negative"}
 {"message": "BTC 现在什么价格", "intent": "price_query", "variant": "negative"}
 {"message": "ETH 和 SOL 哪个强", "intent": "asset_class_trend", "variant": "negative"}
-{"message": "查询 BTC 行情", "intent": "data_query", "variant": "negative"}
+{"message": "查询 BTC 行情", "intent": "metric_series", "variant": "negative"}
 {"message": "CPI 超预期意味着什么", "intent": "data_insight", "variant": "negative"}
 {"message": "估值贵不贵", "intent": "fundamental_valuation", "variant": "negative"}
 {"message": "现在风控状态怎么样", "intent": "risk_control", "variant": "negative"}

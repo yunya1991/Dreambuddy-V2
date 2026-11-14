@@ -267,7 +267,7 @@ capabilities:
 
 | intent | 识别要点 | 执行器 | mode |
 |---|---|---|---|
-| `metric_series` | 指标词 + 时间范围词（近一年/近 30 天/历史走势/变化率） | `exec_metric_series` | deterministic |
+| `metric_series` | 注册表命中 + 查询类词（多少/最新/走势/历史/数据/现在…，无解读词）；注册表含 18/19/9/前端 11 模块与调研新增能力 | `exec_metric_series` | deterministic-keyword |
 | `whale_flow` | 巨鲸/鲸鱼/大户 + 动向/流入流出/转账/最近（排除「说明什么」等解读） | `exec_whale_flow` | deterministic-keyword |
 | `calendar_event` | 议息/FOMC/非农/CPI/PPI + 什么时候/下次/日程；或「经济日历」 | `exec_calendar_event` | deterministic-keyword |
 | `metric_percentile` | 指标词 + 分位/百分位/历史位置/z-score/贵不贵 | `exec_metric_percentile` | deterministic |
@@ -286,8 +286,30 @@ capabilities:
 - fallback 顺序固定：`doc_search → whale_flow → event_line_query → calendar_event → event_analysis → metric_* → data_query / price_query`
 - `deterministic` 不等于免校验：仍需参数完整性与数据质量校验，校验失败走 L2
 - `deterministic-keyword`（`whale_flow` / `calendar_event`）：关键词命中即确定数据口径，直接单维检索直答，**不参与 recall 密度门控**（`route_signal.reasons=["deterministic_keyword_registry"]`）；0.65 阈值本身不变，仍只约束语义意图
-- 关键词注册表 SSoT：`54-L1架构能力聚合层/l1agg/series_catalog.py` 的 `WHALE_METRICS` / `EVENT_KINDS`（新增数据词只加一行）
+- 关键词注册表 SSoT：`54-L1架构能力聚合层/l1agg/series_catalog.py` 的 `WHALE_METRICS` / `EVENT_KINDS` / `CURATED_SERIES`（新增数据词只加一行）
 - golden set 必须新增**负样本 ≥10 条**（例：「CPI 文档在哪」→`doc_search`；「CPI 什么时候发布」→`calendar`；「CPI 和 BTC 有关系吗」→`cross_check`）
+
+#### 5.4.1 三段式注册表（数据关键词注册 → 意图识别 → 索引输出）
+
+| 层 | 载体 | 覆盖 | 维护方式 |
+|---|---|---|---|
+| Tier-1 别名 | `METRIC_ALIASES` | 27 组历史指标别名 | 手工，兼容旧问法 |
+| Tier-2 curated | `CURATED_SERIES` | 前端 11 模块 + 18/19 核心 + 调研新增（巨鲸/ETF/链上持仓/RWA/爆仓/稳定币/期权/周期信号）≈90 条 | 新增能力加一行；关键词去空格归一（`ETF总净流入` ≡ `ETF 净流入`） |
+| Tier-3 全量目录 | `l1agg/data_catalog.json` | `mm_metrics` 全量 27,290 个 (sub_category, metric_name) | `python3 -m l1agg.catalog_build` 重跑；英文长 token 精确匹配，过滤 stopword |
+
+**意图识别口径**：`count_series_hits ≥ 1` 且含查询类词、无解读类词（说明/意味着/怎么看/影响/为什么/分析/建议）→ `metric_series`；含「与/和/以及/、/同时」等多维并列连接词时交回 `data_query`，不做单维截断。命中后 `route_signal.reasons` 含 `deterministic_keyword_registry`，不参与 recall 密度门控。
+
+**索引输出统一模板**（`format_series_output`，所有单维执行器套用）：
+
+```jsonc
+{"kind":"series","id":"sub_category::metric_name","title":"…","unit":"…",
+ "days":90,"quality":"good","source":"dal_mm_metrics","points_n":90,
+ "value":34.7e8,"as_of":"2026-11-14 06:30","window":{"days":90,"points":90},
+ "range":{"min":…,"max":…},"change":{"abs":…,"pct":…},
+ "text":"RWA 总规模：最新 34.70亿美元（2026-11-14 06:30 CST）；近 90 天 …"}
+```
+
+规则：`scale` 统一缩放（亿/万亿美元）、`sign` 统一展示符号（巨鲸净流入 `sign=-1`）、空数据返回 `value=null` 且 `text` 含「暂无历史数据」，`data.index` 与 `answer` 同源，禁止各执行器自拼文案。
 
 ### 5.5 前端契约
 

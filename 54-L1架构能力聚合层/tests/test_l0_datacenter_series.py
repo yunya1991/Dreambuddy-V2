@@ -192,6 +192,51 @@ def test_resolve_metric_and_days():
     assert resolve_metric("今天天气怎么样") is None
 
 
+def test_registry_keywords_self_resolve():
+    """注册表自洽：每个 curated 条目至少一个关键词能解析回自身（含去空格归一）。"""
+    from l1agg.series_catalog import CURATED_SERIES
+
+    unresolved = []
+    for item in CURATED_SERIES:
+        want = (item["sub_category"], item["metric_name"])
+        if not any(
+            resolve_metric(kw)
+            and (resolve_metric(kw)["sub_category"], resolve_metric(kw)["metric_name"]) == want
+            for kw in item["keywords"]
+        ):
+            unresolved.append((want, item["keywords"]))
+    assert not unresolved, unresolved
+
+
+def test_registry_normalizes_spaces():
+    """「ETF总净流入」与「ETF 净流入」等价命中同一条序列。"""
+    spec = resolve_metric("ETF总净流入近30天走势")
+    assert (spec["sub_category"], spec["metric_name"]) == ("etf_flow", "total_flow")
+    assert (spec.get("scale") or 1.0) == 1.0
+
+
+def test_format_series_output_scale_and_sign():
+    """索引输出统一模板：缩放、符号修正、空数据文案。"""
+    from l1agg.series_catalog import format_series_output, resolve_whale_metric
+
+    spec = resolve_whale_metric("查询巨鲸动向")
+    points = [
+        {"value": 1e9, "ts": NOW - 2 * _DAY},
+        {"value": 2e9, "ts": NOW - _DAY},
+    ]
+    out = format_series_output(
+        series=spec, points=points, days=7, quality="good", source="dal_mm_metrics"
+    )
+    assert out["id"] == "exchanges_whales::whale_netflow_to_ex_usd"
+    assert out["value"] == -2e9  # 落库「转出-转入」，展示净流入需翻转
+    assert "亿美元" in out["text"] and "-20.00" in out["text"]
+    assert out["points_n"] == 2
+
+    empty = format_series_output(series=spec, points=[], days=7)
+    assert empty["value"] is None
+    assert "暂无历史数据" in empty["text"]
+
+
 def test_exec_metric_series_end_to_end(series_db):
     """L1 执行器直答：命中指标别名 → L0 真实序列 → 含 sample_n 的回答。"""
     from data_query_executor import exec_metric_series
@@ -199,7 +244,8 @@ def test_exec_metric_series_end_to_end(series_db):
     result = exec_metric_series("BTC恐惧贪婪近30天变化")
     assert result["success"] is True
     assert result["data"]["sample_n"] == 1
-    assert result["data"]["label"] == "恐惧贪婪指数"
+    assert result["data"]["sub_category"] == "crypto_fear_greed"
+    assert "恐惧贪婪" in result["data"]["label"]
     assert "恐惧贪婪" in result["answer"]
 
     miss = exec_metric_series("今天天气怎么样")
