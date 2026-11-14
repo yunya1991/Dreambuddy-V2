@@ -111,8 +111,8 @@ class TestExitStrategyParamsExpansion:
         p = ExitStrategyParams(soft_vote_cooldown_sec=14400)
         assert p.soft_vote_cooldown_sec == 14400
 
-    def test_to_gene_json_has_12_params(self):
-        """to_gene_json 输出 12 个参数"""
+    def test_to_gene_json_has_13_params(self):
+        """to_gene_json 输出 13 个参数"""
         from dreambuddy_evolution.engines.exit_engine.exit_strategy_params import (
             ExitStrategyParams,
         )
@@ -120,7 +120,7 @@ class TestExitStrategyParamsExpansion:
         p = ExitStrategyParams()
         gene = p.to_gene_json()
         params = gene["parameters"]
-        assert len(params) == 12
+        assert len(params) == 13
         # 验证新参数都有 range
         for key, val in params.items():  # noqa: B007
             assert "value" in val
@@ -267,6 +267,8 @@ class TestExitModuleFacade:
         params = facade.get_params()
         assert params.trailing_arm_pct == 0.05
         assert params.break_even_arm_pct == 0.03
+        # 回归：引擎必须拿到新参数对象，否则进化基因永不生效
+        assert facade._engine.strategy_params is params
 
 
 # ============================================================================

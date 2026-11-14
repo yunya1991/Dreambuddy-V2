@@ -126,7 +126,9 @@ class TestExitEngineDecide:
             "regime": "trend_up",
             "atr_pct": 0.02,
             "tier": "standard",
-            "current_sl_px": 2910.0,
+            # 结构风险 10%（≈ ATR 4.5×2% 与 4% floor 的量级），
+            # 避免 3% 的失真 SL 让规则4(+1R) 抢在 trailing/保本位之前触发
+            "current_sl_px": 2700.0,
             "current_tp_px": 3180.0,
             "okx_algo_triggered": False,
         }
@@ -689,7 +691,7 @@ class TestTimeoutSignalEvaluation:
             "ess": 0.6,
             "tier": "standard",
             "atr_pct": 0.02,
-            "current_sl_px": 2910.0,
+            "current_sl_px": 2700.0,
             "current_tp_px": 3180.0,
             "okx_algo_triggered": False,
             "has_stronger_signal": False,  # 无更强信号

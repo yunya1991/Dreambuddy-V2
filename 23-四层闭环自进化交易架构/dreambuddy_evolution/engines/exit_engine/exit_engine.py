@@ -11,9 +11,10 @@
      a. 盈利 + 有更强信号 → force_close 换仓
      b. 盈利 + 无更强信号 → hold 继续持有
      c. 亏损 → hold 继续持有（不因超时强平亏损仓）
-  4. 分批止盈：+1R→partial_close 50%, +2R→partial_close 30%, +3R→trailing 剩余
-  5. trailing 触发（peak tracking，回撤不退化）
-  6. adjust_sl_tp 保本位（trailing 未触发时）
+  4. 分批止盈：+1R→partial_close 50%, +2R→partial_close 30%, +3R→交锁利水位
+     （1R = |entry − 初始 SL|，结构风险口径，不从 TP 反算）
+  5+6. 统一锁利水位：SL = max(prev_sl, 含费保本位, peak × (1−retrace))，严格单调
+     （多头只升、空头只降；peak 定价，回撤不退化）
   7. ATR 自适应止损：SL = entry × (1 - max(ATR×mult, SL_floor))
 
 FAIL-OPEN：任何异常 → 返回 hold ExitDecision，不阻塞主链路。
@@ -51,6 +52,13 @@ class EvolutionExitEngine:
     # 保本位收紧触发阈值（盈亏达到此值 → SL 移到保本位）
     # P1-1 优化：3%→2%，更早保护盈利
     BREAK_EVEN_ARM_PCT = 0.02
+
+    # 保本位手续费安全垫：双边 taker(0.05%×2) + 滑点(0.02%×2) ≈ 0.14%，留 0.16% 余量
+    # 修复 P1-3：SL=entry 名义保本、含费实亏，保本位必须抬到 entry×(1+垫)
+    BREAK_EVEN_FEE_BUFFER_PCT = 0.0016
+
+    # 止损改善小于该幅度不下单，避免每轮 cancel/replace 抖动
+    SL_MIN_STEP_PCT = 0.0005
 
     # 保护期 60min
     PROTECTION_PERIOD_SEC = 60 * 60
@@ -126,11 +134,13 @@ class EvolutionExitEngine:
         self.strategy_params = strategy_params or ExitStrategyParams()
         # 基因创新闭环: 自动权重调整器
         self._auto_weight_adjuster = None  # lazy init
-        # P4: peak price tracking — 记录每个 symbol 的 peak upl_ratio
-        # trailing 触发后，只要 upl_ratio 仍 > BREAK_EVEN_ARM_PCT，保持 trailing
-        self._peak_upl_ratio: Dict[str, float] = {}
-        # 优化2: 记录每个 symbol 已执行的分批止盈批次
-        self._partial_tp_executed: Dict[str, int] = {}
+        # P4: 持仓级状态（修复 P1-1：按 symbol 永久驻留会跨仓污染）
+        #   key = f"{symbol}|{pos_side}"，由 exit_loop 在平仓/幽灵仓回调中 cleanup_position 清理
+        #   peak_price: 持仓期间最高（多头）/最低（空头）成交价 → trailing 定价基准
+        #   peak_upl_ratio: 峰值浮盈率 → 是否武装 trailing/保本位
+        #   initial_risk_px: 首次见到该持仓时 |entry - SL| → R 倍数基准（结构风险，非 TP 反算）
+        #   partial_batch: 已执行的分批止盈批次
+        self._pos_state: Dict[str, Dict[str, float]] = {}
         # 规则 2b 冷却期：记录每个 symbol 上次 BCRM2.0 反向减仓的时间戳
         #   减仓后 4H 内不再触发，避免震荡中连续扫射（SKHYNIX 47min×7 案例修复）
         self._last_bcrm_reduce_ts: Dict[str, float] = {}
@@ -146,6 +156,41 @@ class EvolutionExitEngine:
     def _log(self, msg: str, level: str = "INFO") -> None:
         # FAIL-OPEN: 日志回调失败仅登记不阻断（safe_call L2 分层）
         safe_call(self._log_fn, None, msg, level)
+
+    # ================================================================ 持仓级状态
+    @staticmethod
+    def _pos_key(symbol: str, pos_side: str) -> str:
+        """持仓状态 key：同币多空双向持仓必须隔离（P1-1）。"""
+        return f"{symbol}|{str(pos_side).lower()}"
+
+    def _state_for(self, symbol: str, pos_side: str) -> Dict[str, float]:
+        key = self._pos_key(symbol, pos_side)
+        st = self._pos_state.get(key)
+        if st is None:
+            st = {
+                "peak_price": 0.0,
+                "peak_upl_ratio": 0.0,
+                "initial_risk_px": 0.0,
+                "partial_batch": 0.0,
+                "trailing_armed": 0.0,
+                "be_armed": 0.0,
+            }
+            self._pos_state[key] = st
+        return st
+
+    def cleanup_position(self, symbol: str, pos_side: str | None = None) -> None:
+        """平仓/幽灵仓后清理持仓级状态（修复 P1-1：不再跨仓继承 peak/partial/风险基准）"""
+        if pos_side:
+            self._pos_state.pop(self._pos_key(symbol, pos_side), None)
+            self._last_bcrm_reduce_ts.pop(symbol, None)
+            self._last_evolution_reduce_ts.pop(symbol, None)
+            self._last_soft_vote_ts.pop(symbol, None)
+            return
+        for _k in [k for k in self._pos_state if k.split("|")[0] == symbol]:
+            self._pos_state.pop(_k, None)
+        self._last_bcrm_reduce_ts.pop(symbol, None)
+        self._last_evolution_reduce_ts.pop(symbol, None)
+        self._last_soft_vote_ts.pop(symbol, None)
 
     # ================================================================ 基因创新闭环
     def post_close_evolution(
@@ -295,22 +340,50 @@ class EvolutionExitEngine:
         # 优化1: ATR 自适应止损（从 context 读取，缺失时用固定百分比兜底）
         atr_pct = float(ctx.get("atr_pct", 0.0) or 0.0)
 
-        # 优化2: 分批止盈 R 倍数（从 context 读取或计算）
-        r_multiple = float(ctx.get("r_multiple", 0.0) or 0.0)
-
-        # 优化2 扩展: TP 时间衰减桥接 — tp_decayed_pct 存在时用衰减后 TP 间距重算 R 倍数
+        # 优化2: 分批止盈 R 倍数 —— 以结构止损距离定义 1R（P0-5 修复）
+        #   1R = |entry - 初始 SL|（首次见到该持仓时锁定），不从 TP 反算。
+        #   旧实现仅当 tp_decayed_pct>0 时才有 R，而生产 enricher 不注入该字段 → 规则4 永不触发。
         tp_decayed_pct = float(ctx.get("tp_decayed_pct", 0.0) or 0.0)
-        if tp_decayed_pct > 0 and entry_price > 0:
+        _st = self._state_for(symbol, pos_side)
+        if _st["initial_risk_px"] <= 0 and entry_price > 0 and current_sl_px > 0:
+            _st["initial_risk_px"] = abs(entry_price - current_sl_px)
+        r_multiple = float(ctx.get("r_multiple", 0.0) or 0.0)
+        if _st["initial_risk_px"] > 0 and entry_price > 0:
+            _gain_px = (
+                (current_price - entry_price)
+                if pos_side == "long"
+                else (entry_price - current_price)
+            )
+            r_multiple = _gain_px / _st["initial_risk_px"]
+        elif tp_decayed_pct > 0 and entry_price > 0:
+            # 兜底：无 SL 信息时按衰减 TP 间距估算（旧行为，仅保留可达性）
             if pos_side == "long":
                 _decayed_tp_px = entry_price * (1 + tp_decayed_pct)
             else:
                 _decayed_tp_px = entry_price * (1 - tp_decayed_pct)
-            _tp_diff = _decayed_tp_px - entry_price
+            _tp_diff = abs(_decayed_tp_px - entry_price)
             if _tp_diff > 0:
                 if pos_side == "long":
                     r_multiple = (current_price - entry_price) / _tp_diff
                 else:
                     r_multiple = (entry_price - current_price) / _tp_diff
+
+        # peak 跟踪（P0-1 修复）：记录持仓期间最优价格与峰值浮盈，
+        #   trailing 定价必须基于 peak，而不是当前价（否则回撤时止损随价下移）。
+        if current_price > 0:
+            if pos_side == "long":
+                _st["peak_price"] = max(_st["peak_price"], current_price)
+            elif _st["peak_price"] > 0:
+                _st["peak_price"] = min(_st["peak_price"], current_price)
+            else:
+                _st["peak_price"] = current_price
+            if entry_price > 0 and _st["peak_price"] > 0:
+                _peak_upl = (
+                    (_st["peak_price"] - entry_price) / entry_price
+                    if pos_side == "long"
+                    else (entry_price - _st["peak_price"]) / entry_price
+                )
+                _st["peak_upl_ratio"] = max(_st["peak_upl_ratio"], _peak_upl)
 
         # 优化3: 超时信号评估所需信息
         has_stronger_signal = bool(ctx.get("has_stronger_signal", False))
@@ -374,6 +447,14 @@ class EvolutionExitEngine:
                     confidence=0.6,
                 )
 
+        # ── 规则 3a：亏损仓超时 → 四 voter 软投票（P0-4 修复：接线，不再死代码）
+        #   仲裁器未注入（生产默认）时 _check_timeout_soft_vote 立即返回 None，行为不变；
+        #   注入后该能力真实可达（由单测 test_soft_vote_is_wired_when_arbitrator_present 守门）。
+        if position_age_sec >= self.TIMEOUT_SIGNAL_EVAL_SEC and upl_ratio <= 0:
+            _soft = self._check_timeout_soft_vote(ctx)
+            if _soft is not None:
+                return _soft
+
         # ── 规则 3b：优化3 超时 29H 信号强度评估
         # 修复(P0-1)：超时盈利+无更强信号不再直接 return hold，
         #   而是继续检查规则4(分批止盈)/规则5(trailing)/规则6(保本位)。
@@ -404,97 +485,94 @@ class EvolutionExitEngine:
                 "INFO",
             )
 
-        # ── 规则 4：优化2 分批止盈（R 倍数驱动）
-        if r_multiple > 0 and entry_price > 0 and current_sl_px > 0:
+        # ── 规则 4：优化2 分批止盈（R 倍数驱动，R=结构风险）
+        if r_multiple > 0 and entry_price > 0 and _st["initial_risk_px"] > 0:
             partial_decision = self._check_partial_tp(
-                symbol, r_multiple, current_price, pos_side, current_tp_px
+                symbol, pos_side, r_multiple, current_price, current_tp_px, _st
             )
             if partial_decision:
                 return partial_decision
 
-        # ── 规则 5：trailing 触发（tier 对应 arm 阈值）
+        # ── 规则 5+6：统一锁利水位（peak trailing ∪ 含费保本），SL 严格单调
+        #   P0-1: 定价基准 = peak_price，不是当前价
+        #   P0-2: 保本位与 trailing 合并为单水位，去掉互斥守卫，二者取高者
+        #   P1-3: 保本位含手续费安全垫（BREAK_EVEN_FEE_BUFFER_PCT）
         trailing_arm = self.TRAILING_ARM_PCT.get(tier, 0.06)
-        # P4: peak tracking — 更新 peak upl_ratio
-        prev_peak = self._peak_upl_ratio.get(symbol, 0.0)
-        current_peak = max(prev_peak, upl_ratio)
-        self._peak_upl_ratio[symbol] = current_peak
+        if _st["peak_upl_ratio"] >= trailing_arm:
+            _st["trailing_armed"] = 1.0
+        if _st["peak_upl_ratio"] >= self.BREAK_EVEN_ARM_PCT:
+            _st["be_armed"] = 1.0
 
-        # trailing 已触发过（peak ≥ arm）且当前仍 > BREAK_EVEN → 保持 trailing
-        trailing_already_armed = prev_peak >= trailing_arm
-        if trailing_already_armed and upl_ratio > self.BREAK_EVEN_ARM_PCT and entry_price > 0:
-            retrace = self.strategy_params.trailing_retrace_pct
-            if pos_side == "long":
-                new_sl_px = current_price * (1 - retrace)
+        _trailing_armed = _st["trailing_armed"] > 0
+        _be_armed = _st["be_armed"] > 0
+        if not (_trailing_armed or _be_armed) or entry_price <= 0:
+            # ── 默认：hold（ATR 自适应 SL 在开仓时已设置，此处不重复）
+            return ExitDecision(
+                action="hold",
+                reason=f"evolution_exit:hold:safe_zone_{upl_ratio:.2%}_atr_{atr_pct:.2%}",
+                params={"atr_adaptive": atr_pct > 0, "atr_pct": atr_pct},
+            )
+
+        # Chandelier 口径：回撤距离随波动率缩放（P1-11）。atr_pct 缺失时回退固定百分比。
+        retrace = self.strategy_params.trailing_retrace_pct
+        _atr_mult = float(getattr(self.strategy_params, "trailing_atr_mult", 0.0) or 0.0)
+        if _atr_mult > 0 and atr_pct > 0:
+            retrace = max(0.03, min(0.20, _atr_mult * atr_pct))
+        target_sl = 0.0
+        if _be_armed:
+            # 保本位（含费）：多头 entry×(1+垫)，空头 entry×(1-垫)
+            target_sl = (
+                entry_price * (1 + self.BREAK_EVEN_FEE_BUFFER_PCT)
+                if pos_side == "long"
+                else entry_price * (1 - self.BREAK_EVEN_FEE_BUFFER_PCT)
+            )
+        if _trailing_armed and _st["peak_price"] > 0:
+            trail_sl = (
+                _st["peak_price"] * (1 - retrace)
+                if pos_side == "long"
+                else _st["peak_price"] * (1 + retrace)
+            )
+            if target_sl > 0:
+                target_sl = (
+                    max(target_sl, trail_sl) if pos_side == "long" else min(target_sl, trail_sl)
+                )
             else:
-                new_sl_px = current_price * (1 + retrace)
-            self._log(
-                f"[EvolutionExitEngine] {symbol} trailing 持续 peak={current_peak:.2%} "
-                f"cur={upl_ratio:.2%} SL→{new_sl_px:.4f}",
-                "INFO",
-            )
-            return ExitDecision(
-                action="trailing",
-                params={
-                    "trailing_arm_pct": trailing_arm,
-                    "trailing_retrace_pct": retrace,
-                    "peak_upl_ratio": current_peak,
-                },
-                sl_px=new_sl_px,
-                tp_px=current_tp_px,
-                reason=f"evolution_exit:trailing:peak_{current_peak:.2%}_cur_{upl_ratio:.2%}",
-                confidence=0.8,
+                target_sl = trail_sl
+
+        # 单调约束：绝不回退既有 SL（多头只升、空头只降）
+        if current_sl_px > 0:
+            target_sl = (
+                max(target_sl, current_sl_px)
+                if pos_side == "long"
+                else min(target_sl, current_sl_px)
             )
 
-        # 首次触发 trailing（upl_ratio ≥ arm）
-        if upl_ratio >= trailing_arm and entry_price > 0:
-            retrace = self.strategy_params.trailing_retrace_pct
-            if pos_side == "long":
-                new_sl_px = current_price * (1 - retrace)
-            else:
-                new_sl_px = current_price * (1 + retrace)
-            self._log(
-                f"[EvolutionExitEngine] {symbol} trailing 触发 arm={trailing_arm:.2%} retrace={retrace:.2%}",
-                "INFO",
-            )
-            return ExitDecision(
-                action="trailing",
-                params={
-                    "trailing_arm_pct": trailing_arm,
-                    "trailing_retrace_pct": retrace,
-                    "peak_upl_ratio": current_peak,
-                },
-                sl_px=new_sl_px,
-                tp_px=current_tp_px,
-                reason=f"evolution_exit:trailing:armed_at_{trailing_arm:.2%}",
-                confidence=0.8,
-            )
-
-        # ── 规则 6：adjust_sl_tp（盈亏触达 +3% → SL 收紧到保本位）
-        # P4: 仅在 trailing 未触发过时执行（避免 trailing 状态退化到保本位）
-        if not trailing_already_armed and upl_ratio >= self.BREAK_EVEN_ARM_PCT and entry_price > 0:
-            # 优化1: ATR 自适应保本位收紧
-            new_sl_px = self._calc_atr_adaptive_sl(
-                entry_price, current_price, atr_pct, tier, pos_side, mode="break_even"
-            )
-            self._log(
-                f"[EvolutionExitEngine] {symbol} adjust_sl_tp 保本位 SL→{new_sl_px:.4f} "
-                f"(ATR={atr_pct:.2%} tier={tier})",
-                "INFO",
-            )
-            return ExitDecision(
-                action="adjust_sl_tp",
-                params={"mode": "break_even", "atr_adaptive": atr_pct > 0, "atr_pct": atr_pct},
-                sl_px=new_sl_px,
-                tp_px=current_tp_px,
-                reason=f"evolution_exit:adjust_sl_tp:break_even_{upl_ratio:.2%}_atr_{atr_pct:.2%}",
-                confidence=0.6,
-            )
-
-        # ── 默认：hold（ATR 自适应 SL 在开仓时已设置，此处不重复）
+        _improved = abs(target_sl - current_sl_px) >= current_sl_px * self.SL_MIN_STEP_PCT
+        _action = "trailing" if _trailing_armed else "adjust_sl_tp"
+        self._log(
+            f"[EvolutionExitEngine] {symbol} 锁利水位 {_action} "
+            f"peak={_st['peak_upl_ratio']:.2%} cur={upl_ratio:.2%} "
+            f"SL {current_sl_px:.4f}→{target_sl:.4f}"
+            f"{'' if _improved else '（无实质改善，跳过重挂）'}",
+            "INFO",
+        )
         return ExitDecision(
-            action="hold",
-            reason=f"evolution_exit:hold:safe_zone_{upl_ratio:.2%}_atr_{atr_pct:.2%}",
-            params={"atr_adaptive": atr_pct > 0, "atr_pct": atr_pct},
+            action=_action,
+            params={
+                "trailing_arm_pct": trailing_arm,
+                "trailing_retrace_pct": retrace,
+                "peak_upl_ratio": _st["peak_upl_ratio"],
+                "breakeven_armed": _be_armed,
+                "sl_improved": _improved,
+            },
+            sl_px=target_sl,
+            tp_px=current_tp_px,
+            reason=(
+                f"evolution_exit:trailing:peak_{_st['peak_upl_ratio']:.2%}_cur_{upl_ratio:.2%}"
+                if _trailing_armed
+                else f"evolution_exit:adjust_sl_tp:break_even_{upl_ratio:.2%}_atr_{atr_pct:.2%}"
+            ),
+            confidence=0.8 if _trailing_armed else 0.6,
         )
 
     def _check_bcrm_reverse_signal(self, ctx: Dict[str, Any]) -> Optional[ExitDecision]:
@@ -739,27 +817,28 @@ class EvolutionExitEngine:
     def _check_partial_tp(
         self,
         symbol: str,
+        pos_side: str,
         r_multiple: float,
         current_price: float,
-        pos_side: str,
         current_tp_px: float,
+        state: Dict[str, float],
     ) -> Optional[ExitDecision]:
-        """优化2: 分批止盈检查
+        """优化2: 分批止盈检查（状态按 symbol|pos_side 隔离，P1-1）
 
         +1R → partial_close 50%
         +2R → partial_close 30%
-        +3R → trailing 剩余 20%（返回 trailing 决策）
+        +3R → trailing 剩余 20%（返回 None 交给锁利水位）
         """
-        executed = self._partial_tp_executed.get(symbol, 0)
+        executed = int(state.get("partial_batch", 0))
 
         for i, (r_thresh, pct) in enumerate(
             zip(self.PARTIAL_TP_R_THRESHOLDS, self.PARTIAL_TP_PCTAGES)  # noqa: B905
         ):
             if r_multiple >= r_thresh and executed <= i:
-                self._partial_tp_executed[symbol] = i + 1
+                state["partial_batch"] = float(i + 1)
                 if i < 2:  # +1R, +2R → partial_close
                     self._log(
-                        f"[EvolutionExitEngine] {symbol} 分批止盈 batch{i+1} "
+                        f"[EvolutionExitEngine] {symbol}({pos_side}) 分批止盈 batch{i+1} "
                         f"+{r_thresh}R → partial_close {pct*100:.0f}%",
                         "INFO",
                     )
@@ -772,11 +851,11 @@ class EvolutionExitEngine:
                     )
                 else:  # +3R → trailing 剩余
                     self._log(
-                        f"[EvolutionExitEngine] {symbol} 分批止盈 batch3 "
+                        f"[EvolutionExitEngine] {symbol}({pos_side}) 分批止盈 batch3 "
                         f"+{r_thresh}R → trailing 剩余 {pct*100:.0f}%",
                         "INFO",
                     )
-                    return None  # 返回 None 让 trailing 规则接管
+                    return None  # 返回 None 让锁利水位接管
         return None
 
     def _calc_atr_adaptive_sl(

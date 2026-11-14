@@ -137,6 +137,9 @@ class ExitModuleFacade:
         try:
             d = json.loads(gene_json_str)
             self._strategy_params = ExitStrategyParams.from_dict(d)
+            # 修复：引擎持有旧对象引用，只替换 facade 的字段会让进化基因永不生效
+            if getattr(self, "_engine", None) is not None:
+                self._engine.strategy_params = self._strategy_params
         except (json.JSONDecodeError, TypeError) as exc:
             logger.warning("[ExitModuleFacade] load_gene crash (FAIL-OPEN): %s", exc)
             # 保持原有参数不变

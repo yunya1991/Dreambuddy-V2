@@ -3,9 +3,9 @@
 对应 Phase 5 参数自适应闭环：离场策略参数作为基因写入
 gene_data/strategy_genes/conditions/，不修改 strategy_gene.py 4 个冻结接口。
 
-参数字段（12 个，全部可进化）：
+参数字段（13 个，全部可进化）：
   原始 4 参数：
-    - trailing_retrace_pct: 移动止盈回调百分比（默认 0.05 = 5%）
+    - trailing_retrace_pct: 移动止盈回调百分比（ATR 缺失时的兜底值，默认 0.05 = 5%）
     - sl_tighten_factor: 止损收紧因子（默认 0.7 = 收紧 30%）
     - tp_extend_factor: 止盈扩展因子（默认 1.2 = 扩展 20%）
     - force_close_threshold: 强制平仓 R_total 阈值（默认 -0.5）
@@ -18,6 +18,8 @@ gene_data/strategy_genes/conditions/，不修改 strategy_gene.py 4 个冻结接
     - tp_decay_floor_pct: TP 衰减下限间距（默认 0.015）
     - tp_decay_grace_hours: TP 衰减宽限期（默认 12）
     - soft_vote_cooldown_sec: 软投票冷却期（默认 14400）
+  新增 1 参数（v1.15 Chandelier 口径）：
+    - trailing_atr_mult: trailing 回撤 = clamp(该倍数 × ATR%, 3%, 20%)（默认 3.0）
 """
 
 from __future__ import annotations
@@ -28,7 +30,7 @@ from dataclasses import dataclass
 
 @dataclass
 class ExitStrategyParams:
-    """离场策略参数基因（12 参数，全部可进化）"""
+    """离场策略参数基因（13 参数，全部可进化）"""
 
     # --- 原始 4 参数 ---
     trailing_retrace_pct: float = 0.05
@@ -45,6 +47,11 @@ class ExitStrategyParams:
     tp_decay_floor_pct: float = 0.015
     tp_decay_grace_hours: int = 12
     soft_vote_cooldown_sec: int = 14400
+
+    # --- 新增 1 参数（v1.15 Chandelier 口径）---
+    # trailing 回撤 = clamp(trailing_atr_mult × atr_pct, 3%, 20%)；
+    # atr_pct 缺失(≤0)时回退 trailing_retrace_pct。回测证据：ATR×3 在 6/6 标的优于固定 5%
+    trailing_atr_mult: float = 3.0
 
     def to_gene_json(self) -> dict:
         """序列化为基因 JSON 结构（写入 strategy_genes/conditions/）
@@ -108,6 +115,10 @@ class ExitStrategyParams:
                 "soft_vote_cooldown_sec": {
                     "value": self.soft_vote_cooldown_sec,
                     "range": {"low": 0, "high": 86400},
+                },
+                "trailing_atr_mult": {
+                    "value": self.trailing_atr_mult,
+                    "range": {"low": 1.5, "high": 5.0},
                 },
             },
             "code_ref": {

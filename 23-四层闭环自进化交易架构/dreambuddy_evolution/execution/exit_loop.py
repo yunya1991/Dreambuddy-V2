@@ -90,7 +90,11 @@ class EvolutionExitLoop:
             )
 
         self._engine = exit_engine
-        self._rl_enabled = _env_on("EVOLUTION_EXIT_RL") if enable_rl is None else bool(enable_rl)
+        # 修复 P1-5：RL 覆盖默认关闭（Q 网络训练指标发散、仅 2000 样本）。
+        # 需显式 EVOLUTION_EXIT_RL=on 才启用；规则链始终兜底。
+        self._rl_enabled = (
+            _env_on("EVOLUTION_EXIT_RL", default="off") if enable_rl is None else bool(enable_rl)
+        )
         self._shadow_enabled = (
             _env_on("EVOLUTION_EXIT_SHADOW_RL")
             if enable_shadow_rl is None
@@ -253,6 +257,7 @@ class EvolutionExitLoop:
                 if current_price <= 0:
                     if on_ghost is not None:
                         on_ghost(pos, entry_price)
+                    self._cleanup_engine_state(pos)
                     return {"status": "skipped", "reason": "ghost_position"}
         if current_price <= 0:
             current_price = entry_price
@@ -357,7 +362,9 @@ class EvolutionExitLoop:
             _px = float(_p.get("mark_px") or _p.get("last_px") or current_price or 0)
             _qty = abs(float(_p.get("pos", 0) or 0))
             _usdt = position_usdt if position_usdt > 0 else _qty * _px
-            return (max(current_price, _px), _usdt)
+            # 修复 P1-7：原 max(current_price, _px) 对多头系统性高估浮盈、空头低估。
+            # 统一用交易所价（mark→last），缺失才回退本地价。
+            return (_px if _px > 0 else current_price, _usdt)
         except Exception as e:  # noqa: BLE001
             self._log(f"[ExitLoop] 持仓同步失败(FAIL-OPEN): {e}", "DEBUG")
             return None
@@ -504,12 +511,28 @@ class EvolutionExitLoop:
                 on_closed(pos, decision, _res, ctx)
             except Exception as e:  # noqa: BLE001
                 self._log(f"[ExitLoop] {coin} on_closed 异常(FAIL-OPEN): {e}", "WARN")
+        if ratio >= 0.999:
+            # P1-1：全平后清理持仓级状态，避免同币二次开仓继承 peak/partial/风险基准
+            self._cleanup_engine_state(pos)
         return {
             "status": "executed",
             "action": _sig["action"],
             "sz": _sz,
             "decision_id": _sig["decision_id"],
         }
+
+    def _cleanup_engine_state(self, pos) -> None:
+        """平仓/幽灵仓后清理引擎持仓级状态（P1-1），FAIL-OPEN。"""
+        try:
+            _engine = self._engine
+            if _engine is None or not hasattr(_engine, "cleanup_position"):
+                return
+            _coin = str(pos.get("coin") or str(pos.get("inst_id") or "").split("-")[0]).upper()
+            _side = str(pos.get("pos_side") or pos.get("direction") or "").lower() or None
+            if _coin:
+                _engine.cleanup_position(_coin, _side)
+        except Exception as e:  # noqa: BLE001
+            self._log(f"[ExitLoop] 持仓状态清理失败(FAIL-OPEN): {e}", "DEBUG")
 
     def _apply_sl_tp(self, pos, inst_id, coin, decision, ctx):
         if self._okx is None:
@@ -518,6 +541,21 @@ class EvolutionExitLoop:
         _new_tp = float(decision.tp_px or 0.0) or float(ctx.get("current_tp_px") or 0.0)
         if _new_sl <= 0 and _new_tp <= 0:
             return {"status": "skipped", "reason": "no_sl_tp"}
+
+        # 硬门禁：止损单调（P0-1）。任何决策来源（规则/RL 覆盖）都不得把 SL 往不利方向改。
+        _cur_sl = float(ctx.get("current_sl_px") or 0.0)
+        _side = str(ctx.get("pos_side") or "long").lower()
+        if _new_sl > 0 and _cur_sl > 0:
+            if _side == "long":
+                _new_sl = max(_new_sl, _cur_sl)
+            else:
+                _new_sl = min(_new_sl, _cur_sl)
+        # 无实质变化不下单：避免每轮 cancel + 重挂（5bp 内视为相同）
+        _sl_same = _cur_sl <= 0 or abs(_new_sl - _cur_sl) < _cur_sl * 0.0005
+        _cur_tp = float(ctx.get("current_tp_px") or 0.0)
+        _tp_same = _new_tp <= 0 or (_cur_tp > 0 and abs(_new_tp - _cur_tp) < 1e-9)
+        if _sl_same and _tp_same:
+            return {"status": "skipped", "reason": "sl_tp_unchanged"}
         try:
             if hasattr(self._okx, "cancel_algo_orders"):
                 self._okx.cancel_algo_orders(inst_id=inst_id)
