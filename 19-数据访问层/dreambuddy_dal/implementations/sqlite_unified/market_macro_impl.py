@@ -388,18 +388,27 @@ class SqliteMarketMacroRepository(MarketMacroRepository):
     ) -> bool:
         unix = _to_unix_sec(ts)
         with get_sqlite_connection(self.db_path) as conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS mm_metrics (
-                    source TEXT NOT NULL,
-                    sub_category TEXT NOT NULL,
-                    metric_name TEXT NOT NULL,
-                    metric_value REAL,
-                    timestamp INTEGER NOT NULL,
-                    PRIMARY KEY (source, sub_category, metric_name, timestamp)
-                ) WITHOUT ROWID
-                """,
-            )
+            # 首次建表时一并建二级索引（PK 前缀是 source，按 sub_category+metric_name+timestamp
+            # 的区间查询无法命中 PK；与 scripts/migrate_mm_metrics_index.py 保持一致）
+            if not conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='mm_metrics'"
+            ).fetchone():
+                conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS mm_metrics (
+                        source TEXT NOT NULL,
+                        sub_category TEXT NOT NULL,
+                        metric_name TEXT NOT NULL,
+                        metric_value REAL,
+                        timestamp INTEGER NOT NULL,
+                        PRIMARY KEY (source, sub_category, metric_name, timestamp)
+                    ) WITHOUT ROWID
+                    """,
+                )
+                conn.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_mm_metrics_query "
+                    "ON mm_metrics (sub_category, metric_name, timestamp)"
+                )
             conn.execute(
                 """
                 INSERT OR REPLACE INTO mm_metrics
