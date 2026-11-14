@@ -105,7 +105,11 @@ def propagate(
         }
     )
 
-    if "symbol_not_in_layers" in snap.degraded or abs(corr0) < MIN_CORR:
+    if abs(corr0) < MIN_CORR or (
+        {"symbol_not_in_layers", "resonance_fallback", "fetch_failed", "leader_missing"}
+        & set(snap.degraded or [])
+    ):
+        meta["skip_reason"] = "degraded_or_low_corr"
         payload["resonance"] = meta
         return decision
     if snap.t_arrive is not None and snap.t_arrive > MAX_LAG_DAYS:

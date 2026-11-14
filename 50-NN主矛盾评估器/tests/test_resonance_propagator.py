@@ -90,3 +90,14 @@ def test_no_leader_evidence_skips():
     out = propagate(d, [], "crypto_usdt", FakeSensor(_snap()))
     assert out["confidence"] == 0.6
     assert out["payload"]["resonance"]["leader_direction"] is None
+
+
+def test_skips_when_leader_resonance_fell_back():
+    """样本不足（resonance_fallback）不得用恒等 corr0=1.0 放大置信度。"""
+    sensor = FakeSensor(_snap(corr0=1.0, down_corr=1.0, degraded=["resonance_fallback"]))
+    decision = _decision(direction="long", confidence=0.6, symbol="OXY-USDT-SWAP")
+    evidences = [{"symbol": "NVDA", "direction": "long", "confidence": 0.7}]
+    out = propagate(decision, evidences, asset_class="us_stock", sensor=sensor)
+    assert out["confidence"] == 0.6
+    assert out["payload"]["resonance"]["applied"] is False
+    assert out["payload"]["resonance"]["skip_reason"] == "degraded_or_low_corr"
