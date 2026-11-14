@@ -131,3 +131,26 @@ def test_real_registry_symbols_are_live_authorized(monkeypatch):
             {"signal_id": "x", "symbol": inst_id}, rights, mandate=cfg["mandate_id"]
         )
         assert result["outcome"] == "live:50-bypass", inst_id
+
+
+def test_registry_covers_all_40_tradable_assets():
+    """22 live 注册表必须覆盖 40 asset_classes 的 G1/G2 全部可交易标的（防资产匮乏）。"""
+    import importlib.util
+
+    root = DEFAULT_RIGHTS_PATH.parents[2]
+    spec = importlib.util.spec_from_file_location(
+        "_asset_classes_40", root / "40-周期神经网络系统" / "asset_classes.py"
+    )
+    ac = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ac)
+    registry = json.loads(
+        (root / "22-执行引擎中心" / "config" / "live_symbols.json").read_text(encoding="utf-8")
+    )
+    want = {
+        f"{sym}-USDT-SWAP": cls
+        for sym, cls in ac.SYMBOL_CLASS.items()
+        if ac.ASSET_CLASSES[cls].get("session") != "macro_series_only"
+    }
+    got = {v["inst_id"]: v["asset_class"] for v in registry["symbols"].values()}
+    assert not set(want) - set(got), f"未接入 live: {sorted(set(want) - set(got))}"
+    assert {i: got[i] for i in want} == want, "asset_class 与 40 类别定义不一致"

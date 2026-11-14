@@ -1,39 +1,343 @@
 {
-  "version": 2,
-  "description": "live 可交易标的单一事实源（22 执行器 + 11 bridge + 50 run_live 共用）",
+  "version": 3,
+  "description": "live 可交易标的单一事实源（22 执行器 + 11 bridge + 50 run_live 共用）；与 40 asset_classes.ASSET_CLASSES 的 G1/G2 全集对齐（fx/DXY 无 USDT 永续，不在此表）",
+  "source_of_truth": "40-周期神经网络系统/asset_classes.py",
   "max_positions_default": 6,
+  "classes": {
+    "crypto": {
+      "leader": "BTC",
+      "g1_anchor": true,
+      "count": 21
+    },
+    "precious_metal": {
+      "leader": "XAU",
+      "g1_anchor": true,
+      "count": 4
+    },
+    "industrial_metal": {
+      "leader": "XCU",
+      "g1_anchor": false,
+      "count": 1
+    },
+    "energy": {
+      "leader": "CL",
+      "g1_anchor": true,
+      "count": 4
+    },
+    "us_index": {
+      "leader": "US500",
+      "g1_anchor": true,
+      "count": 3
+    },
+    "us_etf": {
+      "leader": "SPY",
+      "g1_anchor": false,
+      "count": 8
+    },
+    "apac_index": {
+      "leader": "JP225",
+      "g1_anchor": true,
+      "count": 2
+    },
+    "us_stock": {
+      "leader": "NVDA",
+      "g1_anchor": false,
+      "count": 28
+    },
+    "rates_credit": {
+      "leader": "TLT",
+      "g1_anchor": true,
+      "count": 1
+    }
+  },
   "symbols": {
-    "BTC": {"inst_id": "BTC-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "ETH": {"inst_id": "ETH-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "SOL": {"inst_id": "SOL-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "BNB": {"inst_id": "BNB-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "XRP": {"inst_id": "XRP-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "ADA": {"inst_id": "ADA-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "AVAX": {"inst_id": "AVAX-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "NEAR": {"inst_id": "NEAR-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "SUI": {"inst_id": "SUI-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "APT": {"inst_id": "APT-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "DOT": {"inst_id": "DOT-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "ATOM": {"inst_id": "ATOM-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "LTC": {"inst_id": "LTC-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "LINK": {"inst_id": "LINK-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "ARB": {"inst_id": "ARB-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "OP": {"inst_id": "OP-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "UNI": {"inst_id": "UNI-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "AAVE": {"inst_id": "AAVE-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "DOGE": {"inst_id": "DOGE-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "PEPE": {"inst_id": "PEPE-USDT-SWAP", "asset_class": "crypto_usdt"},
-    "NVDA": {"inst_id": "NVDA-USDT-SWAP", "asset_class": "us_stock"},
-    "TSLA": {"inst_id": "TSLA-USDT-SWAP", "asset_class": "us_stock"},
-    "MSFT": {"inst_id": "MSFT-USDT-SWAP", "asset_class": "us_stock"},
-    "META": {"inst_id": "META-USDT-SWAP", "asset_class": "us_stock"},
-    "GOOGL": {"inst_id": "GOOGL-USDT-SWAP", "asset_class": "us_stock"},
-    "AAPL": {"inst_id": "AAPL-USDT-SWAP", "asset_class": "us_stock"},
-    "AMZN": {"inst_id": "AMZN-USDT-SWAP", "asset_class": "us_stock"},
-    "COIN": {"inst_id": "COIN-USDT-SWAP", "asset_class": "us_stock"},
-    "MSTR": {"inst_id": "MSTR-USDT-SWAP", "asset_class": "us_stock"},
-    "NFLX": {"inst_id": "NFLX-USDT-SWAP", "asset_class": "us_stock"},
-    "XAU": {"inst_id": "XAU-USDT-SWAP", "asset_class": "precious_metal"},
-    "XAG": {"inst_id": "XAG-USDT-SWAP", "asset_class": "precious_metal"}
+    "BTC": {
+      "inst_id": "BTC-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "ETH": {
+      "inst_id": "ETH-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "SOL": {
+      "inst_id": "SOL-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "AVAX": {
+      "inst_id": "AVAX-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "LINK": {
+      "inst_id": "LINK-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "ADA": {
+      "inst_id": "ADA-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "DOGE": {
+      "inst_id": "DOGE-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "PEPE": {
+      "inst_id": "PEPE-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "WIF": {
+      "inst_id": "WIF-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "BNB": {
+      "inst_id": "BNB-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "XRP": {
+      "inst_id": "XRP-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "SUI": {
+      "inst_id": "SUI-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "APT": {
+      "inst_id": "APT-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "DOT": {
+      "inst_id": "DOT-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "ATOM": {
+      "inst_id": "ATOM-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "LTC": {
+      "inst_id": "LTC-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "ARB": {
+      "inst_id": "ARB-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "OP": {
+      "inst_id": "OP-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "UNI": {
+      "inst_id": "UNI-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "AAVE": {
+      "inst_id": "AAVE-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "NEAR": {
+      "inst_id": "NEAR-USDT-SWAP",
+      "asset_class": "crypto"
+    },
+    "XAU": {
+      "inst_id": "XAU-USDT-SWAP",
+      "asset_class": "precious_metal"
+    },
+    "XAG": {
+      "inst_id": "XAG-USDT-SWAP",
+      "asset_class": "precious_metal"
+    },
+    "XPT": {
+      "inst_id": "XPT-USDT-SWAP",
+      "asset_class": "precious_metal"
+    },
+    "XPD": {
+      "inst_id": "XPD-USDT-SWAP",
+      "asset_class": "precious_metal"
+    },
+    "XCU": {
+      "inst_id": "XCU-USDT-SWAP",
+      "asset_class": "industrial_metal"
+    },
+    "CL": {
+      "inst_id": "CL-USDT-SWAP",
+      "asset_class": "energy"
+    },
+    "BZ": {
+      "inst_id": "BZ-USDT-SWAP",
+      "asset_class": "energy"
+    },
+    "NG": {
+      "inst_id": "NG-USDT-SWAP",
+      "asset_class": "energy"
+    },
+    "USO": {
+      "inst_id": "USO-USDT-SWAP",
+      "asset_class": "energy"
+    },
+    "US500": {
+      "inst_id": "US500-USDT-SWAP",
+      "asset_class": "us_index"
+    },
+    "US100": {
+      "inst_id": "US100-USDT-SWAP",
+      "asset_class": "us_index"
+    },
+    "SPX": {
+      "inst_id": "SPX-USDT-SWAP",
+      "asset_class": "us_index"
+    },
+    "SPY": {
+      "inst_id": "SPY-USDT-SWAP",
+      "asset_class": "us_etf"
+    },
+    "QQQ": {
+      "inst_id": "QQQ-USDT-SWAP",
+      "asset_class": "us_etf"
+    },
+    "IWM": {
+      "inst_id": "IWM-USDT-SWAP",
+      "asset_class": "us_etf"
+    },
+    "SMH": {
+      "inst_id": "SMH-USDT-SWAP",
+      "asset_class": "us_etf"
+    },
+    "XLE": {
+      "inst_id": "XLE-USDT-SWAP",
+      "asset_class": "us_etf"
+    },
+    "XLV": {
+      "inst_id": "XLV-USDT-SWAP",
+      "asset_class": "us_etf"
+    },
+    "XBI": {
+      "inst_id": "XBI-USDT-SWAP",
+      "asset_class": "us_etf"
+    },
+    "URNM": {
+      "inst_id": "URNM-USDT-SWAP",
+      "asset_class": "us_etf"
+    },
+    "JP225": {
+      "inst_id": "JP225-USDT-SWAP",
+      "asset_class": "apac_index"
+    },
+    "KR200": {
+      "inst_id": "KR200-USDT-SWAP",
+      "asset_class": "apac_index"
+    },
+    "NVDA": {
+      "inst_id": "NVDA-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "AMD": {
+      "inst_id": "AMD-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "AVGO": {
+      "inst_id": "AVGO-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "TSM": {
+      "inst_id": "TSM-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "ASML": {
+      "inst_id": "ASML-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "MU": {
+      "inst_id": "MU-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "ARM": {
+      "inst_id": "ARM-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "AAPL": {
+      "inst_id": "AAPL-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "MSFT": {
+      "inst_id": "MSFT-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "GOOGL": {
+      "inst_id": "GOOGL-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "AMZN": {
+      "inst_id": "AMZN-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "META": {
+      "inst_id": "META-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "NFLX": {
+      "inst_id": "NFLX-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "TSLA": {
+      "inst_id": "TSLA-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "GS": {
+      "inst_id": "GS-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "JPM": {
+      "inst_id": "JPM-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "V": {
+      "inst_id": "V-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "BRKB": {
+      "inst_id": "BRKB-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "IBKR": {
+      "inst_id": "IBKR-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "COIN": {
+      "inst_id": "COIN-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "MSTR": {
+      "inst_id": "MSTR-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "HOOD": {
+      "inst_id": "HOOD-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "CRCL": {
+      "inst_id": "CRCL-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "XOM": {
+      "inst_id": "XOM-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "CVX": {
+      "inst_id": "CVX-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "OXY": {
+      "inst_id": "OXY-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "GE": {
+      "inst_id": "GE-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "DELL": {
+      "inst_id": "DELL-USDT-SWAP",
+      "asset_class": "us_stock"
+    },
+    "TLT": {
+      "inst_id": "TLT-USDT-SWAP",
+      "asset_class": "rates_credit"
+    }
   }
 }

@@ -31,6 +31,8 @@ _LEADER = {
     "us_index": "US500",
     "energy": "CL",
     "apac_index": "JP225",
+    "industrial_metal": "XCU",
+    "rates_credit": "TLT",
 }
 
 _SENSOR: ResonanceSensor | None = None

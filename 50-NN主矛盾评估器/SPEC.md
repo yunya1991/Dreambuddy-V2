@@ -134,7 +134,7 @@
 | 审计 | `decision_id / constraint_id / evidence_id / mandate_id / execution_rights outcome / kill_switch 状态` |
 | live 灰度 | 仅 R5 评审通过后；50 live 与 23 live 不得同标的并存 |
 
-> 47 `execution_rights.json` v0.4（2026-11-14）已把 `fifty_nn_domain` 扩到 22 域 `config/live_symbols.json` 注册表全量 32 标的（crypto_usdt 20 / precious_metal 2 / us_stock 10），统一 `mandate_id=mandate-20261114-50-live-multi`；`run_live` 的 allowlist 改为动态（总线 `confidence≥0.8` 且 `direction ∈ {long, short}` 且注册表内），并按资产类别做龙头共振传导（`core/resonance_propagator.py`，只调 confidence 不改方向）。参数：单笔 ≤100 USDT、3x、最多 6 仓、日内亏损 ≤50 USDT、SL/TP 必带；回退单标的只需把该标的 outcome 改回 `paper`。
+> 47 `execution_rights.json` v0.7（2026-11-15）已把 `fifty_nn_domain` 扩到 22 域 `config/live_symbols.json` 注册表全量 72 标的 / 9 类（crypto 21 / precious_metal 4 / industrial_metal 1 / energy 4 / us_index 3 / us_etf 8 / apac_index 2 / us_stock 28 / rates_credit 1，与 40 `asset_classes` 的 G1/G2 可交易全集对齐；fx/DXY 无 USDT 永续故排除），统一 `mandate_id=mandate-20261114-50-live-multi`；`run_live` 的 allowlist 改为动态（总线 `confidence≥0.8` 且 `direction ∈ {long, short}` 且注册表内），并按资产类别做龙头共振传导（`core/resonance_propagator.py`，只调 confidence 不改方向）。参数：单笔 ≤100 USDT、3x、最多 6 仓、日内亏损 ≤50 USDT、SL/TP 必带；回退单标的只需把该标的 outcome 改回 `paper`。
 
 ---
 

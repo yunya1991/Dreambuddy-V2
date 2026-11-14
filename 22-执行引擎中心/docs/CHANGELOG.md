@@ -1,5 +1,16 @@
 # 执行引擎中心 — 变更记录
 
+## v1.8（2026-11-15）— live 注册表对齐 40 G1/G2 全集（72 标的 / 9 类）
+
+### 新增
+- `tests`（50 侧）`test_registry_covers_all_40_tradable_assets`：注册表必须覆盖 40 `asset_classes.ASSET_CLASSES` 的全部可交易标的且 `asset_class` 一致，防未来新增类别漏接入
+
+### 修改
+- `config/live_symbols.json` v3：32 → 72 标的，类别与 40 对齐（crypto 21 / precious_metal 4 / industrial_metal 1 / energy 4 / us_index 3 / us_etf 8 / apac_index 2 / us_stock 28 / rates_credit 1）；新增 `classes` 索引（leader / g1_anchor / count）与 `source_of_truth`；fx/DXY 为 `macro_series_only` 无 USDT 永续，不入表
+- `47/registry/execution_rights.json` v0.7：顶层 `symbols` 与 `fifty_nn_domain.symbols` 同步 72 标的 `live:50-bypass`，Mandate 不变
+- `50/core/resonance_propagator.py`：`_LEADER` 补 `industrial_metal→XCU`、`rates_credit→TLT`；注册表 `asset_class` 改用 40 类名（crypto 等）
+- 已核验 72 标的在 OKX `state=live` 且 73 USDT 名义下按各自 ctVal/lotSz 均能开出 ≥ minSz
+
 ## v1.7（2026-11-14）— Phase 2：执行权落 22
 
 ### 新增

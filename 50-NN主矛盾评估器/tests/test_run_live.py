@@ -194,7 +194,7 @@ def test_run_uses_dynamic_allowlist_when_symbols_empty(monkeypatch, tmp_path):
     monkeypatch.setattr(run_live, "make_decision", fake_decision)
     result = run_live.run(tmp_path / "bus.json", tmp_path / "out", (), "m-1")
     assert result["allowlist"] == ["ARB-USDT-SWAP"]
-    assert seen == [("ARB-USDT-SWAP", "crypto_usdt")]
+    assert seen == [("ARB-USDT-SWAP", "crypto")]
 
 
 def test_run_respects_kill_switch(monkeypatch, tmp_path):
@@ -202,3 +202,37 @@ def test_run_respects_kill_switch(monkeypatch, tmp_path):
     result = run_live.run(tmp_path / "bus.json", tmp_path / "out", ("BTC-USDT-SWAP",), "m-1")
     assert result["status"] == "skipped"
     assert "kill" in result["reason"].lower()
+
+
+def test_run_declares_small_notional_and_records_overlay_meta(monkeypatch, tmp_path):
+    """M4-4：小额名义上限与灰度参数随决策落盘，供 22 执行与事后归因。"""
+    now = datetime.now(timezone.utc)
+    monkeypatch.setattr(
+        run_live, "load_evidences", lambda _: [_evidence("BTC", now + timedelta(hours=1))]
+    )
+    monkeypatch.setattr(run_live, "load_rights", lambda: {"symbols": {}})
+    monkeypatch.setattr(run_live, "load_constraints", lambda: {})
+    monkeypatch.setattr(run_live, "is_kill_switch_on", lambda: False)
+    monkeypatch.setattr(
+        run_live,
+        "make_decision",
+        lambda evidences, **kwargs: {
+            "signal_id": "50-nn|BTC-USDT-SWAP|1",
+            "symbol": "BTC-USDT-SWAP",
+            "direction": "long",
+            "payload": {},
+            "execution": {"outcome": "live:50-bypass", "allowed": True},
+        },
+    )
+
+    result = run_live.run(
+        tmp_path / "bus.json", tmp_path / "out", ("BTC-USDT-SWAP",), "m-1", notional_usdt=20.0
+    )
+    assert result["notional_usdt"] == 20.0
+    assert set(result["overlay"]) == {"enabled", "coef", "coef_source"}
+
+    row = json.loads(
+        (tmp_path / "out" / "outbox.jsonl").read_text(encoding="utf-8").splitlines()[0]
+    )
+    assert row["notional_usdt"] == 20.0
+    assert row["payload"]["notional_usdt"] == 20.0
