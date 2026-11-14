@@ -19181,12 +19181,24 @@ class PollingTrader:
         # ══ P2-S4b+: 自进化系统独立离场巡检（23 EvolutionExitLoop 全权驱动）════
         #   开仓由 _check_evolution_kline_signal 负责；离场编排/决策/执行均在 23，
         #   11 只提供持仓数据、本地上下文补充与落账/反思回调。
+        #   P3 切流开关：23 独立 runner（dreambuddy-exit23.service）上线后
+        #   置 YIJING_23_EXIT_ENABLED=0，11 不再巡检 23 持仓。
+        _evo_exit_enabled = str(os.environ.get("YIJING_23_EXIT_ENABLED", "1")).lower() in (
+            "1",
+            "true",
+            "on",
+            "yes",
+        )
         try:
-            _exit_positions = [
-                self._evolution_exit_position_dict(rec)
-                for rec in self.position_tracker.all_open_positions()
-                if str(getattr(rec, "source_tag", "") or "").lower() in _EVO_EXIT_TAGS
-            ]
+            _exit_positions = (
+                [
+                    self._evolution_exit_position_dict(rec)
+                    for rec in self.position_tracker.all_open_positions()
+                    if str(getattr(rec, "source_tag", "") or "").lower() in _EVO_EXIT_TAGS
+                ]
+                if _evo_exit_enabled
+                else []
+            )
             if _exit_positions:
                 _exit_report = self._get_evolution_exit_loop().run(
                     _exit_positions,

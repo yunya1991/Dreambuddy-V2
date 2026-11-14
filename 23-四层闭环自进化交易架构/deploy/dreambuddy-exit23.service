@@ -1,0 +1,19 @@
+[Unit]
+Description=Dreambuddy 23-domain exit runner (independent from 11)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/luke/dreambuddy/23-四层闭环自进化交易架构
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=-/home/luke/dreambuddy/.env
+EnvironmentFile=-/home/luke/dreambuddy/23-四层闭环自进化交易架构/.env
+ExecStart=/home/luke/venv-trading/bin/python -m dreambuddy_evolution.scripts.exit_runner --interval 60
+Restart=always
+RestartSec=10
+KillSignal=SIGTERM
+TimeoutStopSec=90
+
+[Install]
+WantedBy=multi-user.target
