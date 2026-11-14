@@ -246,7 +246,13 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
         if not dry_run:
             guard = _position_guard(decision)
             if guard:
-                processed[decision_id] = {"status": "position_guard", "reason": guard, "ts": _now()}
+                # 查询持仓失败属临时故障：不落幂等，下一轮重试
+                if guard != "position_query_failed":
+                    processed[decision_id] = {
+                        "status": "position_guard",
+                        "reason": guard,
+                        "ts": _now(),
+                    }
                 result["skipped"] += 1
                 result.setdefault("position_guard_rejected", []).append(
                     {"decision_id": decision_id, "reason": guard}

@@ -86,30 +86,84 @@ EXECUTORS = {
 _FALLBACK_PATTERNS = [
     (
         "contradiction_insight",
-        re.compile(r"(?=.*(矛盾|一致))(?=.*(维度|资金面|技术面|情绪面|宏观|主要矛盾))"),
+        re.compile(
+            r"(?=.*(矛盾|一致|占主导))(?=.*(维度|资金面|技术面|情绪面|宏观|主要矛盾|占主导))"
+        ),
     ),
-    ("path_insight", re.compile(r"最小阻力|往哪走|该多还是空|交汇|综合看|综合判断|最优路径")),
-    ("technical_analysis", re.compile(r"技术面|技术指标|卦象|置信度")),
-    ("fundamental_valuation", re.compile(r"估值|基本面分析|估值百分位|估值高不高")),
-    ("asset_class_trend", re.compile(r"跨资产|资产对比|各类资产|趋势对比|美股和加密|贵金属和加密")),
+    (
+        "path_insight",
+        re.compile(
+            r"最小阻力|往哪走|该多还是空|交汇|综合看|综合判断|最优路径"
+            r"|能不能上车|该不该买|该不该卖|满仓还是空仓|加仓还是减仓"
+        ),
+    ),
+    (
+        "technical_analysis",
+        re.compile(r"技术面|技术指标|卦象|置信度|K线|均线|MACD|RSI|布林|背离|支撑位|压力位"),
+    ),
+    (
+        "fundamental_valuation",
+        re.compile(r"估值|基本面分析|估值百分位|估值高不高|贵不贵|贵吗|便宜吗|值不值"),
+    ),
+    (
+        "asset_class_trend",
+        re.compile(
+            r"跨资产|资产对比|各类资产|趋势对比|美股和加密|贵金属和加密"
+            r"|(?=.*(美股|港股|A股|纳指|标普|黄金|原油|贵金属))(?=.*(怎么样|表现|强弱|哪个强|谁强))"
+            r"|(?=.*(BTC|ETH|SOL))(?=.*(哪个强|谁强))"
+        ),
+    ),
     (
         "event_analysis",
         re.compile(
-            r"FOMC|事件驱动|这次事件|金融事件|事件分析|超预期|price in|priced_in|加息事件|降息事件"
+            r"FOMC|事件驱动|这次事件|金融事件|事件分析|超预期事件|price in|priced_in|加息事件|降息事件"
+            r"|鲍威尔|议息|发布会|讲话|会议纪要"
         ),
     ),
-    ("risk_control", re.compile(r"风控|风险度|止盈|止损|调控状态|仓位状态|持仓风控|移动止盈")),
-    ("price_query", re.compile(r"什么价|价格|现价|实时价|最新价|多少钱|现在.*价")),
+    (
+        "risk_control",
+        re.compile(
+            r"风控|风险度|止盈|止损|调控状态|仓位状态|持仓风控|移动止盈|风险大不大|风险大吗"
+        ),
+    ),
+    (
+        "price_query",
+        # 多实体并列（如"价格和资金费率"）交给 data_query，避免只答一半
+        re.compile(
+            r"^(?!.*(?:和|以及|还有|、).*(?:资金费率|费率|指数|TVL|CPI|非农|持仓|快讯|多空比))"
+            r".*(?:什么价|价格|现价|实时价|最新价|多少钱|涨到多少|跌到多少|啥价)"
+        ),
+    ),
+    (
+        "doc_search",
+        re.compile(
+            r"(查|搜|找|检索|搜索).*(文档|资料|SPEC|规范|手册|指南|知识库|wiki|记忆系统)"
+            r"|(文档|资料|SPEC|知识库).*(在哪|位置|路径)|全文检索"
+        ),
+    ),
+    (
+        "event_evolution",
+        re.compile(
+            r"(事件|快讯).*(演变|变化|趋势|进展|怎么样|如何)"
+            r"|.*(美联储|监管|巨鲸|解锁|ETF|地缘).*(最近|演变|变化|动态)"
+        ),
+    ),
 ]
 
 # 通用意图（TS 侧仅 requiredPattern 无 fallback，模型预测后做前置校验）
+# data_insight：宏观/情绪实体 + 解读动词（双条件，先于 data_query）
 _DATA_INSIGHT_PATTERN = re.compile(
-    r"(?=.*(CPI|非农|恐惧贪婪|稳定币|多空比|资金费率|TVL|美联储|利率|期权|通胀|就业))"
-    r"(?=.*(意味着|说明什么|什么影响|怎么解读|含义|超预期|不及预期|转向|上升|下降|增长|减少|流入|流出))"
+    r"(?=.*(CPI|非农|恐惧贪婪|稳定币|多空比|资金费率|TVL|美联储|利率|加息|降息|期权|通胀|就业))"
+    r"(?=.*(意味着|说明什么|什么影响|怎么解读|含义|超预期|不及预期|转向|上升|下降|增长|减少|流入|流出"
+    r"|会怎么样|会怎样|怎么看))"
+)
+# data_query："查询动词/时间限定" 与 "数据实体" 必须共现，避免"现在/多少"这类泛词吞掉其他意图
+_DATA_ENTITY = (
+    r"CPI|非农|PCE|GDP|恐惧贪婪|稳定币|多空比|资金费率|TVL|美联储|利率|期权|衍生品|链上|快讯|"
+    r"行情|指数|价格|现价|K线|成交量|持仓量|市值|涨幅|跌幅|净流入|净流出|BTC|ETH|SOL"
 )
 _DATA_QUERY_PATTERN = re.compile(
-    r"查|查询|多少|最新|现在|当前|什么价|价格|行情|指数|TVL|CPI|非农|美联储|fred|defillama"
-    r"|恐惧贪婪|稳定币|多空比|资金费率|链上|快讯|期权|衍生品",
+    rf"(?=.*(?:查|查询|搜|检索|多少|几|最新|现在|当前|今天|本周|数据))(?=.*(?:{_DATA_ENTITY}))",
     re.IGNORECASE,
 )
 
@@ -145,14 +199,19 @@ def extract_json(raw: str):
     return None
 
 
-def _unknown_result(trace_id: str = ""):
+def _unknown_result(
+    trace_id: str = "",
+    intent: str = "unknown",
+    reason: str = R_INTENT_UNKNOWN,
+    degraded: bool = True,
+):
     return {
         "success": True,
-        "intent": "unknown",
+        "intent": intent,
         "handled": False,
         "answer": "",
         "data": None,
-        "degraded": True,
+        "degraded": degraded,
         "trace_id": trace_id,
         "route_signal": RouteConfidenceResult(
             route_confidence=0.0,
@@ -161,8 +220,8 @@ def _unknown_result(trace_id: str = ""):
             case_density=0,
             prediction_error=None,
             fast_path=False,
-            degraded=True,
-            reasons=[R_INTENT_UNKNOWN],
+            degraded=degraded,
+            reasons=[reason],
         ).to_dict(),
     }
 
@@ -177,6 +236,9 @@ def route_query(message: str, intent: str = "", trace_id: str = "") -> dict:
         intent = detect_intent(message)
     if not intent:
         return _unknown_result(trace_id)
+    if intent not in EXECUTORS:
+        # 注册表有该意图但 L1 没有确定性执行器（doc_search/event_evolution）→ 交 L2，保留 hint
+        return _unknown_result(trace_id, intent, "l1_no_executor", degraded=False)
 
     # 认知召回（L0 scope；异常/降级 → cognitive_available=False → evaluate_route 静态兜底）
     cognitive_available = True

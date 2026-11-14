@@ -149,6 +149,9 @@ def test_position_guard_fail_closed_on_query_error(monkeypatch, tmp_path):
     result = ex.run(outbox, dry_run=False, limit=10)
     assert result["executed"] == 0
     assert result["position_guard_rejected"][0]["reason"] == "position_query_failed"
+    # 临时故障不得落幂等：下一轮必须重试
+    state = json.loads((tmp_path / "processed.json").read_text(encoding="utf-8"))
+    assert state.get("processed", {}) == {}
 
 
 def test_position_guard_allows_flat_symbol(monkeypatch, tmp_path):
