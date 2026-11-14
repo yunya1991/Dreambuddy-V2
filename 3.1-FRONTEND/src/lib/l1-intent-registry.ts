@@ -57,7 +57,7 @@ export const L1_INTENT_REGISTRY: L1IntentDef[] = [
   },
   {
     intent: 'event_analysis',
-    fallbackPattern: /FOMC|事件驱动|这次事件|金融事件|事件分析|超预期|price in|priced_in|加息事件|降息事件/,
+    fallbackPattern: /FOMC|事件驱动|这次事件|金融事件|事件分析|超预期事件|price in|priced_in|加息事件|降息事件/,
   },
   {
     intent: 'risk_control',

@@ -105,7 +105,10 @@ class TestDetectIntent:
             ("当前持仓风控和止损位", "risk_control"),
             ("查一下最新CPI", "data_query"),
             ("defillama TVL 查询", "data_query"),
-            ("CPI超预期意味着什么", "event_analysis"),  # 与 TS fallback 顺序一致：event 先命中
+            (
+                "CPI超预期意味着什么",
+                "data_insight",
+            ),  # 指标+解读问法优先于 event（"超预期"单独不再算事件）
         ],
     )
     def test_detect_hits(self, message, expected):
@@ -271,7 +274,7 @@ class TestMain:
             "degraded": True,
             "route_signal": {"route_confidence": 0.0, "decision": "L2_HANDOFF"},
         }
-        monkeypatch.setattr(lrs, "route_query", lambda message, intent="": payload)
+        monkeypatch.setattr(lrs, "route_query", lambda message, intent="", trace_id="": payload)
         monkeypatch.setattr(
             sys,
             "argv",
