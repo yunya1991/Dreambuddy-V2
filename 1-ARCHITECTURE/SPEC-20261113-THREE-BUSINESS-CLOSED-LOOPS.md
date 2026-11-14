@@ -1,15 +1,15 @@
 # SPEC：三大业务闭环链——交易链、涌现链、执行链
 
-> **版本**：v0.3.4  
-> **日期**：2026-11-13  
-> **状态**：待复评（P0 已关闭；P1-03~06 规格已补齐；§12.3 D1 缺口已裁决 B+C 并落地契约；DEC-BCL-07 纠正执行层落位——40 只产意图，成交由 22 产生；G-BCL-1 仍为 FAIL，待纸面成交累积到 n≥100）  
+> **版本**：v0.3.5  
+> **日期**：2026-11-15  
+> **状态**：待复评（P0 已关闭；P1-03~06 规格已补齐；§12.3 D1 缺口已裁决 B+C 并落地契约；DEC-BCL-07 纠正执行层落位——40 只产意图，成交由 22 产生；G-BCL-1 仍为 FAIL，待纸面成交累积到 n≥100）；v0.3.5 仅登记实盘口径现状（22 live 注册表 72 标的 / 47 执行权 v0.7），不改 G-BCL 判定
 > **评审意见**：[REVIEW-20261113-THREE-BUSINESS-CLOSED-LOOPS.md](./REVIEW-20261113-THREE-BUSINESS-CLOSED-LOOPS.md) v1.0（4 项 P0 已在 v0.2.0 修订，待复评确认关闭）  
 > **scoped 标识**：`BUSINESS-CLOSED-LOOPS-SSOT`，仅作为三大业务闭环链的编排事实源  
 > **上游架构 SSoT**：[SYSTEM_ARCHITECTURE_OVERVIEW.md](./SYSTEM_ARCHITECTURE_OVERVIEW.md) v4.2  
-> **模块映射**：[3+3架构模块映射.md](./3+3架构模块映射.md)  
+> **模块映射**：[3+3架构模块映射.md](./3+3架构模块映射.md) v1.2  
 > **领域定义权**：交易契约归 49/50，涌现判据与实验归 48，DSH 归 46，MCP 封装归 47  
 > **本次变更范围**：架构调研与文档固化；不改业务代码、不开放 live、不新增 MCP 壳  
-> **证据口径**：当前状态来自 2026-11-13 文档与代码静态核查；运行态数字引用既有核验记录，本次未重跑云端链路
+> **证据口径**：当前状态来自 2026-11-13 文档与代码静态核查；运行态数字引用既有核验记录，本次未重跑云端链路；v0.3.5 的实盘注册表数字取自 2026-11-15 本地与云端一致性校验
 
 ---
 
@@ -204,6 +204,8 @@
   → 13 风控（Fail-Closed）
   → 16 调控/定容
   → 22 / 11 已授权执行出口
+       └─ live 准入：22 `config/live_symbols.json` v3（72 标的 / 9 类）∧ 47 `live:50-bypass`
+          ∧ Mandate ∧ kill-switch 关闭；名义：非指数 100U 下限、指数类 150–300U、3x、并发 ≤12
 
 异步回流：
 信号、证据、约束、拒单、委托、成交、PnL、能力版本
@@ -218,7 +220,8 @@
 - 50 输出 NN 链决策，不直接训练自身、不直接修改 40/50 权重；
 - 13 保留最终风控否决权；
 - 同标的同时刻只能有一个执行出口；
-- 50 初期保持 shadow/paper，live 必须另有显式授权、Mandate、kill-switch 和评审；
+- 50 初期保持 shadow/paper；进入 live 必须同时具备 47 `execution_rights` 显式授权（当前 `mandate-20261114-50-live-multi` + 72 标的 `live:50-bypass`）、22 live 注册表准入、kill-switch 可即时关闭，且授权变更需评审；
+- 22 与 47 是 live 准入的两个独立闸门，任一缺失即禁止下单；注册表外的标的即便在 40 有 G1/G2 定义也不得执行；
 - 48 不进入每次交易的同步热路径，在线链只消费最近已批准的产物。
 
 #### 4.2.1 主干口径对照与收敛责任
@@ -690,11 +693,11 @@ MCP 是三层能力的边界适配层，不是内部调用链改造层。纵向�
 
 ## 11. 当前状态与主要缺口
 
-> 本节是 2026-11-13 静态核查快照，不是本轮运行验收报告。
+> 本节是 2026-11-13 静态核查快照（NN 快环一行来自 2026-11-15 live 注册表与执行记录校验），不是本轮运行验收报告。
 
 | 链路 | 已有证据 | 主要缺口 | 当前结论 |
 |---|---|---|---|
-| NN 快环 | 既有记录显示 50 shadow/paper、48→40 消费端、40 先验到 50 已有证据 | R2 融合、完整对照和 live 灰度未完成 | 部分贯通 |
+| NN 快环 | 50 shadow/paper 与 live 双通道并存；live 已按 22 注册表运行（72 标的 / 9 类，`mandate-20261114-50-live-multi`），2026-11-15 验证轮次 `executed=6` 且均带 OCO SL/TP | R2 融合与完整对照未完成；energy / us_index / apac_index / rates_credit / industrial_metal 已有下单能力但 42 总线尚无对应信号 | 部分贯通（live 灰度进行中） |
 | D1 慢环 | TrainingEvent 已实现且幂等，反思/做梦能力存在 | 既有记录本地 12/云端 3 未同步，统一 join 和自动回灌不足 | 部分实现 |
 | 观测环 | E0—E6、M1—M7 和多类 verdict 已落盘 | 部分实验候选、证伪或数据不足 | 有观测，不等于涌现成立 |
 | D2 | D2-A/D2-B 有 formal candidate | 人工盲评、需求单回填、独立复核 | 候选 |
@@ -948,7 +951,9 @@ generate_from_template(template_id, params, symbol, timeframe)
 | 标的域 | `VALIDATION_UNIVERSE` 覆盖加密/贵金属（XAU、XAG）/能源（CL、BZ、NG）/工业金属（XCU）/美股指数与 ETF（US500、SPY）/美股龙头（NVDA）/亚太（JP225）/利率（TLT），解决 B 的标的域上限 |
 | 禁止 | 把 40 的意图记录当成交事实；用 paper 成交冒充 live；纸面扩标放松 X2 实盘门禁；`open` 状态记 `pnl` |
 
-**残留风险（B 覆盖上限）**：50 当前决策标的含 NVDA/XAU/XAG/BNB/HYPE，40 执行白名单为 8 个加密主流币；B 落地后实测仅 BTC/ETH/SOL 三个标的可建立 `decision_id` 关联（8 条白名单中 3 条）。DEC-BCL-07 通过 `VALIDATION_UNIVERSE` 把 XAU/XAG/XCU/CL/BZ/NG/US500/SPY/NVDA/JP225/TLT 纳入纸面验证场（不改 X2 实盘白名单）；HYPE 仍按 meme/增长型红线排除，BNB 待评估。
+**残留风险（B 覆盖上限，v0.3.5 更新）**：50 当前决策标的含 NVDA/XAU/XAG/BNB/HYPE，历史 40 X2 实盘白名单为 8 个加密主流币，B 落地后实测仅 BTC/ETH/SOL 三个标的可建立 `decision_id` 关联（8 条白名单中 3 条）。DEC-BCL-07 先用 `VALIDATION_UNIVERSE` 把 XAU/XAG/XCU/CL/BZ/NG/US500/SPY/NVDA/JP225/TLT 纳入纸面验证场（不改 X2 实盘白名单）。
+
+2026-11-15 起，22 `config/live_symbols.json` v3 已覆盖 40 `asset_classes.py` 的 G1/G2 可交易全集 **72 标的 / 9 类**（crypto 21 / precious_metal 4 / industrial_metal 1 / energy 4 / us_index 3 / us_etf 8 / apac_index 2 / us_stock 28 / rates_credit 1；fx/DXY 无 USDT 永续排除），并由 47 `execution_rights.json` v0.7 全量授权 `live:50-bypass`，B 的标的域上限在 live 侧基本解除。HYPE 仍按 meme/增长型红线排除；BNB 已进入注册表。**注册表覆盖 ≠ 总线有信号**：energy / us_index / apac_index / rates_credit / industrial_metal 目前具备下单能力但 42 总线尚无该类信号，成交证据仍集中在 crypto / 贵金属 / 美股。
 
 **裁决前纪律（硬约束）**
 
@@ -1007,3 +1012,4 @@ generate_from_template(template_id, params, symbol, timeframe)
 | v0.3.2 | 2026-11-13 | DEC-BCL-06 裁决为 B 短期 + C 中期并落地契约：40 X0 回写 `decision_id`/`decision_ts`（含标的归一与伪符号排除）、新增 `portfolio_executions.jsonl` 组合级执行记录（幂等 + fail-open）；fixture 验证 `join_coverage_strict=1.0`；G-BCL-1 因无成交事实仍保持 FAIL |
 | v0.3.3 | 2026-11-13 | DEC-BCL-07 架构落位纠偏：40 是周期/意图/验证场，**执行层是 22**；新增 `22/x1_paper_executor.py`（13→16→22 纸面成交，落 `22/audit/x1_paper_fills.jsonl`，含 `decision_id/order_id/fill_id/fill_px/exit_px/pnl`）；`FinalDecisionSignal` 增 `decision_id`；D1 证据源切到 22 账本；`40/asset_classes.VALIDATION_UNIVERSE` 扩多板块标的（XAU/XAG/XCU/CL/BZ/NG/US500/SPY/NVDA/JP225/TLT），X2 实盘白名单不变；fixture 验证 `join_coverage_strict=1.0`，G-BCL-1 仍 FAIL（n=2<100） |
 | v0.3.4 | 2026-11-13 | trace 贯穿落地并建立台账：task 元数据/入口/L1 settle/L2 settle 全链带 `trace_id`；新增 `execution_chain_trace.jsonl` 五阶段台账；G-BCL-3 判定改为执行单元口径（L1 直答按 trace 聚合、交接行不计）、新增跨 task trace 复用与降级原因覆盖率检查；运行时样本 n=1，G-BCL-3 仍 FAIL（样本不足） |
+| v0.3.5 | 2026-11-15 | 登记实盘口径现状：22 `live_symbols.json` v3 覆盖 40 G1/G2 可交易全集 72 标的 / 9 类，47 `execution_rights.json` v0.7 全量授权 `live:50-bypass`（`mandate-20261114-50-live-multi`）；§4.2 在线链补 live 准入与资金口径（非指数 100U 下限、指数类 150–300U、3x、并发 ≤12）；§11 NN 快环与 §12.3 残留风险按实测更新。不新增开发授权，G-BCL-1/3/5 判定不变 |
