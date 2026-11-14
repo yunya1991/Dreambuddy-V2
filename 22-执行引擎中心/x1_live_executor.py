@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""22 执行层 live 执行器：消费 50 live 决策 → 22 风控/审计 → 触发 11 域 bypass 下单。
+"""22 执行层 live 执行器：消费 50 live 决策 → 22 风控/审计 → 22 域下单桥真实下单。
 
 职责边界（49 SPEC / execution_rights）：
 - 22 负责：执行权复核、kill-switch、标的/名义金额/杠杆/持仓数校验、幂等、审计
 - 13 负责：事前风控判定 + 真实权益 + 定容（经 risk_bridge，fail-closed）
-- 11 负责：持有 OKX 密钥并真实下单（经 live_order_bridge.py，22 不接触密钥）
+- 22 负责：持有 OKX 凭据（加密库）并真实下单（经 executors/live_order_bridge.py）
 
 用法：
   python3 x1_live_executor.py [--outbox PATH] [--dry-run] [--limit N]
@@ -28,13 +28,29 @@ from risk_bridge import precheck  # noqa: E402
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _MODULE_DIR = Path(__file__).resolve().parent
-_BRIDGE = _REPO_ROOT / "11-易经推理系统" / "scripts" / "memory_l4" / "live_order_bridge.py"
+_BRIDGE = _MODULE_DIR / "executors" / "live_order_bridge.py"
 _DEFAULT_OUTBOX = _REPO_ROOT / "50-NN主矛盾评估器" / "runtime" / "live" / "outbox.jsonl"
 _LEDGER_DIR = _MODULE_DIR / "audit"
 _LEDGER = _LEDGER_DIR / "x1_live_fills.jsonl"
 _STATE = _MODULE_DIR / "runtime" / "x1_live_processed.json"
 
-ALLOWED_SYMBOLS = {"BTC-USDT-SWAP"}
+_SYMBOL_REGISTRY = _MODULE_DIR / "config" / "live_symbols.json"
+
+
+def _load_allowed_symbols() -> set[str]:
+    """从 config/live_symbols.json 读取可交易 instId；文件缺失时 fail-closed 仅 BTC。"""
+    try:
+        data = json.loads(_SYMBOL_REGISTRY.read_text(encoding="utf-8"))
+        return {
+            str(v.get("inst_id")).upper()
+            for v in (data.get("symbols") or {}).values()
+            if v.get("inst_id")
+        }
+    except (OSError, json.JSONDecodeError):
+        return {"BTC-USDT-SWAP"}
+
+
+ALLOWED_SYMBOLS = _load_allowed_symbols()
 MAX_NOTIONAL_USDT = 100.0
 MAX_LEVERAGE = 3
 DEFAULT_SL_PCT = 1.5

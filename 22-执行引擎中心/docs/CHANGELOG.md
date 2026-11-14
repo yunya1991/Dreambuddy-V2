@@ -1,5 +1,30 @@
 # 执行引擎中心 — 变更记录
 
+## v1.6（2026-11-14）— 多资产 live：注册表单一事实源 + 动态 allowlist
+
+### 新增
+- `config/live_symbols.json`：live 可交易标的单一事实源（32 标的：crypto_usdt 20 / precious_metal 2 / us_stock 10），含 `max_positions_default`
+- `tests/test_live_order_bridge_moved.py::test_registry_drives_allowed_symbols_and_max_positions`：白名单与并发上限来自注册表，`22_MAX_POSITIONS` 可覆盖
+
+### 修改
+- `x1_live_executor.py` / `executors/live_order_bridge.py`：`ALLOWED_SYMBOLS` 改读注册表（缺失 fail-closed 仅 BTC）；并发上限默认 6（注册表 → 环境变量覆盖）
+- `50/tools/run_live.py`：allowlist 改为总线 `confidence≥0.8` 的 long/short 动态选取 + 资产类别共振传导；默认 Mandate 改 `mandate-20261114-50-live-multi`
+- `47/registry/execution_rights.json` v0.4：`fifty_nn_domain` 32 标的 `live:50-bypass`，Mandate 不匹配回落 paper
+
+## v1.5（2026-11-14）— Plan A：OKX 凭据收口到 22 域
+
+### 新增
+- `executors/credentials.py`：交易所凭据唯一存放地（AES-256-GCM，`runtime/venue`，密钥 0600），CLI 支持 `status` / `import-env`
+- `executors/okx_client.py`：OKX 客户端唯一实现（自 11 `okx_simulated.py` 迁入），凭据优先级 = 环境变量 > 22 加密库 > 默认值，禁止回落 `.env`
+- `executors/live_order_bridge.py`：真实下单唯一出口（原 11 同名脚本迁入），kill-switch `22_LIVE_KILL_SWITCH`、审计 `runtime/live_order_audit.jsonl`
+- `tests/test_executor_credentials.py` / `test_okx_client_moved.py` / `test_live_order_bridge_moved.py`：共 18 项契约测试
+
+### 修改
+- `x1_live_executor.py`：`_BRIDGE` 指向 22 `executors/live_order_bridge.py`
+- 11 `scripts/memory_l4/okx_simulated.py`：降为转发 shim（11→22 单向依赖）
+- 11 `data_server_fixed.py`：账户查询改读 22 加密凭据库
+- `11/.env`：移除全部 `OKX_*` 明文凭据（迁移前备份于 /tmp，权限 0600）
+
 ## v1.4（2026-11-14）— 13/16/22 整合：域路由执行器迁入 + 13 门禁 fail-closed
 
 ### 新增

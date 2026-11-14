@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""11 域 live bypass 下单桥（供 22 执行层触发，11 域独占密钥）。
+"""22 域 live 下单桥（真实交易所下单的唯一出口）。
 
 设计边界：
-- 22 不接触 OKX 密钥，只通过本脚本子进程提交标准化订单请求
-- 本脚本读取 11/.env 的真实凭证（OKX_SIMULATED=false / OKX_DRY_RUN=false）
+- 交易所凭据只在 22 域加密凭据库（executors.credentials），本脚本不读 .env
 - 所有请求 fail-closed：kill-switch、allowlist、名义金额、杠杆、持仓数任一不满足即拒单
-- 每次调用写 runtime/live_order_audit.jsonl 审计
+- 每次调用写 22/runtime/live_order_audit.jsonl 审计
 
 用法：
   echo '{"action":"status"}' | python3 live_order_bridge.py
@@ -25,34 +24,60 @@ from pathlib import Path
 from typing import Any
 
 _MODULE_DIR = Path(__file__).resolve().parent
-_11_ROOT = _MODULE_DIR.parents[1]
+_MODULE_ROOT = _MODULE_DIR.parent
 if str(_MODULE_DIR) not in sys.path:
     sys.path.insert(0, str(_MODULE_DIR))
 
-from okx_simulated import OKXSimulatedClient  # noqa: E402
+try:  # 包内导入（executors.live_order_bridge）
+    from .okx_client import OKXSimulatedClient  # noqa: E402
+except ImportError:  # 脚本方式执行（python3 executors/live_order_bridge.py）
+    from okx_client import OKXSimulatedClient  # noqa: E402
 
-ALLOWED_SYMBOLS = {"BTC-USDT-SWAP"}
+_SYMBOL_REGISTRY = _MODULE_ROOT / "config" / "live_symbols.json"
+
+
+def _load_registry() -> dict[str, Any]:
+    """读取标的注册表；文件缺失/损坏时返回空（调用方 fail-closed）。"""
+    try:
+        data = json.loads(_SYMBOL_REGISTRY.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+_REGISTRY = _load_registry()
+
+
+def _load_allowed_symbols() -> set[str]:
+    """可交易 instId 单一事实源；文件缺失时 fail-closed 仅 BTC。"""
+    symbols = {
+        str(v.get("inst_id")).upper()
+        for v in (_REGISTRY.get("symbols") or {}).values()
+        if v.get("inst_id")
+    }
+    return symbols or {"BTC-USDT-SWAP"}
+
+
+def _load_max_positions() -> int:
+    """并发持仓上限：环境变量优先，其次注册表 max_positions_default（默认 3）。"""
+    raw = os.environ.get("22_MAX_POSITIONS")
+    if raw:
+        try:
+            return int(raw)
+        except ValueError:
+            pass
+    try:
+        return int(_REGISTRY.get("max_positions_default") or 3)
+    except (TypeError, ValueError):
+        return 3
+
+
+ALLOWED_SYMBOLS = _load_allowed_symbols()
 MAX_NOTIONAL_USDT = 100.0
 MAX_LEVERAGE = 3
-MAX_POSITIONS = 3
-KILL_SWITCH_FILE = _11_ROOT / "runtime" / "LIVE_KILL_SWITCH"
-AUDIT_PATH = _11_ROOT / "runtime" / "live_order_audit.jsonl"
-
-
-def _load_env() -> None:
-    """加载 11/.env（不覆盖已有环境变量）。"""
-    env_path = _11_ROOT / ".env"
-    if not env_path.exists():
-        return
-    for line in env_path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key and key not in os.environ:
-            os.environ[key] = value
+MAX_POSITIONS = _load_max_positions()
+KILL_SWITCH_FILE = _MODULE_ROOT / "runtime" / "LIVE_KILL_SWITCH"
+AUDIT_PATH = _MODULE_ROOT / "runtime" / "live_order_audit.jsonl"
 
 
 def _audit(record: dict[str, Any]) -> None:
@@ -72,15 +97,14 @@ def _reject(reason: str, code: str = "rejected") -> dict[str, Any]:
 
 
 def _guard_kill_switch() -> str | None:
-    if os.environ.get("11_LIVE_KILL_SWITCH", "0") == "1":
-        return "11_LIVE_KILL_SWITCH=1"
+    if os.environ.get("22_LIVE_KILL_SWITCH", "0") == "1":
+        return "22_LIVE_KILL_SWITCH=1"
     if KILL_SWITCH_FILE.exists():
         return f"kill switch file exists: {KILL_SWITCH_FILE}"
     return None
 
 
 def _client() -> OKXSimulatedClient:
-    _load_env()
     return OKXSimulatedClient()
 
 
@@ -104,7 +128,7 @@ def _order(client: OKXSimulatedClient, req: dict[str, Any]) -> dict[str, Any]:
         return _reject(kill, "kill_switch")
     if client.simulated or client.dry_run:
         return _reject(
-            "11 域当前为 simulated/dry_run，拒绝真实下单（检查 11/.env）",
+            "22 域当前为 simulated/dry_run，拒绝真实下单（检查 22 域凭据库 executors.credentials）",
             "not_live",
         )
 

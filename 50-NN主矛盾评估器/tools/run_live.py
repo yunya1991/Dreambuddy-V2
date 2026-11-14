@@ -42,11 +42,32 @@ from adapters.execution_writer import (  # noqa: E402
     load_rights,
 )
 from core.decision import make_decision  # noqa: E402
+from core.resonance_propagator import propagate as propagate_resonance  # noqa: E402
 
 DEFAULT_BUS_STATE = _42_ROOT / "runtime" / "bus_state.json"
 DEFAULT_OUT_DIR = _50_ROOT / "runtime" / "live"
-DEFAULT_SYMBOLS = ("BTC-USDT-SWAP",)
-DEFAULT_MANDATE = os.environ.get("50_LIVE_MANDATE", "mandate-20261113-50-live-btc")
+DEFAULT_MANDATE = os.environ.get("50_LIVE_MANDATE", "mandate-20261114-50-live-multi")
+# 动态 allowlist：总线里置信度 ≥ 阈值的 long/short 且注册表内可交易标的
+MIN_CONFIDENCE = float(os.environ.get("50_LIVE_MIN_CONFIDENCE", "0.8"))
+_SYMBOL_REGISTRY = _REPO_ROOT / "22-执行引擎中心" / "config" / "live_symbols.json"
+
+
+def _load_registry() -> dict[str, dict[str, str]]:
+    """读取 22 域 live 标的注册表（base -> {inst_id, asset_class}）。"""
+    try:
+        data = json.loads(_SYMBOL_REGISTRY.read_text(encoding="utf-8"))
+        return {
+            str(k).upper(): {
+                "inst_id": str(v.get("inst_id") or "").upper(),
+                "asset_class": str(v.get("asset_class") or "crypto_usdt"),
+            }
+            for k, v in (data.get("symbols") or {}).items()
+        }
+    except (OSError, json.JSONDecodeError):
+        return {"BTC": {"inst_id": "BTC-USDT-SWAP", "asset_class": "crypto_usdt"}}
+
+
+_REGISTRY = _load_registry()
 
 # 42 总线符号 → OKX 合约 instId
 _SYMBOL_MAP = {
@@ -102,7 +123,38 @@ def _is_fresh(ev: dict[str, Any], now: datetime) -> bool:
 
 
 def _to_inst_id(symbol: str) -> str | None:
-    return _SYMBOL_MAP.get((symbol or "").strip().upper())
+    """符号 → instId：优先 22 域注册表，其次兼容旧映射表。"""
+    raw = (symbol or "").strip().upper()
+    base = raw.replace("/", "-").split("-")[0]
+    entry = _REGISTRY.get(base)
+    if entry and entry.get("inst_id"):
+        return entry["inst_id"]
+    return _SYMBOL_MAP.get(raw)
+
+
+def _asset_class_of(inst_id: str) -> str:
+    for entry in _REGISTRY.values():
+        if entry.get("inst_id") == inst_id:
+            return entry.get("asset_class") or "crypto_usdt"
+    return "crypto_usdt"
+
+
+def _dynamic_allowlist(fresh: list[dict[str, Any]]) -> set[str]:
+    """从新鲜证据中挑选置信度 ≥MIN_CONFIDENCE 的 long/short 可交易标的。"""
+    allow: set[str] = set()
+    for ev in fresh:
+        if str(ev.get("direction") or "").lower() not in ("long", "short"):
+            continue
+        try:
+            conf = float(ev.get("confidence") or 0)
+        except (TypeError, ValueError):
+            continue
+        if conf < MIN_CONFIDENCE:
+            continue
+        inst_id = _to_inst_id(str(ev.get("symbol") or ""))
+        if inst_id:
+            allow.add(inst_id)
+    return allow
 
 
 def _evidence_key(ev: dict[str, Any]) -> str:
@@ -155,7 +207,9 @@ def run(
         result["reason"] = "no_fresh_evidences（42 总线无可用的未过期信号）"
         return result
 
-    allow = {s.strip().upper() for s in symbols}
+    # 显式 --symbols 时按指定清单；否则按总线高置信度动态选取
+    allow = {s.strip().upper() for s in symbols if s.strip()} or _dynamic_allowlist(fresh)
+    result["allowlist"] = sorted(allow)
     grouped: dict[str, list[dict[str, Any]]] = {}
     for inst_id in allow:
         group: list[dict[str, Any]] = []
@@ -181,7 +235,7 @@ def run(
         decision = make_decision(
             group,
             symbol=inst_id,
-            asset_class="crypto_usdt",
+            asset_class=_asset_class_of(inst_id),
             constraints=constraints,
             rights=rights,
             mandate=mandate,
@@ -189,6 +243,8 @@ def run(
             now=now,
             mode="live",
         )
+        # 龙头共振传导：只调 confidence，不改 direction；矩阵不可用时原样返回
+        propagate_resonance(decision, fresh, _asset_class_of(inst_id))
         outcome = (decision.get("execution") or {}).get("outcome")
         if outcome != "live:50-bypass" or decision.get("direction") not in ("long", "short"):
             result["skipped"].append(
@@ -225,7 +281,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="50 live 决策调度入口")
     parser.add_argument("--bus-state", default=str(DEFAULT_BUS_STATE))
     parser.add_argument("--out-dir", default=str(DEFAULT_OUT_DIR))
-    parser.add_argument("--symbols", default=",".join(DEFAULT_SYMBOLS))
+    parser.add_argument(
+        "--symbols",
+        default="",
+        help="显式标的清单（逗号分隔）；留空则按总线置信度动态选取",
+    )
     parser.add_argument("--mandate", default=DEFAULT_MANDATE)
     args = parser.parse_args()
 

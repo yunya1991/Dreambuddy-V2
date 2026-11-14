@@ -116,6 +116,87 @@ def test_decision_id_changes_when_evidence_changes(monkeypatch, tmp_path):
     assert first["decisions"][0]["decision_id"] != second["decisions"][0]["decision_id"]
 
 
+def test_dynamic_allowlist_uses_bus_confidence_and_registry():
+    """置信度 ≥0.8 的 long/short 且注册表内可交易的标的才进 allowlist。"""
+    now = datetime.now(timezone.utc)
+    fresh = [
+        {
+            "symbol": "ARB",
+            "direction": "long",
+            "confidence": 0.9,
+            "expires_at": (now + timedelta(hours=1)).isoformat(),
+        },
+        {
+            "symbol": "ETH",
+            "direction": "long",
+            "confidence": 0.7,
+            "expires_at": (now + timedelta(hours=1)).isoformat(),
+        },
+        {
+            "symbol": "SNDK",
+            "direction": "long",
+            "confidence": 0.99,
+            "expires_at": (now + timedelta(hours=1)).isoformat(),
+        },
+        {
+            "symbol": "MACRO",
+            "direction": "short",
+            "confidence": 0.8,
+            "expires_at": (now + timedelta(hours=1)).isoformat(),
+        },
+        {
+            "symbol": "XAG",
+            "direction": "short",
+            "confidence": 0.85,
+            "expires_at": (now + timedelta(hours=1)).isoformat(),
+        },
+    ]
+    assert run_live._dynamic_allowlist(fresh) == {"ARB-USDT-SWAP", "XAG-USDT-SWAP"}
+
+
+def test_run_uses_dynamic_allowlist_when_symbols_empty(monkeypatch, tmp_path):
+    now = datetime.now(timezone.utc)
+    monkeypatch.setattr(
+        run_live,
+        "load_evidences",
+        lambda _: [
+            {
+                "signal_id": "s1",
+                "symbol": "ARB",
+                "direction": "long",
+                "confidence": 0.9,
+                "expires_at": (now + timedelta(hours=1)).isoformat(),
+            },
+            {
+                "signal_id": "s2",
+                "symbol": "ETH",
+                "direction": "long",
+                "confidence": 0.6,
+                "expires_at": (now + timedelta(hours=1)).isoformat(),
+            },
+        ],
+    )
+    monkeypatch.setattr(run_live, "load_rights", lambda: {"symbols": {}})
+    monkeypatch.setattr(run_live, "load_constraints", lambda: {})
+    monkeypatch.setattr(run_live, "is_kill_switch_on", lambda: False)
+    monkeypatch.setattr(run_live, "propagate_resonance", lambda d, e, c: d)
+    seen = []
+
+    def fake_decision(evidences, **kwargs):
+        seen.append((kwargs["symbol"], kwargs["asset_class"]))
+        return {
+            "signal_id": "50-nn|x",
+            "symbol": kwargs["symbol"],
+            "direction": "long",
+            "execution": {"outcome": "live:50-bypass", "allowed": True},
+        }
+
+    monkeypatch.setattr(run_live, "make_decision", fake_decision)
+    result = run_live.run(tmp_path / "bus.json", tmp_path / "out", (), "m-1")
+    assert result["allowlist"] == ["ARB-USDT-SWAP"]
+    assert seen == [("ARB-USDT-SWAP", "crypto_usdt")]
+
+
 def test_run_respects_kill_switch(monkeypatch, tmp_path):
     monkeypatch.setattr(run_live, "is_kill_switch_on", lambda: True)
     result = run_live.run(tmp_path / "bus.json", tmp_path / "out", ("BTC-USDT-SWAP",), "m-1")

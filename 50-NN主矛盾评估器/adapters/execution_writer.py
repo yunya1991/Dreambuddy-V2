@@ -24,10 +24,20 @@ def is_kill_switch_on(env_var: str = "50_KILL_SWITCH", on_value: str = "1") -> b
     return os.environ.get(env_var, "0") == on_value
 
 
+def _symbol_cfg(symbol: str, rights: dict[str, Any]) -> dict[str, Any]:
+    """标的执行权声明：50 分区优先，其次全局 symbols（单出口声明）。"""
+    domain_symbols = (rights.get("fifty_nn_domain") or {}).get("symbols") or {}
+    for scope in (domain_symbols, rights.get("symbols") or {}):
+        cfg = scope.get(symbol)
+        if isinstance(cfg, dict) and cfg.get("outcome"):
+            return cfg
+    return {}
+
+
 def resolve_outcome(symbol: str, rights: dict[str, Any]) -> str:
-    symbol_cfg = rights.get("symbols", {}).get(symbol) or {}
-    if isinstance(symbol_cfg, dict) and symbol_cfg.get("outcome"):
-        return symbol_cfg["outcome"]
+    cfg = _symbol_cfg(symbol, rights)
+    if cfg:
+        return cfg["outcome"]
     domain = rights.get("fifty_nn_domain", {})
     return domain.get("default_outcome") or rights.get("defaults", {}).get("outcome", "paper")
 
@@ -52,9 +62,13 @@ def validate_execution(
     domain = rights.get("fifty_nn_domain", {})
 
     if outcome in LIVE_OUTCOMES:
+        expected_mandate = _symbol_cfg(decision.get("symbol", ""), rights).get("mandate_id")
         if domain.get("mandate_required_for_live", True) and not mandate:
             outcome = "paper"
             reason = "live_requires_mandate"
+        elif expected_mandate and mandate != expected_mandate:
+            outcome = "paper"
+            reason = f"mandate_mismatch:expected={expected_mandate}"
         else:
             reason = "live_authorized"
     else:

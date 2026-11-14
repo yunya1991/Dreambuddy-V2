@@ -289,7 +289,7 @@ flowchart TB
 | G3 | 40 未启用 48 网关 | **已关闭（r4）**：`40/scripts/consume_48_feedback.py`（108 行）真 `import adapter_48_feedback` + `attach_to_payload`，入 `run_daily_pipeline.sh` STEPS，落盘 `40/nn_feedback_consumption.json`（`status=consumed`, `dual_read.consistent=true`, diffs 含 join_coverage/n_complete/n_contradiction_priors/n_events），FAIL-OPEN。**遗留**：网关产物 `40_feedback.json` 无调度，r9 已接入 STEPS 关闭（见 G13） | 48 已成为 40 对接口 | P0 | 48 + 40 |
 | G4 | 40 未输出因子/矛盾先验 | **已关闭（r4/r5）**：`factor_contradiction_priors.py` 入 STEPS、产物路径仓库相对；r5 新增 50 域 `adapters/prior_reader.py`（54 行），shadow 载荷实测携带 `priors_40` 摘要（34 因子先验/top5 因子/1376 矛盾事件，fail-open）。**遗留**：先验产物依赖网关刷新，r9 已接入 STEPS 关闭（见 G13） | 先验已产出且被 50 消费 | P0 | 40 + 50 |
 | G5 | 思维树未实现 | **已关闭（r6）**：`thought_tree.py` 束搜索落地（多步展开/剪枝/回溯 + 不劣化保证），接线 L1 主循环实测 V 0.5586→0.7780，9 项单测全过 | 候选路径多样性与可解释性已补齐 | P1 | 33 + 48 |
-| G6 | 50 live 仅灰度 | 2026-11-13 起 `BTC-USDT-SWAP` 走 `live:50-bypass`（`mandate-20261113-50-live-btc`），其余标的仍 shadow；`50_KILL_SWITCH` 机制在；决策均附 `execution_rights`（G12 已修复） | 仅单标的灰度，未全面放开 | P1 | 50 + 47 |
+| G6 | 50 live 仅灰度 | **已关闭（r11）**：2026-11-13 `BTC-USDT-SWAP` 首发 `live:50-bypass`；2026-11-14 扩到 22 `config/live_symbols.json` 全量 32 标的（`mandate-20261114-50-live-multi`），50 allowlist 改为总线 `confidence≥0.8` 的 long/short 动态选取 + 龙头共振传导；`50_KILL_SWITCH` 在；决策均附 `execution_rights` | 单笔 ≤100 USDT、3x、最多 6 仓、SL/TP 必带 | — | 50 + 47 + 22 |
 | G7 | 组合因子降级 | `factor_prior.json degraded=true, n_factors=0` | 组合因子/主次矛盾体不可用 | P1 | 18 |
 | G8 | 快讯先验默认关闭 | `reason=newsflash_prior_disabled_by_default`；13 条 sens_f | 快讯维度未参与 | P2 | 18 |
 | G9 | 9 域自有 API 缺失 | `9-基本面分析/engines/dimension_context.py` 不存在 | 概念归属与实现归属不一致 | P2 | 9 + 18 |
