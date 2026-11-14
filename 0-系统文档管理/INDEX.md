@@ -1,6 +1,6 @@
 # 全项目文档索引 — INDEX
 
-> **版本**: v2.17 | **更新日期**: 2026-11-13
+> **版本**: v2.18 | **更新日期**: 2026-11-14
 > **定位（视角 B）**: **文档导航中枢，不是架构内容本身**。由 0-系统文档管理 维护，告诉你「到哪里找什么文档」。
 > **架构唯一事实源（SSoT）**: 所有架构争议以 [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v4.2** 为准（L0/L1/L2 三层 + L2 内部新 SACG + 认知 C1-C4 + 置信度门控）。被取代的旧架构文档已加「已归档」横幅，禁止作为实现依据。
 > **维护**: 每次新增/删除文档时同步更新；由 `4-工具与自动化/doc_coverage.py` 自动校验（已建成）
@@ -94,10 +94,10 @@
 | 文档 | 路径 | 版本 |
 |------|------|------|
 | README | [11-易经推理系统/README.md](../11-易经推理系统/README.md) | - |
-| 工程索引 | [11-易经推理系统/docs/ENGINEERING_INDEX.md](../11-易经推理系统/docs/ENGINEERING_INDEX.md) | v2.6 |
-| 技术设计 | [11-易经推理系统/docs/TECHNICAL_DESIGN.md](../11-易经推理系统/docs/TECHNICAL_DESIGN.md) | v2.9 |
+| 工程索引 | [11-易经推理系统/docs/ENGINEERING_INDEX.md](../11-易经推理系统/docs/ENGINEERING_INDEX.md) | v3.6 |
+| 技术设计 | [11-易经推理系统/docs/TECHNICAL_DESIGN.md](../11-易经推理系统/docs/TECHNICAL_DESIGN.md) | v4.6.1 |
 | 接口规格 | [11-易经推理系统/docs/API_SPEC.md](../11-易经推理系统/docs/API_SPEC.md) | v2.9 |
-| 变更日志 | [11-易经推理系统/docs/CHANGELOG.md](../11-易经推理系统/docs/CHANGELOG.md) | v2.9 |
+| 变更日志 | [11-易经推理系统/docs/CHANGELOG.md](../11-易经推理系统/docs/CHANGELOG.md) | v4.5.0 |
 
 ### 12-三屏趋势系统
 
@@ -156,7 +156,7 @@
 |------|------|------|
 | 技术设计 | [23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md](../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) | v1.13 |
 | 接口规格 | [23-四层闭环自进化交易架构/docs/API_SPEC.md](../23-四层闭环自进化交易架构/docs/API_SPEC.md) | v1.1 |
-| 变更日志 | [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) | v1.13 |
+| 变更日志 | [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) | v1.16 |
 | SPEC | `2-KNOWLEDGE/_analysis/SPEC-交易知识构建双通道方案.md`（目录被 gitignore，本地草稿） | v1.0（已完成） |
 | SPEC（做空疏通） | [23-四层闭环自进化交易架构/docs/SPEC-自进化系统做空能力疏通探讨.md](../23-四层闭环自进化交易架构/docs/SPEC-自进化系统做空能力疏通探讨.md) | v0.2（执行层集成完成 2026-10-09） |
 | REA设计增强任务 | [23-四层闭环自进化交易架构/docs/REA设计增强任务清单.md](../23-四层闭环自进化交易架构/docs/REA设计增强任务清单.md) | v1.0（T2.1-T2.3完成 2026-10-10） |
@@ -264,7 +264,7 @@
 | 人机协作 | [8-FEISHU/README.md](../8-FEISHU/README.md) · [6-TRADING/scripts/feishu_notify.py](../6-TRADING/scripts/feishu_notify.py) |
 | RAG检索 | [2-KNOWLEDGE/9-RAG-INFRA/INDEX.md](../2-KNOWLEDGE/9-RAG-INFRA/INDEX.md) v2.0 |
 | 交易知识 | [2-KNOWLEDGE/1-TRADING/经典模式/](../2-KNOWLEDGE/1-TRADING/经典模式/) · [2-KNOWLEDGE/1-TRADING/硬约束总表.md](../2-KNOWLEDGE/1-TRADING/硬约束总表.md) |
-| 自进化 | [23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md](../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) v1.13 · [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) v1.13 |
+| 自进化 | [23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md](../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) v1.13 · [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) v1.16 |
 | 双决策链 | [49-交易框架协议/SPEC.md](../49-交易框架协议/SPEC.md) v0.14.2 · [50-NN主矛盾评估器/SPEC.md](../50-NN主矛盾评估器/SPEC.md) v0.2.0 · [ADR-0002](../49-交易框架协议/docs/adr/ADR-0002-dual-decision-chain.md) |
 | 辩论系统 | `.trae/documents/debate-engine-v2-spec.md` v2.0 · `.trae/documents/debate-adjudication-training-spec.md` v1.2 · **jev集成SPEC v1.1**（以上均为本地草稿，`.trae/` 不入库） |
 | Jev 决策模型 | `.trae/documents/debate-jev-integration-spec.md`（本地草稿） v1.1 · `1-ARCHITECTURE/dream-harness-bridge/packages/python-server/{debate_quality_gate,adjudication_validator,jev_score_supplement,jev_preference_judge}.py` |

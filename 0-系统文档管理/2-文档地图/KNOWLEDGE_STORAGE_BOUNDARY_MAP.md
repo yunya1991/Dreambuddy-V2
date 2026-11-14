@@ -61,7 +61,7 @@
 │                    _rag_hotpath_lookup() [FAIL-OPEN 只读]            │     │
 │                               ↓                                       │     │
 │            ├─→ _open_position L12839      [RAG-PRE-OPEN]              │     │
-│            ├─→ _evolution_build_position L8603 [RAG-PRE-EVO-OPEN]    │     │
+│            ├─→ _evolution_entry_loop(23)+adapter(11) [M1-e]           │     │
 │            └─→ _evolution_check_exit L9187   [RAG-PRE-EXIT]          │     │
 │                               ↓                                       │     │
 │                    注入 inference["rag_context"]                      │     │

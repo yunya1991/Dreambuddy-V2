@@ -190,10 +190,10 @@
 - **解除条件**：仅当 `direction_state == "SHORT_ONLY"` 时才解除
 - **性质**：方向状态机驱动，但 SHORT_ONLY 状态极少触发
 
-### 门禁 3：_evolution_build_position 实施 SHORT_BAN
-- **位置**：[polling_trader.py:10801-10825](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L10801-L10825)
-- **内容**：黑名单币种做空直接 `return`（不建仓）
-- **性质**：执行层硬拦截，在仓位映射前阻断
+### 门禁 3：EvolutionEntryLoop 实施 SHORT_BAN（原 `_evolution_build_position`，M1-e 后下沉 23）
+- **位置**：[entry_loop.py:340-350](../../23-四层闭环自进化交易架构/dreambuddy_evolution/execution/entry_loop.py#L340-L350)（`short_ban_fn` 注入；11 侧实现 `_evolution_short_ban`）
+- **内容**：黑名单币种做空直接 blocked（不建仓），豁免时返回 `pos_mult`
+- **性质**：执行层硬拦截，在仓位映射前阻断（11 侧原函数已于 2026-11-14 M1-e 删除）
 
 ### 门禁 4：三因子豁免 AND 逻辑极苛
 - **位置**：[three_factor_short.py:60-74](../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/three_factor_short.py#L60-L74)
@@ -575,7 +575,7 @@
 |---|---|---|
 | [polling_trader.py](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L890) | 890 | SHORT_ONLY_BLACKLIST 静态黑名单 |
 | [polling_trader.py](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L15884) | 15884 | SHORT_BAN 铁律默认活跃 |
-| [polling_trader.py](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L10801-L10825) | 10801-10825 | _evolution_build_position 实施 SHORT_BAN |
+| [entry_loop.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/execution/entry_loop.py#L340-L350) | 340-350 | EvolutionEntryLoop 实施 SHORT_BAN（M1-e 下沉；11 原 `_evolution_build_position` 已删除） |
 | [polling_trader.py](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L10651) | 10651 | MAX_DIRECTION_RATIO 集中度限制 |
 | [three_factor_short.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/three_factor_short.py#L60-L74) | 60-74 | 三因子 AND 豁免逻辑 |
 | [kline_event_handler.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py) | — | 信号主链路 |

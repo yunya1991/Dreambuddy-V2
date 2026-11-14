@@ -567,7 +567,7 @@ def _init_data_pipeline(self):
 
 - `KlineEventHandler.on_kline_close()` — 不改，它已设计为接收全字段 dict
 - `ResistanceVector.calculate()` — 不改，它已能处理缺失字段（0.5 兜底）
-- `_evolution_build_position()` — 不改
+- `_evolution_build_position()` — 已于 2026-11-14（M1-e）下沉至 23 `dreambuddy_evolution/execution/entry_loop.py` 的 `EvolutionEntryLoop`；11 侧改为薄 adapter `_evolution_entry_build`（依赖注入 + 成交后 SL/TP 兜底与落账），原函数已删除
 - `_trigger_evolution_reflection()` — 不改
 - `TradeSettlementBridge` — 不改
 

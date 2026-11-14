@@ -864,7 +864,7 @@ def record_polling(self, symbol: str, inference: dict,
 - **方向状态兼容**：`direction_state`/`direction_bias` 在 `FiveDomainState` 中按资产类别存储为 dict（`{'crypto_usdt': 'SHORT_ONLY', ...}`），`polling_trader._record_shadow_log` 按当前币种资产类别取值，兼容 dict 和非 dict 两种结构
 - ★ **direction_state 闘门双路径覆盖**（2026-09-12 修复）：
   - BCRM2.0 路径：`_execute_trade` L14255-L14291 检查 direction_state（★ 开关 `enable_bcrm_direction_state_check` 默认 False，影子模式：跳过拦截，仅 shadow_logger 记录方向状态供 A/B 对比观察；验证完成后设为 True 启用）
-  - evolution 路径：`_evolution_build_position` L9678-L9757 检查 direction_state（新增，默认启用）
+  - evolution 路径：direction_state 闸门已随 M1-e（2026-11-14）下沉至 23 `dreambuddy_evolution/execution/entry_loop.py` 的 `EvolutionEntryLoop`（`direction_state_fn` 注入）；11 侧由 `_evolution_entry_build` 注入 `_evolution_direction_state`，开仓函数内不再保留闸门逻辑（原 `_evolution_build_position` L9678-L9757 已删除）
   - FREEZE→禁止开仓，SHORT_ONLY→禁止做多，LONG_ONLY→禁止做空，NEUTRAL→多空均可
   - 两路径 FAIL-OPEN 设计一致：异常时放行，不阻塞交易热路径
 - ★ **战略层影子模式配置修正**（2026-09-12 修复）：

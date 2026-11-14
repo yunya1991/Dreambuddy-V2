@@ -1,7 +1,37 @@
 # 23-四层闭环自进化交易架构 — 变更日志
 
-> **版本**: v1.15 | **更新日期**: 2026-10-14
+> **版本**: v1.16 | **更新日期**: 2026-11-14
 > **定位**: 模块级变更日志，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+
+---
+
+## [v1.16] - 2026-11-14 (M1-e：开仓循环下沉 EvolutionEntryLoop)
+
+### 核心成果
+
+23 从「有脑无手」变为**自主承接开仓编排**：`EvolutionEntryLoop` 以可注入 callable 的形式接收 11 侧闸门/定容依赖，在 23 内部完成闸门链 → 定容 → SL/TP 定价 → 22 网关下单，11 只保留薄 adapter 与成交落账。对应 SPEC：`.trae/documents/SPEC-23域信号频率-BCRM方向-执行权收口.md` §M1-e。
+
+### 1. 新增 `execution/entry_loop.py`（`EvolutionEntryLoop`）
+
+- 构造注入 18 个 callable：authority / blacklist / fuse / has_position / cooldown / direction_state / subpool / short_ban / equity / track_mult / asset_class / macro_constraint / used_notional / min_sz / price / sltp / on_shadow / on_opened / on_blocked
+- 闸门链（顺序冻结）：execution_authority → 黑名单 → `u_open × cbr_sim` 耦合 → 组合熔断 → 去重 → 冷静期（28800s）→ direction_state → 子池上限 5 → 方向集中度 70%（count≥3 且 tier≠trend）→ probe 上限 2 → 禁空分层豁免 → 40/43 配额门
+- 定容：`equity × leverage(min 2000) × 轨道乘数 × u_open × 分层 pos_mult × cap_mode`，钳位 2000；probe 地板 `minSz×px×1.2`（`EVOLUTION_PROBE_MIN_SZ_FLOOR`），standard 地板 250U
+- SL/TP：`sltp_fn` 优先，缺省按 tier/ATR 兜底；下单经 `TradeExecutionGateway`（22），`decision_id` 由 `ExecutionOutbox` 幂等去重
+- 单闸异常 FAIL-OPEN（`_call()` 捕获并 WARN），不阻塞交易热路径；返回 `{status, gate, reason, notional_usdt, result, decision_id}`
+- ATTR 日志：`[P2-S4b][ATTR] exec_path=23.entry_loop→22.gateway`
+
+### 2. 11 侧收口
+
+- 删除 `polling_trader._evolution_build_position`（约 790 行）
+- 新增 `_evolution_entry_loop()`（惰性构建 + 注入 16 个 11 侧 callable，gateway 变化时重建）
+- 新增 `_evolution_entry_build()`（KlineEventHandler `build_position_callback` 目标，恒返回 None）
+- 新增 `_on_evolution_entry_shadow()` / `_on_evolution_entry_opened()`（SL/TP 兜底 + `_verify_algo_sltp` + `position_tracker.open_position`，快照保留 d_star/u_open/ri/ftc/tier）
+
+### 3. 验收证据
+
+- 23 全量 **162 passed**（含新增 `tests/test_evolution_entry_loop.py` 27 项）；11 `-k evolution` **54 passed**；`py_compile` / `ruff` / `black` 通过
+- 本地端到端冒烟：伪造 tracker + fake gateway → 下单、SL/TP 兜底、落账均通过
+- 云端：commit `e5433117` → origin/main → ff-only 部署 → `yijing-polling-trader.service` active，日志 `[P2-S4b]` 正常、部署后 0 ERROR
 
 ---
 

@@ -1,11 +1,13 @@
 # 入场侧 BCRM2.0 反向信号分层治理 — 设计文档
 
+> **⚠️ 已失效（2026-11-14，M2 + M1-e）**：BCRM2.0 已降级为因子，**不得拦截/否决/压缩 23 信号**；本文描述的「反向 conf>0.8 硬否决 / ×0.3-0.7 降仓」已在 `_evolution_build_position` 删除，且该函数随 M1-e 下沉至 23 `EvolutionEntryLoop`。本文仅保留为历史设计记录。
+>
 > 对称于离场侧规则 2b（partial_close），形成开仓-离场学习闭环。
 > 1 页文档，TDD 落地依据。
 
-## 1. 当前状态
+## 1. 当前状态（历史，2026-09 时点）
 
-`_evolution_build_position`（polling_trader.py#L8401-L8430）中：
+`_evolution_build_position`（polling_trader.py#L8401-L8430，**该函数已于 M1-e 删除**）中：
 - BCRM2.0 反向 + conf > 0.8 → **硬否决**（`return` 跳过建仓）
 - BCRM2.0 反向 + conf ≤ 0.8 → 放行（DEBUG 日志）
 

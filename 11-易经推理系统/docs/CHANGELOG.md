@@ -2,7 +2,22 @@
 
 > **定位**：记录每次变更的原因、内容、验证方式
 > **格式**：`[版本] - 日期 → 变更类型（新增/修改/修复/删除）`
-> **版本**：v4.4.8 | **更新**：2026-09-12
+> **版本**：v4.5.0 | **更新**：2026-11-14
+
+---
+
+## [v4.5.0] - 2026-11-14
+
+### M1-e：evolution 开仓循环下沉 23 `EvolutionEntryLoop`（执行器收口）
+
+- **变更**: 删除 `polling_trader._evolution_build_position`（约 790 行），evolution 开仓的全部闸门、定容与 SL/TP 定价迁入 23 `dreambuddy_evolution/execution/entry_loop.py` 的 `EvolutionEntryLoop`，由 11 以可注入 callable 形式提供依赖，最终经 22 `TradeExecutionGateway` 下单
+  - **下沉的闸门链**（顺序不变）：execution_authority → 黑名单 → `u_open × cbr_sim` 耦合 → 组合熔断 → 去重 → 冷静期（`COOLDOWN_SEC=28800`）→ direction_state（FREEZE/SHORT_ONLY/LONG_ONLY）→ 子池上限（5）→ 方向集中度 70%（count≥3 且 tier≠trend）→ probe 上限（2）→ 禁空分层豁免 → 40/43 配额门（`EVOLUTION_QUOTA_GATE`，默认 on）
+  - **定容**：`equity × leverage(min 2000) × FTC 轨道乘数 × u_open × 分层 pos_mult × cap_mode` → 钳位上限 2000；probe 交易所地板 `minSz×px×1.2`（`EVOLUTION_PROBE_MIN_SZ_FLOOR`），standard 地板 250U
+  - **11 侧保留**：薄 adapter `_evolution_entry_build`（KlineEventHandler `build_position_callback` 指向它）、`_on_evolution_entry_shadow`（执行权拦截写影子信号）、`_on_evolution_entry_opened`（成交后按 sl_pct/tp_pct 重算 SL/TP 兜底 + `_verify_algo_sltp` + `position_tracker.open_position` 落账）；单闸异常 FAIL-OPEN 由 23 `_call()` 统一处理
+  - **归因**：成交链路日志保留 `[P2-S4b][ATTR] exec_path=23.entry_loop→22.gateway`
+- **影响范围**: `23-四层闭环自进化交易架构/dreambuddy_evolution/execution/entry_loop.py`（新增）、`execution/__init__.py`、`11-易经推理系统/scripts/memory_l4/polling_trader.py` L12300-L12640、`23-.../tests/test_evolution_entry_loop.py`（新增 27 项）
+- **验证**: 23 全量 `pytest tests -q` 162 passed（含新增 27）；11 `pytest -k evolution` 54 passed；`py_compile` / `ruff` / `black` 通过；本地端到端冒烟（伪造 tracker + fake gateway）验证下单、SL/TP 兜底、落账
+- **部署**: commit `e5433117` → `origin/main` → 云端 `merge --ff-only` → 重启 `yijing-polling-trader.service`（HEAD 一致、日志持续写入、部署后 0 ERROR）
 
 ---
 
