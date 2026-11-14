@@ -656,6 +656,16 @@ class TradeExecutionGateway:
         收口原因：撤掉 SL 会直接降低保护，必须与下单同源可审计，
         不能让调用方通过 ``__getattr__`` 透传到 raw client。
         """
+        # 影子模式（23 域 dry-run）绝不允许真的撤掉交易所保护单，只落审计
+        if self._shadow_only:
+            result: Dict[str, Any] = {
+                "ok": True,
+                "shadow": True,
+                "inst_id": inst_id,
+                "msg": "shadow_only_no_cancel",
+            }
+            self._audit_cancel(inst_id, source, result)
+            return result
         fn = getattr(self._okx, "cancel_algo_orders", None)
         if not callable(fn):
             return {"ok": False, "error": "cancel_algo_orders_unsupported"}

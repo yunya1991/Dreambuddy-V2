@@ -64,6 +64,22 @@ def test_fail_closed_rejects_cancel_algo_orders():
     assert raw.cancels == []
 
 
+def test_shadow_gateway_cancel_never_touches_exchange(tmp_path):
+    """23 域 dry-run（shadow_only）不得真的撤掉交易所保护单。"""
+    raw = _FakeRaw()
+    audit = tmp_path / "audit.jsonl"
+    gw = TradeExecutionGateway(okx_client=raw, audit_path=audit, shadow_only=True)
+
+    out = gw.cancel_algo_orders("ETH-USDT-SWAP", source="23-evolution")
+
+    assert out["ok"] is True
+    assert out.get("shadow") is True
+    assert raw.cancels == []
+    rec = json.loads(audit.read_text(encoding="utf-8").strip())
+    assert rec["action"] == "cancel_algo"
+    assert rec["source"] == "23-evolution"
+
+
 def test_domain_tagged_cancel_uses_gateway_with_evo_source(tmp_path):
     raw = dc.DomainTaggedOkxClient(_FakeRaw(), None)
     audit = tmp_path / "audit.jsonl"

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import sys
 from types import SimpleNamespace
 
+from dreambuddy_evolution.scripts import exit_runner
 from dreambuddy_evolution.scripts.exit_runner import (
     build_ctx,
     collect_positions,
@@ -143,3 +145,34 @@ def test_run_once_passes_enriched_ctx():
     assert loop.seen[0]["inst_id"] == "ETH-USDT-SWAP"
     assert loop.ctx["current_sl_px"] == 95.0
     assert loop.ctx["ess"] == 0.6
+
+
+def test_build_runtime_wires_23_writes_through_gateway(monkeypatch):
+    """P3 回归：23 写操作必须经 22 Gateway，且网关持 raw（不成环）。"""
+    import types
+
+    import executors.okx_client as okx_mod
+
+    class _StubClient:
+        def __init__(self, cfg):
+            self.cfg = cfg
+
+    fake_cred = types.ModuleType("credentials")
+    fake_cred.load_okx_config = lambda: {
+        "api_key": "k",
+        "secret_key": "s",
+        "passphrase": "p",
+        "base_url": "http://127.0.0.1:1",
+        "simulated": True,
+        "dry_run": True,
+        "default_inst_id": "ETH-USDT-SWAP",
+    }
+    monkeypatch.setitem(sys.modules, "credentials", fake_cred)
+    monkeypatch.setattr(okx_mod, "OKXSimulatedClient", _StubClient)
+
+    loop, gateway, tagged = exit_runner.build_runtime(dry_run=True)
+
+    assert gateway._shadow_only is True
+    assert tagged._gateway is gateway
+    assert gateway._okx is not tagged  # 网关持 raw，避免 tagged↔gateway 递归
+    assert loop._dispatcher._gateway is gateway

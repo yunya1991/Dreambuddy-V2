@@ -259,15 +259,16 @@ def build_runtime(dry_run: bool):
     """构造 22 执行栈。生产必须拿到凭证；dry-run 仅影子校验不落单。"""
     from credentials import load_okx_config  # 22/executors/credentials.py
     from executors.domain_clients import DomainTaggedOkxClient
-    from executors.okx_client import OKXClient
+    from executors.okx_client import OKXSimulatedClient
     from trade_execution_gateway import TradeExecutionGateway
 
     cfg = load_okx_config()
     if not cfg or not cfg.get("api_key"):
         raise RuntimeError("缺少 OKX 凭证（22 credentials.load_okx_config 为空）")
-    raw = OKXClient(cfg)
-    tagged = DomainTaggedOkxClient(raw, None)  # 23 域下单标签
-    gateway = TradeExecutionGateway(okx_client=tagged, shadow_only=bool(dry_run))
+    raw = OKXSimulatedClient(cfg)
+    # 网关持 raw（避免 tagged 与 gateway 互相回调成环），23 写操作由 tagged 提交网关
+    gateway = TradeExecutionGateway(okx_client=raw, shadow_only=bool(dry_run))
+    tagged = DomainTaggedOkxClient(raw, None, gateway=gateway)
     loop = EvolutionExitLoop(gateway=gateway, okx_client=tagged)
     return loop, gateway, tagged
 
