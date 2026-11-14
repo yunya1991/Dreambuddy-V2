@@ -53,6 +53,12 @@ _TIER_ATTACK = 75
 _TIER_DEFEND = 60
 _TIER_LIGHT = 50
 
+# 方向倾斜阈值：五维是分位型评分（50=中性），历史总分长期贴 50
+# （2026-10-29~11-13 共 721 次发布，100% total=51 → 原 65/45 永远 neutral）。
+# 方向只表达"相对 50 的倾斜幅度"，与四档仓位分级解耦；±3 为最小可分辨倾斜。
+_DIR_LONG = 53
+_DIR_SHORT = 47
+
 
 def _tier_of(total: int) -> Dict[str, Any]:
     """总分 → 四档决策（SPEC §三）。"""
@@ -66,12 +72,12 @@ def _tier_of(total: int) -> Dict[str, Any]:
 
 
 def _direction_of(total: int, dao: int) -> str:
-    """方向判定：总分偏移 + 道维一票否决（dao<40 → neutral）。"""
+    """方向判定：总分倾斜 + 道维一票否决（dao<40 → neutral）。"""
     if dao < 40:
         return "neutral"
-    if total >= 65:
+    if total >= _DIR_LONG:
         return "long"
-    if total <= 45:
+    if total <= _DIR_SHORT:
         return "short"
     return "neutral"
 

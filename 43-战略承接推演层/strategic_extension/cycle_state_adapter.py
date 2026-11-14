@@ -169,7 +169,9 @@ def build_bridge_inputs(
         records = coverage.get("records")
         confidence = real_cycle.get("confidence")
         if isinstance(records, (int, float)) and records > 0:
-            rec_score = min(1.0, float(records) / 800.0)
+            # records 为月频样本数；4 年（48 个月）已足以覆盖 4 年周期相位。
+            # 原 /800 按 1954 年起全量月数校准，云端仅 45 个月时会把将维压到 42 分。
+            rec_score = min(1.0, float(records) / 48.0)
             conf_score = 1.0 if confidence == "high" else (0.7 if confidence == "medium" else 0.4)
             out["factor_coverage_pct"] = round(rec_score * conf_score, 4)
 
