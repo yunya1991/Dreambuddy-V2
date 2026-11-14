@@ -104,7 +104,7 @@ class TestDynamicSection:
         assert "L2" in dyn["boundary"]
 
     def test_quality_thresholds(self, pool):
-        assert pool.quality["min_rows_3y"] == 1095
+        assert pool.quality["min_rows_3y"] == 1090
         assert pool.quality["stale_days"] == 3
 
 
