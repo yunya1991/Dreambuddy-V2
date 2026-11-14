@@ -299,9 +299,9 @@
     }
   },
   "twentythree_domain": {
-    "gate": "EVOLUTION_EXEC_VIA_22",
+    "gate": "EVOLUTION_ENTRY23_ENABLED",
     "source": "23-evolution",
-    "executor": "22-执行引擎中心 TradeExecutionGateway",
+    "executor": "23 dreambuddy_evolution/scripts/entry_runner.py → 22 TradeExecutionGateway",
     "default_outcome": "paper",
     "allowed_outcomes": [
       "paper",
@@ -310,9 +310,9 @@
     ],
     "decision_id_required": true,
     "expires_at_required": true,
-    "kill_switch_env": "EVOLUTION_EXEC_VIA_22",
+    "kill_switch_env": "EVOLUTION_ENTRY23_ENABLED",
     "kill_switch_value": "off",
-    "mapping_note": "2026-11-14 执行器收口 22：23 自进化只产出 FinalDecisionSignal(source=23-evolution)，由 22 TradeExecutionGateway 唯一执行（13 风控→16 定容→交易所）。23 与 11/50 同一标的不得并存；decision_id 必填、expires_at 过期即拒。DomainTaggedOkxClient 传入 gateway 时写操作经网关，仅 gateway=None 且显式回滚时才走旧通道；11 的 _evolution_build_position/_evolution_check_exit 已降为转发 shim，Gateway 不可用时 fail-closed。",
+    "mapping_note": "2026-11-14 开仓侧收口：23 由独立 entry_runner 取 18-数据获取中心行情，经 23 pipeline/EvolutionEntryLoop 产出 FinalDecisionSignal(source=23-evolution)，由 22 TradeExecutionGateway 唯一执行（13 风控→16 定容→交易所）。11 已删除 _execute_evolution_(order|close)_via_tee 直连回退与 23 开仓 PositionTracker 写盘；持仓/冷静期/子池一律读 22 PositionLedger（LedgerGuards）。23 与 11/50 同一标的不得并存；decision_id 必填、expires_at 过期即拒。EVOLUTION_ENTRY23_ENABLED=off 即全局拒开仓（dry-run 同样拦截）。",
     "symbols": {}
   },
   "eleven_domain": {

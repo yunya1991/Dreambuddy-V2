@@ -28,9 +28,6 @@ for _p in (
         sys.path.insert(0, str(_p))
 
 from dreambuddy_evolution.execution.exit_loop import EvolutionExitLoop  # noqa: E402
-from dreambuddy_evolution.execution.tracker_sync import (  # noqa: E402
-    archive_closed_position,
-)
 
 logger = logging.getLogger("exit23")
 
@@ -245,11 +242,7 @@ def run_once(loop: EvolutionExitLoop, gateway: Any, okx: Any, args) -> Dict[str,
             getattr(decision, "action", ""),
             getattr(decision, "reason", ""),
         )
-        # 22 账本已自动落平仓 + 冷却；这里只清 11 侧幽灵文件（数据级，失败不影响交易）
-        try:
-            archive_closed_position(inst_id)
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("持仓文件归档失败(FAIL-OPEN) %s: %s", inst_id, exc)
+        # 22 账本已自动落平仓 + 冷却；23 不再触碰 11 侧持仓文件
 
     report = loop.run(
         positions,

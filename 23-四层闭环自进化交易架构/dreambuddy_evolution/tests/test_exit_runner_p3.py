@@ -176,18 +176,3 @@ def test_build_runtime_wires_23_writes_through_gateway(monkeypatch):
     assert tagged._gateway is gateway
     assert gateway._okx is not tagged  # 网关持 raw，避免 tagged↔gateway 递归
     assert loop._dispatcher._gateway is gateway
-
-
-def test_archive_closed_position_moves_file(tmp_path):
-    from dreambuddy_evolution.execution.tracker_sync import archive_closed_position
-
-    root = tmp_path / "open_positions"
-    root.mkdir()
-    (root / "ETH-USDT-SWAP.json").write_text("{}", encoding="utf-8")
-
-    dst = archive_closed_position("ETH-USDT-SWAP", positions_dir=root)
-
-    assert dst is not None and dst.exists()
-    assert not (root / "ETH-USDT-SWAP.json").exists()
-    assert dst.parent.name == "_closed_by_23"
-    assert archive_closed_position("ETH-USDT-SWAP", positions_dir=root) is None

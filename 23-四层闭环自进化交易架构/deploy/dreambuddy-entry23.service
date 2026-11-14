@@ -1,0 +1,24 @@
+[Unit]
+Description=Dreambuddy 23-domain entry runner (18 market data -> 23 pipeline -> 22 gateway)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=luke
+WorkingDirectory=/home/luke/dreambuddy/23-四层闭环自进化交易架构
+Environment="HOME=/home/luke"
+Environment=PYTHONUNBUFFERED=1
+Environment=EVOLUTION_ENTRY23_ENABLED=off
+EnvironmentFile=-/home/luke/dreambuddy/.env
+EnvironmentFile=-/home/luke/dreambuddy/23-四层闭环自进化交易架构/.env
+ExecStart=/home/luke/venv-trading/bin/python -m dreambuddy_evolution.scripts.entry_runner --interval 300 --symbols BTC,ETH,SOL
+Restart=always
+RestartSec=10
+KillSignal=SIGTERM
+TimeoutStopSec=90
+StandardOutput=append:/home/luke/logs/yijing/entry23.log
+StandardError=append:/home/luke/logs/yijing/entry23.log
+
+[Install]
+WantedBy=multi-user.target
