@@ -187,6 +187,8 @@ tests/archive/
 *.sqlite3
 *.log
 *.jsonl
+# 例外: L1 意图 golden set 是源码级回归资产（人工标注，非运行时产物）
+!34-前端应用训练系统/l1_intent_golden.jsonl
 *.bin
 *.npz
 *.csv

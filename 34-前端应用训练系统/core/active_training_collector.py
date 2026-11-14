@@ -203,3 +203,10 @@ class ActiveTrainingCollector:
             self.register_provider(REABatchCollector())
         except Exception:
             pass
+
+        try:
+            from intent_golden_collector import IntentGoldenCollector
+
+            self.register_provider(IntentGoldenCollector())
+        except Exception:
+            pass

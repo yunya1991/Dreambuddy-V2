@@ -3,7 +3,7 @@
  *
  * 覆盖：
  *   - v2 静态行为零回归：canHandleL1 / fallbackIntent
- *   - v3 信号门控：高置信 L1_DIRECT 放行、低置信/L2_HANDOFF 拦截、阈值边界 0.7
+ *   - v3 信号门控：高置信 L1_DIRECT 放行、低置信/L2_HANDOFF 拦截、阈值边界 0.65
  *   - FAIL-OPEN：信号缺失/null/非法 → 退回静态 canHandleL1
  *   - 未注册意图：恒 false（信号不能越权放行）
  */
@@ -51,7 +51,7 @@ describe('l1-intent-registry v2 静态门控（零回归）', () => {
   });
 
   it('阈值常量跨系统唯一 (SSoT §16.5)', () => {
-    expect(ROUTE_CONFIDENCE_THRESHOLD_HIGH).toBe(0.7);
+    expect(ROUTE_CONFIDENCE_THRESHOLD_HIGH).toBe(0.65);
   });
 });
 
@@ -70,13 +70,13 @@ describe('canHandleL1WithSignal v3 信号门控', () => {
     expect(canHandleL1WithSignal('risk_control', '当前持仓风控状态', signal)).toBe(false);
   });
 
-  it('decision=L1_DIRECT 但置信度低于 0.7 仍拦截', () => {
-    const signal = makeSignal({ route_confidence: 0.69 });
+  it('decision=L1_DIRECT 但置信度低于 0.65 仍拦截', () => {
+    const signal = makeSignal({ route_confidence: 0.64 });
     expect(canHandleL1WithSignal('technical_analysis', '技术面', signal)).toBe(false);
   });
 
-  it('阈值边界：route_confidence 恰好 0.7 放行', () => {
-    const signal = makeSignal({ route_confidence: 0.7 });
+  it('阈值边界：route_confidence 恰好 0.65 放行', () => {
+    const signal = makeSignal({ route_confidence: 0.65 });
     expect(canHandleL1WithSignal('path_insight', '最小阻力路径', signal)).toBe(true);
   });
 
