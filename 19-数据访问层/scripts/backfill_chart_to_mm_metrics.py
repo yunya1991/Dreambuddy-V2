@@ -14,11 +14,10 @@ mm_metrics 表，使 query_valuation_percentile 可通过 MarketMacroRepository
 
 设计要点：
   - 只处理 source='coingecko' AND category='coin' AND sub_category LIKE 'chart_%'
-  - timeseries 每个点展平为一条 mm_metrics 记录
-  - metric_name='market_cap'（当前 query_valuation_percentile 唯一消费字段）
+  - timeseries 每个点展平为 mm_metrics 记录（price / market_cap / volume 三个 metric）
   - date 'YYYY-MM-DD' → 补 T00:00:00Z → unix 秒
   - 幂等（主键 INSERT OR REPLACE）
-  - 跳过 market_cap<=0 或非数值的点（数据缺失）
+  - 跳过 <=0 或非数值的点（数据缺失）
 """
 
 from __future__ import annotations
@@ -90,13 +89,14 @@ def _pg_conn():
 def _iter_chart_metric_rows(src_db: str) -> Iterable[tuple]:
     """从 18 records 的 chart_{coin_id} timeseries 展平产出 mm_metrics 行。
 
-    每行：(source='coingecko', sub_category, metric_name='market_cap', value, unix_ts)
+    每个时序点产出 3 行：metric_name ∈ {price, market_cap, volume}。
+    每行：(source='coingecko', sub_category, metric_name, value, unix_ts)
 
-    注：coingecko_collector 第 146 行 `.date().isoformat()` 丢弃了小时信息，
-    720 小时点的 date 字段只有 31 个唯一值。为避免主键 (source,sub_category,
-    metric_name,timestamp) 去重丢失数据，对同一币的 timeseries 用全局索引 i
-    生成唯一 timestamp = unix(date) + i 秒。这样 720 点全部保留，且同一天的点
-    timestamp 接近（差几秒），不影响 query_valuation_percentile（取所有点）。
+    注：coingecko_collector 用 `.date().isoformat()` 丢弃了小时信息，
+    小时级数据（days<=90）同一天会有多个点。为避免主键
+    (source,sub_category,metric_name,timestamp) 去重丢失数据，
+    用全局索引 i 生成唯一 timestamp = unix(date) + i 秒。
+    metric_name 不同的行可共享同一 timestamp（PK 含 metric_name）。
     """
     conn = _pg_conn()
     cur = conn.cursor()
@@ -124,15 +124,16 @@ def _iter_chart_metric_rows(src_db: str) -> Iterable[tuple]:
             if not isinstance(point, dict):
                 continue
             date_str = point.get("date")
-            mc = point.get("market_cap")
-            if not _is_numeric(mc) or float(mc) <= 0:
-                continue
             base_unix = _date_to_unix_sec(date_str)
             if base_unix is None:
                 continue
             # 合成唯一 timestamp：base + i 秒（i 是该币 timeseries 全局索引）
             unix_ts = base_unix + i
-            yield ("coingecko", sub_category, "market_cap", float(mc), unix_ts)
+            for metric_name in ("price", "market_cap", "volume"):
+                val = point.get(metric_name)
+                if not _is_numeric(val) or float(val) <= 0:
+                    continue
+                yield ("coingecko", sub_category, metric_name, float(val), unix_ts)
     conn.close()
 
 
@@ -184,9 +185,10 @@ def backfill(src_db: str, dst_db: str, dry_run: bool = False) -> dict:
             inserted += len(batch)
         conn.commit()
         cur = conn.execute(
-            "SELECT COUNT(*) FROM mm_metrics WHERE metric_name='market_cap' AND sub_category LIKE 'chart_%'"
+            "SELECT metric_name, COUNT(*) FROM mm_metrics "
+            "WHERE sub_category LIKE 'chart_%' GROUP BY metric_name"
         )
-        db_count = cur.fetchone()[0]
+        db_counts = dict(cur.fetchall())
     finally:
         conn.close()
 
@@ -194,7 +196,8 @@ def backfill(src_db: str, dst_db: str, dry_run: bool = False) -> dict:
         "total_metric_rows": total,
         "inserted_or_replaced": inserted,
         "chart_subcategories": len(subcats),
-        "db_chart_market_cap_rows": db_count,
+        "db_chart_rows_by_metric": db_counts,
+        "db_chart_total_rows": sum(db_counts.values()),
         "dry_run": False,
         "dst_db": str(dst_db),
     }
@@ -222,7 +225,7 @@ def main() -> None:
     for k, v in stats.items():
         print(f"  {k}: {v}")
 
-    if not args.dry_run and stats.get("db_chart_market_cap_rows", 0) > 0:
+    if not args.dry_run and stats.get("db_chart_total_rows", 0) > 0:
         print("\n[OK] 18 chart_ timeseries → 19-DAL mm_metrics 展平回填完成。")
 
 

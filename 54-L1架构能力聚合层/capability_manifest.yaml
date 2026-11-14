@@ -1,0 +1,72 @@
+# 54 能力注册表（能力层唯一事实源，SPEC-54 §3.3 / §11.4）
+# 规则：
+#   1. 只能引用方法库已登记且 implemented=true 的 method_id（manifest.validate() 强制）；
+#   2. min_n 是「能力级最小样本」，方法级门禁仍由 l1agg.methods.registry 独立执行；
+#   3. 新增能力 = 加一条 + 在 l1agg/capabilities/stats.py 提供同名 executor；
+#   4. mode=deterministic 绕过记忆相似度门禁，gated 仍需 route_confidence >= 0.65。
+version: 1
+updated: "2026-11-15"
+capabilities:
+  - id: D-E02
+    intent: metric_percentile
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.percentile_forward
+    methods: [I30, R02]
+    min_n: 250
+    notes: T0.5 仅 h=1；PIT 4 桶，每桶非重叠 n>=250，不足降 2 桶并披露
+  - id: D-E03
+    intent: seasonality_query
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.seasonality
+    methods: [C01, C02, C03, C04, C05, C07, C09, C12, C13, C14, C15]
+    min_n: 60
+    min_span_days: 730
+    notes: 月份效应需 ≥5 年才可下结论；<60 个月只作描述
+  - id: D-E05
+    intent: correlation_query
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.correlation
+    methods: [M01, M02, M03, M04, M05, M06, M07, M23]
+    min_n: 60
+    notes: 双序列与多资产矩阵 TopK；同期相关门槛 n>=60；TopK 按 |rho| 降序并披露 BH-FDR
+  - id: D-E06
+    intent: correlation_query
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.correlation
+    methods: [T03, T04, M11, M12]
+    min_n: 120
+    notes: 领先滞后 CCF 门槛 n>=120
+  - id: D-E07
+    intent: state_transition
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.state_transition
+    methods: [B04, B07, B08, B09]
+    min_n: 100
+  - id: D-E08
+    intent: conditional_return
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.conditional_ic
+    methods: [B11, B13, B14, B15]
+    min_n: 250
+    notes: 每桶非重叠 n>=250（T2 门禁）
+  - id: D-E10
+    intent: drawdown_query
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.drawdown
+    methods: [D20, D21, F09, F10]
+    min_n: 250
+    notes: 回撤画像只用价格，不需跨资产回填
+  - id: D-E11
+    intent: cross_check
+    mode: gated
+    data_scope: [market.candles]
+    executor: capabilities.stats.correlation
+    methods: [M23, M24, M25]
+    min_n: 60

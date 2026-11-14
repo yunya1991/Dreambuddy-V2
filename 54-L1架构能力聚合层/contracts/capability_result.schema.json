@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dreambuddy.local/54/contracts/capability_result.schema.json",
+  "title": "CapabilityResult",
+  "description": "54 能力层统一返回信封（SPEC-54 §5.3）。顶层固定 ok/capability/intent/answer/data/quality/trace_id；quality 只在顶层出现。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ok", "capability", "intent", "answer", "data", "quality"],
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "description": "status=empty 时为 false，L1 据此转 L2"
+    },
+    "capability": {
+      "type": "string",
+      "pattern": "^D-[A-Z]\\d{2}$",
+      "description": "能力 ID，必须已在 capability_manifest.yaml 登记"
+    },
+    "intent": {
+      "type": "string",
+      "minLength": 1,
+      "description": "L1 意图，必须与 capability_manifest.yaml 中该能力的 intent 一致"
+    },
+    "answer": {
+      "type": "string",
+      "minLength": 1,
+      "description": "面向用户的一句话；quality.status != good 时必须含降级说明（样本/不足/降级）"
+    },
+    "data": {
+      "type": "object",
+      "description": "结构化结果；禁止嵌套 quality / answer",
+      "not": {
+        "anyOf": [
+          {"required": ["quality"]},
+          {"required": ["answer"]}
+        ]
+      },
+      "properties": {
+        "capabilities": {
+          "type": "object",
+          "description": "能力块：key=能力 ID，value={gate, methods, ...}",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["gate", "methods"],
+            "properties": {
+              "gate": {
+                "enum": ["ok", "insufficient_samples", "insufficient_history", "no_data"]
+              },
+              "methods": {
+                "type": "array",
+                "items": {"type": "string", "pattern": "^[A-Z]{1,2}\\d{2}$"},
+                "minItems": 1
+              },
+              "reason": {"type": "string"}
+            }
+          }
+        },
+        "params": {"type": "object"},
+        "symbol": {"type": ["string", "null"]},
+        "pair": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2}
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "sample_n", "is_stale", "degraded_reason"],
+      "properties": {
+        "status": {"enum": ["good", "partial", "empty"]},
+        "sample_n": {"type": "integer", "minimum": 0},
+        "span": {
+          "type": ["array", "null"],
+          "items": {"type": "string"},
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "[首日, 末日]，UTC ISO 日期"
+        },
+        "is_stale": {"type": "boolean"},
+        "degraded_reason": {
+          "type": ["string", "null"],
+          "description": "status != good 时必填：insufficient_samples / no_history / stale_data / seasonality_depth_lt_5y 等"
+        },
+        "sources": {"type": "array", "items": {"type": "string"}},
+        "missing_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "align_method": {"type": ["string", "null"]},
+        "timezone": {"type": ["string", "null"]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"enum": ["partial", "empty"]}}},
+          "then": {"required": ["degraded_reason"], "properties": {"degraded_reason": {"type": "string"}}}
+        }
+      ]
+    },
+    "trace_id": {"type": ["string", "null"]}
+  }
+}

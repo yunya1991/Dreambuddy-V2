@@ -126,10 +126,22 @@ class CoinGeckoCollector(BaseCollector):
         """GET /api/v3/coins/{id}/market_chart?days={days} → 历史 prices/market_caps。
 
         用于 CoinFundamentalRanker 的价格趋势/均值回归信号。
+
+        days 上限策略：
+          - 配置了 COINGECKO_API_KEY（Demo/Pro）：上限 365 天，且支持 days='max' 拉全量
+          - 未配置 key（匿名公共 API）：上限 90 天（免费档硬限制）
         """
         if not coin_id:
             return []
-        days = max(1, min(days, 90))  # 限制 1-90 天
+        import os
+
+        has_key = bool(os.environ.get("COINGECKO_API_KEY", "").strip())
+        if isinstance(days, str) and days.lower() == "max":
+            days = "max" if has_key else 90
+        elif has_key:
+            days = max(1, min(int(days), 365))
+        else:
+            days = max(1, min(int(days), 90))
         data = self._get(f"{_BASE}/coins/{coin_id}/market_chart?vs_currency=usd&days={days}")
         if not isinstance(data, dict):
             return []

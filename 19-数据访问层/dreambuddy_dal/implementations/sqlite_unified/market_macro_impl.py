@@ -76,15 +76,27 @@ class SqliteMarketMacroRepository(MarketMacroRepository):
 
     # ------------------------------------------------------------------ 补列
     def _ensure_proto_columns(self) -> None:
-        """Protocol 需要但 schema_init 缺列，ALTER TABLE 幂等补。"""
+        """Protocol 需要但 schema_init 缺列，ALTER TABLE 幂等补（缺表则跳过）。
+
+        空库/未初始化库的 DDL 由 migrations.init_schema 统一负责（G0-6），
+        构造器不应因缺表而失败。
+        """
         with get_sqlite_connection(self.db_path) as conn:
+
+            def _columns(table: str):
+                if not conn.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
+                ).fetchone():
+                    return None
+                return {c[1] for c in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+
             # mm_open_interest 需要 sum_open_interest_value → 补 oi_sum_value REAL
-            cols_oi = {c[1] for c in conn.execute("PRAGMA table_info(mm_open_interest)").fetchall()}
-            if "oi_sum_value" not in cols_oi:
+            cols_oi = _columns("mm_open_interest")
+            if cols_oi is not None and "oi_sum_value" not in cols_oi:
                 conn.execute("ALTER TABLE mm_open_interest ADD COLUMN oi_sum_value REAL DEFAULT 0")
             # mm_taker_volume 需要 buy_sell_volume_diff → 补 taker_vol_diff REAL
-            cols_tv = {c[1] for c in conn.execute("PRAGMA table_info(mm_taker_volume)").fetchall()}
-            if "taker_vol_diff" not in cols_tv:
+            cols_tv = _columns("mm_taker_volume")
+            if cols_tv is not None and "taker_vol_diff" not in cols_tv:
                 conn.execute("ALTER TABLE mm_taker_volume ADD COLUMN taker_vol_diff REAL DEFAULT 0")
 
     # ================================================================ 5.1 恐惧贪婪

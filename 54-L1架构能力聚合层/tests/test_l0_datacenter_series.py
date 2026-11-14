@@ -228,13 +228,71 @@ def test_format_series_output_scale_and_sign():
         series=spec, points=points, days=7, quality="good", source="dal_mm_metrics"
     )
     assert out["id"] == "exchanges_whales::whale_netflow_to_ex_usd"
-    assert out["value"] == -2e9  # 落库「转出-转入」，展示净流入需翻转
+    assert out["value"] == -20.0  # 落库「转出-转入」+ 按 unit 归一（亿美元，scale=1e8）
     assert "亿美元" in out["text"] and "-20.00" in out["text"]
     assert out["points_n"] == 2
 
     empty = format_series_output(series=spec, points=[], days=7)
     assert empty["value"] is None
     assert "暂无历史数据" in empty["text"]
+
+
+def test_defi_tvl_display_unit_is_yi_not_bln():
+    """DeFi TVL 库内单位十亿美元 → 展示必须换成亿美元（147.88 bln = 1478.8 亿）。"""
+    from l1agg.series_catalog import format_series_output, resolve_metric
+
+    spec = resolve_metric("defi tvl")
+    assert spec["unit"] == "亿美元"
+    assert spec["scale"] == 0.1
+    points = [
+        {"value": 144.88, "ts": NOW - 2 * _DAY},
+        {"value": 147.88, "ts": NOW},
+    ]
+    out = format_series_output(series=spec, points=points, days=90, quality="good")
+    assert "1478.80 亿美元" in out["text"]
+    assert "十亿" not in out["text"]
+    assert out["value"] == 1478.8
+    assert out["range"]["max"] == 1478.8
+
+
+def test_format_series_output_window_coverage_honesty():
+    """样本只覆盖 9 天却请求 90 天 → 文案如实标注，不能冒充近 90 天。"""
+    from l1agg.series_catalog import format_series_output, resolve_metric
+
+    spec = resolve_metric("defi tvl")
+    points = [
+        {"value": 81.08, "ts": NOW - 8 * _DAY},
+        {"value": 77.50, "ts": NOW - 4 * _DAY},
+        {"value": 73.88, "ts": NOW},
+    ]
+    out = format_series_output(series=spec, points=points, days=90, quality="partial")
+    assert out["window"]["coverage_days"] == 9
+    assert out["window"]["days"] == 90
+    assert "最近" not in out["text"]
+    assert "近 9 天（请求 90 天，样本不足）" in out["text"]
+    assert "数据质量 partial" in out["text"]
+
+    # 覆盖充分时不加「样本不足」噪音
+    full = [{"value": 100 + i, "ts": NOW - (89 - i) * _DAY} for i in range(90)]
+    ok = format_series_output(series=spec, points=full, days=90, quality="good")
+    assert ok["window"]["coverage_days"] == 90
+    assert "样本不足" not in ok["text"]
+    assert "近 90 天" in ok["text"]
+
+
+def test_funding_rate_uses_live_okx_source_and_keeps_precision():
+    """资金费率取 okx_derivatives（旧 funding_rate 已停更）；小额百分比不能显示成 0.00。"""
+    from l1agg.series_catalog import format_series_output, resolve_metric
+
+    spec = resolve_metric("资金费率")
+    assert (spec["sub_category"], spec["metric_name"]) == ("okx_derivatives", "funding_rate_pct")
+
+    points = [
+        {"value": 0.0012, "ts": NOW - _DAY},
+        {"value": 0.000942, "ts": NOW},
+    ]
+    out = format_series_output(series=spec, points=points, days=7)
+    assert "最新 0.0009" in out["text"]
 
 
 def test_exec_metric_series_end_to_end(series_db):
@@ -372,3 +430,350 @@ def test_exec_whale_flow_end_to_end(series_db, monkeypatch):
     assert result["data"]["stats"]["last"] == 3.0e8  # -3e8 落库 → +3亿净流入
     assert "净流入" in result["answer"]
     assert "1000 笔" in result["answer"]
+
+
+# ============================================================
+# S1-a：L0 `market.candles`（日频价格 → 1D/1W/1M K 线）
+# ============================================================
+
+
+@pytest.fixture
+def candle_db(tmp_path, monkeypatch):
+    db = tmp_path / "core.db"
+    rows = []
+    for i in range(40):
+        ts = NOW - (39 - i) * _DAY
+        rows.append(("okx", "BTC", "close_usd", 100.0 + i, ts))
+        rows.append(("okx", "BTC", "volume_usd", 1000.0, ts))
+    # 同一 UTC 日两条收盘：取最后一条；成交量按桶内求和
+    rows.append(("okx", "BTC", "close_usd", 999.0, NOW - 2 * _DAY + 3600))
+    rows.append(("okx", "BTC", "volume_usd", 500.0, NOW - 2 * _DAY + 3600))
+    _make_db(str(db), rows)
+    monkeypatch.setenv("DREAMBUDDY_CORE_DB", str(db))
+    return str(db)
+
+
+def test_market_candles_daily(candle_db):
+    ctx = _l0().fetch_context("market.candles", {"symbol": "BTC", "days": 60, "bar": "1d"})
+    assert ctx["degraded"] is False
+    data, meta = ctx["data"], ctx["meta"]
+    assert data["sample_n"] == 40
+    assert data["has_ohlc"] is False
+    assert data["points"][-1]["close"] == 139.0
+    assert meta["timezone"] == "UTC"
+    assert meta["align_method"] == "daily_last"
+    assert meta["quality"] == "partial"  # <120 根
+    assert meta["missing_rate"] == 0.0 or meta["missing_rate"] < 0.05
+    # 同一 UTC 日：收盘取最后一条；成交量本身是滚动 24h 口径，同日取最后值（不累加，避免重复计）
+    assert data["points"][-3]["close"] == 999.0
+    assert data["points"][-3]["volume"] == 500.0
+
+
+def test_market_candles_weekly(candle_db):
+    ctx = _l0().fetch_context("market.candles", {"symbol": "BTC", "days": 60, "bar": "1w"})
+    points = ctx["data"]["points"]
+    assert 5 <= len(points) <= 8
+    # 周桶按 ISO 周一取整
+    assert all(datetime.date.fromisoformat(p["timestamp"][:10]).weekday() == 0 for p in points)
+    assert points[-1]["close"] == 139.0
+
+
+def test_market_candles_invalid_bar(candle_db):
+    ctx = _l0().fetch_context("market.candles", {"symbol": "BTC", "bar": "4h"})
+    assert ctx["degraded"] is True
+    assert ctx["meta"]["reason"] == "invalid_params"
+
+
+def test_market_candles_empty_symbol(candle_db):
+    ctx = _l0().fetch_context("market.candles", {"symbol": "NOPE", "days": 30})
+    assert ctx["degraded"] is False
+    assert ctx["data"]["sample_n"] == 0
+    assert ctx["meta"]["quality"] == "empty"
+    assert ctx["meta"]["reason"] == "no_history"
+
+
+# ============================================================
+# S1-b：market.candles OHLC 合并（`{symbol}/USDT` high/low → 桶内极值）
+# ============================================================
+
+
+@pytest.fixture
+def candle_ohlc_db(tmp_path, monkeypatch):
+    db = tmp_path / "core.db"
+    rows = []
+    for i in range(40):
+        ts = NOW - (39 - i) * _DAY
+        rows.append(("okx", "BTC", "close_usd", 100.0 + i, ts))
+        rows.append(("okx", "BTC", "volume_usd", 1000.0, ts))
+        # 同一 UTC 日两个小时快照：high 取 max(日+5)、low 取 min(日-5)
+        rows.append(("ccxt", "BTC/USDT", "high", 100.0 + i + 3, ts - 3600))
+        rows.append(("ccxt", "BTC/USDT", "high", 100.0 + i + 5, ts - 2 * 3600))
+        rows.append(("ccxt", "BTC/USDT", "low", 100.0 + i - 3, ts - 3600))
+        rows.append(("ccxt", "BTC/USDT", "low", 100.0 + i - 5, ts - 2 * 3600))
+    _make_db(str(db), rows)
+    monkeypatch.setenv("DREAMBUDDY_CORE_DB", str(db))
+    return str(db)
+
+
+def test_market_candles_ohlc_merged(candle_ohlc_db):
+    ctx = _l0().fetch_context("market.candles", {"symbol": "BTC", "days": 60, "bar": "1d"})
+    data, meta = ctx["data"], ctx["meta"]
+    assert data["sample_n"] == 40
+    assert data["has_ohlc"] is True
+    assert meta["ohlc_coverage"] == 1.0
+    assert meta["ohlc_source"] == "mm_metrics:BTC/USDT"
+    assert meta["ohlc_note"]
+    last = data["points"][-1]
+    assert last["high"] == pytest.approx(144.0)  # 139 + 5
+    assert last["low"] == pytest.approx(134.0)  # 139 - 5
+    assert last["high"] >= last["close"] >= last["low"]
+
+
+def test_market_candles_ohlc_weekly_extremes(candle_ohlc_db):
+    ctx = _l0().fetch_context("market.candles", {"symbol": "BTC", "days": 60, "bar": "1w"})
+    points = ctx["data"]["points"]
+    assert ctx["data"]["has_ohlc"] is True
+    expected = {}
+    for i in range(40):
+        day = datetime.datetime.fromtimestamp(NOW - (39 - i) * _DAY, datetime.UTC)
+        key = (day - datetime.timedelta(days=day.weekday())).strftime("%Y-%m-%d")
+        expected.setdefault(key, []).append(100.0 + i)
+    for p in points:
+        week = p["timestamp"][:10]
+        assert p["high"] == pytest.approx(max(expected[week]) + 5)
+        assert p["low"] == pytest.approx(min(expected[week]) - 5)
+        assert p["high"] >= p["close"] >= p["low"]
+
+
+def test_market_candles_ohlc_partial_coverage_not_faked(candle_ohlc_db):
+    db = os.environ["DREAMBUDDY_CORE_DB"]
+    day_ts = NOW - 10 * _DAY
+    conn = sqlite3.connect(db)
+    conn.execute(
+        "UPDATE mm_metrics SET metric_value = 0 WHERE sub_category = 'BTC/USDT' "
+        "AND metric_name = 'high' AND timestamp IN (?, ?)",
+        (day_ts - 3600, day_ts - 2 * 3600),
+    )
+    conn.commit()
+    conn.close()
+
+    ctx = _l0().fetch_context("market.candles", {"symbol": "BTC", "days": 60, "bar": "1d"})
+    data, meta = ctx["data"], ctx["meta"]
+    assert data["has_ohlc"] is False  # 桶不全 → 不冒充完整 OHLC
+    assert meta["ohlc_coverage"] == pytest.approx(0.975)
+    uncovered = [p for p in data["points"] if "high" not in p]
+    assert len(uncovered) == 1
+    assert "low" not in uncovered[0]
+
+
+def test_market_candles_without_ohlc_sub_keeps_close_only(candle_db):
+    ctx = _l0().fetch_context("market.candles", {"symbol": "NOPE", "days": 30})
+    assert ctx["degraded"] is False
+    assert ctx["data"]["has_ohlc"] is False
+    assert ctx["meta"]["ohlc_source"] == ""
+
+
+# ============================================================
+# S1-c：market.candles 1h（OHLC 子类小时级 last/high/low）
+# ============================================================
+
+
+@pytest.fixture
+def candle_1h_db(tmp_path, monkeypatch):
+    db = tmp_path / "core.db"
+    rows = []
+    base = NOW - 200 * 3600
+    for i in range(150):
+        ts = base + i * 3600
+        rows += [
+            ("ccxt", "BTC/USDT", "last", 100.0 + i, ts),
+            ("ccxt", "BTC/USDT", "high", 101.0 + i, ts),
+            ("ccxt", "BTC/USDT", "low", 99.0 + i, ts),
+        ]
+    # 脏小时（high=0）三腿不齐 → 该小时必须被剔除，不得回填
+    extra = base + 150 * 3600
+    rows += [
+        ("ccxt", "BTC/USDT", "last", 250.0, extra),
+        ("ccxt", "BTC/USDT", "high", 0.0, extra),
+        ("ccxt", "BTC/USDT", "low", 249.0, extra),
+    ]
+    _make_db(str(db), rows)
+    monkeypatch.setenv("DREAMBUDDY_CORE_DB", str(db))
+    return str(db)
+
+
+def test_market_candles_hourly_from_ohlc_sub(candle_1h_db):
+    ctx = _l0().fetch_context("market.candles", {"symbol": "BTC", "days": 60, "bar": "1h"})
+    data, meta = ctx["data"], ctx["meta"]
+    assert data["sample_n"] == 150
+    assert data["has_ohlc"] is True
+    assert meta["bar"] == "1h" and meta["align_method"] == "hourly_last"
+    assert meta["ohlc_coverage"] == 1.0
+    last = data["points"][-1]
+    assert last["close"] == pytest.approx(249.0)
+    assert last["high"] == pytest.approx(250.0)
+    assert last["low"] == pytest.approx(248.0)
+    assert all("high" in p and "low" in p for p in data["points"])
+
+
+def test_market_candles_hourly_without_ohlc_sub(candle_db):
+    ctx = _l0().fetch_context("market.candles", {"symbol": "NOPE", "days": 30, "bar": "1h"})
+    assert ctx["degraded"] is False
+    assert ctx["data"]["sample_n"] == 0
+    assert ctx["meta"]["reason"] == "no_ohlc_source"
+
+
+# ============================================================
+# S1-d：真实日线 OHLC（18 中心 1h 回填的 `*_1d`）优先于 ticker 合并
+# ============================================================
+
+
+@pytest.fixture
+def candle_true_ohlc_db(tmp_path, monkeypatch):
+    db = tmp_path / "core.db"
+    rows = []
+    for i in range(10):
+        day = (NOW - (9 - i) * _DAY) // _DAY * _DAY
+        rows += [
+            ("binance", "BTC/USDT", "open_1d", 100.0 + i, day),
+            ("binance", "BTC/USDT", "high_1d", 106.0 + i, day),
+            ("binance", "BTC/USDT", "low_1d", 94.0 + i, day),
+            ("binance", "BTC/USDT", "close_1d", 102.0 + i, day),
+            ("binance", "BTC/USDT", "volume_1d", 500.0, day),
+            # 干扰项：日频 close_usd 与 ticker 高低点均与真实日线不一致
+            ("okx", "BTC", "close_usd", 200.0 + i, day),
+            ("ccxt", "BTC/USDT", "high", 300.0 + i, day),
+            ("ccxt", "BTC/USDT", "low", 150.0 + i, day),
+        ]
+    _make_db(str(db), rows)
+    monkeypatch.setenv("DREAMBUDDY_CORE_DB", str(db))
+    return str(db)
+
+
+def test_market_candles_prefers_true_daily_ohlc(candle_true_ohlc_db):
+    ctx = _l0().fetch_context("market.candles", {"symbol": "BTC", "days": 30, "bar": "1d"})
+    data, meta = ctx["data"], ctx["meta"]
+    assert data["sample_n"] == 10
+    assert data["has_ohlc"] is True
+    assert meta["ohlc_source"] == "mm_metrics:BTC/USDT#1d"
+    assert meta["align_method"] == "binance_1h_agg"
+    last = data["points"][-1]
+    assert last["close"] == pytest.approx(111.0)  # 真实日线 close_1d，而非 close_usd=209
+    assert last["high"] == pytest.approx(115.0)
+    assert last["low"] == pytest.approx(103.0)
+    assert last["open"] == pytest.approx(109.0)
+    assert last["volume"] == pytest.approx(500.0)
+
+
+def test_market_candles_true_ohlc_weekly_aggregation(candle_true_ohlc_db):
+    ctx = _l0().fetch_context("market.candles", {"symbol": "BTC", "days": 30, "bar": "1w"})
+    points = ctx["data"]["points"]
+    assert ctx["data"]["has_ohlc"] is True
+    expected = {}
+    for i in range(10):
+        day = datetime.datetime.fromtimestamp((NOW - (9 - i) * _DAY) // _DAY * _DAY, datetime.UTC)
+        key = (day - datetime.timedelta(days=day.weekday())).strftime("%Y-%m-%d")
+        expected.setdefault(key, []).append(i)
+    for p in points:
+        idxs = expected[p["timestamp"][:10]]
+        assert p["open"] == pytest.approx(100.0 + min(idxs))
+        assert p["high"] == pytest.approx(106.0 + max(idxs))
+        assert p["low"] == pytest.approx(94.0 + min(idxs))
+        assert p["close"] == pytest.approx(102.0 + max(idxs))
+        assert p["volume"] == pytest.approx(500.0 * len(idxs))
+
+
+def test_market_candles_true_ohlc_invalid_day_skipped(candle_true_ohlc_db):
+    db = os.environ["DREAMBUDDY_CORE_DB"]
+    bad_day = (NOW - 3 * _DAY) // _DAY * _DAY
+    conn = sqlite3.connect(db)
+    conn.execute(
+        "UPDATE mm_metrics SET metric_value = 130.0 WHERE sub_category = 'BTC/USDT' "
+        "AND metric_name = 'close_1d' AND timestamp = ?",
+        (bad_day,),
+    )
+    conn.commit()
+    conn.close()
+
+    ctx = _l0().fetch_context("market.candles", {"symbol": "BTC", "days": 30, "bar": "1d"})
+    data = ctx["data"]
+    assert data["sample_n"] == 9  # close>high 的非法日整天剔除
+    assert all(p["high"] >= p["close"] >= p["low"] for p in data["points"])
+
+
+# ============================================================
+# 日线对齐（收盘锚点）：真实日线 00:00 vs 日频快照 16:00 → 同一 UTC 日键
+# ============================================================
+
+
+@pytest.fixture
+def candle_mixed_db(tmp_path, monkeypatch):
+    db = tmp_path / "core.db"
+    rows = []
+    for i in range(40):
+        day_ts = NOW - (39 - i) * _DAY  # 12:00 观测 → 归一后为当日 00:00
+        bar_ts = day_ts - 12 * 3600
+        snap_ts = day_ts + 4 * 3600  # 16:00 快照
+        rows += [
+            ("binance", "BTC/USDT", "open_1d", 100.0 + i, bar_ts),
+            ("binance", "BTC/USDT", "high_1d", 102.0 + i, bar_ts),
+            ("binance", "BTC/USDT", "low_1d", 98.0 + i, bar_ts),
+            ("binance", "BTC/USDT", "close_1d", 100.0 + i, bar_ts),
+            ("binance", "BTC/USDT", "volume_1d", 10.0, bar_ts),
+            ("okx", "BTC", "close_usd", 100.5 + i, snap_ts),
+            ("okx", "ETH", "close_usd", 50.0 + i, snap_ts),
+        ]
+    _make_db(str(db), rows)
+    monkeypatch.setenv("DREAMBUDDY_CORE_DB", str(db))
+    return str(db)
+
+
+def test_candles_close_anchor_bar_vs_snapshot(candle_mixed_db):
+    auto = _l0().fetch_context("market.candles", {"symbol": "BTC", "days": 60, "bar": "1d"})
+    assert auto["meta"]["close_anchor"] == "bar_close"
+    assert all(p["ts"] % _DAY == 0 for p in auto["data"]["points"])
+
+    snap = _l0().fetch_context(
+        "market.candles",
+        {"symbol": "BTC", "days": 60, "bar": "1d", "source_policy": "snapshot"},
+    )
+    assert snap["meta"]["close_anchor"] == "snapshot_last"
+    pts = snap["data"]["points"]
+    # 日键归一到 UTC 日首，真实观测时刻保留在 close_ts
+    assert all(p["ts"] % _DAY == 0 for p in pts)
+    assert pts[-1]["close"] == pytest.approx(139.5)
+    assert pts[-1]["close_ts"].endswith("T16:00:00Z")
+
+
+def test_candles_snapshot_policy_aligns_cross_symbol_day_keys(candle_mixed_db):
+    btc = _l0().fetch_context(
+        "market.candles",
+        {"symbol": "BTC", "days": 60, "bar": "1d", "source_policy": "snapshot"},
+    )
+    eth = _l0().fetch_context(
+        "market.candles",
+        {"symbol": "ETH", "days": 60, "bar": "1d", "source_policy": "snapshot"},
+    )
+    assert btc["meta"]["close_anchor"] == eth["meta"]["close_anchor"] == "snapshot_last"
+    assert [p["timestamp"] for p in btc["data"]["points"]] == [
+        p["timestamp"] for p in eth["data"]["points"]
+    ]
+
+
+def test_candles_bars_policy_requires_true_bars(candle_mixed_db):
+    ctx = _l0().fetch_context(
+        "market.candles",
+        {"symbol": "ETH", "days": 60, "bar": "1d", "source_policy": "bars"},
+    )
+    assert ctx["degraded"] is False
+    assert ctx["data"]["sample_n"] == 0
+    assert ctx["meta"]["reason"] == "no_true_bars"
+    assert ctx["meta"]["close_anchor"] == "bar_close"
+
+
+def test_candles_invalid_source_policy(candle_mixed_db):
+    ctx = _l0().fetch_context(
+        "market.candles", {"symbol": "BTC", "days": 60, "source_policy": "ffill"}
+    )
+    assert ctx["degraded"] is True
+    assert ctx["meta"]["reason"] == "invalid_params"

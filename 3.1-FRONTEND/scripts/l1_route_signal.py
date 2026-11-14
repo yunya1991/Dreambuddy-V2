@@ -47,6 +47,53 @@ _L1AGG_ROOT = os.path.join(_SCRIPTS_DIR, "..", "..", "54-L1架构能力聚合层
 if _L1AGG_ROOT not in sys.path:
     sys.path.insert(0, _L1AGG_ROOT)
 
+# 41 文件索引系统：L1 语义意图检索（SPEC-41-L1 §3.3）
+# 注意：追加到 sys.path 末尾（非 insert(0)），避免 41 的 core（有 __init__.py）
+# 遮蔽 34 的 core（l1_route_signal 需从 34 core 导入 cognitive_router 等）。
+# 41 的 IntentMatcher 通过 importlib 以独立包名加载，不依赖 core 命名空间。
+_INDEX_ROOT = os.path.join(_SCRIPTS_DIR, "..", "..", "41-文件索引系统")
+if _INDEX_ROOT not in sys.path:
+    sys.path.append(_INDEX_ROOT)
+
+# 语义意图匹配器（懒加载：embedder 模型按需加载，不阻塞模块导入）
+# 注意：34 的 core 是正规包（有 __init__.py），会遮蔽 41 的 core，
+# 因此用 importlib 以独立包名 _l1_semantic_core 加载 41 模块。
+# FAIL-OPEN：导入失败或环境变量关闭时，_semantic_matcher 为 None，退回纯正则
+_L1_SEMANTIC_ENABLED = os.environ.get("L1_SEMANTIC_MATCH", "1") != "0"
+_semantic_matcher = None
+
+
+def _load_semantic_matcher():
+    """通过 importlib 加载 41 的 IntentMatcher（避开与 34 core 的包名冲突）。"""
+    import importlib.util
+    import types
+
+    pkg_name = "_l1_semantic_core"
+    pkg_path = os.path.join(_INDEX_ROOT, "core")
+    pkg = types.ModuleType(pkg_name)
+    pkg.__path__ = [pkg_path]
+    pkg.__package__ = pkg_name
+    sys.modules[pkg_name] = pkg
+    # 按依赖顺序加载子模块
+    for mod_name in ("embedder_bridge", "intent_vector_store", "intent_matcher"):
+        full_name = f"{pkg_name}.{mod_name}"
+        if full_name in sys.modules:
+            continue
+        spec = importlib.util.spec_from_file_location(
+            full_name, os.path.join(pkg_path, f"{mod_name}.py")
+        )
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[full_name] = mod
+        spec.loader.exec_module(mod)
+    return sys.modules[f"{pkg_name}.intent_matcher"].IntentMatcher()
+
+
+if _L1_SEMANTIC_ENABLED:
+    try:
+        _semantic_matcher = _load_semantic_matcher()
+    except Exception:  # noqa: BLE001
+        _semantic_matcher = None
+
 from core.cognitive_router import evaluate_match  # noqa: E402
 from core.l0_foundation import get_l0  # noqa: E402
 from core.route_confidence import (  # noqa: E402
@@ -63,11 +110,16 @@ from data_query_executor import (  # noqa: E402
     exec_data_query,
     exec_event_analysis,
     exec_fundamental_valuation,
+    exec_leader_compare,
     exec_metric_series,
     exec_path_insight,
+    exec_persistence_strength,
     exec_price_query,
     exec_risk_control,
+    exec_stat_query,
     exec_technical_analysis,
+    exec_technical_indicator,
+    exec_top_correlation,
     exec_whale_flow,
     resolve_source,
     settle_to_cognitive,
@@ -81,6 +133,8 @@ EXECUTORS = {
     "contradiction_insight": exec_contradiction_insight,
     "path_insight": exec_path_insight,
     "technical_analysis": exec_technical_analysis,
+    "technical_indicator": exec_technical_indicator,
+    "stat_query": exec_stat_query,
     "fundamental_valuation": exec_fundamental_valuation,
     "asset_class_trend": exec_asset_class_trend,
     "event_analysis": exec_event_analysis,
@@ -89,13 +143,26 @@ EXECUTORS = {
     "metric_series": exec_metric_series,
     "whale_flow": exec_whale_flow,
     "calendar_event": exec_calendar_event,
+    "leader_compare": exec_leader_compare,
+    "top_correlation": exec_top_correlation,
+    "persistence_strength": exec_persistence_strength,
 }
 
 # 确定性关键词注册表意图（S1）：关键词命中即确定要走哪个单维数据，
 # 执行器直连真实数据（mm_metrics / mm_events），不存在“语义猜错”风险，
 # 因此不参与 recall 密度门控（route_confidence 0.65 门限只约束语义意图）。
 # 这样「巨鲸动向」「下一次议息会议」不会因 recall 空/密度不足被推给 L2。
-DETERMINISTIC_INTENTS = frozenset({"whale_flow", "calendar_event"})
+DETERMINISTIC_INTENTS = frozenset(
+    {
+        "whale_flow",
+        "calendar_event",
+        "leader_compare",
+        "top_correlation",
+        "persistence_strength",
+        "technical_indicator",
+        "stat_query",
+    }
+)
 R_DETERMINISTIC_REGISTRY = "deterministic_keyword_registry"
 
 # 查询类判定：命中其一即「要数值/序列」，交给 metric_series 做索引输出
@@ -132,7 +199,7 @@ def _is_deterministic_series(message: str) -> bool:
 
 # ============================================================
 # 意图识别 — 对齐 TS l1-intent-registry.ts v3
-# 10 个 fallbackPattern（顺序与注册表一致）+ 2 个通用意图后端识别
+# 11 个 fallbackPattern（顺序与注册表一致）+ 2 个通用意图后端识别
 # =========================================================
 
 _FALLBACK_PATTERNS = [
@@ -179,6 +246,16 @@ _FALLBACK_PATTERNS = [
             r"|怎么走|适合做多|适合做空|往哪个方向"
         ),
     ),
+    # 技术指标（54 D-B00–B07，确定性计算）先于技术分析（BCRM2 卦象）：
+    # 出现具体指标/价位词 + 标的或价位语境时，走真实 K 线计算而非卦象解读
+    (
+        "technical_indicator",
+        re.compile(
+            r"(?=.*(阻力位|阻力|支撑位|支撑|压力位|压力|均线|MACD|RSI|布林|ATR|金叉|死叉|超买|超卖|K线|技术指标))"
+            r"(?=.*(BTC|ETH|SOL|比特币|以太坊|索拉纳|黄金|XAU|现价|价格|价位|多少|哪里|哪儿|在哪|位置|现在|当前|走势|分析|如何|怎么样|情况))",
+            re.IGNORECASE,
+        ),
+    ),
     (
         "technical_analysis",
         re.compile(
@@ -188,6 +265,36 @@ _FALLBACK_PATTERNS = [
     (
         "fundamental_valuation",
         re.compile(r"估值|基本面|贵不贵|贵吗|便宜吗|值不值|值得买"),
+    ),
+    # 四类追问钩子对应的三项可执行能力（确定性，不参与 recall 门控）
+    (
+        "leader_compare",
+        re.compile(
+            r"(?=.*(对比|对照|相比|比较|差距|谁更强|谁强|强弱))"
+            r"(?=.*(涨跌|涨幅|跌幅|变化幅度|幅度|龙头|BTC|ETH|SOL|比特币|以太坊|索拉纳|黄金|原油|纳指|标普))"
+        ),
+    ),
+    (
+        "top_correlation",
+        re.compile(r"相关性最高|最相关|相关性最强|相关度最高|相关.{0,6}指标|相关性分析|相关性"),
+    ),
+    (
+        "persistence_strength",
+        re.compile(r"延续性|趋势延续|记忆性|Hurst|均值回复|动量延续|持续性强度"),
+    ),
+    # 统计关系（54 D-E03/E05/E07/E08/E10，确定性计算）：
+    # 统计词 + 标的口径/价格语境双条件，避免吞掉普通行情问法；
+    # 置于 top_correlation 之后，保留「相关性最高/最相关」由该执行器处理
+    (
+        "stat_query",
+        re.compile(
+            r"(?=.*(回撤|drawdown|季节性|月份效应|日历效应|几月|星期几|周几|月内|月初|月末"
+            r"|状态转移|转移矩阵|状态切换|停留|状态持续性"
+            r"|信息系数|因子有效|单调性|(?:^|[^A-Za-z])IC(?:[^A-Za-z]|$)"
+            r"|相关性|同向|领先|滞后))"
+            r"(?=.*(BTC|ETH|SOL|比特币|以太坊|索拉纳|黄金|XAU|标的|价格|价位|行情|走势|现在|当前|历史))",
+            re.IGNORECASE,
+        ),
     ),
     (
         "asset_class_trend",
@@ -281,7 +388,12 @@ _RECALL_TOP_K = 5
 
 
 def detect_intent(message: str) -> str:
-    """后端关键词识别（前端未透传 intent 时的兜底，规则与 TS 注册表对齐）。"""
+    """后端关键词识别（前端未透传 intent 时的兜底，规则与 TS 注册表对齐）。
+
+    双通道：正则优先 → 语义兜底（SPEC-41-L1 §3.3）。
+    语义命中的 data_query/data_insight 仍需 requiredPattern 校验。
+    FAIL-OPEN：语义通道任何异常退回空串（交 L2）。
+    """
     if not message:
         return ""
     for intent, pattern in _FALLBACK_PATTERNS:
@@ -296,6 +408,30 @@ def detect_intent(message: str) -> str:
         return "metric_series"
     if resolve_source(message) or _DATA_QUERY_PATTERN.search(message):
         return "data_query"
+
+    # ===== 通道 B：语义兜底（正则未命中时启用） =====
+    # 短消息（<5 字）多为对话/寒暄/测试，跳过语义匹配避免误命中
+    if _semantic_matcher is not None and len(message) >= 5:
+        try:
+            semantic = _semantic_matcher.semantic_match(message, lang="auto")
+            if semantic:
+                intent = semantic[0]
+                # 通用意图仍需 requiredPattern 校验（与正则通道同等待遇）
+                if intent == "data_insight" and not _DATA_INSIGHT_PATTERN.search(message):
+                    return ""
+                if intent == "data_query" and not (
+                    resolve_source(message) or _DATA_QUERY_PATTERN.search(message)
+                ):
+                    return ""
+                # metric_series 仍需确定性序列检查（否则走正常 recall 门控）
+                if intent == "metric_series" and not _is_deterministic_series(message):
+                    # 语义命中 metric_series 但非确定性序列 → 仍返回该意图，
+                    # route_query 会走 recall 门控（语义兜底不改变门控逻辑）
+                    pass
+                return intent
+        except Exception:  # noqa: BLE001 — FAIL-OPEN：语义通道异常不影响主链路
+            pass
+
     return ""
 
 

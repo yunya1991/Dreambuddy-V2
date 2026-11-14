@@ -1,0 +1,305 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dreambuddy.local/54-l1agg/contracts/persistence.schema.json",
+  "title": "L1 延续性画像契约（persistence / T0）",
+  "description": "SPEC-54-延续性统计分析模块 §4 的机器可校验版本。只描述历史统计，不含任何预测/点估计字段。",
+  "oneOf": [
+    { "$ref": "#/definitions/profile" },
+    { "$ref": "#/definitions/errorProfile" }
+  ],
+  "definitions": {
+    "profile": {
+      "type": "object",
+      "required": ["kind", "symbol", "span", "sample_n", "metrics", "quality", "caveat", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "persistence" },
+        "symbol": { "type": "string", "minLength": 1 },
+        "span": { "type": "string" },
+        "sample_n": { "type": "integer", "minimum": 0 },
+        "metrics": { "$ref": "#/definitions/metrics" },
+        "quality": { "$ref": "#/definitions/quality" },
+        "caveat": { "const": "历史统计，不代表未来" },
+        "text": { "type": "string", "minLength": 1 }
+      }
+    },
+    "errorProfile": {
+      "type": "object",
+      "required": ["kind", "symbol", "error", "caveat"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "persistence" },
+        "symbol": { "type": "string", "minLength": 1 },
+        "error": { "type": "string", "minLength": 1 },
+        "caveat": { "const": "历史统计，不代表未来" }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["hurst", "variance_ratio", "ar1", "runs", "transition", "trend", "ic_decay", "conditional_distribution"],
+      "additionalProperties": false,
+      "properties": {
+        "hurst": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["h", "chunks", "max_chunk", "loglog_r2", "corrected", "n", "confidence", "regime", "regime_displayable"],
+              "additionalProperties": false,
+              "properties": {
+                "h": { "type": "number" },
+                "chunks": { "type": "array", "items": { "type": "integer", "minimum": 4 } },
+                "max_chunk": { "type": "integer", "minimum": 4 },
+                "loglog_r2": { "type": "number" },
+                "corrected": { "type": "boolean" },
+                "n": { "type": "integer", "minimum": 64 },
+                "confidence": { "enum": ["low", "high"] },
+                "regime": { "enum": ["persistent", "random_walk", "anti_persistent"] },
+                "regime_displayable": { "type": "boolean" }
+              }
+            }
+          ]
+        },
+        "variance_ratio": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["q", "vr", "z", "p", "n", "interpretation"],
+                "additionalProperties": false,
+                "properties": {
+                  "q": { "type": "integer", "minimum": 2 },
+                  "vr": { "type": "number", "exclusiveMinimum": 0 },
+                  "z": { "type": "number" },
+                  "p": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+                  "n": { "type": "integer", "minimum": 30 },
+                  "interpretation": { "enum": ["trend", "mean_revert", "random_walk"] }
+                }
+              }
+            }
+          ]
+        },
+        "ar1": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["phi", "halflife_days", "n"],
+              "additionalProperties": false,
+              "properties": {
+                "phi": { "type": "number" },
+                "halflife_days": { "type": ["number", "null"] },
+                "n": { "type": "integer", "minimum": 30 }
+              }
+            }
+          ]
+        },
+        "runs": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["n_runs", "max_run", "mean_run", "max_up", "max_down", "n", "n_zero"],
+              "additionalProperties": false,
+              "properties": {
+                "n_runs": { "type": "integer", "minimum": 1 },
+                "max_run": { "type": "integer", "minimum": 1 },
+                "mean_run": { "type": "number" },
+                "max_up": { "type": "integer", "minimum": 0 },
+                "max_down": { "type": "integer", "minimum": 0 },
+                "n": { "type": "integer", "minimum": 10 },
+                "n_zero": { "type": "integer", "minimum": 0 }
+              }
+            }
+          ]
+        },
+        "transition": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["p_up_up", "p_up_down", "p_down_up", "p_down_down", "steady_up", "dwell_up_days", "dwell_down_days", "n", "n_zero"],
+              "additionalProperties": false,
+              "properties": {
+                "p_up_up": { "type": ["number", "null"] },
+                "p_up_down": { "type": ["number", "null"] },
+                "p_down_up": { "type": ["number", "null"] },
+                "p_down_down": { "type": ["number", "null"] },
+                "steady_up": { "type": ["number", "null"] },
+                "dwell_up_days": { "type": ["number", "null"] },
+                "dwell_down_days": { "type": ["number", "null"] },
+                "n": { "type": "integer", "minimum": 30 },
+                "n_zero": { "type": "integer", "minimum": 0 }
+              }
+            }
+          ]
+        },
+        "trend": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["slope_per_day", "annualized_log", "se", "t", "p", "r2", "n", "hac_corrected", "note"],
+              "additionalProperties": false,
+              "properties": {
+                "slope_per_day": { "type": "number" },
+                "annualized_log": { "type": "number" },
+                "se": { "type": ["number", "null"] },
+                "t": { "type": ["number", "null"] },
+                "p": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+                "r2": { "type": "number", "minimum": 0, "maximum": 1 },
+                "n": { "type": "integer", "minimum": 30 },
+                "hac_corrected": { "const": false },
+                "note": { "type": "string", "minLength": 1 }
+              }
+            }
+          ]
+        },
+        "conditional_distribution": {
+          "type": "object",
+          "required": ["gate", "state", "state_method", "method", "h", "requested_buckets", "buckets", "min_bucket_nonoverlap_n", "vol_window", "degraded_reason", "result"],
+          "additionalProperties": false,
+          "properties": {
+            "gate": { "enum": ["ok", "insufficient_samples"] },
+            "state": { "const": "volatility" },
+            "state_method": { "const": "I30" },
+            "method": { "const": "R02" },
+            "h": { "const": 1 },
+            "requested_buckets": { "const": 4 },
+            "buckets": { "enum": [2, 4] },
+            "min_bucket_nonoverlap_n": { "type": "integer", "minimum": 1 },
+            "vol_window": { "type": "integer", "minimum": 2 },
+            "degraded_reason": { "type": ["string", "null"] },
+            "result": {
+              "oneOf": [
+                { "type": "null" },
+                {
+                  "type": "object",
+                  "required": ["current_percentile", "bucket", "by_horizon", "phrase", "n", "sample_n", "pit", "as_of", "window", "align_method"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "current_percentile": { "type": "number", "minimum": 0, "maximum": 100 },
+                    "bucket": { "type": "integer", "minimum": 0 },
+                    "by_horizon": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "type": "object",
+                        "required": ["h", "n", "mean", "median", "win_rate", "t", "p", "p10", "p90", "effective_n", "nonoverlap_n", "pit", "as_of", "window", "align_method", "by_bucket"],
+                        "additionalProperties": false,
+                        "properties": {
+                          "h": { "const": 1 },
+                          "n": { "type": "integer", "minimum": 0 },
+                          "mean": { "type": ["number", "null"] },
+                          "median": { "type": ["number", "null"] },
+                          "win_rate": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+                          "t": { "type": ["number", "null"] },
+                          "p": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+                          "p10": { "type": ["number", "null"] },
+                          "p90": { "type": ["number", "null"] },
+                          "effective_n": { "type": "integer", "minimum": 0 },
+                          "nonoverlap_n": { "type": "integer", "minimum": 0 },
+                          "pit": { "const": true },
+                          "as_of": { "type": ["string", "number"] },
+                          "window": { "type": "integer", "minimum": 2 },
+                          "align_method": { "type": "string", "minLength": 1 },
+                          "by_bucket": {
+                            "type": "array",
+                            "minItems": 2,
+                            "items": {
+                              "type": "object",
+                              "required": ["bucket", "n", "mean", "median", "win_rate", "t", "p", "p10", "p90", "effective_n", "nonoverlap_n"],
+                              "additionalProperties": false,
+                              "properties": {
+                                "bucket": { "type": "integer", "minimum": 0 },
+                                "n": { "type": "integer", "minimum": 0 },
+                                "mean": { "type": ["number", "null"] },
+                                "median": { "type": ["number", "null"] },
+                                "win_rate": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+                                "t": { "type": ["number", "null"] },
+                                "p": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+                                "p10": { "type": ["number", "null"] },
+                                "p90": { "type": ["number", "null"] },
+                                "effective_n": { "type": "integer", "minimum": 0 },
+                                "nonoverlap_n": { "type": "integer", "minimum": 0 }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "phrase": { "type": "string", "minLength": 1 },
+                    "n": { "type": "integer", "minimum": 0 },
+                    "sample_n": { "type": "integer", "minimum": 0 },
+                    "pit": { "const": true },
+                    "as_of": { "type": ["string", "number"] },
+                    "window": { "type": "integer", "minimum": 2 },
+                    "align_method": { "type": "string", "minLength": 1 }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "ic_decay": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["lookback", "items", "n"],
+              "additionalProperties": false,
+              "properties": {
+                "lookback": { "type": "integer", "minimum": 1 },
+                "n": { "type": "integer", "minimum": 1 },
+                "items": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "required": ["h", "ric", "n", "ric_nonoverlap", "ric_nonoverlap_min", "ric_nonoverlap_max", "n_phases", "n_nonoverlap"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "h": { "type": "integer", "minimum": 1 },
+                      "ric": { "type": ["number", "null"], "minimum": -1, "maximum": 1 },
+                      "n": { "type": "integer", "minimum": 0 },
+                      "ric_nonoverlap": { "type": ["number", "null"], "minimum": -1, "maximum": 1 },
+                      "ric_nonoverlap_min": { "type": ["number", "null"], "minimum": -1, "maximum": 1 },
+                      "ric_nonoverlap_max": { "type": ["number", "null"], "minimum": -1, "maximum": 1 },
+                      "n_phases": { "type": "integer", "minimum": 0, "maximum": 20 },
+                      "n_nonoverlap": { "type": "integer", "minimum": 0 }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "required": ["status", "sample_n", "span", "align_method", "timezone", "min_n", "lookback_days", "degraded_reason", "failed_methods", "hurst_confident_n", "hurst_max_chunk", "notes"],
+      "additionalProperties": false,
+      "properties": {
+        "status": { "enum": ["good", "partial", "degraded"] },
+        "sample_n": { "type": "integer", "minimum": 0 },
+        "span": { "type": "string" },
+        "align_method": { "type": "string", "minLength": 1 },
+        "timezone": { "type": "string", "minLength": 1 },
+        "min_n": { "type": "integer", "minimum": 0 },
+        "lookback_days": { "type": "integer", "minimum": 1 },
+        "degraded_reason": { "type": ["string", "null"] },
+        "failed_methods": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "hurst_confident_n": { "type": "integer", "minimum": 1 },
+        "hurst_max_chunk": { "type": "integer", "minimum": 4 },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

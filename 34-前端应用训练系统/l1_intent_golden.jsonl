@@ -130,24 +130,24 @@
 {"message": "看一下MACD技术指标", "intent": "technical_analysis", "variant": "formal"}
 {"message": "卦象置信度如何", "intent": "technical_analysis", "variant": "formal"}
 {"message": "BTC 技术面 卦象 置信度", "intent": "technical_analysis", "variant": "terse"}
-{"message": "帮我看下BTC的K线", "intent": "technical_analysis", "variant": "colloquial"}
-{"message": "BTC日线均线排列如何", "intent": "technical_analysis", "variant": "formal"}
-{"message": "RSI现在多少", "intent": "technical_analysis", "variant": "formal"}
+{"message": "帮我看下BTC的K线", "intent": "technical_indicator", "variant": "colloquial"}
+{"message": "BTC日线均线排列如何", "intent": "technical_indicator", "variant": "formal"}
+{"message": "RSI现在多少", "intent": "technical_indicator", "variant": "formal"}
 {"message": "布林带开口了吗", "intent": "technical_analysis", "variant": "colloquial"}
 {"message": "有没有顶背离", "intent": "technical_analysis", "variant": "formal"}
-{"message": "支撑位和压力位在哪", "intent": "technical_analysis", "variant": "formal"}
+{"message": "支撑位和压力位在哪", "intent": "technical_indicator", "variant": "formal"}
 {"message": "技术面上BTC处在什么位置", "intent": "technical_analysis", "variant": "formal"}
-{"message": "看下ETH的K线和均线", "intent": "technical_analysis", "variant": "colloquial"}
+{"message": "看下ETH的K线和均线", "intent": "technical_indicator", "variant": "colloquial"}
 {"message": "MACD金叉了吗", "intent": "technical_analysis", "variant": "colloquial"}
-{"message": "BTC四小时技术指标", "intent": "technical_analysis", "variant": "formal"}
+{"message": "BTC四小时技术指标", "intent": "technical_indicator", "variant": "formal"}
 {"message": "均线多头发散吗", "intent": "technical_analysis", "variant": "formal"}
 {"message": "卦象对BTC的判断", "intent": "technical_analysis", "variant": "formal"}
 {"message": "技术面是否超买", "intent": "technical_analysis", "variant": "formal"}
-{"message": "布林带位置在哪", "intent": "technical_analysis", "variant": "formal"}
+{"message": "布林带位置在哪", "intent": "technical_indicator", "variant": "formal"}
 {"message": "看下RSI和MACD", "intent": "technical_analysis", "variant": "terse"}
-{"message": "支撑位是多少", "intent": "technical_analysis", "variant": "formal"}
+{"message": "支撑位是多少", "intent": "technical_indicator", "variant": "formal"}
 {"message": "BTC技术形态如何", "intent": "technical_analysis", "variant": "formal"}
-{"message": "压力位在哪", "intent": "technical_analysis", "variant": "terse"}
+{"message": "压力位在哪", "intent": "technical_indicator", "variant": "terse"}
 {"message": "BTC估值高不高", "intent": "fundamental_valuation", "variant": "formal"}
 {"message": "美股估值百分位", "intent": "fundamental_valuation", "variant": "formal"}
 {"message": "基本面分析一下ETH", "intent": "fundamental_valuation", "variant": "formal"}
@@ -366,3 +366,12 @@
 {"message": "过去90天降息概率走势", "intent": "metric_series", "variant": "formal"}
 {"message": "近一年恐惧贪婪指数变化", "intent": "metric_series", "variant": "formal"}
 {"message": "最近90天BTC市占率走势", "intent": "metric_series", "variant": "formal"}
+{"message": "BTC 现在回撤多少", "intent": "stat_query", "variant": "formal"}
+{"message": "ETH 最大回撤是多少", "intent": "stat_query", "variant": "colloquial"}
+{"message": "比特币有明显的月份效应吗", "intent": "stat_query", "variant": "formal"}
+{"message": "SOL 星期几表现最好", "intent": "stat_query", "variant": "colloquial"}
+{"message": "BTC 日收益状态转移矩阵", "intent": "stat_query", "variant": "formal"}
+{"message": "ETH 和 BTC 同向吗", "intent": "stat_query", "variant": "colloquial"}
+{"message": "BTC 和 ETH 谁领先谁滞后", "intent": "stat_query", "variant": "formal"}
+{"message": "BTC 因子有效性 IC 是多少", "intent": "stat_query", "variant": "mixed"}
+{"message": "黄金价格日历效应明显吗", "intent": "stat_query", "variant": "formal"}

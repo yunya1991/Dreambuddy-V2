@@ -29,7 +29,7 @@ import os
 import re
 import sqlite3
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 SettleGate = Callable[[Dict[str, Any]], Tuple[bool, Dict[str, Any]]]
@@ -94,6 +94,13 @@ _ASSET_KEYS = ("crypto_usdt", "us_stock", "precious_metal")
 _SERIES_DB_ENV = "DREAMBUDDY_CORE_DB"
 _SERIES_MAX_DAYS = 1825  # 5 年上限，防止全表扫描
 _SERIES_AGGS = ("raw", "daily", "weekly", "monthly")
+# market.candles（S1）：日频价格 → K 线；OHLC 来自 18 中心落库的 `{symbol}/USDT` 高低点
+_CANDLE_BARS = ("1h", "1d", "1w", "1m")
+_CANDLE_MIN_GOOD = {"1h": 240, "1d": 250, "1w": 52, "1m": 24}
+_CANDLE_DEFAULT_SYMBOL = "BTC"
+# OHLC 子类映射：18 中心 ccxt ticker 以 `BTC/USDT` 落 high/low（非逐根K线极值）
+_CANDLE_OHLC_SUBCATEGORY = {"BTC": "BTC/USDT", "ETH": "ETH/USDT", "SOL": "SOL/USDT"}
+_CANDLE_OHLC_NOTE = "ccxt ticker 24h 滚动高低点（非逐根K线极值）"
 # 标识符白名单：sub_category / metric_name 仅允许字母数字与有限符号，防御注入与误查
 _SERIES_IDENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._/%+=\-]{0,63}$")
 
@@ -134,6 +141,17 @@ def _iso_utc(ts: int) -> str:
     )
 
 
+def _day_window(days: int) -> tuple:
+    """UTC 日历日窗口 (start_ts, end_ts)：end 为「明天 00:00」，含当日已落库点。
+
+    按日对齐而非 now-N*86400，避免查询时刻（时/分）把窗口边界切进某一天，
+    导致 days=5 只取到 4 个日频点这类随时钟漂移的结果。
+    """
+    now = datetime.now(tz=timezone.utc)
+    end_ts = int(now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()) + 86400
+    return end_ts - days * 86400, end_ts
+
+
 def _iso_cst(ts: int) -> str:
     """UNIX 秒 → 北京时间 `2026-12-10 03:00`（经济日历展示用，不带时区后缀）。"""
     return datetime.fromtimestamp(int(ts) + 8 * 3600, tz=timezone.utc).strftime("%Y-%m-%d %H:%M")
@@ -163,6 +181,58 @@ def _aggregate_series(rows: List[Tuple[str, float, int]], agg: str) -> List[Dict
     ]
 
 
+def _daily_last(rows: List[Tuple[str, float, int]]) -> Dict[str, Tuple[int, float]]:
+    """同一 UTC 日取最后一个观测（收盘口径），返回 {YYYY-MM-DD: (ts, value)}。"""
+    out: Dict[str, Tuple[int, float]] = {}
+    for _source, value, ts in rows:
+        day = _bucket_key(ts, "daily")
+        prev = out.get(day)
+        if prev is None or int(ts) >= prev[0]:
+            out[day] = (int(ts), float(value))
+    return out
+
+
+def _day_to_dt(day: str) -> datetime:
+    """YYYY-MM-DD → UTC 00:00 datetime。"""
+    return datetime.strptime(day, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+
+
+def _candle_bar_start(day: str, bar: str) -> str:
+    """日键 → 所属 K 线桶键（1d 原样；1w 取 ISO 周一；1m 取月初）。"""
+    if bar == "1d":
+        return day
+    dt = datetime.strptime(day, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    if bar == "1m":
+        return dt.strftime("%Y-%m-01")
+    return (dt - timedelta(days=dt.weekday())).strftime("%Y-%m-%d")
+
+
+def _bucket_extreme(
+    rows: List[Tuple[str, float, int]], bar: str, pick: Callable
+) -> Dict[str, float]:
+    """按 K 线桶取高低点极值（`pick` 为 max/min）；忽略 <=0 的脏值，不填假值。"""
+    out: Dict[str, float] = {}
+    for _source, value, ts in rows:
+        value = float(value)
+        if value <= 0:
+            continue
+        key = _candle_bar_start(_bucket_key(ts, "daily"), bar)
+        prev = out.get(key)
+        out[key] = value if prev is None else pick(prev, value)
+    return out
+
+
+def _hour_last(rows: List[Tuple[str, float, int]]) -> Dict[int, float]:
+    """小时桶取最后一个观测（同一小时多源/多点时按时间升序覆盖）。"""
+    out: Dict[int, float] = {}
+    for _source, value, ts in rows:
+        value = float(value)
+        if value <= 0:
+            continue
+        out[int(ts) // 3600 * 3600] = value
+    return out
+
+
 # ============================================================
 # L0Foundation
 # ============================================================
@@ -184,6 +254,7 @@ class L0Foundation:
         "event.state": "_fetch_event_state",
         "riskcontrol.trailing": "_fetch_riskcontrol_trailing",
         "market.ticker": "_fetch_market_ticker",
+        "market.candles": "_fetch_market_candles",
         "cognitive.recall": "_fetch_cognitive_recall",
         "docs.search": "_fetch_docs_search",  # B1（41 SPEC §13.2）：41 recall 文档上下文供给
     }
@@ -375,8 +446,7 @@ class L0Foundation:
         db_path = self._resolve_series_db()
         if not os.path.isfile(db_path):
             return _degraded(src_tag, "source_missing", db_path)
-        end_ts = int(datetime.now(tz=timezone.utc).timestamp()) + 86400  # 含当日已落库点
-        start_ts = end_ts - days * 86400
+        start_ts, end_ts = _day_window(days)
         try:
             rows = self._query_series_rows(
                 db_path, sub, metric, start_ts, end_ts, str(source) if source else None
@@ -665,6 +735,429 @@ class L0Foundation:
                 last_error = str(e)
                 continue
         return _degraded(f"{self.okx_base}/{self.okx_backup}", "upstream_unavailable", last_error)
+
+    # -------- scope: market.candles（S1：日频价格 → 1D/1W/1M K 线） --------
+
+    def _resolve_ohlc_sub(self, symbol: str, params: Dict) -> str:
+        """解析 OHLC 子类：显式参数 > `{symbol}/USDT` 映射；非法/无映射回空串（不伪造）。"""
+        sub = str(params.get("ohlc_sub_category") or "").strip()
+        if not sub:
+            sub = _CANDLE_OHLC_SUBCATEGORY.get(symbol, "")
+        return sub if sub and _SERIES_IDENT_RE.match(sub) else ""
+
+    def _fetch_market_candles(self, params: Dict) -> Dict[str, Any]:
+        """从 `mm_metrics` 派生 K 线（close/volume 来自 `{symbol}`，OHLC 来自 `{symbol}/USDT`）。
+
+        参数: symbol（默认 BTC）、days（1..1825，默认 365）、bar ∈ {1h,1d,1w,1m}、
+              ohlc_sub_category（可选，覆盖默认高低点子类映射）、
+              source_policy ∈ {auto, snapshot, bars}（1d 收盘来源策略）。
+        口径:
+          - 1d 收盘来源（meta.close_anchor）：
+              `bar_close`（18 中心回填的 `*_1d` 真实日线，收盘锚点=UTC 日末）
+              / `snapshot_last`（OKX 日频快照，收盘锚点=当日最后一个观测）；
+              **跨源比较必须使用同一策略**（不同锚点混用会让同期相关被系统性低估），
+              故 `source_policy=snapshot` 强制两侧都走快照、`bars` 强制只走真实日线；
+          - 1d 的 `ts` 统一归一到 UTC 日首（日键），真实观测/收盘时刻另存 `close_ts`；
+            同一 UTC 日取最后一个观测为收盘；1w 取 ISO 周一、1m 取月初为桶起点，
+            桶内 close 取桶末值，volume 取桶内求和；
+          - OHLC: 桶内 high 取 max、low 取 min（忽略 <=0 脏值），且收盘须落在 [low, high]
+                内才挂 OHLC（跨源不一致的桶不伪造）；**只有全部桶都有高低点**才置
+                `has_ohlc=True`，部分覆盖时如实给 `ohlc_coverage` 且不回填假值；
+          - 1h: 直接取 OHLC 子类的小时级 `last/high/low`，只输出三腿齐全的小时（无则跳过）；
+          - 时效与质量由调用方按 meta 判定（不在此处伪造/外推）。
+        局限: 库内 OHLC 为 ccxt ticker 的 24h 滚动高低点，非逐根 K 线真实极值（meta.ohlc_note 标注）。
+        """
+        src_tag = "dal_mm_metrics"
+        symbol = str(params.get("symbol") or _CANDLE_DEFAULT_SYMBOL).strip().upper()
+        if not _SERIES_IDENT_RE.match(symbol):
+            return _degraded(src_tag, "invalid_params", f"illegal symbol: {symbol}")
+        bar = str(params.get("bar") or "1d").lower()
+        if bar not in _CANDLE_BARS:
+            return _degraded(src_tag, "invalid_params", f"unsupported bar: {bar}")
+        policy = str(params.get("source_policy") or "auto").lower()
+        if policy not in ("auto", "snapshot", "bars"):
+            return _degraded(src_tag, "invalid_params", f"unsupported source_policy: {policy}")
+        try:
+            days = int(params.get("days", 365))
+        except (TypeError, ValueError):
+            return _degraded(src_tag, "invalid_params", "days must be int")
+        if days < 1 or days > _SERIES_MAX_DAYS:
+            return _degraded(src_tag, "invalid_params", f"days out of range 1..{_SERIES_MAX_DAYS}")
+
+        db_path = self._resolve_series_db()
+        if not os.path.isfile(db_path):
+            return _degraded(src_tag, "source_missing", db_path)
+        start_ts, end_ts = _day_window(days)
+        if bar == "1h":
+            return self._fetch_market_candles_hourly(
+                db_path, symbol, days, start_ts, end_ts, params
+            )
+
+        # 真实日线 OHLC（18 中心 1h K 线回填的 `*_1d`）优先于 ticker 高低点合并
+        # `source_policy=snapshot` 时禁用该路径，保证跨资产比较同一收盘锚点
+        ohlc_sub = self._resolve_ohlc_sub(symbol, params)
+        true_bars = (
+            []
+            if policy == "snapshot"
+            else self._load_daily_ohlc_bars(db_path, ohlc_sub, start_ts, end_ts)
+        )
+        if true_bars:
+            return self._candles_from_bars(true_bars, symbol, bar, days, ohlc_sub, db_path)
+        if policy == "bars":
+            return _envelope(
+                {
+                    "symbol": symbol,
+                    "bar": bar,
+                    "points": [],
+                    "sample_n": 0,
+                    "has_ohlc": False,
+                },
+                src_tag,
+                meta={
+                    "quality": "empty",
+                    "sample_n": 0,
+                    "reason": "no_true_bars",
+                    "bar": bar,
+                    "days": days,
+                    "timezone": "UTC",
+                    "align_method": "daily_last",
+                    "close_anchor": "bar_close",
+                    "has_ohlc": False,
+                    "ohlc_coverage": 0.0,
+                    "ohlc_source": "",
+                    "db": db_path,
+                },
+            )
+
+        try:
+            close_rows = self._query_series_rows(db_path, symbol, "close_usd", start_ts, end_ts)
+            volume_rows = self._query_series_rows(db_path, symbol, "volume_usd", start_ts, end_ts)
+        except Exception as e:
+            return _degraded(src_tag, "read_error", f"{type(e).__name__}: {e}")
+
+        # OHLC 合并：有映射且查询失败时回退为 close-only（FAIL-OPEN，不阻塞收盘序列）
+        highs: Dict[str, float] = {}
+        lows: Dict[str, float] = {}
+        ohlc_source = ""
+        if ohlc_sub:
+            try:
+                high_rows = self._query_series_rows(db_path, ohlc_sub, "high", start_ts, end_ts)
+                low_rows = self._query_series_rows(db_path, ohlc_sub, "low", start_ts, end_ts)
+                highs = _bucket_extreme(high_rows, bar, max)
+                lows = _bucket_extreme(low_rows, bar, min)
+                ohlc_source = f"mm_metrics:{ohlc_sub}"
+            except Exception:
+                highs, lows, ohlc_source = {}, {}, ""
+
+        closes = _daily_last(close_rows)
+        volumes = _daily_last(volume_rows)
+        if not closes:
+            return _envelope(
+                {
+                    "symbol": symbol,
+                    "bar": bar,
+                    "points": [],
+                    "sample_n": 0,
+                    "has_ohlc": False,
+                },
+                src_tag,
+                meta={
+                    "quality": "empty",
+                    "sample_n": 0,
+                    "reason": "no_history",
+                    "bar": bar,
+                    "days": days,
+                    "timezone": "UTC",
+                    "align_method": "daily_last",
+                    "close_anchor": "snapshot_last",
+                    "has_ohlc": False,
+                    "ohlc_coverage": 0.0,
+                    "ohlc_source": ohlc_source,
+                    "db": db_path,
+                },
+            )
+
+        # 桶内：收盘取桶末值，成交量取桶内求和；1w/1m 的 timestamp 记为桶起点（K 线惯例）
+        buckets: Dict[str, Dict[str, Any]] = {}
+        for day in sorted(closes):
+            key = _candle_bar_start(day, bar)
+            ts, close = closes[day]
+            slot = buckets.setdefault(key, {"ts": ts, "close": close, "volume": None})
+            if ts >= slot["ts"]:
+                slot["ts"], slot["close"] = ts, close
+            vol = volumes.get(day)
+            if vol is not None:
+                slot["volume"] = round((slot["volume"] or 0.0) + vol[1], 6)
+
+        points = []
+        for key, v in sorted(buckets.items(), key=lambda kv: kv[1]["ts"]):
+            # 1d 统一归一到 UTC 日首（日键），真实观测时刻保留在 close_ts
+            bar_ts = int(_day_to_dt(key).timestamp())
+            point = {
+                "timestamp": _iso_utc(bar_ts),
+                "ts": bar_ts,
+                "close": round(float(v["close"]), 6),
+                "volume": v["volume"],
+                "close_ts": _iso_utc(v["ts"]),
+            }
+            high, low = highs.get(key), lows.get(key)
+            # 跨源一致性校验：收盘必须落在 [low, high] 内，否则该桶不挂 OHLC（不伪造 K 线）
+            if high is not None and low is not None and high >= low and low <= v["close"] <= high:
+                point["high"] = round(high, 6)
+                point["low"] = round(low, 6)
+            points.append(point)
+        sample_n = len(points)
+        calendar_days = max(1, (points[-1]["ts"] - points[0]["ts"]) // 86400 + 1)
+        missing_rate = round(max(0.0, 1.0 - sample_n / calendar_days), 4) if bar == "1d" else 0.0
+        ohlc_n = sum(1 for p in points if "high" in p)
+        ohlc_coverage = round(ohlc_n / sample_n, 4) if sample_n else 0.0
+        has_ohlc = sample_n > 0 and ohlc_n == sample_n
+        quality = (
+            "empty"
+            if sample_n == 0
+            else ("partial" if sample_n < _CANDLE_MIN_GOOD[bar] else "good")
+        )
+        meta = {
+            "quality": quality,
+            "sample_n": sample_n,
+            "bar": bar,
+            "days": days,
+            "span": f"{points[0]['timestamp'][:10]}~{points[-1]['timestamp'][:10]}",
+            "missing_rate": missing_rate,
+            "timezone": "UTC",
+            "align_method": "daily_last",
+            "close_anchor": "snapshot_last",
+            "has_ohlc": has_ohlc,
+            "ohlc_coverage": ohlc_coverage,
+            "ohlc_source": ohlc_source,
+            "ohlc_note": _CANDLE_OHLC_NOTE if ohlc_source else "",
+            "db": db_path,
+            "sources": sorted({r[0] for r in close_rows}),
+        }
+        return _envelope(
+            {
+                "symbol": symbol,
+                "bar": bar,
+                "points": points,
+                "sample_n": sample_n,
+                "has_ohlc": has_ohlc,
+            },
+            src_tag,
+            meta=meta,
+        )
+
+    def _load_daily_ohlc_bars(
+        self, db_path: str, ohlc_sub: str, start_ts: int, end_ts: int
+    ) -> List[Dict[str, Any]]:
+        """读 18 中心回填的真实日线 OHLC（`open_1d/high_1d/low_1d/close_1d/volume_1d`）。
+
+        四腿齐全且自洽（high>=max(open,close)、low<=min(open,close)）的交易日才返回；
+        读取失败或无数据返回 []（交由 ticker 合并路径降级，不阻塞）。
+        """
+        if not ohlc_sub or not _SERIES_IDENT_RE.match(ohlc_sub):
+            return []
+        try:
+            maps = {
+                name: {
+                    _bucket_key(ts, "daily"): float(value)
+                    for _src, value, ts in self._query_series_rows(
+                        db_path, ohlc_sub, f"{name}_1d", start_ts, end_ts
+                    )
+                    if float(value) > 0
+                }
+                for name in ("open", "high", "low", "close")
+            }
+            volumes = {
+                _bucket_key(ts, "daily"): float(value)
+                for _src, value, ts in self._query_series_rows(
+                    db_path, ohlc_sub, "volume_1d", start_ts, end_ts
+                )
+                if float(value) >= 0
+            }
+        except Exception:
+            return []
+        days = sorted(set(maps["open"]) & set(maps["high"]) & set(maps["low"]) & set(maps["close"]))
+        bars: List[Dict[str, Any]] = []
+        for day in days:
+            o, h, lo, c = (maps[k][day] for k in ("open", "high", "low", "close"))
+            if not (h >= max(o, c) and lo <= min(o, c) and h >= lo):
+                continue
+            bars.append(
+                {
+                    "day": day,
+                    "ts": int(_day_to_dt(day).timestamp()),
+                    "open": o,
+                    "high": h,
+                    "low": lo,
+                    "close": c,
+                    "volume": volumes.get(day),
+                }
+            )
+        return bars
+
+    def _candles_from_bars(
+        self,
+        bars: List[Dict[str, Any]],
+        symbol: str,
+        bar: str,
+        days: int,
+        ohlc_sub: str,
+        db_path: str,
+    ) -> Dict[str, Any]:
+        """真实日线 OHLC → 目标 bar（1d 原样；1w/1m 聚合 open首/high max/low min/close末/volume和）。"""
+        src_tag = "dal_mm_metrics"
+        buckets: Dict[str, Dict[str, Any]] = {}
+        for item in bars:
+            key = _candle_bar_start(item["day"], bar)
+            slot = buckets.get(key)
+            if slot is None:
+                buckets[key] = dict(item)
+                continue
+            slot["high"] = max(slot["high"], item["high"])
+            slot["low"] = min(slot["low"], item["low"])
+            slot["close"] = item["close"]
+            if slot["volume"] is not None and item["volume"] is not None:
+                slot["volume"] = slot["volume"] + item["volume"]
+
+        points = []
+        for key, v in sorted(buckets.items(), key=lambda kv: kv[1]["ts"]):
+            bar_ts = v["ts"] if bar == "1d" else int(_day_to_dt(key).timestamp())
+            points.append(
+                {
+                    "timestamp": _iso_utc(bar_ts),
+                    "ts": bar_ts,
+                    "open": round(float(v["open"]), 6),
+                    "high": round(float(v["high"]), 6),
+                    "low": round(float(v["low"]), 6),
+                    "close": round(float(v["close"]), 6),
+                    "volume": None if v["volume"] is None else round(float(v["volume"]), 6),
+                    "close_ts": _iso_utc(v["ts"]),
+                }
+            )
+        sample_n = len(points)
+        calendar_days = max(1, (points[-1]["ts"] - points[0]["ts"]) // 86400 + 1)
+        quality = (
+            "empty"
+            if sample_n == 0
+            else ("partial" if sample_n < _CANDLE_MIN_GOOD[bar] else "good")
+        )
+        meta = {
+            "quality": quality,
+            "sample_n": sample_n,
+            "bar": bar,
+            "days": days,
+            "span": f"{points[0]['timestamp'][:10]}~{points[-1]['timestamp'][:10]}",
+            "missing_rate": (
+                round(max(0.0, 1.0 - sample_n / calendar_days), 4) if bar == "1d" else 0.0
+            ),
+            "timezone": "UTC",
+            "align_method": "binance_1h_agg",
+            "close_anchor": "bar_close",
+            "has_ohlc": True,
+            "ohlc_coverage": 1.0,
+            "ohlc_source": f"mm_metrics:{ohlc_sub}#1d",
+            "ohlc_note": "18 中心 1h K 线聚合日线（真实 OHLC）",
+            "db": db_path,
+        }
+        return _envelope(
+            {
+                "symbol": symbol,
+                "bar": bar,
+                "points": points,
+                "sample_n": sample_n,
+                "has_ohlc": True,
+            },
+            src_tag,
+            meta=meta,
+        )
+
+    def _fetch_market_candles_hourly(
+        self,
+        db_path: str,
+        symbol: str,
+        days: int,
+        start_ts: int,
+        end_ts: int,
+        params: Dict,
+    ) -> Dict[str, Any]:
+        """1h K 线：只用 OHLC 子类的小时级 last/high/low（三腿齐全才输出，缺失小时跳过）。"""
+        src_tag = "dal_mm_metrics"
+        ohlc_sub = self._resolve_ohlc_sub(symbol, params)
+        base_meta = {"bar": "1h", "days": days, "timezone": "UTC", "db": db_path}
+        if not ohlc_sub:
+            return _envelope(
+                {"symbol": symbol, "bar": "1h", "points": [], "sample_n": 0, "has_ohlc": False},
+                src_tag,
+                meta={**base_meta, "quality": "empty", "sample_n": 0, "reason": "no_ohlc_source"},
+            )
+        try:
+            last_rows = self._query_series_rows(db_path, ohlc_sub, "last", start_ts, end_ts)
+            high_rows = self._query_series_rows(db_path, ohlc_sub, "high", start_ts, end_ts)
+            low_rows = self._query_series_rows(db_path, ohlc_sub, "low", start_ts, end_ts)
+            vol_rows = self._query_series_rows(db_path, ohlc_sub, "volume", start_ts, end_ts)
+        except Exception as e:
+            return _degraded(src_tag, "read_error", f"{type(e).__name__}: {e}")
+
+        closes = _hour_last(last_rows)
+        highs = _hour_last(high_rows)
+        lows = _hour_last(low_rows)
+        volumes = _hour_last(vol_rows)
+        hours = sorted(set(closes) & set(highs) & set(lows))
+        points = []
+        for ts in hours:
+            high, low = highs[ts], lows[ts]
+            if high < low:
+                continue
+            point = {
+                "timestamp": _iso_utc(ts),
+                "ts": ts,
+                "close": round(closes[ts], 6),
+                "high": round(high, 6),
+                "low": round(low, 6),
+            }
+            if ts in volumes:
+                point["volume"] = round(volumes[ts], 6)
+            points.append(point)
+        sample_n = len(points)
+        if sample_n == 0:
+            return _envelope(
+                {"symbol": symbol, "bar": "1h", "points": [], "sample_n": 0, "has_ohlc": False},
+                src_tag,
+                meta={
+                    **base_meta,
+                    "quality": "empty",
+                    "sample_n": 0,
+                    "reason": "no_history",
+                    "has_ohlc": False,
+                    "ohlc_source": f"mm_metrics:{ohlc_sub}",
+                },
+            )
+        calendar_hours = max(1, (points[-1]["ts"] - points[0]["ts"]) // 3600 + 1)
+        quality = "partial" if sample_n < _CANDLE_MIN_GOOD["1h"] else "good"
+        meta = {
+            **base_meta,
+            "quality": quality,
+            "sample_n": sample_n,
+            "span": f"{points[0]['timestamp'][:10]}~{points[-1]['timestamp'][:10]}",
+            "missing_rate": round(max(0.0, 1.0 - sample_n / calendar_hours), 4),
+            "align_method": "hourly_last",
+            "has_ohlc": True,
+            "ohlc_coverage": 1.0,
+            "ohlc_source": f"mm_metrics:{ohlc_sub}",
+            "ohlc_note": _CANDLE_OHLC_NOTE,
+            "sources": sorted({r[0] for r in last_rows}),
+        }
+        return _envelope(
+            {
+                "symbol": symbol,
+                "bar": "1h",
+                "points": points,
+                "sample_n": sample_n,
+                "has_ohlc": True,
+            },
+            src_tag,
+            meta=meta,
+        )
 
     # -------- scope: cognitive.recall --------
 

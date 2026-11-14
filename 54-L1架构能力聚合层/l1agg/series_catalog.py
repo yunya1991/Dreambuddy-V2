@@ -44,8 +44,6 @@ MODULE_SERIES: Dict[str, Dict[str, Any]] = {
     "flow": {
         "series": [
             ("etf_flow", "total_flow"),
-            ("okx_derivatives", "funding_rate_pct"),
-            ("funding_rate", "funding_rate_pct"),
         ],
         "label": "ETF 总净流入",
         "unit": "百万美元",
@@ -58,7 +56,7 @@ MODULE_SERIES: Dict[str, Dict[str, Any]] = {
         "days": 90,
     },
     "capital_flow": {
-        "series": [("open_interest", "open_interest_value"), ("funding_rate", "funding_rate_pct")],
+        "series": [("open_interest", "open_interest_value")],
         "label": "合约持仓量价值",
         "unit": "USD",
         "days": 90,
@@ -131,7 +129,7 @@ METRIC_ALIASES: List[Tuple[Tuple[str, str], Tuple[str, ...], str, str, int]] = [
         "H/s",
         90,
     ),
-    (("funding_rate", "funding_rate_pct"), ("资金费率", "funding rate"), "资金费率", "%", 90),
+    (("okx_derivatives", "funding_rate_pct"), ("资金费率", "funding rate"), "资金费率", "%", 90),
     (("long_short_ratio", "long_short_ratio"), ("多空比", "long short"), "多空比", "", 90),
     (
         ("open_interest", "open_interest_value"),
@@ -144,7 +142,7 @@ METRIC_ALIASES: List[Tuple[Tuple[str, str], Tuple[str, ...], str, str, int]] = [
         ("chains_summary", "total_tvl_bln"),
         ("defi tvl", "tvl", "锁仓量"),
         "DeFi TVL",
-        "十亿美元",
+        "亿美元",
         90,
     ),
     (
@@ -480,8 +478,15 @@ CURATED_SERIES: List[Dict[str, Any]] = [
         1e12,
     ),
     _c("overview_market", "global_change24_pct", "加密总市值24h变化", "%", ("总市值变化",), 30),
+    # 库内单位是十亿美元（bln），展示统一用「亿美元」：1 bln = 10 亿 → scale=0.1
     _c(
-        "chains_summary", "total_tvl_bln", "DeFi TVL", "十亿美元", ("defi tvl", "tvl", "锁仓量"), 90
+        "chains_summary",
+        "total_tvl_bln",
+        "DeFi TVL",
+        "亿美元",
+        ("defi tvl", "tvl", "锁仓量"),
+        90,
+        0.1,
     ),
     # ---- capital_flow（衍生品 / 资金）----
     _c(
@@ -493,9 +498,9 @@ CURATED_SERIES: List[Dict[str, Any]] = [
         90,
         1e8,
     ),
-    _c("funding_rate", "funding_rate_pct", "资金费率", "%", ("资金费率", "funding rate"), 90),
+    _c("okx_derivatives", "funding_rate_pct", "资金费率", "%", ("资金费率", "funding rate"), 90),
     _c(
-        "funding_rate",
+        "okx_derivatives",
         "funding_rate_annualized_pct",
         "资金费率年化",
         "%",
@@ -853,24 +858,38 @@ def format_series_output(
 
     vals = [float(p["value"]) * sign for p in points]
     last = vals[-1]
+    # 小额百分比（如资金费率 0.000942%）按 2 位会显示成 0.00，按最新值量级提精度
+    if unit not in _UNIT_INT and abs(last) < 0.01:
+        prec = 4
     first = vals[0]
     last_ts = int(points[-1].get("ts", 0))
+    first_ts = int(points[0].get("ts", 0))
     g = _t.gmtime(last_ts + 8 * 3600)
     as_of = "%04d-%02d-%02d %02d:%02d" % (g.tm_year, g.tm_mon, g.tm_mday, g.tm_hour, g.tm_min)
     delta = last - first
     pct = (delta / abs(first) * 100.0) if first else 0.0
+    # 实际覆盖天数：样本起点晚于请求窗口时，range/change 只是「可用 N 天」口径，
+    # 不能冒充「近 days 天」（DeFi TVL 曾因仅 9 天样本被读成 90 天变化）。
+    coverage_days = (last_ts - first_ts) // 86400 + 1 if last_ts and first_ts else 1
     out.update(
         {
-            "value": round(last, 6),
+            # value/range/change 一律按 unit 归一（÷scale），避免「147.88 亿美元」这类量纲错配
+            "value": round(last / scale, 6),
             "as_of": as_of,
-            "window": {"days": days, "points": len(vals)},
-            "range": {"min": round(min(vals), 6), "max": round(max(vals), 6)},
-            "change": {"abs": round(delta, 6), "pct": round(pct, 2)},
+            "window": {"days": days, "points": len(vals), "coverage_days": coverage_days},
+            "range": {
+                "min": round(min(vals) / scale, 6),
+                "max": round(max(vals) / scale, 6),
+            },
+            "change": {"abs": round(delta / scale, 6), "pct": round(pct, 2)},
         }
     )
+    window = f"近 {days} 天"
+    if coverage_days < days * 0.9:
+        window = f"近 {coverage_days} 天（请求 {days} 天，样本不足）"
     text = (
         f"{title}：最新 {_fmt(last)}{u}（{as_of} CST）；"
-        f"近 {days} 天 {_fmt(min(vals))}~{_fmt(max(vals))}{u}，"
+        f"{window} {_fmt(min(vals))}~{_fmt(max(vals))}{u}，"
         f"变化 {delta / scale:+.{prec}f}{u}（{pct:+.2f}%）"
     )
     if quality:

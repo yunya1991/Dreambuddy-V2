@@ -1,0 +1,4197 @@
+diff --git a/54-L1架构能力聚合层/l1agg/methods/conditional.py b/54-L1架构能力聚合层/l1agg/methods/conditional.py
+new file mode 100644
+index 0000000000..b6cf0257b1
+--- /dev/null
++++ b/54-L1架构能力聚合层/l1agg/methods/conditional.py
+@@ -0,0 +1,948 @@
++# -*- coding: utf-8 -*-
++"""S3 批（条件收益 / IC / 分组）：S11/S25/S26、F01–F06、B01–B03/B05/B11–B16、H01、R01/R02。
++
++口径纪律（METHOD_LIBRARY §14 S3 + §16）：
++  - **门禁分层**：分布/收益类 `min_n=30`，条件收益/IC/分组类 `min_n=250`
++    （与 §14「S3 需 ≥250 对齐点」一致，不足即 `insufficient_samples`）；
++  - **前瞻收益唯一实现** = `l1agg.align.forward_returns`：B13/B14/B16/R02 只消费
++    已对齐的 target，不自行位移、不重复实现；
++  - **B15 复用冻结实现** `persistence.metrics.ic_decay`（重叠 + h 个相位非重叠），
++    禁止在本批另写一份口径；
++  - p 值统一走 t 分布（`stats_core.t_two_sided_p`），`p<0.05` 只表述为显著，不表述为因果；
++  - 只接收已对齐等长序列（`l1agg.align.align` 产物），不取数、不写库、无随机数。
++"""
++
++from __future__ import annotations
++
++import bisect
++import math
++from typing import Any, Dict, List, Mapping, Optional, Sequence
++
++from l1agg.align import forward_returns, simple_returns
++from l1agg.persistence._stats import pearson, spearman
++from l1agg.persistence.metrics import ic_decay
++
++from .registry import MethodChecks, register
++from .stats_core import corr_p, t_two_sided_p
++
++DIST_MIN_N = 30  # 单维分布/收益描述
++COND_MIN_N = 250  # 条件收益 / IC / 分组（§14 S3 门禁）
++EPS = 1e-12
++
++
++# ============================================================
++# 输入契约（只接受已对齐等长序列）
++# ============================================================
++
++
++def _floats(seq: Sequence[Any]) -> List[float]:
++    return [float(v) for v in seq]
++
++
++def _series(data: Any) -> List[float]:
++    """单序列：list 或 {"series"/"values"/"price"/"prices"/"indicator"}。"""
++    if isinstance(data, Mapping):
++        for key in ("series", "values", "price", "prices", "indicator", "x"):
++            if key in data:
++                return _floats(data[key])
++        raise ValueError("series data must contain one of series/values/price/prices/indicator")
++    return _floats(data)
++
++
++def _two(data: Mapping[str, Any]) -> tuple[List[float], List[float]]:
++    """等长双序列：x/y 或 factor/target 或 factor/price 或 indicator/price。"""
++    for a, b in (
++        ("x", "y"),
++        ("factor", "target"),
++        ("factor", "price"),
++        ("indicator", "price"),
++    ):
++        if a in data and b in data:
++            xs, ys = _floats(data[a]), _floats(data[b])
++            n = min(len(xs), len(ys))
++            if n < 3:
++                raise ValueError("need at least 3 paired points")
++            return xs[:n], ys[:n]
++    raise ValueError("paired data must contain x/y, factor/target or factor/price")
++
++
++def _quantile_sorted(sorted_vals: Sequence[float], q: float) -> float:
++    """线性插值分位（与 numpy.percentile(method="linear") 同口径）。"""
++    n = len(sorted_vals)
++    if n == 0:
++        raise ValueError("empty series")
++    if q <= 0:
++        return sorted_vals[0]
++    if q >= 1:
++        return sorted_vals[-1]
++    pos = q * (n - 1)
++    lo = int(math.floor(pos))
++    hi = min(lo + 1, n - 1)
++    frac = pos - lo
++    return sorted_vals[lo] * (1.0 - frac) + sorted_vals[hi] * frac
++
++
++def _mean(xs: Sequence[float]) -> float:
++    return sum(xs) / len(xs) if xs else float("nan")
++
++
++def _median(sorted_vals: Sequence[float]) -> float:
++    return _quantile_sorted(sorted_vals, 0.5)
++
++
++def _std(xs: Sequence[float]) -> float:
++    n = len(xs)
++    if n < 2:
++        return 0.0
++    mu = _mean(xs)
++    return math.sqrt(sum((x - mu) ** 2 for x in xs) / (n - 1))
++
++
++def _group_stats(values: Sequence[float]) -> Dict[str, Any]:
++    """组内描述统计（R01/B05 共用）：均值/中位/胜率/t。"""
++    n = len(values)
++    if n == 0:
++        return {"n": 0, "mean": None, "median": None, "win_rate": None, "t": None, "p": None}
++    mu = _mean(values)
++    sd = _std(values)
++    t = None if (n < 2 or sd <= EPS) else mu / (sd / math.sqrt(n))
++    return {
++        "n": n,
++        "mean": round(mu, 6),
++        "median": round(_median(sorted(values)), 6),
++        "win_rate": round(sum(1 for v in values if v > 0) / n, 6),
++        "t": None if t is None else round(t, 3),
++        "p": t_two_sided_p(t, n - 1) if t is not None else None,
++    }
++
++
++# ============================================================
++# S11 / S25 / S26 单维分布
++# ============================================================
++
++
++@register(
++    "S11", name="分位（线性插值）", group="S", layer="D1", input_kind="series",
++    min_n=DIST_MIN_N,
++    output_schema=("p1", "p5", "p10", "p25", "p50", "p75", "p90", "p95", "p99", "n"),
++    notes="与 numpy.percentile(method='linear') 同口径",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": [float(i) for i in range(30)],
++            "params": {},
++            "expect": {"result.p50": 14.5, "result.p1": 0.29, "result.n": 30},
++        },
++        reference=lambda data: {
++            "result.p50": float(__import__("numpy").percentile(data, 50)),
++            "result.p99": float(__import__("numpy").percentile(data, 99)),
++        },
++    ),
++)
++def s11_percentiles(data, **_: Any) -> Dict[str, Any]:
++    values = sorted(_series(data))
++    qs = (1, 5, 10, 25, 50, 75, 90, 95, 99)
++    out: Dict[str, Any] = {
++        f"p{q}": round(_quantile_sorted(values, q / 100.0), 6) for q in qs
++    }
++    out["n"] = len(values)
++    return out
++
++
++@register(
++    "S25", name="历史分位", group="S", layer="D1", input_kind="series",
++    min_n=DIST_MIN_N, output_schema=("value", "percentile", "n"),
++    notes="percentile = 100 × count(X ≤ x_last) / n（PIT 无未来函数）",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": [float(i) for i in range(30)],
++            "params": {},
++            "expect": {"result.percentile": 100.0, "result.value": 29.0},
++        },
++    ),
++)
++def s25_percentile(data, **_: Any) -> Dict[str, Any]:
++    values = _series(data)
++    last = values[-1]
++    return {
++        "value": round(last, 6),
++        "percentile": round(100.0 * sum(1 for v in values if v <= last) / len(values), 4),
++        "n": len(values),
++    }
++
++
++@register(
++    "S26", name="z-score（winsorize p1/p99）", group="S", layer="D1", input_kind="series",
++    min_n=DIST_MIN_N, output_schema=("z", "mean", "std", "n", "winsorized"),
++    notes="先按 p1/p99 截断再算 μ/σ，z 取末点（D-A05 口径）",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": [float(i) for i in range(30)],
++            "params": {},
++            "expect": {"result.mean": 14.5, "result.n": 30},
++        },
++    ),
++)
++def s26_zscore(data, **_: Any) -> Dict[str, Any]:
++    values = _series(data)
++    s = sorted(values)
++    lo, hi = _quantile_sorted(s, 0.01), _quantile_sorted(s, 0.99)
++    wins = [min(max(v, lo), hi) for v in values]
++    mu, sd = _mean(wins), _std(wins)
++    return {
++        "z": None if sd <= EPS else round((values[-1] - mu) / sd, 6),
++        "mean": round(mu, 6),
++        "std": round(sd, 6),
++        "n": len(values),
++        "winsorized": True,
++    }
++
++
++# ============================================================
++# F01–F06 收益与风险
++# ============================================================
++
++
++@register(
++    "F01", name="简单收益", group="F", layer="D1", input_kind="series",
++    min_n=DIST_MIN_N, output_schema=("r", "mean", "std", "n"),
++    notes="复用 align.simple_returns（r_t=P_t/P_{t-1}−1，首点丢弃）",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": [100.0 * (1.1 ** i) for i in range(30)],
++            "params": {},
++            "expect": {"result.mean": 0.1, "result.n": 30},
++        },
++    ),
++)
++def f01_simple_return(data, **_: Any) -> Dict[str, Any]:
++    values = _series(data)
++    rs = simple_returns(values)
++    return {
++        "r": [round(r, 6) for r in rs],
++        "mean": round(_mean(rs), 6),
++        "std": round(_std(rs), 6),
++        "n": len(values),
++    }
++
++
++@register(
++    "F02", name="对数收益", group="F", layer="D1", input_kind="series",
++    min_n=DIST_MIN_N, output_schema=("lr", "mean", "std", "n"),
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": [100.0 * (1.1 ** i) for i in range(30)],
++            "params": {},
++            "expect": {"result.mean": 0.0953102, "result.n": 30},
++        },
++    ),
++)
++def f02_log_return(data, **_: Any) -> Dict[str, Any]:
++    values = _series(data)
++    lrs = [
++        0.0 if (a <= 0 or b <= 0) else math.log(b / a)
++        for a, b in zip(values, values[1:])
++    ]
++    return {
++        "lr": [round(v, 6) for v in lrs],
++        "mean": round(_mean(lrs), 6),
++        "std": round(_std(lrs), 6),
++        "n": len(values),
++    }
++
++
++@register(
++    "F03", name="区间收益", group="F", layer="D1", input_kind="series",
++    min_n=2, output_schema=("ret", "start", "end", "n"),
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": [100.0] * 15 + [200.0] * 15,
++            "params": {},
++            "expect": {"result.ret": 1.0, "result.n": 30},
++        },
++    ),
++)
++def f03_interval_return(data, **_: Any) -> Dict[str, Any]:
++    values = _series(data)
++    first, last = values[0], values[-1]
++    return {
++        "ret": None if first == 0 else round(last / first - 1.0, 6),
++        "start": round(first, 6),
++        "end": round(last, 6),
++        "n": len(values),
++    }
++
++
++@register(
++    "F04", name="年化收益", group="F", layer="D1", input_kind="series",
++    min_n=DIST_MIN_N, output_schema=("ann", "mean_daily", "n"),
++    notes="(1+日均收益)^365 − 1；仅描述历史，不外推",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": [100.0 * (1.001 ** i) for i in range(30)],
++            "params": {},
++            "expect": {"result.mean_daily": 0.001, "result.n": 30},
++        },
++    ),
++)
++def f04_annualized_return(data, **_: Any) -> Dict[str, Any]:
++    values = _series(data)
++    mu = _mean(simple_returns(values))
++    return {
++        "ann": round((1.0 + mu) ** 365 - 1.0, 6),
++        "mean_daily": round(mu, 6),
++        "n": len(values),
++    }
++
++
++@register(
++    "F05", name="年化波动率", group="F", layer="D1", input_kind="series",
++    min_n=DIST_MIN_N, output_schema=("vol", "mean_ret", "n"),
++    notes="σ(日简单收益) × √365",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": [100.0 * (1.1 ** i) for i in range(30)],
++            "params": {},
++            "expect": {"result.vol": 0.0, "result.n": 30},
++        },
++    ),
++)
++def f05_annualized_vol(data, **_: Any) -> Dict[str, Any]:
++    values = _series(data)
++    rs = simple_returns(values)
++    return {
++        "vol": round(_std(rs) * math.sqrt(365.0), 6),
++        "mean_ret": round(_mean(rs), 6),
++        "n": len(values),
++    }
++
++
++@register(
++    "F06", name="夏普比率", group="F", layer="D2", input_kind="series",
++    min_n=DIST_MIN_N, output_schema=("sharpe", "ann_ret", "ann_vol", "rf", "n"),
++    notes="(年化收益 − rf) / 年化波动；波动为 0 时返回 null",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": [100.0 * (1.1 ** i) for i in range(30)],
++            "params": {},
++            "expect": {"result.sharpe": None, "result.n": 30},
++        },
++    ),
++)
++def f06_sharpe(data, rf: float = 0.0, **_: Any) -> Dict[str, Any]:
++    values = _series(data)
++    rs = simple_returns(values)
++    mu = _mean(rs)
++    vol = _std(rs) * math.sqrt(365.0)
++    ann = (1.0 + mu) ** 365 - 1.0
++    return {
++        "sharpe": None if vol <= EPS else round((ann - float(rf)) / vol, 6),
++        "ann_ret": round(ann, 6),
++        "ann_vol": round(vol, 6),
++        "rf": float(rf),
++        "n": len(values),
++    }
++
++
++# ============================================================
++# B01–B03 分箱
++# ============================================================
++
++
++@register(
++    "B01", name="等宽分箱", group="B", layer="D1", input_kind="series",
++    min_n=DIST_MIN_N, output_schema=("edges", "counts", "bin", "k", "n"),
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": [float(i) for i in range(30)],
++            "params": {"k": 10},
++            "expect": {"result.counts.0": 3, "result.counts.9": 3, "result.k": 10},
++        },
++    ),
++)
++def b01_width_bins(data, k: int = 10, **_: Any) -> Dict[str, Any]:
++    values = _series(data)
++    if k < 2:
++        raise ValueError("k must be >= 2")
++    lo, hi = min(values), max(values)
++    width = (hi - lo) / k if hi > lo else 1.0
++    edges = [lo + width * i for i in range(k + 1)]
++    counts = [0] * k
++    for v in values:
++        counts[min(int((v - lo) / width), k - 1)] += 1
++    return {
++        "edges": [round(e, 6) for e in edges],
++        "counts": counts,
++        "bin": min(int((values[-1] - lo) / width), k - 1),
++        "k": k,
++        "n": len(values),
++    }
++
++
++@register(
++    "B02", name="等频分箱（分位）", group="B", layer="D1", input_kind="series",
++    min_n=DIST_MIN_N, output_schema=("edges", "counts", "bucket", "k", "n"),
++    notes="edges 用线性插值分位；左闭右开，末桶闭合",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": [float(i) for i in range(30)],
++            "params": {"k": 5},
++            "expect": {"result.counts.0": 6, "result.k": 5, "result.bucket": 4},
++        },
++    ),
++)
++def b02_quantile_bins(data, k: int = 5, **_: Any) -> Dict[str, Any]:
++    values = _series(data)
++    if k < 2:
++        raise ValueError("k must be >= 2")
++    s = sorted(values)
++    edges = [_quantile_sorted(s, i / k) for i in range(k + 1)]
++    inner = edges[1:-1]
++    counts = [0] * k
++    for v in values:
++        counts[min(bisect.bisect_right(inner, v), k - 1)] += 1
++    return {
++        "edges": [round(e, 6) for e in edges],
++        "counts": counts,
++        "bucket": min(bisect.bisect_right(inner, values[-1]), k - 1),
++        "k": k,
++        "n": len(values),
++    }
++
++
++@register(
++    "B03", name="固定阈值分档", group="B", layer="D1", input_kind="series",
++    min_n=1, output_schema=("level", "label", "counts", "thresholds", "n"),
++    notes="如恐惧贪婪 0–25/26–50/…；阈值由参数给出，不写死在数据里",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": [float(i) for i in range(101)],
++            "params": {"thresholds": (25, 50, 75)},
++            "expect": {"result.level": 3, "result.n": 101},
++        },
++    ),
++)
++def b03_threshold_levels(
++    data, thresholds: Sequence[float] = (25, 50, 75), **_: Any
++) -> Dict[str, Any]:
++    values = _series(data)
++    th = sorted(float(t) for t in thresholds)
++    if not th:
++        raise ValueError("thresholds must not be empty")
++    counts = [0] * (len(th) + 1)
++    for v in values:
++        counts[min(bisect.bisect_right(th, v), len(th))] += 1
++    level = min(bisect.bisect_right(th, values[-1]), len(th))
++    if level == 0:
++        label = f"<{th[0]:g}"
++    elif level == len(th):
++        label = f">={th[-1]:g}"
++    else:
++        label = f"{th[level - 1]:g}~{th[level]:g}"
++    return {
++        "level": level,
++        "label": label,
++        "counts": counts,
++        "thresholds": th,
++        "n": len(values),
++    }
++
++
++# ============================================================
++# B05 / B11–B16 条件分组与 IC
++# ============================================================
++
++
++@register(
++    "B05", name="条件分组统计", group="B", layer="D2", input_kind="pairs",
++    min_n=COND_MIN_N, output_schema=("table", "n"),
++    notes="state × target → 每组 均值/中位/胜率/次数/t（配 R01 表达）",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": {
++                "state": [str(i % 2) for i in range(300)],
++                "target": [0.01 if i % 2 else -0.01 for i in range(300)],
++            },
++            "params": {},
++            "expect": {"result.table.1.mean": 0.01, "result.table.0.mean": -0.01},
++        },
++    ),
++)
++def b05_conditional(data, **_: Any) -> Dict[str, Any]:
++    if "state" not in data or "target" not in data:
++        raise ValueError("B05 needs data.state and data.target")
++    states = list(data["state"])[: len(data["target"])]
++    targets = _floats(data["target"])[: len(states)]
++    groups: Dict[str, List[float]] = {}
++    for s, t in zip(states, targets):
++        groups.setdefault(str(s), []).append(t)
++    table = [dict(state=k, **_group_stats(v)) for k, v in groups.items()]
++    return {"table": table, "n": len(targets)}
++
++
++def _bucket_by_quantile(
++    factor: Sequence[float], target: Sequence[float], k: int
++) -> List[Dict[str, Any]]:
++    edges = [_quantile_sorted(sorted(factor), i / k) for i in range(k + 1)]
++    inner = edges[1:-1]
++    buckets: List[List[float]] = [[] for _ in range(k)]
++    for f, t in zip(factor, target):
++        buckets[min(bisect.bisect_right(inner, f), k - 1)].append(t)
++    return [
++        dict(bucket=i, lo=round(edges[i], 6), hi=round(edges[i + 1], 6), **_group_stats(vals))
++        for i, vals in enumerate(buckets)
++    ]
++
++
++@register(
++    "B16", name="分组回测统计", group="B", layer="D2", input_kind="pairs",
++    min_n=COND_MIN_N, output_schema=("table", "spread", "k", "n"),
++    notes="factor 分位分组 → target 组内均值/胜率；spread = 最高组 − 最低组（描述性，非策略收益）",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": {
++                "factor": [float(i) for i in range(300)],
++                "target": [0.001 * i for i in range(300)],
++            },
++            "params": {"k": 5},
++            "expect": {"result.spread": 0.24, "result.k": 5},
++        },
++    ),
++)
++def b16_group_stats(
++    data, k: int = 5, **_: Any
++) -> Dict[str, Any]:
++    factor, target = _two(data)
++    if k < 2:
++        raise ValueError("k must be >= 2")
++    table = _bucket_by_quantile(factor, target, k)
++    top, bottom = table[-1]["mean"], table[0]["mean"]
++    spread = None if (top is None or bottom is None) else round(top - bottom, 6)
++    return {"table": table, "spread": spread, "k": k, "n": len(target)}
++
++
++@register(
++    "B12", name="分箱收益梯度", group="B", layer="D2", input_kind="pairs",
++    min_n=COND_MIN_N, output_schema=("spread", "spread_pp", "k", "n"),
++    notes="同 B16 的价差，额外给百分点写法",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": {
++                "factor": [float(i) for i in range(300)],
++                "target": [0.001 * i for i in range(300)],
++            },
++            "params": {"k": 5},
++            "expect": {"result.spread": 0.24, "result.spread_pp": 24.0},
++        },
++    ),
++)
++def b12_gradient(data, k: int = 5, **_: Any) -> Dict[str, Any]:
++    out = b16_group_stats(data, k=k)
++    return {
++        "spread": out["spread"],
++        "spread_pp": None if out["spread"] is None else round(out["spread"] * 100.0, 4),
++        "k": out["k"],
++        "n": out["n"],
++    }
++
++
++@register(
++    "B11", name="分箱单调性", group="B", layer="D2", input_kind="pairs",
++    min_n=COND_MIN_N, output_schema=("monotonic", "bin_means", "rho_bin", "k", "n"),
++    notes="组均值随桶序严格递增/递减才算 monotonic，否则 non_monotonic",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": {
++                "factor": [float(i) for i in range(300)],
++                "target": [0.001 * i for i in range(300)],
++            },
++            "params": {"k": 5},
++            "expect": {"result.monotonic": "increasing"},
++        },
++    ),
++)
++def b11_monotonic(data, k: int = 5, **_: Any) -> Dict[str, Any]:
++    table = b16_group_stats(data, k=k)["table"]
++    means = [float(x["mean"]) for x in table]
++    diffs = [b - a for a, b in zip(means, means[1:])]
++    if all(d > 0 for d in diffs):
++        mono = "increasing"
++    elif all(d < 0 for d in diffs):
++        mono = "decreasing"
++    else:
++        mono = "non_monotonic"
++    rho = None
++    try:
++        rho = spearman([float(i) for i in range(len(means))], means)
++    except Exception:
++        pass
++    return {
++        "monotonic": mono,
++        "bin_means": [round(m, 6) for m in means],
++        "rho_bin": None if rho is None else round(rho, 6),
++        "k": k,
++        "n": sum(x["n"] for x in table),
++    }
++
++
++@register(
++    "B13", name="信息系数 IC", group="B", layer="D2", input_kind="pairs",
++    min_n=COND_MIN_N, output_schema=("ic", "p", "n"),
++    notes="factor 与 target（已由 align.forward_returns 生成）的 Pearson 相关；不做位移",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": {
++                "factor": [float(i) for i in range(300)],
++                "target": [float(i) for i in range(300)],
++            },
++            "params": {},
++            "expect": {"result.ic": 1.0, "result.n": 300},
++        },
++        null="no_correlation",
++        reference=lambda data: {
++            "result.ic": float(
++                __import__("scipy.stats", fromlist=["stats"]).pearsonr(
++                    data["factor"], data["target"]
++                )[0]
++            )
++        },
++    ),
++)
++def b13_ic(data, **_: Any) -> Dict[str, Any]:
++    factor, target = _two(data)
++    ic = pearson(factor, target)
++    return {"ic": round(ic, 6), "p": corr_p(ic, len(factor)), "n": len(factor)}
++
++
++@register(
++    "B14", name="Rank IC", group="B", layer="D2", input_kind="pairs",
++    min_n=COND_MIN_N, output_schema=("rank_ic", "p", "n"),
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": {
++                "factor": [float(i) for i in range(300)],
++                "target": [float(i) ** 3 for i in range(300)],
++            },
++            "params": {},
++            "expect": {"result.rank_ic": 1.0},
++        },
++        null="no_correlation",
++        reference=lambda data: {
++            "result.rank_ic": float(
++                __import__("scipy.stats", fromlist=["stats"]).spearmanr(
++                    data["factor"], data["target"]
++                )[0]
++            )
++        },
++    ),
++)
++def b14_rank_ic(data, **_: Any) -> Dict[str, Any]:
++    factor, target = _two(data)
++    ric = spearman(factor, target)
++    return {"rank_ic": round(ric, 6), "p": corr_p(ric, len(factor)), "n": len(factor)}
++
++
++@register(
++    "B15", name="IC 衰减", group="B", layer="D3", input_kind="series",
++    min_n=COND_MIN_N, output_schema=("lookback", "items", "n"),
++    notes="复用 §16 冻结实现 persistence.metrics.ic_decay（重叠 + h 相位非重叠）",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": [
++                100.0 * math.exp(0.001 * i + 0.05 * math.sin(i / 5.0))
++                for i in range(400)
++            ],
++            "params": {"lookback": 20, "horizons": (1, 5, 20)},
++            "expect": {"result.items.0.h": 1, "result.n": 400},
++        },
++    ),
++)
++def b15_ic_decay(
++    data, lookback: int = 20, horizons: Sequence[int] = (1, 5, 20), **_: Any
++) -> Dict[str, Any]:
++    out = ic_decay(_series(data), lookback=lookback, horizons=tuple(horizons))
++    # 统一输出：把非重叠口径标成 gate 语言，避免下游误用重叠 n
++    for item in out["items"]:
++        item["nonoverlap_gate"] = "ok" if item.get("ric_nonoverlap") is not None else "insufficient_samples"
++    return out
++
++
++# ============================================================
++# H01 单样本 t
++# ============================================================
++
++
++@register(
++    "H01", name="单样本 t 检验", group="H", layer="D2", input_kind="series",
++    min_n=DIST_MIN_N, output_schema=("mean", "se", "t", "p", "n", "is_significant"),
++    notes="H0: 均值=0；p 走 t 分布（df=n−1）",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": [0.01, 0.02] * 15,
++            "params": {},
++            "expect": {"result.mean": 0.015, "result.is_significant": True},
++        },
++        reference=lambda data: {
++            "result.t": float(
++                __import__("scipy.stats", fromlist=["stats"]).ttest_1samp(
++                    data, 0.0
++                )[0]
++            )
++        },
++    ),
++)
++def h01_one_sample_t(data, **_: Any) -> Dict[str, Any]:
++    values = _series(data)
++    n = len(values)
++    mu, sd = _mean(values), _std(values)
++    se = None if sd <= EPS else sd / math.sqrt(n)
++    t = None if (se is None or se <= EPS) else mu / se
++    p = None if t is None else t_two_sided_p(t, n - 1)
++    return {
++        "mean": round(mu, 6),
++        "se": None if se is None else round(se, 8),
++        "t": None if t is None else round(t, 3),
++        "p": p,
++        "n": n,
++        "is_significant": bool(p is not None and p < 0.05),
++    }
++
++
++# ============================================================
++# R01 / R02 关系表达
++# ============================================================
++
++
++@register(
++    "R01", name="条件收益统计（表达）", group="R", layer="D2", input_kind="pairs",
++    min_n=COND_MIN_N, output_schema=("table", "phrase", "state", "h", "n"),
++    notes="固定句式（§13 R01）；只描述历史统计，不含因果与预测措辞",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": {
++                "state": [str(i % 2) for i in range(300)],
++                "target": [0.01 if i % 2 else -0.01 for i in range(300)],
++            },
++            "params": {"h": 1},
++            "expect": {"result.table.1.mean": 0.01, "result.n": 300},
++        },
++    ),
++)
++def r01_conditional_phrase(
++    data, h: int = 1, state: Optional[str] = None, **_: Any
++) -> Dict[str, Any]:
++    out = b05_conditional(data)
++    table = out["table"]
++    if not table:
++        raise ValueError("no state group")
++    pick = next((row for row in table if str(row["state"]) == str(state)), None) if state else None
++    if pick is None:
++        pick = max(table, key=lambda row: row["n"])
++    mean_pct = None if pick["mean"] is None else pick["mean"] * 100.0
++    med_pct = None if pick["median"] is None else pick["median"] * 100.0
++    win = None if pick["win_rate"] is None else pick["win_rate"] * 100.0
++    phrase = (
++        f"历史 {pick['n']} 次「{pick['state']}」后 {h} 日："
++        f"均值 {mean_pct:+.2f}%、中位 {med_pct:+.2f}%、上涨 {win:.1f}%"
++        f"（n={pick['n']}，t={pick['t']}）。"
++    )
++    return {"table": table, "phrase": phrase, "state": pick["state"], "h": h, "n": out["n"]}
++
++
++def _r02_time_key(value: Any) -> float:
++    """把 ISO 日期/时间或数值时间戳转成可比较的 UTC 秒。"""
++    if isinstance(value, (int, float)):
++        return float(value)
++    if isinstance(value, str):
++        text = value.strip()
++        try:
++            return float(text)
++        except ValueError:
++            pass
++        from datetime import datetime, timezone
++
++        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
++        if parsed.tzinfo is None:
++            parsed = parsed.replace(tzinfo=timezone.utc)
++        return parsed.timestamp()
++    raise ValueError(f"unsupported timestamp: {value!r}")
++
++
++def _r02_nonoverlap_n(indices: Sequence[int], horizon: int) -> int:
++    """按时间顺序贪心保留前瞻窗口不重叠的样本数。"""
++    count = 0
++    next_available = None
++    for i in indices:
++        if next_available is None or i >= next_available:
++            count += 1
++            next_available = i + horizon
++    return count
++
++
++@register(
++    "R02", name="分位→前瞻收益（表达）", group="R", layer="D2", input_kind="pairs",
++    min_n=COND_MIN_N,
++    output_schema=(
++        "current_percentile", "bucket", "by_horizon", "phrase", "n",
++        "pit", "as_of", "window", "align_method",
++    ),
++    notes="pit=true 逐时点滚动分位；pit=false 仅供含未来函数的样本内回顾",
++    checks=MethodChecks(
++        synthetic=lambda: {
++            "data": {
++                "indicator": [float(i) for i in range(300)],
++                "price": [100.0 * math.exp(0.0005 * i) for i in range(300)],
++            },
++            "params": {"buckets": 10, "horizons": (1, 5)},
++            "expect": {"result.current_percentile": 100.0, "result.bucket": 9},
++        },
++    ),
++)
++def r02_percentile_forward(
++    data,
++    buckets: int = 10,
++    horizons: Sequence[int] = (1, 3, 5, 10, 20),
++    label: str = "该指标",
++    pit: bool = False,
++    window: int = COND_MIN_N,
++    as_of: Any = None,
++    **_: Any,
++) -> Dict[str, Any]:
++    indicator, price = _two(data)
++    n = len(indicator)
++    if buckets < 2:
++        raise ValueError("buckets must be >= 2")
++    if window < 2:
++        raise ValueError("window must be >= 2")
++
++    raw_times = next(
++        (data[key] for key in ("timestamps", "dates", "ts") if key in data),
++        list(range(n)),
++    )
++    if len(raw_times) != n:
++        raise ValueError("timestamps length must equal indicator/price length")
++    time_keys = [_r02_time_key(v) for v in raw_times]
++    if any(b < a for a, b in zip(time_keys, time_keys[1:])):
++        raise ValueError("timestamps must be sorted")
++
++    as_of_value = raw_times[-1] if as_of is None else as_of
++    as_of_key = _r02_time_key(as_of_value)
++    end = bisect.bisect_right(time_keys, as_of_key)
++    if end < 1:
++        raise ValueError("as_of precedes the first observation")
++    indicator = indicator[:end]
++    price = price[:end]
++    raw_times = raw_times[:end]
++    time_keys = time_keys[:end]
++
++    release_keys = time_keys
++    if pit and "release_ts" in data:
++        if len(data["release_ts"]) != n:
++            raise ValueError("release_ts length must equal indicator/price length")
++        release_keys = [_r02_time_key(v) for v in data["release_ts"][:end]]
++
++    def rolling_state(last_index: int, visible_until: float):
++        visible = [
++            j for j in range(last_index + 1)
++            if release_keys[j] <= visible_until
++        ]
++        if len(visible) < window:
++            return None
++        values = [indicator[j] for j in visible[-window:]]
++        current = values[-1]
++        ordered = sorted(values)
++        inner = [
++            _quantile_sorted(ordered, i / buckets)
++            for i in range(1, buckets)
++        ]
++        percentile = 100.0 * sum(1 for v in values if v <= current) / len(values)
++        bucket = min(bisect.bisect_right(inner, current), buckets - 1)
++        return percentile, bucket
++
++    if pit:
++        current_state = rolling_state(end - 1, as_of_key)
++        if current_state is None:
++            raise ValueError(f"pit requires at least {window} visible observations as of {as_of_value}")
++        states = [rolling_state(i, time_keys[i]) for i in range(end)]
++        pct, bucket = current_state
++    else:
++        last = indicator[-1]
++        pct = 100.0 * sum(1 for v in indicator if v <= last) / end
++        edges = [_quantile_sorted(sorted(indicator), i / buckets) for i in range(buckets + 1)]
++        inner = edges[1:-1]
++        bucket = min(bisect.bisect_right(inner, last), buckets - 1)
++        states = [
++            (0.0, min(bisect.bisect_right(inner, value), buckets - 1))
++            for value in indicator
++        ]
++
++    align_method = str(data.get("align_method") or "prealigned")
++    disclosed_window = int(window) if pit else end
++    def describe(selected, horizon: int) -> Dict[str, Any]:
++        stats = _group_stats([float(v) for _, v in selected])
++        ordered = sorted(float(v) for _, v in selected)
++        stats["p10"] = round(_quantile_sorted(ordered, 0.1), 6) if ordered else None
++        stats["p90"] = round(_quantile_sorted(ordered, 0.9), 6) if ordered else None
++        if pit and horizon > 1:
++            stats["t"] = None
++            stats["p"] = None
++        stats.update({
++            "effective_n": len(selected),
++            "nonoverlap_n": _r02_nonoverlap_n([i for i, _ in selected], horizon),
++        })
++        return stats
++
++    by_horizon: List[Dict[str, Any]] = []
++    for h in horizons:
++        horizon = int(h)
++        fwd = forward_returns(price, horizon)
++        by_bucket: List[Dict[str, Any]] = []
++        for condition_bucket in range(buckets):
++            selected = [
++                (i, fwd[i])
++                for i in range(end)
++                if fwd[i] is not None and states[i] is not None
++                and states[i][1] == condition_bucket
++            ]
++            by_bucket.append(dict(bucket=condition_bucket, **describe(selected, horizon)))
++        stats = dict(by_bucket[bucket])
++        stats.pop("bucket")
++        stats.update({
++            "pit": bool(pit),
++            "as_of": as_of_value,
++            "window": disclosed_window,
++            "align_method": align_method,
++            "by_bucket": by_bucket,
++        })
++        by_horizon.append(dict(h=horizon, **stats))
++
++    main = by_horizon[0] if by_horizon else None
++    if main and main["effective_n"]:
++        distribution = (
++            f"历史同分位区间后 {main['h']} 日：均值 {(main['mean'] or 0.0) * 100.0:+.2f}%、"
++            f"上涨 {(main['win_rate'] or 0.0) * 100.0:.1f}%"
++            f"（有效 n={main['effective_n']}，非重叠 n={main['nonoverlap_n']}）。"
++        )
++    else:
++        distribution = "历史同分位区间样本不足。"
++    if pit:
++        phrase = (
++            f"截至 {as_of_value}，当前 {label} 处于 {pct:.1f}% 分位；"
++            f"按当时可见数据识别的{distribution}历史统计，不代表未来。"
++        )
++    else:
++        phrase = (
++            f"样本内回顾（全样本分位，含未来函数，不用于条件外推）：当前 {label} "
++            f"处于 {pct:.1f}% 分位；{distribution}历史统计，不代表未来。"
++        )
++    return {
++        "current_percentile": round(pct, 4),
++        "bucket": bucket,
++        "by_horizon": by_horizon,
++        "phrase": phrase,
++        "n": end,
++        "sample_n": end,
++        "pit": bool(pit),
++        "as_of": as_of_value,
++        "window": disclosed_window,
++        "align_method": align_method,
++    }
+diff --git a/54-L1架构能力聚合层/l1agg/methods/technical.py b/54-L1架构能力聚合层/l1agg/methods/technical.py
+new file mode 100644
+index 0000000000..74a8484b32
+--- /dev/null
++++ b/54-L1架构能力聚合层/l1agg/methods/technical.py
+@@ -0,0 +1,996 @@
++# -*- coding: utf-8 -*-
++"""I 组技术指标（D-B01–B07 的方法内核）：I 组 34 个方法全量实现。
++
++口径冻结（METHOD_LIBRARY §6）：
++  - 全部纯 stdlib、只吃等长序列、不取数、不写库；
++  - EMA/MACD 以「前 period 个值的 SMA」为种子（adjust=False 口径）；
++  - RSI/ATR 用 Wilder 平滑；布林用总体标准差（ddof=0，与 pandas 一致）；
++  - 依赖 high/low 的方法（I12、I20–I23）缺腿时抛 `ValueError`，
++    由编排层转成 `insufficient_history`——**禁止**用 close 伪造高低点。
++"""
++
++from __future__ import annotations
++
++import math
++from typing import Any, Dict, List, Mapping, Sequence
++
++from l1agg.persistence._stats import mean
++
++from ._helpers import EPS, ols_slope, r4, r6
++from .registry import register
++
++SUPPORT_EPS_PCT = 0.015  # 支撑/压力聚簇容差（同簇价差 ≤1.5%）
++
++
++def _series(data: Mapping[str, Any], key: str) -> List[float]:
++    values = data.get(key)
++    if values is None or isinstance(values, str):
++        raise ValueError(f"missing '{key}' series")
++    out = [float(v) for v in values]
++    if not out:
++        raise ValueError(f"empty '{key}' series")
++    return out
++
++
++def _ohlc(data: Mapping[str, Any]) -> tuple[List[float], List[float]]:
++    return _series(data, "high"), _series(data, "low")
++
++
++def _sma(values: Sequence[float], period: int) -> float:
++    if period < 1 or len(values) < period:
++        raise ValueError(f"sma needs n>={period}")
++    return mean(list(values[-period:]))
++
++
++def _ema_series(values: Sequence[float], period: int) -> List[float]:
++    """种子 = 前 period 个值 SMA；返回与输入等长的 EMA 序列。"""
++    if period < 1 or len(values) < period:
++        raise ValueError(f"ema needs n>={period}")
++    alpha = 2.0 / (period + 1.0)
++    seed = mean(list(values[:period]))
++    out = [seed] * period
++    for v in values[period:]:
++        out.append(out[-1] + alpha * (v - out[-1]))
++    return out
++
++
++def _touch_count(
++    highs: Sequence[float], lows: Sequence[float], level: float, eps_pct: float
++) -> int:
++    lo, hi = level * (1.0 - eps_pct), level * (1.0 + eps_pct)
++    return sum(1 for h, low in zip(highs, lows, strict=True) if low <= hi and h >= lo)
++
++
++def _pivot_levels(
++    values: Sequence[float], *, side: str, window: int, eps_pct: float, k: int = 2,
++    highs: Sequence[float], lows: Sequence[float]
++) -> List[Dict[str, float]]:
++    """分形枢轴极值 → 邻近聚簇（同簇价差 ≤ eps_pct），输出价格 + 触碰次数。"""
++    if window < 2 * k + 1:
++        raise ValueError(f"window needs >={2 * k + 1}")
++    seq = list(values[-window:])
++    picks: List[float] = []
++    for i in range(k, len(seq) - k):
++        neighbors = seq[i - k : i + k + 1]
++        if side == "high" and seq[i] >= max(neighbors):
++            picks.append(seq[i])
++        elif side == "low" and seq[i] <= min(neighbors):
++            picks.append(seq[i])
++    clusters: List[Dict[str, float]] = []
++    for price in sorted(picks, reverse=(side == "high")):
++        if clusters and abs(price - clusters[-1]["price"]) / clusters[-1]["price"] <= eps_pct:
++            c = clusters[-1]
++            c["price"] = (c["price"] * c["hits"] + price) / (c["hits"] + 1)
++            c["hits"] += 1
++        else:
++            clusters.append({"price": price, "hits": 1})
++    for c in clusters:
++        c["touches"] = _touch_count(highs, lows, c["price"], eps_pct)
++        c.pop("hits", None)
++    return clusters
++
++
++# ============================================================
++# D-B01：MA / EMA
++# ============================================================
++
++
++@register(
++    "I01", name="SMA 简单移动平均", group="I", layer="D1", input_kind="series",
++    min_n=20, output_schema=("ma",),
++)
++def i01_sma(data, periods: Sequence[int] = (5, 10, 20, 60, 120), **_: Any) -> Dict[str, Any]:
++    close = _series(data, "close")
++    ma: Dict[str, float] = {}
++    for p in periods:
++        if len(close) >= p:
++            ma[str(p)] = round(_sma(close, p), 6)
++    return {"ma": ma}
++
++
++@register(
++    "I02", name="EMA 指数移动平均", group="I", layer="D1", input_kind="series",
++    min_n=26, output_schema=("ema",),
++)
++def i02_ema(data, periods: Sequence[int] = (12, 26, 50), **_: Any) -> Dict[str, Any]:
++    close = _series(data, "close")
++    ema: Dict[str, float] = {}
++    for p in periods:
++        if len(close) >= p:
++            ema[str(p)] = round(_ema_series(close, p)[-1], 6)
++    return {"ema": ema}
++
++
++# ============================================================
++# D-B02：RSI（Wilder 14）
++# ============================================================
++
++
++@register(
++    "I07", name="RSI 相对强弱", group="I", layer="D1", input_kind="series",
++    min_n=15, output_schema=("rsi", "zone"),
++)
++def i07_rsi(data, period: int = 14, **_: Any) -> Dict[str, Any]:
++    close = _series(data, "close")
++    if len(close) < period + 1:
++        raise ValueError(f"rsi needs n>={period + 1}")
++    diffs = [close[i] - close[i - 1] for i in range(1, len(close))]
++    gains = [max(d, 0.0) for d in diffs]
++    losses = [max(-d, 0.0) for d in diffs]
++    avg_gain = mean(gains[:period])
++    avg_loss = mean(losses[:period])
++    for g, loss in zip(gains[period:], losses[period:], strict=True):
++        avg_gain = (avg_gain * (period - 1) + g) / period
++        avg_loss = (avg_loss * (period - 1) + loss) / period
++    if avg_gain == 0.0 and avg_loss == 0.0:
++        rsi = 50.0
++    elif avg_loss == 0.0:
++        rsi = 100.0
++    elif avg_gain == 0.0:
++        rsi = 0.0
++    else:
++        rs = avg_gain / avg_loss
++        rsi = 100.0 - 100.0 / (1.0 + rs)
++    zone = "超买" if rsi >= 70 else ("超卖" if rsi <= 30 else "中性")
++    return {"rsi": round(rsi, 6), "zone": zone}
++
++
++# ============================================================
++# D-B03：MACD（12/26/9）
++# ============================================================
++
++
++@register(
++    "I09", name="MACD", group="I", layer="D1", input_kind="series",
++    min_n=35, output_schema=("dif", "dea", "hist", "cross"),
++)
++def i09_macd(data, fast: int = 12, slow: int = 26, signal: int = 9, **_: Any) -> Dict[str, Any]:
++    close = _series(data, "close")
++    if len(close) < slow + signal:
++        raise ValueError(f"macd needs n>={slow + signal}")
++    ema_fast = _ema_series(close, fast)
++    ema_slow = _ema_series(close, slow)
++    dif_series = [f - s for f, s in zip(ema_fast, ema_slow, strict=True)]
++    dea_series = _ema_series(dif_series, signal)
++    dif, dea = dif_series[-1], dea_series[-1]
++    cross = "none"
++    if len(dif_series) >= 2:
++        prev_dif, prev_dea = dif_series[-2], dea_series[-2]
++        if prev_dif <= prev_dea and dif > dea:
++            cross = "golden"
++        elif prev_dif >= prev_dea and dif < dea:
++            cross = "death"
++    return {
++        "dif": round(dif, 6),
++        "dea": round(dea, 6),
++        "hist": round(dif - dea, 6),
++        "cross": cross,
++    }
++
++
++# ============================================================
++# D-B04：ATR（Wilder 14，需 HLC）
++# ============================================================
++
++
++@register(
++    "I12", name="ATR 平均真实波幅", group="I", layer="D1", input_kind="series",
++    min_n=15, output_schema=("atr", "atr_pct"),
++)
++def i12_atr(data, period: int = 14, **_: Any) -> Dict[str, Any]:
++    high, low = _ohlc(data)
++    close = _series(data, "close")
++    n = min(len(high), len(low), len(close))
++    if n < period + 1:
++        raise ValueError(f"atr needs n>={period + 1}")
++    tr = [high[0] - low[0]]
++    for i in range(1, n):
++        tr.append(max(
++            high[i] - low[i],
++            abs(high[i] - close[i - 1]),
++            abs(low[i] - close[i - 1]),
++        ))
++    atr = mean(tr[1 : period + 1])
++    for value in tr[period + 1 :]:
++        atr = (atr * (period - 1) + value) / period
++    return {"atr": round(atr, 6), "atr_pct": round(atr / close[n - 1], 6)}
++
++
++# ============================================================
++# D-B05：布林带 / %B
++# ============================================================
++
++
++def _boll(close: Sequence[float], period: int, k: float) -> tuple[float, float, float]:
++    if len(close) < period:
++        raise ValueError(f"boll needs n>={period}")
++    window = list(close[-period:])
++    mid = mean(window)
++    var = sum((v - mid) ** 2 for v in window) / period
++    sd = math.sqrt(var)
++    return mid + k * sd, mid, mid - k * sd
++
++
++@register(
++    "I14", name="布林带", group="I", layer="D1", input_kind="series",
++    min_n=20, output_schema=("upper", "mid", "lower"),
++)
++def i14_boll(data, period: int = 20, k: float = 2.0, **_: Any) -> Dict[str, Any]:
++    upper, mid, lower = _boll(_series(data, "close"), period, k)
++    return {"upper": round(upper, 6), "mid": round(mid, 6), "lower": round(lower, 6)}
++
++
++@register(
++    "I15", name="布林带位置 %B", group="I", layer="D1", input_kind="series",
++    min_n=20, output_schema=("pctb",),
++)
++def i15_pctb(data, period: int = 20, k: float = 2.0, **_: Any) -> Dict[str, Any]:
++    close = _series(data, "close")
++    upper, _, lower = _boll(close, period, k)
++    width = upper - lower
++    pctb = 0.5 if width == 0 else (close[-1] - lower) / width
++    return {"pctb": round(pctb, 6)}
++
++
++# ============================================================
++# D-B06：量能比
++# ============================================================
++
++
++@register(
++    "I17", name="量能比", group="I", layer="D1", input_kind="series",
++    min_n=21, output_schema=("vol_ratio", "base_vol"),
++)
++def i17_vol_ratio(data, period: int = 20, **_: Any) -> Dict[str, Any]:
++    volume = _series(data, "volume")
++    if len(volume) < period + 1:
++        raise ValueError(f"vol_ratio needs n>={period + 1}")
++    base = mean(volume[-period - 1 : -1])
++    if base == 0:
++        raise ValueError("base volume is zero")
++    return {"vol_ratio": round(volume[-1] / base, 6), "base_vol": round(base, 6)}
++
++
++# ============================================================
++# D-B07：支撑 / 压力 / 触碰 / 距离
++# ============================================================
++
++
++@register(
++    "I20", name="支撑位（低点聚类）", group="I", layer="D1", input_kind="series",
++    min_n=20, output_schema=("levels",),
++)
++def i20_support(
++    data, window: int = 60, eps_pct: float = SUPPORT_EPS_PCT, **_: Any
++) -> Dict[str, Any]:
++    high, low = _ohlc(data)
++    levels = _pivot_levels(
++        low[-window:], side="low", window=min(window, len(low)), eps_pct=eps_pct,
++        highs=high, lows=low,
++    )
++    return {"levels": [{"price": round(c["price"], 6), "touches": c["touches"]} for c in levels]}
++
++
++@register(
++    "I21", name="压力位（高点聚类）", group="I", layer="D1", input_kind="series",
++    min_n=20, output_schema=("levels",),
++)
++def i21_resistance(
++    data, window: int = 60, eps_pct: float = SUPPORT_EPS_PCT, **_: Any
++) -> Dict[str, Any]:
++    high, low = _ohlc(data)
++    levels = _pivot_levels(
++        high[-window:], side="high", window=min(window, len(high)), eps_pct=eps_pct,
++        highs=high, lows=low,
++    )
++    return {"levels": [{"price": round(c["price"], 6), "touches": c["touches"]} for c in levels]}
++
++
++@register(
++    "I22", name="触碰次数", group="I", layer="D1", input_kind="series",
++    min_n=1, output_schema=("touches",),
++)
++def i22_touches(data, level: float, eps_pct: float = 0.01, **_: Any) -> Dict[str, Any]:
++    high, low = _ohlc(data)
++    return {"touches": _touch_count(high, low, float(level), float(eps_pct))}
++
++
++@register(
++    "I23", name="距支撑/压力距离", group="I", layer="D1", input_kind="series",
++    min_n=1, output_schema=("support_dist", "resistance_dist"),
++)
++def i23_level_distance(
++    data, support: float, resistance: float, **_: Any
++) -> Dict[str, Any]:
++    close = _series(data, "close")[-1]
++    if close == 0:
++        raise ValueError("close is zero")
++    return {
++        "support_dist": round((close - float(support)) / close, 6),
++        "resistance_dist": round((float(resistance) - close) / close, 6),
++    }
++
++
++# ============================================================
++# 通用滚动算子（I 组第二批共用）
++# ============================================================
++
++
++def _rolling_mean(values: Sequence[float], period: int) -> List[Any]:
++    """滚动均值，前 period−1 位为 None；长度与输入一致。"""
++    n = len(values)
++    if period < 1 or n < period:
++        return [None] * n
++    out: List[Any] = [None] * (period - 1)
++    running = sum(values[:period])
++    out.append(running / period)
++    for i in range(period, n):
++        running += values[i] - values[i - period]
++        out.append(running / period)
++    return out
++
++
++def _rolling_max(values: Sequence[float], period: int) -> List[Any]:
++    n = len(values)
++    if period < 1 or n < period:
++        return [None] * n
++    return [None] * (period - 1) + [
++        max(values[i - period + 1 : i + 1]) for i in range(period - 1, n)
++    ]
++
++
++def _rolling_min(values: Sequence[float], period: int) -> List[Any]:
++    n = len(values)
++    if period < 1 or n < period:
++        return [None] * n
++    return [None] * (period - 1) + [
++        min(values[i - period + 1 : i + 1]) for i in range(period - 1, n)
++    ]
++
++
++def _wma(values: Sequence[float], period: int) -> float:
++    """线性加权移动平均：权重 1..period（最新价权重最大）。"""
++    if period < 1 or len(values) < period:
++        raise ValueError(f"wma needs n>={period}")
++    window = list(values[-period:])
++    denom = period * (period + 1) / 2.0
++    return sum(w * v for w, v in zip(range(1, period + 1), window, strict=True)) / denom
++
++
++def _rsi_value(avg_gain: float, avg_loss: float) -> float:
++    if avg_gain == 0.0 and avg_loss == 0.0:
++        return 50.0
++    if avg_loss == 0.0:
++        return 100.0
++    if avg_gain == 0.0:
++        return 0.0
++    return 100.0 - 100.0 / (1.0 + avg_gain / avg_loss)
++
++
++def _rsi_series(close: Sequence[float], period: int) -> List[Any]:
++    """Wilder RSI 序列，前 period 位为 None（与 close 等长）。"""
++    if len(close) < period + 1:
++        raise ValueError(f"rsi needs n>={period + 1}")
++    out: List[Any] = [None] * period
++    diffs = [close[i] - close[i - 1] for i in range(1, len(close))]
++    gains = [max(d, 0.0) for d in diffs]
++    losses = [max(-d, 0.0) for d in diffs]
++    avg_gain, avg_loss = mean(gains[:period]), mean(losses[:period])
++    out.append(_rsi_value(avg_gain, avg_loss))
++    for g, loss in zip(gains[period:], losses[period:], strict=True):
++        avg_gain = (avg_gain * (period - 1) + g) / period
++        avg_loss = (avg_loss * (period - 1) + loss) / period
++        out.append(_rsi_value(avg_gain, avg_loss))
++    return out
++
++
++def _macd_lines(
++    close: Sequence[float], fast: int, slow: int, signal: int
++) -> tuple[List[float], List[float]]:
++    if len(close) < slow + signal:
++        raise ValueError(f"macd needs n>={slow + signal}")
++    ema_fast = _ema_series(close, fast)
++    ema_slow = _ema_series(close, slow)
++    dif = [f - s for f, s in zip(ema_fast, ema_slow, strict=True)]
++    return dif, _ema_series(dif, signal)
++
++
++# ============================================================
++# D-B08：均线族扩展（I03 WMA / I04 位置 / I05 排列 / I06 交叉）
++# ============================================================
++
++
++@register(
++    "I03", name="WMA 线性加权移动平均", group="I", layer="D1", input_kind="series",
++    min_n=20, output_schema=("wma",),
++    notes="权重 1..period 线性递增（最新价权重 period），分母 period(period+1)/2；默认 20 周期",
++)
++def i03_wma(data, period: int = 20, **_: Any) -> Dict[str, Any]:
++    return {"wma": r6(_wma(_series(data, "close"), period))}
++
++
++@register(
++    "I04", name="价格相对均线位置", group="I", layer="D1", input_kind="series",
++    min_n=20, output_schema=("pos",),
++    notes="pos[period]=close/MA(period)−1，仅输出样本足够的历史窗口；>0 表示价在均线上方",
++)
++def i04_ma_position(
++    data, periods: Sequence[int] = (5, 10, 20, 60, 120), **_: Any
++) -> Dict[str, Any]:
++    close = _series(data, "close")
++    last = close[-1]
++    if last == 0:
++        raise ValueError("close is zero")
++    pos: Dict[str, float] = {}
++    for p in periods:
++        if len(close) >= p:
++            pos[str(p)] = r6(last / _sma(close, p) - 1.0)
++    return {"pos": pos}
++
++
++@register(
++    "I05", name="均线排列", group="I", layer="D1", input_kind="series",
++    min_n=60, output_schema=("ma5", "ma20", "ma60", "stack"),
++    notes="固定 5/20/60 三线：ma5>ma20>ma60 为多头排列，反向为空头排列，其余为非单调",
++)
++def i05_ma_stack(data, **_: Any) -> Dict[str, Any]:
++    close = _series(data, "close")
++    ma5, ma20, ma60 = (_sma(close, p) for p in (5, 20, 60))
++    if ma5 > ma20 > ma60:
++        stack = "多头排列"
++    elif ma5 < ma20 < ma60:
++        stack = "空头排列"
++    else:
++        stack = "非单调"
++    return {"ma5": r6(ma5), "ma20": r6(ma20), "ma60": r6(ma60), "stack": stack}
++
++
++@register(
++    "I06", name="金叉/死叉", group="I", layer="D1", input_kind="series",
++    min_n=30, output_schema=("cross", "bars_since", "ma_fast", "ma_slow"),
++    notes="快线(默认 5)上穿慢线(默认 20)记 golden、下穿记 death；bars_since 为距最近交叉的 K 线数，无交叉为 null",
++)
++def i06_ma_cross(data, fast: int = 5, slow: int = 20, **_: Any) -> Dict[str, Any]:
++    close = _series(data, "close")
++    if fast < 1 or slow < 1 or fast >= slow:
++        raise ValueError("need 1 <= fast < slow")
++    if len(close) < slow + 1:
++        raise ValueError(f"ma cross needs n>={slow + 1}")
++    ma_fast = _rolling_mean(close, fast)
++    ma_slow = _rolling_mean(close, slow)
++    prev_diff = None
++    last_cross = "none"
++    last_idx = None
++    for i, (f, s) in enumerate(zip(ma_fast, ma_slow, strict=True)):
++        if f is None or s is None:
++            continue
++        diff = f - s
++        if prev_diff is not None:
++            if prev_diff <= 0.0 < diff:
++                last_cross, last_idx = "golden", i
++            elif prev_diff >= 0.0 > diff:
++                last_cross, last_idx = "death", i
++        prev_diff = diff
++    return {
++        "cross": last_cross,
++        "bars_since": None if last_idx is None else len(close) - 1 - last_idx,
++        "ma_fast": r6(ma_fast[-1]),
++        "ma_slow": r6(ma_slow[-1]),
++    }
++
++
++# ============================================================
++# D-B09：RSI 背离 / MACD 柱变化（I08、I10）
++# ============================================================
++
++
++@register(
++    "I08", name="RSI 背离", group="I", layer="D2", input_kind="series",
++    min_n=60, output_schema=("divergence", "price_delta", "rsi_delta", "window"),
++    notes="取最近 window 与前一 window 段比较：价新高但 RSI 峰值走低=bearish；价新低但 RSI 谷值抬高=bullish；delta 为对应峰/谷差",
++)
++def i08_rsi_divergence(
++    data, period: int = 14, window: int = 20, **_: Any
++) -> Dict[str, Any]:
++    close = _series(data, "close")
++    if len(close) < 2 * window + period:
++        raise ValueError(f"divergence needs n>={2 * window + period}")
++    rsi = _rsi_series(close, period)
++    recent_px, prior_px = close[-window:], close[-2 * window : -window]
++    recent_rsi = [v for v in rsi[-window:] if v is not None]
++    prior_rsi = [v for v in rsi[-2 * window : -window] if v is not None]
++    if not recent_rsi or not prior_rsi:
++        raise ValueError("insufficient rsi history for divergence")
++    if max(recent_px) > max(prior_px) and max(recent_rsi) < max(prior_rsi):
++        return {
++            "divergence": "bearish",
++            "price_delta": r6(max(recent_px) - max(prior_px)),
++            "rsi_delta": r6(max(recent_rsi) - max(prior_rsi)),
++            "window": window,
++        }
++    if min(recent_px) < min(prior_px) and min(recent_rsi) > min(prior_rsi):
++        return {
++            "divergence": "bullish",
++            "price_delta": r6(min(recent_px) - min(prior_px)),
++            "rsi_delta": r6(min(recent_rsi) - min(prior_rsi)),
++            "window": window,
++        }
++    return {
++        "divergence": "none",
++        "price_delta": r6(max(recent_px) - max(prior_px)),
++        "rsi_delta": r6(max(recent_rsi) - max(prior_rsi)),
++        "window": window,
++    }
++
++
++@register(
++    "I10", name="MACD 柱变化", group="I", layer="D1", input_kind="series",
++    min_n=36, output_schema=("hist", "prev_hist", "delta", "expanding"),
++    notes="hist=dif−dea；delta=hist(t)−hist(t−1)；expanding=True 表示红柱/绿柱幅度扩大（|delta| 上的方向性由 delta 符号给出）",
++)
++def i10_macd_hist_delta(
++    data, fast: int = 12, slow: int = 26, signal: int = 9, **_: Any
++) -> Dict[str, Any]:
++    close = _series(data, "close")
++    dif, dea = _macd_lines(close, fast, slow, signal)
++    hist = dif[-1] - dea[-1]
++    prev_hist = dif[-2] - dea[-2]
++    delta = hist - prev_hist
++    return {
++        "hist": r6(hist),
++        "prev_hist": r6(prev_hist),
++        "delta": r6(delta),
++        "expanding": abs(hist) > abs(prev_hist),
++    }
++
++
++# ============================================================
++# D-B10：KDJ / 真实波幅 / 布林带宽（I11、I13、I16）
++# ============================================================
++
++
++@register(
++    "I11", name="KDJ", group="I", layer="D1", input_kind="series",
++    min_n=20, output_schema=("k", "d", "j"),
++    notes="RSV=(C−LLV(L,9))/(HHV(H,9)−LLV(L,9))×100；K=2/3·K₋₁+1/3·RSV、D=2/3·D₋₁+1/3·K，种子 50；J=3K−2D；需 HLC",
++)
++def i11_kdj(
++    data, period: int = 9, k_period: int = 3, d_period: int = 3, **_: Any
++) -> Dict[str, Any]:
++    high, low = _ohlc(data)
++    close = _series(data, "close")
++    n = min(len(high), len(low), len(close))
++    if n < period:
++        raise ValueError(f"kdj needs n>={period}")
++    a_k, a_d = 1.0 / k_period, 1.0 / d_period
++    k_val = d_val = 50.0
++    for i in range(period - 1, n):
++        hhv = max(high[i - period + 1 : i + 1])
++        llv = min(low[i - period + 1 : i + 1])
++        rsv = 50.0 if hhv == llv else (close[i] - llv) / (hhv - llv) * 100.0
++        k_val = (1.0 - a_k) * k_val + a_k * rsv
++        d_val = (1.0 - a_d) * d_val + a_d * k_val
++    return {"k": r6(k_val), "d": r6(d_val), "j": r6(3.0 * k_val - 2.0 * d_val)}
++
++
++@register(
++    "I13", name="真实波幅 TR", group="I", layer="D1", input_kind="series",
++    min_n=15, output_schema=("tr", "tr_pct", "max_tr"),
++    notes="TR=max(H−L,|H−C₋₁|,|L−C₋₁|) 取当根；tr_pct=TR/close；max_tr 为最近 period 根 TR 最大值；需 HLC",
++)
++def i13_true_range(data, period: int = 14, **_: Any) -> Dict[str, Any]:
++    high, low = _ohlc(data)
++    close = _series(data, "close")
++    n = min(len(high), len(low), len(close))
++    if n < 2:
++        raise ValueError("true range needs n>=2")
++    trs = [high[0] - low[0]]
++    for i in range(1, n):
++        trs.append(max(
++            high[i] - low[i],
++            abs(high[i] - close[i - 1]),
++            abs(low[i] - close[i - 1]),
++        ))
++    last = trs[-1]
++    if close[n - 1] == 0:
++        raise ValueError("close is zero")
++    return {
++        "tr": r6(last),
++        "tr_pct": r6(last / close[n - 1]),
++        "max_tr": r6(max(trs[-period:])),
++    }
++
++
++@register(
++    "I16", name="布林带宽", group="I", layer="D1", input_kind="series",
++    min_n=20, output_schema=("width", "mid", "upper", "lower"),
++    notes="width=(upper−lower)/mid，与 I14 同参数（20, 2σ，总体标准差 ddof=0）",
++)
++def i16_boll_width(data, period: int = 20, k: float = 2.0, **_: Any) -> Dict[str, Any]:
++    upper, mid, lower = _boll(_series(data, "close"), period, k)
++    width = 0.0 if mid == 0 else (upper - lower) / mid
++    return {
++        "width": r6(width),
++        "mid": r6(mid),
++        "upper": r6(upper),
++        "lower": r6(lower),
++    }
++
++
++# ============================================================
++# D-B11：量能族（I18 OBV / I19 成交量 z-score / I34 成交额比）
++# ============================================================
++
++
++@register(
++    "I18", name="OBV 能量潮", group="I", layer="D1", input_kind="series",
++    min_n=30, output_schema=("obv", "obv_change", "n"),
++    notes="首根 OBV=0；收涨加当日量、收跌减当日量、持平不变；obv_change=当前 OBV 与 period 根之前的差",
++)
++def i18_obv(data, period: int = 20, **_: Any) -> Dict[str, Any]:
++    close = _series(data, "close")
++    volume = _series(data, "volume")
++    n = min(len(close), len(volume))
++    if n < 2:
++        raise ValueError("obv needs n>=2")
++    obv = [0.0]
++    for i in range(1, n):
++        if close[i] > close[i - 1]:
++            obv.append(obv[-1] + volume[i])
++        elif close[i] < close[i - 1]:
++            obv.append(obv[-1] - volume[i])
++        else:
++            obv.append(obv[-1])
++    ref = obv[-min(period + 1, n)]
++    return {"obv": r6(obv[-1]), "obv_change": r6(obv[-1] - ref), "n": n}
++
++
++@register(
++    "I19", name="成交量 z-score", group="I", layer="D1", input_kind="series",
++    min_n=21, output_schema=("z", "mean", "std", "volume"),
++    notes="z=(v−μ)/σ，μ/σ 取最近 period 根（σ 为样本标准差 ddof=1）；σ≈0 时 z=0",
++)
++def i19_volume_zscore(data, period: int = 20, **_: Any) -> Dict[str, Any]:
++    volume = _series(data, "volume")
++    if len(volume) < period:
++        raise ValueError(f"volume z-score needs n>={period}")
++    seg = volume[-period:]
++    mu = mean(seg)
++    sd = math.sqrt(sum((v - mu) ** 2 for v in seg) / (period - 1)) if period > 1 else 0.0
++    z = 0.0 if sd <= EPS else (volume[-1] - mu) / sd
++    return {
++        "z": r6(z),
++        "mean": r6(mu),
++        "std": r6(sd),
++        "volume": r6(volume[-1]),
++    }
++
++
++@register(
++    "I34", name="换手/成交额比", group="I", layer="D1", input_kind="series",
++    min_n=30, output_schema=("ratio", "vwap", "volume"),
++    notes="ratio=(Σ成交额/Σ成交量)/close，即均价相对收盘价的偏离；无 turnover 字段时以 close×volume 作成交额代理",
++)
++def i34_turnover_ratio(data, period: int = 20, **_: Any) -> Dict[str, Any]:
++    close = _series(data, "close")
++    volume = _series(data, "volume")
++    turnover = data.get("turnover") if isinstance(data, Mapping) else None
++    if turnover is not None:
++        amount = [float(v) for v in turnover]
++    else:
++        amount = [c * v for c, v in zip(close, volume, strict=False)]
++    n = min(len(close), len(volume), len(amount))
++    if n < period:
++        raise ValueError(f"turnover ratio needs n>={period}")
++    vol_sum = sum(volume[-period:])
++    if vol_sum == 0:
++        raise ValueError("volume sum is zero")
++    if close[n - 1] == 0:
++        raise ValueError("close is zero")
++    vwap = sum(amount[-period:]) / vol_sum
++    return {
++        "ratio": r6(vwap / close[n - 1]),
++        "vwap": r6(vwap),
++        "volume": r6(vol_sum),
++    }
++
++
++# ============================================================
++# D-B12：突破 / 极值 / 回撤 / 通道 / 动量（I24–I29）
++# ============================================================
++
++
++@register(
++    "I24", name="突破事件", group="I", layer="D1", input_kind="series",
++    min_n=60, output_schema=("breakout", "close", "prior_high_20", "prior_high_60"),
++    notes="突破=close 高于前高（前高不含当日）：先判 20 日、再判 60 日，均未破为 none",
++)
++def i24_breakout(data, short: int = 20, long: int = 60, **_: Any) -> Dict[str, Any]:
++    close = _series(data, "close")
++    if len(close) < short + 1:
++        raise ValueError(f"breakout needs n>={short + 1}")
++    prior_short = max(close[-short - 1 : -1])
++    prior_long = max(close[-long - 1 : -1])
++    last = close[-1]
++    flag = "20" if last > prior_short else ("60" if last > prior_long else "none")
++    return {
++        "breakout": flag,
++        "close": r6(last),
++        "prior_high_20": r6(prior_short),
++        "prior_high_60": r6(prior_long),
++    }
++
++
++@register(
++    "I25", name="新高/新低天数", group="I", layer="D1", input_kind="series",
++    min_n=60, output_schema=("new_high_days", "new_low_days", "window"),
++    notes="在最近 window 根内统计收盘价等于其 trailing window 最高/最低的根数（rolling max/min 口径）",
++)
++def i25_extreme_days(data, window: int = 20, **_: Any) -> Dict[str, Any]:
++    close = _series(data, "close")
++    if len(close) < 2 * window:
++        raise ValueError(f"extreme days needs n>={2 * window}")
++    rmax = _rolling_max(close, window)
++    rmin = _rolling_min(close, window)
++    highs = lows = 0
++    for i in range(len(close) - window, len(close)):
++        if rmax[i] is not None and close[i] >= rmax[i]:
++            highs += 1
++        if rmin[i] is not None and close[i] <= rmin[i]:
++            lows += 1
++    return {"new_high_days": highs, "new_low_days": lows, "window": window}
++
++
++@register(
++    "I26", name="距 ATH 回撤", group="I", layer="D1", input_kind="series",
++    min_n=30, output_schema=("dd", "ath", "close"),
++    notes="dd=close/max(全样本收盘)−1（≤0）；ath 为样本内历史最高收盘",
++)
++def i26_from_ath(data, **_: Any) -> Dict[str, Any]:
++    close = _series(data, "close")
++    ath = max(close)
++    if ath == 0:
++        raise ValueError("ath is zero")
++    return {"dd": r6(close[-1] / ath - 1.0), "ath": r6(ath), "close": r6(close[-1])}
++
++
++@register(
++    "I27", name="唐奇安通道", group="I", layer="D1", input_kind="series",
++    min_n=20, output_schema=("upper", "mid", "lower", "width_pct"),
++    notes="upper=max(H,period)、lower=min(L,period)、mid 为中轨、width_pct=(upper−lower)/mid；需 high/low",
++)
++def i27_donchian(data, period: int = 20, **_: Any) -> Dict[str, Any]:
++    high, low = _ohlc(data)
++    n = min(len(high), len(low))
++    if n < period:
++        raise ValueError(f"donchian needs n>={period}")
++    upper, lower = max(high[-period:]), min(low[-period:])
++    mid = (upper + lower) / 2.0
++    width_pct = 0.0 if mid == 0 else (upper - lower) / mid
++    return {
++        "upper": r6(upper),
++        "mid": r6(mid),
++        "lower": r6(lower),
++        "width_pct": r6(width_pct),
++    }
++
++
++@register(
++    "I28", name="价格动量", group="I", layer="D1", input_kind="series",
++    min_n=30, output_schema=("mom", "mom_pct"),
++    notes="绝对动量 mom[k]=C−C₋ₖ（方法库公式与 I29 ROC 同为比值口径，此处取价差口径以区分）；mom_pct[k]=C/C₋ₖ−1",
++)
++def i28_momentum(data, ks: Sequence[int] = (1, 5, 20), **_: Any) -> Dict[str, Any]:
++    close = _series(data, "close")
++    mom: Dict[str, float] = {}
++    mom_pct: Dict[str, float] = {}
++    for k in ks:
++        if k < 1 or len(close) <= k:
++            continue
++        base = close[-1 - k]
++        mom[str(k)] = r6(close[-1] - base)
++        mom_pct[str(k)] = None if base == 0 else r6(close[-1] / base - 1.0)
++    if not mom:
++        raise ValueError("momentum needs n>max(k)")
++    return {"mom": mom, "mom_pct": mom_pct}
++
++
++@register(
++    "I29", name="变化率 ROC", group="I", layer="D1", input_kind="series",
++    min_n=30, output_schema=("roc",),
++    notes="roc[k]=C/C₋ₖ−1，默认 k∈{1,5,20}，仅输出样本足够的 k",
++)
++def i29_roc(data, ks: Sequence[int] = (1, 5, 20), **_: Any) -> Dict[str, Any]:
++    close = _series(data, "close")
++    roc: Dict[str, float] = {}
++    for k in ks:
++        if k < 1 or len(close) <= k:
++            continue
++        base = close[-1 - k]
++        if base == 0:
++            raise ValueError("base close is zero")
++        roc[str(k)] = r6(close[-1] / base - 1.0)
++    if not roc:
++        raise ValueError("roc needs n>max(k)")
++    return {"roc": roc}
++
++
++# ============================================================
++# D-B13：波动率分位 / 回归通道（I30、I31）
++# ============================================================
++
++
++def rolling_volatility(close: Sequence[float], window: int = 20) -> List[float]:
++    """I30 的滚动波动率序列；首个值对齐 close[window]。"""
++    if window < 2:
++        raise ValueError("vol window must be >= 2")
++    values = [float(v) for v in close]
++    rets: List[float] = []
++    for i in range(1, len(values)):
++        if values[i - 1] == 0:
++            raise ValueError("close is zero at previous bar")
++        rets.append(values[i] / values[i - 1] - 1.0)
++    vols: List[float] = []
++    for i in range(window - 1, len(rets)):
++        seg = rets[i - window + 1 : i + 1]
++        mu = mean(seg)
++        vols.append(math.sqrt(sum((x - mu) ** 2 for x in seg) / (window - 1)))
++    return vols
++
++
++@register(
++    "I30", name="波动率分位", group="I", layer="D2", input_kind="series",
++    min_n=60, output_schema=("percentile", "current_vol", "window", "lookback"),
++    notes="滚动 window 根日收益率样本标准差(ddof=1)序列，当前值在最近 lookback 个历史值中的百分位（0–100，含自身）",
++)
++def i30_vol_percentile(
++    data, window: int = 20, lookback: int = 60, **_: Any
++) -> Dict[str, Any]:
++    close = _series(data, "close")
++    if len(close) < window + 2:
++        raise ValueError(f"vol percentile needs n>={window + 2}")
++    vols = rolling_volatility(close, window)
++    hist = vols[-lookback:]
++    current = vols[-1] if vols else None
++    if current is None or not hist:
++        raise ValueError("insufficient return history for vol percentile")
++    pct = 100.0 * sum(1 for v in hist if v <= current) / len(hist)
++    return {
++        "percentile": r4(pct),
++        "current_vol": r6(current),
++        "window": window,
++        "lookback": lookback,
++    }
++
++
++@register(
++    "I31", name="回归通道", group="I", layer="D3", input_kind="series",
++    min_n=60, output_schema=("slope", "intercept", "mid", "upper", "lower", "r2"),
++    notes="最近 window 根收盘价对时间 OLS（t=0..window−1），通道=拟合值±k·残差标准差(ddof=2)，k 默认 2；mid 为末端拟合值",
++)
++def i31_regression_channel(
++    data, window: int = 60, k: float = 2.0, **_: Any
++) -> Dict[str, Any]:
++    close = _series(data, "close")
++    if len(close) < window or window < 3:
++        raise ValueError(f"regression channel needs n>={window}")
++    y = list(close[-window:])
++    xs = [float(i) for i in range(window)]
++    fit = ols_slope(y)
++    slope = fit["slope"]
++    if slope is None:
++        raise ValueError("degenerate series: zero variance")
++    intercept = mean(y) - slope * mean(xs)
++    resid = [y[i] - (intercept + slope * xs[i]) for i in range(window)]
++    sigma = math.sqrt(sum(e * e for e in resid) / (window - 2))
++    mid = intercept + slope * xs[-1]
++    return {
++        "slope": r6(slope),
++        "intercept": r6(intercept),
++        "mid": r6(mid),
++        "upper": r6(mid + k * sigma),
++        "lower": r6(mid - k * sigma),
++        "r2": r6(fit["r2"]),
++    }
++
++
++# ============================================================
++# D-B14：ADX 趋势强度 / MFI 资金流（I32、I33）
++# ============================================================
++
++
++@register(
++    "I32", name="趋势强度 ADX", group="I", layer="D1", input_kind="series",
++    min_n=30, output_schema=("adx", "plus_di", "minus_di", "atr_smoothed"),
++    notes="Wilder 平滑：±DM 与 TR 首值为前 period 根求和，之后 S=S−S/period+x；DX=100|+DI−−DI|/(+DI+−DI)，ADX 为 DX 的 Wilder 均值；需 HLC",
++)
++def i32_adx(data, period: int = 14, **_: Any) -> Dict[str, Any]:
++    high, low = _ohlc(data)
++    close = _series(data, "close")
++    n = min(len(high), len(low), len(close))
++    if n < 2 * period + 1:
++        raise ValueError(f"adx needs n>={2 * period + 1}")
++    tr: List[float] = []
++    plus_dm: List[float] = []
++    minus_dm: List[float] = []
++    for i in range(1, n):
++        up, down = high[i] - high[i - 1], low[i - 1] - low[i]
++        plus_dm.append(up if (up > down and up > 0.0) else 0.0)
++        minus_dm.append(down if (down > up and down > 0.0) else 0.0)
++        tr.append(max(
++            high[i] - low[i],
++            abs(high[i] - close[i - 1]),
++            abs(low[i] - close[i - 1]),
++        ))
++    atr_s = sum(tr[:period])
++    p_s = sum(plus_dm[:period])
++    m_s = sum(minus_dm[:period])
++    dxs: List[float] = []
++    pdi = mdi = 0.0
++    for i in range(period - 1, len(tr)):
++        if i >= period:
++            atr_s = atr_s - atr_s / period + tr[i]
++            p_s = p_s - p_s / period + plus_dm[i]
++            m_s = m_s - m_s / period + minus_dm[i]
++        pdi = 100.0 * p_s / atr_s if atr_s > EPS else 0.0
++        mdi = 100.0 * m_s / atr_s if atr_s > EPS else 0.0
++        denom = pdi + mdi
++        dxs.append(100.0 * abs(pdi - mdi) / denom if denom > EPS else 0.0)
++    adx = mean(dxs[:period])
++    for dx in dxs[period:]:
++        adx = (adx * (period - 1) + dx) / period
++    return {
++        "adx": r6(adx),
++        "plus_di": r6(pdi),
++        "minus_di": r6(mdi),
++        "atr_smoothed": r6(atr_s),
++    }
++
++
++@register(
++    "I33", name="资金流 MFI", group="I", layer="D1", input_kind="series",
++    min_n=30, output_schema=("mfi", "positive_flow", "negative_flow"),
++    notes="典型价 TP=(H+L+C)/3，资金流=TP×V；最近 period 根按 TP 涨跌归入正/负流；MFI=100−100/(1+正/负)，负流为 0 时记 100；需 HLCV",
++)
++def i33_mfi(data, period: int = 14, **_: Any) -> Dict[str, Any]:
++    high, low = _ohlc(data)
++    close = _series(data, "close")
++    volume = _series(data, "volume")
++    n = min(len(high), len(low), len(close), len(volume))
++    if n < period + 1:
++        raise ValueError(f"mfi needs n>={period + 1}")
++    tp = [(high[i] + low[i] + close[i]) / 3.0 for i in range(n)]
++    pos = neg = 0.0
++    for i in range(n - period, n):
++        flow = tp[i] * volume[i]
++        if tp[i] > tp[i - 1]:
++            pos += flow
++        elif tp[i] < tp[i - 1]:
++            neg += flow
++    if neg <= EPS:
++        mfi = 100.0
++    elif pos <= EPS:
++        mfi = 0.0
++    else:
++        mfi = 100.0 - 100.0 / (1.0 + pos / neg)
++    return {"mfi": r6(mfi), "positive_flow": r6(pos), "negative_flow": r6(neg)}
+diff --git a/54-L1架构能力聚合层/l1agg/persistence/profile.py b/54-L1架构能力聚合层/l1agg/persistence/profile.py
+new file mode 100644
+index 0000000000..2f41506e6c
+--- /dev/null
++++ b/54-L1架构能力聚合层/l1agg/persistence/profile.py
+@@ -0,0 +1,242 @@
++# -*- coding: utf-8 -*-
++"""延续性画像聚合：A1–A7 + A8 条件分布扩展 → 单一 profile。"""
++
++from __future__ import annotations
++
++from dataclasses import dataclass, field
++
++from .. import align
++from . import metrics as M
++from .constants import CAVEAT, KIND, MIN_N, PersistenceError
++
++
++@dataclass
++class PersistenceProfile:
++    symbol: str
++    span: str = ""
++    sample_n: int = 0
++    metrics: dict = field(default_factory=dict)
++    quality: dict = field(default_factory=dict)
++
++    def to_dict(self) -> dict:
++        return {
++            "kind": KIND,
++            "symbol": self.symbol,
++            "span": self.span,
++            "sample_n": self.sample_n,
++            "metrics": self.metrics,
++            "quality": self.quality,
++            "caveat": CAVEAT,
++            "text": self._text(),
++        }
++
++    def _text(self) -> str:
++        m = self.metrics
++        parts = [f"{self.symbol} 近 {self.sample_n} 个交易日延续性画像（{self.span}）"]
++
++        h = m.get("hurst") or {}
++        if h.get("h") is not None:
++            if h.get("regime_displayable"):
++                label = {"persistent": "持续", "anti_persistent": "反持续", "random_walk": "随机"}[h["regime"]]
++                parts.append(f"Hurst={h['h']}（{label}，置信度 {h['confidence']}）")
++            else:
++                # 评审 §6 反对 2：低置信度不展示 regime 标签，避免误导
++                parts.append(f"Hurst={h['h']}（口径敏感，仅参考，不作结论）")
++
++        vr = m.get("variance_ratio") or []
++        if vr:
++            parts.append("、".join(f"VR({v['q']})={v['vr']}" for v in vr))
++
++        a = m.get("ar1") or {}
++        if a.get("phi") is not None:
++            hl = a.get("halflife_days")
++            parts.append(f"AR(1) φ={a['phi']}" + (f"，半衰期 {hl} 日" if hl is not None else "，无有效半衰期"))
++
++        r = m.get("runs") or {}
++        if r.get("n_runs"):
++            parts.append(f"最长连涨/连跌={r['max_up']}/{r['max_down']} 日")
++
++        t = m.get("transition") or {}
++        if t.get("p_up_up") is not None:
++            parts.append(f"P(涨|涨)={t['p_up_up']}，P(跌|跌)={t['p_down_down']}")
++
++        s = m.get("trend") or {}
++        if s.get("t") is not None:
++            parts.append(f"趋势斜率 t={s['t']}（R²={s['r2']}，t 未做自相关修正）")
++
++        ic = m.get("ic_decay") or {}
++        if ic.get("items"):
++            seg = "、".join(f"h={it['h']} IC={it['ric']}" for it in ic["items"] if it.get("ric") is not None)
++            if seg:
++                parts.append(f"动量 IC：{seg}")
++
++        a8 = m.get("conditional_distribution") or {}
++        result = a8.get("result") or {}
++        horizons = result.get("by_horizon") or []
++        current = horizons[0] if horizons else {}
++        if current.get("effective_n"):
++            downgrade = "4 桶非重叠样本不足，降为 2 桶；" if a8.get("buckets") != a8.get("requested_buckets") else ""
++            insufficient = "，每桶非重叠样本未达 250" if a8.get("gate") != "ok" else ""
++            parts.append(
++                f"{downgrade}波动率同状态后 1 日：均值 {current['mean'] * 100:+.2f}%，"
++                f"中位 {current['median'] * 100:+.2f}%，80% 历史区间 "
++                f"[{current['p10'] * 100:+.2f}%, {current['p90'] * 100:+.2f}%]，"
++                f"上涨 {current['win_rate'] * 100:.1f}%（{a8['buckets']} 桶，"
++                f"有效 n={current['effective_n']}，非重叠 n={current['nonoverlap_n']}{insufficient}）"
++            )
++        elif a8:
++            parts.append("波动率同状态条件分布样本不足")
++
++        q = self.quality
++        if q.get("status") != "good":
++            parts.append(f"[降级：{q.get('degraded_reason') or q.get('status')}]")
++        parts.append(CAVEAT)
++        return "；".join(parts) + "。"
++
++
++def conditional_distribution(
++    prices,
++    dates=None,
++    *,
++    window: int = MIN_N,
++    vol_window: int = 20,
++    min_bucket_n: int = MIN_N,
++) -> dict:
++    """A8：I30 波动状态经 R02 PIT 分桶，检查所有桶后执行 4→2 降级。"""
++    from ..methods import run as run_method
++    from ..methods.technical import rolling_volatility
++
++    out = {
++        "gate": "insufficient_samples",
++        "state": "volatility",
++        "state_method": "I30",
++        "method": "R02",
++        "h": 1,
++        "requested_buckets": 4,
++        "buckets": 4,
++        "min_bucket_nonoverlap_n": min_bucket_n,
++        "vol_window": vol_window,
++        "degraded_reason": None,
++        "result": None,
++    }
++    try:
++        vols = rolling_volatility(prices, vol_window)
++        offset = len(prices) - len(vols)
++        aligned_prices = [float(v) for v in prices[offset:]]
++        if dates is None:
++            timestamps = list(range(len(vols)))
++        else:
++            if len(dates) != len(prices):
++                raise ValueError("dates length must equal prices length")
++            timestamps = [v.isoformat() if hasattr(v, "isoformat") else str(v) for v in dates[offset:]]
++        data = {
++            "indicator": vols,
++            "price": aligned_prices,
++            "timestamps": timestamps,
++            "align_method": align.ALIGN_METHOD,
++        }
++
++        def evaluate(buckets: int):
++            envelope = run_method(
++                "R02", data, buckets=buckets, horizons=(1,), label="滚动波动率",
++                pit=True, window=window,
++            )
++            result = envelope.get("result")
++            passed = bool(result) and all(
++                row["nonoverlap_n"] >= min_bucket_n
++                for row in result["by_horizon"][0]["by_bucket"]
++            )
++            return envelope, passed
++
++        four, four_passed = evaluate(4)
++        if four.get("gate") != "ok":
++            out.update(buckets=2, degraded_reason=four["gate"])
++            return out
++        if four_passed:
++            out.update(gate="ok", result=four["result"])
++            return out
++
++        two, two_passed = evaluate(2)
++        out.update(
++            gate="ok" if two_passed else "insufficient_samples",
++            buckets=2,
++            degraded_reason="bucket_nonoverlap_lt_250",
++            result=two.get("result"),
++        )
++        return out
++    except (TypeError, ValueError, ZeroDivisionError) as exc:
++        out.update(buckets=2, degraded_reason=f"{type(exc).__name__}: {exc}")
++        return out
++
++
++def build_profile(
++    db_path: str,
++    symbol: str = "BTC",
++    *,
++    days: int = 1200,
++    min_n: int = MIN_N,
++    vr_qs=(2, 5, 10, 20),
++    ic_horizons=(1, 5, 20),
++) -> dict:
++    """组装单资产延续性画像（A1–A7），所有失败项返回 None 并写 reason。"""
++    prices_map = align.load_price(db_path, symbol, days)
++    dates = sorted(prices_map)
++    prices = [prices_map[d] for d in dates]
++    span = f"{dates[0]}~{dates[-1]}" if dates else ""
++    rets = align.log_returns(prices)
++    n = len(rets)
++
++    metrics: dict = {}
++    errors: dict = {}
++
++    def run(name, fn):
++        try:
++            metrics[name] = fn()
++        except (PersistenceError, ZeroDivisionError, ValueError) as exc:
++            metrics[name] = None
++            errors[name] = f"{type(exc).__name__}: {exc}"
++
++    run("hurst", lambda: M.hurst_rs(rets))
++    run("variance_ratio", lambda: [M.variance_ratio(rets, q) for q in vr_qs])
++    run("ar1", lambda: M.ar1_halflife(rets))
++    run("runs", lambda: M.run_length_stats(rets))
++    run("transition", lambda: M.transition_matrix(rets))
++    run("trend", lambda: M.trend_slope(prices))
++    run("ic_decay", lambda: M.ic_decay(prices, horizons=ic_horizons))
++    # A8 有独立的 T0.5 样本门禁，不改变 A1–A7 的 quality.status 语义。
++    metrics["conditional_distribution"] = conditional_distribution(prices, dates)
++
++    if n < min_n:
++        status, degraded = "partial", "insufficient_samples"
++    elif errors:
++        # 样本够但方法失败：不能报 good，否则与 degraded_reason 自相矛盾
++        status, degraded = "degraded", "partial_methods_failed"
++    else:
++        status, degraded = "good", None
++
++    profile = PersistenceProfile(
++        symbol=symbol.upper(),
++        span=span,
++        sample_n=n,
++        metrics=metrics,
++        quality={
++            "status": status,
++            "sample_n": n,
++            "span": span,
++            "align_method": align.ALIGN_METHOD,
++            "timezone": align.TIMEZONE,
++            "min_n": min_n,
++            "lookback_days": days,  # 自然日回看窗口（非交易日数），评审 I2
++            "degraded_reason": degraded,
++            "failed_methods": errors,
++            "hurst_confident_n": M.HURST_CONFIDENT_N,
++            "hurst_max_chunk": M.HURST_MAX_CHUNK,
++            "notes": [
++                "trend_t_no_hac: 趋势斜率 t 未做 Newey-West 修正，仅作相对比较",
++                "hurst_low_confidence: Hurst 在 n<2000 时口径敏感，不展示 regime 标签",
++                "ic_phase: IC 非重叠口径为 h 个相位的均值，极差见 ric_nonoverlap_min/max",
++                "a8_independent_gate: A8 使用自身 4→2 桶门禁，不改变 A1–A7 质量状态",
++            ],
++        },
++    )
++    return profile.to_dict()
+diff --git a/54-L1架构能力聚合层/l1agg/capabilities/stats.py b/54-L1架构能力聚合层/l1agg/capabilities/stats.py
+new file mode 100644
+index 0000000000..438d934531
+--- /dev/null
++++ b/54-L1架构能力聚合层/l1agg/capabilities/stats.py
+@@ -0,0 +1,564 @@
++# -*- coding: utf-8 -*-
++"""E 组统计关系能力编排（能力层，D-E03/E05/E06/E07/E08/E10/E11）。
++
++分工：能力层只做「取数后编排 + 门禁 + 信封 + 一句话」，所有统计量一律调用
++`l1agg.methods.run`（方法层唯一 SSoT），不在此重算任何口径。
++
++门禁口径（TECHNICAL_DESIGN §0.3 / METHOD_LIBRARY §15）：
++  - 季节性强结论需 ≥5 年（60 个月），不足只作描述并标 `seasonality_depth_lt_5y`；
++  - 同期相关 n≥60、领先滞后 n≥120、状态转移 n≥100、条件 IC 每桶非重叠 n≥250；
++  - 回撤画像只需价格，n≥250；任何不足都返回 `status=partial` 且统计字段保留原始门禁块。
++"""
++
++from __future__ import annotations
++
++import datetime as _dt
++from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
++
++from ..methods import run as run_method
++from .envelope import STATUS_EMPTY, STATUS_GOOD, STATUS_PARTIAL, build, quality, quality_for, unavailable
++
++INTENT_SEASONALITY = "seasonality_query"
++INTENT_CORRELATION = "correlation_query"
++INTENT_STATE = "state_transition"
++INTENT_CONDITIONAL = "conditional_return"
++INTENT_DRAWDOWN = "drawdown_query"
++
++MIN_DRAWDOWN = 250
++MIN_SEASONALITY = 60
++MIN_STATE = 100
++MIN_CORR = 60
++MIN_CCF = 120
++MIN_CONDITIONAL = 250
++MONTHS_FOR_SEASONALITY = 60
++CAVEAT = "历史统计，不代表未来"
++
++
++# ---------------- 通用工具 ----------------
++
++
++def _floats(values: Sequence[Any]) -> List[float]:
++    out: List[float] = []
++    for v in values:
++        if v is None:
++            continue
++        try:
++            out.append(float(v))
++        except (TypeError, ValueError):
++            continue
++    return out
++
++
++def _returns(prices: Sequence[float]) -> List[float]:
++    return [prices[i] / prices[i - 1] - 1.0 for i in range(1, len(prices)) if prices[i - 1]]
++
++
++def _parse_dates(values: Optional[Sequence[Any]]) -> List[_dt.date]:
++    if not values:
++        return []
++    out: List[_dt.date] = []
++    for v in values:
++        if isinstance(v, _dt.datetime):
++            out.append(v.date())
++        elif isinstance(v, _dt.date):
++            out.append(v)
++        elif isinstance(v, (int, float)):
++            out.append(_dt.datetime.fromtimestamp(float(v), _dt.timezone.utc).date())
++        else:
++            text = str(v)[:10]
++            try:
++                out.append(_dt.date.fromisoformat(text))
++            except ValueError:
++                return []
++    return out
++
++
++def _span(dates: Sequence[_dt.date]) -> Optional[List[str]]:
++    if not dates:
++        return None
++    return [dates[0].isoformat(), dates[-1].isoformat()]
++
++
++def _call(method_id: str, data: Any, **params: Any) -> Dict[str, Any]:
++    """调方法层；任何输入/门禁问题收敛为结构化块，不抛给 L1。"""
++    try:
++        env = run_method(method_id, data, **params)
++    except ValueError as exc:
++        return {"gate": "insufficient_history", "reason": str(exc), "result": None,
++                "method": method_id}
++    if env.get("gate") != "ok":
++        return {"gate": env.get("gate"), "result": None, "method": method_id}
++    return {"gate": "ok", "result": env["result"], "method": method_id}
++
++
++def _months_span(dates: Sequence[_dt.date]) -> int:
++    if not dates:
++        return 0
++    return (dates[-1].year - dates[0].year) * 12 + (dates[-1].month - dates[0].month) + 1
++
++
++def _degrade(quality_block: Dict[str, Any], reason: str) -> Dict[str, Any]:
++    if quality_block["status"] == STATUS_EMPTY:
++        return quality_block
++    updated = dict(quality_block)
++    updated["status"] = STATUS_PARTIAL
++    updated["degraded_reason"] = reason
++    return updated
++
++
++# ---------------- D-E10 回撤画像 ----------------
++
++
++def drawdown(
++    prices: Sequence[Any],
++    *,
++    symbol: str = "",
++    dates: Optional[Sequence[Any]] = None,
++    now_ts: Optional[int] = None,
++    trace_id: Optional[str] = None,
++) -> Dict[str, Any]:
++    px = _floats(prices)
++    ds = _parse_dates(dates)
++    if len(px) < 2:
++        return unavailable(capability="D-E10", intent=INTENT_DRAWDOWN,
++                           reason="价格样本不足 2 点", trace_id=trace_id)
++    profile = _call("D20", px)
++    duration = _call("D21", px)
++    if profile["gate"] != "ok" or duration["gate"] != "ok":
++        return unavailable(capability="D-E10", intent=INTENT_DRAWDOWN,
++                           reason="回撤画像计算失败", trace_id=trace_id)
++    mdd = profile["result"]
++    dur = duration["result"]
++    peak = max(px)
++    peak_index = px.index(peak)
++    peak_date = ds[peak_index].isoformat() if len(ds) == len(px) else None
++    last = px[-1]
++    current_dd = round(1.0 - last / peak, 6) if peak else None
++    q = quality_for(
++        len(px), min_n=MIN_DRAWDOWN, span=_span(ds), sources=["market.candles"],
++        align_method="utc_daily_close", timezone="UTC",
++    )
++    if q["status"] != STATUS_GOOD:
++        note = "样本不足 250 点，回撤仅为短窗口描述"
++    else:
++        note = "样本充足"
++    head = f"{symbol or '标的'} " if symbol else ""
++    peak_txt = f"（高点 {peak_date}）" if peak_date else ""
++    answer = (
++        f"{head}当前价 {last:.2f}，自历史高点 {peak:.2f}{peak_txt} 回撤 {current_dd * 100:.2f}%；"
++        f"区间最大回撤 {mdd['mdd'] * 100:.2f}%（峰→谷 {mdd['trough_index'] - mdd['peak_index']} 天），"
++        f"当前回撤已持续 {dur['duration_days']} 天，"
++        f"{'已收复前高' if dur['recovered'] else '尚未收复前高'}。{note}，n={len(px)}。{CAVEAT}。"
++    )
++    return build(
++        capability="D-E10", intent=INTENT_DRAWDOWN, answer=answer,
++        data={
++            "capabilities": {
++                "D-E10": {
++                    "gate": "ok",
++                    "methods": ["D20", "D21", "F09", "F10"],
++                    "mdd": mdd["mdd"],
++                    "peak_index": mdd["peak_index"],
++                    "trough_index": mdd["trough_index"],
++                    "peak_date": peak_date,
++                    "current_drawdown": current_dd,
++                    "duration_days": dur["duration_days"],
++                    "recovery_days": dur["recovery_days"],
++                    "recovered": dur["recovered"],
++                }
++            },
++            "params": {"min_n": MIN_DRAWDOWN, "window_days": len(px)},
++            "symbol": symbol or None,
++        },
++        quality_block=q, trace_id=trace_id,
++    )
++
++
++# ---------------- D-E03 季节性 / 日历效应 ----------------
++
++
++def seasonality(
++    prices: Sequence[Any],
++    *,
++    dates: Optional[Sequence[Any]] = None,
++    symbol: str = "",
++    is_returns: bool = False,
++    trace_id: Optional[str] = None,
++) -> Dict[str, Any]:
++    values = _floats(prices)
++    ds = _parse_dates(dates)
++    if not is_returns:
++        values = _returns(values)
++        ds = ds[1:] if ds else ds
++    if not ds:
++        return unavailable(capability="D-E03", intent=INTENT_SEASONALITY,
++                           reason="缺少日期轴，无法做日历分组", trace_id=trace_id)
++    n = min(len(values), len(ds))
++    values, ds = values[:n], ds[:n]
++    if n < MIN_SEASONALITY:
++        return unavailable(capability="D-E03", intent=INTENT_SEASONALITY,
++                           reason=f"样本 {n} 天 < {MIN_SEASONALITY} 天", trace_id=trace_id)
++
++    data = {"returns": values, "dates": [d.isoformat() for d in ds]}
++    month = _call("C01", data)
++    win = _call("C02", data)
++    weekday = _call("C05", data)
++    strength = _call("C13", data)
++    consistency = _call("C14", data)
++    dom = _call("C07", data)
++    failed = [name for name, block in (("C01", month), ("C05", weekday)) if block["gate"] != "ok"]
++    if failed:
++        return unavailable(capability="D-E03", intent=INTENT_SEASONALITY,
++                           reason=f"方法门禁未通过: {failed}", trace_id=trace_id)
++
++    table = month["result"]["table"]
++    best = max(table, key=lambda row: row["mean"])
++    worst = min(table, key=lambda row: row["mean"])
++    wd_table = weekday["result"]["table"]
++    wd_best = max(wd_table, key=lambda row: row["mean"])
++    months = _months_span(ds)
++    q = quality_for(
++        n, min_n=MIN_SEASONALITY, span=_span(ds), sources=["market.candles"],
++        align_method="utc_daily_close", timezone="UTC",
++    )
++    caveat_depth = ""
++    if months < MONTHS_FOR_SEASONALITY:
++        q = _degrade(q, "seasonality_depth_lt_5y")
++        caveat_depth = (
++            f"注意：样本仅覆盖 {months} 个月，未达月份效应 5 年门槛，下述结论只作描述、不构成规律。"
++        )
++    answer = (
++        f"{symbol + ' ' if symbol else ''}按月看：最强月 {best['month']} 月"
++        f"均值 {best['mean'] * 100:.3f}%（n={best['n']}），最弱月 {worst['month']} 月"
++        f"均值 {worst['mean'] * 100:.3f}%（n={worst['n']}）；"
++        f"星期维度最强 {wd_best['label']} 均值 {wd_best['mean'] * 100:.3f}%、"
++        f"胜率 {wd_best['win_rate'] * 100:.1f}%（n={wd_best['n']}）；"
++        f"季节强度 {strength['result']['strength'] if strength['gate'] == 'ok' else None}。"
++        f"{caveat_depth}样本 n={n}（{q['span'][0]}~{q['span'][1]}）。{CAVEAT}。"
++    )
++    return build(
++        capability="D-E03", intent=INTENT_SEASONALITY, answer=answer,
++        data={
++            "capabilities": {
++                "D-E03": {
++                    "gate": "ok",
++                    "methods": ["C01", "C02", "C05", "C07", "C13", "C14"],
++                    "month_table": table,
++                    "weekday_table": wd_table,
++                    "seasonal_strength": strength["result"] if strength["gate"] == "ok" else None,
++                    "month_consistency": consistency["result"] if consistency["gate"] == "ok" else None,
++                    "day_of_month": dom["result"] if dom["gate"] == "ok" else None,
++                    "best_month": best["month"],
++                    "worst_month": worst["month"],
++                    "months_covered": months,
++                }
++            },
++            "params": {"min_n": MIN_SEASONALITY, "months_for_conclusion": MONTHS_FOR_SEASONALITY},
++            "symbol": symbol or None,
++        },
++        quality_block=q, trace_id=trace_id,
++    )
++
++
++# ---------------- D-E07 状态转移 ----------------
++
++
++def state_transition(
++    prices: Sequence[Any],
++    *,
++    k: int = 4,
++    symbol: str = "",
++    dates: Optional[Sequence[Any]] = None,
++    is_returns: bool = False,
++    trace_id: Optional[str] = None,
++) -> Dict[str, Any]:
++    values = _floats(prices)
++    if not is_returns:
++        values = _returns(values)
++    if len(values) < MIN_STATE:
++        return unavailable(capability="D-E07", intent=INTENT_STATE,
++                           reason=f"样本 {len(values)} < {MIN_STATE}", trace_id=trace_id)
++    bins = _call("B02", values, k=k)
++    if bins["gate"] != "ok":
++        return unavailable(capability="D-E07", intent=INTENT_STATE,
++                           reason="分箱失败", trace_id=trace_id)
++    edges = bins["result"]["edges"]
++    inner = edges[1:-1]
++    states = [f"q{sum(1 for e in inner if v > e)}" for v in values]
++
++    trans = _call("B07", {"states": states})
++    stationary = _call("B08", {"states": states})
++    dwell = _call("B09", {"states": states})
++    if trans["gate"] != "ok" or stationary["gate"] != "ok":
++        return unavailable(capability="D-E07", intent=INTENT_STATE,
++                           reason="转移矩阵计算失败", trace_id=trace_id)
++    order = trans["result"]["states"]
++    matrix = trans["result"]["matrix"]
++    stat = stationary["result"]["stationary"]
++    dwell_vals = dwell["result"]["dwell"] if dwell["gate"] == "ok" else [None] * len(order)
++    idx = sorted(range(len(order)), key=lambda i: order[i])
++    order = [order[i] for i in idx]
++    matrix = [[matrix[i][j] for j in idx] for i in idx]
++    stat = [stat[i] for i in idx]
++    dwell_vals = [dwell_vals[i] for i in idx]
++    dwell_txt = "、".join(
++        f"{s} {d if d is not None else '∞'} 步" for s, d in zip(order, dwell_vals)
++    )
++    q = quality_for(
++        len(values), min_n=MIN_STATE, span=_span(_parse_dates(dates)),
++        sources=["market.candles"], align_method="utc_daily_close", timezone="UTC",
++    )
++    hotspots = sorted(zip(order, stat), key=lambda item: item[1], reverse=True)
++    answer = (
++        f"{symbol + ' ' if symbol else ''}按日收益 {k} 分位状态（{order[0]}~{order[-1]}）："
++        f"稳态分布占比最高为 {hotspots[0][0]}（{hotspots[0][1] * 100:.1f}%）；"
++        f"平均停留 {dwell_txt}。样本 n={len(values)}。{CAVEAT}。"
++    )
++    return build(
++        capability="D-E07", intent=INTENT_STATE, answer=answer,
++        data={
++            "capabilities": {
++                "D-E07": {
++                    "gate": "ok",
++                    "methods": ["B02", "B07", "B08", "B09"],
++                    "states": order,
++                    "edges": edges,
++                    "transition_matrix": matrix,
++                    "stationary": stat,
++                    "dwell": dwell_vals,
++                }
++            },
++            "params": {"min_n": MIN_STATE, "k": k},
++            "symbol": symbol or None,
++        },
++        quality_block=q, trace_id=trace_id,
++    )
++
++
++# ---------------- D-E05 / D-E06 / D-E11 相关与领先滞后 ----------------
++
++
++def correlation(
++    x: Sequence[Any],
++    y: Sequence[Any],
++    *,
++    x_name: str = "x",
++    y_name: str = "y",
++    window: int = 90,
++    max_lag: int = 10,
++    trace_id: Optional[str] = None,
++) -> Dict[str, Any]:
++    xv, yv = _floats(x), _floats(y)
++    n = min(len(xv), len(yv))
++    if n < MIN_CORR:
++        return unavailable(capability="D-E05", intent=INTENT_CORRELATION,
++                           reason=f"对齐点 {n} < {MIN_CORR}", trace_id=trace_id)
++    xv, yv = xv[:n], yv[:n]
++    pair = {"x": xv, "y": yv}
++
++    pearson = _call("M01", pair)
++    spearman = _call("M02", pair)
++    rolling = _call("M04", pair, window=min(window, n))
++    move = _call("M23", pair)
++    stability = _call("M24", pair, window=min(30, n))
++    change = _call("M25", pair, window=min(30, n))
++    if pearson["gate"] != "ok" or move["gate"] != "ok":
++        return unavailable(capability="D-E05", intent=INTENT_CORRELATION,
++                           reason="相关计算失败", trace_id=trace_id)
++
++    blocks: Dict[str, Any] = {
++        "D-E05": {
++            "gate": "ok",
++            "methods": ["M01", "M02", "M04", "M23"],
++            "pearson": pearson["result"],
++            "spearman": spearman["result"] if spearman["gate"] == "ok" else None,
++            "rolling": rolling["result"] if rolling["gate"] == "ok" else None,
++            "same_direction": move["result"],
++        },
++        "D-E11": {
++            "gate": "ok" if (stability["gate"] == "ok" and change["gate"] == "ok") else "insufficient_history",
++            "methods": ["M23", "M24", "M25"],
++            "stability": stability["result"] if stability["gate"] == "ok" else None,
++            "breakpoints": change["result"]["breakpoints"] if change["gate"] == "ok" else None,
++        },
++    }
++    ccf_note = ""
++    if n >= MIN_CCF:
++        ccf = _call("T03", pair, max_lag=max_lag)
++        best = _call("T04", pair, max_lag=max_lag)
++        if ccf["gate"] == "ok" and best["gate"] == "ok":
++            blocks["D-E06"] = {
++                "gate": "ok",
++                "methods": ["T03", "T04"],
++                "ccf": ccf["result"]["ccf"],
++                "best_lag": best["result"]["lag"],
++                "best_ccf": best["result"]["ccf"],
++            }
++            lag = best["result"]["lag"]
++            ccf_note = (
++                f"领先滞后：最优 lag={lag}（CCF={best['result']['ccf']}），"
++                f"{'正 lag 表示 ' + x_name + ' 领先' if lag > 0 else ('负 lag 表示 ' + y_name + ' 领先' if lag < 0 else '同期同步')}。"
++            )
++    else:
++        blocks["D-E06"] = {"gate": "insufficient_history",
++                           "methods": ["T03", "T04"], "reason": f"n={n} < {MIN_CCF}",
++                           "result": None}
++
++    q = quality_for(n, min_n=MIN_CORR, sources=["market.candles"],
++                    align_method="utc_daily_close", timezone="UTC")
++    r = pearson["result"]
++    answer = (
++        f"{x_name} 与 {y_name}：Pearson ρ={r['r']}（p={r['p']}，95%CI {r['ci95']}），"
++        f"Spearman ρ={spearman['result']['r'] if spearman['gate'] == 'ok' else None}，"
++        f"同向率 {move['result']['ratio'] * 100:.1f}%；"
++        f"相关稳定性 {stability['result']['stability'] if stability['gate'] == 'ok' else None}，"
++        f"突变点 {len(blocks['D-E11']['breakpoints'] or [])} 个。{ccf_note}"
++        f"对齐 n={n}。{CAVEAT}。"
++    )
++    return build(
++        capability="D-E05", intent=INTENT_CORRELATION, answer=answer,
++        data={"capabilities": blocks, "params": {"min_n": MIN_CORR, "min_ccf_n": MIN_CCF,
++                                                "window": window, "max_lag": max_lag},
++              "pair": [x_name, y_name]},
++        quality_block=q, trace_id=trace_id,
++    )
++
++
++# ---------------- D-E02 分位 → 前瞻收益 ----------------
++
++
++def percentile_forward(
++    prices: Sequence[Any],
++    *,
++    dates: Optional[Sequence[Any]] = None,
++    symbol: str = "",
++    trace_id: Optional[str] = None,
++) -> Dict[str, Any]:
++    from ..persistence.profile import conditional_distribution
++
++    px = _floats(prices)
++    ds = _parse_dates(dates)
++    if dates and len(ds) != len(px):
++        return unavailable(capability="D-E02", intent="metric_percentile",
++                           reason="日期轴与价格长度不一致", trace_id=trace_id)
++    a8 = conditional_distribution(px, ds if dates else None)
++    result = a8.get("result")
++    if not result:
++        return unavailable(capability="D-E02", intent="metric_percentile",
++                           reason=str(a8.get("degraded_reason") or "条件分布样本不足"),
++                           trace_id=trace_id)
++    current = result["by_horizon"][0]
++    if not current.get("effective_n"):
++        return unavailable(capability="D-E02", intent="metric_percentile",
++                           reason="当前波动分位桶无有效前瞻样本", trace_id=trace_id)
++
++    n = result["sample_n"]
++    offset = len(px) - n
++    span = _span(ds[offset:]) if len(ds) == len(px) else None
++    q = quality_for(
++        n, min_n=MIN_CONDITIONAL, span=span, sources=["market.candles"],
++        align_method=result["align_method"], timezone="UTC",
++    )
++    notes = []
++    if a8["buckets"] != a8["requested_buckets"]:
++        notes.append("4 桶非重叠样本不足，降为 2 桶")
++    if a8["gate"] != "ok":
++        notes.append("每桶非重叠样本仍未达 250，仅作描述")
++    if a8.get("degraded_reason"):
++        q = _degrade(q, a8["degraded_reason"])
++    note = f"{'；'.join(notes)}。" if notes else ""
++    head = f"{symbol} " if symbol else ""
++    answer = (
++        f"{head}截至 {result['as_of']}，滚动波动率处于 {result['current_percentile']:.1f}% 分位；"
++        f"历史同状态后 1 日均值 {current['mean'] * 100:+.2f}%、"
++        f"中位 {current['median'] * 100:+.2f}%、80% 历史区间 "
++        f"[{current['p10'] * 100:+.2f}%, {current['p90'] * 100:+.2f}%]、"
++        f"上涨 {current['win_rate'] * 100:.1f}%（{a8['buckets']} 桶，"
++        f"有效 n={current['effective_n']}，非重叠 n={current['nonoverlap_n']}）。"
++        f"{note}{CAVEAT}。"
++    )
++    return build(
++        capability="D-E02", intent="metric_percentile", answer=answer,
++        data={
++            "capabilities": {"D-E02": {
++                "gate": a8["gate"], "methods": ["I30", "R02"],
++                "conditional_distribution": a8,
++            }},
++            "params": {
++                "min_n": MIN_CONDITIONAL, "h": 1,
++                "min_bucket_nonoverlap_n": a8["min_bucket_nonoverlap_n"],
++            },
++            "symbol": symbol or None,
++        },
++        quality_block=q, trace_id=trace_id,
++    )
++
++
++# ---------------- D-E08 条件 IC / 分箱单调性 ----------------
++
++
++def conditional_ic(
++    factor: Sequence[Any],
++    forward: Sequence[Any],
++    *,
++    k: int = 5,
++    name: str = "",
++    trace_id: Optional[str] = None,
++) -> Dict[str, Any]:
++    f, t = _floats(factor), _floats(forward)
++    n = min(len(f), len(t))
++    if n < MIN_CONDITIONAL:
++        return unavailable(capability="D-E08", intent=INTENT_CONDITIONAL,
++                           reason=f"对齐点 {n} < {MIN_CONDITIONAL}（每桶非重叠门禁）",
++                           trace_id=trace_id)
++    pair = {"factor": f[:n], "target": t[:n]}
++    mono = _call("B11", pair, k=k)
++    ic = _call("B13", pair)
++    rank_ic = _call("B14", pair)
++    if ic["gate"] != "ok" or mono["gate"] != "ok":
++        return unavailable(capability="D-E08", intent=INTENT_CONDITIONAL,
++                           reason="IC/分箱计算失败", trace_id=trace_id)
++    q = quality_for(n, min_n=MIN_CONDITIONAL, sources=["market.candles"],
++                    align_method="forward_returns", timezone="UTC")
++    answer = (
++        f"{name + ' ' if name else ''}因子对前瞻收益：IC={ic['result']['ic']}"
++        f"（p={ic['result']['p']}），RankIC="
++        f"{rank_ic['result']['rank_ic'] if rank_ic['gate'] == 'ok' else None}，"
++        f"分箱单调性 {mono['result']['monotonic']}（ρ_bin={mono['result']['rho_bin']}）。"
++        f"对齐 n={n}。{CAVEAT}。"
++    )
++    return build(
++        capability="D-E08", intent=INTENT_CONDITIONAL, answer=answer,
++        data={"capabilities": {"D-E08": {
++            "gate": "ok", "methods": ["B11", "B13", "B14"],
++            "monotonic": mono["result"]["monotonic"],
++            "bin_means": mono["result"]["bin_means"],
++            "ic": ic["result"], "rank_ic": rank_ic["result"] if rank_ic["gate"] == "ok" else None,
++        }}, "params": {"min_n": MIN_CONDITIONAL, "k": k}},
++        quality_block=q, trace_id=trace_id,
++    )
++
++
++# ---------------- 统一调度（能力 ID → executor） ----------------
++
++_EXECUTORS = {
++    "D-E02": percentile_forward,
++    "D-E03": seasonality,
++    "D-E05": correlation,
++    "D-E06": correlation,
++    "D-E07": state_transition,
++    "D-E08": conditional_ic,
++    "D-E10": drawdown,
++    "D-E11": correlation,
++}
++
++
++def run_capability(capability_id: str, **kwargs: Any) -> Dict[str, Any]:
++    """按能力 ID 调度；未知能力直接抛 KeyError（注册表校验在 manifest 层）。"""
++    if capability_id not in _EXECUTORS:
++        raise KeyError(f"unregistered capability: {capability_id}")
++    return _EXECUTORS[capability_id](**kwargs)
++
++
++def supported() -> Tuple[str, ...]:
++    return tuple(sorted(_EXECUTORS))
+diff --git a/54-L1架构能力聚合层/capability_manifest.yaml b/54-L1架构能力聚合层/capability_manifest.yaml
+new file mode 100644
+index 0000000000..8dce2e189e
+--- /dev/null
++++ b/54-L1架构能力聚合层/capability_manifest.yaml
+@@ -0,0 +1,72 @@
++# 54 能力注册表（能力层唯一事实源，SPEC-54 §3.3 / §11.4）
++# 规则：
++#   1. 只能引用方法库已登记且 implemented=true 的 method_id（manifest.validate() 强制）；
++#   2. min_n 是「能力级最小样本」，方法级门禁仍由 l1agg.methods.registry 独立执行；
++#   3. 新增能力 = 加一条 + 在 l1agg/capabilities/stats.py 提供同名 executor；
++#   4. mode=deterministic 绕过记忆相似度门禁，gated 仍需 route_confidence >= 0.65。
++version: 1
++updated: "2026-11-15"
++capabilities:
++  - id: D-E02
++    intent: metric_percentile
++    mode: deterministic
++    data_scope: [market.candles]
++    executor: capabilities.stats.percentile_forward
++    methods: [I30, R02]
++    min_n: 250
++    notes: T0.5 仅 h=1；PIT 4 桶，每桶非重叠 n>=250，不足降 2 桶并披露
++  - id: D-E03
++    intent: seasonality_query
++    mode: deterministic
++    data_scope: [market.candles]
++    executor: capabilities.stats.seasonality
++    methods: [C01, C02, C03, C04, C05, C07, C09, C12, C13, C14, C15]
++    min_n: 60
++    min_span_days: 730
++    notes: 月份效应需 ≥5 年才可下结论；<60 个月只作描述
++  - id: D-E05
++    intent: correlation_query
++    mode: deterministic
++    data_scope: [market.candles]
++    executor: capabilities.stats.correlation
++    methods: [M01, M02, M04, M23]
++    min_n: 60
++    notes: 同期相关门槛 n>=60；随机序列应得 |rho|<0.1
++  - id: D-E06
++    intent: correlation_query
++    mode: deterministic
++    data_scope: [market.candles]
++    executor: capabilities.stats.correlation
++    methods: [T03, T04, M11, M12]
++    min_n: 120
++    notes: 领先滞后 CCF 门槛 n>=120
++  - id: D-E07
++    intent: state_transition
++    mode: deterministic
++    data_scope: [market.candles]
++    executor: capabilities.stats.state_transition
++    methods: [B04, B07, B08, B09]
++    min_n: 100
++  - id: D-E08
++    intent: conditional_return
++    mode: deterministic
++    data_scope: [market.candles]
++    executor: capabilities.stats.conditional_ic
++    methods: [B11, B13, B14, B15]
++    min_n: 250
++    notes: 每桶非重叠 n>=250（T2 门禁）
++  - id: D-E10
++    intent: drawdown_query
++    mode: deterministic
++    data_scope: [market.candles]
++    executor: capabilities.stats.drawdown
++    methods: [D20, D21, F09, F10]
++    min_n: 250
++    notes: 回撤画像只用价格，不需跨资产回填
++  - id: D-E11
++    intent: cross_check
++    mode: gated
++    data_scope: [market.candles]
++    executor: capabilities.stats.correlation
++    methods: [M23, M24, M25]
++    min_n: 60
+diff --git a/54-L1架构能力聚合层/contracts/persistence.schema.json b/54-L1架构能力聚合层/contracts/persistence.schema.json
+new file mode 100644
+index 0000000000..6bfb38adac
+--- /dev/null
++++ b/54-L1架构能力聚合层/contracts/persistence.schema.json
+@@ -0,0 +1,305 @@
++{
++  "$schema": "http://json-schema.org/draft-07/schema#",
++  "$id": "https://dreambuddy.local/54-l1agg/contracts/persistence.schema.json",
++  "title": "L1 延续性画像契约（persistence / T0）",
++  "description": "SPEC-54-延续性统计分析模块 §4 的机器可校验版本。只描述历史统计，不含任何预测/点估计字段。",
++  "oneOf": [
++    { "$ref": "#/definitions/profile" },
++    { "$ref": "#/definitions/errorProfile" }
++  ],
++  "definitions": {
++    "profile": {
++      "type": "object",
++      "required": ["kind", "symbol", "span", "sample_n", "metrics", "quality", "caveat", "text"],
++      "additionalProperties": false,
++      "properties": {
++        "kind": { "const": "persistence" },
++        "symbol": { "type": "string", "minLength": 1 },
++        "span": { "type": "string" },
++        "sample_n": { "type": "integer", "minimum": 0 },
++        "metrics": { "$ref": "#/definitions/metrics" },
++        "quality": { "$ref": "#/definitions/quality" },
++        "caveat": { "const": "历史统计，不代表未来" },
++        "text": { "type": "string", "minLength": 1 }
++      }
++    },
++    "errorProfile": {
++      "type": "object",
++      "required": ["kind", "symbol", "error", "caveat"],
++      "additionalProperties": false,
++      "properties": {
++        "kind": { "const": "persistence" },
++        "symbol": { "type": "string", "minLength": 1 },
++        "error": { "type": "string", "minLength": 1 },
++        "caveat": { "const": "历史统计，不代表未来" }
++      }
++    },
++    "metrics": {
++      "type": "object",
++      "required": ["hurst", "variance_ratio", "ar1", "runs", "transition", "trend", "ic_decay", "conditional_distribution"],
++      "additionalProperties": false,
++      "properties": {
++        "hurst": {
++          "oneOf": [
++            { "type": "null" },
++            {
++              "type": "object",
++              "required": ["h", "chunks", "max_chunk", "loglog_r2", "corrected", "n", "confidence", "regime", "regime_displayable"],
++              "additionalProperties": false,
++              "properties": {
++                "h": { "type": "number" },
++                "chunks": { "type": "array", "items": { "type": "integer", "minimum": 4 } },
++                "max_chunk": { "type": "integer", "minimum": 4 },
++                "loglog_r2": { "type": "number" },
++                "corrected": { "type": "boolean" },
++                "n": { "type": "integer", "minimum": 64 },
++                "confidence": { "enum": ["low", "high"] },
++                "regime": { "enum": ["persistent", "random_walk", "anti_persistent"] },
++                "regime_displayable": { "type": "boolean" }
++              }
++            }
++          ]
++        },
++        "variance_ratio": {
++          "oneOf": [
++            { "type": "null" },
++            {
++              "type": "array",
++              "minItems": 1,
++              "items": {
++                "type": "object",
++                "required": ["q", "vr", "z", "p", "n", "interpretation"],
++                "additionalProperties": false,
++                "properties": {
++                  "q": { "type": "integer", "minimum": 2 },
++                  "vr": { "type": "number", "exclusiveMinimum": 0 },
++                  "z": { "type": "number" },
++                  "p": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
++                  "n": { "type": "integer", "minimum": 30 },
++                  "interpretation": { "enum": ["trend", "mean_revert", "random_walk"] }
++                }
++              }
++            }
++          ]
++        },
++        "ar1": {
++          "oneOf": [
++            { "type": "null" },
++            {
++              "type": "object",
++              "required": ["phi", "halflife_days", "n"],
++              "additionalProperties": false,
++              "properties": {
++                "phi": { "type": "number" },
++                "halflife_days": { "type": ["number", "null"] },
++                "n": { "type": "integer", "minimum": 30 }
++              }
++            }
++          ]
++        },
++        "runs": {
++          "oneOf": [
++            { "type": "null" },
++            {
++              "type": "object",
++              "required": ["n_runs", "max_run", "mean_run", "max_up", "max_down", "n", "n_zero"],
++              "additionalProperties": false,
++              "properties": {
++                "n_runs": { "type": "integer", "minimum": 1 },
++                "max_run": { "type": "integer", "minimum": 1 },
++                "mean_run": { "type": "number" },
++                "max_up": { "type": "integer", "minimum": 0 },
++                "max_down": { "type": "integer", "minimum": 0 },
++                "n": { "type": "integer", "minimum": 10 },
++                "n_zero": { "type": "integer", "minimum": 0 }
++              }
++            }
++          ]
++        },
++        "transition": {
++          "oneOf": [
++            { "type": "null" },
++            {
++              "type": "object",
++              "required": ["p_up_up", "p_up_down", "p_down_up", "p_down_down", "steady_up", "dwell_up_days", "dwell_down_days", "n", "n_zero"],
++              "additionalProperties": false,
++              "properties": {
++                "p_up_up": { "type": ["number", "null"] },
++                "p_up_down": { "type": ["number", "null"] },
++                "p_down_up": { "type": ["number", "null"] },
++                "p_down_down": { "type": ["number", "null"] },
++                "steady_up": { "type": ["number", "null"] },
++                "dwell_up_days": { "type": ["number", "null"] },
++                "dwell_down_days": { "type": ["number", "null"] },
++                "n": { "type": "integer", "minimum": 30 },
++                "n_zero": { "type": "integer", "minimum": 0 }
++              }
++            }
++          ]
++        },
++        "trend": {
++          "oneOf": [
++            { "type": "null" },
++            {
++              "type": "object",
++              "required": ["slope_per_day", "annualized_log", "se", "t", "p", "r2", "n", "hac_corrected", "note"],
++              "additionalProperties": false,
++              "properties": {
++                "slope_per_day": { "type": "number" },
++                "annualized_log": { "type": "number" },
++                "se": { "type": ["number", "null"] },
++                "t": { "type": ["number", "null"] },
++                "p": { "type": ["number", "null"], "exclusiveMinimum": 0 },
++                "r2": { "type": "number", "minimum": 0, "maximum": 1 },
++                "n": { "type": "integer", "minimum": 30 },
++                "hac_corrected": { "const": false },
++                "note": { "type": "string", "minLength": 1 }
++              }
++            }
++          ]
++        },
++        "conditional_distribution": {
++          "type": "object",
++          "required": ["gate", "state", "state_method", "method", "h", "requested_buckets", "buckets", "min_bucket_nonoverlap_n", "vol_window", "degraded_reason", "result"],
++          "additionalProperties": false,
++          "properties": {
++            "gate": { "enum": ["ok", "insufficient_samples"] },
++            "state": { "const": "volatility" },
++            "state_method": { "const": "I30" },
++            "method": { "const": "R02" },
++            "h": { "const": 1 },
++            "requested_buckets": { "const": 4 },
++            "buckets": { "enum": [2, 4] },
++            "min_bucket_nonoverlap_n": { "type": "integer", "minimum": 1 },
++            "vol_window": { "type": "integer", "minimum": 2 },
++            "degraded_reason": { "type": ["string", "null"] },
++            "result": {
++              "oneOf": [
++                { "type": "null" },
++                {
++                  "type": "object",
++                  "required": ["current_percentile", "bucket", "by_horizon", "phrase", "n", "sample_n", "pit", "as_of", "window", "align_method"],
++                  "additionalProperties": false,
++                  "properties": {
++                    "current_percentile": { "type": "number", "minimum": 0, "maximum": 100 },
++                    "bucket": { "type": "integer", "minimum": 0 },
++                    "by_horizon": {
++                      "type": "array",
++                      "minItems": 1,
++                      "items": {
++                        "type": "object",
++                        "required": ["h", "n", "mean", "median", "win_rate", "t", "p", "p10", "p90", "effective_n", "nonoverlap_n", "pit", "as_of", "window", "align_method", "by_bucket"],
++                        "additionalProperties": false,
++                        "properties": {
++                          "h": { "const": 1 },
++                          "n": { "type": "integer", "minimum": 0 },
++                          "mean": { "type": ["number", "null"] },
++                          "median": { "type": ["number", "null"] },
++                          "win_rate": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
++                          "t": { "type": ["number", "null"] },
++                          "p": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
++                          "p10": { "type": ["number", "null"] },
++                          "p90": { "type": ["number", "null"] },
++                          "effective_n": { "type": "integer", "minimum": 0 },
++                          "nonoverlap_n": { "type": "integer", "minimum": 0 },
++                          "pit": { "const": true },
++                          "as_of": { "type": ["string", "number"] },
++                          "window": { "type": "integer", "minimum": 2 },
++                          "align_method": { "type": "string", "minLength": 1 },
++                          "by_bucket": {
++                            "type": "array",
++                            "minItems": 2,
++                            "items": {
++                              "type": "object",
++                              "required": ["bucket", "n", "mean", "median", "win_rate", "t", "p", "p10", "p90", "effective_n", "nonoverlap_n"],
++                              "additionalProperties": false,
++                              "properties": {
++                                "bucket": { "type": "integer", "minimum": 0 },
++                                "n": { "type": "integer", "minimum": 0 },
++                                "mean": { "type": ["number", "null"] },
++                                "median": { "type": ["number", "null"] },
++                                "win_rate": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
++                                "t": { "type": ["number", "null"] },
++                                "p": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
++                                "p10": { "type": ["number", "null"] },
++                                "p90": { "type": ["number", "null"] },
++                                "effective_n": { "type": "integer", "minimum": 0 },
++                                "nonoverlap_n": { "type": "integer", "minimum": 0 }
++                              }
++                            }
++                          }
++                        }
++                      }
++                    },
++                    "phrase": { "type": "string", "minLength": 1 },
++                    "n": { "type": "integer", "minimum": 0 },
++                    "sample_n": { "type": "integer", "minimum": 0 },
++                    "pit": { "const": true },
++                    "as_of": { "type": ["string", "number"] },
++                    "window": { "type": "integer", "minimum": 2 },
++                    "align_method": { "type": "string", "minLength": 1 }
++                  }
++                }
++              ]
++            }
++          }
++        },
++        "ic_decay": {
++          "oneOf": [
++            { "type": "null" },
++            {
++              "type": "object",
++              "required": ["lookback", "items", "n"],
++              "additionalProperties": false,
++              "properties": {
++                "lookback": { "type": "integer", "minimum": 1 },
++                "n": { "type": "integer", "minimum": 1 },
++                "items": {
++                  "type": "array",
++                  "minItems": 1,
++                  "items": {
++                    "type": "object",
++                    "required": ["h", "ric", "n", "ric_nonoverlap", "ric_nonoverlap_min", "ric_nonoverlap_max", "n_phases", "n_nonoverlap"],
++                    "additionalProperties": false,
++                    "properties": {
++                      "h": { "type": "integer", "minimum": 1 },
++                      "ric": { "type": ["number", "null"], "minimum": -1, "maximum": 1 },
++                      "n": { "type": "integer", "minimum": 0 },
++                      "ric_nonoverlap": { "type": ["number", "null"], "minimum": -1, "maximum": 1 },
++                      "ric_nonoverlap_min": { "type": ["number", "null"], "minimum": -1, "maximum": 1 },
++                      "ric_nonoverlap_max": { "type": ["number", "null"], "minimum": -1, "maximum": 1 },
++                      "n_phases": { "type": "integer", "minimum": 0, "maximum": 20 },
++                      "n_nonoverlap": { "type": "integer", "minimum": 0 }
++                    }
++                  }
++                }
++              }
++            }
++          ]
++        }
++      }
++    },
++    "quality": {
++      "type": "object",
++      "required": ["status", "sample_n", "span", "align_method", "timezone", "min_n", "lookback_days", "degraded_reason", "failed_methods", "hurst_confident_n", "hurst_max_chunk", "notes"],
++      "additionalProperties": false,
++      "properties": {
++        "status": { "enum": ["good", "partial", "degraded"] },
++        "sample_n": { "type": "integer", "minimum": 0 },
++        "span": { "type": "string" },
++        "align_method": { "type": "string", "minLength": 1 },
++        "timezone": { "type": "string", "minLength": 1 },
++        "min_n": { "type": "integer", "minimum": 0 },
++        "lookback_days": { "type": "integer", "minimum": 1 },
++        "degraded_reason": { "type": ["string", "null"] },
++        "failed_methods": {
++          "type": "object",
++          "additionalProperties": { "type": "string" }
++        },
++        "hurst_confident_n": { "type": "integer", "minimum": 1 },
++        "hurst_max_chunk": { "type": "integer", "minimum": 4 },
++        "notes": { "type": "array", "items": { "type": "string" } }
++      }
++    }
++  }
++}
+diff --git a/54-L1架构能力聚合层/tests/test_methods_s3.py b/54-L1架构能力聚合层/tests/test_methods_s3.py
+new file mode 100644
+index 0000000000..7318a068ea
+--- /dev/null
++++ b/54-L1架构能力聚合层/tests/test_methods_s3.py
+@@ -0,0 +1,333 @@
++# -*- coding: utf-8 -*-
++"""S3 批（条件收益 / IC / 分组）测试：S11/S25/S26、F01–F06、B01–B03/B05/B11–B16、H01、R01/R02。"""
++
++import json
++import math
++import os
++import random
++import sys
++
++import pytest
++
++_MODULE_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
++if _MODULE_ROOT not in sys.path:
++    sys.path.insert(0, _MODULE_ROOT)
++
++from l1agg.methods import get, run  # noqa: E402
++
++DIST_N = 30
++COND_N = 300
++
++
++def _linear(n=DIST_N):
++    return [float(i) for i in range(n)]
++
++
++def _growth(n=DIST_N, rate=0.01):
++    return [100.0 * (1.0 + rate) ** i for i in range(n)]
++
++
++def _cond_pair(n=COND_N):
++    return {"factor": [float(i) for i in range(n)], "target": [0.001 * i for i in range(n)]}
++
++
++# ---------- 目录与门禁 ----------
++
++
++def test_s3_batch_registered():
++    ids = ["S11", "S25", "S26", "F01", "F02", "F03", "F04", "F05", "F06",
++           "B01", "B02", "B03", "B05", "B11", "B12", "B13", "B14", "B15", "B16",
++           "H01", "R01", "R02"]
++    for mid in ids:
++        assert get(mid).implemented is True, mid
++
++
++def test_cond_batch_gate_needs_250():
++    short = {"factor": _linear(100), "target": _linear(100)}
++    assert run("B13", short)["gate"] == "insufficient_samples"
++    assert run("B13", _cond_pair())["gate"] == "ok"
++    assert get("B13").min_n == 250
++
++
++def test_dist_batch_gate_needs_30():
++    assert run("S11", _linear(10))["gate"] == "insufficient_samples"
++    assert run("F03", [1.0, 2.0])["gate"] == "ok"  # F03 只需 2 点
++
++
++# ---------- S11 / S25 / S26 ----------
++
++
++def test_s11_matches_numpy():
++    np = pytest.importorskip("numpy")
++    xs = [3.0, 1.0, 4.0, 1.0, 5.0, 9.0, 2.0, 6.0, 5.0, 3.0] * 3
++    out = run("S11", xs)["result"]
++    for q in (1, 25, 50, 90, 99):
++        assert out[f"p{q}"] == pytest.approx(float(np.percentile(xs, q)), abs=1e-6)
++
++
++def test_s25_percentile_pit():
++    out = run("S25", _linear())["result"]
++    assert out["value"] == 29.0
++    assert out["percentile"] == 100.0
++    assert out["n"] == 30
++
++
++def test_s26_zscore_winsorized():
++    out = run("S26", _linear())["result"]
++    assert out["mean"] == pytest.approx(14.5)
++    assert out["winsorized"] is True
++    # 末点为最大值，z 必为正
++    assert out["z"] > 0
++
++
++def test_s26_zero_variance_returns_null():
++    out = run("S26", [5.0] * 30)["result"]
++    assert out["z"] is None
++
++
++# ---------- F01–F06 ----------
++
++
++def test_f01_f02_returns():
++    prices = _growth()
++    f01 = run("F01", prices)["result"]
++    f02 = run("F02", prices)["result"]
++    assert f01["mean"] == pytest.approx(0.01, abs=1e-9)
++    assert f02["mean"] == pytest.approx(math.log(1.01), abs=1e-6)  # 输出保留 6 位
++    assert f01["n"] == DIST_N
++
++
++def test_f03_interval_return():
++    out = run("F03", [100.0] * 15 + [200.0] * 15)["result"]
++    assert out["ret"] == pytest.approx(1.0)
++
++
++def test_f04_f05_annualized():
++    prices = _growth(rate=0.001)
++    f04 = run("F04", prices)["result"]
++    f05 = run("F05", prices)["result"]
++    assert f04["mean_daily"] == pytest.approx(0.001, abs=1e-9)
++    assert f04["ann"] == pytest.approx(1.001 ** 365 - 1.0, abs=1e-6)
++    assert f05["vol"] == pytest.approx(0.0, abs=1e-6)
++
++
++def test_f06_sharpe_null_when_zero_vol():
++    assert run("F06", _growth(rate=0.1))["result"]["sharpe"] is None
++    # 有波动时 sharpe 为有限数
++    rng = random.Random(11)
++    noisy = [100.0 * (1.0 + 0.01 + rng.gauss(0, 0.01)) ** i for i in range(60)]
++    out = run("F06", noisy)["result"]
++    assert out["sharpe"] is not None and out["ann_vol"] > 0
++
++
++# ---------- B01–B03 ----------
++
++
++def test_b01_equal_width_counts():
++    out = run("B01", _linear(), k=10)["result"]
++    assert len(out["edges"]) == 11
++    assert sum(out["counts"]) == DIST_N
++    assert out["counts"][0] == 3 and out["counts"][9] == 3
++
++
++def test_b02_quantile_bins():
++    out = run("B02", _linear(), k=5)["result"]
++    assert out["counts"] == [6, 6, 6, 6, 6]
++    assert out["bucket"] == 4
++
++
++def test_b03_threshold_levels():
++    out = run("B03", [float(i) for i in range(101)], thresholds=(25, 50, 75))["result"]
++    assert out["level"] == 3 and out["label"] == ">=75"
++    assert out["counts"] == [25, 25, 25, 26]
++
++
++# ---------- B05 / B11–B16 ----------
++
++
++def _state_pair(n=COND_N):
++    return {
++        "state": [str(i % 2) for i in range(n)],
++        "target": [0.01 if i % 2 else -0.01 for i in range(n)],
++    }
++
++
++def test_b05_conditional_table():
++    out = run("B05", _state_pair())["result"]
++    table = {row["state"]: row for row in out["table"]}
++    assert table["1"]["mean"] == pytest.approx(0.01)
++    assert table["0"]["mean"] == pytest.approx(-0.01)
++    assert table["1"]["win_rate"] == 1.0
++
++
++def test_b16_group_stats_and_spread():
++    out = run("B16", _cond_pair(), k=5)["result"]
++    assert len(out["table"]) == 5
++    assert sum(row["n"] for row in out["table"]) == COND_N
++    assert out["spread"] == pytest.approx(0.24, abs=1e-6)
++
++
++def test_b11_monotonic_increasing():
++    out = run("B11", _cond_pair(), k=5)["result"]
++    assert out["monotonic"] == "increasing"
++    assert out["rho_bin"] == pytest.approx(1.0)
++    assert out["n"] == COND_N
++
++
++def test_b12_gradient_matches_b16():
++    b12 = run("B12", _cond_pair(), k=5)["result"]
++    b16 = run("B16", _cond_pair(), k=5)["result"]
++    assert b12["spread"] == b16["spread"]
++    assert b12["spread_pp"] == pytest.approx(24.0, abs=1e-6)
++
++
++def test_b13_b14_ic():
++    perfect = {"factor": _linear(COND_N), "target": _linear(COND_N)}
++    assert run("B13", perfect)["result"]["ic"] == pytest.approx(1.0)
++    assert run("B14", perfect)["result"]["rank_ic"] == pytest.approx(1.0)
++    # 单调非线性：Pearson < Spearman
++    cubic = {"factor": _linear(COND_N), "target": [float(i) ** 3 for i in range(COND_N)]}
++    assert run("B13", cubic)["result"]["ic"] < run("B14", cubic)["result"]["rank_ic"]
++
++
++def test_b13_null_random_not_significant():
++    rng = random.Random(7)
++    data = {
++        "factor": [rng.gauss(0, 1) for _ in range(COND_N)],
++        "target": [rng.gauss(0, 1) for _ in range(COND_N)],
++    }
++    res = run("B13", data)["result"]
++    assert abs(res["ic"]) < 0.15
++    assert res["p"] > 0.01
++
++
++def test_b15_ic_decay_reuses_frozen_impl():
++    prices = [100.0 * math.exp(0.001 * i + 0.05 * math.sin(i / 5.0)) for i in range(400)]
++    out = run("B15", prices, lookback=20, horizons=(1, 5, 20))["result"]
++    assert out["lookback"] == 20
++    assert out["n"] == 400
++    assert [item["h"] for item in out["items"]] == [1, 5, 20]
++    assert all("ric_nonoverlap" in item for item in out["items"])
++
++
++# ---------- H01 ----------
++
++
++def test_h01_one_sample_t():
++    out = run("H01", [0.01, 0.02] * 15)["result"]
++    assert out["mean"] == pytest.approx(0.015)
++    assert out["p"] < 0.001
++    assert out["is_significant"] is True
++
++
++# ---------- R01 / R02 ----------
++
++
++def test_r01_phrase_uses_fixed_template():
++    out = run("R01", _state_pair(), h=1, state="1")["result"]
++    assert "历史" in out["phrase"] and "上涨" in out["phrase"]
++    assert out["state"] == "1"
++    assert "+1.00%" in out["phrase"] and "n=" in out["phrase"]
++
++
++def test_r02_percentile_forward():
++    data = {
++        "indicator": [float(i) for i in range(COND_N)],
++        "price": [100.0 * math.exp(0.0005 * i) for i in range(COND_N)],
++    }
++    out = run("R02", data, buckets=10, horizons=(1, 5))["result"]
++    assert out["current_percentile"] == 100.0
++    assert out["bucket"] == 9
++    assert out["pit"] is False
++    assert [item["h"] for item in out["by_horizon"]] == [1, 5]
++    assert "样本内回顾" in out["phrase"] and "含未来函数" in out["phrase"]
++    # 价格单调上涨 → 同桶前瞻收益全为正
++    assert all(item["n"] > 0 and item["mean"] > 0 for item in out["by_horizon"])
++    assert all(item["effective_n"] == item["n"] for item in out["by_horizon"])
++    assert out["by_horizon"][0]["nonoverlap_n"] == out["by_horizon"][0]["effective_n"]
++    assert out["by_horizon"][1]["nonoverlap_n"] < out["by_horizon"][1]["effective_n"]
++
++
++def _r02_pit_data(n=COND_N):
++    return {
++        "indicator": [float(i % 10) for i in range(n)],
++        "price": [100.0 * math.exp(0.0005 * i) for i in range(n)],
++        "timestamps": list(range(n)),
++        "align_method": "daily_last+ffill",
++    }
++
++
++def test_r02_pit_discloses_rolling_conditional_samples():
++    out = run(
++        "R02", _r02_pit_data(), pit=True, window=30, buckets=2, horizons=(1, 5)
++    )["result"]
++    assert out["pit"] is True
++    assert out["as_of"] == COND_N - 1
++    assert out["window"] == 30
++    assert out["align_method"] == "daily_last+ffill"
++    assert out["current_percentile"] == 100.0
++    assert out["bucket"] == 1
++    for item in out["by_horizon"]:
++        assert item["pit"] is True
++        assert item["as_of"] == COND_N - 1
++        assert item["window"] == 30
++        assert item["align_method"] == "daily_last+ffill"
++        assert item["effective_n"] == item["n"] > 0
++        assert 0 < item["nonoverlap_n"] <= item["effective_n"]
++        assert item["mean"] > 0
++    assert out["by_horizon"][0]["nonoverlap_n"] == out["by_horizon"][0]["effective_n"]
++    assert out["by_horizon"][1]["nonoverlap_n"] < out["by_horizon"][1]["effective_n"]
++    assert out["by_horizon"][1]["t"] is None
++    assert out["by_horizon"][1]["p"] is None
++    assert "按当时可见数据" in out["phrase"]
++
++
++def test_r02_pit_discloses_every_bucket_and_return_interval():
++    out = run(
++        "R02", _r02_pit_data(), pit=True, window=30, buckets=2, horizons=(1,)
++    )["result"]
++    current = out["by_horizon"][0]
++    assert current["p10"] <= current["median"] <= current["p90"]
++    assert [row["bucket"] for row in current["by_bucket"]] == [0, 1]
++    for row in current["by_bucket"]:
++        assert row["effective_n"] == row["n"] > 0
++        assert row["nonoverlap_n"] == row["effective_n"]
++        assert row["p10"] <= row["median"] <= row["p90"]
++
++
++def test_r02_pit_future_rows_do_not_change_as_of_result():
++    full = _r02_pit_data()
++    prefix = {key: (value[:270] if isinstance(value, list) else value) for key, value in full.items()}
++    params = dict(pit=True, window=40, buckets=4, horizons=(1, 5), as_of=269)
++    expected = run("R02", prefix, **params)["result"]
++    full["indicator"][270:] = [1e9] * (COND_N - 270)
++    full["price"][270:] = [1e9] * (COND_N - 270)
++    actual = run("R02", full, **params)["result"]
++    assert actual == expected
++
++
++def test_r02_pit_release_ts_controls_visibility():
++    data = _r02_pit_data()
++    data["indicator"] = [0.0] * COND_N
++    data["release_ts"] = list(range(COND_N))
++    for i in range(100, 130):
++        data["indicator"][i] = 1000.0
++        data["release_ts"][i] = 150
++
++    before = run(
++        "R02", data, pit=True, window=60, buckets=2, horizons=(1,), as_of=120
++    )["result"]
++    after = run(
++        "R02", data, pit=True, window=60, buckets=2, horizons=(1,), as_of=150
++    )["result"]
++    assert before["current_percentile"] == 100.0
++    assert after["current_percentile"] == pytest.approx(50.0)
++
++
++# ---------- 确定性 ----------
++
++
++def test_determinism_identical_runs():
++    a = run("B16", _cond_pair(), k=5)
++    b = run("B16", _cond_pair(), k=5)
++    assert json.dumps(a, sort_keys=True, default=str) == json.dumps(b, sort_keys=True, default=str)
+diff --git a/54-L1架构能力聚合层/tests/test_persistence.py b/54-L1架构能力聚合层/tests/test_persistence.py
+new file mode 100644
+index 0000000000..db1709e368
+--- /dev/null
++++ b/54-L1架构能力聚合层/tests/test_persistence.py
+@@ -0,0 +1,392 @@
++# -*- coding: utf-8 -*-
++"""T0 延续性统计分析（persistence）单元测试。
++
++用「已知答案序列」锁定方法与口径，不依赖真实库：
++  - iid 随机游走 → H≈0.5、VR≈1、φ≈0
++  - AR(1) φ=0.6 → H>0.55、φ≈0.6
++  - 线性指数价格 → R²≈1、t 显著
++"""
++
++import datetime
++import math
++import os
++import sqlite3
++import sys
++
++import pytest
++
++_MODULE_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
++if _MODULE_ROOT not in sys.path:
++    sys.path.insert(0, _MODULE_ROOT)
++
++from l1agg import persistence as P  # noqa: E402
++
++
++# ---------------- 确定性数据生成（不引入 numpy） ----------------
++
++
++class _LCG:
++    def __init__(self, seed=42):
++        self.s = seed
++
++    def uniform(self):
++        self.s = (1103515245 * self.s + 12345) % (2 ** 31)
++        return self.s / (2 ** 31)
++
++    def normal(self):
++        u1 = max(self.uniform(), 1e-12)
++        u2 = self.uniform()
++        return math.sqrt(-2.0 * math.log(u1)) * math.cos(2.0 * math.pi * u2)
++
++
++def _iid_returns(n=3000, seed=7):
++    g = _LCG(seed)
++    return [0.0005 + 0.02 * g.normal() for _ in range(n)]
++
++
++def _ar1_returns(n=3000, phi=0.6, seed=11):
++    g = _LCG(seed)
++    out, prev = [], 0.0
++    for _ in range(n):
++        prev = phi * prev + 0.01 * g.normal()
++        out.append(prev)
++    return out
++
++
++def _prices_from_returns(rets, p0=100.0):
++    prices = [p0]
++    for r in rets:
++        prices.append(prices[-1] * math.exp(r))
++    return prices
++
++
++def _temp_db(tmp_path, prices, symbol="BTC"):
++    db = os.path.join(str(tmp_path), "t.db")
++    conn = sqlite3.connect(db)
++    conn.execute(
++        "CREATE TABLE mm_metrics (sub_category TEXT, metric_name TEXT, "
++        "timestamp INTEGER, metric_value REAL, source TEXT)"
++    )
++    today = datetime.datetime.now(datetime.timezone.utc).date()
++    start = today - datetime.timedelta(days=len(prices))
++    rows = [
++        (symbol, "close_usd",
++         int(datetime.datetime.combine(start + datetime.timedelta(days=i), datetime.time(16), datetime.timezone.utc).timestamp()),
++         v, "test")
++        for i, v in enumerate(prices)
++    ]
++    conn.executemany("INSERT INTO mm_metrics VALUES (?,?,?,?,?)", rows)
++    conn.commit()
++    conn.close()
++    return db
++
++
++# ---------------- A1 Hurst ----------------
++
++
++def test_hurst_random_walk_near_half():
++    h = P.hurst_rs(_iid_returns())
++    assert 0.35 <= h["h"] <= 0.68, h
++    assert h["confidence"] == "high"  # n=3000 >= 2000
++    assert h["regime"] in ("random_walk", "persistent")
++
++
++def test_hurst_persistent_series_above_half():
++    h = P.hurst_rs(_ar1_returns())
++    assert h["h"] > 0.55, h
++    assert h["regime"] == "persistent"
++
++
++def test_hurst_short_sample_marked_low_confidence():
++    h = P.hurst_rs(_iid_returns(n=500))
++    assert h["confidence"] == "low"
++    assert h["n"] == 500
++
++
++def test_hurst_rejects_tiny_sample():
++    with pytest.raises(P.PersistenceError):
++        P.hurst_rs([0.01] * 20)
++
++
++def test_hurst_chunks_capped_for_comparability():
++    # B3：块上限固定，长样本不再引入 512/1024 块，保证跨期 H 可比
++    h = P.hurst_rs(_iid_returns(n=3000))
++    assert h["max_chunk"] == P.HURST_MAX_CHUNK
++    assert max(h["chunks"]) <= P.HURST_MAX_CHUNK
++    assert h["confidence"] == "high" and h["regime_displayable"] is True
++
++
++def test_hurst_low_confidence_not_displayable():
++    h = P.hurst_rs(_iid_returns(n=500))
++    assert h["regime_displayable"] is False
++
++
++# ---------------- A2 方差比 ----------------
++
++
++def test_variance_ratio_iid_near_one():
++    v = P.variance_ratio(_iid_returns(n=4000), 5)
++    assert 0.8 <= v["vr"] <= 1.2, v
++    assert abs(v["z"]) < 2.5, v
++
++
++def test_variance_ratio_ar1_above_one():
++    v = P.variance_ratio(_ar1_returns(), 5)
++    assert v["vr"] > 1.0, v
++
++
++def test_variance_ratio_p_never_zero():
++    # 强均值回复 + 极小噪声 → |z| 极大 → p 下溢，必须截断而非输出 0
++    rets = [0.01 + (1e-6 if i % 2 else -1e-6) for i in range(400)]
++    v = P.variance_ratio(rets, 5)
++    assert v["p"] is not None and v["p"] > 0, v
++
++
++# ---------------- A3 AR(1) / 半衰期 ----------------
++
++
++def test_ar1_recovers_phi_and_halflife():
++    a = P.ar1_halflife(_ar1_returns(phi=0.6))
++    assert abs(a["phi"] - 0.6) < 0.08, a
++    assert 1.0 < a["halflife_days"] < 2.0, a  # ln0.5/ln0.6 ≈ 1.36
++
++
++def test_ar1_iid_phi_near_zero():
++    a = P.ar1_halflife(_iid_returns())
++    assert abs(a["phi"]) < 0.08, a
++
++
++# ---------------- A4 连胜 / A5 转移 ----------------
++
++
++def test_run_length_known_sequence():
++    # UUU DD U | UUU DD U | UUU DD U → 跨块 U 合并为 UUUU
++    seq = [0.01, 0.01, 0.01, -0.01, -0.01, 0.01] * 3
++    r = P.run_length_stats(seq)
++    assert r["n_runs"] == 7
++    assert r["max_run"] == 4
++    assert r["max_up"] == 4
++    assert r["max_down"] == 2
++
++
++def test_transition_matrix_known_sequence():
++    # 20 涨 + 20 跌 + 20 涨 → uu=38, ud=1, dd=19, du=1
++    t = P.transition_matrix([0.01] * 20 + [-0.01] * 20 + [0.01] * 20)
++    assert t["p_up_up"] == pytest.approx(38 / 39, abs=1e-4)
++    assert t["p_down_down"] == pytest.approx(19 / 20, abs=1e-4)
++    assert t["steady_up"] == pytest.approx((1 / 20) / (1 / 39 + 1 / 20), abs=1e-4)
++    assert t["n"] == 59
++    assert t["n_zero"] == 0
++
++
++def test_zero_returns_skipped_and_counted():
++    # I1：A4/A5 统一跳过 r==0，并把跳过的个数写进 n_zero
++    seq = [0.01, 0.0, 0.0, -0.01, 0.01] * 10
++    r = P.run_length_stats(seq)
++    assert r["n_zero"] == 20 and r["n"] == 30
++    t = P.transition_matrix(seq)
++    assert t["n_zero"] == 20 and t["n"] == 29
++
++
++# ---------------- A6 趋势斜率 ----------------
++
++
++def test_trend_slope_exact_exponential():
++    prices = [100.0 * math.exp(0.01 * i) for i in range(300)]
++    s = P.trend_slope(prices)
++    assert s["slope_per_day"] == pytest.approx(0.01, abs=1e-9)
++    assert s["r2"] == pytest.approx(1.0, abs=1e-6)
++    assert abs(s["t"]) > 100
++    assert s["p"] == pytest.approx(1e-12, rel=0.0)  # 下溢截断，禁止输出 0
++
++
++def test_trend_slope_rejects_non_positive():
++    with pytest.raises(P.PersistenceError):
++        P.trend_slope([1.0, 2.0, 0.0, 3.0] * 10)
++
++
++def test_trend_slope_declares_no_hac():
++    # B1：t 未做 HAC 修正必须显式声明，禁止下游当显著性证据
++    s = P.trend_slope([100.0 * math.exp(0.001 * i) for i in range(200)])
++    assert s["hac_corrected"] is False
++    assert "HAC" in s["note"]
++
++
++# ---------------- A7 IC 衰减 ----------------
++
++
++def test_ic_decay_block_trend_has_positive_short_horizon_ic():
++    # 100 日一段的单边行情，20 日动量与次日方向高度同向
++    rets = []
++    for block in range(30):
++        rets.extend([0.01] * 100 if block % 2 == 0 else [-0.01] * 100)
++    d = P.ic_decay(_prices_from_returns(rets), lookback=20, horizons=(1, 5, 20))
++    h1 = next(it for it in d["items"] if it["h"] == 1)
++    assert h1["ric"] is not None and h1["ric"] > 0.5, h1
++    assert all(-1.0 <= it["ric"] <= 1.0 for it in d["items"] if it["ric"] is not None)
++
++
++def test_ic_decay_reports_all_phases():
++    # B2：非重叠口径遍历 h 个相位，输出均值与极差，避免固定相位选择偏差
++    rets = []
++    for block in range(30):
++        rets.extend([0.01] * 100 if block % 2 == 0 else [-0.01] * 100)
++    d = P.ic_decay(_prices_from_returns(rets), lookback=20, horizons=(1, 5, 20))
++    for it in d["items"]:
++        assert it["n_phases"] == it["h"], it
++        if it["ric_nonoverlap"] is not None:
++            assert it["ric_nonoverlap_min"] <= it["ric_nonoverlap"] <= it["ric_nonoverlap_max"] + 1e-9
++
++
++# ---------------- A8 单资产波动状态 → 条件前瞻分布 ----------------
++
++
++def test_a8_conditional_distribution_uses_four_pit_buckets(tmp_path):
++    prices = _prices_from_returns(_iid_returns(n=1600))
++    db = _temp_db(tmp_path, prices)
++    a8 = P.build_profile(db, "BTC", days=2000)["metrics"]["conditional_distribution"]
++    assert a8["gate"] == "ok"
++    assert (a8["state"], a8["state_method"], a8["method"]) == ("volatility", "I30", "R02")
++    assert (a8["h"], a8["requested_buckets"], a8["buckets"]) == (1, 4, 4)
++    assert a8["degraded_reason"] is None
++    result = a8["result"]
++    assert result["pit"] is True and result["as_of"] is not None
++    current = result["by_horizon"][0]
++    assert current["h"] == 1
++    assert current["p10"] <= current["median"] <= current["p90"]
++    assert current["effective_n"] >= current["nonoverlap_n"] >= 250
++    assert len(current["by_bucket"]) == 4
++    assert all(row["nonoverlap_n"] >= 250 for row in current["by_bucket"])
++
++
++def test_a8_conditional_distribution_degrades_four_to_two_buckets(tmp_path):
++    prices = _prices_from_returns(_iid_returns(n=1100))
++    db = _temp_db(tmp_path, prices)
++    prof = P.build_profile(db, "BTC", days=1500)
++    a8 = prof["metrics"]["conditional_distribution"]
++    assert a8["gate"] == "ok"
++    assert (a8["requested_buckets"], a8["buckets"]) == (4, 2)
++    assert a8["degraded_reason"] == "bucket_nonoverlap_lt_250"
++    current = a8["result"]["by_horizon"][0]
++    assert len(current["by_bucket"]) == 2
++    assert all(row["nonoverlap_n"] >= 250 for row in current["by_bucket"])
++    assert "降为 2 桶" in prof["text"]
++    assert not any(word in prof["text"] for word in ("将会", "预计", "必然"))
++
++
++def test_a8_short_sample_has_independent_gate(tmp_path):
++    prices = _prices_from_returns(_iid_returns(n=500))
++    db = _temp_db(tmp_path, prices)
++    prof = P.build_profile(db, "BTC", days=800)
++    a8 = prof["metrics"]["conditional_distribution"]
++    assert a8["gate"] == "insufficient_samples"
++    assert a8["buckets"] == 2
++    assert a8["result"]["by_horizon"][0]["effective_n"] > 0
++    assert a8["result"]["by_horizon"][0]["nonoverlap_n"] < 250
++    # A8 是 T0.5 扩展门禁，不 retroactively 改变 A1–A7 的 good 质量语义。
++    assert prof["quality"]["status"] == "good"
++
++
++# ---------------- 聚合画像 ----------------
++
++
++def test_build_profile_good(tmp_path):
++    prices = _prices_from_returns(_iid_returns(n=500))
++    db = _temp_db(tmp_path, prices)
++    prof = P.build_profile(db, "BTC", days=800)
++    assert prof["kind"] == "persistence"
++    assert prof["quality"]["status"] == "good"
++    assert prof["quality"]["degraded_reason"] is None
++    assert prof["sample_n"] == len(prices) - 1
++    for key in ("hurst", "variance_ratio", "ar1", "runs", "transition", "trend", "ic_decay"):
++        assert prof["metrics"][key] is not None, key
++    assert "Hurst" in prof["text"] and P.CAVEAT in prof["text"]
++
++
++def test_build_profile_partial_when_short(tmp_path):
++    prices = _prices_from_returns(_iid_returns(n=120))
++    db = _temp_db(tmp_path, prices)
++    prof = P.build_profile(db, "BTC", days=800, min_n=250)
++    assert prof["quality"]["status"] == "partial"
++    assert prof["quality"]["degraded_reason"] == "insufficient_samples"
++    assert "降级" in prof["text"]
++
++
++def test_build_profile_records_failed_methods(tmp_path):
++    # 常数价格 → 收益全 0 → 方差比/AR1 失败，但画像仍返回
++    db = _temp_db(tmp_path, [100.0] * 400)
++    prof = P.build_profile(db, "BTC", days=800)
++    assert prof["quality"]["status"] == "degraded"
++    assert "variance_ratio" in prof["quality"]["failed_methods"]
++    assert prof["metrics"]["variance_ratio"] is None
++    assert prof["quality"]["degraded_reason"] == "partial_methods_failed"
++    assert "降级" in prof["text"]
++
++
++def test_profile_text_hides_regime_when_low_confidence(tmp_path):
++    # 评审 §6 反对 2：n<2000 时文本层不得出现「持续/反持续」标签
++    prices = _prices_from_returns(_iid_returns(n=500))
++    db = _temp_db(tmp_path, prices)
++    prof = P.build_profile(db, "BTC", days=800)
++    assert prof["metrics"]["hurst"]["regime_displayable"] is False
++    assert "口径敏感" in prof["text"]
++    assert "持续" not in prof["text"]
++    assert "未做自相关修正" in prof["text"]
++
++
++def test_profile_quality_declares_comparability(tmp_path):
++    prices = _prices_from_returns(_iid_returns(n=500))
++    db = _temp_db(tmp_path, prices)
++    q = P.build_profile(db, "BTC", days=800)["quality"]
++    assert q["lookback_days"] == 800
++    assert q["hurst_max_chunk"] == P.HURST_MAX_CHUNK
++    assert any(n.startswith("trend_t_no_hac") for n in q["notes"])
++
++
++def test_report_cli_json_single_asset(tmp_path, capsys):
++    import json
++
++    from l1agg.persistence import report as R
++
++    prices = _prices_from_returns(_iid_returns(n=500))
++    db = _temp_db(tmp_path, prices)
++    out_dir = os.path.join(str(tmp_path), "reports")
++    rc = R.main(["--db", db, "--symbols", "BTC", "--days", "800", "--out", out_dir, "--json"])
++    assert rc == 0
++    payload = json.loads(capsys.readouterr().out)
++    assert payload["kind"] == "persistence" and payload["symbol"] == "BTC"
++    assert not os.path.isdir(out_dir)  # --json 不落盘
++
++
++def test_profile_matches_schema(tmp_path):
++    jsonschema = pytest.importorskip("jsonschema")
++    import json
++
++    schema_path = os.path.join(_MODULE_ROOT, "contracts", "persistence.schema.json")
++    with open(schema_path, encoding="utf-8") as fh:
++        schema = json.load(fh)
++
++    prices = _prices_from_returns(_iid_returns(n=500))
++    db = _temp_db(tmp_path, prices)
++    jsonschema.validate(P.build_profile(db, "BTC", days=800), schema)
++    jsonschema.validate(
++        {"kind": "persistence", "symbol": "NOPE", "error": "AlignError: empty",
++         "caveat": P.CAVEAT},
++        schema,
++    )
++
++
++# ---------------- 真实库冒烟（存在才跑） ----------------
++
++_REAL_DB = os.path.join(
++    os.path.dirname(os.path.abspath(__file__)),
++    "..", "..", "19-数据访问层", "data", "dreambuddy_core.db",
++)
++
++
++@pytest.mark.skipif(not os.path.isfile(_REAL_DB), reason="本地真实库不存在")
++def test_build_profile_on_real_db():
++    prof = P.build_profile(_REAL_DB, "BTC", days=1200)
++    assert prof["quality"]["status"] == "good"
++    assert prof["sample_n"] >= 1000
++    assert prof["metrics"]["hurst"]["confidence"] == "low"  # 1094 < 2000
+diff --git a/54-L1架构能力聚合层/tests/test_capabilities.py b/54-L1架构能力聚合层/tests/test_capabilities.py
+new file mode 100644
+index 0000000000..7076121958
+--- /dev/null
++++ b/54-L1架构能力聚合层/tests/test_capabilities.py
+@@ -0,0 +1,291 @@
++# -*- coding: utf-8 -*-
++"""能力层测试：manifest 校验 + 信封契约 + E 组五个端到端编排。"""
++
++import datetime
++import json
++import math
++import os
++import random
++import sys
++
++import pytest
++
++_MODULE_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
++if _MODULE_ROOT not in sys.path:
++    sys.path.insert(0, _MODULE_ROOT)
++
++from l1agg.capabilities import (  # noqa: E402
++    STATUS_EMPTY,
++    STATUS_GOOD,
++    STATUS_PARTIAL,
++    build,
++    manifest,
++    quality_for,
++    run_capability,
++    supported,
++    unavailable,
++)
++from l1agg.capabilities.manifest import Capability, Manifest, ManifestError, validate  # noqa: E402
++
++
++def _prices(n=400, seed=5, drift=0.0005, vol=0.02):
++    rng = random.Random(seed)
++    out, px = [], 100.0
++    for _ in range(n):
++        px *= 1.0 + rng.gauss(drift, vol)
++        out.append(px)
++    return out
++
++
++def _dates(n=400, start=datetime.date(2024, 1, 1)):
++    return [(start + datetime.timedelta(days=i)).isoformat() for i in range(n)]
++
++
++# ---------------- manifest ----------------
++
++
++def test_manifest_loads_and_validates():
++    m = manifest()
++    assert m.version >= 1
++    ids = [cap.id for cap in m.capabilities]
++    assert len(ids) == len(set(ids))
++    assert {"D-E02", "D-E03", "D-E05", "D-E06", "D-E07", "D-E08", "D-E10", "D-E11"} <= set(ids)
++    for cap in m.capabilities:
++        assert cap.executor.split(".")[-1] in {
++            "seasonality", "correlation", "state_transition", "conditional_ic", "drawdown",
++            "percentile_forward",
++        }
++
++
++def test_manifest_every_declared_capability_is_runnable():
++    assert set(supported()) == {cap.id for cap in manifest().capabilities}
++
++
++def test_manifest_rejects_unimplemented_method():
++    bad = Manifest(version=1, updated="", capabilities=(
++        Capability(id="D-E99", intent="x", mode="deterministic", data_scope=("market.candles",),
++                   executor="capabilities.stats.drawdown", methods=("T23",), min_n=10),
++    ))
++    with pytest.raises(ManifestError):
++        validate(bad)
++
++
++def test_manifest_rejects_min_n_below_method_gate():
++    bad = Manifest(version=1, updated="", capabilities=(
++        Capability(id="D-E98", intent="x", mode="deterministic", data_scope=("market.candles",),
++                   executor="capabilities.stats.conditional_ic", methods=("B13",), min_n=10),
++    ))
++    with pytest.raises(ManifestError):
++        validate(bad)
++
++
++def test_manifest_rejects_mode_mix_within_intent():
++    caps = (
++        Capability(id="D-E90", intent="correlation_query", mode="deterministic",
++                   data_scope=("market.candles",), executor="capabilities.stats.correlation",
++                   methods=("M01",), min_n=60),
++        Capability(id="D-E91", intent="correlation_query", mode="gated",
++                   data_scope=("market.candles",), executor="capabilities.stats.correlation",
++                   methods=("M01",), min_n=60),
++    )
++    with pytest.raises(ManifestError):
++        validate(Manifest(version=1, updated="", capabilities=caps))
++
++
++# ---------------- 信封 ----------------
++
++
++def test_envelope_rejects_empty_answer():
++    with pytest.raises(ValueError):
++        build(capability="D-E10", intent="drawdown_query", answer="  ",
++              data={}, quality_block=quality_for(10, min_n=1))
++
++
++def test_envelope_rejects_nested_quality():
++    with pytest.raises(ValueError):
++        build(capability="D-E10", intent="drawdown_query", answer="ok",
++              data={"quality": {"status": "good"}}, quality_block=quality_for(10, min_n=1))
++
++
++def test_envelope_partial_requires_reason_and_answer_disclosure():
++    q = quality_for(10, min_n=100)
++    assert q["status"] == STATUS_PARTIAL and q["degraded_reason"] == "insufficient_samples"
++    with pytest.raises(ValueError):
++        build(capability="D-E10", intent="drawdown_query", answer="回撤 10%",
++              data={}, quality_block=q)
++    out = build(capability="D-E10", intent="drawdown_query",
++                answer="样本不足 100 点，回撤仅作描述", data={}, quality_block=q)
++    assert out["ok"] is True
++
++
++def test_unavailable_is_empty_and_readable():
++    out = unavailable(capability="D-E10", intent="drawdown_query", reason="价格样本不足")
++    assert out["ok"] is False
++    assert out["quality"]["status"] == STATUS_EMPTY
++    assert "不足" in out["answer"]
++
++
++# ---------------- D-E10 回撤 ----------------
++
++
++def test_drawdown_matches_manual_profile():
++    px = _prices()
++    out = run_capability("D-E10", prices=px, symbol="BTC", dates=_dates())
++    assert out["ok"] is True and out["quality"]["status"] == STATUS_GOOD
++    block = out["data"]["capabilities"]["D-E10"]
++    peak = max(px)
++    manual_mdd = max(1.0 - v / max(px[: i + 1]) for i, v in enumerate(px))
++    assert block["mdd"] == pytest.approx(manual_mdd, abs=1e-6)
++    assert block["current_drawdown"] == pytest.approx(1 - px[-1] / peak, abs=1e-6)
++    assert block["methods"] == ["D20", "D21", "F09", "F10"]
++    assert out["quality"]["sample_n"] == len(px)
++    assert "历史统计" in out["answer"]
++
++
++def test_drawdown_insufficient_is_partial_not_fabricated():
++    out = run_capability("D-E10", prices=_prices(60))
++    assert out["ok"] is True
++    assert out["quality"]["status"] == STATUS_PARTIAL
++    assert out["quality"]["degraded_reason"] == "insufficient_samples"
++
++
++def test_drawdown_empty_on_no_price():
++    out = run_capability("D-E10", prices=[100.0])
++    assert out["ok"] is False and out["quality"]["status"] == STATUS_EMPTY
++
++
++# ---------------- D-E03 季节性 ----------------
++
++
++def test_seasonality_detects_weekend_effect():
++    dates, px = [], []
++    price = 100.0
++    for i in range(400):
++        d = datetime.date(2024, 1, 1) + datetime.timedelta(days=i)
++        price *= 1.0 + (0.01 if d.weekday() >= 5 else -0.002)
++        dates.append(d.isoformat())
++        px.append(price)
++    out = run_capability("D-E03", prices=px, dates=dates, symbol="BTC")
++    table = {row["weekday"]: row["mean"] for row in out["data"]["capabilities"]["D-E03"]["weekday_table"]}
++    assert table[5] > table[0]
++    assert out["quality"]["status"] == STATUS_PARTIAL
++    assert out["quality"]["degraded_reason"] == "seasonality_depth_lt_5y"
++    assert "样本" in out["answer"]
++
++
++def test_seasonality_without_dates_is_clean_handoff():
++    out = run_capability("D-E03", prices=_prices())
++    assert out["ok"] is False
++    assert "日期" in out["answer"]
++
++
++# ---------------- D-E07 状态转移 ----------------
++
++
++def test_state_transition_matrix_is_stochastic():
++    out = run_capability("D-E07", prices=_prices(300), symbol="BTC")
++    block = out["data"]["capabilities"]["D-E07"]
++    assert block["states"] == ["q0", "q1", "q2", "q3"]
++    for row in block["transition_matrix"]:
++        assert sum(row) == pytest.approx(1.0, abs=1e-4)
++    assert sum(block["stationary"]) == pytest.approx(1.0, abs=1e-6)
++    assert all(d is not None and d >= 1.0 for d in block["dwell"])
++
++
++def test_state_transition_short_series_is_empty():
++    out = run_capability("D-E07", prices=_prices(50))
++    assert out["ok"] is False
++
++
++# ---------------- D-E05 / D-E06 / D-E11 相关 ----------------
++
++
++def test_correlation_identical_series():
++    px = _prices(300)
++    out = run_capability("D-E05", x=px, y=list(px), x_name="BTC", y_name="BTC2")
++    block = out["data"]["capabilities"]["D-E05"]
++    assert block["pearson"]["r"] == pytest.approx(1.0)
++    assert block["same_direction"]["ratio"] == 1.0
++    assert "D-E11" in out["data"]["capabilities"]
++    assert out["data"]["capabilities"]["D-E06"]["gate"] == "ok"
++
++
++def test_correlation_short_pair_blocks():
++    out = run_capability("D-E05", x=_prices(40), y=_prices(40, seed=9))
++    assert out["ok"] is False and "对齐点" in out["answer"]
++
++
++def test_ccf_blocked_between_60_and_120():
++    out = run_capability("D-E05", x=_prices(100), y=_prices(100, seed=2))
++    assert out["data"]["capabilities"]["D-E05"]["gate"] == "ok"
++    assert out["data"]["capabilities"]["D-E06"]["gate"] == "insufficient_history"
++
++
++# ---------------- D-E02 分位 → 前瞻收益 ----------------
++
++
++def test_percentile_forward_exposes_pit_conditional_distribution():
++    px = _prices(1600)
++    out = run_capability("D-E02", prices=px, dates=_dates(1600), symbol="BTC")
++    assert out["ok"] is True and out["quality"]["status"] == STATUS_GOOD
++    block = out["data"]["capabilities"]["D-E02"]
++    assert block["methods"] == ["I30", "R02"]
++    a8 = block["conditional_distribution"]
++    assert a8["gate"] == "ok" and a8["buckets"] == 4
++    current = a8["result"]["by_horizon"][0]
++    assert current["h"] == 1 and current["nonoverlap_n"] >= 250
++    assert current["p10"] <= current["median"] <= current["p90"]
++    assert "历史统计" in out["answer"] and "80% 历史区间" in out["answer"]
++    assert not any(word in out["answer"] for word in ("将会", "预计", "必然"))
++
++
++# ---------------- D-E08 条件 IC ----------------
++
++
++def test_conditional_ic_positive_relationship():
++    n = 300
++    rng = random.Random(11)
++    factor = [math.sin(i / 9.0) for i in range(n)]
++    forward = [v * 0.3 + rng.gauss(0, 0.05) for v in factor]
++    out = run_capability("D-E08", factor=factor, forward=forward, name="TEST")
++    block = out["data"]["capabilities"]["D-E08"]
++    assert block["ic"]["ic"] > 0.5
++    assert block["monotonic"] in ("increasing", "non_monotonic")
++
++
++def test_conditional_ic_needs_250():
++    out = run_capability("D-E08", factor=_prices(200), forward=_prices(200, seed=8))
++    assert out["ok"] is False and "250" in out["answer"]
++
++
++# ---------------- 契约：JSON schema + 序列化 ----------------
++
++
++def test_output_validates_against_json_schema():
++    jsonschema = pytest.importorskip("jsonschema")
++    schema_path = os.path.join(_MODULE_ROOT, "contracts", "capability_result.schema.json")
++    with open(schema_path, "r", encoding="utf-8") as fh:
++        schema = json.load(fh)
++    outputs = [
++        run_capability("D-E10", prices=_prices(), symbol="BTC", dates=_dates()),
++        run_capability("D-E03", prices=_prices(), dates=_dates()),
++        run_capability("D-E07", prices=_prices()),
++        run_capability("D-E05", x=_prices(), y=_prices(seed=3)),
++        run_capability("D-E02", prices=_prices(1100), dates=_dates(1100)),
++        run_capability("D-E08", factor=_prices(), forward=_prices(seed=4)),
++        run_capability("D-E10", prices=[100.0]),
++    ]
++    for out in outputs:
++        jsonschema.validate(instance=out, schema=schema)
++
++
++def test_outputs_are_json_serializable_and_deterministic():
++    a = run_capability("D-E10", prices=_prices(), symbol="BTC", dates=_dates())
++    b = run_capability("D-E10", prices=_prices(), symbol="BTC", dates=_dates())
++    assert json.dumps(a, sort_keys=True, ensure_ascii=False) == json.dumps(b, sort_keys=True, ensure_ascii=False)
++    for cid, kw in (("D-E03", dict(prices=_prices(), dates=_dates())),
++                    ("D-E07", dict(prices=_prices())),
++                    ("D-E05", dict(x=_prices(), y=_prices(seed=3)))):
++        first = json.dumps(run_capability(cid, **kw), sort_keys=True, default=str)
++        second = json.dumps(run_capability(cid, **kw), sort_keys=True, default=str)
++        assert first == second, cid

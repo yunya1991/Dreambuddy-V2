@@ -30,7 +30,7 @@ for _p in [_THIS_DIR, _ADAPTERS_DIR, _34_DIR]:
 import intent_golden_collector as igc  # noqa: E402
 from interfaces.training_data_provider import TrainingDataProvider  # noqa: E402
 
-_GOLDEN_TOTAL = 368
+_GOLDEN_TOTAL = 377
 
 
 class IntentGoldenCollectorTest(unittest.TestCase):

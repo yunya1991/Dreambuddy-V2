@@ -71,14 +71,15 @@ class TestModuleImport:
         assert callable(lrs.route_query)
         assert callable(lrs.detect_intent)
         assert callable(lrs.extract_json)
-        # 十意图执行器 + S1 两个确定性关键词注册表意图
-        assert len(lrs.EXECUTORS) == 13
+        # 十意图执行器 + S1/S2 增量意图（确定性指标、注册表能力、统计关系等）
+        assert len(lrs.EXECUTORS) == 18
         for name in (
             "data_query",
             "data_insight",
             "contradiction_insight",
             "path_insight",
             "technical_analysis",
+            "technical_indicator",
             "fundamental_valuation",
             "asset_class_trend",
             "event_analysis",
@@ -87,6 +88,10 @@ class TestModuleImport:
             "metric_series",
             "whale_flow",
             "calendar_event",
+            "leader_compare",
+            "top_correlation",
+            "persistence_strength",
+            "stat_query",
         ):
             assert callable(lrs.EXECUTORS[name])
 
@@ -102,6 +107,8 @@ class TestDetectIntent:
             ("各维度和资金面有矛盾吗", "contradiction_insight"),
             ("综合看最小阻力路径往哪走", "path_insight"),
             ("BTC技术面和卦象", "technical_analysis"),
+            ("比特币目前阻力位在哪", "technical_indicator"),
+            ("ETH 现在支撑位多少", "technical_indicator"),
             ("ETH估值百分位高不高", "fundamental_valuation"),
             ("美股和加密的跨资产趋势对比", "asset_class_trend"),
             ("这次FOMC事件分析", "event_analysis"),

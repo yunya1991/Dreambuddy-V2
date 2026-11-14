@@ -16,6 +16,7 @@ import json
 import os
 import re
 import sys
+import time
 
 # 接入 34 系统 L0（core/l0_foundation.py，与本脚本同处项目根下两级）
 _TRAINING_SYS_DIR = os.path.join(
@@ -49,6 +50,37 @@ _L1AGG_ROOT = os.path.join(
 )
 if _L1AGG_ROOT not in sys.path:
     sys.path.insert(0, _L1AGG_ROOT)
+# S1-c 价格回显（asof 验证 + 默认基准）：加密→BTC；美股→标普/纳指/道指；
+# 美联储/宏观→黄金/美股指数；大宗商品→石油；避险→黄金；其他→BTC。
+from l1agg.align import AlignError as _AlignError  # noqa: E402
+from l1agg.align import load_leader as _load_leader  # noqa: E402
+
+# 四类追问钩子 + 三项可执行能力（龙头对照 / 相关性 Top / 延续性强度）
+from l1agg.hooks import build_hooks, format_hooks  # noqa: E402
+from l1agg.price_echo import (  # noqa: E402
+    PriceEchoError as _PriceEchoError,
+)
+from l1agg.price_echo import (  # noqa: E402
+    echo_anchor_price,
+    find_past_day_reference,
+    format_echo,
+    price_echo,
+)
+from l1agg.price_echo import (  # noqa: E402
+    resolve_anchor as _resolve_anchor,
+)
+from l1agg.relations import (  # noqa: E402
+    RelationError as _RelationError,
+)
+from l1agg.relations import (  # noqa: E402
+    leader_gap as _leader_gap,
+)
+from l1agg.relations import (  # noqa: E402
+    persistence_strength as _persistence_strength,
+)
+from l1agg.relations import (  # noqa: E402
+    top_correlated as _top_correlated,
+)
 from l1agg.series_catalog import (  # noqa: E402
     format_series_output,
     resolve_days,
@@ -89,6 +121,43 @@ def _resolve_symbol(message, candidates=None):
         if candidates is None or sym in candidates:
             return sym
     return None
+
+
+def _symbols_in_message(message):
+    """按出现顺序返回消息中的资产符号（别名最长优先，单字别名不参与）。"""
+    if not message:
+        return []
+    hits = []
+    for sym, aliases in ENTITY_ALIASES.items():
+        best = None
+        for a in aliases:
+            if not a or len(a) < 2:
+                continue
+            pos = message.lower().find(a.lower())
+            if pos >= 0 and (best is None or pos < best[0]):
+                best = (pos, -len(a))
+        if best is not None:
+            hits.append((best[0], best[1], sym))
+    hits.sort()
+    out = []
+    for _pos, _neg_len, sym in hits:
+        if sym not in out:
+            out.append(sym)
+    return out
+
+
+def _attach_hooks(result, symbol, *, at_day=None, subject=None):
+    """给答案追加四类追问钩子（结构化 + 文本可选项）。FAIL-OPEN。"""
+    try:
+        hooks = build_hooks(symbol, at_day=at_day, subject=subject)
+    except Exception:
+        return result
+    data = result.get("data")
+    if isinstance(data, dict):
+        data["hooks"] = hooks
+    result["hooks"] = hooks
+    result["answer"] = (result.get("answer") or "") + format_hooks(hooks)
+    return result
 
 
 # 数据源关键词 → source 映射（消息中出现关键词即命中）
@@ -209,15 +278,16 @@ SERIES_KEYWORDS = {
         ("stablecoins_top_10", ["稳定币", "stablecoin", "整体", "前十"]),
     ],
     "defillama": [
-        ("chains_summary", ["公链", "chains"]),
-        ("all_protocols", ["tvl", "defi", "协议", "锁仓"]),
+        ("chains_summary", ["公链", "chains", "tvl", "defi", "锁仓"]),
+        ("all_protocols", ["协议", "protocol"]),
     ],
 }
 SERIES_DEFAULTS = {
     "ccxt": "BTC/USDT",
     "yfinance": "^GSPC",
     "stablecoin_transparency": "stablecoins_top_10",
-    "defillama": "all_protocols",
+    # DeFi 总锁仓取 chains_summary（全链汇总）；all_protocols 是协议求和、跨链重复计数
+    "defillama": "chains_summary",
 }
 
 
@@ -363,7 +433,8 @@ def exec_metric_series(message: str):
     }
     if points:
         sign = spec.get("sign", 1.0) or 1.0
-        values = [float(p["value"]) * sign for p in points]
+        scale = spec.get("scale", 1.0) or 1.0  # 与 unit 同量纲（如 bln→亿美元 scale=0.1）
+        values = [float(p["value"]) * sign / scale for p in points]
         payload["stats"] = {
             "first": values[0],
             "last": values[-1],
@@ -372,13 +443,53 @@ def exec_metric_series(message: str):
             "change": round(values[-1] - values[0], 6),
         }
     answer = out["text"]
-    # CPI 指数序列补同比口径（与 data_query 的财经日历口径一致）
+    # 同期锚定价回显：验证「当时价格 → 当前价格 → 变化」的对齐链路（默认基准见 price_echo）
+    if points:
+        last_ts = int(points[-1].get("ts") or 0)
+        is_self = spec.get("metric_name") == "close_usd" and spec.get("sub_category") in (
+            "BTC",
+            "ETH",
+            "SOL",
+            "XAU",
+        )
+        if last_ts and not is_self:
+            try:
+                day = time.strftime("%Y-%m-%d", time.gmtime(last_ts))
+                echo = echo_anchor_price(
+                    _DAL_DB_PATH,
+                    day,
+                    sub_category=spec["sub_category"],
+                    metric_name=spec["metric_name"],
+                    days=1825,
+                )
+                payload["price_echo"] = echo
+                at, now = echo["at"], echo["now"]
+                pct = echo["change"]["pct"]
+                pct_text = "N/A" if pct is None else f"{pct:+.2f}"
+                answer += (
+                    f"；同期{echo['symbol']}（{echo['anchor']['label']}基准）"
+                    f"{at['asof_day']} 收 {at['price']:,.2f}，最新 {now['price']:,.2f}"
+                    f"（{'实时' if now['kind'] == 'live' else '库内最后一点'}），变化 {pct_text}%"
+                )
+            except Exception:
+                pass  # FAIL-OPEN：回显失败不影响主答案
     if points and spec["sub_category"] == "CPIAUCSL":
         cpi = _fetch_cpi_yoy()
         if cpi and cpi.get("actual") is not None:
             payload["yoy"] = cpi
             answer += f"；同比 {cpi['actual']:+.2f}%（{cpi.get('period', '')} 观测）"
-    return {"success": True, "answer": answer, "data": payload}
+    anchor = _resolve_anchor(spec["sub_category"], spec["metric_name"])
+    at_day = None
+    if points:
+        try:
+            at_day = time.strftime("%Y-%m-%d", time.gmtime(int(points[-1].get("ts") or 0)))
+        except (TypeError, ValueError):
+            at_day = None
+    return _attach_hooks(
+        {"success": True, "answer": answer, "data": payload},
+        anchor.primary,
+        at_day=at_day,
+    )
 
 
 def _series_last(sub: str, metric: str, days: int):
@@ -731,6 +842,317 @@ def exec_technical_analysis(message):
             "hexagram": hexagram,
         },
     }
+
+
+def _fmt_pct(value):
+    return f"{value * 100:+.2f}%"
+
+
+def exec_technical_indicator(message):
+    """技术指标直答（54 D-B00–B07，确定性、零 token、无 LLM）。
+
+    数据链路：L0 `market.candles`（日线优先；日线 OHLC 不全时回退小时线）→
+    54 `l1agg.technical.analyze`。样本不足/无 OHLC 时如实回 gate 与缺失腿，
+    不伪造高低点（SPEC §5.4 双端同步）。
+    """
+    try:
+        from l1agg.candles import CandleError
+        from l1agg.candles import load as load_candles
+        from l1agg.technical import MIN_BARS, analyze
+    except Exception as e:  # noqa: BLE001  FAIL-OPEN：54 模块不可用时降级
+        return {
+            "success": True,
+            "degraded": True,
+            "answer": f"技术指标能力不可用: {e}",
+            "data": None,
+        }
+
+    symbol = _resolve_symbol(message) or "BTC"
+    candidates = []
+    failures = []
+    for bar, days in (("1d", 365), ("1h", 60)):
+        try:
+            candles = load_candles(symbol, bar=bar, days=days)
+        except CandleError as e:
+            failures.append(f"{bar}:{e}")
+            continue
+        candidates.append((candles, analyze(candles)))
+    if not candidates:
+        return {
+            "success": True,
+            "degraded": True,
+            "answer": f"{symbol} K线数据不可用（{'；'.join(failures) or '无数据源'}）",
+            "data": None,
+        }
+
+    with_ohlc = [(c, o) for c, o in candidates if c.has_ohlc and o.get("gate") == "ok"]
+    candles, out = with_ohlc[0] if with_ohlc else candidates[0]
+    bar_label = {"1d": "日线", "1h": "小时线"}.get(candles.bar, candles.bar)
+    span = out.get("span") or "无"
+    n = out.get("sample_n") or 0
+
+    if out.get("gate") == "empty":
+        return {
+            "success": True,
+            "degraded": True,
+            "answer": f"{symbol} 暂无可用的{bar_label} K线数据",
+            "data": out,
+        }
+    if out.get("gate") != "ok":
+        reason = "；".join(out.get("degraded") or [])
+        answer = f"{symbol} {bar_label}样本不足（{n} 根，需≥{MIN_BARS} 根）"
+        if not out.get("has_ohlc"):
+            answer += "，库内暂无可用的高低点(OHLC)，支撑/压力位无法计算"
+        return {
+            "success": True,
+            "degraded": True,
+            "answer": f"{answer}。原因：{reason}" if reason else answer,
+            "data": out,
+        }
+
+    caps = out["capabilities"]
+    parts = []
+    b01 = caps.get("D-B01") or {}
+    if b01.get("gate") == "ok":
+        rel = b01.get("price_vs_ma20")
+        parts.append(
+            f"现价 {b01['price']:.2f}（MA20 {b01['ma20']:.2f}"
+            + (f"，偏离 {_fmt_pct(rel)}" if rel is not None else "")
+            + "）"
+        )
+    b02 = caps.get("D-B02") or {}
+    if b02.get("gate") == "ok":
+        parts.append(f"RSI14 {b02['rsi14']:.1f}（{b02['zone']}）")
+    b03 = caps.get("D-B03") or {}
+    if b03.get("gate") == "ok":
+        cross = {"golden": "金叉", "death": "死叉"}.get(b03.get("cross"), "无交叉")
+        parts.append(f"MACD {cross}（DIF {b03['dif']:.2f} / DEA {b03['dea']:.2f}）")
+    b04 = caps.get("D-B04") or {}
+    if b04.get("gate") == "ok":
+        parts.append(f"ATR14 {b04['atr14']:.2f}（{b04['atr_pct'] * 100:.2f}%）")
+    b05 = caps.get("D-B05") or {}
+    if b05.get("gate") == "ok":
+        parts.append(
+            f"布林上/中/下 {b05['upper']:.2f}/{b05['mid']:.2f}/{b05['lower']:.2f}"
+            f"（%B {b05['boll_pos']:.2f}）"
+        )
+    b06 = caps.get("D-B06") or {}
+    if b06.get("gate") == "ok":
+        parts.append(f"量比 {b06['vol_ratio']:.2f}")
+    b07 = caps.get("D-B07") or {}
+    if b07.get("gate") == "ok":
+        parts.append(
+            f"支撑 {b07['support']:.2f}（触碰 {b07['support_touches']} 次，"
+            f"距离 {_fmt_pct(b07['support_dist'])}）"
+        )
+        parts.append(
+            f"压力 {b07['resistance']:.2f}（触碰 {b07['resistance_touches']} 次，"
+            f"距离 {_fmt_pct(b07['resistance_dist'])}）"
+        )
+
+    head = f"{symbol} 技术面（{bar_label}，{n} 根，{span}"
+    if out.get("is_stale"):
+        head += f"，滞后 {out.get('stale_days')} 天"
+    head += "）"
+    answer = f"{head}：" + "；".join(parts) if parts else f"{head}：指标暂不可用"
+    if not out.get("has_ohlc"):
+        answer += "。注意：库内暂无可用的高低点(OHLC)，ATR/支撑压力位未计算"
+    ohlc_note = (candles.meta or {}).get("ohlc_note")
+    if ohlc_note:
+        answer += f"。注意：{ohlc_note}"
+    return {
+        "success": True,
+        "degraded": bool(out.get("degraded")),
+        "answer": answer,
+        "data": out,
+    }
+
+
+# ── 统计关系问答（54 D-E02/E03/E05/E07/E08/E10）──────────────
+# 子能力选择：按序匹配，命中即止；无命中默认回撤（价格样本最稳）
+_STAT_DRAWDOWN_CUE = re.compile(r"回撤|drawdown|跌了多少", re.IGNORECASE)
+_STAT_SEASONAL_CUE = re.compile(r"季节性|月份效应|几月|星期几|周几|月内|月初|月末|日历效应")
+_STAT_PERCENTILE_CUE = re.compile(r"分位|百分位|percentile|同分位|前瞻收益|前瞻分布", re.IGNORECASE)
+_STAT_STATE_CUE = re.compile(r"状态转移|转移矩阵|状态切换|停留|状态持续性")
+_STAT_IC_CUE = re.compile(
+    r"(?:^|[^A-Za-z])IC(?:[^A-Za-z]|$)|信息系数|因子有效|单调性", re.IGNORECASE
+)
+_STAT_CORR_CUE = re.compile(r"相关|同向|领先|滞后")
+
+
+def _stat_dates(ts_values):
+    """epoch 秒 → UTC ISO 日期（能力层 C 组方法要求日频日期轴）。"""
+    from datetime import datetime, timezone
+
+    return [datetime.fromtimestamp(int(t), timezone.utc).date().isoformat() for t in ts_values]
+
+
+def _stat_returns(values):
+    return [values[i] / values[i - 1] - 1.0 for i in range(1, len(values)) if values[i - 1]]
+
+
+def _stat_result(envelope):
+    """能力层信封 → L1 执行器口径（answer 原样透出，数值不改写）。"""
+    out = {
+        "success": True,
+        "answer": envelope.get("answer", ""),
+        "data": envelope.get("data"),
+        "quality": envelope.get("quality"),
+        "capability": envelope.get("capability"),
+    }
+    if not envelope.get("ok"):
+        out["degraded"] = True
+    return out
+
+
+def exec_stat_query(message):
+    """统计关系直答（54 能力层，确定性、零 token、无 LLM）。
+
+    数据链路：日线 730 天经 54 `l1agg.candles`（L0 market.candles）→
+    `l1agg.capabilities.run_capability`。样本不足/无法计算由能力层自行降级，
+    本层不修改 `quality`、不改写 `answer` 数值；FAIL-OPEN 不向上抛异常。
+    """
+    try:
+        from l1agg.candles import CandleError
+        from l1agg.candles import load as load_candles
+        from l1agg.capabilities import run_capability
+    except Exception as e:  # noqa: BLE001  FAIL-OPEN：54 模块不可用时降级
+        return {
+            "success": True,
+            "degraded": True,
+            "answer": f"统计关系能力不可用: {e}",
+            "data": None,
+        }
+
+    message = message or ""
+    symbol = _resolve_symbol(message) or "BTC"
+
+    if _STAT_DRAWDOWN_CUE.search(message):
+        capability_id = "D-E10"
+    elif _STAT_SEASONAL_CUE.search(message):
+        capability_id = "D-E03"
+    elif _STAT_PERCENTILE_CUE.search(message):
+        capability_id = "D-E02"
+    elif _STAT_STATE_CUE.search(message):
+        capability_id = "D-E07"
+    elif _STAT_IC_CUE.search(message):
+        capability_id = "D-E08"
+    elif _STAT_CORR_CUE.search(message):
+        capability_id = "D-E05"
+    else:
+        capability_id = "D-E10"
+
+    if capability_id == "D-E08":
+        # 无因子数据源：如实降级，不拿价格序列伪造因子
+        return {
+            "success": True,
+            "degraded": True,
+            "answer": "条件 IC 需要明确的因子序列与前瞻收益口径，当前 L1 未接入因子数据源："
+            "请指明因子（如动量/波动率/资金费率）后再计算，不做推算。",
+            "data": None,
+            "capability": "D-E08",
+        }
+
+    if capability_id == "D-E05":
+        peers = [s for s in _symbols_in_message(message) if s != symbol]
+        if not peers:
+            return {
+                "success": True,
+                "degraded": True,
+                "answer": f"相关性统计需要第二个标的（当前识别为 {symbol}），"
+                "请指明对比对象（如 BTC 与 ETH），不做推算。",
+                "data": None,
+                "capability": "D-E05",
+            }
+        peer = peers[0]
+        # 跨资产日收益必须同一「收盘锚点」：优先两侧都走日频快照（close_anchor=snapshot_last），
+        # 避免一侧真实日线（UTC 日末收盘）与一侧快照（日内时点）混算导致同期相关被低估；
+        # 某标的无快照时整体退回 auto，并在回答里标注锚点混用。
+        x_candles = y_candles = None
+        last_error = None
+        for policy in ("snapshot", "auto"):
+            try:
+                cx = load_candles(symbol, bar="1d", days=730, source_policy=policy)
+                cy = load_candles(peer, bar="1d", days=730, source_policy=policy)
+            except CandleError as e:
+                last_error = e
+                continue
+            if cx.sample_n and cy.sample_n:
+                x_candles, y_candles = cx, cy
+                break
+            last_error = last_error or "empty series"
+        if x_candles is None:
+            return {
+                "success": True,
+                "degraded": True,
+                "answer": f"{symbol}/{peer} K线数据不可用，暂无法计算相关性（{last_error}）",
+                "data": None,
+                "capability": "D-E05",
+            }
+        # 按共同交易日（UTC 日期轴，日线 ts 已归一到 UTC 日首）对齐后取日收益
+        x_map = dict(zip(_stat_dates(x_candles.ts), x_candles.close, strict=False))
+        y_map = dict(zip(_stat_dates(y_candles.ts), y_candles.close, strict=False))
+        common = sorted(set(x_map) & set(y_map))
+        if len(common) < 2:
+            return {
+                "success": True,
+                "degraded": True,
+                "answer": f"{symbol} 与 {peer} 无对齐的日线数据，暂无法计算相关性，不做推算。",
+                "data": None,
+                "capability": "D-E05",
+            }
+        try:
+            envelope = run_capability(
+                "D-E05",
+                x=_stat_returns([x_map[t] for t in common]),
+                y=_stat_returns([y_map[t] for t in common]),
+                x_name=symbol,
+                y_name=peer,
+            )
+        except Exception as e:  # noqa: BLE001  FAIL-OPEN
+            return {
+                "success": True,
+                "degraded": True,
+                "answer": f"相关性计算异常: {e}",
+                "data": None,
+                "capability": "D-E05",
+            }
+        result = _stat_result(envelope)
+        if x_candles.close_anchor != y_candles.close_anchor:
+            result["answer"] += "（两侧收盘锚点不同，相关值可能偏低）"
+        return result
+
+    try:
+        candles = load_candles(symbol, bar="1d", days=730)
+    except CandleError as e:
+        return {
+            "success": True,
+            "degraded": True,
+            "answer": f"{symbol} K线数据不可用，暂无法计算该统计（{e}）",
+            "data": None,
+            "capability": capability_id,
+        }
+
+    kwargs = {"prices": list(candles.close), "symbol": symbol}
+    if capability_id == "D-E03":
+        kwargs["dates"] = _stat_dates(candles.ts)
+        kwargs["is_returns"] = False
+    elif capability_id == "D-E02":
+        # percentile_forward(prices, dates, ...)：PIT 口径需要 UTC 日期轴
+        kwargs["dates"] = _stat_dates(candles.ts)
+    elif capability_id == "D-E07":
+        kwargs["is_returns"] = False
+    try:
+        envelope = run_capability(capability_id, **kwargs)
+    except Exception as e:  # noqa: BLE001  FAIL-OPEN
+        return {
+            "success": True,
+            "degraded": True,
+            "answer": f"{capability_id} 统计计算异常: {e}",
+            "data": None,
+            "capability": capability_id,
+        }
+    return _stat_result(envelope)
 
 
 def exec_fundamental_valuation(message):
@@ -1122,6 +1544,85 @@ def exec_doc_search(message: str):
         return {"success": True, "degraded": True, "answer": f"文档检索暂不可用: {e}", "data": None}
 
 
+def exec_leader_compare(message):
+    """钩子 2：同赛道龙头对照（同期涨跌幅差 + 日变动相关）。"""
+    syms = _symbols_in_message(message)
+    symbol = syms[0] if syms else _resolve_symbol(message)
+    if not symbol:
+        return {
+            "success": True,
+            "need_clarification": True,
+            "answer": "请问要对比哪个资产与同赛道龙头？（如：以太坊和比特币）",
+            "data": None,
+        }
+    peer = syms[1] if len(syms) > 1 else None
+    try:
+        out = _leader_gap(_DAL_DB_PATH, symbol, peer=peer)
+    except (_RelationError, _AlignError, _PriceEchoError) as exc:
+        return {
+            "success": True,
+            "degraded": True,
+            "answer": f"{symbol} 与龙头对照不可用：{exc}",
+            "data": None,
+        }
+    return _attach_hooks(
+        {"success": True, "answer": out["text"], "data": out},
+        symbol,
+    )
+
+
+def exec_top_correlation(message):
+    """钩子 3：与目标资产相关性最高的指标（Pearson + BH-FDR）。"""
+    syms = _symbols_in_message(message)
+    symbol = syms[0] if syms else _resolve_symbol(message)
+    if not symbol:
+        return {
+            "success": True,
+            "need_clarification": True,
+            "answer": "请问要查哪个资产的相关性指标？（如：以太坊）",
+            "data": None,
+        }
+    try:
+        out = _top_correlated(_DAL_DB_PATH, symbol, top_k=5)
+    except (_RelationError, _AlignError, _PriceEchoError) as exc:
+        return {
+            "success": True,
+            "degraded": True,
+            "answer": f"{symbol} 相关性扫描不可用：{exc}",
+            "data": None,
+        }
+    return _attach_hooks(
+        {"success": True, "answer": out["text"], "data": out},
+        symbol,
+    )
+
+
+def exec_persistence_strength(message):
+    """钩子 4：历史周期下的趋势延续性强度（Hurst / VR / AR1 / 连涨连跌）。"""
+    syms = _symbols_in_message(message)
+    symbol = syms[0] if syms else _resolve_symbol(message)
+    if not symbol:
+        return {
+            "success": True,
+            "need_clarification": True,
+            "answer": "请问要评估哪个资产的趋势延续性？（如：比特币、以太坊）",
+            "data": None,
+        }
+    try:
+        out = _persistence_strength(_DAL_DB_PATH, symbol)
+    except (_RelationError, _AlignError, _PriceEchoError) as exc:
+        return {
+            "success": True,
+            "degraded": True,
+            "answer": f"{symbol} 延续性强度不可用：{exc}",
+            "data": None,
+        }
+    return _attach_hooks(
+        {"success": True, "answer": out["text"], "data": out},
+        symbol,
+    )
+
+
 def exec_price_query(message):
     """价格查询: 经 L0 直连 OKX API 获取实时价格，失败降级回查 18 中心。"""
     # SPEC v1.5: 别名表统一解析，无币种时澄清追问（不再静默默认 BTC）
@@ -1136,6 +1637,40 @@ def exec_price_query(message):
     inst_id = f"{symbol}-USDT"
     ctx = get_l0().fetch_context("market.ticker", {"symbol": symbol})
     t = None if ctx.get("degraded") else ctx["data"]
+
+    # 历史时点 → 价格回显（asof）：当时价 + 现价 + 变化，验证对齐层
+    at_day = find_past_day_reference(message)
+    if at_day:
+        live_price = live_ts = None
+        try:
+            if t and t.get("last"):
+                live_price = float(t["last"])
+                live_ts = int(t.get("ts", 0)) // 1000 or None
+        except (TypeError, ValueError):
+            live_price = None
+        try:
+            series = _load_leader(_DAL_DB_PATH, symbol, days=1825)
+            echo = price_echo(
+                series,
+                at_day,
+                symbol=symbol,
+                now_price=live_price,
+                now_ts=live_ts,
+                source=("okx_ticker+dal_mm_metrics" if live_price else "dal_mm_metrics"),
+            )
+            return _attach_hooks(
+                {"success": True, "answer": format_echo(echo), "data": echo},
+                symbol,
+                at_day=at_day,
+            )
+        except (_PriceEchoError, _AlignError) as exc:
+            return {
+                "success": True,
+                "degraded": True,
+                "answer": f"{symbol} 在 {at_day} 的价格回显不可用：{exc}",
+                "data": None,
+            }
+
     if t:
         last = t.get("last", "")
         open24h = t.get("open24h", "")
@@ -1146,23 +1681,26 @@ def exec_price_query(message):
         except Exception:
             chg = 0.0
         sign = "+" if chg >= 0 else ""
-        return {
-            "success": True,
-            "answer": (
-                f"{symbol} 实时价格（OKX {inst_id}）：{last} USDT，"
-                f"24h涨跌 {sign}{chg:.2f}%，24h最高 {high}，最低 {low}"
-            ),
-            "data": {
-                "symbol": symbol,
-                "inst_id": inst_id,
-                "last": last,
-                "open24h": open24h,
-                "high24h": high,
-                "low24h": low,
-                "change_pct": round(chg, 2),
-                "source": "okx",
+        return _attach_hooks(
+            {
+                "success": True,
+                "answer": (
+                    f"{symbol} 实时价格（OKX {inst_id}）：{last} USDT，"
+                    f"24h涨跌 {sign}{chg:.2f}%，24h最高 {high}，最低 {low}"
+                ),
+                "data": {
+                    "symbol": symbol,
+                    "inst_id": inst_id,
+                    "last": last,
+                    "open24h": open24h,
+                    "high24h": high,
+                    "low24h": low,
+                    "change_pct": round(chg, 2),
+                    "source": "okx",
+                },
             },
-        }
+            symbol,
+        )
     # 降级: 回查 18 中心数据库
     fallback = exec_data_query(message)
     if fallback.get("data"):
@@ -1192,6 +1730,8 @@ def main():
             result = exec_path_insight(message)
         elif intent == "technical_analysis":
             result = exec_technical_analysis(message)
+        elif intent == "technical_indicator":
+            result = exec_technical_indicator(message)
         elif intent == "fundamental_valuation":
             result = exec_fundamental_valuation(message)
         elif intent == "asset_class_trend":
@@ -1202,8 +1742,16 @@ def main():
             result = exec_risk_control(message)
         elif intent == "price_query":
             result = exec_price_query(message)
+        elif intent == "leader_compare":
+            result = exec_leader_compare(message)
+        elif intent == "top_correlation":
+            result = exec_top_correlation(message)
+        elif intent == "persistence_strength":
+            result = exec_persistence_strength(message)
         elif intent == "metric_series":
             result = exec_metric_series(message)
+        elif intent == "stat_query":
+            result = exec_stat_query(message)
         elif intent == "whale_flow":
             result = exec_whale_flow(message)
         elif intent == "calendar_event":

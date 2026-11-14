@@ -69,6 +69,13 @@ export const L1_INTENT_REGISTRY: L1IntentDef[] = [
       /最小阻力|往哪走|往哪边走|往哪个方向|该多还是空|交汇|综合看|综合判断|综合信号|最优路径|信号指向|能不能上车|能上车吗|能追吗|还能追|该不该买|该不该卖|满仓还是空仓|加仓还是减仓|要不要现在进场|该进场还是|布局多还是空|该买还是该卖|先测试.*还是|怎么走|适合做多|适合做空/,
   },
   {
+    // 技术指标（54 D-B00–B07 真实 K 线计算）先于技术分析（BCRM2 卦象）：
+    // 具体指标/价位词 + 标的或价位语境 → 走确定性指标计算（与 l1_route_signal.py 对齐）
+    intent: 'technical_indicator',
+    fallbackPattern:
+      /(?=.*(阻力位|阻力|支撑位|支撑|压力位|压力|均线|MACD|RSI|布林|ATR|金叉|死叉|超买|超卖|K线|技术指标))(?=.*(BTC|ETH|SOL|比特币|以太坊|索拉纳|黄金|XAU|现价|价格|价位|多少|哪里|哪儿|在哪|位置|现在|当前|走势|分析|如何|怎么样|情况))/i,
+  },
+  {
     intent: 'technical_analysis',
     fallbackPattern:
       /技术面|技术指标|技术形态|卦象|置信度|K线|均线|MACD|RSI|布林|背离|支撑位|压力位/,
@@ -76,6 +83,30 @@ export const L1_INTENT_REGISTRY: L1IntentDef[] = [
   {
     intent: 'fundamental_valuation',
     fallbackPattern: /估值|基本面|贵不贵|贵吗|便宜吗|值不值|值得买/,
+  },
+  // 四类追问钩子对应的三项可执行能力（与 l1_route_signal.py 对齐；确定性，不参与 recall 门控）
+  {
+    intent: 'leader_compare',
+    fallbackPattern:
+      /(?=.*(对比|对照|相比|比较|差距|谁更强|谁强|强弱))(?=.*(涨跌|涨幅|跌幅|变化幅度|幅度|龙头|BTC|ETH|SOL|比特币|以太坊|索拉纳|黄金|原油|纳指|标普))/,
+  },
+  {
+    intent: 'top_correlation',
+    fallbackPattern:
+      /相关性最高|最相关|相关性最强|相关度最高|相关.{0,6}指标|相关性分析|相关性/,
+  },
+  {
+    intent: 'persistence_strength',
+    fallbackPattern: /延续性|趋势延续|记忆性|Hurst|均值回复|动量延续|持续性强度/,
+  },
+  {
+    // 名称：统计关系｜确定性计算、无 LLM（54 D-E03/E05/E07/E08/E10）
+    // executor: exec_stat_query（3.1-FRONTEND/scripts/data_query_executor.py）
+    // 示例：BTC 现在回撤多少／ETH 有明显的月份效应吗／BTC 和 ETH 谁领先谁滞后
+    // 置于 top_correlation 之后，保留「相关性最高/最相关」由该执行器处理
+    intent: 'stat_query',
+    fallbackPattern:
+      /(?=.*(回撤|drawdown|季节性|月份效应|日历效应|几月|星期几|周几|月内|月初|月末|状态转移|转移矩阵|状态切换|停留|状态持续性|信息系数|因子有效|单调性|(?:^|[^A-Za-z])IC(?:[^A-Za-z]|$)|相关性|同向|领先|滞后))(?=.*(BTC|ETH|SOL|比特币|以太坊|索拉纳|黄金|XAU|标的|价格|价位|行情|走势|现在|当前|历史))/i,
   },
   {
     intent: 'asset_class_trend',

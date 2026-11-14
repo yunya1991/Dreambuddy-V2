@@ -57,8 +57,61 @@ def _to_unix_sec(ts_text: str) -> int | None:
     return int(dt.timestamp())
 
 
+def _point_ts_to_unix(ts_val) -> int | None:
+    """panewslab timeseries 点的 ts 字段 → unix 秒。
+
+    兼容 ISO 字符串 / unix 秒(int) / unix 毫秒(int)。
+    """
+    if ts_val is None:
+        return None
+    if isinstance(ts_val, (int, float)):
+        v = int(ts_val)
+        # 毫秒级（13位）→ 转秒
+        if v > 10**12:
+            return v // 1000
+        return v
+    if isinstance(ts_val, str):
+        return _to_unix_sec(ts_val)
+    return None
+
+
 def _is_numeric(v: Any) -> bool:
     return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def _expand_panewslab_timeseries(source: str, sub_category: str, ts_json: str) -> Iterable[tuple]:
+    """展开 panewslab timeseries 的 30 日趋势点。
+
+    panewslab timeseries 格式：
+      [{"name": "btc_price", "series": [{"ts": ..., "v": ...}, ...]},
+       {"name": "global_cap", "series": [...]},
+       {"name": "coins_top10", "items": [...]}]  ← 非 series 项跳过
+
+    产出：(source, sub_category, metric_name=name, value, unix_ts)
+    """
+    try:
+        ts_list = json.loads(ts_json)
+    except (json.JSONDecodeError, TypeError):
+        return
+    if not isinstance(ts_list, list):
+        return
+    for entry in ts_list:
+        if not isinstance(entry, dict):
+            continue
+        name = entry.get("name")
+        series = entry.get("series")
+        if not name or not isinstance(series, list):
+            continue
+        for point in series:
+            if not isinstance(point, dict):
+                continue
+            v = point.get("v")
+            if not _is_numeric(v):
+                continue
+            unix_ts = _point_ts_to_unix(point.get("ts"))
+            if unix_ts is None:
+                continue
+            yield (source, sub_category, str(name), float(v), unix_ts)
 
 
 def _pg_conn():
@@ -120,8 +173,13 @@ def _iter_metric_rows(src_db: str) -> Iterable[tuple]:
                         yield (source, sub_category, metric_name, float(value), unix_ts)
                         found_numeric = True
 
-        # 2. metrics 无数值时，从 timeseries 提取 close 作为 fallback
-        if not found_numeric and ts_json:
+        # 2. panewslab：展开 timeseries 的 30 日趋势点（btc_price / global_cap 等）
+        if source == "panewslab" and ts_json:
+            yield from _expand_panewslab_timeseries(source, sub_category, ts_json)
+
+        # 3. metrics 无数值时，从 timeseries 提取 close 作为 fallback
+        #    （yfinance 等采集器把价格存在 timeseries 而非 metrics）
+        if not found_numeric and ts_json and source != "panewslab":
             try:
                 ts_list = json.loads(ts_json)
             except (json.JSONDecodeError, TypeError):

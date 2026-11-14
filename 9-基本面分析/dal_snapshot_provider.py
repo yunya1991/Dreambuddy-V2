@@ -612,10 +612,13 @@ class DalSnapshotProvider:
     def collect_breadth(self) -> Optional[Dict]:
         btc_dominance = self._metric("overview_market", "btc_dominance_pct", 0.0)
         global_change = self._metric("overview_market", "global_change24_pct", 0.0)
-        # DeFi TVL：优先 all_protocols.total_tvl_bln（全链协议总锁仓），回退 chains_summary.total_tvl_bln
-        tvl_bln = self._metric("all_protocols", "total_tvl_bln", 0.0)
+        # DeFi TVL：只取 chains_summary.total_tvl_bln（DeFiLlama 官方 /charts 全链汇总，与 L1 SSoT 同源）。
+        # 不可用 all_protocols.total_tvl_bln 回退：那是协议 TVL 求和，跨链部署协议被重复计数
+        # （实测 523B vs 官方 148B），会把前端卡片的 DeFi TVL 放大 3.5 倍。
+        tvl_bln = self._metric("chains_summary", "total_tvl_bln", 0.0)
         if tvl_bln == 0.0:
-            tvl_bln = self._metric("chains_summary", "total_tvl_bln", 0.0)
+            # 老库可能只有 USD 口径
+            tvl_bln = self._metric("chains_summary", "total_tvl", 0.0) / 1e9
         if btc_dominance == 0.0 and global_change == 0.0:
             return None
         # 广度线：全球涨跌 * 系数

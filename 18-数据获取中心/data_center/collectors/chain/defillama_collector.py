@@ -79,7 +79,7 @@ class DeFiLlamaCollector(BaseCollector):
     def _fetch_chains(self) -> list[DataRecord]:
         data = self._get(f"{_BASE}/v2/chains")
         chains = {}
-        total_tvl = 0.0
+        chain_sum = 0.0
         top_names = []
         for c in data or []:
             try:
@@ -94,9 +94,24 @@ class DeFiLlamaCollector(BaseCollector):
                 "symbol": c.get("symbol"),
             }
             top_names.append((name, tvl_bln))
-            total_tvl += tvl
+            chain_sum += tvl
         top_names.sort(key=lambda kv: kv[1], reverse=True)
         top10_names = [n for n, _ in top_names[:10]]
+
+        # DeFi TVL 口径：官方首页/图表用的是 /charts 的 totalLiquidityUSD；
+        # /v2/chains 求和会显著偏低（实测 73.9B vs 147.9B），仅作链级拆分参考。
+        total_tvl = 0.0
+        total_source = "/charts"
+        try:
+            history = self._get(f"{_BASE}/charts")
+            if isinstance(history, list) and history:
+                total_tvl = float(history[-1].get("totalLiquidityUSD") or 0.0)
+        except Exception:
+            total_tvl = 0.0
+        if total_tvl <= 0:
+            total_tvl = chain_sum
+            total_source = "/v2/chains"
+
         now = datetime.now(timezone.utc).astimezone().isoformat()
         rec = DataRecord(
             source="defillama",
@@ -106,19 +121,22 @@ class DeFiLlamaCollector(BaseCollector):
             metrics={
                 "total_tvl": total_tvl,
                 "total_tvl_bln": round(total_tvl / 1e9, 4),
+                "tvl_chain_sum": chain_sum,
                 "chain_count": len(chains),
                 "top1_chain": top10_names[0] if top10_names else "",
                 "top2_chain": top10_names[1] if len(top10_names) > 1 else "",
                 "top3_chain": top10_names[2] if len(top10_names) > 2 else "",
             },
             events=[],
+            # 不再写 `tvl/tvl_bln`：多链同名指标会在 mm_metrics 互相覆盖成 0
             timeseries=[
-                {"chain": name, "tvl": info["tvl"], "tvl_bln": info["tvl_bln"]}
-                for name, info in chains.items()
+                {"chain": name, "chain_tvl_usd": info["tvl"]} for name, info in chains.items()
             ],
             raw={
                 "url": "/v2/chains",
+                "total_source": total_source,
                 "chain_count": len(data or []),
+                "chain_sum_usd": chain_sum,
                 "chains": chains,
                 "top10_by_tvl": [(n, round(t, 4)) for n, t in top_names[:10]],
             },

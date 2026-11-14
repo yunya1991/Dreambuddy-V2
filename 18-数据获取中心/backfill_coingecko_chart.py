@@ -1,14 +1,19 @@
 """一次性 backfill 脚本：拉取 SECTOR_MAP 全部 30 币的 CoinGecko market_chart 数据，
-写入 data_center.db records 表（sub_category=chart_{coin_id}）。
+写入 data_center records 表（sub_category=chart_{coin_id}）。
 
-供 query_valuation_percentile / sector_waterline 使用。
+供 query_valuation_percentile / sector_waterline / 因子池纵深（≥250 天）使用。
 
 用法：
   cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心
-  python backfill_coingecko_chart.py              # 回填全部 30 币
-  python backfill_coingecko_chart.py --only avalanche-2 near lido-dao dogwifhat  # 只回填指定币
+  python backfill_coingecko_chart.py              # 回填全部 30 币，days=365
+  python backfill_coingecko_chart.py --days 90    # 自定义天数（有 key 时上限 365）
+  python backfill_coingecko_chart.py --only avalanche-2 near  # 只回填指定币
 
-CoinGecko 公共 API 限流 ~10-30 req/min，串行 + 间隔 5s 避免触发 429。
+后端：默认写 PostgreSQL（DATA_CENTER_BACKEND=postgres），与生产一致。
+      设 DATA_CENTER_BACKEND=sqlite 可写本地 data_center.db（仅本地调试）。
+
+CoinGecko 限流：匿名 ~10-30 req/min；带 COINGECKO_API_KEY 走独立配额。
+      串行 + 间隔 5s 避免触发 429。
 """
 
 from __future__ import annotations
@@ -26,9 +31,6 @@ if _THIS_DIR not in sys.path:
 
 from data_center.collectors.coin.coingecko_collector import CoinGeckoCollector  # noqa: E402
 from data_center.core.errors import RateLimitError  # noqa: E402
-from data_center.storage.sink_sqlite import SqliteSink  # noqa: E402
-
-DB_PATH = os.path.join(_THIS_DIR, "data_center.db")
 
 # 与 scheduler.py / coin_fundamental_crypto.py._SECTOR_COIN_META 对齐
 COIN_IDS = [
@@ -71,30 +73,51 @@ COIN_IDS = [
 ]
 
 
+def _get_sink():
+    """根据 DATA_CENTER_BACKEND 选择 sink（默认 postgres，与生产一致）。"""
+    backend = os.environ.get("DATA_CENTER_BACKEND", "postgres").lower()
+    if backend == "sqlite":
+        from data_center.storage.sink_sqlite import SqliteSink
+
+        return SqliteSink(os.path.join(_THIS_DIR, "data_center.db"))
+    from data_center.storage import sink_postgres
+
+    return sink_postgres.get_sink()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Backfill CoinGecko chart data for SECTOR_MAP coins"
     )
     parser.add_argument("--only", nargs="+", metavar="COIN_ID", help="只回填指定的 coin_id 列表")
+    parser.add_argument(
+        "--days",
+        type=int,
+        default=365,
+        help="拉取天数（有 COINGECKO_API_KEY 时上限 365，匿名上限 90）",
+    )
     args = parser.parse_args()
 
     coin_ids = args.only if args.only else COIN_IDS
+    days = args.days
 
-    sink = SqliteSink(DB_PATH)
+    sink = _get_sink()
     collector = CoinGeckoCollector()
 
     if not collector.is_available():
         print("ERROR: CoinGeckoCollector 不可用（网络问题）", file=sys.stderr)
         return 1
 
+    has_key = bool(os.environ.get("COINGECKO_API_KEY", "").strip())
+    effective_days = min(days, 365) if has_key else min(days, 90)
+    print(
+        f"[{datetime.now(timezone.utc).isoformat()}] 开始 backfill {len(coin_ids)} 个币的 chart 数据"
+        f"（days={effective_days}, key={'yes' if has_key else 'no'}）"
+    )
+
     ok_count = 0
     fail_count = 0
     skip_count = 0
-
-    print(
-        f"[{datetime.now(timezone.utc).isoformat()}] 开始 backfill {len(coin_ids)} 个币的 chart 数据"
-    )
-    print(f"DB: {DB_PATH}")
 
     for i, coin_id in enumerate(coin_ids, 1):
         # 限流：每个请求间隔 5s
@@ -102,7 +125,9 @@ def main() -> int:
             time.sleep(5.0)
 
         try:
-            recs = collector.fetch({"route": "coin_chart", "coin_id": coin_id, "days": 30})
+            recs = collector.fetch(
+                {"route": "coin_chart", "coin_id": coin_id, "days": effective_days}
+            )
             if not recs:
                 print(f"[{i:02d}/{len(coin_ids)}] {coin_id:30s} SKIP（无数据返回）")
                 skip_count += 1
@@ -117,12 +142,14 @@ def main() -> int:
             )
             ok_count += 1
 
-        except RateLimitError as e:  # noqa: F841
+        except RateLimitError:
             # 429 限流：等 60s 后重试一次
             print(f"[{i:02d}/{len(coin_ids)}] {coin_id:30s} 429 限流，等 60s 后重试一次...")
             time.sleep(60.0)
             try:
-                recs = collector.fetch({"route": "coin_chart", "coin_id": coin_id, "days": 30})
+                recs = collector.fetch(
+                    {"route": "coin_chart", "coin_id": coin_id, "days": effective_days}
+                )
                 if recs:
                     sink.write(recs)
                     ts = recs[0].timeseries

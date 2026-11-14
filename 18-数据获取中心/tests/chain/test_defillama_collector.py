@@ -84,6 +84,55 @@ def test_fetch_chains_route_sums_tvl_and_stablecoins(mocker):
     assert len(r.timeseries) >= 2
 
 
+def test_fetch_chains_prefers_official_charts_total(mocker):
+    """DeFi TVL 口径：取官方 /charts 的 totalLiquidityUSD，链求和仅作拆分参考。
+
+    /v2/chains 逐链求和会显著低于官方总 TVL（实测 73.9B vs 147.9B）。
+    """
+    from data_center.collectors.chain.defillama_collector import DeFiLlamaCollector
+
+    def _get(url, timeout=20):
+        if url.endswith("/charts"):
+            return _Resp(
+                [
+                    {"date": 1704067200, "totalLiquidityUSD": 90_000_000_000.0},
+                    {"date": 1704153600, "totalLiquidityUSD": 95_000_000_000.0},
+                ]
+            )
+        return _Resp(_chains_resp())
+
+    m = mocker.patch(DEFILLAMA_MOD)
+    m.get.side_effect = _get
+
+    c = DeFiLlamaCollector()
+    r = c.fetch({"route": "chains"})[0]
+
+    assert r.metrics["total_tvl_bln"] == pytest.approx(95.0)
+    assert r.metrics["tvl_chain_sum"] == pytest.approx(44.3e9)
+    assert r.raw["total_source"] == "/charts"
+    # 分链明细仍保留在 raw / timeseries（字段名不得叫 tvl，避免 mm_metrics 覆盖）
+    assert r.raw["chains"]["Ethereum"]["tvl_bln"] == pytest.approx(38.1)
+    assert r.timeseries[0] == {"chain": "Ethereum", "chain_tvl_usd": pytest.approx(38.1e9)}
+
+
+def test_fetch_chains_falls_back_to_chain_sum_when_charts_fails(mocker):
+    """官方 /charts 不可用时回退链求和，并在 raw 标注来源。"""
+    from data_center.collectors.chain.defillama_collector import DeFiLlamaCollector
+
+    def _get(url, timeout=20):
+        if url.endswith("/charts"):
+            raise RuntimeError("HTTP 502")
+        return _Resp(_chains_resp())
+
+    m = mocker.patch(DEFILLAMA_MOD)
+    m.get.side_effect = _get
+
+    c = DeFiLlamaCollector()
+    r = c.fetch({"route": "chains"})[0]
+    assert r.metrics["total_tvl_bln"] == pytest.approx(44.3)
+    assert r.raw["total_source"] == "/v2/chains"
+
+
 def test_fetch_historical_chain_tvl_route(mocker):
     from data_center.collectors.chain.defillama_collector import DeFiLlamaCollector
 

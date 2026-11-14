@@ -1,6 +1,6 @@
 # SPEC-54 L1 架构能力聚合层
 
-- **版本**: v1.1 ｜ **日期**: 2026-11-14 ｜ **状态**: 🟢 完整版（v1.0 + S1–S5 五级能力路线 + S1.0 硬前置 + S4 条件外推收口 + MERS 分阶段，见 §13–§17）
+- **版本**: v1.7 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 完整版（v1.0 + S1–S5 五级能力路线 + S1.0 硬前置 + S4 条件外推收口 + MERS 分阶段 + §3.5 四层分工，见 §13–§17；v1.4 回写 E 组能力层落地与 `stat_query` 意图合并；v1.5 回写日线收盘锚点修复；v1.6 调研对齐 R02 PIT 双口径与能力状态边界；v1.7 D-E02 三层接线、可执行出口 8 个、T0.5 首版交付，整体进度由 TECHNICAL_DESIGN §6 汇总）
 - **归属**: 54-L1架构能力聚合层（L1 确定性数据能力的唯一聚合出口）
 - **上游约束**: 19-DAL Schema/Repo 契约、18-数据获取中心 `DataRecord`、9-基本面分析评分口径、34-前端应用训练系统（意图/SFT 与 route_confidence）
 - **下游影响**: 3.1-FRONTEND `/api/data/query`、`/api/fundamental/**`、`/api/agent/chat`、L1 意图注册表（TS/Python 双端）
@@ -44,7 +44,7 @@
 | 层 | 事实 | 证据 |
 |---|---|---|
 | 18 采集 | `DataRecord` 统一契约 + 调度器，覆盖 FRED 宏观、Binance 资金费率/多空比、恐惧贪婪、CoinGecko 市值/板块、ETF 流向、稳定币、清算、鲸鱼流、社交声量 | `18-数据获取中心/data_center/scheduler.py`、`backfill_fred_history.py`、`collect_missing_data.py` |
-| 19 DAL | 7 域 21 表；`mm_metrics(sub_category, metric_name, timestamp, metric_value)` 实测 **348,543 行 / 5,304 sub_category / 455 指标**，`DGS10` 回溯至 1962、`NASDAQCOM` 1971、`crypto_fear_greed` 2018 起日频 4,066 条 | `19-数据访问层/docs/SCHEMA_DESIGN.md`、`sqlite3 只读实测` |
+| 19 DAL | 7 域 21 表；`mm_metrics(sub_category, metric_name, timestamp, metric_value)` 实测 **348,543 行 / 5,304 sub_category / 27,290 个 sub::metric 组合 / 455 个不同指标名**，`DGS10` 回溯至 1962、`NASDAQCOM` 1971、`crypto_fear_greed` 2018 起日频 4,066 条 | `19-数据访问层/docs/SCHEMA_DESIGN.md`、`sqlite3 只读实测` |
 | 19 查询能力 | 已具备时间点/区间查询：`query_latest_metric`、`query_metric_by_time`、`query_fear_greed_by_time`、`query_funding_by_time`、`query_open_interest_by_time`、`query_liquidation_by_time`、`query_long_short_ratio_by_time`、`query_taker_volume_by_time` | `dreambuddy_dal/implementations/sqlite_unified/market_macro_impl.py` |
 | 9 计算层 | `DalSnapshotProvider._history()` 已是真实区间查询；但 `_make_timeseries()` 为随机游走合成序列 | `9-基本面分析/dal_snapshot_provider.py`、`data_collector.py` |
 | 34 L1 现状 | 10 个确定性执行器；`route_confidence` 阈值 SSoT = 0.65；意图 golden set 311 条 | `3.1-FRONTEND/scripts/l1_route_signal.py`、`data_query_executor.py`、`34-前端应用训练系统/l1_intent_golden.jsonl` |
@@ -170,6 +170,53 @@ capabilities:
 | 23 四层闭环 | 提供 `dimension_force_evaluator` 力度/分位，crosscheck 复用 |
 | 34 训练系统 | 新增意图需同步补 golden set 与 TS 注册表 |
 | 3.1 前端 | `/api/fundamental/**` 与 L1 共用聚合结果 |
+
+---
+
+### 3.5 四层分工：方法库 / 能力登记 / 场景包 / 评估层（v1.3 对齐）
+
+> 本节用于消除三份文档的职责重叠：**METHOD_LIBRARY（怎么算）→ TECHNICAL_DESIGN 能力登记 + 本 SPEC（能问什么）→ 场景包（一次问全）→ MERS/Discovery（是否稳定）**。
+
+| 层 | 载体 | 回答什么 | 命名单位 | 是否新增方法 | 门禁语言 |
+|---|---|---|---|---|---|
+| ① **方法层** | [METHOD_LIBRARY.md](./docs/METHOD_LIBRARY.md) + 两份 RESEARCH 补强 | 某个统计量怎么算、需要多少样本、D1/D2/D3 哪级 | 方法 ID（`T13`/`M01`/`B13`…）+ `R01–R18` 关系原语 | **是（唯一 SSoT）** | `sample_n`、D 级 |
+| ② **能力层** | [TECHNICAL_DESIGN.md](./docs/TECHNICAL_DESIGN.md) 能力登记 + 本 SPEC §四/§五 | 用户一句话能问什么、走哪个 scope、返回什么信封 | `D-A/B/C/E/G/J/K` 能力 ID | 否（只组合 + 绑 scope） | `quality{status,sample_n,span}` |
+| ③ **场景包** | [SPEC-54-延续性统计分析模块.md](./SPEC-54-延续性统计分析模块.md)（`l1agg/persistence/`） | 一个资产「有没有记忆」的一站式画像 | `D-E13`（画像）；A1–A7 全部映射既有方法 ID | 否（纯编排） | 每方法门禁 + 画像 `status` |
+| ④ **评估层** | 本 SPEC §14 MERS + §15 Discovery + §17.1.3 的 S5 回测排名 | 某关系/方法在某资产某期限上**是否稳定、是否推荐** | 评估单元 `eval_id` | 否（批量跑②③的方法） | RankIC / `p_adj` / holdout 同号 / 随机数据 `stable=0` |
+
+**三者关系一句话**：方法库是**体检项目表**，能力层是**挂号窗口**，场景包是**体检套餐**，MERS/Discovery 是**年度复查与排名**。
+
+#### 3.5.1 延续性统计分析 vs 统计回测相关性（最易混的一对）
+
+| 维度 | 延续性统计分析（③ 场景包） | 统计回测相关性（④ 评估层） |
+|---|---|---|
+| 目标变量 | 固定为**本资产价格的前瞻收益** | 关系单元的**稳定性评分**（不针对某个资产写死） |
+| 问题 | 「这个序列自身有没有记忆」 | 「指标 X 与资产 Y 在 h 期限上的关系是否可复现」 |
+| 范围 | 单资产、无条件、一次性 | 跨序列、条件化、周期性重跑 + 状态机 |
+| 输出 | 一张画像（7 个数字 + 一句话） | `relationship_registry.db` 排序表 + 推荐 |
+| 数据门槛 | 仅需价格（四资产各 1,094 点 ✅） | 价格腿已够（28 龙头已绑定）；真正缺口是加密域指标仅 14–44 天、专用表 0 行，全库与 BTC 日频重叠 ≥60 天仅 26 条 |
+| 共同点 | 共用方法库、共用 `l1agg/align.py`、共用门禁语言（`n≥`、`p_adj`、`align_method`） | 同左 |
+
+#### 3.5.2 四条硬约束（SSoT）
+
+1. **前瞻收益唯一实现 = `l1agg/align.forward_returns`**。23 的 `FactorICSelector` 现有 `shift(-h).rolling(h).sum().shift(-h+1)` 在 `h>1` 时多位移 `h-1` 天（§17.1.3 已知缺陷 1），S5 前必须改为调用 `align` 或整体废弃；persistence 的 A7 与 MERS 的 B13–B16 必须调同一函数。
+2. **IC 的三处消费分工**：persistence A7 = 单资产描述（重叠 + 非重叠相位双口径）；MERS B13–B16 = 跨序列评估（含 `p_adj`/holdout/状态机）；23 = S5 前只保留历史产物，不再新增计算。
+3. **能力登记不重复计数**：`D-E13` = `D-E07`（状态转移）+ `D-E08`（分箱/IC）+ T 组方法的**场景编排**，不新增方法 ID；`D-E14` = 相关状态条件分布，依赖 `D-E05/D-E06/D-E11`。方法库改动（如 T13 口径）必须回写场景包测试。
+4. **R02 PIT 双口径**：`pit=false`（全样本分位边界）只能作样本内回顾，不得进入 T0.5/T2/MERS；`pit=true` 要求每个历史时点只使用当时可见数据，宏观数据还须满足 `release_ts≤as_of`，是上述场景的唯一合法口径，**已实现**（`conditional.py::r02_percentile_forward`：逐时点滚动分位 + `release_ts` 过滤），能力出口尚未接线。算法与输出字段唯一定义见 METHOD_LIBRARY §16.1。
+
+#### 3.5.3 T 阶段 ↔ S 级映射（两套编号必须成对出现）
+
+| persistence 阶段 | 对应 S 级 | 说明 |
+|---|---|---|
+| T0 ✅ | **S3 的「自身延续性」子集** | 不依赖跨资产回填，已交付 |
+| T0.5 ✅ | **S3 → S4 之间** | 单资产状态 → 前瞻分布（R01/R02/R08）；首版 h=1，**已经 D-E02 出口交付**（A8 编排 `persistence/profile.py::conditional_distribution`，`pit=true`，样本不足自动 4→2 桶并披露 `effective_n/nonoverlap_n`） |
+| T1a | S3 前置（特征） | 自身状态特征，归 align/特征层 |
+| T1b | **S2 因子池** + S3 前置 | 跨资产相关特征；价格腿已绑 28 龙头，加密域指标待回填 |
+| T2 | **S4** | 多维状态 → 前瞻条件分布 |
+| T3a/T3b | **S5**（MERS 下游） | L2 模型，须过 MERS 门禁 |
+| T3c/T4 | S5 之后 | 可选 |
+
+> `T*` 编号仅在 persistence 域内有效；跨文档引用必须同时给出 S 级定位，禁止只用 T 编号（避免两套路线漂移）。另：方法库 §14 使用 `S0–S7`（方法实施与能力接线阶段），与本 SPEC 的 `S1–S5` **不是同一编号体系**，映射见 METHOD_LIBRARY §14 末尾「三套路线编号的映射」。整体进度和下一阶段顺序以 [TECHNICAL_DESIGN §6](docs/TECHNICAL_DESIGN.md) 为汇总。
 
 ---
 
@@ -493,9 +540,19 @@ capabilities:
 - **P1** 增 `market.candles` + `technical_indicator`（先做 MA/RSI/ATR/量能比 4 个）；同批增 E 组的 `seasonality_query`（月份效应/胜率/次数）、`metric_percentile`（分位→前瞻收益）、`drawdown_query`。
 - **P2** 增 `correlation_query`（相关矩阵 TopK + 领先滞后）与 `cross_check` 自动组合（同向率/相关突变），以及 `conditional_return`、`event_study`、`state_transition`。
 
-**P1 硬前置（新增）**：E 组与 B 组月度/季节性统计依赖「日频价格历史 ≥3 年」。实测库内价格仅约 2 周（`bitcoin.current_price_usd` 51 点），必须先回填 OKX `history-candles` 或 CoinGecko chart；否则相关能力一律返回 `insufficient_history`。
+**P1 硬前置（v1.3 更新）**：E 组与 B 组的价格前提**已闭环**——四资产 `close_usd` 各 1,094 点（2023-11-15~2026-11-12，缺口 0），`market.candles` 1D/1W/1M 已落地。但**纵深不足以支撑月度季节性**：月份效应需 ≥5 年（60 个月），现仅 36 个月；四年周期需 ≥2 个周期（≈2,920 日），现 1,094 日。纵深事实统一见 [docs/METHOD_LIBRARY.md §15](docs/METHOD_LIBRARY.md)，本 SPEC 不复制点数。
 
 **方法选择**：全部由 [docs/METHOD_LIBRARY.md](docs/METHOD_LIBRARY.md) 的意图→方法路由表驱动（238 方法 / 18 关系原语），L1 只做「选法 + 套模板」，不做推理。
+
+**E 组落地状态（v1.4，2026-11-14）**：
+
+1. **能力层已实现**：`l1agg/capabilities/{manifest,envelope,stats}.py` + `capability_manifest.yaml` + `contracts/capability_result.schema.json`。已接线 D-E02（分位→前瞻收益，A8/T0.5，v1.7 补前端分派）、D-E03（季节性）、D-E05/D-E06/D-E11（相关/领先滞后/同向率）、D-E07（状态转移）、D-E08（条件 IC，需因子源）、D-E10（回撤）。方法层注册表 **386 方法** audit 全 PASS（全量 387 登记，仅 C11 缺交易日历不可用；C 组 17 方法落地 `l1agg/methods/seasonal.py`）。
+2. **意图合并（与 §11.4 表的有意偏差）**：前端先合为单一确定性意图 **`stat_query`**，内部按关键词分派到上述能力 ID，另加 `cross_check` 相关子能力。理由：5 个独立意图 × 双端注册表 × 金标集维护成本高，而能力 ID 已能精确定位；后续若要拆分为 §11.4 的 5 个独立意图，只需拆分执行器入口，能力层与 manifest 无需改动。
+3. **双端同步点**：`3.1-FRONTEND/scripts/l1_route_signal.py`（EXECUTORS + DETERMINISTIC_INTENTS + fallback pattern）、`data_query_executor.py::exec_stat_query`、`3.1-FRONTEND/src/lib/l1-intent-registry.ts`、`34-前端应用训练系统/l1_intent_golden.jsonl`。
+4. **未接线**：D-E01（需因子池 ≥250 天纵深）、D-E04/D-E09（事件表仅 16 行）、D-E12（需多资产同日切片）、D-E14（需场景出口与每桶非重叠 ≥250）。
+5. **登记范围复核（v1.7）**：8 个可执行出口不等于 8 项登记范围全部完成。D-E05 当前仅 M01/M02/M04/M23 双序列子集，M05–M07 矩阵 TopK 未接；D-E11 尚未绑定 C18。D-E01 等不得因方法层实现而标为能力完整交付；D-E02 已经 manifest + executor + 前端分派三层接线，标为已交付（h=1，含降桶降级披露）。
+
+**日线对齐修复（v1.5，2026-11-14）**：`market.candles` 1d 的 `ts` 统一归一到 **UTC 日首**（真实观测时刻保留 `close_ts`），并新增 `meta.close_anchor ∈ {bar_close, snapshot_last}` 与 `source_policy ∈ {auto, snapshot, bars}`。**跨资产横截面统计（D-E05/D-E06/D-E11）必须两侧同锚点**：执行器优先 `source_policy=snapshot`，某标的无快照才退回 `auto` 并在回答标注。修复前 BTC（真实日线 00:00）与 ETH（快照 16:00）锚点混用，同期 ρ=0.33 且最优 lag=+1；修复后 ρ=0.83、最优 lag=0（n=727）。
 
 ---
 
@@ -737,11 +794,12 @@ CREATE INDEX idx_rel_pick ON relationship_eval(target, horizon, status, rank_ic 
 
 ### 17.1 五级能力路线（按能力层级逐项落地，替代原 P0–P3 表述）
 
-**评估结论：顺序合理，附和「数据 → 关系 → 元方法」的依赖链，且每级都有用户可见产出。需三处修正**：
+**评估结论：顺序合理，附和「数据 → 关系 → 元方法」的依赖链，且每级都有用户可见产出。需四处修正**：
 
 1. **S1 必须同时覆盖「过去」**：只做「现在」可查，S2/S3 无数据可用 → 价格回填与资产池定义并入 S1 的前置（S1.0）。
 2. **S4 改名「条件外推表达」**：不做点预测。只允许「当前状态 → 历史同状态的前瞻分布 + 区间」，或暴露既有模型输出（标 `model_output`）；禁止「将会/预计点位」。
 3. **S5 的 MERS 提前做内部窄版**：S3 需要「哪个方法与该指标关系最强」来选法，因此 MERS 的计算内核在 S3 就要具备（仅内部使用、不对外推荐）；对外推荐与 Discovery 留在 S5。
+4. **相关性之前插入对齐层、排名后置（v1.2 新增）**：实测仅 26 条序列可与 BTC 日频价格对齐 ≥60 天，加密域指标只有 14–44 天 → 必须先建 `market.candles` + `l1agg/align.py`，并通过加密域历史回填；「回测排名」是 B13–B16 的下游产物，不是与统计学方法并列的阶段。详见 §17.1.3。
 
 ### 17.1.0 S1.0 硬前置（整条路线唯一阻断项，必须先完成）
 
@@ -757,9 +815,9 @@ CREATE INDEX idx_rel_pick ON relationship_eval(target, horizon, status, rank_ic 
 | 级 | 能力 | 交付物（用户可见） | 依赖 | 验收门禁 |
 |---|---|---|---|---|
 | **S1** | 前端各模块数据可查（现在 + 过去） | 11 个基本面模块全部字段可查；每模块真实 `timeseries`（30/90/365 天）；行情/宏观/链上/情绪/资金 实时与历史同入口 | 索引迁移；`datacenter.series`；价格回填 ≥3 年（S1.0） | 每模块 ≥3 个自然语言查询命中 L1；`timeseries` 非空且 `sample_n` 正确；P95≤800ms |
-| **S2** | 多维数据相关性组合 | 相关矩阵 TopK、领先滞后、滚动相关、同向率、固定权重合成指标；「哪些资产相关性最高」可直答 | S1 + 统一资产池（8 资产） | 输出带 `n/p/window`；随机序列相关系数≈0 且不显著；合成指标权重固定可复现 |
-| **S3** | 高相关数据与价格的统计关系 | 条件收益、分位→前瞻分布、分箱单调性、日历效应、回撤画像（R01/R02/R03/R08/R11） | S2 + MERS 计算内核（内部） | 每关系输出 `n/win_rate/mean/p_adj/单调性`；随机数据无显著；方法选择可追溯 `method_id` |
-| **S4** | 过去 + 现在的条件外推表达（非点预测） | 「当前处于 X 状态，历史同状态后 h 日分布：均值/中位/胜率/区间」；既有模型输出（bdsm/bcrm2/event）gated 暴露 | S3 | 必须含区间与样本量；无模型输出时降级为纯历史分布；禁止点预测措辞（抽检 20 条） |
+| **S2 🟡** | 多维数据相关性组合 | 相关矩阵 TopK、领先滞后、滚动相关、同向率、固定权重合成指标；「哪些资产相关性最高」可直答 | S1 + 统一资产池（8 资产）+ **加密域历史回填（≥60 对齐点）** | 输出带 `n/p/window/align_method`；`n≥60` 才出同期相关、`n≥120` 才出 CCF；随机序列相关系数≈0 且不显著。当前方法层完成、双序列/领先滞后等子集可执行，矩阵 TopK 与 C18 未闭环 |
+| **S3 🟡** | 高相关数据与价格的统计关系 | 条件收益、分位→前瞻分布、分箱单调性、日历效应、回撤画像（R01/R02/R03/R08/R11） | S2 + MERS 计算内核（内部） | 每关系输出 `n/win_rate/mean/p_adj/单调性`；随机数据无显著；方法选择可追溯 `method_id`。当前方法层、T0 与部分能力出口已交付（R02 双口径已实现），R02 PIT 能力出口、D-E01/E02 完整出口及 MERS 内核未闭环 |
+| **S4 ⬜** | 过去 + 现在的条件外推表达（非点预测） | 「当前处于 X 状态，历史同状态后 h 日分布：均值/中位/胜率/区间」；既有模型输出（bdsm/bcrm2/event）gated 暴露 | S3；T0.5/T2 另需 R02 `pit=true`（已实现） | 必须含区间、样本量及 `pit/as_of/effective_n/nonoverlap_n`；无模型输出时降级为纯历史分布；禁止点预测措辞（抽检 20 条）；h>1 显著性推断须先实现 Newey-West/HAC |
 | **S5** | 统计方法扩展 + 回测推荐 + 探索发现 | MERS v1 注册表（10 方法 × 3 期限 × 8 资产）+ `relationship_recommend`；Discovery v1（≤2000 单元）+ `discovery_query`；G/J 组方法扩展 | S1–S4 全部稳定 | MERS 重跑字节一致；随机数据 `stable=0`；Discovery 随机数据 `findings=0`；5000 单元≤10min |
 
 **阶段映射**：S1 = 原 P0 + 价格回填；S2 = 原 P2 相关性部分；S3 = 原 P1 关系表达；S4 = 原 P2 预测类收口；S5 = 原 P1/P3 的 MERS 与 Discovery 扩展。
@@ -783,6 +841,91 @@ CREATE INDEX idx_rel_pick ON relationship_eval(target, horizon, status, rank_ic 
 
 > 配置见 `config/asset_pool.yaml` 的 `dynamic` 段；加载器 `l1agg/asset_pool.py` 负责校验（含 benchmarks 必须在锚定表内）。
 
+### 17.1.3 数据纵深实测与顺序修正（v1.2，2026-11-14 调研结论）
+
+**结论：原 S1–S5 顺序成立，但「过去数据」的瓶颈判断需修正——不是价格，是指标历史纵深；且相关性之前必须插入「对齐层」，回测排名应降为 S3/S4 的下游。**
+
+实测证据（云端快照只读）：
+
+| 数据面 | 实测 | 判定 |
+|---|---|---|
+| 日频价格 | `BTC/ETH/SOL/XAU close_usd` 各 1,094 点，2023-11-15 ~ 2026-11-12，缺口 0 | ✅ S1.0 已闭环 |
+| 宏观 FRED | 19 条序列与近 3 年价格窗口重叠 ≥250 天 | ✅ 可用 |
+| 加密域指标 | `derivatives_spot`/`etf_institutional`/`exchanges_whales`/`holdings_onchain_funds`/`stablecoin_rwa` 均 28 天；`options` 44、`funding_rate` 40、`btc_onchain` 37、`etf_flow` 14、`okx_derivatives` 8 | ❌ 不满足相关性门禁 |
+| 专用表 | `mm_funding_rate`/`mm_open_interest`/`mm_liquidation`/`mm_long_short_ratio`/`mm_taker_volume`/`mm_fear_greed` 本地 0 行 | ❌ |
+| 全库纵深 | 27,290 个 `sub::metric` 中 25,795 个仅 1 天；≥250 天 28 条；与 BTC 日频重叠 ≥60 天仅 26 条 | 决定 S2 因子池上限 |
+| 事件表 | `mm_events` 16 行 | R04/F19–F23 不可做 |
+
+**修正后的推进顺序（与 METHOD_LIBRARY §14 对齐）**：
+
+| 阶段 | 内容 | 门禁 |
+|---|---|---|
+| S0 ✅ | 单点 + 周期序列直答（`metric_series`） | 已上线 |
+| **S1-a** | 新增 L0 scope `market.candles`（1D/1W/1M，由 `mm_metrics` 日频价格派生） | 任一资产 ≥1,090 根；`quality/sample_n/span` 齐全 |
+| **S1-b** | 新增对齐层 `l1agg/align.py`（UTC 日收盘口径、跨源去重、低频 ffill、前瞻收益、样本门禁） | 对齐后缺失率 <5%；任何 D2/D3 输出必带 `align_method/timezone` |
+| **S1-c** | 价格回显 `l1agg/price_echo.py`：任意历史时点 → 当时价 + 现价 + 变化；默认基准按品类（加密→BTC、美股→US500/US100/DJIA、宏观→XAU+美股指数、大宗→CL、避险→XAU、其他→BTC） | `asof_day/staleness_days/sample_n/span/align_method/timezone/gate` 齐全；禁止未来函数；抽查 20 条与库内原始行一致 |
+| **S1-d** ✅ | 四类追问钩子 `l1agg/hooks.py`（回显/龙头对照/相关性 Top/延续性强度）+ 三项可执行能力 `l1agg/relations.py`：任何确定性答案末尾追加 4 个可选下一步，`data.hooks` 同步结构化返回 | 钩子 query 必须能被 `l1_route_signal` 确定性路由到对应执行器（4/4 L1_DIRECT）；无年份日期「9月9日」解析为当年最近一次过去；`leader_gap/top_correlated/persistence_strength` 均带 `sample_n/span/align_method`。**相关性口径**：排除同质价格（自身/同赛道币价、市值、盘口、成交量），按指标观测频率分组（daily n≥120 / weekly n≥52 / monthly n≥36）独立 BH-FDR，样本不足单列 `low_sample` 不参与排名，资产价格相关单列 `price_baseline` |
+| **S2-p** | **跨资产历史回填**（18 职责，云端执行，幂等）；分类口径与 **40 层 `asset_classes.py` 完全统一**，54 仅做绑定（`l1agg/leader_registry.py`）：已绑定 28 个龙头、诚实登记 1 个历史不足 | 对齐点 ≥250 天的跨资产龙头 ≥10 条（当前 28 条达标，2026-11-14 回填后） |
+| S2 🟡 | 相关性（M01–M07/M11–M12/M24–M25 + R05）方法注册表 + 评估 harness 已落地；D-E05 双序列子集、D-E06、D-E11 可执行 | `n≥60` 同期、`n≥120` CCF；p 值走 t 分布 + BH-FDR；harness 六检 11/11 PASS；随机白噪声负例 `|ρ|<0.15` 且假阳率 ≤20%。矩阵 TopK 与 C18 未接，故不是登记范围全绿 |
+| S3 🟡 | 条件收益/IC/分组方法层已交付，T0/D-E13 与部分能力出口已交付；R02 双口径已实现但未接线 | `n≥250`；T0.5/T2 只接受 R02 `pit=true`；h>1 重叠前瞻收益在 Newey-West/HAC 实现前只描述、不作显著性结论 |
+| S4 ⬜ | 条件外推表达（非点预测）；T0.5=S3→S4，首版 h=1 | 含区间与 `pit/as_of/effective_n/nonoverlap_n`；每桶非重叠 n≥250；T2 另等 T-1 扩样本 |
+| S5 | 回测排名：复用并修正 23 `FactorICSelector` | 必须含样本外 IC 与 walk-forward |
+
+> **与场景包的关系（v1.3）**：延续性画像（`D-E13`，T0）是「**S3 自身延续性子集**」的已落地实现，不是 S3 之外的新阶段；S3 的证据不依赖 S2-p 回填（只用价格），而 S2 的相关性仍受因子池上限约束。T 阶段与 S 级的完整映射见 §3.5.3。
+
+**已知缺陷（S5 前必须修，属 23 域）**：
+1. `forward_returns` 的 `L.shift(-h).rolling(h).sum().shift(-h+1)` 在 `h>1` 时多位移 `h-1` 天；
+2. `ic_ir` 用 5 个 horizon 的 IC 求 mean/std，非标准滚动时间序列 IC_IR；`win_rate` 的 n=5 无统计意义；
+3. 价格源读 `price_path` JSON，未走 19/L0，违反「唯一数据源」。
+
+**S1 验收结果（2026-11-14 真实库实测）**：
+
+| 检查项 | 实测 | 判定 |
+|---|---|---|
+| `market.candles` 1d（BTC，1825 天窗口） | `sample_n=1094`、`2023-11-15~2026-11-12`、`quality=good`、`missing_rate=0.0`、`has_ohlc=false` | ✅ 过（≥1,090 根） |
+| 1w / 1m | 157 根 / 37 根，quality 均 good | ✅ 过 |
+| 对齐：`CPIAUCSL`（月频） | `aligned_n=1063`、`stale_ratio=0.93`、`max_stale_days=45`、`gate60=ok` | ✅ 过（月频自动放宽陈旧上限） |
+| 对齐：`DGS10`（日频，含周末） | `aligned_n=1094`、`stale_ratio=0.31` | ✅ 过 |
+| 对齐：`crypto_fear_greed` | `aligned_n=1094`、`stale_ratio=0.001` | ✅ 过 |
+| 对齐：`derivatives_spot.fut_open_interest_usd` | `aligned_n=8`、`missing_rate=0.99`、`gate=insufficient_samples` | ✅ 正确拦截（证明 S2 前必须先回填） |
+| 对齐：`etf_flow.total_flow` | `aligned_n=15`、`gate=insufficient_samples` | ✅ 正确拦截 |
+| `align` 单测 | 12 条全通过（含「h 期前瞻收益不得多位移」回归） | ✅ 过 |
+
+**S2 缺口决策与验收（2026-11-14，v1.3-6）**
+
+| 缺口 | 决策 | 依据 / 落地 |
+|---|---|---|
+| OI 长历史（规范序列 `open_interest.open_interest_value` 仅 32 天） | **禁止跨所/跨口径拼接**；新增 Binance Vision 日频 `sum_open_interest_value` 单所长历史序列 `open_interest.open_interest_value_binance`（USD）+ `open_interest_btc_binance` | 实测 OKX rubik 全合约聚合口径与 ccxt 单合约同日相差 ~35%，拼接会产生假跳变；Binance Vision 免 Key、2020 起、含 USD 口径，1095 天可一次回填。规范序列保持 ccxt 原口径不动，S2/S3 若要长历史须**显式选 `_binance` 指标** |
+| 清算（liquidation） | **永久 `not_collected`（不采集）**，任何方法遇到必须返回 `not_collected` | OKX/Binance 仅 24h 快照，Coinglass 历史需付费 Key；不编造 |
+| OKX OI / 多空账户比仅 180 天 | 保留为**交叉验证源**（`open_interest_value_ccy` / `long_short_ratio`），不承担长历史主链 | 免费源硬上限（更早窗口返回 `50030 Illegal time range`） |
+| 大户多空比 | OKX `long-short-account-ratio-contract` 分窗口回填 **730 天**，作为多空长历史主链 | `begin/end` 实测可回溯 700+ 天 |
+| 资金费率 | 主链 Binance `fapi/v1/fundingRate` **1096 天**；OKX 96 天保留交叉验证 | OKX funding-history 只保留约 96 天，且向旧翻页必须用 `after=` |
+| ETF 净流入 | Farside 全量 **730 天**（13 发行人列 + `total_flow`，百万美元） | 云端直连 Cloudflare 403，经 `r.jina.ai` 只读代理取 Markdown 表格 |
+
+**S2 回填验收（云端 `mm_metrics` 实测）**：加密域 ≥250 天序列 **26 条**（BTC/ETH/SOL/XAU 价格+成交量各 1,094、Binance 费率 1,096、ETF 13 列 730、大户多空 730、XAG 290、XCU 255），S2-p 门禁「≥10 条」通过；OI 180 天、清算 0 天为已登记缺口，不阻塞 S2 相关性（n≥60/120 门禁）。
+
+**跨资产龙头注册（S1-b 同步注册，分类 SSoT = 40 层）**
+
+分类**不在 54 另立**：[leader_registry.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/54-L1架构能力聚合层/l1agg/leader_registry.py) 直接加载 `40-周期神经网络系统/asset_classes.py` 的 `ASSET_CLASSES / G1_ANCHORS / G0_MACRO`，54 只补「龙头 → DAL 序列」绑定；无数据者进 `UNBOUND` 并附原因，`align.load_leader()` 遇到即抛 `not_collected`，**禁止静默空序列**。
+
+实测覆盖（2026-11-14 跨资产回填后，`min_days=250`，`coverage_summary` 云端复检 28 available / 1 not_collected）：
+
+| 大类（40 口径） | 已绑定（n≥250） | 未采集（诚实登记） |
+|---|---|---|
+| crypto | BTC 1,094 / ETH 1,094 / SOL 1,094 | — |
+| precious_metal | XAU 1,094 / XAG 290（OKX 永续） | — |
+| industrial_metal | XCU 255（OKX 永续） | — |
+| energy | CL 9,545（FRED WTI 代理）/ BZ 757（DCOILBRENTEU 代理）/ NG 746（DHHNGSP 代理） | — |
+| us_index | **US500 2,521（标普）/ US100 14,066（纳指）/ DJIA 752（DIA 代理）** + VIX 9,320 | — |
+| us_stock | NVDA / AAPL / MSFT / TSLA / AMZN / GOOGL / META 各 752（Nasdaq） | — |
+| us_etf | SPY 752 / QQQ 752（Nasdaq） | — |
+| apac_index | — | JP225（OKX 永续 2026-09 上线，67 天 < 250 天） |
+| fx | DXY 5,235（DTWEXBGS 代理） | — |
+| rates_credit | TLT 16,206（DGS10 代理）/ T10Y2Y 12,607 / HY_OAS 784 | — |
+| macro（G0 门控） | CPI 1,009 / INDPRO 1,346 | — |
+
+> 口径说明：`CL/DXY/US500/US100/TLT/DJIA/BZ/NG` 为**代理序列**，绑定中 `proxy=True`，任何输出必须带出。道指用 DIA（道指 ETF）代理——Nasdaq 公开 API 无 `^DJI` 指数历史、Yahoo 对云端 IP 返回 429、FRED `DJIA` 已停更；美股/ETF/金属/能源由 `scripts/backfill_cross_asset_leaders.py` 幂等回填（Nasdaq API + OKX 永续 + FRED API），后续只需在 `BINDINGS` 增加一行即自动进入对齐层与相关性，无需改方法层。
+
 ### 17.2 与 L1 的关系（重申）
 
 MERS 与 Discovery 只改变「**选哪个方法**」，不改变「**输出什么**」——L1 输出永远是「方法 + 样本量 + 统计量 + 历史事实 + caveat」。
@@ -797,7 +940,53 @@ MERS 与 Discovery 只改变「**选哪个方法**」，不改变「**输出什�
 
 ---
 
-## §十二、修订记录（v0.1 → v1.1）
+## §十二、修订记录（v0.1 → v1.6）
+
+### v1.6（2026-11-14）
+
+| 编号 | 位置 | 内容 |
+|---|---|---|
+| v1.7 | §3.5.3、§11.4、§17.1 | D-E02 三层接线（manifest `I30/R02` + `percentile_forward` + 前端 `exec_stat_query` 分位 cue 与 `dates` 传参），可执行出口 7→8；T0.5/A8 首版经 D-E02 交付（h=1 PIT，4→2 桶降级披露）；未接线清单移除 D-E02 |
+| v1.6-1 | §3.5.2–§3.5.3、§11.4 | 新增 R02 PIT 双口径硬约束：T0.5/T2/MERS 只接受 `pit=true`（v1.6 时点尚未实现，v1.11 已在 `conditional.py` 落地）；明确 T0.5=S3→S4 的 blocker 与 7 个能力出口的子集边界 |
+| v1.6-2 | §17.1、§17.1.3 | S2/S3 改为方法层完成、能力登记范围部分交付；补 `pit/as_of/effective_n/nonoverlap_n`、每桶非重叠门禁及 h>1 Newey-West/HAC 前置；整体进度与后续顺序统一指向 TECHNICAL_DESIGN §6 |
+| v1.6-3 | METHOD_LIBRARY v1.9、延续性场景包 v1.3、TECHNICAL_DESIGN v2.6 | 同步 R02 方法口径、T0.5 场景依赖、103 项能力状态、四类关系榜单、三种周期口径与 S0–S7 路线映射；仅文档变更，不宣称新增代码能力 |
+
+### v1.5（2026-11-14）
+
+| 编号 | 位置 | 内容 |
+|---|---|---|
+| v1.5-1 | §11.4、METHOD_LIBRARY §16、TECHNICAL_DESIGN §2.2 | 日线 `ts` 归一到 UTC 日首并保留 `close_ts`；新增 `close_anchor/source_policy`，跨资产相关与领先滞后强制同锚点；记录 BTC–ETH 同期相关修复证据与 397 例测试基线 |
+
+### v1.4（2026-11-14）
+
+| 编号 | 位置 | 内容 |
+|---|---|---|
+| v1.4-1 | §11.4、能力层与 manifest | 回写 D-E03/E05/E06/E07/E08/E10/E11 共 7 个可执行出口、171 方法 audit 与统一 `CapabilityResult`；前端合并为 `stat_query`，同步双端意图注册与金标集 |
+
+### v1.3（2026-11-14）
+
+| 编号 | 位置 | 内容 |
+|---|---|---|
+| v1.3-1 | §3.5（新增） | 新增「四层分工：方法库 / 能力登记 / 场景包 / 评估层」，明确延续性统计分析（场景包 `D-E13`）与统计回测相关性（§14 MERS / §15 Discovery / S5 排名）在目标变量、范围、输出、数据门槛上的差异 |
+| v1.3-2 | §3.5.2 / §3.5.3（新增） | 三条 SSoT 硬约束（前瞻收益唯一实现 `align.forward_returns`；IC 三处消费分工；能力登记不重复计数）+ T 阶段 ↔ S 级映射（T0=S3 自身延续性子集、T1b=S2 因子池、T2=S4、T3=S5） |
+| v1.3-3 | §17.1.3 | 补「与场景包的关系」注：`D-E13` 是 S3 子集的已落地实现，不依赖 S2-p 回填；S2 相关性仍受因子池上限约束 |
+| v1.3-4 | 技术文档 §2.4 | 登记 `D-E13`（✅ 已交付）/ `D-E14`（⬜），标注为场景编排不新增方法 ID；E 组硬前提由「价格仅 2 周」更新为「价格腿已闭环，瓶颈转为因子池纵深」 |
+| v1.3-5 | 方法库 §0.1、§16 | 新增四层边界表与「已实现方法冻结口径」表（T13/T14/T20-21/F18/B07-08/T08-09/B13-15/R02），成为口径 SSoT |
+| v1.3-6 | §17.1.3（新增）、`scripts/backfill_crypto_derivatives.py` | S2 缺口决策：OI 禁止跨所拼接（新增 Binance Vision `open_interest_value_binance` 1095 天）、清算永久 `not_collected`、OKX 180 天降为交叉验证；资金费率主链 Binance 1096 天、ETF Farside 730 天 |
+| v1.3-7 | §17.1.3 验收表 | S2 回填验收：加密域 ≥250 天序列 26 条（门禁 ≥10 通过）；OI 180 天/清算 0 天为已登记缺口，不阻塞 S2 n≥60/120 相关性 |
+| v1.3-8 | 技术文档 §0 / §2 / §3 / §6 | 总技术文档升级 v2.0：新增文档地图、六类问题能力地图（对齐/相关/周期/惯性/延续/单维→多维）、数据可行性矩阵、6 条治理规则；能力登记修正（101 项）、`D-B00` 改 1D/1W/1M 日频派生、`D-E03` 标注月度季节性数据不足、`datacenter.series`/`market.candles` 改 ✅ |
+| v1.3-9 | §1.1 / §11.3 / 方法库 §14/§15 | 消除过期事实：删除「价格仅约 2 周 / `bitcoin.current_price_usd` 51 点」，改为价格腿已闭环；龙头由「14 已绑 / 15 未采集」改为「28 已绑定 + 1 诚实登记（JP225）」；新增 S0–S6 / S1–S5 / T0–T4 三套编号映射，规定跨文档引用必须成对出现 |
+| v1.3-10 | 技术文档 §0.5 / §2.7（新增 §0.5） | 总技术文档升级 v2.1：新增 §0.5「四层分工与边界」（四层载体表 + 场景包 vs 评估层对比表 + 6 条边界纪律），使四层关系在总技术文档内自洽、不依赖跳转本文 §3.5；§2.7 K 组标注为第④层评估层只读出口 |
+
+### v1.2（2026-11-14）
+
+| 编号 | 位置 | 内容 |
+|---|---|---|
+| v1.2-1 | §17.1.3 | 新增「数据纵深实测与顺序修正」：价格腿已满足（1,094 日/3 年），真实瓶颈为加密域指标仅 14–44 天、专用表 0 行；相关性前插入 `market.candles` + 对齐层，排名后置为 S3/S4 下游 |
+| v1.2-2 | §17.1 第 4 条、§17.1 表 S2 行 | 增补第四处修正；S2 依赖追加「跨资产历史回填（≥60 对齐点）」，门禁追加 `n≥60/120` 与 `align_method` |
+| v1.2-3 | 方法库 §14、§15、§0 | §14 由 P1a/P1b/P2a/P2b 重排为 S0–S6（按样本量门禁）；§15 修正「价格仅约 2 周」过期事实并补实测；§0 标注 `market.candles` 为 S1 新增 scope |
+| v1.2-4 | §17.1.3、§17.1 表 S2-p | 跨资产分类与 40 层 `asset_classes.py` 统一（SSoT=40）；新增 `l1agg/leader_registry.py` 绑定 14 龙头 + 诚实登记 15 未采集；`align.load_leader()` 对未采集抛 `not_collected`；S2-p 由「加密域回填」扩为「跨资产回填」 |
+| v1.2-5 | §17.1.3 覆盖表、§17.1 表 S2-p | 跨资产回填落地：新增 `scripts/backfill_cross_asset_leaders.py`（Nasdaq 个股/ETF + OKX 金属 + FRED 能源，幂等），云端回填 14 条序列 8,065 点；`coverage_summary` 28 available / 1 not_collected（JP225 历史不足）；DJIA 用 DIA 代理 |
 
 ### v1.1（2026-11-14）
 
