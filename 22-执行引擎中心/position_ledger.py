@@ -76,6 +76,14 @@ class PositionLedger:
                 );
                 CREATE INDEX IF NOT EXISTS idx_fills_inst
                     ON fills (inst_id, pos_side, id DESC);
+                CREATE TABLE IF NOT EXISTS cooldowns (
+                    inst_id TEXT PRIMARY KEY,
+                    pos_side TEXT DEFAULT '',
+                    close_ts TEXT NOT NULL,
+                    realized_pnl REAL,
+                    exit_reason TEXT DEFAULT '',
+                    source TEXT DEFAULT ''
+                );
                 """)
 
     # ── 写 ────────────────────────────────────────────────────────
@@ -134,6 +142,7 @@ class PositionLedger:
         decision_id: str = "",
         fee: float = 0.0,
         ts: Optional[str] = None,
+        exit_reason: str = "",
     ) -> Dict[str, Any]:
         """部分/全部平仓：扣减数量并累计已实现盈亏。
 
@@ -206,11 +215,23 @@ class PositionLedger:
                     decision_id,
                 ),
             )
+            _cooldown_set = _remaining <= _EPS
+            if _cooldown_set:
+                # 全部平仓 → 记录冷却（供开仓侧查询，替代 11 的 last_close_info）
+                conn.execute(
+                    "INSERT INTO cooldowns (inst_id, pos_side, close_ts, realized_pnl,"
+                    " exit_reason, source) VALUES (?,?,?,?,?,?)"
+                    " ON CONFLICT(inst_id) DO UPDATE SET pos_side=excluded.pos_side,"
+                    " close_ts=excluded.close_ts, realized_pnl=excluded.realized_pnl,"
+                    " exit_reason=excluded.exit_reason, source=excluded.source",
+                    (inst_id, pos_side, _ts, _realized + (_pnl or 0.0), exit_reason, source),
+                )
         return {
             "ok": True,
             "realized_pnl": _pnl,
             "remaining_qty": _remaining,
             "ratio": _ratio,
+            "cooldown_set": _cooldown_set,
         }
 
     def reconcile(
@@ -290,6 +311,19 @@ class PositionLedger:
         with self._lock, self._connect() as conn:
             rows = conn.execute(
                 "SELECT * FROM fills ORDER BY id DESC LIMIT ?", (max(1, int(limit)),)
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_cooldown(self, inst_id: str) -> Optional[Dict[str, Any]]:
+        with self._lock, self._connect() as conn:
+            row = conn.execute("SELECT * FROM cooldowns WHERE inst_id=?", (inst_id,)).fetchone()
+        return dict(row) if row is not None else None
+
+    def list_cooldowns(self, limit: int = 50) -> List[Dict[str, Any]]:
+        with self._lock, self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM cooldowns ORDER BY close_ts DESC LIMIT ?",
+                (max(1, int(limit)),),
             ).fetchall()
         return [dict(r) for r in rows]
 

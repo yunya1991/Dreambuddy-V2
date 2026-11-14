@@ -610,6 +610,7 @@ class TradeExecutionGateway:
                     source=sig.source,
                     decision_id=str(sig.decision_id or ""),
                     fee=float((_fill or {}).get("fee") or 0.0),
+                    exit_reason=str(sig.reason or ""),
                 )
         except Exception as exc:  # noqa: BLE001 — 落账失败不影响已成交订单
             logger.warning("[Gateway] 账本落账失败(FAIL-OPEN): %s", exc)
@@ -649,6 +650,24 @@ class TradeExecutionGateway:
     def list_positions(self) -> list[Dict[str, Any]]:
         ledger = self._get_ledger()
         return ledger.list_positions() if ledger is not None else []
+
+    def get_cooldown(self, inst_id: str) -> Optional[Dict[str, Any]]:
+        """最近一次全平记录（含 close_ts/exit_reason/realized_pnl）。"""
+        ledger = self._get_ledger()
+        return ledger.get_cooldown(inst_id) if ledger is not None else None
+
+    def is_in_cooldown(self, inst_id: str, cooldown_sec: float) -> bool:
+        """开仓侧冷却查询：距上次全平不足 cooldown_sec 即禁止再开。"""
+        row = self.get_cooldown(inst_id)
+        if not row or cooldown_sec <= 0:
+            return False
+        try:
+            _close_ts = datetime.fromisoformat(
+                str(row["close_ts"]).replace("Z", "+00:00")
+            ).timestamp()
+        except (KeyError, TypeError, ValueError):
+            return False
+        return (datetime.now(timezone.utc).timestamp() - _close_ts) < float(cooldown_sec)
 
     def reconcile_ledger(self, source: str = "22-reconciled") -> Dict[str, Any]:
         """存量仓一次性对账回填：交易所持仓 → 22 账本（幂等，不覆盖真实流水）。"""

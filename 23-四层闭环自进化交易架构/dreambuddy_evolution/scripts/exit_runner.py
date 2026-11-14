@@ -28,6 +28,9 @@ for _p in (
         sys.path.insert(0, str(_p))
 
 from dreambuddy_evolution.execution.exit_loop import EvolutionExitLoop  # noqa: E402
+from dreambuddy_evolution.execution.tracker_sync import (  # noqa: E402
+    archive_closed_position,
+)
 
 logger = logging.getLogger("exit23")
 
@@ -234,15 +237,24 @@ def run_once(loop: EvolutionExitLoop, gateway: Any, okx: Any, args) -> Dict[str,
         _base.update({k: v for k, v in _ctx.items() if v not in (None, 0, 0.0)})
         return _base
 
+    def _on_closed(pos, decision, ctx, sig) -> None:
+        inst_id = str(pos.get("inst_id") or getattr(decision, "symbol", "") or "")
+        logger.info(
+            "平仓完成 %s %s %s",
+            inst_id,
+            getattr(decision, "action", ""),
+            getattr(decision, "reason", ""),
+        )
+        # 22 账本已自动落平仓 + 冷却；这里只清 11 侧幽灵文件（数据级，失败不影响交易）
+        try:
+            archive_closed_position(inst_id)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("持仓文件归档失败(FAIL-OPEN) %s: %s", inst_id, exc)
+
     report = loop.run(
         positions,
         enricher=_enrich,
-        on_closed=lambda pos, decision, ctx, sig: logger.info(
-            "平仓完成 %s %s %s",
-            pos.get("inst_id"),
-            getattr(decision, "action", ""),
-            getattr(decision, "reason", ""),
-        ),
+        on_closed=_on_closed,
         on_ghost=lambda pos, px: logger.warning("幽灵仓 %s 落账价 %.6f", pos.get("inst_id"), px),
     )
     logger.info(

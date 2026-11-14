@@ -171,3 +171,30 @@ def test_gateway_reconcile_ledger_reads_exchange_positions(tmp_path, monkeypatch
     rows = {p["inst_id"]: p for p in gw.list_positions()}
     assert rows["BTC-USDT-SWAP"]["source"] == "22-reconciled"
     assert rows["XAU-USDT-SWAP"]["avg_entry"] == 3879.4
+
+
+def test_full_close_sets_cooldown_but_partial_does_not(tmp_path):
+    led = _ledger(tmp_path)
+    led.record_open("BTC-USDT-SWAP", "long", 1.0, 100.0)
+
+    r1 = led.apply_partial_close("BTC-USDT-SWAP", "long", 0.4, 110.0, exit_reason="trailing")
+    assert r1["cooldown_set"] is False
+    assert led.get_cooldown("BTC-USDT-SWAP") is None
+
+    r2 = led.apply_partial_close("BTC-USDT-SWAP", "long", 0.6, 120.0, exit_reason="atr_retrace")
+    assert r2["cooldown_set"] is True
+    cd = led.get_cooldown("BTC-USDT-SWAP")
+    assert cd["exit_reason"] == "atr_retrace"
+    assert abs(cd["realized_pnl"] - (0.4 * 10 + 0.6 * 20)) < 1e-9
+    assert [c["inst_id"] for c in led.list_cooldowns()] == ["BTC-USDT-SWAP"]
+
+
+def test_gateway_is_in_cooldown_reads_ledger(tmp_path, monkeypatch):
+    monkeypatch.setenv("POSITION_LEDGER_PATH", str(tmp_path / "cd.db"))
+    gw = TradeExecutionGateway(okx_client=_OkxWithPositions(), audit_path=tmp_path / "a.jsonl")
+
+    assert gw.is_in_cooldown("BTC-USDT-SWAP", 3600) is False
+    gw._get_ledger().apply_partial_close("BTC-USDT-SWAP", "short", 0.1, 66000.0, exit_reason="tp")
+    assert gw.is_in_cooldown("BTC-USDT-SWAP", 3600) is True
+    assert gw.get_cooldown("BTC-USDT-SWAP")["exit_reason"] == "tp"
+    assert gw.is_in_cooldown("BTC-USDT-SWAP", 0) is False
