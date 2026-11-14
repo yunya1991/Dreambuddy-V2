@@ -458,9 +458,19 @@ class L0Foundation:
             return _degraded("cognitive-loop-entry", "invalid_params", "missing param: context")
         top_k = int(params.get("top_k", 5))
         min_quality = params.get("min_quality", "C")
+        # L1 是确定性能力直达（意图→检索→直答），PoE 信任门禁属 L2 语义层，
+        # 调用方可显式按次关闭，结束后恢复原值。
+        poe = params.get("poe_enforcement")
         try:
             cle = self._load_cle()
-            memories = cle.recall(context, top_k=top_k, min_quality=min_quality)
+            prev_poe = getattr(cle, "poe_enforcement", None)
+            if poe:
+                cle.poe_enforcement = str(poe)
+            try:
+                memories = cle.recall(context, top_k=top_k, min_quality=min_quality)
+            finally:
+                if poe and prev_poe is not None:
+                    cle.poe_enforcement = prev_poe
         except Exception as e:
             return _degraded(
                 "cognitive-loop-entry", "cognitive_unavailable", f"{type(e).__name__}: {e}", data=[]

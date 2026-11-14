@@ -184,7 +184,12 @@ def route_query(message: str, intent: str = "", trace_id: str = "") -> dict:
     try:
         ctx = get_l0().fetch_context(
             "cognitive.recall",
-            {"context": f"{intent}::{message}", "top_k": _RECALL_TOP_K},
+            {
+                "context": f"{intent}::{message}",
+                "top_k": _RECALL_TOP_K,
+                # L1 只做确定性检索直答，PoE 证据门禁留给 L2 语义层判定
+                "poe_enforcement": "off",
+            },
         )
         if ctx.get("degraded"):
             cognitive_available = False

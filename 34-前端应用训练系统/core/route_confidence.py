@@ -4,7 +4,7 @@
 依据: `PLAN-L0L1L2-implementation.md` P2 + SSoT v4.0 §16.5 / CDrive SPEC §7.7。
 
 阈值跨系统唯一（禁止第二套），直接引用 C3/C4 已落地常量:
-  THRESHOLD_HIGH       = 0.7   （L1 直答门限）
+  THRESHOLD_HIGH       = 0.65  （L1 直答门限；bge-small 真实语义相似度多落在 0.6~0.7）
   CASE_DENSITY_MIN     = 3     （= cognitive_router.TIER1_DENSITY_THRESHOLD）
   PREDICTION_ERROR_MAX = 0.3   （= jev_gate.PREDICTION_ERROR_THRESHOLD）
   FAST_PATH            = match≥0.8 & density≥5（= jev_gate.FAST_PATH_MATCH/DENSITY）
@@ -14,8 +14,8 @@
                      − 0.3 (若 prediction_error > 0.3)
                      − 0.2 (若 case_density < 3)
 路由:
-  route_confidence >= 0.7 → L1_DIRECT（零 token 直答）
-  route_confidence <  0.7 → L2_HANDOFF（转 L2，透传 l1_intent_hint）
+  route_confidence >= 0.65 → L1_DIRECT（零 token 直答）
+  route_confidence <  0.65 → L2_HANDOFF（转 L2，透传 l1_intent_hint）
 
 FAIL-OPEN:
   - recall 空/超时（memories 为空）→ route_confidence=0 → L2_HANDOFF；
@@ -41,7 +41,7 @@ from core.jev_gate import (
 # 阈值（单一事实源：数值只引用 C3/C4 既有常量）
 # ============================================================
 
-THRESHOLD_HIGH = 0.7
+THRESHOLD_HIGH = 0.65
 CASE_DENSITY_MIN = TIER1_DENSITY_THRESHOLD  # 3
 PREDICTION_ERROR_MAX = PREDICTION_ERROR_THRESHOLD  # 0.3
 

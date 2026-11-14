@@ -3,12 +3,12 @@
 
 依据: PLAN-L0L1L2-implementation.md P2 + SSoT v4.0 §16.5 / CDrive SPEC §7.7。
 阈值跨系统唯一，禁止第二套：
-  THRESHOLD_HIGH=0.7 / CASE_DENSITY_MIN=3 / PREDICTION_ERROR_MAX=0.3
+  THRESHOLD_HIGH=0.65 / CASE_DENSITY_MIN=3 / PREDICTION_ERROR_MAX=0.3
   FAST_PATH: match≥0.8 & density≥5
 公式:
   route_confidence = match_score − 0.3(若 prediction_error>0.3) − 0.2(若 case_density<3)
 路由:
-  route_confidence >= 0.7 → L1 直答（零 token）；< 0.7 → 转 L2（透传 l1_intent_hint）
+  route_confidence >= 0.65 → L1 直答（零 token）；< 0.65 → 转 L2（透传 l1_intent_hint）
 FAIL-OPEN:
   recall 空/超时 → route_confidence=0 → L2；C4 不可用 → 退化为纯 C3；
   认知整体不可用 → 退回注册表静态置信度。
@@ -55,7 +55,7 @@ class TestModuleImport:
         from core import cognitive_router as c3
         from core import jev_gate as c4
 
-        assert rc.THRESHOLD_HIGH == 0.7
+        assert rc.THRESHOLD_HIGH == 0.65
         assert rc.CASE_DENSITY_MIN == 3 == c3.TIER1_DENSITY_THRESHOLD
         assert rc.PREDICTION_ERROR_MAX == 0.3 == c4.PREDICTION_ERROR_THRESHOLD
         assert rc.FAST_PATH_MATCH == 0.8 == c4.FAST_PATH_MATCH
