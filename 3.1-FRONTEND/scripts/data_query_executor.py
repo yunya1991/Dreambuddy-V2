@@ -223,24 +223,41 @@ def _resolve_series(src: str, message: str):
     return SERIES_DEFAULTS.get(src)
 
 
-def _fetch_cpi_yoy():
-    """从 19-DAL mm_metrics 读取 CPI 同比百分比（actual/forecast/previous，最新发布口径）"""
+_DAL_DB_PATH = os.path.normpath(
+    os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..",
+        "..",
+        "19-数据访问层",
+        "data",
+        "dreambuddy_core.db",
+    )
+)
+
+
+def _cst_date_parts(ts: int):
+    """mm_metrics 时间戳按 CST（UTC+8）取年月日；FRED 月度期以 CST 月初落库。"""
+    import time as _t
+
+    g = _t.gmtime(int(ts) + 8 * 3600)
+    return g.tm_year, g.tm_mon, g.tm_mday
+
+
+def _fetch_cpi_yoy(db_path: str = ""):
+    """美国 CPI 同比（%）。
+
+    优先：mm_metrics 中 sub_category='cpi' 的 actual/forecast/previous（财经日历发布口径）。
+    回退：由 CPIAUCSL 月度指数计算——最新观测月 vs 去年同月（缺同月则取最近可用更早月），
+          只看 CST 月初的观测行，排除增量采集产生的"当前时间"重复快照。
+    FAIL-OPEN：数据不足/异常 → None（调用方保留指数原值展示）。
+    """
     import sqlite3 as _sq
 
     try:
-        dal_db = os.path.normpath(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "..",
-                "..",
-                "19-数据访问层",
-                "data",
-                "dreambuddy_core.db",
-            )
-        )
-        if not os.path.exists(dal_db):
+        path = db_path or _DAL_DB_PATH
+        if not os.path.exists(path):
             return None
-        conn = _sq.connect(f"file:{dal_db}?mode=ro", uri=True)
+        conn = _sq.connect(f"file:{path}?mode=ro", uri=True)
         out = {}
         for name in ("actual", "forecast", "previous"):
             row = conn.execute(
@@ -251,8 +268,40 @@ def _fetch_cpi_yoy():
             ).fetchone()
             if row and row[0] is not None:
                 out[name] = row[0]
+        if "actual" in out:
+            conn.close()
+            return out
+
+        rows = conn.execute(
+            "SELECT timestamp, metric_value FROM mm_metrics "
+            "WHERE sub_category='CPIAUCSL' AND metric_name='value' "
+            "AND metric_value IS NOT NULL ORDER BY timestamp ASC"
+        ).fetchall()
         conn.close()
-        return out if "actual" in out else None
+        monthly = {}
+        for ts, val in rows:
+            y, m, d = _cst_date_parts(int(ts))
+            if d == 1:  # 仅月度观测点
+                monthly[(y, m)] = float(val)
+        if len(monthly) < 13:
+            return None
+        latest_month = max(monthly)
+        base_key = (latest_month[0] - 1, latest_month[1])
+        if base_key not in monthly:
+            prior = [k for k in monthly if k < base_key]
+            if not prior:
+                return None
+            base_key = max(prior)
+        base = monthly[base_key]
+        if base <= 0:
+            return None
+        latest = monthly[latest_month]
+        return {
+            "actual": round((latest / base - 1) * 100, 2),
+            "period": "%04d-%02d" % latest_month,
+            "base_period": "%04d-%02d" % base_key,
+            "index": round(latest, 3),
+        }
     except Exception:
         return None
 
@@ -367,11 +416,18 @@ def exec_data_query(message: str):
         yoy = _fetch_cpi_yoy()
         if yoy:
             idx_val = metrics.get("value") if isinstance(metrics, dict) else None
-            answer = (
-                f"美国CPI同比 {yoy.get('actual')}%"
-                f"（预期 {yoy.get('forecast')}%，前值 {yoy.get('previous')}%）"
-                f"；CPI指数水平 CPIAUCSL={idx_val}（1982-84=100，{row['timestamp']}）"
-            )
+            if yoy.get("forecast") is not None or yoy.get("previous") is not None:
+                answer = (
+                    f"美国CPI同比 {yoy.get('actual')}%"
+                    f"（预期 {yoy.get('forecast')}%，前值 {yoy.get('previous')}%）"
+                    f"；CPI指数水平 CPIAUCSL={idx_val}（1982-84=100，{row['timestamp']}）"
+                )
+            else:
+                answer = (
+                    f"美国CPI同比 {yoy.get('actual')}%"
+                    f"（{yoy.get('period')} 观测，基期 {yoy.get('base_period')}）"
+                    f"；CPI指数水平 CPIAUCSL={idx_val}（1982-84=100，{row['timestamp']}）"
+                )
     return {
         "success": True,
         "answer": answer,
