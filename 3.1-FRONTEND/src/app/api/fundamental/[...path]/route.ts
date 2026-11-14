@@ -18,6 +18,17 @@ async function runAggregator(): Promise<any> {
   return JSON.parse(stdout.trim());
 }
 
+// S1: 进程内 60s 缓存（聚合脚本约 0.8s，命中后 <10ms），失败结果不缓存避免粘住故障
+const AGG_CACHE_TTL_MS = 60_000;
+let aggCache: { at: number; data: any } | null = null;
+
+async function runAggregatorCached(): Promise<any> {
+  if (aggCache && Date.now() - aggCache.at < AGG_CACHE_TTL_MS) return aggCache.data;
+  const data = await runAggregator();
+  if (!data?.degraded) aggCache = { at: Date.now(), data };
+  return data;
+}
+
 function clampDays(raw: string | null): number {
   const n = Number(raw || 0);
   if (!Number.isFinite(n) || n <= 0) return 0;
@@ -29,7 +40,7 @@ async function handleFundamental(segments: string[], daysParam?: string | null):
 
   if (subPath === 'snapshot') {
     try {
-      return NextResponse.json(await runAggregator());
+      return NextResponse.json(await runAggregatorCached());
     } catch (err: any) {
       return NextResponse.json(
         {
@@ -48,7 +59,7 @@ async function handleFundamental(segments: string[], daysParam?: string | null):
   if (segments.length === 2 && segments[1] === 'snapshot') {
     const moduleKey = segments[0];
     try {
-      const data = await runAggregator();
+      const data = await runAggregatorCached();
       const mod = data?.modules?.[moduleKey];
       if (!mod) {
         return NextResponse.json(
