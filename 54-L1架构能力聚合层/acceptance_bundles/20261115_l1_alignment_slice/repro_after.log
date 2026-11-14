@@ -1,0 +1,6 @@
+spec=SPEC-54-L1 v1.9 §11.4; TECHNICAL_DESIGN v2.12 §2.4; METHOD_LIBRARY v1.14 §14/S7
+observed=D-E12.good {"align_method": "daily_last+ffill", "assets": ["BTC", "ETH"], "btc_end": 139.0, "eth_end": 128.0, "max_stale_days": 3, "methods": ["R18"], "sample_n": 30, "timezone": "UTC", "window": "2024-01-11~2024-02-09"}
+observed=D-E12.insufficient {"answer": "暂无法给出该项统计：时空对齐样本不足 30 点。样本或数据不足，不做推算（转 L2 处理）。", "ok": false, "sample_n": 0, "status": "empty"}
+observed=D-E12.empty_window {"answer": "暂无法给出该项统计：R18 时间窗为空（start/end/window 与序列无交集）。样本或数据不足，不做推算（转 L2 处理）。", "ok": false, "sample_n": 0, "status": "empty"}
+observed=R18.dedupe_ffill_stale_cap {"align_method": "daily_last+ffill", "b_end": 108.0, "b_n_obs": 30, "b_stale_ratio": 0.4915, "duplicate_999_removed": true, "max_stale_days": 3, "timezone": "UTC"}
+exit=0

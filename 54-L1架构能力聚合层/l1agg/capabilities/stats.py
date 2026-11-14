@@ -32,8 +32,10 @@ INTENT_CORRELATION = "correlation_query"
 INTENT_STATE = "state_transition"
 INTENT_CONDITIONAL = "conditional_return"
 INTENT_DRAWDOWN = "drawdown_query"
+INTENT_CROSS = "cross_check"
 
 MIN_DRAWDOWN = 250
+MIN_ALIGNMENT = 30
 MIN_SEASONALITY = 60
 MIN_STATE = 100
 MIN_CORR = 60
@@ -1016,6 +1018,84 @@ def conditional_ic(
     )
 
 
+# ---------------- D-E12 时空对齐切片 ----------------
+
+
+def alignment_slice(
+    series: Mapping[str, Sequence[Any]],
+    *,
+    dates: Optional[Sequence[Any]] = None,
+    start: Optional[Any] = None,
+    end: Optional[Any] = None,
+    window: Optional[int] = None,
+    max_stale_days: int = 3,
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {"series": series}
+    if dates is not None:
+        payload["dates"] = dates
+    aligned = _call(
+        "R18",
+        payload,
+        start=start,
+        end=end,
+        window=window,
+        max_stale_days=max_stale_days,
+    )
+    if aligned["gate"] != "ok":
+        reason = (
+            f"时空对齐样本不足 {MIN_ALIGNMENT} 点"
+            if aligned["gate"] == "insufficient_samples"
+            else aligned.get("reason", "时空对齐切片计算失败")
+        )
+        return unavailable(
+            capability="D-E12",
+            intent=INTENT_CROSS,
+            reason=reason,
+            sources=["market.candles"],
+            trace_id=trace_id,
+        )
+
+    result = aligned["result"]
+    sample_n = min((row["n_obs"] for row in result["window_rows"]), default=0)
+    span = result["window"].split("~")
+    q = quality_for(
+        sample_n,
+        min_n=MIN_ALIGNMENT,
+        span=span,
+        sources=["market.candles"],
+        align_method=result["align_method"],
+        timezone=result["timezone"],
+    )
+    answer = (
+        f"{len(result['assets'])} 个资产完成 UTC 日收盘对齐，窗口 {result['window']}，"
+        f"最小有效观测样本 n={sample_n}，stale 上限 {result['max_stale_days']} 天。{CAVEAT}。"
+    )
+    return build(
+        capability="D-E12",
+        intent=INTENT_CROSS,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-E12": {
+                    "gate": "ok",
+                    "methods": ["R18"],
+                    **result,
+                }
+            },
+            "params": {
+                "min_n": MIN_ALIGNMENT,
+                "start": start,
+                "end": end,
+                "window": window,
+                "max_stale_days": max_stale_days,
+            },
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
 # ---------------- 统一调度（能力 ID → executor） ----------------
 
 _EXECUTORS = {
@@ -1028,6 +1108,7 @@ _EXECUTORS = {
     "D-E08": conditional_ic,
     "D-E10": drawdown,
     "D-E11": correlation,
+    "D-E12": alignment_slice,
 }
 
 

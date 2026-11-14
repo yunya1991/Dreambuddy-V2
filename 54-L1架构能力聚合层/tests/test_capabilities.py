@@ -57,6 +57,17 @@ def _factor_prices(n=300):
     return factor, prices
 
 
+def _alignment_kwargs(n=40):
+    return {
+        "series": {
+            "BTC": [100.0 + i for i in range(n)],
+            "ETH": [50.0 + 2 * i for i in range(n)],
+        },
+        "dates": _dates(n),
+        "window": min(n, 30),
+    }
+
+
 # ---------------- manifest ----------------
 
 
@@ -65,9 +76,18 @@ def test_manifest_loads_and_validates():
     assert m.version >= 1
     ids = [cap.id for cap in m.capabilities]
     assert len(ids) == len(set(ids))
-    assert {"D-E01", "D-E02", "D-E03", "D-E05", "D-E06", "D-E07", "D-E08", "D-E10", "D-E11"} <= set(
-        ids
-    )
+    assert {
+        "D-E01",
+        "D-E02",
+        "D-E03",
+        "D-E05",
+        "D-E06",
+        "D-E07",
+        "D-E08",
+        "D-E10",
+        "D-E11",
+        "D-E12",
+    } <= set(ids)
     assert {"M01", "M02", "M03", "M04", "M05", "M06", "M07"} <= set(m.get("D-E05").methods)
     for cap in m.capabilities:
         assert cap.executor.split(".")[-1] in {
@@ -78,11 +98,47 @@ def test_manifest_loads_and_validates():
             "conditional_return",
             "drawdown",
             "percentile_forward",
+            "alignment_slice",
         }
 
 
 def test_manifest_every_declared_capability_is_runnable():
     assert set(supported()) == {cap.id for cap in manifest().capabilities}
+
+
+def test_alignment_slice_executes_r18_and_returns_aligned_rows():
+    out = run_capability("D-E12", **_alignment_kwargs())
+    assert out["ok"] is True
+    assert out["capability"] == "D-E12"
+    assert out["intent"] == "cross_check"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 30
+    assert out["quality"]["align_method"] == "daily_last+ffill"
+    block = out["data"]["capabilities"]["D-E12"]
+    assert block["methods"] == ["R18"]
+    assert block["window"] == "2024-01-11~2024-02-09"
+    assert block["assets"] == ["BTC", "ETH"]
+    rows = {row["asset"]: row for row in block["window_rows"]}
+    assert rows["BTC"]["start_value"] == 110.0
+    assert rows["BTC"]["end_value"] == 139.0
+    assert rows["ETH"]["start_value"] == 70.0
+    assert rows["ETH"]["end_value"] == 128.0
+
+
+def test_alignment_slice_insufficient_history_fails_open():
+    out = run_capability("D-E12", **_alignment_kwargs(10))
+    assert out["ok"] is False
+    assert out["quality"]["status"] == STATUS_EMPTY
+    assert "样本" in out["answer"]
+
+
+def test_alignment_slice_empty_window_fails_open():
+    kwargs = _alignment_kwargs()
+    kwargs["start"] = "2030-01-01"
+    out = run_capability("D-E12", **kwargs)
+    assert out["ok"] is False
+    assert out["quality"]["status"] == STATUS_EMPTY
+    assert "样本" in out["answer"]
 
 
 def test_manifest_rejects_unimplemented_method():
@@ -614,6 +670,7 @@ def test_output_validates_against_json_schema():
         run_capability("D-E05", x=_prices(), y=_prices(seed=3)),
         run_capability("D-E05", series={"BTC": _prices(), "ETH": _prices(seed=3)}, dates=_dates()),
         run_capability("D-E02", prices=_prices(1100), dates=_dates(1100)),
+        run_capability("D-E12", **_alignment_kwargs()),
         run_capability("D-E08", factor=_prices(), forward=_prices(seed=4)),
         run_capability("D-E10", prices=[100.0]),
     ]
@@ -676,6 +733,7 @@ def test_manifest_matches_methods_actually_executed_across_capability_branches(m
         ("D-E07", {"prices": _prices(300)}),
         ("D-E08", {"factor": _prices(300), "forward": _prices(300, seed=4)}),
         ("D-E10", {"prices": _prices(), "dates": _dates()}),
+        ("D-E12", _alignment_kwargs()),
     )
 
     for capability_id, kwargs in scenarios:

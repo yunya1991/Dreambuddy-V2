@@ -79,3 +79,11 @@ capabilities:
     methods: [M23, M24, M25, C18]
     min_n: 60
     notes: 双序列输入按已对齐收益处理；提供 dates 时执行 C18 自然月同向率，缺失行同步过滤 values/dates
+  - id: D-E12
+    intent: cross_check
+    mode: gated
+    data_scope: [market.candles]
+    executor: capabilities.stats.alignment_slice
+    methods: [R18]
+    min_n: 30
+    notes: 多资产 UTC 日收盘对齐；同日取最后观测、跨源去重、ffill 且受 stale 上限约束

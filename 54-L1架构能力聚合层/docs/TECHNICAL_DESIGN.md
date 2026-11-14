@@ -1,6 +1,6 @@
 # 54 总技术文档 — 数据 → 统计 → 关系能力地图
 
-- **版本**: v2.11 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 总技术文档（v2.11 接入 D-E11/C18 与 D-E01，可执行出口 **9 个**；MERS S3 内部固定网格、BH-FDR、状态机与幂等注册表已交付，S5 对外推荐仍未开放；测试 **695 例全绿**，audit **386/386 PASS**、验证覆盖率 **66.15%**；v2.10 D-E05 双序列与多资产矩阵 TopK 全接线、D-E06 全 lag BH-FDR、manifest 真实执行覆盖与 audit 验证覆盖报告；v2.9 D-E02 能力出口接线与 T0.5/A8 首版交付；v2.8 方法层全部落地：`REGISTRY` 387 条全登记、`implemented=true` **386**，仅 C11 因缺交易日历不可用；v2.7 注册表放开调研族前缀并完成占位登记；v2.6 调研对齐与路线收口）
+- **版本**: v2.12 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 总技术文档（v2.12 接入 D-E12/R18 时空对齐切片，可执行出口 **10 个**；D-A14 的 F26 方法已实现，但 `level` 阈值未冻结，暂不宣称完整交付；MERS S3 内部固定网格、BH-FDR、状态机与幂等注册表已交付，S5 对外推荐仍未开放；测试 **698 例全绿**，audit **386/386 PASS**、验证覆盖率 **66.15%**；v2.11 接入 D-E11/C18 与 D-E01；v2.10 D-E05 双序列与多资产矩阵 TopK 全接线、D-E06 全 lag BH-FDR、manifest 真实执行覆盖与 audit 验证覆盖报告；v2.9 D-E02 能力出口接线与 T0.5/A8 首版交付；v2.8 方法层全部落地：`REGISTRY` 387 条全登记、`implemented=true` **386**，仅 C11 因缺交易日历不可用；v2.7 注册表放开调研族前缀并完成占位登记；v2.6 调研对齐与路线收口）
 - **上游**: `SPEC-54-L1架构能力聚合层.md`（ADR/契约/路线）、`docs/METHOD_LIBRARY.md`（方法 SSoT）
 - **下游**: `3.1-FRONTEND/scripts/l1_route_signal.py`（L1 路由）、`34-前端应用训练系统/core/l0_foundation.py`（L0 scope）、`/api/fundamental/**`
 - **定位**: 本文是 54 的**总技术文档**——上半部（§0）回答「有哪些问题域、每个问题域用什么方法、现在缺什么」；下半部（§1–§6）是能力登记册（ID/依赖/字段/优先级/状态）。
@@ -13,9 +13,9 @@
 
 | 文档 | 角色 | 唯一负责的内容 | 当前版本 |
 |---|---|---|---|
-| [SPEC-54-L1架构能力聚合层.md](../SPEC-54-L1架构能力聚合层.md) | 架构与契约 | ADR、scope 出入参、门禁、路线（S1–S5）、MERS/Discovery | v1.8 |
-| **本文 TECHNICAL_DESIGN.md** | **总技术文档 + 能力登记** | 六类问题地图、四层分工（§0.5）、能力 ID `D-*`、状态列、整体进度（§6.2） | **v2.11** |
-| [METHOD_LIBRARY.md](./METHOD_LIBRARY.md) | 方法 SSoT | 方法 ID（S/D/T/C/I/M/B/F/H/R/X/O/P/Q/SC）、口径冻结（§16）、数据前提（§15） | v1.13 |
+| [SPEC-54-L1架构能力聚合层.md](../SPEC-54-L1架构能力聚合层.md) | 架构与契约 | ADR、scope 出入参、门禁、路线（S1–S5）、MERS/Discovery | v1.9 |
+| **本文 TECHNICAL_DESIGN.md** | **总技术文档 + 能力登记** | 六类问题地图、四层分工（§0.5）、能力 ID `D-*`、状态列、整体进度（§6.2） | **v2.12** |
+| [METHOD_LIBRARY.md](./METHOD_LIBRARY.md) | 方法 SSoT | 方法 ID（S/D/T/C/I/M/B/F/H/R/X/O/P/Q/SC）、口径冻结（§16）、数据前提（§15） | v1.14 |
 | [RESEARCH-TREND-PERSISTENCE-MODELS.md](./RESEARCH-TREND-PERSISTENCE-MODELS.md) | 调研 | 延续性三层拆解、Tier A/B/C、T 阶段 | v1.2 |
 | [RESEARCH-INSTITUTIONAL-L1-METHODS.md](./RESEARCH-INSTITUTIONAL-L1-METHODS.md) | 调研补强 | 机构方法（X/O/P/Q） | — |
 | [RESEARCH-SCIENTIFIC-METHODS.md](./RESEARCH-SCIENTIFIC-METHODS.md) | 调研补强 | 科研统计（SC01–SC92） | — |
@@ -66,7 +66,7 @@
 
 | 子问题 | 方法 ID | 能力 ID | 实现状态 |
 |---|---|---|---|
-| UTC 日收盘、跨源去重、低频 ffill、stale 上限 | 口径见 `align.py`，原语 R18；`market.candles` 1d 另有**收盘锚点** `bar_close`/`snapshot_last`（跨资产统计须同锚点） | D-E12 ⬜（对齐函数已可用） | ✅ `l1agg/align.py` / `l0_foundation.py::_fetch_market_candles` |
+| UTC 日收盘、跨源去重、低频 ffill、stale 上限 | 口径见 `align.py`，原语 R18；`market.candles` 1d 另有**收盘锚点** `bar_close`/`snapshot_last`（跨资产统计须同锚点） | D-E12 ✅ | ✅ `l1agg/align.py` / `capabilities/stats.py::alignment_slice` / `l0_foundation.py::_fetch_market_candles` |
 | 价格轴派生 1D/1W/1M | S20–S23 | D-B00（🟡→✅） | ✅ `market.candles` |
 | 前视规避（PIT，`as_of` / 宏观 `release_ts`） | SC90、R02 | D-J30 ⬜ | ✅ R02 `pit=true` 已实现（`conditional.py`：逐时点滚动分位 + `release_ts≤as_of` 过滤）；✅ SC90 方法层已实现；⬜ 全局 PIT/release_ts 能力（D-J30）未接线，滚动窗口本身不能替代发布日期与修订处理 |
 | 缺口/陈旧度披露 | S02 | 所有能力 `quality` | ✅ 信封字段已有 |
@@ -262,7 +262,7 @@ L1 意图（TS/Python 双端注册表）
 | D-A11 | 双序列滚动相关性 | 两条序列 | Pearson，30/90d 窗口 | `corr, window, sample_n` | correlation_query | deterministic | P2 | 🟡（23/11 有相关计算） |
 | D-A12 | 领先滞后相关 | 两条序列 | lag 0–10 的相关系数序列 | `best_lag, corr_by_lag[]` | correlation_query | deterministic | P2 | ⬜ |
 | D-A13 | 极端事件频率 | 单序列 | 超阈值天数 / 占比 | `days, ratio, threshold` | metric_series | deterministic | P2 | ⬜ |
-| D-A14 | 拥挤度 | 资金费率 + 多空比 + 未平仓 | 三分位加权合成（规则固定） | `score, level, parts[]` | metric_percentile | deterministic | P2 | ⬜ |
+| D-A14 | 拥挤度 | 资金费率 + 多空比 + 未平仓 | 三分位加权合成（规则固定） | `score, level, parts[]` | metric_percentile | deterministic | P2 | 🟡 F26 已实现 `score/components/weights/n`；`level` 阈值未冻结，能力未接线 |
 | D-A15 | ETF 净流入滚动和 | ETF 净流入序列 | 7/30d 滚动求和 | `sum_7d, sum_30d` | metric_series | deterministic | P2 | ⬜ |
 | D-A16 | 稳定币增速 | USDT/USDC 规模序列 | 7/30d 增速 | `growth_7d, growth_30d` | metric_series | deterministic | P2 | ⬜ |
 
@@ -315,7 +315,7 @@ L1 意图（TS/Python 双端注册表）
 | D-E09 | 计数与共现 | B17 + R09/R10 | 事件序列 | metric_series | P1 | 🟡 B17/R09/R10 方法层已实现（`inference.py`），事件表仍薄（`mm_events` 16 行） |
 | D-E10 | 回撤画像 | D20–D21 | 价格 ≥250 点 | drawdown_query | P1 | ✅ 能力层已接线；F09/F10 为同口径库内别名，不重复执行 |
 | D-E11 | 跨资产同向率/相关突变 | M23–M25, C18 | 多资产对齐 ≥60 点 | cross_check | P2 | ✅ M23/M24/M25/C18 均已接线；dates 与双收益序列按原始行号同步过滤，无 dates 时不执行 C18 |
-| D-E12 | 时空对齐切片 | R18 | 多资产同日数据 | cross_check | P2 | ⬜ |
+| D-E12 | 时空对齐切片 | R18 | 多资产同日数据 | cross_check | P2 | ✅ `capabilities/stats.py::alignment_slice` 已接线；样本不足与空窗口显式降级 |
 | **D-E13** | **趋势延续性画像（场景包）** | T13 + T14 + T20/T21 + F18 + B07/B08 + T08/T09 + B13–B15 | 日频价格 ≥250 点（当前纵深见 METHOD_LIBRARY §15） | conditional_return（子集） | **P0** | ✅ 已交付（2026-11-14，27 用例） |
 | **D-E14** | **相关状态条件分布（场景包）** | D-E05/D-E06/D-E11 的状态特征 + R01/R02/R08 | 多资产对齐 + **每桶非重叠 ≥250** | correlation_query 扩展 | P2 | ⬜（T2；方法层可用（R02 `pit=true` 已实现），场景出口与样本纵深未完成，依赖 T-1 扩样本） |
 
@@ -333,18 +333,18 @@ L1 意图（TS/Python 双端注册表）
 >
 > 全量 `method_audit.py --scope all` 已于 2026-11-15 重跑并写入 [docs/method_audit.json](./method_audit.json)：**implemented 386 / passed 386 / failed 0**，`catalog_total=238`、`research_catalog_total=149`、`registered_total=387`；六类检查共 2316 项，真实执行 1028、不适用 762、缺失 526，适用检查覆盖率 **66.15%**。`pytest tests -q` → **695 passed**。PASS 不等于完整验证覆盖；上段 154 仅为 v2.3 时点记录，现已被完全包含。
 
-**能力层接线（v2.11）**：方法层不再是瓶颈——`l1agg/capabilities/` 已把 E 组 9 个能力接到方法注册表，端到端产出 `CapabilityResult`，并对跨条件分支累计的真实方法调用做 manifest 覆盖校验：
+**能力层接线（v2.12）**：方法层不再是瓶颈——`l1agg/capabilities/` 已把 E 组 10 个能力接到方法注册表，端到端产出 `CapabilityResult`，并对跨条件分支累计的真实方法调用做 manifest 覆盖校验：
 
 | 文件 | 职责 |
 |---|---|
-| `capability_manifest.yaml` | 能力 → 意图 / scope / executor / 方法 / `min_n` 的**唯一事实源**（9 条） |
+| `capability_manifest.yaml` | 能力 → 意图 / scope / executor / 方法 / `min_n` 的**唯一事实源**（10 条） |
 | `l1agg/capabilities/manifest.py` | 加载 + 绑定校验 + `validate_execution`：跨条件分支累计真实成功调用，拒绝未绑定调用与声明但从未执行的方法 |
 | `l1agg/eval/harness.py` | 六类检查按 `executed/missing/not_applicable` 统计；方法级、检查级与全局覆盖率进入 JSON/CLI 报告，PASS 不再冒充全覆盖 |
 | `l1agg/capabilities/envelope.py` | 统一信封组装 + 契约守卫（`quality` 只在顶层、partial 必带 `degraded_reason`、`answer` 非空） |
-| `l1agg/capabilities/stats.py` | 7 个编排函数：`conditional_return` / `drawdown` / `seasonality` / `percentile_forward` / `state_transition` / `correlation` / `conditional_ic` + `run_capability(id, **kw)` 调度 |
+| `l1agg/capabilities/stats.py` | 8 个编排函数：`conditional_return` / `drawdown` / `seasonality` / `percentile_forward` / `state_transition` / `correlation` / `conditional_ic` / `alignment_slice` + `run_capability(id, **kw)` 调度 |
 | `contracts/capability_result.schema.json` | JSON Schema（测试用 `jsonschema` 逐条校验输出） |
 
-已登记 9 个可执行出口：D-E01（B02/B05/F01/H01 条件收益）、D-E02（I30/R02 分位→前瞻收益，A8/T0.5）、D-E03（C 组）、D-E05/D-E06/D-E11（M/T/C 组）、D-E07（B 组）、D-E08（B11/B13/B14 IC）、D-E10（D20/D21 回撤）。D-E05 双序列与多资产矩阵 TopK、D-E11/C18 均已接线。**尚未接线**：D-E04（缺事件表）、D-E09（事件表薄）、D-E12（需多资产同日切片）、D-E14（场景编排与样本纵深未闭环）；各已接线的实际结论仍受各自样本门禁约束。
+已登记 10 个可执行出口：D-E01（B02/B05/F01/H01 条件收益）、D-E02（I30/R02 分位→前瞻收益，A8/T0.5）、D-E03（C 组）、D-E05/D-E06/D-E11（M/T/C 组）、D-E07（B 组）、D-E08（B11/B13/B14 IC）、D-E10（D20/D21 回撤）、D-E12（R18 时空对齐切片）。D-E05 双序列与多资产矩阵 TopK、D-E11/C18 均已接线；D-E12 在样本不足或空窗口时显式降级。**尚未接线**：D-E04（缺事件表）、D-E09（事件表薄）、D-E14（场景编排与样本纵深未闭环）；各已接线的实际结论仍受各自样本门禁约束。A 组 D-A14 的 F26 仅交付 `score/components/weights/n`，`level` 阈值未冻结，暂不接线。
 
 ### 2.5 G 组：机构统计方法（25 项，调研见 RESEARCH-INSTITUTIONAL-L1-METHODS.md）
 
@@ -486,9 +486,18 @@ L1 意图（TS/Python 双端注册表）
 - 场景包 SPEC = 某类问题的**固定编排**（当前已交付延续性画像 `D-E13`；T0.5/T2 为后续编排，不新增能力 ID）。
 - 新增能力流程：本文登记 → SPEC 补契约（如涉及新 scope）→ 实现 + 测试 → 更新状态列并附代码位置。
 
-### 6.1 本版更改（v2.11 C18/D-E01/MERS；v2.10 配对/推断/执行覆盖；v2.9 D-E02 接线与 T0.5 交付；v2.8 方法层全部落地）
+### 6.1 本版更改（v2.12 D-E12/R18；v2.11 C18/D-E01/MERS；v2.10 配对/推断/执行覆盖；v2.9 D-E02 接线与 T0.5 交付；v2.8 方法层全部落地）
 
-**v2.11（本版，改动代码 + 文档）**
+**v2.12（本版，改动代码 + 文档）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-E12/R18 时空对齐切片 | `capabilities/stats.py::alignment_slice`、`capability_manifest.yaml` | `cross_check/gated` 出口真实调用 R18；UTC 日收盘、同日最后观测、跨源去重、ffill 与 `max_stale_days` 口径由方法层统一执行 |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 30 点有效窗口返回 good；历史不足与空窗口均 FAIL-OPEN 为 empty；D-E12 纳入 JSON Schema、manifest 可运行性及真实执行覆盖校验 |
+| D-A14 状态纠偏 | §2.1、§2.4、§6.3 | F26 固定权重 `0.4/0.3/0.3` 仅交付 `score/components/weights/n`；`level` 阈值未冻结，不自行发明阈值或宣称完整交付 |
+| 验证 | `pytest tests -q`、ruff、black、py_compile | **698 passed**；D-E12 与 R18 联合回归 62 例通过；静态检查通过 |
+
+**v2.11（C18/D-E01/MERS，改动代码 + 文档）**
 
 | 变更 | 代码 / 本文位置 | 结论 |
 |---|---|---|
@@ -560,10 +569,10 @@ L1 意图（TS/Python 双端注册表）
 
 | 文档 | 目标版本 | 同步内容 |
 |---|---|---|
-| [METHOD_LIBRARY.md](./METHOD_LIBRARY.md) | v1.13 | v1.13：D-E01 与 D-E11/C18 接线，可执行出口 9 个；v1.12：D-E02 与 T0.5/A8 交付；方法口径未因本轮接线改变 |
-| [SPEC-54-L1架构能力聚合层.md](../SPEC-54-L1架构能力聚合层.md) | v1.8 | D-E05 矩阵 TopK、D-E11/C18、D-E01 与 MERS S3 内核已交付；S5 对外推荐仍未开放；PIT、T0.5=S3→S4 与整体路线门禁保持不变 |
+| [METHOD_LIBRARY.md](./METHOD_LIBRARY.md) | v1.14 | v1.14：D-E12/R18 接线，可执行出口 10 个；v1.13：D-E01 与 D-E11/C18 接线；方法口径未因本轮接线改变 |
+| [SPEC-54-L1架构能力聚合层.md](../SPEC-54-L1架构能力聚合层.md) | v1.9 | D-E12/R18 已交付，可执行出口 10 个；同步纠正 R02、矩阵 TopK/C18 的过期状态；D-A14 保留 `level` 阈值阻塞；S5 对外推荐仍未开放 |
 | [SPEC-54-延续性统计分析模块.md](../SPEC-54-延续性统计分析模块.md) | v1.5 | T0.5/A8 首版经 D-E02 出口交付（h=1 PIT，含降桶降级披露）；R02 `pit=true` 已实现；不改 A1–A7 冻结口径 |
-| 三份 RESEARCH 文档 | 保持原文（仅同步能力计数） | 作为调研证据，不改写方法结论；RESEARCH-SCIENTIFIC 的能力出口计数同步为 9，分别支撑延续性分层、机构研究协议与科研可复现/PIT 校验 |
+| 三份 RESEARCH 文档 | 保持原文（仅同步能力计数） | 作为调研证据，不改写方法结论；RESEARCH-SCIENTIFIC 的能力出口计数同步为 10，分别支撑延续性分层、机构研究协议与科研可复现/PIT 校验 |
 
 **整体进度（按登记范围，而非按方法数量）**：
 
@@ -571,7 +580,7 @@ L1 意图（TS/Python 双端注册表）
 |---|---|---|---|
 | SPEC S1 ↔ 方法 S1 | 🟡 核心底座完成 | `market.candles`、UTC 对齐、前瞻收益、价格回显、日线同锚点 | 前端 11 模块全量历史查询覆盖仍按 SPEC 独立验收，不能由底座完成自动判全绿 |
 | SPEC S2 ↔ 方法 S2 | 🟡 方法完成、能力部分接线 | M01–M07/M11–M12/M24–M25 方法；D-E05 双序列与矩阵 TopK、D-E06 BH-FDR、D-E11/C18 可执行 | 固定权重合成指标及完整四类榜单契约 |
-| SPEC S3 ↔ 方法 S3/S6/S7；T0=S3 子集 | 🟡 方法、能力与 MERS S3 内核部分交付 | S3 批 22 方法、S6 扩展、9 个 manifest 出口（含 D-E01/D-E02）；T0/D-E13 已交付；R02 `pit=true` 与 MERS 180 单元内部内核已实现 | S3 全量真实数据验收；R03/R04/F19 所需日历/事件上下文及云端周期调度 |
+| SPEC S3 ↔ 方法 S3/S6/S7；T0=S3 子集 | 🟡 方法、能力与 MERS S3 内核部分交付 | S3 批 22 方法、S6 扩展、10 个 manifest 出口（含 D-E01/D-E02/D-E12）；T0/D-E13 已交付；R02 `pit=true` 与 MERS 180 单元内部内核已实现 | S3 全量真实数据验收；R03/R04/F19 所需日历/事件上下文及云端周期调度 |
 | **T0.5=S3→S4** | ✅ 首版已交付（v2.9） | R02 `pit=true` + A8 编排 + D-E02 出口与前端分派；h=1、4 桶 PIT 滚动分位，样本不足自动降 2 桶并披露 `effective_n/nonoverlap_n` | 真实数据纵深不足时按契约降级；h>1 显著性仍受 Newey-West/HAC 前置约束 |
 | SPEC S4 ↔ T2 | ⬜ | 条件分布非点预测的契约已明确 | T-1 扩样本、T1a/T1b、F1–F12 状态特征、1–2 维场景出口；h>1 显著性另受 HAC 阻塞 |
 | SPEC S5 ↔ T3及后续 | ⬜ | MERS S3 内部内核、BH-FDR、holdout 同号、状态机、幂等注册表与随机负例已交付 | walk-forward 完整验收、Discovery、只读推荐/发现出口；不得提前开放 `relationship_recommend` |
@@ -580,7 +589,7 @@ L1 意图（TS/Python 双端注册表）
 
 1. **R02 `pit=true` 与 T0.5 已交付（v2.9）**：`conditional.py::r02_percentile_forward` 双口径 + A8 编排 + D-E02 出口（manifest/executor/前端分派）均已接线；样本不足按场景包降 2 桶并披露 `effective_n/nonoverlap_n`，不输出点预测。
 2. **MERS S3 内核已交付，下一关键路径是 S3 全量真实数据验收**：180 单元、BH-FDR、holdout 同号、状态机、幂等与随机负例已验证；生产周期评估只能在云端执行，R03/R04/F19 仍需真实日历/事件上下文，单出口交付不等于显著性结论。
-3. **继续补齐 S2/S3 登记范围**：D-E05 矩阵 TopK、D-E11/C18、D-E01 已完成；后续处理固定权重合成指标、D-E04/D-E09/D-E12/D-E14 等缺口，四类榜单分别披露搜索空间与 `p_adj`，不得混排。
+3. **继续补齐 S2/S3 登记范围**：D-E05 矩阵 TopK、D-E11/C18、D-E01、D-E12/R18 已完成；后续处理 D-E04/D-E09/D-E14 等缺口，四类榜单分别披露搜索空间与 `p_adj`，不得混排。D-A14 的 F26 固定权重分已就绪，但须先由用户冻结 `level` 阈值再完整接线。
 4. **扩样本后再做 T2**：T-1 由云端唯一生产写入口执行；随后完成 T1a/T1b 与 F1–F12 PIT 特征，再交付 1–2 维 D-E14。任何 h>1 显著性结论必须先有 Newey-West/HAC。
 5. **最后开放 S5**：MERS/Discovery 通过 holdout、walk-forward、BH-FDR 和随机负例后，才开放稳定推荐与发现查询。
 

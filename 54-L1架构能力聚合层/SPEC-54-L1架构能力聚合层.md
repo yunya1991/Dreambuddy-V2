@@ -1,6 +1,6 @@
 # SPEC-54 L1 架构能力聚合层
 
-- **版本**: v1.8 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 完整版（v1.0 + S1–S5 五级能力路线 + S1.0 硬前置 + S4 条件外推收口 + MERS 分阶段 + §3.5 四层分工，见 §13–§17；v1.8 D-E05 矩阵 TopK、D-E11/C18、D-E01 与 MERS S3 内部内核交付，可执行出口 **9 个**，S5 对外推荐仍未开放；v1.7 D-E02 三层接线与 T0.5 首版交付；v1.6 调研对齐 R02 PIT 双口径与能力状态边界；v1.5 回写日线收盘锚点修复；v1.4 回写 E 组能力层落地与 `stat_query` 意图合并，整体进度由 TECHNICAL_DESIGN §6 汇总）
+- **版本**: v1.9 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 完整版（v1.0 + S1–S5 五级能力路线 + S1.0 硬前置 + S4 条件外推收口 + MERS 分阶段 + §3.5 四层分工，见 §13–§17；v1.9 D-E12/R18 时空对齐切片交付，可执行出口 **10 个**，并纠正 R02 与矩阵 TopK/C18 的过期状态；D-A14 的 `level` 阈值未冻结，S5 对外推荐仍未开放；v1.8 D-E05 矩阵 TopK、D-E11/C18、D-E01 与 MERS S3 内部内核交付；v1.7 D-E02 三层接线与 T0.5 首版交付；v1.6 调研对齐 R02 PIT 双口径与能力状态边界；v1.5 回写日线收盘锚点修复；v1.4 回写 E 组能力层落地与 `stat_query` 意图合并，整体进度由 TECHNICAL_DESIGN §6 汇总）
 - **归属**: 54-L1架构能力聚合层（L1 确定性数据能力的唯一聚合出口）
 - **上游约束**: 19-DAL Schema/Repo 契约、18-数据获取中心 `DataRecord`、9-基本面分析评分口径、34-前端应用训练系统（意图/SFT 与 route_confidence）
 - **下游影响**: 3.1-FRONTEND `/api/data/query`、`/api/fundamental/**`、`/api/agent/chat`、L1 意图注册表（TS/Python 双端）
@@ -202,7 +202,7 @@ capabilities:
 1. **前瞻收益唯一实现 = `l1agg/align.forward_returns`**。23 的 `FactorICSelector` 现有 `shift(-h).rolling(h).sum().shift(-h+1)` 在 `h>1` 时多位移 `h-1` 天（§17.1.3 已知缺陷 1），S5 前必须改为调用 `align` 或整体废弃；persistence 的 A7 与 MERS 的 B13–B16 必须调同一函数。
 2. **IC 的三处消费分工**：persistence A7 = 单资产描述（重叠 + 非重叠相位双口径）；MERS B13–B16 = 跨序列评估（含 `p_adj`/holdout/状态机）；23 = S5 前只保留历史产物，不再新增计算。
 3. **能力登记不重复计数**：`D-E13` = `D-E07`（状态转移）+ `D-E08`（分箱/IC）+ T 组方法的**场景编排**，不新增方法 ID；`D-E14` = 相关状态条件分布，依赖 `D-E05/D-E06/D-E11`。方法库改动（如 T13 口径）必须回写场景包测试。
-4. **R02 PIT 双口径**：`pit=false`（全样本分位边界）只能作样本内回顾，不得进入 T0.5/T2/MERS；`pit=true` 要求每个历史时点只使用当时可见数据，宏观数据还须满足 `release_ts≤as_of`，是上述场景的唯一合法口径，**已实现**（`conditional.py::r02_percentile_forward`：逐时点滚动分位 + `release_ts` 过滤），能力出口尚未接线。算法与输出字段唯一定义见 METHOD_LIBRARY §16.1。
+4. **R02 PIT 双口径**：`pit=false`（全样本分位边界）只能作样本内回顾，不得进入 T0.5/T2/MERS；`pit=true` 要求每个历史时点只使用当时可见数据，宏观数据还须满足 `release_ts≤as_of`，是上述场景的唯一合法口径，**已实现**（`conditional.py::r02_percentile_forward`：逐时点滚动分位 + `release_ts` 过滤），能力出口已由 D-E02 接线，A8/T0.5 经此出口交付。算法与输出字段唯一定义见 METHOD_LIBRARY §16.1。
 
 #### 3.5.3 T 阶段 ↔ S 级映射（两套编号必须成对出现）
 
@@ -489,7 +489,7 @@ capabilities:
 | 双序列滚动相关性（30/90d） | 任意两条 `mm_metrics` | 中 | ✅ 23 层/11 系统有相关计算 |
 | 领先滞后相关（lag 0–10） | 同上 | 中 | ⬜ |
 | 极端事件频率（超阈值天数） | 恐惧贪婪/资金费率/清算 | 低 | ⬜ |
-| 拥挤度（分位 + 变化率合成） | 资金费率 + 多空比 + 未平仓 | 中 | ⬜ |
+| 拥挤度（分位 + 变化率合成） | 资金费率 + 多空比 + 未平仓 | 中 | 🟡 F26 已实现固定权重 `score/components/weights/n`；`level` 阈值未冻结，D-A14 能力未接线 |
 | ETF 净流入滚动和（7/30d） | `mm_*` ETF 系列 | 低 | ⬜ |
 | 稳定币增速（7/30d） | USDT/USDC 系列 | 低 | ⬜ |
 
@@ -544,13 +544,13 @@ capabilities:
 
 **方法选择**：全部由 [docs/METHOD_LIBRARY.md](docs/METHOD_LIBRARY.md) 的意图→方法路由表驱动（238 方法 / 18 关系原语），L1 只做「选法 + 套模板」，不做推理。
 
-**E 组落地状态（v1.8，2026-11-15）**：
+**E 组落地状态（v1.9，2026-11-15）**：
 
-1. **能力层已实现**：`l1agg/capabilities/{manifest,envelope,stats}.py` + `capability_manifest.yaml` + `contracts/capability_result.schema.json`。已接线 D-E01（条件收益）、D-E02（分位→前瞻收益，A8/T0.5）、D-E03（季节性）、D-E05/D-E06/D-E11（相关/领先滞后/同向率，含矩阵 TopK 与 C18）、D-E07（状态转移）、D-E08（条件 IC，需因子源）、D-E10（回撤）。方法层注册表 **386 方法** audit 全 PASS（全量 387 登记，仅 C11 缺交易日历不可用；C 组 17 方法落地 `l1agg/methods/seasonal.py`）。
+1. **能力层已实现**：`l1agg/capabilities/{manifest,envelope,stats}.py` + `capability_manifest.yaml` + `contracts/capability_result.schema.json`。已接线 D-E01（条件收益）、D-E02（分位→前瞻收益，A8/T0.5）、D-E03（季节性）、D-E05/D-E06/D-E11/D-E12（相关/领先滞后/同向率/时空对齐，含矩阵 TopK、C18 与 R18）、D-E07（状态转移）、D-E08（条件 IC，需因子源）、D-E10（回撤）。方法层注册表 **386 方法** audit 全 PASS（全量 387 登记，仅 C11 缺交易日历不可用；C 组 17 方法落地 `l1agg/methods/seasonal.py`）。
 2. **意图合并（与 §11.4 表的有意偏差）**：前端先合为单一确定性意图 **`stat_query`**，内部按关键词分派到上述能力 ID，另加 `cross_check` 相关子能力。理由：5 个独立意图 × 双端注册表 × 金标集维护成本高，而能力 ID 已能精确定位；后续若要拆分为 §11.4 的 5 个独立意图，只需拆分执行器入口，能力层与 manifest 无需改动。
 3. **双端同步点**：`3.1-FRONTEND/scripts/l1_route_signal.py`（EXECUTORS + DETERMINISTIC_INTENTS + fallback pattern）、`data_query_executor.py::exec_stat_query`、`3.1-FRONTEND/src/lib/l1-intent-registry.ts`、`34-前端应用训练系统/l1_intent_golden.jsonl`。
-4. **未接线**：D-E04/D-E09（事件表仅 16 行）、D-E12（需多资产同日切片）、D-E14（需场景出口与每桶非重叠 ≥250）。D-E01 已接线，但实际统计仍受因子与价格 ≥250 个有效配对样本门禁约束。
-5. **登记范围复核（v1.8）**：9 个可执行出口不等于 E 组登记范围全部完成。D-E05 双序列与 M05–M07 矩阵 TopK 均已接线；D-E11 已绑定 C18，提供 dates 时执行自然月同向率；D-E01 已按 B02/B05/F01/H01 契约接线，h=1 前瞻收益先在原价格轴计算再过滤有效因子对。
+4. **未接线**：D-E04/D-E09（事件表仅 16 行）、D-E14（需场景出口与每桶非重叠 ≥250）。D-E01 已接线，但实际统计仍受因子与价格 ≥250 个有效配对样本门禁约束。
+5. **登记范围复核（v1.9）**：10 个可执行出口不等于 E 组登记范围全部完成。D-E05 双序列与 M05–M07 矩阵 TopK 均已接线；D-E11 已绑定 C18，提供 dates 时执行自然月同向率；D-E01 已按 B02/B05/F01/H01 契约接线，h=1 前瞻收益先在原价格轴计算再过滤有效因子对；D-E12 已按 R18 契约接线，样本不足与空窗口均显式降级为 empty。
 
 **日线对齐修复（v1.5，2026-11-14）**：`market.candles` 1d 的 `ts` 统一归一到 **UTC 日首**（真实观测时刻保留 `close_ts`），并新增 `meta.close_anchor ∈ {bar_close, snapshot_last}` 与 `source_policy ∈ {auto, snapshot, bars}`。**跨资产横截面统计（D-E05/D-E06/D-E11）必须两侧同锚点**：执行器优先 `source_policy=snapshot`，某标的无快照才退回 `auto` 并在回答标注。修复前 BTC（真实日线 00:00）与 ETH（快照 16:00）锚点混用，同期 ρ=0.33 且最优 lag=+1；修复后 ρ=0.83、最优 lag=0（n=727）。
 
@@ -816,7 +816,7 @@ CREATE INDEX idx_rel_pick ON relationship_eval(target, horizon, status, rank_ic 
 | 级 | 能力 | 交付物（用户可见） | 依赖 | 验收门禁 |
 |---|---|---|---|---|
 | **S1** | 前端各模块数据可查（现在 + 过去） | 11 个基本面模块全部字段可查；每模块真实 `timeseries`（30/90/365 天）；行情/宏观/链上/情绪/资金 实时与历史同入口 | 索引迁移；`datacenter.series`；价格回填 ≥3 年（S1.0） | 每模块 ≥3 个自然语言查询命中 L1；`timeseries` 非空且 `sample_n` 正确；P95≤800ms |
-| **S2 🟡** | 多维数据相关性组合 | 相关矩阵 TopK、领先滞后、滚动相关、同向率、固定权重合成指标；「哪些资产相关性最高」可直答 | S1 + 统一资产池（8 资产）+ **加密域历史回填（≥60 对齐点）** | 输出带 `n/p/window/align_method`；`n≥60` 才出同期相关、`n≥120` 才出 CCF；随机序列相关系数≈0 且不显著。当前方法层完成，D-E05 矩阵 TopK 与 D-E11/C18 已接线，固定权重合成指标等登记范围待闭环 |
+| **S2 🟡** | 多维数据相关性组合 | 相关矩阵 TopK、领先滞后、滚动相关、同向率、固定权重合成指标；「哪些资产相关性最高」可直答 | S1 + 统一资产池（8 资产）+ **加密域历史回填（≥60 对齐点）** | 输出带 `n/p/window/align_method`；`n≥60` 才出同期相关、`n≥120` 才出 CCF；随机序列相关系数≈0 且不显著。当前方法层完成，D-E05 矩阵 TopK、D-E11/C18 与 D-E12/R18 已接线；D-A14/F26 固定权重分已就绪，`level` 阈值冻结前不接完整能力 |
 | **S3 🟡** | 高相关数据与价格的统计关系 | 条件收益、分位→前瞻分布、分箱单调性、日历效应、回撤画像（R01/R02/R03/R08/R11） | S2 + MERS 计算内核（内部） | 每关系输出 `n/win_rate/mean/p_adj/单调性`；随机数据无显著；方法选择可追溯 `method_id`。D-E01/D-E02 与 R02 PIT 能力出口已交付；MERS S3 内部 180 单元网格、BH-FDR、状态机与幂等注册表已实现，待全量真实数据验收及云端周期调度 |
 | **S4 ⬜** | 过去 + 现在的条件外推表达（非点预测） | 「当前处于 X 状态，历史同状态后 h 日分布：均值/中位/胜率/区间」；既有模型输出（bdsm/bcrm2/event）gated 暴露 | S3；T0.5/T2 另需 R02 `pit=true`（已实现） | 必须含区间、样本量及 `pit/as_of/effective_n/nonoverlap_n`；无模型输出时降级为纯历史分布；禁止点预测措辞（抽检 20 条）；h>1 显著性推断须先实现 Newey-West/HAC |
 | **S5** | 统计方法扩展 + 回测推荐 + 探索发现 | MERS v1 注册表（10 方法 × 3 期限 × 8 资产）+ `relationship_recommend`；Discovery v1（≤2000 单元）+ `discovery_query`；G/J 组方法扩展 | S1–S4 全部稳定 | MERS 重跑字节一致；随机数据 `stable=0`；Discovery 随机数据 `findings=0`；5000 单元≤10min |
@@ -867,8 +867,8 @@ CREATE INDEX idx_rel_pick ON relationship_eval(target, horizon, status, rank_ic 
 | **S1-c** | 价格回显 `l1agg/price_echo.py`：任意历史时点 → 当时价 + 现价 + 变化；默认基准按品类（加密→BTC、美股→US500/US100/DJIA、宏观→XAU+美股指数、大宗→CL、避险→XAU、其他→BTC） | `asof_day/staleness_days/sample_n/span/align_method/timezone/gate` 齐全；禁止未来函数；抽查 20 条与库内原始行一致 |
 | **S1-d** ✅ | 四类追问钩子 `l1agg/hooks.py`（回显/龙头对照/相关性 Top/延续性强度）+ 三项可执行能力 `l1agg/relations.py`：任何确定性答案末尾追加 4 个可选下一步，`data.hooks` 同步结构化返回 | 钩子 query 必须能被 `l1_route_signal` 确定性路由到对应执行器（4/4 L1_DIRECT）；无年份日期「9月9日」解析为当年最近一次过去；`leader_gap/top_correlated/persistence_strength` 均带 `sample_n/span/align_method`。**相关性口径**：排除同质价格（自身/同赛道币价、市值、盘口、成交量），按指标观测频率分组（daily n≥120 / weekly n≥52 / monthly n≥36）独立 BH-FDR，样本不足单列 `low_sample` 不参与排名，资产价格相关单列 `price_baseline` |
 | **S2-p** | **跨资产历史回填**（18 职责，云端执行，幂等）；分类口径与 **40 层 `asset_classes.py` 完全统一**，54 仅做绑定（`l1agg/leader_registry.py`）：已绑定 28 个龙头、诚实登记 1 个历史不足 | 对齐点 ≥250 天的跨资产龙头 ≥10 条（当前 28 条达标，2026-11-14 回填后） |
-| S2 🟡 | 相关性（M01–M07/M11–M12/M24–M25 + R05）方法注册表 + 评估 harness 已落地；D-E05 双序列子集、D-E06、D-E11 可执行 | `n≥60` 同期、`n≥120` CCF；p 值走 t 分布 + BH-FDR；harness 六检 11/11 PASS；随机白噪声负例 `|ρ|<0.15` 且假阳率 ≤20%。矩阵 TopK 与 C18 未接，故不是登记范围全绿 |
-| S3 🟡 | 条件收益/IC/分组方法层已交付，T0/D-E13 与部分能力出口已交付；R02 双口径已实现但未接线 | `n≥250`；T0.5/T2 只接受 R02 `pit=true`；h>1 重叠前瞻收益在 Newey-West/HAC 实现前只描述、不作显著性结论 |
+| S2 🟡 | 相关性（M01–M07/M11–M12/M24–M25 + R05）方法注册表 + 评估 harness 已落地；D-E05 双序列与矩阵 TopK、D-E06、D-E11/C18、D-E12/R18 可执行 | `n≥60` 同期、`n≥120` CCF；p 值走 t 分布 + BH-FDR；harness 六检 11/11 PASS；随机白噪声负例 `|ρ|<0.15` 且假阳率 ≤20%。D-A14/F26 固定权重分已就绪，但 `level` 阈值未冻结，登记范围尚未全绿 |
+| S3 🟡 | 条件收益/IC/分组方法层已交付，T0/D-E13、T0.5/D-E02 与 D-E01 等能力出口已交付；R02 双口径及能力接线均已完成 | `n≥250`；T0.5/T2 只接受 R02 `pit=true`；h>1 重叠前瞻收益在 Newey-West/HAC 实现前只描述、不作显著性结论 |
 | S4 ⬜ | 条件外推表达（非点预测）；T0.5=S3→S4，首版 h=1 | 含区间与 `pit/as_of/effective_n/nonoverlap_n`；每桶非重叠 n≥250；T2 另等 T-1 扩样本 |
 | S5 | 回测排名：复用并修正 23 `FactorICSelector` | 必须含样本外 IC 与 walk-forward |
 
@@ -941,7 +941,14 @@ MERS 与 Discovery 只改变「**选哪个方法**」，不改变「**输出什�
 
 ---
 
-## §十二、修订记录（v0.1 → v1.8）
+## §十二、修订记录（v0.1 → v1.9）
+
+### v1.9（2026-11-15）
+
+| 编号 | 位置 | 内容 |
+|---|---|---|
+| v1.9-1 | §3.5/§11/§17 | D-E12/R18 时空对齐切片交付，可执行出口 9→10；样本不足与空窗口显式降级，manifest 真实执行覆盖同步纳入 |
+| v1.9-2 | §3.5.2/§11.4/§17.1.3 | 纠正 R02 未接线、矩阵 TopK/C18 未接等过期表述；D-A14/F26 固定权重分与 `level` 阈值阻塞分开登记 |
 
 ### v1.8（2026-11-15）
 
