@@ -24,8 +24,10 @@ source_priority:
   - panewslab
 
 quality:
-  min_rows_3y: 1090          # 3 年日历日 1095/1096（闰年浮动），留 0.5% 容忍
-  max_gap_ratio: 0.01        # 允许缺口比例
+  min_rows_3y: 1090          # 7×24 市场（okx）：3 年日历日 1095/1096，留 0.5% 容忍
+  min_rows_3y_trading: 740   # 交易日市场（fred）：3 年约 756 个工作日，留 2% 容忍
+  max_gap_ratio: 0.01        # 7×24 市场缺口率上限（日历日口径）
+  max_gap_ratio_trading: 0.06 # 交易日市场缺口率上限（工作日口径，含美股假日约 4%）
   min_non_null_ratio: 0.95   # 非空率下限
   stale_days: 3              # 超过 3 天未更新视为陈旧
 

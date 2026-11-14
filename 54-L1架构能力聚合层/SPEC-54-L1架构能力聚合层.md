@@ -724,7 +724,7 @@ CREATE INDEX idx_rel_pick ON relationship_eval(target, horizon, status, rank_ic 
 | 1 | `mm_metrics` 索引迁移 | `(sub_category, metric_name, timestamp)` 复合索引 | `EXPLAIN QUERY PLAN` 走索引；区间查询 P95≤300ms ✅ 2026-11-14（本地 p95 0.78ms；云端索引已存在） |
 | 2 | 资产池定稿 | `config/asset_pool.yaml`：BTC/ETH/SOL + 纳指(IXIC)/标普(SPX)/黄金(XAU)/原油(WTI)/美债(US10Y) | 8 个资产各有 `instrument/storage/timezone`；类别龙头唯一；`python3 -m l1agg.asset_pool` 校验通过 ✅ 2026-11-14 |
 | 3 | 价格历史回填 | OKX `history-candles` 日频 ≥3 年（缺失回退 CoinGecko chart） | 每资产 ≥1,090 条（3 年日历日 1095/1096 闰年浮动）；缺口率 <1% ✅ 2026-11-14 云端执行：BTC/ETH/SOL/XAU 各 1,094 条 × `close_usd`/`volume_usd`，跨度 2023-11-15~2026-11-12，缺口 0 |
-| 4 | 覆盖体检报告 | `reports/coverage/<date>.md`：每个 metric 的 n / 起止 / 缺失率 / 异常值标记 | 报告生成且 metric 清单与 DAL 一致 |
+| 4 | 覆盖体检报告 | `reports/coverage/<date>.md`：每个 metric 的 n / 起止 / 缺失率 / 异常值标记 | 报告生成且 metric 清单与 DAL 一致 ✅ 2026-11-14 云端执行：8/8 锚定资产 PASS；27,202 series / 344,936 行；NULL 1,580（0.46%）；负 epoch 4,388 行登记为 FRED 真实历史；跨源重复 2 组（`BTC_FUTURES_CME`、`funding_rate`） |
 
 > 四项全部通过才可进入 S1；任一项失败则 S2/S3 不得启动（相关性、条件收益都会因样本不足而产生假规律）。
 
