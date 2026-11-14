@@ -12,6 +12,7 @@ from typing import Any
 
 from adapters.constraint_loader import clamp_position, load_constraints
 from adapters.execution_writer import validate_execution
+from adapters.factor_priors_provider import maybe_apply_factor_priors_overlay
 
 from core.dominance import resolve_dominance
 from core.mappings import profile_for_trigger
@@ -70,6 +71,44 @@ def _apply_regime_overlay(paths: list[Path], regime_overlay: str) -> list[Path]:
     return adjusted
 
 
+def _build_overlay_attribution(
+    baseline_paths: list[Path],
+    constraints: dict[str, Any],
+    asset_class: str,
+    reconciliation: dict[str, Any] | None,
+    direction: str,
+    confidence: float,
+    position_pct: float,
+) -> dict[str, Any]:
+    """M4-4 归因：用未调制 path 复算反事实基线，隔离 overlay 的净影响。
+
+    纯函数，不改路径、不写状态；与主链路共用同一 constraints/asset_class，
+    保证 delta 只反映先验 overlay，而非钳位差异。
+    """
+    base = adjudicate(baseline_paths, reconciliation)
+    base_direction = base["direction"]
+    base_confidence = base["total"]
+    base_raw = 50.0 + 50.0 * (
+        base_confidence
+        if base_direction == "long"
+        else -base_confidence if base_direction == "short" else 0.0
+    )
+    base_position = clamp_position(constraints, base_raw, asset_class)
+    return {
+        "baseline": {
+            "direction": base_direction,
+            "confidence": round(base_confidence, 6),
+            "raw_position": round(base_raw, 4),
+            "position_pct": round(base_position, 4),
+        },
+        "delta": {
+            "confidence": round(confidence - base_confidence, 6),
+            "position_pct": round(position_pct - base_position, 4),
+        },
+        "direction_flip": base_direction != direction,
+    }
+
+
 def _extract_trigger(evidences: list[dict[str, Any]]) -> str:
     """从 evidences 中提取 trigger（macro_led/micro_led），取首个有效值。"""
     for ev in evidences:
@@ -122,6 +161,9 @@ def make_decision(
     paths = synthesize_paths(evidences, now=moment)
     # M4-6：regime_overlay 调整 intent 权重
     paths = _apply_regime_overlay(paths, regime_overlay)
+    # M4-2（SPEC-M4）：40 因子方向先验 overlay（开关关闭/门禁不满足时原样返回）
+    paths_pre_overlay = paths
+    paths, factor_priors_audit = maybe_apply_factor_priors_overlay(paths, now=moment)
     # 2) 4 维裁决
     w4 = adjudicate(paths, reconciliation)
     # 3) Dominance（同 horizon 成对支配 + Copeland）
@@ -134,6 +176,17 @@ def make_decision(
         confidence if direction == "long" else -confidence if direction == "short" else 0.0
     )
     position_pct = clamp_position(constraints, raw_position, asset_class)
+    # M4-4：overlay 归因（反事实基线，仅开关启用时计算；纯函数无副作用）
+    if factor_priors_audit.get("enabled"):
+        factor_priors_audit["attribution"] = _build_overlay_attribution(
+            paths_pre_overlay,
+            constraints,
+            asset_class,
+            reconciliation,
+            direction,
+            confidence,
+            position_pct,
+        )
     # 6) 组装决策信号
     decision = {
         "signal_id": f"50-nn|{moment.strftime(chr(37) + chr(89) + chr(37) + chr(109) + chr(37) + chr(100) + chr(84) + chr(37) + chr(72) + chr(37) + chr(77) + chr(37) + chr(83) + chr(90))}",
@@ -159,6 +212,7 @@ def make_decision(
             "constraint_freeze": constraints.get("freeze", False),
             "constraint_degraded": constraints.get("degraded", []),
             "path_count": len(paths),
+            "factor_priors_overlay": factor_priors_audit,
             "proposed_trigger": proposed_trigger,
             "trigger_flap": {
                 "locked": flap.locked,

@@ -259,11 +259,22 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
                 )
                 continue
 
+        # M4-4：50 侧可声明更小的单笔名义上限（只降不升；仍受 22 的 100 USDT 硬上限约束）
+        notional = float(risk.get("notional_usdt") or MAX_NOTIONAL_USDT)
+        declared = decision.get("notional_usdt")
+        if declared is None and isinstance(decision.get("payload"), dict):
+            declared = decision["payload"].get("notional_usdt")
+        try:
+            if declared is not None:
+                notional = min(notional, float(declared))
+        except (TypeError, ValueError):
+            pass
+
         payload = {
             "action": "order",
             "symbol": decision.get("symbol"),
             "direction": decision.get("direction"),
-            "notional_usdt": risk.get("notional_usdt") or MAX_NOTIONAL_USDT,
+            "notional_usdt": notional,
             "leverage": int(risk.get("leverage") or MAX_LEVERAGE),
             "sl_pct": DEFAULT_SL_PCT,
             "tp_pct": DEFAULT_TP_PCT,

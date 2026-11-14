@@ -41,6 +41,14 @@ from adapters.execution_writer import (  # noqa: E402
     is_kill_switch_on,
     load_rights,
 )
+from adapters.factor_priors_provider import (  # noqa: E402
+    COEF_CANDIDATES,
+    COEF_DEFAULT,
+    COEF_ENV,
+    ENABLE_ENV,
+    is_overlay_enabled,
+    resolve_coef,
+)
 from core.decision import make_decision  # noqa: E402
 from core.resonance_propagator import propagate as propagate_resonance  # noqa: E402
 
@@ -49,6 +57,10 @@ DEFAULT_OUT_DIR = _50_ROOT / "runtime" / "live"
 DEFAULT_MANDATE = os.environ.get("50_LIVE_MANDATE", "mandate-20261114-50-live-multi")
 # 动态 allowlist：总线里置信度 ≥ 阈值的 long/short 且注册表内可交易标的
 MIN_CONFIDENCE = float(os.environ.get("50_LIVE_MIN_CONFIDENCE", "0.8"))
+# M4-4 小额验证：50 侧声明单笔名义上限（22 执行层只降不升，仍受 22 的 100 USDT 硬上限约束）
+DEFAULT_NOTIONAL_USDT = float(os.environ.get("50_LIVE_NOTIONAL_USDT", "20"))
+# M4-4：live 通道默认开启因子先验 overlay（shadow 通道仍默认关闭）
+DEFAULT_FACTOR_PRIORS = os.environ.get("50_LIVE_FACTOR_PRIORS", "on")
 _SYMBOL_REGISTRY = _REPO_ROOT / "22-执行引擎中心" / "config" / "live_symbols.json"
 
 
@@ -183,14 +195,24 @@ def run(
     out_dir: Path,
     symbols: tuple[str, ...],
     mandate: str,
+    notional_usdt: float = DEFAULT_NOTIONAL_USDT,
 ) -> dict[str, Any]:
     now = datetime.now(timezone.utc)
+    overlay_enabled = is_overlay_enabled()
+    coef, coef_source = resolve_coef()
     result: dict[str, Any] = {
         "run_ts": now.isoformat().replace("+00:00", "Z"),
         "status": "ok",
         "reason": None,
         "decisions": [],
         "skipped": [],
+        # M4-4：灰度参数随每次运行留档（归因/复现的唯一入口）
+        "overlay": {
+            "enabled": overlay_enabled,
+            "coef": coef if overlay_enabled else 0.0,
+            "coef_source": coef_source if overlay_enabled else "disabled",
+        },
+        "notional_usdt": round(float(notional_usdt), 2),
     }
 
     if is_kill_switch_on():
@@ -256,6 +278,10 @@ def run(
             continue
         decision["decision_id"] = stable_decision_id(inst_id, group)
         decision["mandate_id"] = mandate
+        # M4-4：50 侧声明单笔名义上限，22 执行层取 min(13 定容, 本值)
+        decision["notional_usdt"] = result["notional_usdt"]
+        if isinstance(decision.get("payload"), dict):
+            decision["payload"]["notional_usdt"] = result["notional_usdt"]
         result["decisions"].append(decision)
 
     if not result["decisions"]:
@@ -287,10 +313,43 @@ def main() -> int:
         help="显式标的清单（逗号分隔）；留空则按总线置信度动态选取",
     )
     parser.add_argument("--mandate", default=DEFAULT_MANDATE)
+    parser.add_argument(
+        "--factor-priors",
+        choices=("on", "off"),
+        default=DEFAULT_FACTOR_PRIORS,
+        help="M4-4 因子先验 overlay 开关（live 默认 on；off 等价回滚）",
+    )
+    parser.add_argument(
+        "--coef",
+        type=float,
+        default=None,
+        help=f"预注册系数，候选 {sorted(COEF_CANDIDATES)}；缺省 {COEF_DEFAULT}",
+    )
+    parser.add_argument(
+        "--notional-usdt",
+        type=float,
+        default=DEFAULT_NOTIONAL_USDT,
+        help="M4-4 小额验证：单笔名义上限（USDT）",
+    )
     args = parser.parse_args()
 
+    # 把灰度参数显式落到进程环境，供 adapters 层读取（与 shadow 通道隔离）
+    os.environ[ENABLE_ENV] = "1" if args.factor_priors == "on" else "0"
+    if args.coef is not None:
+        if args.coef not in COEF_CANDIDATES:
+            parser.error(f"--coef 必须属于预注册候选集 {sorted(COEF_CANDIDATES)}")
+        os.environ[COEF_ENV] = str(args.coef)
+    if not (0 < args.notional_usdt <= 100):
+        parser.error("--notional-usdt 必须落在 (0, 100] USDT（22 执行层硬上限 100）")
+
     symbols = tuple(s for s in args.symbols.split(",") if s.strip())
-    result = run(Path(args.bus_state), Path(args.out_dir), symbols, args.mandate)
+    result = run(
+        Path(args.bus_state),
+        Path(args.out_dir),
+        symbols,
+        args.mandate,
+        notional_usdt=args.notional_usdt,
+    )
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
 

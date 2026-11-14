@@ -8,6 +8,7 @@ from typing import Any
 
 from adapters.constraint_loader import clamp_position
 from adapters.execution_writer import load_rights, validate_execution
+from adapters.factor_priors_provider import maybe_apply_factor_priors_overlay
 
 from core.path_synthesis import synthesize_paths
 
@@ -44,6 +45,8 @@ def make_shadow_decision(
 ) -> dict[str, Any]:
     moment = now or datetime.now(timezone.utc)
     paths = synthesize_paths(evidences, now=moment)
+    # M4-2（SPEC-M4）：40 因子方向先验 overlay（开关关闭/门禁不满足时原样返回）
+    paths, factor_priors_audit = maybe_apply_factor_priors_overlay(paths, now=moment)
 
     score = sum(_signed_score(p) for p in paths)
     if score > 0:
@@ -76,6 +79,7 @@ def make_shadow_decision(
             "position_pct": round(position_pct, 4),
             "constraint_freeze": constraints.get("freeze", False),
             "constraint_degraded": constraints.get("degraded", []),
+            "factor_priors_overlay": factor_priors_audit,
             "paths": [
                 {
                     "path_id": p.path_id,
@@ -118,6 +122,8 @@ def build_symbol_decisions(
     moment = now or datetime.now(timezone.utc)
     try:
         paths = synthesize_paths(evidences, now=moment)
+        # M4-2（SPEC-M4）：与组合级决策共用同一批 path 的 overlay，避免双重口径
+        paths, factor_priors_audit = maybe_apply_factor_priors_overlay(paths, now=moment)
     except Exception:  # noqa: BLE001
         return []
 
@@ -167,6 +173,7 @@ def build_symbol_decisions(
                 "position_pct": round(position_pct, 4),
                 "constraint_freeze": constraints.get("freeze", False),
                 "constraint_degraded": constraints.get("degraded", []),
+                "factor_priors_overlay": factor_priors_audit,
                 "paths": [
                     {
                         "path_id": p.path_id,
