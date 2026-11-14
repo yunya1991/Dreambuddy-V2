@@ -119,7 +119,11 @@ class DataCenterMarketClient:
         return {"ok": True, "last": _last, "bid": _last, "ask": _last}
 
     def get_positions(self, inst_id: str | None = None) -> Dict[str, Any]:
-        """持仓真相在 22 账本，按 OKX 形状回放给 23 适配器。"""
+        """账户多空占比（22 账本口径），供 okx_market 的持仓维度消费。
+
+        `OKXMarketAdapter._fetch_positions` 只接受 `{long, short}` 比例字典；
+        按名义价值统计账户全部持仓，与 11 原口径（账户级、非全市场）一致。
+        """
         if self._positions_fn is None:
             return {"ok": False, "error": "no_positions_source"}
         try:
@@ -127,23 +131,21 @@ class DataCenterMarketClient:
         except Exception as exc:  # noqa: BLE001 — 持仓维度 FAIL-OPEN
             logger.warning("22 账本持仓查询失败: %s", exc)
             return {"ok": False, "error": str(exc)}
-        _out = []
+        _long = _short = 0.0
         for _r in rows:
-            _iid = str(_r.get("inst_id") or "")
-            if inst_id and _iid.upper() != str(inst_id).upper():
-                continue
             _qty = float(_r.get("qty") or 0.0)
+            _px = float(_r.get("avg_entry") or 0.0)
             if _qty <= 0:
                 continue
-            _out.append(
-                {
-                    "inst_id": _iid,
-                    "pos": _qty,
-                    "pos_side": str(_r.get("pos_side") or "long").lower(),
-                    "avg_px": float(_r.get("avg_entry") or 0.0),
-                }
-            )
-        return {"ok": True, "positions": _out}
+            _notional = _qty * _px
+            if str(_r.get("pos_side") or "long").lower() == "short":
+                _short += _notional
+            else:
+                _long += _notional
+        _total = _long + _short
+        if _total <= 0:
+            return {"ok": False, "error": "empty_positions"}
+        return {"ok": True, "positions": {"long": _long / _total, "short": _short / _total}}
 
 
 # ── 22 账户/合约辅助 ──────────────────────────────────────────────────

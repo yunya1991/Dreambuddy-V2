@@ -38,17 +38,18 @@ def test_get_ticker_uses_latest_price():
     assert out["ok"] is True and out["last"] == 123.0
 
 
-def test_get_positions_projects_22_ledger_rows():
+def test_get_positions_returns_long_short_ratio_from_22_ledger():
     rows = [
-        {"inst_id": "BTC-USDT-SWAP", "qty": 0.5, "pos_side": "long", "avg_entry": 60000.0},
-        {"inst_id": "ETH-USDT-SWAP", "qty": 0.0, "pos_side": "long", "avg_entry": 3000.0},
+        {"inst_id": "BTC-USDT-SWAP", "qty": 0.1, "pos_side": "long", "avg_entry": 60000.0},
+        {"inst_id": "ETH-USDT-SWAP", "qty": 1.0, "pos_side": "short", "avg_entry": 2000.0},
+        {"inst_id": "SOL-USDT-SWAP", "qty": 0.0, "pos_side": "long", "avg_entry": 100.0},
     ]
     client = DataCenterMarketClient(positions_fn=lambda: rows)
-    out = client.get_positions("btc-usdt-swap")
+    out = client.get_positions("BTC-USDT-SWAP")
     assert out["ok"] is True
-    assert out["positions"] == [
-        {"inst_id": "BTC-USDT-SWAP", "pos": 0.5, "pos_side": "long", "avg_px": 60000.0}
-    ]
+    # notional: long=6000, short=2000 → 0.75 / 0.25
+    assert out["positions"]["long"] == 0.75
+    assert out["positions"]["short"] == 0.25
 
 
 def test_get_positions_without_source_is_fail_open():
