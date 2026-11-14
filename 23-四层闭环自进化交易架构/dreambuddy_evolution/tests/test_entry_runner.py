@@ -38,6 +38,24 @@ def test_get_ticker_uses_latest_price():
     assert out["ok"] is True and out["last"] == 123.0
 
 
+def test_get_positions_projects_22_ledger_rows():
+    rows = [
+        {"inst_id": "BTC-USDT-SWAP", "qty": 0.5, "pos_side": "long", "avg_entry": 60000.0},
+        {"inst_id": "ETH-USDT-SWAP", "qty": 0.0, "pos_side": "long", "avg_entry": 3000.0},
+    ]
+    client = DataCenterMarketClient(positions_fn=lambda: rows)
+    out = client.get_positions("btc-usdt-swap")
+    assert out["ok"] is True
+    assert out["positions"] == [
+        {"inst_id": "BTC-USDT-SWAP", "pos": 0.5, "pos_side": "long", "avg_px": 60000.0}
+    ]
+
+
+def test_get_positions_without_source_is_fail_open():
+    out = DataCenterMarketClient().get_positions()
+    assert out["ok"] is False
+
+
 # ── 执行权闸门 ────────────────────────────────────────────────────────
 def test_authority_blocks_all_in_dry_run():
     fn = _authority(True, ("23-evolution",))

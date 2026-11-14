@@ -67,10 +67,12 @@ class DataCenterMarketClient:
         bar: str = "1H",
         candles_fn: Optional[Callable[..., List[dict]]] = None,
         ticker_fn: Optional[Callable[..., Optional[dict]]] = None,
+        positions_fn: Optional[Callable[[], List[dict]]] = None,
     ) -> None:
         self._bar = bar
         self._candles_fn = candles_fn
         self._ticker_fn = ticker_fn
+        self._positions_fn = positions_fn
 
     @staticmethod
     def to_ccxt_symbol(inst_id: str) -> str:
@@ -115,6 +117,33 @@ class DataCenterMarketClient:
             return {"ok": False, "error": "no_last"}
         # 公共行情无盘口，用最新价填充 bid/ask（价差=0，不影响下单）
         return {"ok": True, "last": _last, "bid": _last, "ask": _last}
+
+    def get_positions(self, inst_id: str | None = None) -> Dict[str, Any]:
+        """持仓真相在 22 账本，按 OKX 形状回放给 23 适配器。"""
+        if self._positions_fn is None:
+            return {"ok": False, "error": "no_positions_source"}
+        try:
+            rows = self._positions_fn() or []
+        except Exception as exc:  # noqa: BLE001 — 持仓维度 FAIL-OPEN
+            logger.warning("22 账本持仓查询失败: %s", exc)
+            return {"ok": False, "error": str(exc)}
+        _out = []
+        for _r in rows:
+            _iid = str(_r.get("inst_id") or "")
+            if inst_id and _iid.upper() != str(inst_id).upper():
+                continue
+            _qty = float(_r.get("qty") or 0.0)
+            if _qty <= 0:
+                continue
+            _out.append(
+                {
+                    "inst_id": _iid,
+                    "pos": _qty,
+                    "pos_side": str(_r.get("pos_side") or "long").lower(),
+                    "avg_px": float(_r.get("avg_entry") or 0.0),
+                }
+            )
+        return {"ok": True, "positions": _out}
 
 
 # ── 22 账户/合约辅助 ──────────────────────────────────────────────────
@@ -275,7 +304,7 @@ def build_runtime(dry_run: bool, symbols: List[str], bar: str = "1H"):
     raw = OKXSimulatedClient(cfg)
     gateway = TradeExecutionGateway(okx_client=raw, shadow_only=bool(dry_run))
     guards = LedgerGuards(gateway)
-    market = DataCenterMarketClient(bar=bar)
+    market = DataCenterMarketClient(bar=bar, positions_fn=gateway.list_positions)
     adapter = DataPipelineAdapter(
         okx_client=market,
         trader=None,
