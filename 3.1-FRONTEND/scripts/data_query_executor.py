@@ -40,6 +40,17 @@ if _DC_PG_DIR not in sys.path:
     sys.path.insert(0, _DC_PG_DIR)
 import dc_pg  # noqa: E402
 
+# S1 指标字典（54 模块 l1agg 为唯一事实源，与前端 timeseries 共用）
+_L1AGG_ROOT = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "..",
+    "..",
+    "54-L1架构能力聚合层",
+)
+if _L1AGG_ROOT not in sys.path:
+    sys.path.insert(0, _L1AGG_ROOT)
+from l1agg.series_catalog import resolve_days, resolve_metric  # noqa: E402
+
 # SPEC v1.5: 实体别名表（SSoT，39-金融语义蒸馏系统接管维护）
 _ALIASES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "entity_aliases.json")
 try:
@@ -244,6 +255,80 @@ def _fetch_cpi_yoy():
         return out if "actual" in out else None
     except Exception:
         return None
+
+
+def exec_metric_series(message: str):
+    """S1: 指标历史序列直答（真实 mm_metrics，无合成数据）。"""
+    spec = resolve_metric(message)
+    if not spec:
+        return {
+            "success": True,
+            "answer": "未能识别要查询的指标序列，可指明：CPI、恐惧贪婪指数、BTC 价格、MVRV、资金费率、DeFi TVL 等",
+            "data": None,
+        }
+    days = resolve_days(message, spec["days"])
+    ctx = get_l0().fetch_context(
+        "datacenter.series",
+        {
+            "sub_category": spec["sub_category"],
+            "metric_name": spec["metric_name"],
+            "days": days,
+            "agg": "daily",
+        },
+    )
+    if ctx.get("degraded"):
+        return {
+            "success": True,
+            "degraded": True,
+            "answer": f"序列查询失败: {ctx['meta'].get('error') or ctx['meta'].get('reason', '')}",
+            "data": None,
+        }
+    data = ctx.get("data") or {}
+    meta = ctx.get("meta") or {}
+    points = data.get("points") or []
+    unit = spec.get("unit") or ""
+    if not points:
+        return {
+            "success": True,
+            "answer": f"{spec['label']} 近 {days} 天暂无历史序列（{meta.get('reason', 'no_history')}）",
+            "data": {
+                "label": spec["label"],
+                "days": days,
+                "sample_n": 0,
+                "quality": meta.get("quality"),
+            },
+        }
+    values = [p["value"] for p in points]
+    first, last = values[0], values[-1]
+    change = last - first
+    answer = (
+        f"{spec['label']} 近 {days} 天（日频，{len(points)} 点）："
+        f"最新 {last:.4g}{unit}（{points[-1]['timestamp']}），"
+        f"区间 {min(values):.4g}~{max(values):.4g}{unit}，"
+        f"变化 {change:+.4g}{unit}；数据质量 {meta.get('quality')}"
+    )
+    return {
+        "success": True,
+        "answer": answer,
+        "data": {
+            "sub_category": spec["sub_category"],
+            "metric_name": spec["metric_name"],
+            "label": spec["label"],
+            "unit": unit,
+            "days": days,
+            "agg": data.get("agg"),
+            "sample_n": len(points),
+            "quality": meta.get("quality"),
+            "stats": {
+                "first": first,
+                "last": last,
+                "min": min(values),
+                "max": max(values),
+                "change": round(change, 6),
+            },
+            "points": points,
+        },
+    }
 
 
 def exec_data_query(message: str):
@@ -925,6 +1010,8 @@ def main():
             result = exec_risk_control(message)
         elif intent == "price_query":
             result = exec_price_query(message)
+        elif intent == "metric_series":
+            result = exec_metric_series(message)
         elif intent == "event_listing":
             result = exec_event_listing(message)
         elif intent == "event_line_query":

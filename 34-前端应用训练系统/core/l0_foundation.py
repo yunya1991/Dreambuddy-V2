@@ -27,8 +27,9 @@ import glob
 import json
 import os
 import re
+import sqlite3
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 SettleGate = Callable[[Dict[str, Any]], Tuple[bool, Dict[str, Any]]]
@@ -89,6 +90,13 @@ OKX_BACKUP = "https://aws.okx.com"
 # 战略层三资产类别键（与 L1 _YJ_ASSET_DESC 对齐）
 _ASSET_KEYS = ("crypto_usdt", "us_stock", "precious_metal")
 
+# datacenter.series（S1）：mm_metrics 区间序列查询
+_SERIES_DB_ENV = "DREAMBUDDY_CORE_DB"
+_SERIES_MAX_DAYS = 1825  # 5 年上限，防止全表扫描
+_SERIES_AGGS = ("raw", "daily", "weekly", "monthly")
+# 标识符白名单：sub_category / metric_name 仅允许字母数字与有限符号，防御注入与误查
+_SERIES_IDENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._/%+=\-]{0,63}$")
+
 # ============================================================
 # 信封构造
 # ============================================================
@@ -114,6 +122,39 @@ def _degraded(source: str, reason: str, error: str = "", data: Any = None) -> Di
     return _envelope(data, source, degraded=True, meta=meta)
 
 
+def _iso_utc(ts: int) -> str:
+    """UNIX 秒 → ISO8601 UTC（`2026-11-14T00:00:00Z`）。"""
+    return (
+        datetime.fromtimestamp(int(ts), tz=timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )
+
+
+def _bucket_key(ts: int, agg: str) -> str:
+    """按聚合粒度生成分桶键（UTC；周用 ISO 年周）。"""
+    dt = datetime.fromtimestamp(int(ts), tz=timezone.utc)
+    if agg == "daily":
+        return dt.strftime("%Y-%m-%d")
+    if agg == "weekly":
+        year, week, _ = dt.isocalendar()
+        return f"{year}-W{week:02d}"
+    if agg == "monthly":
+        return dt.strftime("%Y-%m")
+    return str(int(ts))
+
+
+def _aggregate_series(rows: List[Tuple[str, float, int]], agg: str) -> List[Dict[str, Any]]:
+    """同桶取最后一个点（降采样口径见 SPEC §六：统一降采样到日频）。"""
+    buckets: Dict[str, Tuple[int, float]] = {}
+    for _source, value, ts in rows:
+        buckets[_bucket_key(ts, agg)] = (int(ts), float(value))
+    return [
+        {"timestamp": _iso_utc(ts), "ts": int(ts), "value": round(value, 6)}
+        for ts, value in sorted(buckets.values())
+    ]
+
+
 # ============================================================
 # L0Foundation
 # ============================================================
@@ -125,6 +166,7 @@ class L0Foundation:
     # scope → fetcher 方法名
     _SCOPE_REGISTRY = {
         "datacenter.record": "_fetch_datacenter_record",
+        "datacenter.series": "_fetch_datacenter_series",
         "evolution.contradiction": "_fetch_evolution_contradiction",
         "evolution.snapshot": "_fetch_evolution_snapshot",
         "yijing.bcrm2": "_fetch_yijing_bcrm2",
@@ -254,6 +296,112 @@ class L0Foundation:
                 "metrics": row["metrics"],
             },
             src_tag,
+        )
+
+    # -------- scope: datacenter.series（S1：真实历史序列） --------
+
+    def _resolve_series_db(self) -> str:
+        """mm_metrics 所在库：环境变量优先（云端/快照副本），默认 19-DAL 生产库。"""
+        env_path = os.environ.get(_SERIES_DB_ENV)
+        if env_path:
+            return env_path
+        return self._path("19-数据访问层", "data", "dreambuddy_core.db")
+
+    def _query_series_rows(
+        self,
+        db_path: str,
+        sub_category: str,
+        metric_name: str,
+        start_ts: int,
+        end_ts: int,
+        source: Optional[str] = None,
+    ) -> List[Tuple[str, float, int]]:
+        """只读区间查询（命中 idx_mm_metrics_lookup），跨源同 ts 去重保留 source 字典序最小。"""
+        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=5)
+        try:
+            sql = (
+                "SELECT source, metric_value, timestamp FROM mm_metrics "
+                "WHERE sub_category = ? AND metric_name = ? "
+                "AND timestamp >= ? AND timestamp < ? AND metric_value IS NOT NULL"
+            )
+            args: List[Any] = [sub_category, metric_name, start_ts, end_ts]
+            if source:
+                sql += " AND source = ?"
+                args.append(source)
+            sql += " ORDER BY timestamp ASC, source ASC"
+            rows = conn.execute(sql, args).fetchall()
+        finally:
+            conn.close()
+        seen: set = set()
+        out: List[Tuple[str, float, int]] = []
+        for src, value, ts in rows:
+            if ts in seen:  # 跨源重复（如 funding_rate 双写）按 source ASC 去重
+                continue
+            seen.add(ts)
+            out.append((src, float(value), int(ts)))
+        return out
+
+    def _fetch_datacenter_series(self, params: Dict) -> Dict[str, Any]:
+        """mm_metrics 区间序列 + 降采样。返回 {points, sample_n} 与 meta.quality。"""
+        src_tag = "dal_mm_metrics"
+        sub = str(params.get("sub_category") or "").strip()
+        metric = str(params.get("metric_name") or "").strip()
+        if not sub or not metric:
+            return _degraded(src_tag, "invalid_params", "missing param: sub_category/metric_name")
+        if not _SERIES_IDENT_RE.match(sub) or not _SERIES_IDENT_RE.match(metric):
+            return _degraded(src_tag, "invalid_params", f"illegal identifier: {sub}/{metric}")
+        try:
+            days = int(params.get("days", 30))
+        except (TypeError, ValueError):
+            return _degraded(src_tag, "invalid_params", "days must be int")
+        if days < 1 or days > _SERIES_MAX_DAYS:
+            return _degraded(src_tag, "invalid_params", f"days out of range 1..{_SERIES_MAX_DAYS}")
+        agg = str(params.get("agg") or "daily").lower()
+        if agg not in _SERIES_AGGS:
+            return _degraded(src_tag, "invalid_params", f"unsupported agg: {agg}")
+        source = params.get("source")
+        if source and not _SERIES_IDENT_RE.match(str(source)):
+            return _degraded(src_tag, "invalid_params", f"illegal source: {source}")
+
+        db_path = self._resolve_series_db()
+        if not os.path.isfile(db_path):
+            return _degraded(src_tag, "source_missing", db_path)
+        end_ts = int(datetime.now(tz=timezone.utc).timestamp()) + 86400  # 含当日已落库点
+        start_ts = end_ts - days * 86400
+        try:
+            rows = self._query_series_rows(
+                db_path, sub, metric, start_ts, end_ts, str(source) if source else None
+            )
+        except Exception as e:
+            return _degraded(src_tag, "read_error", f"{type(e).__name__}: {e}")
+
+        points = _aggregate_series(rows, agg)
+        sample_n = len(points)
+        quality = "empty" if sample_n == 0 else ("partial" if sample_n < 30 else "good")
+        meta: Dict[str, Any] = {
+            "quality": quality,
+            "sample_n": sample_n,
+            "agg": agg,
+            "days": days,
+            "raw_n": len(rows),
+            "sources": sorted({r[0] for r in rows}),
+            "window_start": _iso_utc(start_ts),
+            "window_end": _iso_utc(end_ts),
+            "db": db_path,
+        }
+        if sample_n == 0:
+            meta["reason"] = "no_history"
+        return _envelope(
+            {
+                "sub_category": sub,
+                "metric_name": metric,
+                "agg": agg,
+                "days": days,
+                "points": points,
+                "sample_n": sample_n,
+            },
+            src_tag,
+            meta=meta,
         )
 
     # -------- scope: evolution.contradiction --------
