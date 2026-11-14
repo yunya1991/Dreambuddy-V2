@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict
 
 # 交易域标签：13→16→22→11 执行链路只属于神经网络系统；23 自进化域经 11 下单
@@ -20,6 +20,8 @@ from typing import Any, Dict
 EVOLUTION_DOMAIN_TAG = "23域"
 EVOLUTION_OKX_TAG = "evo23"  # OKX order tag 仅允许字母/数字且 ≤16 字符，中文无法写入
 NN_OKX_TAG = "yijingsim"  # 神经网络系统沿用默认标签
+# 23 域兜底决策有效期（秒）：expires_at 必须晚于提交时刻，否则 22 网关按过期直接拒单
+EVOLUTION_DECISION_TTL_SEC = 900
 
 
 def tag_reason(reason: str, domain_tag: str = EVOLUTION_DOMAIN_TAG) -> str:
@@ -99,7 +101,11 @@ class DomainTaggedOkxClient:
             else (f"dec-23-{inst_id or 'MULTI'}-{action}-{uuid.uuid4().hex[:8]}")
         )
         decision["expires_at"] = (
-            str(expires_at) if expires_at else datetime.now(timezone.utc).isoformat()
+            str(expires_at)
+            if expires_at
+            else (
+                datetime.now(timezone.utc) + timedelta(seconds=EVOLUTION_DECISION_TTL_SEC)
+            ).isoformat()
         )
         decision["px"] = px
         decision["sl_px"] = sl_px

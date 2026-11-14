@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -136,6 +137,17 @@ def test_evo_client_keeps_shadow_audit_when_gateway_present():
     evo.market_close_long("BARD-USDT-SWAP", reason="evolution_exit")
     assert shadow.decisions and shadow.decisions[0]["source"] == "23-evolution"
     assert len(gw.decisions) == 1
+    assert raw.calls == []
+
+
+def test_evo_client_default_expires_at_is_in_future():
+    """兜底 expires_at 必须晚于提交时刻，否则 22 网关按 SIGNAL_EXPIRED 直接拒单。"""
+    raw = _RawClient()
+    gw = _stub_gateway()
+    evo = DomainTaggedOkxClient(raw, gateway=gw)
+    evo.place_stop_loss_take_profit(inst_id="BARD-USDT-SWAP", pos_side="long", stop_loss_px=1.0)
+    exp = datetime.fromisoformat(gw.decisions[0]["expires_at"])
+    assert exp > datetime.now(timezone.utc)
     assert raw.calls == []
 
 
