@@ -47,6 +47,11 @@ task = {
 
 SPEC-M2 的 `resonance_matrix.json` 从"日更离线产物"扩展为**可按需调用的计算服务**：
 
+> 2026-11-14 增补：R(s) 增加**类内龙头**数据源 `40/leader_resonance.json`
+> （`scripts/p3_leader_resonance.py` 按 `asset_classes.ASSET_CLASSES` 计算成员 vs 本类龙头，
+> 如 XAG↔XAU、AMZN↔NVDA）。传感器优先取该文件的 R，缺失才回落 BTC 锚
+> `resonance_matrix.json` / `cross_asset_matrix.json`；降级条目（样本不足/拉取失败）不参与传导。
+
 ```text
 输入:  {symbol, asof_ts?}
 输出:  {
