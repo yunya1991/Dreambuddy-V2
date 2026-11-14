@@ -144,15 +144,19 @@ class SqliteRiskRepository(RiskRepository):
             # rs_cases.related_trade_id REFERENCES tr_trades(trade_id)：
             # 给 trade_id=None 时用占位行 __NO_LINK__（和 po_positions 同一占位）
             now_iso = _iso_z(datetime.now(timezone.utc))
-            conn.execute(
-                """
-                INSERT OR IGNORE INTO tr_trades (
-                    trade_id, symbol, entry_price, quantity, entry_ts,
-                    direction, risk_level_cn
-                ) VALUES (?, 'PLACEHOLDER', '0', '0', ?, 'long', 'MEDIUM')
-                """,
-                ("__NO_LINK__", now_iso),
-            )
+            # 缺表（空库/未初始化）跳过占位行：DDL 归 migrations.init_schema（G0-6）
+            if conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='tr_trades'"
+            ).fetchone():
+                conn.execute(
+                    """
+                    INSERT OR IGNORE INTO tr_trades (
+                        trade_id, symbol, entry_price, quantity, entry_ts,
+                        direction, risk_level_cn
+                    ) VALUES (?, 'PLACEHOLDER', '0', '0', ?, 'long', 'MEDIUM')
+                    """,
+                    ("__NO_LINK__", now_iso),
+                )
 
     def _ensure_singleton(self) -> None:
         """rs_state 强制单行 id=1（空表时用最小 seed 值占位；第一次 update_state 会覆盖真实列）。"""

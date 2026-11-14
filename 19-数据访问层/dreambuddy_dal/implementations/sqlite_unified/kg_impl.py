@@ -24,6 +24,8 @@ from typing import List, Optional, Set, Tuple
 from dreambuddy_dal.connection import get_sqlite_connection
 from dreambuddy_dal.protocols.kg_repo import KnowledgeGraphRepository
 
+from .schema_init import _add_column_if_missing
+
 
 # ===================================================================== helpers
 def _iso_z(dt: object) -> Optional[str]:
@@ -44,11 +46,11 @@ class SqliteKnowledgeGraphRepository(KnowledgeGraphRepository):
 
     # ------------------------------------------------------------------ 补列
     def _ensure_proto_columns(self) -> None:
-        """kg_entity_aliases 缺 confidence 列 → ALTER。"""
+        """kg_entity_aliases 缺 confidence 列 → ALTER（缺表跳过，DDL 归 init_schema）。"""
         with get_sqlite_connection(self.db_path) as conn:
-            cols = {c[1] for c in conn.execute("PRAGMA table_info(kg_entity_aliases)").fetchall()}
-            if "confidence" not in cols:
-                conn.execute("ALTER TABLE kg_entity_aliases ADD COLUMN confidence REAL DEFAULT 1.0")
+            _add_column_if_missing(
+                conn, "kg_entity_aliases", "confidence", "confidence REAL DEFAULT 1.0"
+            )
 
     # ================================================================ 实体 upsert
     def upsert_entity(

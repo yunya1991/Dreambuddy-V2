@@ -118,15 +118,19 @@ class SqlitePositionRepository(PositionRepository):
             #    本 Repository 把 po_positions 改做净持仓用，不绑定具体 Trade，
             #    用虚拟占位 trade_id="__NO_LINK__" 满足 FK 约束。
             now_iso = _iso_z(datetime.now(timezone.utc))
-            conn.execute(
-                """
-                INSERT OR IGNORE INTO tr_trades (
-                    trade_id, symbol, entry_price, quantity, entry_ts,
-                    direction, risk_level_cn
-                ) VALUES (?, 'PLACEHOLDER', '0', '0', ?, 'long', 'MEDIUM')
-                """,
-                ("__NO_LINK__", now_iso),
-            )
+            # 缺表（空库/未初始化）跳过占位行：DDL 归 migrations.init_schema（G0-6）
+            if conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='tr_trades'"
+            ).fetchone():
+                conn.execute(
+                    """
+                    INSERT OR IGNORE INTO tr_trades (
+                        trade_id, symbol, entry_price, quantity, entry_ts,
+                        direction, risk_level_cn
+                    ) VALUES (?, 'PLACEHOLDER', '0', '0', ?, 'long', 'MEDIUM')
+                    """,
+                    ("__NO_LINK__", now_iso),
+                )
 
     # ============================================================
     # PositionRepository 4 个抽象方法

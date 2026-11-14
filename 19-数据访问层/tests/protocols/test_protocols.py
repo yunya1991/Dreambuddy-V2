@@ -40,7 +40,7 @@ class TestProtocolExistenceAndAbc:
     def test_protocol_package_reexports_all(self):
         from dreambuddy_dal.protocols import __all__
 
-        assert len(__all__) == 6
+        assert len(__all__) == 9
         for name in [
             "TradeRepository",
             "PositionRepository",
@@ -48,6 +48,9 @@ class TestProtocolExistenceAndAbc:
             "RiskRepository",
             "ConfigRepository",
             "KnowledgeGraphRepository",
+            "CognitiveRepository",
+            "SkillRepository",
+            "KnowledgeRepository",
         ]:
             assert name in __all__
 

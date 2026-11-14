@@ -447,7 +447,15 @@ def _add_column_if_missing(
     column: str,
     ddl_with_default: str,
 ) -> bool:
-    """§10 Helper 1/4：缺列 → ALTER TABLE ADD；必带 DEFAULT；幂等。"""
+    """§10 Helper 1/4：缺列 → ALTER TABLE ADD；必带 DEFAULT；幂等。
+
+    缺表时返回 False（不建表）：DDL 唯一 owner 是 init_schema 全量迁移，
+    本 Helper 只做增量补列，避免空库上构造 Repository 时崩溃。
+    """
+    if not conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
+    ).fetchone():
+        return False
     cols = {r[1] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()}
     if column in cols:
         return False
@@ -466,7 +474,13 @@ def _add_index_if_missing(
 
     Args:
         unique: True 时生成 UNIQUE INDEX（唯一值索引，冲突抛 IntegrityError）
+
+    缺表时返回 False（不建表），理由同 _add_column_if_missing。
     """
+    if not conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
+    ).fetchone():
+        return False
     existing = {r[1] for r in conn.execute(f"PRAGMA index_list({table})").fetchall()}
     if name in existing:
         return False
@@ -480,7 +494,11 @@ def _ensure_singleton_row(
     table: str,
     default_values: dict[str, object],
 ) -> None:
-    """§10 Helper 4/4：单行表空表时 INSERT 默认行。幂等。"""
+    """§10 Helper 4/4：单行表空表时 INSERT 默认行。幂等（缺表跳过）。"""
+    if not conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
+    ).fetchone():
+        return
     exists = conn.execute(f"SELECT COUNT(*) FROM {table} WHERE id = 1").fetchone()[0]
     if exists:
         return

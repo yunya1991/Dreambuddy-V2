@@ -306,16 +306,28 @@ class SqliteTradeRepository(TradeRepository):
 
     # ------------------------------------------------------------------ 补列
     def _ensure_trades_proto_columns(self) -> None:
-        """schema_init.tr_trades 缺 unified_models.TradeRecord 的 9 列 → ALTER TABLE（幂等）。"""
+        """schema_init.tr_trades 缺 unified_models.TradeRecord 的 9 列 → ALTER TABLE（幂等）。
+
+        空库/未初始化库直接跳过：DDL 由 migrations.init_schema 统一负责（G0-6），
+        构造器不应因缺表而失败。
+        """
         with get_sqlite_connection(self.db_path) as conn:
+            if not conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='tr_trades'"
+            ).fetchone():
+                return
             existing = {c[1] for c in conn.execute("PRAGMA table_info(tr_trades)").fetchall()}
             for col, ty, default in _TRADES_MISSING_COLS:
                 if col not in existing:
                     conn.execute(f"ALTER TABLE tr_trades ADD COLUMN {col} {ty} DEFAULT {default}")
 
     def _ensure_daily_stats_proto_columns(self) -> None:
-        """补 P0 DailyStats 简版列 + 复合唯一索引。"""
+        """补 P0 DailyStats 简版列 + 复合唯一索引（空库跳过，DDL 归 migrations.init_schema）。"""
         with get_sqlite_connection(self.db_path) as conn:
+            if not conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='tr_daily_stats'"
+            ).fetchone():
+                return
             existing_cols = {
                 c[1] for c in conn.execute("PRAGMA table_info(tr_daily_stats)").fetchall()
             }
