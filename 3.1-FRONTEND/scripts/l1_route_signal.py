@@ -15,6 +15,7 @@
   意图识别（对齐 TS fallbackPattern 顺序）
   → L0 cognitive.recall（core/l0_foundation.py scope，FAIL-OPEN）
   → core.route_confidence.evaluate_route（C3 匹配度 + C4 预测误差，阈值单一事实源）
+  → 确定性关键词注册表意图（whale_flow / calendar_event）：跳过 recall 门控直接单维直答
   → L1_DIRECT: 复用 data_query_executor 十意图执行器 + settle 沉淀
   → L2_HANDOFF: 不执行，仅回传信号
 
@@ -51,6 +52,7 @@ from core.route_confidence import (  # noqa: E402
 )
 from data_query_executor import (  # noqa: E402
     exec_asset_class_trend,
+    exec_calendar_event,
     exec_contradiction_insight,
     exec_data_insight,
     exec_data_query,
@@ -61,6 +63,7 @@ from data_query_executor import (  # noqa: E402
     exec_price_query,
     exec_risk_control,
     exec_technical_analysis,
+    exec_whale_flow,
     resolve_source,
     settle_to_cognitive,
 )
@@ -78,7 +81,16 @@ EXECUTORS = {
     "risk_control": exec_risk_control,
     "price_query": exec_price_query,
     "metric_series": exec_metric_series,
+    "whale_flow": exec_whale_flow,
+    "calendar_event": exec_calendar_event,
 }
+
+# 确定性关键词注册表意图（S1）：关键词命中即确定要走哪个单维数据，
+# 执行器直连真实数据（mm_metrics / mm_events），不存在“语义猜错”风险，
+# 因此不参与 recall 密度门控（route_confidence 0.65 门限只约束语义意图）。
+# 这样「巨鲸动向」「下一次议息会议」不会因 recall 空/密度不足被推给 L2。
+DETERMINISTIC_INTENTS = frozenset({"whale_flow", "calendar_event"})
+R_DETERMINISTIC_REGISTRY = "deterministic_keyword_registry"
 
 # ============================================================
 # 意图识别 — 对齐 TS l1-intent-registry.ts v3
@@ -93,6 +105,16 @@ _FALLBACK_PATTERNS = [
             r"(查|搜|检索|找|有没有|在哪|放哪|路径|怎么写的).*(文档|资料|SPEC|规范|手册|指南|知识库|wiki|白皮书)"
             r"|(文档|资料|SPEC|规范|手册|指南|知识库|wiki|白皮书).*(查|搜|找|有没有|在哪|放哪|路径|怎么写的|吗)"
             r"|全文检索"
+        ),
+    ),
+    # 巨鲸数据先于事件演变：问到「巨鲸+动向/最近/流入流出」是确定性数据检索，
+    # 不是事件流跟踪（否则被 event_line_query 吞掉且 L1 无执行器 → 推给 L2）
+    (
+        "whale_flow",
+        re.compile(
+            r"(?=.*(巨鲸|鲸鱼|whale|大户))"
+            r"(?=.*(动向|动态|数据|流入|流出|净流|转账|动作|最近|当前|现在|多少|情况|怎么样|查询|查一下))",
+            re.IGNORECASE,
         ),
     ),
     # 事件演变先于事件分析：问"后续/演变/进展"是跟踪，不是单次解读
@@ -137,6 +159,17 @@ _FALLBACK_PATTERNS = [
             r"|(?=.*(美股|港股|A股|纳指|标普|黄金|原油|贵金属|加密))"
             r"(?=.*(怎么样|如何|表现|强弱|哪个强|谁强|谁更强|对比|走势|趋势|轮动))"
             r"|(?=.*(BTC|ETH|SOL))(?=.*(哪个强|谁强|谁更强))"
+        ),
+    ),
+    # 经济日历先于事件分析：「议息/FOMC/非农 + 什么时候/下次/日程」问的是日程，
+    # 不是事件解读；否则会被 event_analysis 的「议息」关键词吞掉
+    (
+        "calendar_event",
+        re.compile(
+            r"(?:经济日历|财经日历|宏观日历)"
+            r"|(?=.*(议息|FOMC|美联储会议|利率决议|非农|NFP|CPI|PPI|经济数据|数据公布))"
+            r"(?=.*(什么时候|何时|哪天|几号|下次|下一次|最近一次|日程|日历|时间表|公布时间|发布时间|安排))",
+            re.IGNORECASE,
         ),
     ),
     (
@@ -261,6 +294,44 @@ def _unknown_result(
     }
 
 
+def _route_deterministic(intent: str, message: str, trace_id: str = "") -> dict:
+    """确定性关键词注册表命中：跳过 recall 门控，直接执行单维检索并直答。
+
+    route_signal 显式标注 L1_DIRECT + reason=deterministic_keyword_registry，
+    与语义意图的 0.65 门控区分（阈值本身不变，仍由 route_confidence 单一事实源维护）。
+    """
+    try:
+        result = EXECUTORS[intent](message)
+    except Exception as e:
+        result = {"success": True, "degraded": True, "answer": f"执行异常: {e}", "data": None}
+    settle_attempted = False
+    try:
+        settle_to_cognitive(intent, message, result, trace_id=trace_id)
+        settle_attempted = True
+    except Exception:
+        pass
+    return {
+        "success": True,
+        "intent": intent,
+        "handled": True,
+        "answer": result.get("answer", ""),
+        "data": result.get("data"),
+        "degraded": bool(result.get("degraded")),
+        "trace_id": trace_id,
+        "route_signal": RouteConfidenceResult(
+            route_confidence=1.0,
+            decision=L1_DIRECT,
+            match_score=1.0,
+            case_density=0,
+            prediction_error=None,
+            fast_path=False,
+            degraded=False,
+            reasons=[R_DETERMINISTIC_REGISTRY],
+        ).to_dict(),
+        "settle_attempted": settle_attempted,
+    }
+
+
 def route_query(message: str, intent: str = "", trace_id: str = "") -> dict:
     """门控主流程：意图 → recall → evaluate_route → L1 直答 / L2 交接（全程 FAIL-OPEN）。
 
@@ -274,6 +345,10 @@ def route_query(message: str, intent: str = "", trace_id: str = "") -> dict:
     if intent not in EXECUTORS:
         # 注册表有该意图但 L1 没有确定性执行器（doc_search）→ 交 L2，保留 hint
         return _unknown_result(trace_id, intent, "l1_no_executor", degraded=False)
+
+    # 确定性关键词注册表：不依赖认知召回，直接单维检索直答（无 LLM、无猜测）
+    if intent in DETERMINISTIC_INTENTS:
+        return _route_deterministic(intent, message, trace_id)
 
     # 认知召回（L0 scope；异常/降级 → cognitive_available=False → evaluate_route 静态兜底）
     cognitive_available = True

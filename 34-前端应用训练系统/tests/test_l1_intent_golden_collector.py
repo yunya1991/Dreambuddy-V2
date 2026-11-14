@@ -4,7 +4,7 @@
 覆盖:
   TR-1.1  实现 TrainingDataProvider 接口
   TR-1.2  get_source_name / get_quality_threshold
-  TR-1.3  fetch_cases 覆盖全部 311 条标注
+  TR-1.3  fetch_cases 覆盖全部 golden 标注（_GOLDEN_TOTAL 随标注集递增）
   TR-1.4  TrainingCase 字段映射（intent/outcome_text/metadata/layer_tags）
   TR-1.5  unknown 标注标记为负样本
   TR-1.6  limit 生效
@@ -30,7 +30,7 @@ for _p in [_THIS_DIR, _ADAPTERS_DIR, _34_DIR]:
 import intent_golden_collector as igc  # noqa: E402
 from interfaces.training_data_provider import TrainingDataProvider  # noqa: E402
 
-_GOLDEN_TOTAL = 311
+_GOLDEN_TOTAL = 368
 
 
 class IntentGoldenCollectorTest(unittest.TestCase):

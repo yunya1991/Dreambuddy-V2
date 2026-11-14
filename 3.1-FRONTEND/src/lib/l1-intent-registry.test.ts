@@ -50,6 +50,15 @@ describe('l1-intent-registry v2 静态门控（零回归）', () => {
     expect(fallbackIntent('今天天气咋样')).toBe('');
   });
 
+  it('S1 单维关键词注册表：巨鲸 / 经济日历（与 l1_route_signal.py 对齐）', () => {
+    expect(fallbackIntent('查询巨鲸动向')).toBe('whale_flow');
+    expect(fallbackIntent('下一次议息会议是什么时候')).toBe('calendar_event');
+    expect(fallbackIntent('下次非农什么时候公布')).toBe('calendar_event');
+    // 解读类问句不能被数据意图吞掉
+    expect(fallbackIntent('巨鲸持续买入说明什么')).not.toBe('whale_flow');
+    expect(fallbackIntent('议息会议结果怎么看')).not.toBe('calendar_event');
+  });
+
   it('阈值常量跨系统唯一 (SSoT §16.5)', () => {
     expect(ROUTE_CONFIDENCE_THRESHOLD_HIGH).toBe(0.65);
   });

@@ -163,6 +163,67 @@ METRIC_ALIASES: List[Tuple[Tuple[str, str], Tuple[str, ...], str, str, int]] = [
     (("fedwatch", "cut_prob"), ("降息概率", "cut probability"), "降息概率", "%", 365),
 ]
 
+# ============================================================
+# 单维关键词注册表（S1 扩展）：巨鲸流向 / 经济日历事件
+# 命中即走确定性检索直答（不依赖语义模型），新增关键词只需在此加一行。
+# ============================================================
+
+# 巨鲸指标：metric_name → (关键词, 展示名, 单位, 展示缩放, 默认天数, 符号修正)
+# 均为 mm_metrics 实存序列（sub_category=exchanges_whales）
+# 符号修正：whale_netflow_to_ex_usd 落库口径为「转出-转入」（净转出为正），
+# 展示为「净流入交易所」需乘 -1；其余为直接值。
+WHALE_METRICS: List[Tuple[str, Tuple[str, ...], str, str, float, int, float]] = [
+    (
+        "whale_netflow_to_ex_usd",
+        ("净流入", "净流", "净流出", "netflow", "动向", "动态"),
+        "巨鲸净流入交易所",
+        "亿美元",
+        1e8,
+        7,
+        -1.0,
+    ),
+    (
+        "whale_24h_to_ex_usd",
+        ("流入", "转入", "to exchange"),
+        "巨鲸转入交易所（24h）",
+        "亿美元",
+        1e8,
+        7,
+        1.0,
+    ),
+    (
+        "whale_24h_from_ex_usd",
+        ("流出", "转出", "from exchange"),
+        "巨鲸转出交易所（24h）",
+        "亿美元",
+        1e8,
+        7,
+        1.0,
+    ),
+    (
+        "whales_transfer_count",
+        ("笔数", "次数", "count"),
+        "巨鲸大额转账笔数",
+        "笔",
+        1.0,
+        7,
+        1.0,
+    ),
+]
+
+# 经济日历事件类型：kind → (关键词, 展示名)
+# kind 与 mm_events.event_type 对齐（fed_calendar=fomc / macro_calendar=nfp,cpi,macro_other）
+EVENT_KINDS: List[Tuple[str, Tuple[str, ...], str]] = [
+    (
+        "fomc",
+        ("议息", "fomc", "美联储会议", "利率决议", "加息会议", "降息会议"),
+        "议息会议（FOMC）",
+    ),
+    ("nfp", ("非农", "nfp", "就业形势", "就业报告"), "非农就业报告"),
+    ("cpi", ("cpi", "消费者价格", "通胀数据"), "CPI 数据"),
+    ("ppi", ("ppi", "生产者价格"), "PPI 数据"),
+]
+
 # 天数口语解析（按最长匹配优先）
 _PERIOD_ALIASES = (
     ("三年", 1095),
@@ -211,6 +272,38 @@ def resolve_metric(text: str) -> Optional[Dict[str, Any]]:
         "unit": best[3],
         "days": best[4],
     }
+
+
+def resolve_whale_metric(text: str) -> Dict[str, Any]:
+    """巨鲸问句 → 单维序列定义；最长关键词优先，默认净流入交易所。"""
+    best = WHALE_METRICS[0]
+    best_len = 0
+    low = (text or "").lower()
+    for item in WHALE_METRICS:
+        for alias in item[1]:
+            if alias in low and len(alias) > best_len:
+                best, best_len = item, len(alias)
+    return {
+        "sub_category": "exchanges_whales",
+        "metric_name": best[0],
+        "label": best[2],
+        "unit": best[3],
+        "scale": best[4],
+        "days": best[5],
+        "sign": best[6],
+    }
+
+
+def resolve_event_kind(text: str) -> Optional[Dict[str, Any]]:
+    """经济日历问句 → 事件类型 {kind,label}；未识别返回 None（由调用方查全部）。"""
+    low = (text or "").lower()
+    best = None
+    best_len = 0
+    for kind, aliases, label in EVENT_KINDS:
+        for alias in aliases:
+            if alias in low and len(alias) > best_len:
+                best, best_len = {"kind": kind, "label": label}, len(alias)
+    return best
 
 
 def resolve_days(text: str, default: int) -> int:

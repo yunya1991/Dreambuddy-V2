@@ -257,7 +257,7 @@
 {"message": "最近监管有什么变化", "intent": "event_line_query", "variant": "formal"}
 {"message": "这次解锁事件后续怎么演变", "intent": "event_line_query", "variant": "formal"}
 {"message": "ETF资金流向最近有什么变化", "intent": "event_line_query", "variant": "formal"}
-{"message": "巨鲸动向最近怎么样", "intent": "event_line_query", "variant": "colloquial"}
+{"message": "巨鲸动向最近怎么样", "intent": "whale_flow", "variant": "colloquial"}
 {"message": "地缘事件最近进展如何", "intent": "event_line_query", "variant": "formal"}
 {"message": "美联储政策最近有什么动态", "intent": "event_line_query", "variant": "formal"}
 {"message": "稳定币监管最近的变化", "intent": "event_line_query", "variant": "formal"}
@@ -265,10 +265,15 @@
 {"message": "快讯里监管消息有什么变化", "intent": "event_line_query", "variant": "formal"}
 {"message": "最近ETF相关事件有什么进展", "intent": "event_line_query", "variant": "formal"}
 {"message": "地缘局势最近怎么样", "intent": "event_line_query", "variant": "colloquial"}
-{"message": "巨鲸地址最近的动作变化", "intent": "event_line_query", "variant": "formal"}
+{"message": "巨鲸地址最近的动作变化", "intent": "whale_flow", "variant": "formal"}
 {"message": "监管口径最近有没有变化", "intent": "event_line_query", "variant": "colloquial"}
 {"message": "这次解锁事件的影响在演变吗", "intent": "event_line_query", "variant": "formal"}
 {"message": "最近行业事件趋势", "intent": "event_line_query", "variant": "terse"}
+{"message": "查询巨鲸动向", "intent": "whale_flow", "variant": "terse"}
+{"message": "巨鲸最近往交易所转了多少", "intent": "whale_flow", "variant": "colloquial"}
+{"message": "下一次议息会议是什么时候", "intent": "calendar_event", "variant": "colloquial"}
+{"message": "下次非农什么时候公布", "intent": "calendar_event", "variant": "formal"}
+{"message": "经济日历", "intent": "calendar_event", "variant": "terse"}
 {"message": "你好", "intent": "unknown", "variant": "oos"}
 {"message": "在吗", "intent": "unknown", "variant": "oos"}
 {"message": "今天天气如何", "intent": "unknown", "variant": "oos"}

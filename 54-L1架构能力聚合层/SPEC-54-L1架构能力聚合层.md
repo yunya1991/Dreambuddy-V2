@@ -268,6 +268,8 @@ capabilities:
 | intent | 识别要点 | 执行器 | mode |
 |---|---|---|---|
 | `metric_series` | 指标词 + 时间范围词（近一年/近 30 天/历史走势/变化率） | `exec_metric_series` | deterministic |
+| `whale_flow` | 巨鲸/鲸鱼/大户 + 动向/流入流出/转账/最近（排除「说明什么」等解读） | `exec_whale_flow` | deterministic-keyword |
+| `calendar_event` | 议息/FOMC/非农/CPI/PPI + 什么时候/下次/日程；或「经济日历」 | `exec_calendar_event` | deterministic-keyword |
 | `metric_percentile` | 指标词 + 分位/百分位/历史位置/z-score/贵不贵 | `exec_metric_percentile` | deterministic |
 | `metric_meaning` | 指标词 + 是什么意思/怎么读/怎么看/含义 | `exec_metric_meaning` | deterministic |
 | `cross_check` | 指标词 + 验证/印证/背离/共振/是否一致 | `exec_cross_check` | gated |
@@ -281,8 +283,10 @@ capabilities:
 
 **命中与顺序约束（B2 防误路由）**：
 - 能力命中三条件：`指标别名命中` AND `查询类型词命中` AND `非文档/事件意图`
-- fallback 顺序固定：`doc_search → event_line_query → metric_* → data_query / price_query`
+- fallback 顺序固定：`doc_search → whale_flow → event_line_query → calendar_event → event_analysis → metric_* → data_query / price_query`
 - `deterministic` 不等于免校验：仍需参数完整性与数据质量校验，校验失败走 L2
+- `deterministic-keyword`（`whale_flow` / `calendar_event`）：关键词命中即确定数据口径，直接单维检索直答，**不参与 recall 密度门控**（`route_signal.reasons=["deterministic_keyword_registry"]`）；0.65 阈值本身不变，仍只约束语义意图
+- 关键词注册表 SSoT：`54-L1架构能力聚合层/l1agg/series_catalog.py` 的 `WHALE_METRICS` / `EVENT_KINDS`（新增数据词只加一行）
 - golden set 必须新增**负样本 ≥10 条**（例：「CPI 文档在哪」→`doc_search`；「CPI 什么时候发布」→`calendar`；「CPI 和 BTC 有关系吗」→`cross_check`）
 
 ### 5.5 前端契约

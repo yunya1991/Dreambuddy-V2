@@ -49,7 +49,12 @@ _L1AGG_ROOT = os.path.join(
 )
 if _L1AGG_ROOT not in sys.path:
     sys.path.insert(0, _L1AGG_ROOT)
-from l1agg.series_catalog import resolve_days, resolve_metric  # noqa: E402
+from l1agg.series_catalog import (  # noqa: E402
+    resolve_days,
+    resolve_event_kind,
+    resolve_metric,
+    resolve_whale_metric,
+)
 
 # SPEC v1.5: 实体别名表（SSoT，39-金融语义蒸馏系统接管维护）
 _ALIASES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "entity_aliases.json")
@@ -376,6 +381,149 @@ def exec_metric_series(message: str):
                 "change": round(change, 6),
             },
             "points": points,
+        },
+    }
+
+
+def _series_last(sub: str, metric: str, days: int):
+    """取单维序列最新点 (value, ts)；不可用/空 → None。"""
+    ctx = get_l0().fetch_context(
+        "datacenter.series",
+        {"sub_category": sub, "metric_name": metric, "days": days, "agg": "daily"},
+    )
+    if ctx.get("degraded"):
+        return None
+    points = (ctx.get("data") or {}).get("points") or []
+    if not points:
+        return None
+    last = points[-1]
+    return float(last["value"]), int(last.get("ts", 0))
+
+
+def _cst_hm(ts: int) -> str:
+    import time as _t
+
+    g = _t.gmtime(int(ts) + 8 * 3600)
+    return "%04d-%02d-%02d %02d:%02d" % (g.tm_year, g.tm_mon, g.tm_mday, g.tm_hour, g.tm_min)
+
+
+def exec_whale_flow(message: str):
+    """巨鲸动向：exchanges_whales 单维序列直答（净流入/转入/转出/笔数）。"""
+    spec = resolve_whale_metric(message)
+    days = resolve_days(message, spec["days"])
+    ctx = get_l0().fetch_context(
+        "datacenter.series",
+        {
+            "sub_category": spec["sub_category"],
+            "metric_name": spec["metric_name"],
+            "days": days,
+            "agg": "daily",
+        },
+    )
+    if ctx.get("degraded"):
+        return {
+            "success": True,
+            "degraded": True,
+            "answer": f"巨鲸数据暂不可用: {ctx['meta'].get('error') or ctx['meta'].get('reason', '')}",
+            "data": None,
+        }
+    data = ctx.get("data") or {}
+    meta = ctx.get("meta") or {}
+    points = data.get("points") or []
+    unit = spec["unit"]
+    scale = spec["scale"] or 1.0
+    if not points:
+        return {
+            "success": True,
+            "answer": f"{spec['label']} 近 {days} 天暂无历史数据（{meta.get('reason', 'no_history')}）",
+            "data": {"label": spec["label"], "days": days, "sample_n": 0},
+        }
+    values = [float(p["value"]) * spec["sign"] for p in points]
+    last = values[-1]
+    last_ts = int(points[-1].get("ts", 0))
+    prec = 0 if scale == 1.0 else 2
+    head = (
+        f"{spec['label']}（近 {days} 天，日频 {len(points)} 点）："
+        f"最新 {last / scale:+.{prec}f}{unit}（{_cst_hm(last_ts)} CST），"
+        f"区间 {min(values) / scale:.{prec}f}~{max(values) / scale:.{prec}f}{unit}，"
+        f"区间变化 {(last - values[0]) / scale:+.{prec}f}{unit}；数据质量 {meta.get('quality')}"
+    )
+    # 24h 转入/转出与大额转账笔数（同一 sub_category 的伴随单维，补充方向判断）
+    extra = []
+    for metric, label, sc in (
+        ("whale_24h_to_ex_usd", "24h 转入交易所", 1e8),
+        ("whale_24h_from_ex_usd", "24h 转出交易所", 1e8),
+        ("whales_transfer_count", "大额转账笔数", 1.0),
+    ):
+        if metric == spec["metric_name"]:
+            continue
+        got = _series_last("exchanges_whales", metric, max(days, 2))
+        if got is None:
+            continue
+        val, ts = got
+        if metric == "whales_transfer_count":
+            extra.append(f"{label} {val:.0f} 笔（{_cst_hm(ts)}）")
+        else:
+            extra.append(f"{label} {val / sc:.2f} 亿美元（{_cst_hm(ts)}）")
+    answer = head + ("；" + "，".join(extra) if extra else "")
+    return {
+        "success": True,
+        "answer": answer,
+        "data": {
+            "sub_category": spec["sub_category"],
+            "metric_name": spec["metric_name"],
+            "label": spec["label"],
+            "unit": unit,
+            "days": days,
+            "sample_n": len(points),
+            "quality": meta.get("quality"),
+            "stats": {
+                "last": last,
+                "min": min(values),
+                "max": max(values),
+                "change": round(last - values[0], 6),
+            },
+            "points": points,
+        },
+    }
+
+
+def exec_calendar_event(message: str):
+    """经济日历：mm_events 单维事件检索（议息/非农/CPI/PPI 的下一次或近期日程）。"""
+    kind = resolve_event_kind(message)
+    kinds = [kind["kind"]] if kind else []
+    label = kind["label"] if kind else "经济数据事件"
+    ctx = get_l0().fetch_context(
+        "datacenter.events", {"kinds": kinds, "limit": 3, "future_days": 400}
+    )
+    if ctx.get("degraded"):
+        return {
+            "success": True,
+            "degraded": True,
+            "answer": f"经济日历暂不可用: {ctx['meta'].get('error') or ctx['meta'].get('reason', '')}",
+            "data": None,
+        }
+    events = ctx.get("data") or []
+    if not events:
+        return {
+            "success": True,
+            "answer": f"经济日历中暂无后续{label}日程（数据源未更新）",
+            "data": {"kind": kind["kind"] if kind else "", "events": []},
+        }
+    first = events[0]
+    tail = "；再往后：" + "，".join(e["event_time_cst"] for e in events[1:]) if events[1:] else ""
+    answer = (
+        f"下一次{label}：{first['event_time_cst']}（北京时间），"
+        f"{first['title'] or first['event_type']}（来源 {first['source']}，质量 {first['quality']}）"
+        + tail
+    )
+    return {
+        "success": True,
+        "answer": answer,
+        "data": {
+            "kind": kind["kind"] if kind else "",
+            "label": label,
+            "events": events,
         },
     }
 
@@ -1068,6 +1216,10 @@ def main():
             result = exec_price_query(message)
         elif intent == "metric_series":
             result = exec_metric_series(message)
+        elif intent == "whale_flow":
+            result = exec_whale_flow(message)
+        elif intent == "calendar_event":
+            result = exec_calendar_event(message)
         elif intent == "event_listing":
             result = exec_event_listing(message)
         elif intent == "event_line_query":

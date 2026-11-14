@@ -97,6 +97,9 @@ _SERIES_AGGS = ("raw", "daily", "weekly", "monthly")
 # 标识符白名单：sub_category / metric_name 仅允许字母数字与有限符号，防御注入与误查
 _SERIES_IDENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._/%+=\-]{0,63}$")
 
+# datacenter.events（经济日历）：未来日程最多查 3 年（FOMC 官网仅公布到次年）
+_EVENTS_MAX_DAYS = 1095
+
 # ============================================================
 # 信封构造
 # ============================================================
@@ -129,6 +132,11 @@ def _iso_utc(ts: int) -> str:
         .isoformat(timespec="seconds")
         .replace("+00:00", "Z")
     )
+
+
+def _iso_cst(ts: int) -> str:
+    """UNIX 秒 → 北京时间 `2026-12-10 03:00`（经济日历展示用，不带时区后缀）。"""
+    return datetime.fromtimestamp(int(ts) + 8 * 3600, tz=timezone.utc).strftime("%Y-%m-%d %H:%M")
 
 
 def _bucket_key(ts: int, agg: str) -> str:
@@ -167,6 +175,7 @@ class L0Foundation:
     _SCOPE_REGISTRY = {
         "datacenter.record": "_fetch_datacenter_record",
         "datacenter.series": "_fetch_datacenter_series",
+        "datacenter.events": "_fetch_datacenter_events",
         "evolution.contradiction": "_fetch_evolution_contradiction",
         "evolution.snapshot": "_fetch_evolution_snapshot",
         "yijing.bcrm2": "_fetch_yijing_bcrm2",
@@ -402,6 +411,74 @@ class L0Foundation:
             },
             src_tag,
             meta=meta,
+        )
+
+    # -------- scope: datacenter.events（经济日历：mm_events） --------
+
+    def _fetch_datacenter_events(self, params: Dict) -> Dict[str, Any]:
+        """mm_events 按时序取事件（默认未来 400 天内最近 5 条）。
+
+        params: kinds（事件类型过滤，如 ["fomc"]）、limit（默认 5）、
+                future_days（默认 400）、past_days（默认 0，>0 时含近期已发生事件）
+        返回按 event_time 升序的事件列表；data=[] 表示源可达但窗口内无事件。
+        """
+        src_tag = "dal_mm_events"
+        try:
+            limit = int(params.get("limit", 5))
+            future_days = int(params.get("future_days", 400))
+            past_days = int(params.get("past_days", 0))
+        except (TypeError, ValueError):
+            return _degraded(src_tag, "invalid_params", "limit/future_days/past_days must be int")
+        if not (1 <= limit <= 50) or not (0 <= future_days <= _EVENTS_MAX_DAYS) or past_days < 0:
+            return _degraded(src_tag, "invalid_params", "limit/future_days/past_days out of range")
+        kinds = params.get("kinds") or []
+        if isinstance(kinds, str):
+            kinds = [kinds]
+        kinds = {str(k) for k in kinds if k}
+
+        db_path = self._resolve_series_db()
+        if not os.path.isfile(db_path):
+            return _degraded(src_tag, "source_missing", db_path)
+        now_ts = int(datetime.now(tz=timezone.utc).timestamp())
+        start_ts = now_ts - past_days * 86400
+        end_ts = now_ts + future_days * 86400
+        try:
+            conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=5)
+            try:
+                rows = conn.execute(
+                    "SELECT event_time, event_type, subtype, source, title, confidence, quality "
+                    "FROM mm_events WHERE event_time >= ? AND event_time < ? "
+                    "ORDER BY event_time ASC",
+                    (start_ts, end_ts),
+                ).fetchall()
+            finally:
+                conn.close()
+        except sqlite3.Error as e:
+            return _degraded(src_tag, "read_error", f"{type(e).__name__}: {e}")
+
+        events: List[Dict[str, Any]] = []
+        for et, etype, subtype, source, title, confidence, quality in rows:
+            if kinds and (etype or "") not in kinds:
+                continue
+            events.append(
+                {
+                    "event_time": _iso_utc(int(et)),
+                    "ts": int(et),
+                    "event_time_cst": _iso_cst(int(et)),
+                    "event_type": etype or "",
+                    "subtype": subtype or "",
+                    "source": source or "",
+                    "title": title or "",
+                    "confidence": confidence,
+                    "quality": quality or "",
+                }
+            )
+            if len(events) >= limit:
+                break
+        return _envelope(
+            events,
+            src_tag,
+            meta={"window_start": _iso_utc(start_ts), "window_end": _iso_utc(end_ts)},
         )
 
     # -------- scope: evolution.contradiction --------

@@ -71,8 +71,8 @@ class TestModuleImport:
         assert callable(lrs.route_query)
         assert callable(lrs.detect_intent)
         assert callable(lrs.extract_json)
-        # 十意图执行器全部注册
-        assert len(lrs.EXECUTORS) == 10
+        # 十意图执行器 + S1 两个确定性关键词注册表意图
+        assert len(lrs.EXECUTORS) == 13
         for name in (
             "data_query",
             "data_insight",
@@ -84,6 +84,9 @@ class TestModuleImport:
             "event_analysis",
             "risk_control",
             "price_query",
+            "metric_series",
+            "whale_flow",
+            "calendar_event",
         ):
             assert callable(lrs.EXECUTORS[name])
 
@@ -243,6 +246,69 @@ class TestL1ExecDegrade:
 
         monkeypatch.setitem(lrs.EXECUTORS, "data_query", _boom)
         out = lrs.route_query("查CPI", intent="data_query")
+        assert out["handled"] is True
+        assert out["degraded"] is True
+        assert "执行异常" in out["answer"]
+
+
+class TestDeterministicRegistry:
+    """S1 确定性关键词注册表：命中即单维直答，不被 recall 密度门控推给 L2。"""
+
+    def test_whale_intent_detected(self):
+        assert lrs.detect_intent("查询巨鲸动向") == "whale_flow"
+
+    def test_calendar_intent_detected(self):
+        assert lrs.detect_intent("下一次议息会议是什么时候") == "calendar_event"
+
+    def test_interpretation_not_hijacked(self):
+        # 「说明什么」是解读，不是数据检索，仍归 data_insight
+        assert lrs.detect_intent("巨鲸持续买入说明什么") != "whale_flow"
+        # 「结果怎么看」是事件解读，仍归 event_analysis
+        assert lrs.detect_intent("议息会议结果怎么看") != "calendar_event"
+
+    def test_whale_bypasses_empty_recall(self, monkeypatch):
+        fake_l0 = FakeL0(memories=[])
+        monkeypatch.setattr(lrs, "get_l0", lambda: fake_l0)
+        monkeypatch.setitem(
+            lrs.EXECUTORS,
+            "whale_flow",
+            lambda m: {"success": True, "answer": "巨鲸净流入 +1.00亿美元", "data": {}},
+        )
+
+        out = lrs.route_query("查询巨鲸动向")
+
+        assert out["intent"] == "whale_flow"
+        assert out["handled"] is True
+        assert "1.00" in out["answer"]
+        sig = out["route_signal"]
+        assert sig["decision"] == "L1_DIRECT"
+        assert sig["degraded"] is False
+        assert lrs.R_DETERMINISTIC_REGISTRY in sig["reasons"]
+
+    def test_calendar_bypasses_empty_recall(self, monkeypatch):
+        fake_l0 = FakeL0(memories=[])
+        monkeypatch.setattr(lrs, "get_l0", lambda: fake_l0)
+        monkeypatch.setitem(
+            lrs.EXECUTORS,
+            "calendar_event",
+            lambda m: {"success": True, "answer": "下一次议息会议：2026-12-10 03:00", "data": {}},
+        )
+
+        out = lrs.route_query("下一次议息会议是什么时候")
+
+        assert out["intent"] == "calendar_event"
+        assert out["handled"] is True
+        assert out["route_signal"]["decision"] == "L1_DIRECT"
+
+    def test_executor_exception_degrades_not_crashes(self, monkeypatch):
+        monkeypatch.setitem(
+            lrs.EXECUTORS,
+            "whale_flow",
+            lambda m: (_ for _ in ()).throw(RuntimeError("db locked")),
+        )
+
+        out = lrs.route_query("查询巨鲸动向")
+
         assert out["handled"] is True
         assert out["degraded"] is True
         assert "执行异常" in out["answer"]

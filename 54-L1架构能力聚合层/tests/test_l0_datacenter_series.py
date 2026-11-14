@@ -205,3 +205,124 @@ def test_exec_metric_series_end_to_end(series_db):
     miss = exec_metric_series("今天天气怎么样")
     assert miss["success"] is True
     assert miss["data"] is None
+
+
+# ============================================================
+# S1 扩展：关键词注册表（巨鲸 / 经济日历）+ L0 datacenter.events
+# ============================================================
+
+
+def _make_events_db(path: str, rows) -> None:
+    conn = sqlite3.connect(path)
+    conn.execute("""
+        CREATE TABLE mm_events (
+            event_id TEXT PRIMARY KEY, event_time INTEGER NOT NULL, event_type TEXT NOT NULL,
+            subtype TEXT, source TEXT NOT NULL, title TEXT, confidence REAL, quality TEXT,
+            payload_json TEXT
+        )
+        """)
+    conn.executemany(
+        "INSERT INTO mm_events VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [(f"e{i}", *r, None) for i, r in enumerate(rows)],
+    )
+    conn.commit()
+    conn.close()
+
+
+@pytest.fixture
+def events_db(tmp_path, monkeypatch):
+    db = tmp_path / "core.db"
+    _make_events_db(
+        str(db),
+        [
+            # 过去：不该出现在「下一次」结果里
+            (NOW - 10 * _DAY, "fomc", "statement", "fed_calendar", "FOMC 旧会", 1.0, "A"),
+            (NOW + 20 * _DAY, "fomc", "statement", "fed_calendar", "FOMC 12月", 1.0, "A"),
+            (NOW + 70 * _DAY, "fomc", "statement", "fed_calendar", "FOMC 1月", 1.0, "A"),
+            (NOW + 5 * _DAY, "nfp", "release", "macro_calendar", "Employment Situation", 1.0, "A"),
+            (NOW + 900 * _DAY, "fomc", "statement", "fed_calendar", "窗口外 FOMC", 1.0, "A"),
+        ],
+    )
+    monkeypatch.setenv("DREAMBUDDY_CORE_DB", str(db))
+    return str(db)
+
+
+def test_resolve_whale_metric():
+    from l1agg.series_catalog import resolve_whale_metric
+
+    net = resolve_whale_metric("查询巨鲸动向")
+    assert (net["sub_category"], net["metric_name"]) == (
+        "exchanges_whales",
+        "whale_netflow_to_ex_usd",
+    )
+    assert net["sign"] == -1.0  # 落库口径为「转出-转入」，展示净流入需翻转
+
+    inflow = resolve_whale_metric("巨鲸流入交易所")
+    assert inflow["metric_name"] == "whale_24h_to_ex_usd"
+
+
+def test_resolve_event_kind():
+    from l1agg.series_catalog import resolve_event_kind
+
+    assert resolve_event_kind("下一次议息会议是什么时候")["kind"] == "fomc"
+    assert resolve_event_kind("下次非农什么时候公布")["kind"] == "nfp"
+    assert resolve_event_kind("今天天气怎么样") is None
+
+
+def test_events_scope_returns_future_sorted(events_db):
+    ctx = _l0().fetch_context("datacenter.events", {"kinds": ["fomc"], "limit": 3})
+    assert ctx["degraded"] is False
+    events = ctx["data"]
+    assert [e["title"] for e in events] == ["FOMC 12月", "FOMC 1月"]
+    assert events[0]["event_time_cst"].startswith("2026-12")
+    assert ctx["source"] == "dal_mm_events"
+
+
+def test_events_scope_rejects_bad_limit(events_db):
+    ctx = _l0().fetch_context("datacenter.events", {"limit": 0})
+    assert ctx["degraded"] is True
+    assert ctx["meta"]["reason"] == "invalid_params"
+
+
+def test_events_scope_missing_table_degrades(series_db):
+    ctx = _l0().fetch_context("datacenter.events", {"limit": 3})
+    assert ctx["degraded"] is True
+    assert ctx["meta"]["reason"] == "read_error"
+
+
+def test_exec_calendar_event_end_to_end(events_db):
+    from data_query_executor import exec_calendar_event
+
+    result = exec_calendar_event("下一次议息会议是什么时候")
+    assert result["success"] is True
+    assert result["data"]["kind"] == "fomc"
+    assert "2026-12" in result["answer"]
+    assert result["data"]["events"][0]["event_type"] == "fomc"
+
+
+def test_exec_whale_flow_end_to_end(series_db, monkeypatch):
+    """巨鲸执行器：只依赖 exchanges_whales 序列，符号按注册表翻转。"""
+    import data_query_executor as dqe
+
+    db = os.environ["DREAMBUDDY_CORE_DB"]
+    conn = sqlite3.connect(db)
+    # 落库口径 = 转出-转入：负值代表净流入
+    conn.executemany(
+        "INSERT INTO mm_metrics VALUES (?, ?, ?, ?, ?)",
+        [
+            ("coinglass", "exchanges_whales", "whale_netflow_to_ex_usd", -1.0e8, NOW - 2 * _DAY),
+            ("coinglass", "exchanges_whales", "whale_netflow_to_ex_usd", -3.0e8, NOW - _DAY),
+            ("coinglass", "exchanges_whales", "whale_24h_to_ex_usd", 4.0e9, NOW - _DAY),
+            ("coinglass", "exchanges_whales", "whale_24h_from_ex_usd", 3.0e9, NOW - _DAY),
+            ("coinglass", "exchanges_whales", "whales_transfer_count", 1000.0, NOW - _DAY),
+        ],
+    )
+    conn.commit()
+    conn.close()
+
+    result = dqe.exec_whale_flow("巨鲸动向")
+    assert result["success"] is True
+    assert result["data"]["metric_name"] == "whale_netflow_to_ex_usd"
+    assert result["data"]["stats"]["last"] == 3.0e8  # -3e8 落库 → +3亿净流入
+    assert "净流入" in result["answer"]
+    assert "1000 笔" in result["answer"]
