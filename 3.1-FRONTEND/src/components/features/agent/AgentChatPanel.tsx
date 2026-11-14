@@ -27,6 +27,10 @@ const STATIC_SUGGESTIONS: ChatInputSuggestion[] = [
   { label: '报告生成', value: '@报告生成', hint: '技能' },
 ];
 
+/** 浏览器 fetch 被网络层掐断时的错误文案（瞬时可恢复，值得自动重试一次） */
+const NETWORK_ERROR_RE =
+  /failed to fetch|fetch failed|networkerror|load failed|network request failed|err_network/i;
+
 function toUiMessages(session: AgentSession | undefined): UIMessage[] {
   if (!session) return [];
   return session.messages.map(
@@ -75,6 +79,8 @@ function AgentChatPanelInner({ sessionId, title }: AgentChatPanelProps) {
   const [online, setOnline] = useState(true);
   const interruptedRef = useRef(false);
   const retriedRef = useRef(false);
+  // 网络级失败自动重试一次（每轮发送重置），避免瞬时抖动直接把 "Failed to fetch" 抛给用户
+  const autoRetriedRef = useRef(false);
 
   useEffect(() => {
     if (status === 'submitted' || status === 'streaming') {
@@ -109,6 +115,20 @@ function AgentChatPanelInner({ sessionId, title }: AgentChatPanelProps) {
     };
   }, [regenerate, messages.length]);
 
+  // 网络级失败（浏览器侧 fetch 被掐断）→ 自动重试该轮一次，成功则错误自然清除
+  useEffect(() => {
+    if (status !== 'error' || autoRetriedRef.current) return;
+    const reason = error instanceof Error ? error.message : '';
+    if (!NETWORK_ERROR_RE.test(reason) || messages.length === 0) return;
+    autoRetriedRef.current = true;
+    const timer = setTimeout(() => {
+      void regenerate().catch(() => {
+        // 重试仍失败：保留原始错误，由用户手动「重新生成」
+      });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [status, error, messages.length, regenerate]);
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, status]);
@@ -123,6 +143,7 @@ function AgentChatPanelInner({ sessionId, title }: AgentChatPanelProps) {
     setInput('');
     interruptedRef.current = false;
     retriedRef.current = false;
+    autoRetriedRef.current = false;
     void sendMessage({ text: composed });
   };
 
@@ -181,7 +202,9 @@ function AgentChatPanelInner({ sessionId, title }: AgentChatPanelProps) {
 
         {error && (
           <div className="rounded-lg border border-red-800/40 bg-red-950/30 px-3 py-2 text-xs text-red-300">
-            请求失败：{error.message}
+            {NETWORK_ERROR_RE.test(error.message)
+              ? '网络连接中断，已自动重试；仍失败请点击「重新生成」'
+              : `请求失败：${error.message}`}
           </div>
         )}
 

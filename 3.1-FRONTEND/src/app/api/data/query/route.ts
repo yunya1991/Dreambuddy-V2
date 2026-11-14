@@ -29,7 +29,8 @@ const execFileAsync = promisify(execFile);
 
 export const runtime = 'nodejs';
 
-const SCRIPT_TIMEOUT_MS = 8000;
+// 冷启动（认知 recall 首次加载）实测 6–8s，超时须留足余量，否则闲置后首次查询必被 kill
+const SCRIPT_TIMEOUT_MS = 15000;
 const MAX_MESSAGE_LEN = 2000;
 // 与 cognitive-client 等同构：云端用 COGNITIVE_PYTHON 指向带 sqlite-vec/fastembed 的解释器
 // （云端 systemd 单元已设 COGNITIVE_PYTHON=/home/luke/venv-trading/bin/python），缺省回落 python3

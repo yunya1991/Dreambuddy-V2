@@ -41,6 +41,10 @@ import { randomUUID } from 'crypto';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// 内层 L1 直答超时：必须大于 /api/data/query 的脚本上限（15s），
+// 否则冷启动时内层先断，L1 结果永远拿不到而掉到未配置的 LLM 链路
+const L1_TIMEOUT_MS = 16_000;
+
 const SYSTEM_PROMPT = [
   '你是 DreamBuddy 内置协议层的对话助手。',
   '你只可使用已注册的 MCP 工具回答；工具结果须如实引用，不得编造。',
@@ -90,7 +94,7 @@ async function tryL1Direct(message: string, traceId: string): Promise<string | n
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-request-id': traceId },
       body: JSON.stringify({ message, trace_id: traceId }),
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(L1_TIMEOUT_MS),
     });
     const json = (await res.json()) as {
       ok?: boolean;

@@ -120,4 +120,46 @@ describe('AgentChatPanel 断网续流', () => {
 
     expect(regenerate).not.toHaveBeenCalled();
   });
+
+  it('网络级失败自动重试一次，且只重试一次', () => {
+    jest.useFakeTimers();
+    try {
+      render(<AgentChatPanel sessionId="s4" title="测试会话" />);
+
+      act(() => {
+        jest.advanceTimersByTime(900);
+      });
+      expect(regenerate).toHaveBeenCalledTimes(1);
+
+      act(() => {
+        jest.advanceTimersByTime(5000);
+      });
+      expect(regenerate).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('非网络错误不自动重试', () => {
+    useChatMock.mockReturnValue({
+      messages: [USER_MESSAGE],
+      sendMessage: jest.fn(),
+      status: 'error',
+      error: new Error('模型未配置'),
+      stop: jest.fn(),
+      regenerate,
+    });
+
+    jest.useFakeTimers();
+    try {
+      render(<AgentChatPanel sessionId="s5" title="测试会话" />);
+
+      act(() => {
+        jest.advanceTimersByTime(900);
+      });
+      expect(regenerate).not.toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });
