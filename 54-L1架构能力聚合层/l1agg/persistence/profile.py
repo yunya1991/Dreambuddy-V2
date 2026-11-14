@@ -131,6 +131,7 @@ def conditional_distribution(
         "result": None,
     }
     try:
+        run_method("I30", {"close": prices}, window=vol_window, lookback=window)
         vols = rolling_volatility(prices, vol_window)
         offset = len(prices) - len(vols)
         aligned_prices = [float(v) for v in prices[offset:]]

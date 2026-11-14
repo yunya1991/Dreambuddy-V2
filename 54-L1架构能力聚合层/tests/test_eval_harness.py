@@ -71,6 +71,87 @@ def test_audit_checks_are_six():
     assert names == ["meta", "gate", "determinism", "synthetic", "null", "reference"]
 
 
+def test_audit_coverage_distinguishes_missing_from_not_applicable():
+    report = audit(["M23"], null_trials=1)
+
+    assert report["summary"]["coverage"] == {
+        "total": 6,
+        "executed": 3,
+        "not_applicable": 2,
+        "missing": 1,
+        "rate": 0.75,
+    }
+    assert report["summary"]["checks"]["synthetic"] == {
+        "total": 1,
+        "executed": 0,
+        "not_applicable": 0,
+        "missing": 1,
+        "rate": 0.0,
+    }
+    assert report["summary"]["checks"]["reference"]["not_applicable"] == 1
+    method = report["methods"][0]
+    assert method["passed"] is True
+    assert method["coverage"]["rate"] == 0.75
+    skips = {c["name"]: c for c in method["checks"] if c["skipped"]}
+    assert skips["synthetic"]["skip_kind"] == "missing"
+    assert skips["null"]["skip_kind"] == "not_applicable"
+    assert skips["reference"]["skip_kind"] == "not_applicable"
+
+
+def test_method_audit_cli_prints_coverage_summary(tmp_path, capsys):
+    import importlib.util
+
+    script = os.path.join(_MODULE_ROOT, "scripts", "method_audit.py")
+    spec = importlib.util.spec_from_file_location("method_audit_cli", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    rc = module.main(
+        [
+            "--methods",
+            "M23",
+            "--null-trials",
+            "1",
+            "--out",
+            str(tmp_path / "audit.json"),
+        ]
+    )
+
+    assert rc == 0
+    summary = capsys.readouterr().out.splitlines()[0]
+    assert "coverage=75.00%" in summary
+    assert "executed=3" in summary
+    assert "not_applicable=2" in summary
+    assert "missing=1" in summary
+
+
+def test_audit_failed_but_executed_check_counts_as_coverage():
+    from l1agg.methods import register
+
+    @register(
+        "M98",
+        name="broken coverage",
+        group="M",
+        layer="D2",
+        input_kind="pairs",
+        min_n=60,
+        output_schema=("r",),
+    )
+    def _broken_coverage(data):
+        raise RuntimeError("boom")
+
+    try:
+        report = audit(["M98"], null_trials=1)
+        determinism = report["summary"]["checks"]["determinism"]
+        assert determinism["executed"] == 1
+        assert determinism["missing"] == 0
+        assert report["summary"]["coverage"]["rate"] > 0
+    finally:
+        from l1agg.methods.registry import REGISTRY
+
+        REGISTRY.pop("M98", None)
+
+
 def test_audit_is_deterministic_under_seed():
     a = audit(["M01"], seed=7, null_trials=10)
     b = audit(["M01"], seed=7, null_trials=10)

@@ -32,14 +32,30 @@ class CheckResult:
     passed: bool
     detail: str = ""
     skipped: bool = False
+    skip_kind: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "name": self.name,
             "passed": self.passed,
             "skipped": self.skipped,
+            "skip_kind": self.skip_kind or None,
             "detail": self.detail,
         }
+
+
+def _coverage(checks: Sequence[CheckResult]) -> Dict[str, Any]:
+    executed = sum(not c.skipped for c in checks)
+    not_applicable = sum(c.skipped and c.skip_kind == "not_applicable" for c in checks)
+    missing = sum(c.skipped and c.skip_kind == "missing" for c in checks)
+    applicable = executed + missing
+    return {
+        "total": len(checks),
+        "executed": executed,
+        "not_applicable": not_applicable,
+        "missing": missing,
+        "rate": round(executed / applicable, 6) if applicable else 1.0,
+    }
 
 
 @dataclass
@@ -53,12 +69,17 @@ class MethodReport:
     def passed(self) -> bool:
         return all(c.passed for c in self.checks if not c.skipped)
 
+    @property
+    def coverage(self) -> Dict[str, Any]:
+        return _coverage(self.checks)
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "method_id": self.method_id,
             "name": self.name,
             "implemented": self.implemented,
             "passed": self.passed,
+            "coverage": self.coverage,
             "checks": [c.to_dict() for c in self.checks],
         }
 
@@ -140,7 +161,7 @@ def _check_meta(spec: MethodSpec) -> CheckResult:
 
 def _check_gate(spec: MethodSpec) -> CheckResult:
     if not spec.implemented or spec.min_n <= 0:
-        return CheckResult("gate", True, "skip (min_n=0)", skipped=True)
+        return CheckResult("gate", True, "skip (min_n=0)", skipped=True, skip_kind="not_applicable")
     try:
         out = run(spec.method_id, _empty_data(spec))
     except Exception as exc:  # 空输入不应抛异常
@@ -152,7 +173,7 @@ def _check_gate(spec: MethodSpec) -> CheckResult:
 def _check_determinism(spec: MethodSpec, seed: int) -> CheckResult:
     case = _synthetic_case(spec, seed)
     if case is None:
-        return CheckResult("determinism", True, "skip (no case)", skipped=True)
+        return CheckResult("determinism", True, "skip (no case)", skipped=True, skip_kind="missing")
     try:
         a = run(spec.method_id, case["data"], **case.get("params", {}))
         b = run(spec.method_id, case["data"], **case.get("params", {}))
@@ -164,7 +185,7 @@ def _check_determinism(spec: MethodSpec, seed: int) -> CheckResult:
 
 def _check_synthetic(spec: MethodSpec) -> CheckResult:
     if spec.checks.synthetic is None:
-        return CheckResult("synthetic", True, "skip (none)", skipped=True)
+        return CheckResult("synthetic", True, "skip (none)", skipped=True, skip_kind="missing")
     case = spec.checks.synthetic()
     try:
         out = run(spec.method_id, case["data"], **case.get("params", {}))
@@ -180,7 +201,9 @@ def _check_synthetic(spec: MethodSpec) -> CheckResult:
 
 def _check_null(spec: MethodSpec, seed: int, trials: int) -> CheckResult:
     if not spec.implemented or spec.checks.null != "no_correlation":
-        return CheckResult("null", True, "skip (no null test)", skipped=True)
+        return CheckResult(
+            "null", True, "skip (no null test)", skipped=True, skip_kind="not_applicable"
+        )
     rng = random.Random(seed)
     significant = 0
     abs_r_sum = 0.0
@@ -195,7 +218,7 @@ def _check_null(spec: MethodSpec, seed: int, trials: int) -> CheckResult:
         res = out.get("result") or {}
         ps = _p_values(res)
         if ps is None:
-            return CheckResult("null", True, "skip (no p value)", skipped=True)
+            return CheckResult("null", True, "skip (no p value)", skipped=True, skip_kind="missing")
         used += 1
         if len(ps) == 1:
             significant += int(ps[0] <= 0.05)
@@ -215,14 +238,22 @@ def _check_null(spec: MethodSpec, seed: int, trials: int) -> CheckResult:
 def _check_reference(spec: MethodSpec) -> CheckResult:
     ref = spec.checks.reference
     if ref is None:
-        return CheckResult("reference", True, "skip (none)", skipped=True)
+        return CheckResult(
+            "reference", True, "skip (none)", skipped=True, skip_kind="not_applicable"
+        )
     case = _synthetic_case(spec, seed=0)
     if case is None:
-        return CheckResult("reference", True, "skip (no case)", skipped=True)
+        return CheckResult("reference", True, "skip (no case)", skipped=True, skip_kind="missing")
     try:
         expected = ref(case["data"])
     except ImportError:
-        return CheckResult("reference", True, "skip (reference lib missing)", skipped=True)
+        return CheckResult(
+            "reference",
+            True,
+            "skip (reference lib missing)",
+            skipped=True,
+            skip_kind="missing",
+        )
     except Exception as exc:
         return CheckResult("reference", False, f"reference raised {type(exc).__name__}: {exc}")
     actual = run(spec.method_id, case["data"], **case.get("params", {}))
@@ -259,6 +290,12 @@ def audit(
     implemented = [r for r in reports if r.implemented]
     passed = [r for r in implemented if r.passed]
     failed = [r for r in implemented if not r.passed]
+    all_checks = [check for report in implemented for check in report.checks]
+    check_names = ("meta", "gate", "determinism", "synthetic", "null", "reference")
+    check_coverage = {
+        name: _coverage([check for check in all_checks if check.name == name])
+        for name in check_names
+    }
     return {
         "generated_at": datetime.now(tz=timezone.utc).isoformat(),
         "seed": seed,
@@ -270,6 +307,8 @@ def audit(
             "catalog_total": len(all_specs(scope="core")),
             "research_catalog_total": len(all_specs(scope="research")),
             "registered_total": len(REGISTRY),
+            "coverage": _coverage(all_checks),
+            "checks": check_coverage,
         },
         "failed": [r.method_id for r in failed],
         "methods": [r.to_dict() for r in reports],

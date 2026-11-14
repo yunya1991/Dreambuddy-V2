@@ -7,6 +7,14 @@
 version: 1
 updated: "2026-11-15"
 capabilities:
+  - id: D-E01
+    intent: conditional_return
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.conditional_return
+    methods: [B02, B05, F01, H01]
+    min_n: 250
+    notes: 因子+价格；h=1 前瞻收益复用 align.forward_returns，先在原价格轴计算再过滤有效因子对
   - id: D-E02
     intent: metric_percentile
     mode: deterministic
@@ -45,28 +53,29 @@ capabilities:
     mode: deterministic
     data_scope: [market.candles]
     executor: capabilities.stats.state_transition
-    methods: [B04, B07, B08, B09]
+    methods: [B02, B07, B08, B09]
     min_n: 100
   - id: D-E08
     intent: conditional_return
     mode: deterministic
     data_scope: [market.candles]
     executor: capabilities.stats.conditional_ic
-    methods: [B11, B13, B14, B15]
+    methods: [B11, B13, B14]
     min_n: 250
-    notes: 每桶非重叠 n>=250（T2 门禁）
+    notes: factor 与已对齐前瞻收益的总配对样本 n>=250；B15 为 prices 输入的 IC 衰减，归 D-E13/D-G19，不属于本入口
   - id: D-E10
     intent: drawdown_query
     mode: deterministic
     data_scope: [market.candles]
     executor: capabilities.stats.drawdown
-    methods: [D20, D21, F09, F10]
+    methods: [D20, D21]
     min_n: 250
-    notes: 回撤画像只用价格，不需跨资产回填
+    notes: 回撤画像只用价格；F09/F10 为同口径库内别名，不重复执行
   - id: D-E11
     intent: cross_check
     mode: gated
     data_scope: [market.candles]
     executor: capabilities.stats.correlation
-    methods: [M23, M24, M25]
+    methods: [M23, M24, M25, C18]
     min_n: 60
+    notes: 双序列输入按已对齐收益处理；提供 dates 时执行 C18 自然月同向率，缺失行同步过滤 values/dates

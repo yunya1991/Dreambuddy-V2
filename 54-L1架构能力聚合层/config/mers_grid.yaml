@@ -1,0 +1,9 @@
+version: 1
+transforms: [raw, diff, pct, zscore60, ts_rank60, quintile5]
+methods: [M01, M02, M11, B11, B13, B14, R01, R03, R04, F19]
+horizons: [1, 5, 20]
+params:
+  M11:
+    max_lag: 10
+  B11:
+    k: 5

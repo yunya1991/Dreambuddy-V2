@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
 import yaml
 
@@ -142,6 +142,59 @@ def validate(manifest: Manifest) -> None:
         modes = {manifest.get(cid).mode for cid in cap_ids}
         if len(modes) > 1:
             raise ManifestError(f"意图 {intent} 下 mode 不一致: {sorted(modes)}")
+
+
+def validate_execution(
+    manifest: Manifest,
+    executed: Mapping[str, Iterable[str]],
+    *,
+    require_complete: bool = True,
+) -> Dict[str, Any]:
+    """校验跨场景累计的真实方法调用，并返回绑定覆盖率。
+
+    条件分支不要求单次调用覆盖全部方法；调用方应把各分支实际成功执行的方法
+    按能力聚合后传入。未绑定调用永远拒绝，`require_complete=True` 时还拒绝
+    只在 manifest 声明、从未真实执行的方法。
+    """
+    capability_ids = {cap.id for cap in manifest.capabilities}
+    unknown = sorted(set(executed) - capability_ids)
+    if unknown:
+        raise ManifestError(f"执行覆盖包含未登记能力: {unknown}")
+
+    rows: Dict[str, Any] = {}
+    incomplete: List[str] = []
+    declared_total = 0
+    executed_total = 0
+    for cap in manifest.capabilities:
+        declared = set(cap.methods)
+        actual = set(executed.get(cap.id, ()))
+        unbound = sorted(actual - declared)
+        if unbound:
+            raise ManifestError(f"{cap.id}: 执行了未绑定方法: {unbound}")
+        covered = actual & declared
+        missing = sorted(declared - actual)
+        if missing:
+            incomplete.append(f"{cap.id}={missing}")
+        declared_total += len(declared)
+        executed_total += len(covered)
+        rows[cap.id] = {
+            "declared": sorted(declared),
+            "executed": sorted(covered),
+            "missing": missing,
+            "coverage": len(covered) / len(declared) if declared else 1.0,
+        }
+
+    if require_complete and incomplete:
+        raise ManifestError("manifest 方法执行覆盖不足: " + "; ".join(incomplete))
+    return {
+        "summary": {
+            "declared": declared_total,
+            "executed": executed_total,
+            "missing": declared_total - executed_total,
+            "coverage": executed_total / declared_total if declared_total else 1.0,
+        },
+        "capabilities": rows,
+    }
 
 
 _CACHE: Optional[Manifest] = None

@@ -12,6 +12,7 @@
 
 from __future__ import annotations
 
+import bisect
 import datetime as _dt
 import math
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
@@ -55,6 +56,32 @@ def _floats(values: Sequence[Any]) -> List[float]:
         except (TypeError, ValueError):
             continue
     return out
+
+
+def _paired_rows(
+    left: Sequence[Any], right: Sequence[Any]
+) -> Tuple[List[int], List[float], List[float]]:
+    """按原始位置做 paired complete-case，并保留行号供日期轴同步过滤。"""
+    indices: List[int] = []
+    left_out: List[float] = []
+    right_out: List[float] = []
+    for index, (left_value, right_value) in enumerate(zip(left, right, strict=False)):
+        try:
+            x = float(left_value)
+            y = float(right_value)
+        except (TypeError, ValueError):
+            continue
+        if not (math.isfinite(x) and math.isfinite(y)):
+            continue
+        indices.append(index)
+        left_out.append(x)
+        right_out.append(y)
+    return indices, left_out, right_out
+
+
+def _paired_floats(left: Sequence[Any], right: Sequence[Any]) -> Tuple[List[float], List[float]]:
+    _, left_out, right_out = _paired_rows(left, right)
+    return left_out, right_out
 
 
 def _returns(prices: Sequence[float]) -> List[float]:
@@ -179,7 +206,7 @@ def drawdown(
             "capabilities": {
                 "D-E10": {
                     "gate": "ok",
-                    "methods": ["D20", "D21", "F09", "F10"],
+                    "methods": ["D20", "D21"],
                     "mdd": mdd["mdd"],
                     "peak_index": mdd["peak_index"],
                     "trough_index": mdd["trough_index"],
@@ -234,10 +261,15 @@ def seasonality(
     data = {"returns": values, "dates": [d.isoformat() for d in ds]}
     month = _call("C01", data)
     win = _call("C02", data)
+    counts = _call("C03", data)
+    ranking = _call("C04", data)
     weekday = _call("C05", data)
+    dom = _call("C07", data)
+    quarter = _call("C09", data)
+    half_year = _call("C12", data)
     strength = _call("C13", data)
     consistency = _call("C14", data)
-    dom = _call("C07", data)
+    transition = _call("C15", data)
     failed = [name for name, block in (("C01", month), ("C05", weekday)) if block["gate"] != "ok"]
     if failed:
         return unavailable(
@@ -284,15 +316,34 @@ def seasonality(
             "capabilities": {
                 "D-E03": {
                     "gate": "ok",
-                    "methods": ["C01", "C02", "C05", "C07", "C13", "C14"],
+                    "methods": [
+                        "C01",
+                        "C02",
+                        "C03",
+                        "C04",
+                        "C05",
+                        "C07",
+                        "C09",
+                        "C12",
+                        "C13",
+                        "C14",
+                        "C15",
+                    ],
                     "month_table": table,
                     "month_win_rate": win["result"] if win["gate"] == "ok" else None,
+                    "month_counts": counts["result"] if counts["gate"] == "ok" else None,
+                    "month_ranking": ranking["result"] if ranking["gate"] == "ok" else None,
                     "weekday_table": wd_table,
+                    "day_of_month": dom["result"] if dom["gate"] == "ok" else None,
+                    "quarter_effect": quarter["result"] if quarter["gate"] == "ok" else None,
+                    "half_year": half_year["result"] if half_year["gate"] == "ok" else None,
                     "seasonal_strength": strength["result"] if strength["gate"] == "ok" else None,
                     "month_consistency": (
                         consistency["result"] if consistency["gate"] == "ok" else None
                     ),
-                    "day_of_month": dom["result"] if dom["gate"] == "ok" else None,
+                    "month_transition": (
+                        transition["result"] if transition["gate"] == "ok" else None
+                    ),
                     "best_month": best["month"],
                     "worst_month": worst["month"],
                     "months_covered": months,
@@ -546,8 +597,15 @@ def correlation(
             reason="需要双序列 x/y 或多资产 series",
             trace_id=trace_id,
         )
-    xv, yv = _floats(x), _floats(y)
-    n = min(len(xv), len(yv))
+    if dates is not None and (len(dates) < len(x) or len(dates) < len(y)):
+        return unavailable(
+            capability="D-E05",
+            intent=INTENT_CORRELATION,
+            reason="日期轴短于双序列，无法保持逐行对齐",
+            trace_id=trace_id,
+        )
+    indices, xv, yv = _paired_rows(x, y)
+    n = len(xv)
     if n < MIN_CORR:
         return unavailable(
             capability="D-E05",
@@ -555,7 +613,7 @@ def correlation(
             reason=f"对齐点 {n} < {MIN_CORR}",
             trace_id=trace_id,
         )
-    xv, yv = xv[:n], yv[:n]
+    aligned_dates = [dates[i] for i in indices] if dates is not None else None
     pair = {"x": xv, "y": yv}
 
     pearson = _call("M01", pair)
@@ -570,6 +628,11 @@ def correlation(
             capability="D-E05", intent=INTENT_CORRELATION, reason="相关计算失败", trace_id=trace_id
         )
 
+    cycle = (
+        _call("C18", {"a": xv, "b": yv, "dates": aligned_dates})
+        if aligned_dates is not None
+        else None
+    )
     blocks: Dict[str, Any] = {
         "D-E05": {
             "gate": "ok",
@@ -583,35 +646,76 @@ def correlation(
         "D-E11": {
             "gate": (
                 "ok"
-                if (stability["gate"] == "ok" and change["gate"] == "ok")
+                if (
+                    stability["gate"] == "ok"
+                    and change["gate"] == "ok"
+                    and (cycle is None or cycle["gate"] == "ok")
+                )
                 else "insufficient_history"
             ),
-            "methods": ["M23", "M24", "M25"],
+            "methods": ["M23", "M24", "M25"] + (["C18"] if cycle is not None else []),
             "stability": stability["result"] if stability["gate"] == "ok" else None,
             "breakpoints": change["result"]["breakpoints"] if change["gate"] == "ok" else None,
+            "cycle_alignment": cycle["result"] if cycle and cycle["gate"] == "ok" else None,
         },
     }
     ccf_note = ""
     if n >= MIN_CCF:
-        ccf = _call("T03", pair, max_lag=max_lag)
-        best = _call("T04", pair, max_lag=max_lag)
-        if ccf["gate"] == "ok" and best["gate"] == "ok":
+        legacy_ccf = _call("T03", pair, max_lag=max_lag)
+        legacy_best = _call("T04", pair, max_lag=max_lag)
+        ccf = _call("M11", pair, max_lag=max_lag)
+        best = _call("M12", pair, max_lag=max_lag)
+        if all(block["gate"] == "ok" for block in (legacy_ccf, legacy_best, ccf, best)):
+            family = ccf["result"]
+            optimum = best["result"]
+            best_index = family["lags"].index(optimum["lag"])
+            best_significant = bool(family["significant"][best_index])
             blocks["D-E06"] = {
                 "gate": "ok",
-                "methods": ["T03", "T04"],
-                "ccf": ccf["result"]["ccf"],
-                "best_lag": best["result"]["lag"],
-                "best_ccf": best["result"]["ccf"],
+                "methods": ["T03", "T04", "M11", "M12"],
+                "lags": family["lags"],
+                # 兼容字段改由 M11/M12 提供；T03/T04 原始结果保留在 legacy。
+                "ccf": family["r"],
+                "r": family["r"],
+                "p": family["p"],
+                "q": family["q"],
+                "p_adj": family["q"],
+                "significant": family["significant"],
+                "n_by_lag": family["n_by_lag"],
+                "best_lag": optimum["lag"],
+                "best_ccf": optimum["r"],
+                "best_p": optimum["p"],
+                "best_q": optimum["q"],
+                "best_p_adj": optimum["q"],
+                "best_significant": best_significant,
+                "search_space": {
+                    "pairs": 1,
+                    "lag": family["lags"],
+                    "window": [n],
+                    "h": [],
+                    "tests": len(family["lags"]),
+                },
+                "fdr": {
+                    "method": "BH-FDR",
+                    "alpha": 0.05,
+                    "m": len(family["lags"]),
+                },
+                "legacy": {
+                    "ccf": legacy_ccf["result"],
+                    "best": legacy_best["result"],
+                },
             }
-            lag = best["result"]["lag"]
+            lag = optimum["lag"]
             ccf_note = (
-                f"领先滞后：最优 lag={lag}（CCF={best['result']['ccf']}），"
+                f"领先滞后：最优 lag={lag}（CCF={optimum['r']}，"
+                f"BH-FDR q={optimum['q']}，"
+                f"{'校正后显著' if best_significant else '校正后不显著'}），"
                 f"{'正 lag 表示 ' + x_name + ' 领先' if lag > 0 else ('负 lag 表示 ' + y_name + ' 领先' if lag < 0 else '同期同步')}。"
             )
     else:
         blocks["D-E06"] = {
             "gate": "insufficient_history",
-            "methods": ["T03", "T04"],
+            "methods": ["T03", "T04", "M11", "M12"],
             "reason": f"n={n} < {MIN_CCF}",
             "result": None,
         }
@@ -645,6 +749,108 @@ def correlation(
                 "max_lag": max_lag,
             },
             "pair": [x_name, y_name],
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-E01 条件收益 ----------------
+
+
+def conditional_return(
+    factor: Sequence[Any],
+    prices: Sequence[Any],
+    *,
+    k: int = 5,
+    name: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    if len(factor) != len(prices):
+        return unavailable(
+            capability="D-E01",
+            intent=INTENT_CONDITIONAL,
+            reason="因子与价格长度不一致",
+            trace_id=trace_id,
+        )
+    px = _floats(prices)
+    if len(px) != len(prices) or not all(math.isfinite(value) for value in px):
+        return unavailable(
+            capability="D-E01",
+            intent=INTENT_CONDITIONAL,
+            reason="价格包含无效值，无法在原轴计算前瞻收益",
+            trace_id=trace_id,
+        )
+
+    from ..align import forward_returns
+
+    forward = forward_returns(px, 1)
+    f, target = _paired_floats(factor, forward)
+    n = len(f)
+    if n < MIN_CONDITIONAL:
+        return unavailable(
+            capability="D-E01",
+            intent=INTENT_CONDITIONAL,
+            reason=f"有效因子与前瞻收益对齐点 {n} < {MIN_CONDITIONAL}",
+            trace_id=trace_id,
+        )
+
+    bins = _call("B02", f, k=k)
+    if bins["gate"] != "ok":
+        return unavailable(
+            capability="D-E01",
+            intent=INTENT_CONDITIONAL,
+            reason="因子分位分箱失败",
+            trace_id=trace_id,
+        )
+    inner = bins["result"]["edges"][1:-1]
+    states = [f"q{min(bisect.bisect_right(inner, value), k - 1)}" for value in f]
+    conditional = _call("B05", {"state": states, "target": target})
+    price_returns = _call("F01", px)
+    baseline = _call("H01", target)
+    if any(block["gate"] != "ok" for block in (conditional, price_returns, baseline)):
+        return unavailable(
+            capability="D-E01",
+            intent=INTENT_CONDITIONAL,
+            reason="条件收益计算失败",
+            trace_id=trace_id,
+        )
+
+    table = conditional["result"]["table"]
+    bottom, top = table[0], table[-1]
+    returns_summary = {key: price_returns["result"][key] for key in ("mean", "std", "n")}
+    q = quality_for(
+        n,
+        min_n=MIN_CONDITIONAL,
+        sources=["market.candles"],
+        align_method="forward_returns",
+        timezone="UTC",
+    )
+    answer = (
+        f"{name + ' ' if name else ''}按因子 {k} 等分分位：最低组 {bottom['state']} "
+        f"后 1 日均值 {bottom['mean'] * 100:+.3f}%（n={bottom['n']}），"
+        f"最高组 {top['state']} 后 1 日均值 {top['mean'] * 100:+.3f}%（n={top['n']}）；"
+        f"全样本前瞻收益单样本检验 p={baseline['result']['p']}。"
+        f"对齐 n={n}。{CAVEAT}。"
+    )
+    return build(
+        capability="D-E01",
+        intent=INTENT_CONDITIONAL,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-E01": {
+                    "gate": "ok",
+                    "methods": ["B02", "B05", "F01", "H01"],
+                    "horizon": 1,
+                    "bins": bins["result"],
+                    "conditional": conditional["result"],
+                    "price_returns": returns_summary,
+                    "baseline_t": baseline["result"],
+                }
+            },
+            "params": {"min_n": MIN_CONDITIONAL, "k": k, "h": 1},
+            "name": name or None,
         },
         quality_block=q,
         trace_id=trace_id,
@@ -754,13 +960,13 @@ def conditional_ic(
     name: str = "",
     trace_id: Optional[str] = None,
 ) -> Dict[str, Any]:
-    f, t = _floats(factor), _floats(forward)
-    n = min(len(f), len(t))
+    f, t = _paired_floats(factor, forward)
+    n = len(f)
     if n < MIN_CONDITIONAL:
         return unavailable(
             capability="D-E08",
             intent=INTENT_CONDITIONAL,
-            reason=f"对齐点 {n} < {MIN_CONDITIONAL}（每桶非重叠门禁）",
+            reason=f"对齐点 {n} < {MIN_CONDITIONAL}（条件 IC 总样本门禁）",
             trace_id=trace_id,
         )
     pair = {"factor": f[:n], "target": t[:n]}
@@ -813,6 +1019,7 @@ def conditional_ic(
 # ---------------- 统一调度（能力 ID → executor） ----------------
 
 _EXECUTORS = {
+    "D-E01": conditional_return,
     "D-E02": percentile_forward,
     "D-E03": seasonality,
     "D-E05": correlation,

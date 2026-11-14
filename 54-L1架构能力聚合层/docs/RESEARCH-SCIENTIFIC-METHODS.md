@@ -276,7 +276,7 @@
 | 关系原语 | 18（不变，科研结果复用 R01/R03/R09/R17） |
 | 能力登记 | A16 + B10 + C6 + E14 + G25 + J30 + K2 = **103 项** |
 
-> 计数口径以 [METHOD_LIBRARY.md](./METHOD_LIBRARY.md) §1 与 [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) §2 为准；X/O/P/Q 与 SC 共 149 条已在 `l1agg/methods/research_*.py` 全部实现并登记，audit 386/386 PASS。能力层已接线 8 个可执行出口（含 D-E02），方法可用不等于能力已交付。
+> 计数口径以 [METHOD_LIBRARY.md](./METHOD_LIBRARY.md) §1 与 [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) §2 为准；X/O/P/Q 与 SC 共 149 条已在 `l1agg/methods/research_*.py` 全部实现并登记，audit 386/386 PASS。能力层已接线 9 个可执行出口（含 D-E01/D-E02 与 D-E11/C18），方法可用不等于能力已交付。
 
 ---
 

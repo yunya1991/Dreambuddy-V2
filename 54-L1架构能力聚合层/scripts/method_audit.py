@@ -45,9 +45,12 @@ def main(argv: list[str] | None = None) -> int:
 
     s = report["summary"]
     if not args.quiet:
+        coverage = s["coverage"]
         print(
             f"catalog={s['catalog_total']} implemented={s['implemented']} "
-            f"passed={s['passed']} failed={s['failed']}"
+            f"passed={s['passed']} failed={s['failed']} "
+            f"coverage={coverage['rate']:.2%} executed={coverage['executed']} "
+            f"not_applicable={coverage['not_applicable']} missing={coverage['missing']}"
         )
         for item in report["methods"]:
             if not item["implemented"]:

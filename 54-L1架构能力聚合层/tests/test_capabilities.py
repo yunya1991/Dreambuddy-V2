@@ -25,7 +25,13 @@ from l1agg.capabilities import (  # noqa: E402
     supported,
     unavailable,
 )
-from l1agg.capabilities.manifest import Capability, Manifest, ManifestError, validate  # noqa: E402
+from l1agg.capabilities.manifest import (  # noqa: E402
+    Capability,
+    Manifest,
+    ManifestError,
+    validate,
+    validate_execution,
+)
 
 
 def _prices(n=400, seed=5, drift=0.0005, vol=0.02):
@@ -41,6 +47,16 @@ def _dates(n=400, start=datetime.date(2024, 1, 1)):
     return [(start + datetime.timedelta(days=i)).isoformat() for i in range(n)]
 
 
+def _factor_prices(n=300):
+    factor = [float(i) for i in range(n)]
+    forward = [(value - (n - 1) / 2) * 0.0001 for value in factor]
+    prices = [100.0]
+    for value in forward:
+        prices.append(prices[-1] * (1.0 + value))
+    factor.append(float(n))
+    return factor, prices
+
+
 # ---------------- manifest ----------------
 
 
@@ -49,7 +65,9 @@ def test_manifest_loads_and_validates():
     assert m.version >= 1
     ids = [cap.id for cap in m.capabilities]
     assert len(ids) == len(set(ids))
-    assert {"D-E02", "D-E03", "D-E05", "D-E06", "D-E07", "D-E08", "D-E10", "D-E11"} <= set(ids)
+    assert {"D-E01", "D-E02", "D-E03", "D-E05", "D-E06", "D-E07", "D-E08", "D-E10", "D-E11"} <= set(
+        ids
+    )
     assert {"M01", "M02", "M03", "M04", "M05", "M06", "M07"} <= set(m.get("D-E05").methods)
     for cap in m.capabilities:
         assert cap.executor.split(".")[-1] in {
@@ -57,6 +75,7 @@ def test_manifest_loads_and_validates():
             "correlation",
             "state_transition",
             "conditional_ic",
+            "conditional_return",
             "drawdown",
             "percentile_forward",
         }
@@ -131,6 +150,38 @@ def test_manifest_rejects_mode_mix_within_intent():
         validate(Manifest(version=1, updated="", capabilities=caps))
 
 
+def test_manifest_execution_coverage_aggregates_conditional_branches():
+    capability = manifest().get("D-E05")
+    pair_only = Manifest(version=1, updated="", capabilities=(capability,))
+    pair_calls = {"M01", "M02", "M03", "M04", "M23"}
+    matrix_calls = {"M05", "M06", "M07"}
+
+    report = validate_execution(
+        pair_only, {"D-E05": pair_calls | matrix_calls}, require_complete=True
+    )
+
+    assert report["summary"]["coverage"] == 1.0
+    assert report["capabilities"]["D-E05"]["missing"] == []
+
+
+def test_manifest_execution_coverage_rejects_unexecuted_binding():
+    capability = manifest().get("D-E05")
+    pair_only = Manifest(version=1, updated="", capabilities=(capability,))
+    with pytest.raises(ManifestError, match="M05"):
+        validate_execution(
+            pair_only,
+            {"D-E05": {"M01", "M02", "M03", "M04", "M23"}},
+            require_complete=True,
+        )
+
+
+def test_manifest_execution_coverage_rejects_unbound_runtime_call():
+    capability = manifest().get("D-E05")
+    pair_only = Manifest(version=1, updated="", capabilities=(capability,))
+    with pytest.raises(ManifestError, match="M24"):
+        validate_execution(pair_only, {"D-E05": {"M24"}}, require_complete=False)
+
+
 # ---------------- 信封 ----------------
 
 
@@ -192,7 +243,7 @@ def test_drawdown_matches_manual_profile():
     manual_mdd = max(1.0 - v / max(px[: i + 1]) for i, v in enumerate(px))
     assert block["mdd"] == pytest.approx(manual_mdd, abs=1e-6)
     assert block["current_drawdown"] == pytest.approx(1 - px[-1] / peak, abs=1e-6)
-    assert block["methods"] == ["D20", "D21", "F09", "F10"]
+    assert block["methods"] == ["D20", "D21"]
     assert out["quality"]["sample_n"] == len(px)
     assert "历史统计" in out["answer"]
 
@@ -268,9 +319,109 @@ def test_correlation_identical_series():
     assert out["data"]["capabilities"]["D-E06"]["gate"] == "ok"
 
 
+def test_cycle_alignment_uses_aligned_returns_and_dates():
+    n = 140
+    returns = [math.sin(i / 9.0) * 0.02 for i in range(n)]
+    out = run_capability("D-E11", x=returns, y=list(returns), dates=_dates(n))
+
+    block = out["data"]["capabilities"]["D-E11"]
+    assert block["cycle_alignment"]["ratio"] == 1.0
+    assert block["cycle_alignment"]["months"] >= 4
+    assert block["cycle_alignment"]["n"] == n
+    assert "C18" in block["methods"]
+
+
+def test_cycle_alignment_drops_complete_rows_and_dates_at_original_positions():
+    n = 140
+    x = [math.sin(i / 7.0) * 0.02 for i in range(n)]
+    y = [0.4 * value + math.cos(i / 11.0) * 0.01 for i, value in enumerate(x)]
+    dates = _dates(n)
+    missing = {5: (None, y[5]), 17: (x[17], "invalid"), 63: (None, None), 119: (x[119], None)}
+    dirty_x, dirty_y = list(x), list(y)
+    for i, (x_value, y_value) in missing.items():
+        dirty_x[i], dirty_y[i] = x_value, y_value
+    keep = [i for i in range(n) if i not in missing]
+
+    expected = run_capability(
+        "D-E11", x=[x[i] for i in keep], y=[y[i] for i in keep], dates=[dates[i] for i in keep]
+    )
+    actual = run_capability("D-E11", x=dirty_x, y=dirty_y, dates=dates)
+
+    assert actual == expected
+    assert actual["data"]["capabilities"]["D-E11"]["cycle_alignment"]["n"] == n - len(missing)
+
+
+def test_ccf_exposes_bh_fdr_for_complete_lag_search():
+    n = 160
+    x = [math.sin(i * 0.7) + 0.3 * math.cos(i * 1.3) for i in range(n)]
+    y = [0.0] + x[:-1]
+    out = run_capability("D-E06", x=x, y=y, max_lag=5)
+    block = out["data"]["capabilities"]["D-E06"]
+    lags = list(range(-5, 6))
+
+    assert block["methods"] == ["T03", "T04", "M11", "M12"]
+    assert block["lags"] == lags
+    for key in ("ccf", "r", "p", "q", "p_adj", "significant", "n_by_lag"):
+        assert len(block[key]) == len(lags)
+    assert block["p_adj"] == block["q"]
+    assert block["n_by_lag"] == [n - abs(lag) for lag in lags]
+    assert block["best_lag"] == 1
+    best_index = lags.index(block["best_lag"])
+    assert block["best_ccf"] == block["r"][best_index]
+    assert block["best_p"] == block["p"][best_index]
+    assert block["best_q"] == block["q"][best_index] == block["best_p_adj"]
+    assert block["best_significant"] is True
+    assert block["significant"][best_index] is True
+    assert block["search_space"] == {
+        "pairs": 1,
+        "lag": lags,
+        "window": [n],
+        "h": [],
+        "tests": len(lags),
+    }
+    assert block["fdr"] == {"method": "BH-FDR", "alpha": 0.05, "m": len(lags)}
+    assert "q=" in out["answer"]
+
+
+def test_ccf_random_negative_does_not_promote_uncorrected_best_lag():
+    for seed in range(100):
+        rng = random.Random(seed)
+        x = [rng.gauss(0.0, 1.0) for _ in range(160)]
+        y = [rng.gauss(0.0, 1.0) for _ in range(160)]
+        out = run_capability("D-E06", x=x, y=y, max_lag=10)
+        block = out["data"]["capabilities"]["D-E06"]
+        if block["best_p"] < 0.05 and block["best_q"] >= 0.05:
+            break
+    else:
+        pytest.fail("确定性随机负例中未找到原始 p 显著但 BH-FDR 不显著的样本")
+
+    best_index = block["lags"].index(block["best_lag"])
+    assert block["best_significant"] is False
+    assert block["significant"][best_index] is False
+    assert block["p_adj"][best_index] == block["best_q"]
+    assert "校正后不显著" in out["answer"]
+
+
 def test_correlation_short_pair_blocks():
     out = run_capability("D-E05", x=_prices(40), y=_prices(40, seed=9))
     assert out["ok"] is False and "对齐点" in out["answer"]
+
+
+def test_correlation_pair_drops_complete_rows_at_original_positions():
+    n = 140
+    x = [math.sin(i / 7.0) + i * 0.001 for i in range(n)]
+    y = [0.4 * value + math.cos(i / 11.0) for i, value in enumerate(x)]
+    missing = {5: (None, y[5]), 17: (x[17], "invalid"), 63: (None, None), 119: (x[119], None)}
+    dirty_x, dirty_y = list(x), list(y)
+    for i, (x_value, y_value) in missing.items():
+        dirty_x[i], dirty_y[i] = x_value, y_value
+    keep = [i for i in range(n) if i not in missing]
+
+    expected = run_capability("D-E05", x=[x[i] for i in keep], y=[y[i] for i in keep])
+    actual = run_capability("D-E05", x=dirty_x, y=dirty_y)
+
+    assert actual == expected
+    assert actual["quality"]["sample_n"] == n - len(missing)
 
 
 def test_correlation_matrix_topk_orders_by_abs_then_name_and_preserves_sign():
@@ -333,6 +484,45 @@ def test_ccf_blocked_between_60_and_120():
     assert out["data"]["capabilities"]["D-E06"]["gate"] == "insufficient_history"
 
 
+# ---------------- D-E01 条件收益 ----------------
+
+
+def test_conditional_return_manifest_uses_method_library_contract():
+    capability = next((cap for cap in manifest().capabilities if cap.id == "D-E01"), None)
+    assert capability is not None
+    assert capability.methods == ("B02", "B05", "F01", "H01")
+    assert capability.min_n == 250
+
+
+def test_conditional_return_reports_quantile_forward_returns():
+    factor, prices = _factor_prices()
+    out = run_capability("D-E01", factor=factor, prices=prices, k=5, name="TEST")
+
+    assert out["ok"] is True and out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 300
+    block = out["data"]["capabilities"]["D-E01"]
+    assert block["methods"] == ["B02", "B05", "F01", "H01"]
+    assert block["bins"]["k"] == 5
+    assert [row["state"] for row in block["conditional"]["table"]] == [
+        "q0",
+        "q1",
+        "q2",
+        "q3",
+        "q4",
+    ]
+    assert block["conditional"]["table"][0]["mean"] < 0
+    assert block["conditional"]["table"][-1]["mean"] > 0
+    assert block["price_returns"]["n"] == len(prices)
+    assert block["baseline_t"]["n"] == 300
+    assert block["horizon"] == 1
+
+
+def test_conditional_return_needs_250_aligned_forward_samples():
+    factor, prices = _factor_prices(200)
+    out = run_capability("D-E01", factor=factor, prices=prices)
+    assert out["ok"] is False and "250" in out["answer"]
+
+
 # ---------------- D-E02 分位 → 前瞻收益 ----------------
 
 
@@ -354,6 +544,19 @@ def test_percentile_forward_exposes_pit_conditional_distribution():
 # ---------------- D-E08 条件 IC ----------------
 
 
+def test_conditional_ic_manifest_excludes_price_only_ic_decay():
+    capability = manifest().get("D-E08")
+    assert capability.methods == ("B11", "B13", "B14")
+    assert "每桶非重叠" not in capability.notes
+
+    out = run_capability(
+        "D-E08",
+        factor=[math.sin(i / 9.0) for i in range(250)],
+        forward=[math.sin(i / 9.0) * 0.3 for i in range(250)],
+    )
+    assert out["data"]["capabilities"]["D-E08"]["methods"] == ["B11", "B13", "B14"]
+
+
 def test_conditional_ic_positive_relationship():
     n = 300
     rng = random.Random(11)
@@ -368,6 +571,31 @@ def test_conditional_ic_positive_relationship():
 def test_conditional_ic_needs_250():
     out = run_capability("D-E08", factor=_prices(200), forward=_prices(200, seed=8))
     assert out["ok"] is False and "250" in out["answer"]
+    assert "每桶非重叠" not in out["answer"]
+
+
+def test_conditional_ic_drops_complete_rows_at_original_positions():
+    n = 280
+    factor = [math.sin(i / 9.0) + i * 0.002 for i in range(n)]
+    forward = [0.3 * value + math.cos(i / 13.0) * 0.02 for i, value in enumerate(factor)]
+    missing = {
+        3: (None, forward[3]),
+        41: (factor[41], "invalid"),
+        127: (None, None),
+        269: (factor[269], None),
+    }
+    dirty_factor, dirty_forward = list(factor), list(forward)
+    for i, (factor_value, forward_value) in missing.items():
+        dirty_factor[i], dirty_forward[i] = factor_value, forward_value
+    keep = [i for i in range(n) if i not in missing]
+
+    expected = run_capability(
+        "D-E08", factor=[factor[i] for i in keep], forward=[forward[i] for i in keep]
+    )
+    actual = run_capability("D-E08", factor=dirty_factor, forward=dirty_forward)
+
+    assert actual == expected
+    assert actual["quality"]["sample_n"] == n - len(missing)
 
 
 # ---------------- 契约：JSON schema + 序列化 ----------------
@@ -379,6 +607,7 @@ def test_output_validates_against_json_schema():
     with open(schema_path, "r", encoding="utf-8") as fh:
         schema = json.load(fh)
     outputs = [
+        run_capability("D-E01", **dict(zip(("factor", "prices"), _factor_prices(), strict=True))),
         run_capability("D-E10", prices=_prices(), symbol="BTC", dates=_dates()),
         run_capability("D-E03", prices=_prices(), dates=_dates()),
         run_capability("D-E07", prices=_prices()),
@@ -406,3 +635,61 @@ def test_outputs_are_json_serializable_and_deterministic():
         first = json.dumps(run_capability(cid, **kw), sort_keys=True, default=str)
         second = json.dumps(run_capability(cid, **kw), sort_keys=True, default=str)
         assert first == second, cid
+
+
+def test_manifest_matches_methods_actually_executed_across_capability_branches(monkeypatch):
+    import l1agg.methods as methods
+    from l1agg.capabilities import stats as capability_stats
+
+    real_run = capability_stats.run_method
+    calls = []
+
+    def recording_run(method_id, data, **params):
+        out = real_run(method_id, data, **params)
+        if out.get("gate") == "ok":
+            calls.append(method_id)
+        return out
+
+    monkeypatch.setattr(capability_stats, "run_method", recording_run)
+    monkeypatch.setattr(methods, "run", recording_run)
+    observed = {cap.id: set() for cap in manifest().capabilities}
+    scenarios = (
+        ("D-E01", dict(zip(("factor", "prices"), _factor_prices(), strict=True))),
+        ("D-E02", {"prices": _prices(1600), "dates": _dates(1600)}),
+        ("D-E03", {"prices": _prices(), "dates": _dates()}),
+        ("D-E05", {"x": _prices(300), "y": _prices(300, seed=3)}),
+        (
+            "D-E11",
+            {
+                "x": [math.sin(i / 9.0) * 0.02 for i in range(140)],
+                "y": [math.cos(i / 11.0) * 0.02 for i in range(140)],
+                "dates": _dates(140),
+            },
+        ),
+        (
+            "D-E05",
+            {
+                "series": {"BTC": _prices(120), "ETH": _prices(120, seed=3)},
+                "dates": _dates(120),
+            },
+        ),
+        ("D-E07", {"prices": _prices(300)}),
+        ("D-E08", {"factor": _prices(300), "forward": _prices(300, seed=4)}),
+        ("D-E10", {"prices": _prices(), "dates": _dates()}),
+    )
+
+    for capability_id, kwargs in scenarios:
+        calls.clear()
+        out = run_capability(capability_id, **kwargs)
+        assert out["ok"] is True, (capability_id, out["answer"])
+        blocks = out["data"]["capabilities"]
+        declared_union = set()
+        for block_id, block in blocks.items():
+            declared = set(manifest().get(block_id).methods)
+            assert set(block["methods"]) <= declared
+            observed[block_id].update(set(calls) & declared)
+            declared_union.update(declared)
+        assert set(calls) <= declared_union
+
+    report = validate_execution(manifest(), observed, require_complete=True)
+    assert report["summary"]["coverage"] == 1.0

@@ -1,0 +1,451 @@
+=== targeted symptom and boundary tests ===
+============================= test session starts ==============================
+platform darwin -- Python 3.12.7, pytest-8.4.2, pluggy-1.6.0 -- /opt/anaconda3/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2
+configfile: pyproject.toml
+plugins: anyio-4.12.1, mock-3.15.1, cov-7.1.0, langsmith-0.9.3, asyncio-1.2.0, timeout-2.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 18 items
+
+tests/test_capabilities.py::test_correlation_pair_drops_complete_rows_at_original_positions PASSED [  5%]
+tests/test_capabilities.py::test_conditional_ic_drops_complete_rows_at_original_positions PASSED [ 11%]
+tests/test_capabilities.py::test_ccf_exposes_bh_fdr_for_complete_lag_search PASSED [ 16%]
+tests/test_capabilities.py::test_ccf_random_negative_does_not_promote_uncorrected_best_lag PASSED [ 22%]
+tests/test_capabilities.py::test_manifest_execution_coverage_aggregates_conditional_branches PASSED [ 27%]
+tests/test_capabilities.py::test_manifest_execution_coverage_rejects_unexecuted_binding PASSED [ 33%]
+tests/test_capabilities.py::test_manifest_execution_coverage_rejects_unbound_runtime_call PASSED [ 38%]
+tests/test_capabilities.py::test_cycle_alignment_uses_aligned_returns_and_dates PASSED [ 44%]
+tests/test_capabilities.py::test_cycle_alignment_drops_complete_rows_and_dates_at_original_positions PASSED [ 50%]
+tests/test_capabilities.py::test_conditional_return_reports_quantile_forward_returns PASSED [ 55%]
+tests/test_capabilities.py::test_conditional_return_needs_250_aligned_forward_samples PASSED [ 61%]
+tests/test_eval_harness.py::test_audit_coverage_distinguishes_missing_from_not_applicable PASSED [ 66%]
+tests/test_eval_harness.py::test_audit_failed_but_executed_check_counts_as_coverage PASSED [ 72%]
+tests/test_eval_harness.py::test_method_audit_cli_prints_coverage_summary PASSED [ 77%]
+tests/test_mers.py::test_fixed_grid_enumerates_180_deterministic_units PASSED [ 83%]
+tests/test_mers.py::test_positive_relationship_fdr_idempotency_and_state_progression PASSED [ 88%]
+tests/test_mers.py::test_state_machine_failure_transitions PASSED        [ 94%]
+tests/test_mers.py::test_random_relationship_never_becomes_stable PASSED [100%]
+
+============================== 18 passed in 4.29s ==============================
+
+target_exit=0
+
+=== full regression ===
+........................................................................ [ 10%]
+........................................................................ [ 20%]
+........................................................................ [ 31%]
+........................................................................ [ 41%]
+........................................................................ [ 51%]
+........................................................................ [ 62%]
+........................................................................ [ 72%]
+........................................................................ [ 82%]
+........................................................................ [ 93%]
+...............................................                          [100%]
+695 passed in 6.71s
+
+regression_exit=0
+
+=== ruff ===
+All checks passed!
+
+lint_exit=0
+
+=== black --check ===
+All done! ✨ 🍰 ✨
+9 files would be left unchanged.
+
+black_exit=0
+
+=== full method audit ===
+catalog=238 implemented=386 passed=386 failed=0 coverage=66.15% executed=1028 not_applicable=762 missing=526
+  [PASS] B01  等宽分箱  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] B02  等频分箱（分位）  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] B03  固定阈值分档  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] B04  状态离散化  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] B05  条件分组统计  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] B06  二维交叉表  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] B07  状态转移矩阵  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] B08  马尔可夫稳态分布  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] B09  同状态持续性  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] B10  条件分位  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] B11  分箱单调性  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] B12  分箱收益梯度  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] B13  信息系数 IC  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:ok
+  [PASS] B14  Rank IC  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:ok
+  [PASS] B15  IC 衰减  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] B16  分组回测统计  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] B17  共现计数  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] B18  频率表  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] C01  月份效应  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] C02  月份胜率  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] C03  月份次数统计  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] C04  月份排名  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] C05  星期效应  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] C06  小时效应  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] C07  月内日效应  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] C08  月初/月末效应  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] C09  季度效应  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] C10  年内位置  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] C12  半年度对比  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] C13  季节性强度  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] C14  月份一致性  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] C15  月度转移  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] C16  同日历年分位  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] C17  剩余交易日统计  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] C18  周期对齐（多资产）  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] D01  偏度  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] D02  峰度（超额）  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] D03  中位数绝对偏差  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] D04  稳健 z-score  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] D05  截尾均值  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] D06  Winsorize  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] D07  离群标记（IQR）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] D08  离群标记（MAD）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] D09  经验 CDF  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] D10  直方图分箱  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] D11  核密度估计  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] D12  QQ 偏离度  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] D13  正态性检验（Jarque-Bera）  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] D14  正态性检验（Shapiro）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] D15  分布拟合（正态/对数正态/学生 t）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] D16  尾部指数（Hill）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] D17  VaR（历史法）  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] D18  CVaR / ES  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] D19  最大单期跌幅  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] D20  最大回撤  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] D21  回撤持续期  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] D22  上下行波动比  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] D23  盈亏比  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] D24  胜率  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] F01  简单收益  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] F02  对数收益  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] F03  区间收益  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] F04  年化收益  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] F05  年化波动率  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] F06  夏普比率  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] F07  索提诺比率  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] F08  卡玛比率  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] F09  最大回撤  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] F10  回撤恢复时间  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] F11  收益偏度/峰度  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] F12  自相关（收益）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] F13  波动率聚集  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] F14  风险调整动量  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] F15  相对强弱 RS  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] F16  动量排序  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] F17  反转统计  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] F18  连胜/连败  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] F19  事件窗收益  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] F20  异常收益 AR  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] F21  累计异常收益 CAR  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] F22  事件次数统计  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] F23  事件后分布  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] F24  资金费率年化  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] F25  基差  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] F26  拥挤度合成  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] H01  单样本 t 检验  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:ok
+  [PASS] H02  双样本 t 检验  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] H03  Welch t 检验  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] H04  Mann-Whitney U  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] H05  Wilcoxon 符号秩  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] H06  卡方独立性  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] H07  方差分析 ANOVA  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] H08  Kruskal-Wallis  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] H09  自相关检验（Ljung-Box）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] H10  单位根检验（ADF）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] H11  协整检验（Engle-Granger）  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] H12  正态性检验（D'Agostino-Pearson）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] H13  多重比较校正（Bonferroni）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] H14  多重比较校正（BH-FDR）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] H15  置换检验  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] H16  Bootstrap 置信区间  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] H17  效应量（Cohen d）  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] H18  统计功效（近似）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I01  SMA 简单移动平均  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I02  EMA 指数移动平均  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I03  WMA 线性加权移动平均  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I04  价格相对均线位置  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I05  均线排列  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I06  金叉/死叉  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I07  RSI 相对强弱  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I08  RSI 背离  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I09  MACD  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I10  MACD 柱变化  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I11  KDJ  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I12  ATR 平均真实波幅  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I13  真实波幅 TR  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I14  布林带  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I15  布林带位置 %B  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I16  布林带宽  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I17  量能比  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I18  OBV 能量潮  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I19  成交量 z-score  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I20  支撑位（低点聚类）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I21  压力位（高点聚类）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I22  触碰次数  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I23  距支撑/压力距离  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I24  突破事件  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I25  新高/新低天数  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I26  距 ATH 回撤  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I27  唐奇安通道  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I28  价格动量  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I29  变化率 ROC  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I30  波动率分位  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I31  回归通道  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I32  趋势强度 ADX  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I33  资金流 MFI  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] I34  换手/成交额比  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] M01  Pearson 相关  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:ok,reference:ok
+  [PASS] M02  Spearman 秩相关  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:ok,reference:skip
+  [PASS] M03  Kendall τ-b  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:ok,reference:skip
+  [PASS] M04  滚动相关  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M05  相关矩阵  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M06  相关矩阵 TopK（R05 表达）  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M07  平均相关度  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M08  偏相关  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M09  距离相关  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M10  互信息  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M11  领先滞后 CCF  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M12  最优领先/滞后  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M13  协整（Engle-Granger）  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M14  OLS 单因子回归  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M15  多因子回归  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M16  回归残差平稳性  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M17  Beta（对基准）  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] M18  跟踪误差  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M19  PCA 解释方差  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M20  PCA 载荷  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M21  层次聚类  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M22  K-Means 分群  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M23  资产同向率  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] M24  相关性稳定性  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M25  相关性突变  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] M26  因子暴露（简化）  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] O01  delay(x, d)  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] O02  delta(x, d)  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] O03  ts_sum(x, d)  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] O04  ts_mean / ts_std  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] O05  ts_min / ts_max  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] O06  ts_argmax / ts_argmin  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] O07  ts_rank(x, d)  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] O08  ts_zscore(x, d)  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] O09  ts_corr(x, y, d)  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] O10  ts_cov(x, y, d)  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] O11  decay_linear(x, d)  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] O12  scale(x, a)  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] O13  signedpower(x, e)  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] O14  rank(x)  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] O15  indneutralize(x, g)  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] P01  实现波动率  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] P02  波动率目标换算  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] P03  逆波动权重  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] P04  等风险贡献权重  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] P05  风险贡献分解  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] P06  协方差收缩（Ledoit-Wolf）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] P07  EWMA 波动/协方差  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] P08  PCA 风险分解  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] P09  组合 VaR（参数法）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] P10  组合 CVaR（历史法）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] P11  水下曲线  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] P12  Brinson 归因  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] P13  尾部相关  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] P14  相关性稳定性  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] Q01  IC / RankIC  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] Q02  ICIR  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] Q03  IC 衰减表  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] Q04  分位单调性检验  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] Q05  Fama-MacBeth  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] Q06  Newey-West t  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] Q07  Deflated Sharpe  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] Q08  子样本稳健性  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] Q09  参数扰动  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] Q10  事件窗 CAR  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] Q11  Patell/BMP 标准化检验  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] Q12  Bootstrap 置信区间  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] Q13  置换检验  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] Q14  多重比较校正  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] Q15  样本充分性检查  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] Q16  PIT 校验  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] R01  条件收益统计（表达）  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] R02  分位→前瞻收益（表达）  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] R03  日历效应表  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] R04  事件研究窗  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] R05  相关矩阵 TopK  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] R06  领先滞后  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] R07  状态转移  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] R08  分箱单调性（表达）  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] R09  计数表达  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] R10  共现频次（表达）  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] R11  回撤画像  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] R12  极值后表现  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] R13  波动率状态→收益  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] R14  相关性突变  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] R15  季节性一致率  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] R16  跨资产同向率（表达）  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] R17  水平对比  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] R18  时空对齐切片  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] S01  计数  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] S02  有效样本率  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] S03  算术均值  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] S04  中位数  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] S05  众数（分箱）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] S06  最小值/最大值  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] S07  极差  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] S08  方差（样本）  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] S09  标准差  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] S10  变异系数  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] S11  分位（线性插值）  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:ok
+  [PASS] S12  四分位距  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] S13  均值标准误  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] S14  置信区间（正态近似）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] S15  变化量  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] S16  变化率  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] S17  对数变化  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] S18  累计变化率  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] S19  CAGR  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] S20  滚动均值  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] S21  滚动中位数  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] S22  滚动标准差  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] S23  滚动极值  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] S24  排名/名次  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] S25  历史分位  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] S26  z-score（winsorize p1/p99）  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] S27  标准化 min-max  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] S28  趋势方向  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC01 统计功效  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC02 最小样本量  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC03 等效性检验 TOST  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC04 置换检验  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC05 Bootstrap 百分位区间  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC06 Bootstrap BCa 区间  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC07 Jackknife 标准误  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC08 Delta 法误差传播  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC09 GUM 不确定度合成  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC10 预测区间  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC11 容忍区间  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC12 分割共形区间  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC13 OLS  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC14 WLS  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC15 Logistic 回归  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC16 Poisson 回归  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC17 分位数回归  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC18 Huber 稳健回归  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC19 Ridge（固定 α）  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC20 多重共线性 VIF  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC21 异方差 Breusch-Pagan  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC22 异方差 White 检验  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC23 残差自相关 Durbin-Watson  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC24 影响点 Cook's D / 杠杆  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC25 单因素 ANOVA  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC26 双因素 ANOVA  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC27 ANCOVA  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC28 重复测量 ANOVA  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC29 析因设计主效应  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC30 事后多重比较  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC31 PCA  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC32 SVD  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC33 因子分析  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC34 ICA  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC35 图 Lasso（固定 α）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC36 层次聚类  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC37 K-Means（seed=42, k 固定）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC38 轮廓系数  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC39 FFT 频谱  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC40 Welch 功率谱  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC41 Lomb-Scargle 周期图  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC42 离散小波 DWT  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC43 小波相干  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC44 Savitzky-Golay 平滑  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC45 Butterworth 滤波  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC46 Hilbert 包络/瞬时相位  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC47 Kalman 滤波（固定 Q/R）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC48 互谱相干  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC49 CUSUM 变点  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC50 PELT 变点  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC51 Pettitt 检验  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC52 Mann-Kendall 趋势  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC53 Sen 斜率  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC54 季节 Mann-Kendall  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC55 香农熵  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC56 互信息  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC57 传递熵  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC58 KL 散度  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] SC59 Lempel-Ziv 复杂度  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC60 样本熵  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC61 排列熵  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC62 DFA / Hurst  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC63 块最大值 GEV 拟合  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC64 POT / GPD 拟合  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC65 重现水平  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC66 Hill 尾指数  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC67 Moran's I  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC68 Geary's C  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC69 半变异函数  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC70 普通 Kriging  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC71 网络中心性  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC72 社区发现  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC73 Kaplan-Meier  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC74 Log-rank 检验  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC75 Cox 比例风险  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC76 Weibull 拟合  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC77 MTBF / 失效率  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC78 控制图  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC79 固定效应 meta  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] SC80 随机效应 meta  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] SC81 异质性 I² / Q  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] SC82 漏斗图不对称  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] SC83 Trim-and-fill  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] SC84 缺失机制检验  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC85 KNN 插补  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC86 马氏距离离群  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC87 缺失模式矩阵  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC88 重复记录检测  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC89 一致性规则校验  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC90 PIT 时间校验  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC91 X-13 风格分解  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] SC92 异常点识别  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T01  自相关 ACF(k)  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] T02  偏自相关 PACF(k)  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T03  交叉相关 CCF(k)  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] T04  最优领先/滞后  meta:ok,gate:ok,determinism:ok,synthetic:skip,null:skip,reference:skip
+  [PASS] T05  ADF 单位根检验  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T06  KPSS 平稳性检验  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T07  Ljung-Box 自相关检验  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T08  趋势斜率（OLS）  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] T09  趋势显著性  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T10  STL 分解  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T11  移动平均去趋势  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T12  差分（1 阶/季节）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T13  Hurst 指数（R/S）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T14  方差比检验  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T15  波动率（年化）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T16  滚动波动率  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T17  波动率聚集（ACF of |r|）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T18  GARCH(1,1) 拟合  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T19  EWMA 波动率  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T20  半衰期  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T21  均值回复（OU 近似）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T22  变点检测（CUSUM）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T23  变点检测（PELT 近似）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T24  状态持续性  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T25  谱分析主周期  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T26  周期强度  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T27  分形维数（近似）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] T28  样本熵  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] X01  横截面 z-score  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] X02  横截面百分位 rank  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] X03  中性化（去均值）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] X04  分位组合排序  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] X05  多空价差  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] X06  横截面离散度  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] X07  市场宽度  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] X08  同向率  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] X09  因子暴露回归  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] X10  特质收益  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] X11  因子收益（WLS）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] X12  横截面自相关  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+report -> /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/54-L1架构能力聚合层/docs/method_audit.json
+
+audit_exit=0
+exit=0

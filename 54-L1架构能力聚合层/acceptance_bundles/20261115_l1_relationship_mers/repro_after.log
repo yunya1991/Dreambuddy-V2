@@ -1,0 +1,10 @@
+observed=D-E05.paired_complete_case {"equal_to_precleaned": true, "kendall_tau": 0.275163, "pearson_r": 0.414827, "sample_n": 136}
+observed=D-E08.paired_complete_case {"equal_to_precleaned": true, "methods": ["B11", "B13", "B14"], "rank_ic": 0.998012, "sample_n": 276}
+observed=D-E06.bh_fdr_positive {"best_lag": 1, "best_p": 0.0, "best_q": 0.0, "fdr": {"alpha": 0.05, "m": 11, "method": "BH-FDR"}, "search_tests": 11}
+observed=D-E06.random_negative {"best_p": 0.004340545214074863, "best_q": 0.091151, "best_significant": false, "seed": 1}
+observed=D-E11.C18_dates_alignment {"cycle_n": 136, "months": 5, "ratio": 0.2, "sample_n": 136}
+observed=D-E01.conditional_forward {"baseline_n": 300, "methods": ["B02", "B05", "F01", "H01"], "price_returns_n": 301, "q0_mean": -0.012, "q4_mean": 0.012, "sample_n": 300}
+observed=MERS.strong_idempotent {"coverage": 1.0, "db_rows": 180, "gate_pass": true, "p_adj": 0.0, "rank_ic": 1.0, "unique_eval_ids": 180, "units": 180}
+observed=MERS.random_three_periods {"db_rows": 540, "latest_gate_pass": 0, "periods": 3, "stable": 0}
+
+exit=0
