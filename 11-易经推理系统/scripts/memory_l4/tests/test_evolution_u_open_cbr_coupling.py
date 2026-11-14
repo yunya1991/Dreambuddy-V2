@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""_evolution_build_position u_open/cbr_sim 耦合约束 TDD 测试.
+"""_evolution_entry_build u_open/cbr_sim 耦合约束 TDD 测试.
 
 Spec: .trae/documents/pons_river_evolution_fix_spec.md 缺陷E+F (P2)
 
@@ -9,7 +9,7 @@ Spec: .trae/documents/pons_river_evolution_fix_spec.md 缺陷E+F (P2)
   缺少耦合约束导致低质量开仓。
 
 修复目标:
-  1. _evolution_build_position 入口增加 u_open/cbr_sim 耦合检查：
+  1. _evolution_entry_build 入口增加 u_open/cbr_sim 耦合检查：
      u_open >= 1.0 且 cbr_sim < 0.4 → 拒绝开仓 return
   2. FAIL-OPEN：检查异常不阻断
 
@@ -28,7 +28,7 @@ sys.path.insert(0, str(_MEMORY_L4))
 
 
 class TestEvolutionBuildPositionUOpenCbr:
-    """_evolution_build_position 入口 u_open/cbr_sim 耦合检查测试."""
+    """_evolution_entry_build 入口 u_open/cbr_sim 耦合检查测试."""
 
     @pytest.fixture
     def trader(self):
@@ -46,12 +46,12 @@ class TestEvolutionBuildPositionUOpenCbr:
         return t
 
     def test_high_u_open_low_cbr_blocks_evolution_open(self, trader):
-        """u_open>=1.0 且 cbr_sim<0.4 → _evolution_build_position 应拦截 return None.
+        """u_open>=1.0 且 cbr_sim<0.4 → _evolution_entry_build 应拦截 return None.
 
         场景（RIVER 案例）: u_open=1.0 + cbr_sim=0.3738 → 拒绝开仓
         """
         symbol = "RIVER"
-        result = trader._evolution_build_position(
+        result = trader._evolution_entry_build(
             symbol=symbol,
             action="long",
             u_open=1.0,
@@ -74,10 +74,10 @@ class TestEvolutionBuildPositionUOpenCbr:
         场景: u_open=1.0 + cbr_sim=0.6 → 相似度足够，允许开仓
         """
         symbol = "RIVER"
-        # 调用 _evolution_build_position
+        # 调用 _evolution_entry_build
         # 不会被 u_open/cbr_sim 耦合检查拦截（会继续执行后续逻辑）
         try:
-            trader._evolution_build_position(
+            trader._evolution_entry_build(
                 symbol=symbol,
                 action="long",
                 u_open=1.0,
@@ -101,7 +101,7 @@ class TestEvolutionBuildPositionUOpenCbr:
         """
         symbol = "PONS"
         try:
-            trader._evolution_build_position(
+            trader._evolution_entry_build(
                 symbol=symbol,
                 action="long",
                 u_open=0.4,
@@ -125,7 +125,7 @@ class TestEvolutionBuildPositionUOpenCbr:
         symbol = "RIVER"
         # cbr_sim 传入非法值（字符串），触发比较异常
         try:
-            trader._evolution_build_position(
+            trader._evolution_entry_build(
                 symbol=symbol,
                 action="long",
                 u_open=1.0,
@@ -150,7 +150,7 @@ class TestEvolutionBuildPositionUOpenCbr:
         """
         symbol = "RIVER"
         try:
-            trader._evolution_build_position(
+            trader._evolution_entry_build(
                 symbol=symbol,
                 action="long",
                 u_open=1.0,

@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """TDD: evolution 路径 direction_state 闸门缺失修复测试。
 
-根因：_evolution_build_position 由 KlineEventHandler 直接调用，
+根因：_evolution_entry_build 由 KlineEventHandler 直接调用，
       完全绕过 _execute_trade 中的 direction_state 闸门。
       导致：
       - direction_state=FREEZE 时 evolution 仍可开仓（市场不明确应冻结）
       - direction_state=SHORT_ONLY 时 evolution 仍可做多（市场明确看跌应禁止做多）
       - direction_state=LONG_ONLY 时 evolution 仍可做空（市场明确看多应禁止做空）
 
-修复：在 _evolution_build_position 早期（冷却期检查后、仓位计数前）添加
+修复：在 _evolution_entry_build 早期（冷却期检查后、仓位计数前）添加
       direction_state 闸门，逻辑与 BCRM2.0 路径（L13982-L14012）对齐。
       FAIL-OPEN：异常时放行（不阻塞交易热路径）。
 """
@@ -46,7 +46,7 @@ class MockFiveDomainState:
 
 
 class TestEvolutionDirectionGate:
-    """验证 _evolution_build_position 中 direction_state 闸门生效。"""
+    """验证 _evolution_entry_build 中 direction_state 闸门生效。"""
 
     def _make_trader_with_dstate(self, dstate: str, cls: str = "crypto_usdt"):
         """创建带 direction_state 的 mock trader。"""
@@ -93,7 +93,7 @@ class TestEvolutionDirectionGate:
     def test_freeze_blocks_long(self):
         """direction_state=FREEZE 时禁止做多。"""
         bot = self._make_trader_with_dstate("FREEZE")
-        result = bot._evolution_build_position("BTCUSDT", "long", 0.8, 0.02, 0.55, "standard")
+        result = bot._evolution_entry_build("BTCUSDT", "long", 0.8, 0.02, 0.55, "standard")
         assert result is None, "FREEZE 状态不应开多仓"
         # 验证日志包含 FREEZE 拦截
         log_calls = [str(c) for c in bot._log.call_args_list]
@@ -102,7 +102,7 @@ class TestEvolutionDirectionGate:
     def test_freeze_blocks_short(self):
         """direction_state=FREEZE 时禁止做空。"""
         bot = self._make_trader_with_dstate("FREEZE")
-        result = bot._evolution_build_position("BTCUSDT", "short", 0.8, 0.02, 0.55, "standard")
+        result = bot._evolution_entry_build("BTCUSDT", "short", 0.8, 0.02, 0.55, "standard")
         assert result is None, "FREEZE 状态不应开空仓"
         log_calls = [str(c) for c in bot._log.call_args_list]
         assert any("FREEZE" in c for c in log_calls), f"日志应包含 FREEZE 拦截: {log_calls}"
@@ -112,7 +112,7 @@ class TestEvolutionDirectionGate:
     def test_short_only_blocks_long(self):
         """direction_state=SHORT_ONLY 时禁止做多。"""
         bot = self._make_trader_with_dstate("SHORT_ONLY")
-        result = bot._evolution_build_position("BTCUSDT", "long", 0.8, 0.02, 0.55, "standard")
+        result = bot._evolution_entry_build("BTCUSDT", "long", 0.8, 0.02, 0.55, "standard")
         assert result is None, "SHORT_ONLY 状态不应开多仓"
         log_calls = [str(c) for c in bot._log.call_args_list]
         assert any("SHORT_ONLY" in c for c in log_calls), f"日志应包含 SHORT_ONLY 拦截: {log_calls}"
@@ -122,7 +122,7 @@ class TestEvolutionDirectionGate:
         bot = self._make_trader_with_dstate("SHORT_ONLY")
         # 调用后应通过 direction_state 闸门（可能在后续步骤因其他原因 return，
         # 但不应在 direction_state 闸门处被拦截）
-        bot._evolution_build_position("BTCUSDT", "short", 0.8, 0.02, 0.55, "standard")
+        bot._evolution_entry_build("BTCUSDT", "short", 0.8, 0.02, 0.55, "standard")
         log_calls = [str(c) for c in bot._log.call_args_list]
         # 不应有 SHORT_ONLY 拦截日志（做空被放行）
         assert not any(
@@ -134,7 +134,7 @@ class TestEvolutionDirectionGate:
     def test_long_only_blocks_short(self):
         """direction_state=LONG_ONLY 时禁止做空。"""
         bot = self._make_trader_with_dstate("LONG_ONLY")
-        result = bot._evolution_build_position("BTCUSDT", "short", 0.8, 0.02, 0.55, "standard")
+        result = bot._evolution_entry_build("BTCUSDT", "short", 0.8, 0.02, 0.55, "standard")
         assert result is None, "LONG_ONLY 状态不应开空仓"
         log_calls = [str(c) for c in bot._log.call_args_list]
         assert any("LONG_ONLY" in c for c in log_calls), f"日志应包含 LONG_ONLY 拦截: {log_calls}"
@@ -142,7 +142,7 @@ class TestEvolutionDirectionGate:
     def test_long_only_allows_long(self):
         """direction_state=LONG_ONLY 时允许做多（不被 direction_state 拦截）。"""
         bot = self._make_trader_with_dstate("LONG_ONLY")
-        bot._evolution_build_position("BTCUSDT", "long", 0.8, 0.02, 0.55, "standard")
+        bot._evolution_entry_build("BTCUSDT", "long", 0.8, 0.02, 0.55, "standard")
         log_calls = [str(c) for c in bot._log.call_args_list]
         assert not any(
             "LONG_ONLY" in c and "禁止" in c for c in log_calls
@@ -153,14 +153,14 @@ class TestEvolutionDirectionGate:
     def test_neutral_allows_both(self):
         """direction_state=NEUTRAL 时多空均不被 direction_state 拦截。"""
         bot = self._make_trader_with_dstate("NEUTRAL")
-        bot._evolution_build_position("BTCUSDT", "long", 0.8, 0.02, 0.55, "standard")
+        bot._evolution_entry_build("BTCUSDT", "long", 0.8, 0.02, 0.55, "standard")
         log_calls_long = [str(c) for c in bot._log.call_args_list]
         assert not any(
             "direction_state" in c and "禁止" in c for c in log_calls_long
         ), f"NEUTRAL 做多不应被拦截: {log_calls_long}"
 
         bot2 = self._make_trader_with_dstate("NEUTRAL")
-        bot2._evolution_build_position("BTCUSDT", "short", 0.8, 0.02, 0.55, "standard")
+        bot2._evolution_entry_build("BTCUSDT", "short", 0.8, 0.02, 0.55, "standard")
         log_calls_short = [str(c) for c in bot2._log.call_args_list]
         assert not any(
             "direction_state" in c and "禁止" in c for c in log_calls_short
@@ -177,7 +177,7 @@ class TestEvolutionDirectionGate:
             side_effect=Exception("test exception")
         )
         # 不应在 direction_state 闸门处 return（FAIL-OPEN 放行）
-        bot._evolution_build_position("BTCUSDT", "long", 0.8, 0.02, 0.55, "standard")
+        bot._evolution_entry_build("BTCUSDT", "long", 0.8, 0.02, 0.55, "standard")
         log_calls = [str(c) for c in bot._log.call_args_list]
         # 应有 fail-open 日志
         assert any(

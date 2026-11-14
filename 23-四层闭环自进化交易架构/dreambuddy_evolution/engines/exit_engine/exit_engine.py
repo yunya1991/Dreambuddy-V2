@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 class EvolutionExitEngine:
     """自进化系统独立离场决策引擎
 
-    被 PollingTrader._evolution_check_exit() 调用，不接入 _execute_trade（Phase 0 已隔离）。
+    由 23 `EvolutionExitLoop`（execution/exit_loop.py）驱动，11 只提供持仓数据与回调。
     """
 
     # tier 分层 SL/TP 间距（ATR 缺失时兜底，2026-09-09 放大与 BCRM 对齐）

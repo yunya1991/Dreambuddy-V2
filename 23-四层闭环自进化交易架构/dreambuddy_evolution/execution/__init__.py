@@ -7,12 +7,14 @@ from .decision_signal import (
     build_exit_decision,
     compute_sl_tp_pct,
 )
+from .entry_loop import EvolutionEntryLoop
 from .exit_loop import EvolutionExitLoop
 from .outbox import ExecutionOutbox, default_outbox
 
 __all__ = [
     "SOURCE",
     "EvolutionSignalDispatcher",
+    "EvolutionEntryLoop",
     "EvolutionExitLoop",
     "ExecutionOutbox",
     "default_outbox",
