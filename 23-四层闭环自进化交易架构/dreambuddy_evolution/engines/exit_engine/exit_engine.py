@@ -486,7 +486,13 @@ class EvolutionExitEngine:
             )
 
         # ── 规则 4：优化2 分批止盈（R 倍数驱动，R=结构风险）
-        if r_multiple > 0 and entry_price > 0 and _st["initial_risk_px"] > 0:
+        #   有结构 SL 时用 |entry−SL| 作 1R；无 SL 信息时保留 tp_decayed_pct 兜底，
+        #   否则兜底分支永远不可达（规则4 可达性缺陷）。
+        if (
+            r_multiple > 0
+            and entry_price > 0
+            and (_st["initial_risk_px"] > 0 or tp_decayed_pct > 0)
+        ):
             partial_decision = self._check_partial_tp(
                 symbol, pos_side, r_multiple, current_price, current_tp_px, _st
             )

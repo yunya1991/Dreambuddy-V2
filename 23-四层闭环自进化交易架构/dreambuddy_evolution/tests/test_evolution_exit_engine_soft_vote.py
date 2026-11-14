@@ -893,11 +893,12 @@ class TestTPDecayBridge:
         decision = engine.decide(ctx)
         assert decision is not None
 
-    def test_r_multiple_recalculated_with_decayed_tp(self, engine):
-        """tp_decayed_pct 存在时，r_multiple 用衰减后 TP 重算"""
-        # entry=10000, current=10300, 原始TP=10600(6%), 衰减TP=10300(3%)
-        # 原始 r_multiple = (10300-10000)/(10600-10000) = 300/600 = 0.5R
-        # 衰减后 r_multiple = (10300-10000)/(10300-10000) = 300/300 = 1.0R → 触发分批止盈
+    def test_structural_sl_takes_precedence_over_decayed_tp(self, engine):
+        """有结构 SL 时，1R 由 |entry−SL| 定义，不再从衰减 TP 反算（P0-5）。
+
+        entry=10000, SL=9600 → 1R=400；当前 +300 → 0.75R，未到 +1R，
+        不应触发分批止盈。
+        """
         ctx = {
             "symbol": "BTC",
             "pos_side": "long",
@@ -909,6 +910,27 @@ class TestTPDecayBridge:
             "ess": 0.6,
             "r_vector": {},
             "current_sl_px": 9600.0,
+            "current_tp_px": 10600.0,
+            "atr_pct": 0.025,
+            "r_multiple": 0.5,
+            "tp_decayed_pct": 0.03,
+        }
+        decision = engine.decide(ctx)
+        assert decision.action != "partial_close"
+
+    def test_r_multiple_recalculated_with_decayed_tp(self, engine):
+        """无 SL 信息时，r_multiple 回退用衰减后 TP 重算（兜底路径）。"""
+        # entry=10000, current=10300, 衰减TP=10300(3%) → 1.0R → 触发分批止盈
+        ctx = {
+            "symbol": "BTC",
+            "pos_side": "long",
+            "tier": "standard",
+            "position_age_sec": 2 * 3600,
+            "upl_ratio": 0.03,
+            "current_price": 10300.0,
+            "entry_price": 10000.0,
+            "ess": 0.6,
+            "r_vector": {},
             "current_tp_px": 10600.0,  # 原始 TP
             "atr_pct": 0.025,
             "r_multiple": 0.5,  # 按原始 TP 算的 R

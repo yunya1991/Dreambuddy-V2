@@ -143,6 +143,12 @@ class RiskGatedOkxClient:
     def place_stop_loss_take_profit(self, **kwargs: Any) -> Dict[str, Any]:
         return self._submit_decision(self._sltp_kwargs_to_decision(kwargs))
 
+    def cancel_algo_orders(self, inst_id: str = None, **kwargs: Any) -> Dict[str, Any]:
+        """撤单必须经 Gateway（不允许透传 raw 绕过审计）。"""
+        return self._gateway.cancel_algo_orders(
+            inst_id, source=str(kwargs.get("source") or "11-yijing")
+        )
+
     def market_open_long(
         self, inst_id: str = None, usdt_amount: float = None, reason: str = ""
     ) -> Dict[str, Any]:
@@ -367,6 +373,10 @@ class FailClosedOkxClient:
     def reduce_position(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
         return self._reject()
 
+    def cancel_algo_orders(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+        # 撤掉 SL 等于降低保护，执行权威不可用时必须拒绝
+        return self._reject()
+
     def __getattr__(self, name: str) -> Any:
         return getattr(object.__getattribute__(self, "_raw"), name)
 
@@ -501,6 +511,7 @@ class TradeExecutionGateway:
         capital_allocator: Any = None,
         tee_engine: Any = None,
         shadow_only: bool = False,
+        ledger: Any = None,
     ) -> None:
         self._okx = okx_client if okx_client is not None else _PaperOkxClient()
         self._risk_context = risk_context
@@ -509,6 +520,8 @@ class TradeExecutionGateway:
         self._capital_allocator = capital_allocator  # 16 PACA 定容（可选）
         self._tee_engine = tee_engine  # 22 tee_core OrderPort（可选）
         self._shadow_only = bool(shadow_only)
+        self._ledger = ledger  # 22 PositionLedger（可选，缺省懒加载）
+        self._ledger_ready = ledger is not None
 
         # decision_id 幂等缓存（进程内，双保险）：同一决策重复提交直接返回首次结果
         self._decision_cache: dict[str, tuple[float, ExecutionResult]] = {}
@@ -541,7 +554,135 @@ class TradeExecutionGateway:
         result = self._submit_impl(sig)
         if _did and getattr(result, "executed", False):
             self._cache_put(_did, result)
+        self._record_ledger(sig, result)
         return result
+
+    # ── 持仓账本（P2：22 为唯一真相源，NN 与 23 共用） ────────────────
+    def _get_ledger(self):
+        if self._ledger_ready:
+            return self._ledger
+        self._ledger_ready = True
+        if str(os.getenv("POSITION_LEDGER_ENABLED", "on")).lower() in ("0", "off", "false", "no"):
+            self._ledger = None
+            return None
+        try:
+            from position_ledger import PositionLedger
+
+            self._ledger = PositionLedger()
+        except Exception as exc:  # noqa: BLE001 — 账本不可用不影响交易
+            logger.warning("[Gateway] PositionLedger 初始化失败(FAIL-OPEN): %s", exc)
+            self._ledger = None
+        return self._ledger
+
+    def _record_ledger(self, sig: FinalDecisionSignal, result: ExecutionResult) -> None:
+        """成交后自动落账；部分减仓也会扣减剩余数量并累计已实现盈亏。"""
+        try:
+            if not getattr(result, "executed", False):
+                return
+            ledger = self._get_ledger()
+            if ledger is None:
+                return
+            _action = str(sig.action or "").lower()
+            _side = str(sig.pos_side or sig.direction or "").lower()
+            if _side not in ("long", "short"):
+                return
+            _fill = self._latest_fill(sig.symbol, _side)
+            _order = result.order_result or {}
+            _qty = float((_fill or {}).get("fill_sz") or _order.get("filled_sz") or sig.sz or 0.0)
+            _px = float(
+                (_fill or {}).get("fill_px")
+                or _order.get("avg_px")
+                or _order.get("px")
+                or sig.px
+                or 0.0
+            )
+            if _action == "open":
+                if _qty <= 0:
+                    _qty = self._current_position_qty(sig.symbol, _side)
+                ledger.record_open(sig.symbol, _side, _qty, _px, source=sig.source)
+            elif _action in ("close", "reduce", "reduce_only"):
+                ledger.apply_partial_close(
+                    sig.symbol,
+                    _side,
+                    _qty,
+                    _px,
+                    ratio=1.0 if _action == "close" else None,
+                    source=sig.source,
+                    decision_id=str(sig.decision_id or ""),
+                    fee=float((_fill or {}).get("fee") or 0.0),
+                )
+        except Exception as exc:  # noqa: BLE001 — 落账失败不影响已成交订单
+            logger.warning("[Gateway] 账本落账失败(FAIL-OPEN): %s", exc)
+
+    def _latest_fill(self, inst_id: str, pos_side: str) -> Optional[Dict[str, Any]]:
+        fn = getattr(self._okx, "get_recent_fills", None)
+        if not callable(fn):
+            return None
+        try:
+            data = fn(inst_id, limit=10) or {}
+            for f in data.get("fills") or []:
+                if str(f.get("pos_side") or "").lower() in ("", pos_side):
+                    return f
+        except Exception:  # noqa: BLE001
+            return None
+        return None
+
+    def _current_position_qty(self, inst_id: str, pos_side: str) -> float:
+        """开仓数量兜底：直接读交易所持仓（单位与合约 sz 一致）。"""
+        fn = getattr(self._okx, "get_positions", None)
+        if not callable(fn):
+            return 0.0
+        try:
+            data = fn(inst_id) or {}
+            for p in data.get("positions") or []:
+                if str(p.get("pos_side") or "").lower() == pos_side:
+                    return float(p.get("pos") or 0.0)
+        except Exception:  # noqa: BLE001
+            return 0.0
+        return 0.0
+
+    def get_position(self, inst_id: str, pos_side: str) -> Optional[Dict[str, Any]]:
+        """供 23/16 读取 22 账本（11 只读）。"""
+        ledger = self._get_ledger()
+        return ledger.get_position(inst_id, pos_side) if ledger is not None else None
+
+    def list_positions(self) -> list[Dict[str, Any]]:
+        ledger = self._get_ledger()
+        return ledger.list_positions() if ledger is not None else []
+
+    def cancel_algo_orders(self, inst_id: str = None, source: str = "11-yijing") -> Dict[str, Any]:
+        """撤销未触发的 SL/TP 条件单（写操作唯一入口）。
+
+        收口原因：撤掉 SL 会直接降低保护，必须与下单同源可审计，
+        不能让调用方通过 ``__getattr__`` 透传到 raw client。
+        """
+        fn = getattr(self._okx, "cancel_algo_orders", None)
+        if not callable(fn):
+            return {"ok": False, "error": "cancel_algo_orders_unsupported"}
+        try:
+            result = fn(inst_id) if inst_id else fn()
+        except Exception as exc:  # noqa: BLE001 — 执行异常不外抛，落审计后返回
+            result = {"ok": False, "error": f"cancel_algo_exc:{exc}"}
+        self._audit_cancel(inst_id, source, result)
+        return result
+
+    def _audit_cancel(self, inst_id: Optional[str], source: str, result: Dict[str, Any]) -> None:
+        record = {
+            "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "signal_id": f"cancel-algo|{uuid.uuid4().hex[:12]}",
+            "action": "cancel_algo",
+            "source": source,
+            "symbol": inst_id or "MULTI",
+            "executed": bool(result.get("ok")),
+            "cancelled": result.get("cancelled"),
+            "total": result.get("total"),
+            "reason": result.get("error") or result.get("msg") or "",
+        }
+        try:
+            with open(self._audit_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("cancel audit write failed: %s", exc)
 
     def _submit_impl(self, sig: FinalDecisionSignal) -> ExecutionResult:
         # 只读影子校验：仅跑 13 判定并落审计，绝不执行（23 自进化域专用）

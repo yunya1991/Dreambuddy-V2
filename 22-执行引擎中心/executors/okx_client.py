@@ -1434,6 +1434,91 @@ class OKXSimulatedClient:
                 )
         return {"ok": True, "orders": orders, "count": len(orders)}
 
+    # OKX algo history 的 state 语义归一：effective=仍挂单，不等于已触达。
+    # 11 域的消费方把 effective 误当归一为 triggered，这里显式降为 pending，
+    # 避免"有挂单"被误判成"已触达"而触发规则 0 强平。
+    _ALGO_STATE_MAP = {
+        "effective": "pending",
+        "canceled": "canceled",
+        "order_failed": "failed",
+        "partially_filled": "partially_filled",
+        "filled": "filled",
+        "triggered": "triggered",
+    }
+
+    def get_algo_order_history(self, inst_id: str = None, limit: int = 50) -> Dict:
+        """查询 algo（SL/TP）历史单，供规则 0 判断交易所侧是否已触达。
+
+        返回结构固定为 ``{"ok": bool, "orders": [{"state", "actual_px", ...}]}``，
+        其中 ``state`` 已归一（effective→pending），只有 filled/triggered/
+        partially_filled 才表示真实触达。
+        """
+        inst_id = inst_id or self.cfg["default_inst_id"]
+
+        if self.dry_run:
+            return {"ok": True, "orders": [], "count": 0, "dry_run": True}
+        if not self._has_credentials():
+            return {"ok": False, "error": "missing api credentials"}
+
+        orders = []
+        for ord_type in ("conditional", "oco"):
+            r = self._get(
+                "/api/v5/trade/orders-algo-history",
+                {"instId": inst_id, "ordType": ord_type, "limit": str(max(1, min(limit, 100)))},
+            )
+            if r.get("code") != "0":
+                continue
+            for d in r.get("data", []):
+                _raw_state = str(d.get("state", "") or "").lower()
+                orders.append(
+                    {
+                        "algo_id": d.get("algoId"),
+                        "ord_type": ord_type,
+                        "side": d.get("side"),
+                        "pos_side": d.get("posSide"),
+                        "sz": float(d.get("sz", 0) or 0),
+                        "trigger_px": float(d.get("triggerPx", 0) or 0),
+                        "actual_px": float(d.get("actualPx", 0) or 0),
+                        "state": self._ALGO_STATE_MAP.get(_raw_state, _raw_state),
+                        "raw_state": _raw_state,
+                        "updated_at": int(d.get("uTime", 0) or 0),
+                        "tag": d.get("tag", ""),
+                    }
+                )
+        orders.sort(key=lambda o: o["updated_at"], reverse=True)
+        return {"ok": True, "orders": orders, "count": len(orders)}
+
+    def get_recent_fills(self, inst_id: str = None, limit: int = 10) -> Dict:
+        """查询最近成交明细（用于幽灵仓按真实成交价落账）。"""
+        inst_id = inst_id or self.cfg["default_inst_id"]
+
+        if self.dry_run:
+            return {"ok": True, "fills": [], "count": 0, "dry_run": True}
+        if not self._has_credentials():
+            return {"ok": False, "error": "missing api credentials"}
+
+        r = self._get(
+            "/api/v5/trade/fills",
+            {"instId": inst_id, "limit": str(max(1, min(limit, 100)))},
+        )
+        if r.get("code") != "0":
+            return {"ok": False, "error": r.get("msg", "unknown")}
+        fills = [
+            {
+                "trade_id": d.get("tradeId"),
+                "side": d.get("side"),
+                "pos_side": d.get("posSide"),
+                "fill_px": float(d.get("fillPx", 0) or 0),
+                "fill_sz": float(d.get("fillSz", 0) or 0),
+                "fee": float(d.get("fee", 0) or 0),
+                "pnl": float(d.get("pnl", 0) or 0),
+                "ts": int(d.get("ts", 0) or 0),
+            }
+            for d in r.get("data", [])
+        ]
+        fills.sort(key=lambda f: f["ts"], reverse=True)
+        return {"ok": True, "fills": fills, "count": len(fills)}
+
     def get_order(self, inst_id: str, ord_id: str) -> Dict:
         if not self._has_credentials():
             return {"ok": False, "error": "missing api credentials"}

@@ -311,6 +311,17 @@ class DomainTaggedOkxClient:
         kwargs["reason"] = tag_reason(_reason)
         return self._raw.place_order(**kwargs)
 
+    def cancel_algo_orders(self, inst_id: str = None, **kwargs: Any) -> Dict:
+        """撤单经 22 Gateway，并带域归属（23-evolution）。"""
+        self._shadow_check("cancel_algo", inst_id, "", str(kwargs.get("reason") or ""))
+        gw = object.__getattribute__(self, "_gateway")
+        if gw is not None:
+            return gw.cancel_algo_orders(inst_id, source="23-evolution")
+        fn = getattr(object.__getattribute__(self, "_raw"), "cancel_algo_orders", None)
+        if not callable(fn):
+            return {"ok": False, "error": "cancel_algo_orders_unsupported"}
+        return fn(inst_id)
+
 
 class DomainRoutedOkxClient:
     """按交易域路由下单。
@@ -410,6 +421,10 @@ class DomainRoutedOkxClient:
     def place_order(self, **kwargs: Any) -> Dict:
         domain, _kw = self._split(kwargs)
         return self._pick(domain, _kw.get("inst_id")).place_order(**_kw)
+
+    def cancel_algo_orders(self, inst_id: str = None, **kwargs: Any) -> Dict:
+        domain, _kw = self._split(kwargs)
+        return self._pick(domain, inst_id).cancel_algo_orders(inst_id, **_kw)
 
 
 __all__ = [

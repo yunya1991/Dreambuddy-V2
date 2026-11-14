@@ -256,7 +256,7 @@ class EvolutionExitLoop:
                 current_price, position_usdt = _gone
                 if current_price <= 0:
                     if on_ghost is not None:
-                        on_ghost(pos, entry_price)
+                        on_ghost(pos, self._resolve_ghost_exit_px(inst_id, entry_price))
                     self._cleanup_engine_state(pos)
                     return {"status": "skipped", "reason": "ghost_position"}
         if current_price <= 0:
@@ -342,6 +342,32 @@ class EvolutionExitLoop:
         return {"status": "skipped", "reason": f"unsupported_action:{decision.action}"}
 
     # ── 子步骤 ────────────────────────────────────────────────────
+    def _resolve_ghost_exit_px(self, inst_id: str, entry_price: float) -> float:
+        """幽灵仓落账价：优先用交易所真实成交价，缺失才回退入场价。
+
+        原实现直接用 entry_price，导致所有被交易所 SL/TP 成交的仓位
+        在账本上记为"平进平出"，已实现盈亏与反思样本失真。
+        """
+        if not inst_id or self._okx is None:
+            return entry_price
+        fn = getattr(self._okx, "get_recent_fills", None)
+        if not callable(fn):
+            return entry_price
+        try:
+            _r = fn(inst_id, limit=10)
+            _fills = (_r or {}).get("fills") or []
+            if not _fills:
+                return entry_price
+            _px = float(_fills[0].get("fill_px") or 0)
+            # 安全网：偏离入场价 >30% 视为脏数据，回退
+            if _px <= 0 or abs(_px - entry_price) / entry_price > 0.30:
+                return entry_price
+            self._log(f"[ExitLoop] {inst_id} 幽灵仓使用真实成交价 {_px} 落账", "INFO")
+            return _px
+        except Exception as e:  # noqa: BLE001
+            self._log(f"[ExitLoop] 成交价查询失败(FAIL-OPEN): {e}", "DEBUG")
+            return entry_price
+
     def _sync_from_exchange(self, pos, current_price: float, position_usdt: float):
         """用 OKX 持仓补齐价格/名义；确认无仓返回 (0, 0) 表示幽灵仓。"""
         if self._okx is None:
@@ -506,6 +532,9 @@ class EvolutionExitLoop:
             f"[ExitLoop] {coin} {_sig['action']} 成功 sz={_sz} decision_id={_sig['decision_id']}",
             "INFO",
         )
+        if ratio < 0.999:
+            # P2：部分减仓后刷新剩余数量，避免下一轮用旧仓位重复减仓
+            self._refresh_partial_size(pos, inst_id, pos_side, ratio, ctx)
         if on_closed is not None:
             try:
                 on_closed(pos, decision, _res, ctx)
@@ -520,6 +549,32 @@ class EvolutionExitLoop:
             "sz": _sz,
             "decision_id": _sig["decision_id"],
         }
+
+    def _refresh_partial_size(self, pos, inst_id, pos_side, ratio, ctx) -> None:
+        """部分减仓后同步剩余仓位（优先 22 账本，其次按比例折算）。FAIL-OPEN。"""
+        try:
+            _remaining = None
+            _gw = getattr(self._dispatcher, "_gateway", None)
+            if _gw is not None and hasattr(_gw, "get_position"):
+                _row = _gw.get_position(inst_id, pos_side)
+                if _row:
+                    _remaining = float(_row.get("qty") or 0.0)
+            if _remaining is None:
+                _q0 = float(pos.get("position_qty") or pos.get("sz") or 0.0)
+                if _q0 > 0:
+                    _remaining = max(0.0, _q0 * (1.0 - float(ratio)))
+            if _remaining is None:
+                return
+            pos["position_qty"] = _remaining
+            if float(ctx.get("position_qty") or 0.0) > 0:
+                ctx["position_qty"] = _remaining
+            _usdt = float(ctx.get("position_usdt") or 0.0)
+            if _usdt > 0:
+                ctx["position_usdt"] = _usdt * (1.0 - float(ratio))
+                pos["position_usdt"] = ctx["position_usdt"]
+            self._log(f"[ExitLoop] {inst_id} 部分减仓后剩余 qty={_remaining}", "INFO")
+        except Exception as e:  # noqa: BLE001
+            self._log(f"[ExitLoop] 剩余仓位刷新失败(FAIL-OPEN): {e}", "DEBUG")
 
     def _cleanup_engine_state(self, pos) -> None:
         """平仓/幽灵仓后清理引擎持仓级状态（P1-1），FAIL-OPEN。"""

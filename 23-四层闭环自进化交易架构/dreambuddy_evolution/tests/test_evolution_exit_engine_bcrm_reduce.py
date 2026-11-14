@@ -333,5 +333,5 @@ class TestBCRMReverseReduceCooldown:
         second = engine.decide(bcrm_reverse_context)
         # 不应是 external_signal_reduce
         assert "external_signal_reduce" not in (second.reason or "")
-        # 应是其他正常决策（hold/adjust_sl_tp/trailing）
-        assert second.action in ("hold", "adjust_sl_tp", "trailing")
+        # 应是其他正常决策（rule4 分批止盈 +1R 现在可达，故 partial_close 也合法）
+        assert second.action in ("hold", "adjust_sl_tp", "trailing", "partial_close")
