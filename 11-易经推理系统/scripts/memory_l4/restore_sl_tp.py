@@ -28,6 +28,26 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from okx_simulated import OKXSimulatedClient
 
+# 执行权归 22：SL/TP 条件单也必须经 TradeExecutionGateway 下发
+_22_DIR = Path(__file__).resolve().parents[3] / "22-执行引擎中心"
+if str(_22_DIR) not in sys.path:
+    sys.path.insert(0, str(_22_DIR))
+try:
+    from trade_execution_gateway import RiskGatedOkxClient, TradeExecutionGateway
+except Exception:  # pragma: no cover — 22 不可用时保持原客户端
+    RiskGatedOkxClient = TradeExecutionGateway = None
+
+
+def _with_execution_authority(raw):
+    """把 SL/TP 写入收口到 22 Gateway；22 不可用时回退 raw（保护性维护）。"""
+    if RiskGatedOkxClient is None or TradeExecutionGateway is None:
+        return raw
+    try:
+        return RiskGatedOkxClient(raw, TradeExecutionGateway(okx_client=raw))
+    except Exception as e:  # noqa: BLE001
+        print(f"WARN: 22 执行权威不可用，SL/TP 回退 raw: {e}")
+        return raw
+
 
 def compute_sl_tp(
     entry_px: float,
@@ -108,7 +128,7 @@ def main():
     print(f"SL 间距: {sl_pct*100:.1f}% | TP 间距: {tp_pct*100:.1f}%")
     print()
 
-    client = OKXSimulatedClient()
+    client = _with_execution_authority(OKXSimulatedClient())
     if not client._has_credentials():
         print("ERROR: OKX API 凭据未配置")
         sys.exit(1)

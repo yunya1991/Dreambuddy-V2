@@ -1,5 +1,19 @@
 # 执行引擎中心 — 变更记录
 
+## v1.7（2026-11-14）— Phase 2：执行权落 22
+
+### 新增
+- `trade_execution_gateway.FailClosedOkxClient`：执行权威不可用时的只读代理，写操作一律返回 `EXECUTION_AUTHORITY_UNAVAILABLE`，读操作透传
+- `tests/test_execution_authority.py`：7 个写入口 fail-closed、23 域经网关执行、evo23 标记共 11 项验收
+
+### 修改
+- `executors/domain_clients.DomainTaggedOkxClient`：新增 `gateway` 参数；有网关时全部写操作提交 `TradeExecutionGateway`（source=23-evolution，自动补 `decision_id`/`expires_at`），不再直连 raw；`shadow_gateway` 仅保留 13 只读审计
+- `trade_execution_gateway._place_order`：23 域 `stop_loss`/`take_profit` 条件单同样注入 `tag=evo23`
+- 11 `polling_trader.py`：Gateway 加载失败由 FAIL-OPEN 改为 FAIL-CLOSED（写拒绝/读透传），23 域客户端接入网关，网关缺失时同样拒绝
+- 16 `core/exit_executor.py`：离场下单接入 22 Gateway（`RiskGatedOkxClient`），凭据改读 22 加密库
+- 11 `restore_sl_tp.py`：SL/TP 补单经 22 Gateway 下发
+- `47/registry/execution_rights.json` v0.6：删除 `live:11-bypass` / `11_LIVE_KILL_SWITCH` 口径，统一为 22 执行引擎单出口
+
 ## v1.6（2026-11-14）— 多资产 live：注册表单一事实源 + 动态 allowlist
 
 ### 新增

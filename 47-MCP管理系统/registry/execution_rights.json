@@ -1,8 +1,8 @@
 {
-  "version": "0.5",
+  "version": "0.6",
   "updated": "2026-11-14",
   "owner": "47-MCP管理系统",
-  "description": "执行权注册表（标的级单出口声明）。同一标的同一时刻只能有一个执行出口：paper=trade-exec MCP 模拟盘；live:11-bypass=11-易经推理系统 polling_trader 经 okx_client 旁路网关实盘（不经 MCP）；live:50-bypass=22 执行层复核后触发 11 域 live bypass；disabled=两出口均不执行。 fifty_nn_domain 分区：2026-11-13 起 BTC-USDT-SWAP 灰度 live:50-bypass；2026-11-14 扩到 22 域 live_symbols.json 注册表全量（crypto_usdt 20 / precious_metal 2 / us_stock 10），Mandate=mandate-20261114-50-live-multi，单笔 ≤100 USDT、3x、最多 6 仓、SL/TP 必带。 twentythree_domain 分区：2026-11-14 执行器收口 22，23 自进化只产 FinalDecisionSignal(source=23-evolution) 交由 22 TradeExecutionGateway 唯一执行，decision_id 必填、expires_at 过期即拒，11 仅保留转发 shim。",
+  "description": "执行权注册表（标的级单出口声明）。同一标的同一时刻只能有一个执行出口：paper=trade-exec MCP 模拟盘；live:50-bypass=50 决策经 22-执行引擎中心 TradeExecutionGateway 唯一下单（11 只做信号与转发，不持有下单客户端）；live:23-gateway=23 决策同样经 22 Gateway 执行；disabled=不执行。 2026-11-14 执行权收口 22：OKX 客户端/凭据/真实下单桥全部落 22，11 侧 Gateway 不可用时写操作 fail-closed（不再回退 raw）。 fifty_nn_domain 分区：2026-11-13 起 BTC-USDT-SWAP 灰度 live:50-bypass；2026-11-14 扩到 22 域 live_symbols.json 注册表全量（crypto_usdt 20 / precious_metal 2 / us_stock 10），Mandate=mandate-20261114-50-live-multi，单笔 ≤100 USDT、3x、最多 6 仓、SL/TP 必带。 twentythree_domain 分区：23 自进化只产 FinalDecisionSignal(source=23-evolution) 交由 22 TradeExecutionGateway 唯一执行，decision_id 必填、expires_at 过期即拒，DomainTaggedOkxClient 已改为经网关执行（仅保留 13 只读影子校验）。",
   "defaults": {
     "outcome": "paper",
     "conflict_policy": "reject_mcp"
@@ -11,7 +11,7 @@
     "BTC-USDT-SWAP": {
       "outcome": "live:50-bypass",
       "mandate_id": "mandate-20261114-50-live-multi",
-      "note": "2026-11-13 首发灰度，2026-11-14 并入多资产 Mandate；22 复核后触发 11 域 live bypass；kill-switch=50_KILL_SWITCH/22_LIVE_KILL_SWITCH/11_LIVE_KILL_SWITCH"
+      "note": "2026-11-13 首发灰度，2026-11-14 并入多资产 Mandate；50 决策经 22 执行引擎直接下单；kill-switch=50_KILL_SWITCH/22_LIVE_KILL_SWITCH"
     },
     "ETH-USDT-SWAP": {"outcome": "live:50-bypass", "mandate_id": "mandate-20261114-50-live-multi"},
     "SOL-USDT-SWAP": {"outcome": "live:50-bypass", "mandate_id": "mandate-20261114-50-live-multi"},
@@ -59,13 +59,13 @@
     "expires_at_required": true,
     "kill_switch_env": "EVOLUTION_EXEC_VIA_22",
     "kill_switch_value": "off",
-    "mapping_note": "2026-11-14 执行器收口 22：23 自进化只产出 FinalDecisionSignal(source=23-evolution)，由 22 TradeExecutionGateway 唯一执行（13 风控→16 定容→交易所）。23 与 11/50 同一标的不得并存；decision_id 必填、expires_at 过期即拒。11 的 _evolution_build_position/_evolution_check_exit 已降为转发 shim。",
+    "mapping_note": "2026-11-14 执行器收口 22：23 自进化只产出 FinalDecisionSignal(source=23-evolution)，由 22 TradeExecutionGateway 唯一执行（13 风控→16 定容→交易所）。23 与 11/50 同一标的不得并存；decision_id 必填、expires_at 过期即拒。DomainTaggedOkxClient 传入 gateway 时写操作经网关，仅 gateway=None 且显式回滚时才走旧通道；11 的 _evolution_build_position/_evolution_check_exit 已降为转发 shim，Gateway 不可用时 fail-closed。",
     "symbols": {}
   },
   "eleven_domain": {
     "gate": "EXECUTION_AUTHORITY",
     "default": "evolution_only",
-    "mapping_note": "标的声明 live:11-bypass 后，11 域仍需 EXECUTION_AUTHORITY 允许对应 source_tag 才会真实下单；两者同时满足才算接管。本表不自动改 11 域运行时配置。"
+    "mapping_note": "2026-11-14 起 11 域不再有独立执行出口：所有下单经 22 TradeExecutionGateway。11 域仍需 EXECUTION_AUTHORITY 允许对应 source_tag 才能发起信号，但最终执行权在 22；本表不自动改 11 域运行时配置。"
   },
   "fifty_nn_domain": {
     "gate": "50_KILL_SWITCH",
@@ -78,7 +78,7 @@
     "mandate_required_for_live": true,
     "kill_switch_env": "50_KILL_SWITCH",
     "kill_switch_value": "1",
-    "mapping_note": "50 层默认 paper；2026-11-13 BTC 灰度 live:50-bypass，2026-11-14 扩到 22 域 live_symbols.json 注册表全量（32 标的）并统一 Mandate=mandate-20261114-50-live-multi。22 复核后触发 11 域 bypass；同一标的同时刻单出口，不得与 23 live 并存。标的级回退只需把该标的 outcome 改回 paper。",
+    "mapping_note": "50 层默认 paper；2026-11-13 BTC 灰度 live:50-bypass，2026-11-14 扩到 22 域 live_symbols.json 注册表全量（32 标的）并统一 Mandate=mandate-20261114-50-live-multi。50 决策经 22 执行引擎（TradeExecutionGateway）唯一下单，11 不再持有下单客户端。同一标的同时刻单出口，不得与 23 live 并存。标的级回退只需把该标的 outcome 改回 paper。",
     "symbols": {
       "BTC-USDT-SWAP": {
         "outcome": "live:50-bypass",

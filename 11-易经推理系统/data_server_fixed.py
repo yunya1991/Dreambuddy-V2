@@ -317,30 +317,30 @@ def get_hl_state():
 
 
 def _read_yijing_okx_config():
-    """从 11-易经推理系统/.env 直接读取 OKX 凭据，返回 config dict。
+    """从 22 域加密凭据库读取 OKX 凭据，返回 config dict。
 
+    交易所凭据唯一存放地为 22-执行引擎中心/executors/credentials.py（Plan A），
     不走 os.environ，避免与 V15 capital_manager 写入的 OKX_* 环境变量冲突。
     """
-    env_path = Path(__file__).resolve().parent / ".env"
-    raw = {}
-    if env_path.exists():
-        with open(env_path) as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
-                k, v = line.split("=", 1)
-                raw[k.strip()] = v.strip()
+    try:
+        executors_root = str(_REPO_ROOT / "22-执行引擎中心")
+        if executors_root not in sys.path:
+            sys.path.insert(0, executors_root)
+        from executors.credentials import load_okx_config
+
+        cfg = load_okx_config()
+    except Exception:  # noqa: BLE001 - 凭据库不可用时返回空配置（上游 fail-closed）
+        cfg = {}
     return {
-        "api_key": raw.get("OKX_API_KEY", ""),
-        "secret_key": raw.get("OKX_SECRET_KEY", ""),
-        "passphrase": raw.get("OKX_PASSPHRASE", ""),
-        "base_url": raw.get("OKX_BASE_URL", "https://www.okx.com"),
-        "simulated": raw.get("OKX_SIMULATED", "false").lower() in ("true", "1", "yes"),
-        "dry_run": raw.get("OKX_DRY_RUN", "false").lower() in ("true", "1", "yes"),
-        "default_inst_id": raw.get("OKX_DEFAULT_INST_ID", "BTC-USDT-SWAP"),
-        "default_usdt_amount": 100,
-        "default_leverage": float(raw.get("DEFAULT_LEVERAGE", "5") or 5),
+        "api_key": cfg.get("api_key", ""),
+        "secret_key": cfg.get("secret_key", ""),
+        "passphrase": cfg.get("passphrase", ""),
+        "base_url": cfg.get("base_url", "https://www.okx.com"),
+        "simulated": cfg.get("simulated", False),
+        "dry_run": cfg.get("dry_run", False),
+        "default_inst_id": cfg.get("default_inst_id", "BTC-USDT-SWAP"),
+        "default_usdt_amount": cfg.get("default_usdt_amount", 100),
+        "default_leverage": cfg.get("default_leverage", 5),
     }
 
 

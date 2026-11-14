@@ -19,7 +19,10 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sys
+import threading
+import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -323,6 +326,51 @@ class RiskGatedOkxClient:
         }
 
 
+class FailClosedOkxClient:
+    """执行权威不可用时的只读代理：写操作一律拒绝，绝不回退 raw。
+
+    用于 11/16 等域在 22 Gateway 加载失败时的降级：读操作（持仓/行情）照常透传，
+    但下单入口 fail-closed，避免"执行权落 22"被 FAIL-OPEN 旁路破坏。
+    """
+
+    _REJECT: Dict[str, Any] = {
+        "ok": False,
+        "rejected": True,
+        "error": "execution_authority_unavailable",
+        "reason_code": "EXECUTION_AUTHORITY_UNAVAILABLE",
+    }
+
+    def __init__(self, raw_client: Any) -> None:
+        object.__setattr__(self, "_raw", raw_client)
+
+    def _reject(self) -> Dict[str, Any]:
+        return dict(self._REJECT)
+
+    def place_order(self, **kwargs: Any) -> Dict[str, Any]:
+        return self._reject()
+
+    def place_stop_loss_take_profit(self, **kwargs: Any) -> Dict[str, Any]:
+        return self._reject()
+
+    def market_open_long(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+        return self._reject()
+
+    def market_open_short(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+        return self._reject()
+
+    def market_close_long(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+        return self._reject()
+
+    def market_close_short(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+        return self._reject()
+
+    def reduce_position(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+        return self._reject()
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(object.__getattribute__(self, "_raw"), name)
+
+
 class _PaperOkxClient:
     """默认 paper 占位客户端：当调用方未注入 okx_client 时使用。
 
@@ -462,6 +510,11 @@ class TradeExecutionGateway:
         self._tee_engine = tee_engine  # 22 tee_core OrderPort（可选）
         self._shadow_only = bool(shadow_only)
 
+        # decision_id 幂等缓存（进程内，双保险）：同一决策重复提交直接返回首次结果
+        self._decision_cache: dict[str, tuple[float, ExecutionResult]] = {}
+        self._decision_cache_lock = threading.Lock()
+        self._decision_cache_ttl = float(os.getenv("GATEWAY_DECISION_CACHE_TTL_SEC", "3600"))
+
         if audit_path is None:
             audit_path = REPO_ROOT / "22-执行引擎中心" / "audit" / "gateway.jsonl"
         self._audit_path = Path(audit_path)
@@ -469,7 +522,7 @@ class TradeExecutionGateway:
 
     # ── public API ────────────────────────────────────────────────────
     def submit(self, decision: Dict[str, Any] | FinalDecisionSignal) -> ExecutionResult:
-        """提交决策执行。
+        """提交决策执行（带 decision_id 进程内幂等）。
 
         Returns:
             ExecutionResult: passed=13是否通过, executed=是否实际下单。
@@ -479,10 +532,28 @@ class TradeExecutionGateway:
             if isinstance(decision, FinalDecisionSignal)
             else FinalDecisionSignal.from_dict(decision)
         )
+        _did = getattr(sig, "decision_id", None)
+        if _did:
+            _hit = self._cache_get(_did)
+            if _hit is not None:
+                logger.info("[Gateway] 幂等命中 decision_id=%s，返回首次执行结果", _did)
+                return _hit
+        result = self._submit_impl(sig)
+        if _did and getattr(result, "executed", False):
+            self._cache_put(_did, result)
+        return result
 
+    def _submit_impl(self, sig: FinalDecisionSignal) -> ExecutionResult:
         # 只读影子校验：仅跑 13 判定并落审计，绝不执行（23 自进化域专用）
         if self._shadow_only:
             return self._submit_shadow(sig)
+
+        # 23-evolution 独立出口：decision_id 必填 + expires_at 过期即拒（SPEC M1）
+        if sig.source == "23-evolution":
+            _pre = self._precheck_evolution(sig)
+            if _pre is not None:
+                self._audit(sig, _pre)
+                return _pre
 
         # neutral 不进执行链
         if sig.direction == "neutral":
@@ -496,6 +567,8 @@ class TradeExecutionGateway:
             return result
 
         is_close = sig.action in _CLOSE_ACTIONS
+        # 仅 close/reduce 类允许越过 13 入场拒绝；stop_loss/take_profit 仍按原规则
+        _is_hard_close = sig.action in ("close", "reduce", "reduce_only")
 
         # 13 加载失败 → fail-closed：开仓拒，平仓放行
         modules = _load_13_modules()
@@ -574,20 +647,31 @@ class TradeExecutionGateway:
 
         if not check.passed:
             _evaluated, _rule = _rule_audit_fields(check)
-            result = ExecutionResult(
-                passed=False,
-                executed=False,
-                reason=str(getattr(check, "message", "")),
-                reason_code=str(getattr(check.reason_code, "value", check.reason_code)),
-                position_modifier=float(getattr(check, "position_modifier", 1.0) or 1.0),
-                rules_evaluated=_evaluated,
-                rule_name=_rule,
-            )
-            self._audit(sig, result)
-            return result
+            if _is_hard_close:
+                # 平仓/减仓永不被入场风控阻断（否则会产生无法退出的风险敞口）
+                logger.warning(
+                    "[T13] 平仓动作忽略 13 拒绝并放行: %s %s reason=%s",
+                    sig.symbol,
+                    sig.action,
+                    getattr(check, "message", ""),
+                )
+            else:
+                result = ExecutionResult(
+                    passed=False,
+                    executed=False,
+                    reason=str(getattr(check, "message", "")),
+                    reason_code=str(getattr(check.reason_code, "value", check.reason_code)),
+                    position_modifier=float(getattr(check, "position_modifier", 1.0) or 1.0),
+                    rules_evaluated=_evaluated,
+                    rule_name=_rule,
+                )
+                self._audit(sig, result)
+                return result
 
         # 通过 → 执行下单（应用 13 position_modifier + 16 PACA 定容）
-        position_modifier = float(getattr(check, "position_modifier", 1.0) or 1.0)
+        position_modifier = (
+            1.0 if _is_hard_close else float(getattr(check, "position_modifier", 1.0) or 1.0)
+        )
         # T13: 16 capital_allocator 定容（13→16→22 管道）
         # 16 输出的是 USDT 金额建议，必须按合约面值换算成张数，且只做上限约束：
         # 直接用它覆盖 sz 会把仓位放大 (px × ct_val) 倍。
@@ -654,6 +738,57 @@ class TradeExecutionGateway:
         return result
 
     # ── internals ─────────────────────────────────────────────────────
+    @staticmethod
+    def _precheck_evolution(sig: FinalDecisionSignal) -> Optional[ExecutionResult]:
+        """23-evolution 出口硬前置：decision_id 必填；expires_at 过期即拒。
+
+        无法解析 expires_at 时 fail-open（不阻断），由 13 风控继续兜底。
+        """
+        if not sig.decision_id:
+            return ExecutionResult(
+                passed=False,
+                executed=False,
+                reason="23-evolution 决策缺少 decision_id，禁止执行",
+                reason_code="MISSING_DECISION_ID",
+            )
+        if sig.expires_at:
+            try:
+                _dt = datetime.fromisoformat(str(sig.expires_at).replace("Z", "+00:00"))
+                if _dt.tzinfo is None:
+                    _dt = _dt.replace(tzinfo=timezone.utc)
+                if _dt < datetime.now(timezone.utc):
+                    return ExecutionResult(
+                        passed=False,
+                        executed=False,
+                        reason=f"23-evolution 决策已过期: {sig.expires_at}",
+                        reason_code="SIGNAL_EXPIRED",
+                    )
+            except (TypeError, ValueError):
+                pass
+        return None
+
+    def _cache_get(self, decision_id: str) -> Optional[ExecutionResult]:
+        with self._decision_cache_lock:
+            item = self._decision_cache.get(decision_id)
+            if item is None:
+                return None
+            ts, result = item
+            if time.time() - ts > self._decision_cache_ttl:
+                self._decision_cache.pop(decision_id, None)
+                return None
+            return result
+
+    def _cache_put(self, decision_id: str, result: ExecutionResult) -> None:
+        with self._decision_cache_lock:
+            if len(self._decision_cache) > 4096:
+                _now = time.time()
+                self._decision_cache = {
+                    k: v
+                    for k, v in self._decision_cache.items()
+                    if _now - v[0] <= self._decision_cache_ttl
+                }
+            self._decision_cache[decision_id] = (time.time(), result)
+
     def _submit_shadow(self, sig: FinalDecisionSignal) -> ExecutionResult:
         """只读影子校验：只跑 13 PreTradeGate 判定并落审计，绝不调用 16/22/交易所。
 
@@ -843,6 +978,12 @@ class TradeExecutionGateway:
                 }
                 if sz is not None:
                     kwargs["sz"] = sz
+                # 23 域出口：条件单同样打标签，便于按域审计
+                _sltp_tag = sig.payload.get("tag") or (
+                    "evo23" if sig.source == "23-evolution" else None
+                )
+                if _sltp_tag and self._accepts_kwarg(fn, "tag"):
+                    kwargs["tag"] = str(_sltp_tag)
                 try:
                     return fn(**kwargs)
                 except Exception as exc:
@@ -861,6 +1002,10 @@ class TradeExecutionGateway:
         }
         if sz is not None:
             kwargs["sz"] = sz
+        # 23 域出口：交易所侧打标签，便于按域审计（客户端不支持时自动跳过）
+        _tag = sig.payload.get("tag") or ("evo23" if sig.source == "23-evolution" else None)
+        if _tag and self._accepts_kwarg(self._okx.place_order, "tag"):
+            kwargs["tag"] = str(_tag)
         if sig.px is not None:
             # 适配不同客户端的价格参数名（OKXSimulatedClient=px, OKXCLI=price）
             price_key = self._detect_price_key()
@@ -899,6 +1044,19 @@ class TradeExecutionGateway:
         except Exception as exc:
             return {"ok": False, "error": f"place_order_exc:{exc}", "dry_run": False}
 
+    @staticmethod
+    def _accepts_kwarg(fn: Any, name: str) -> bool:
+        """检测底层方法是否接受指定关键字参数（含 **kwargs）。"""
+        import inspect
+
+        try:
+            params = inspect.signature(fn).parameters
+        except (TypeError, ValueError):
+            return False
+        return name in params or any(
+            p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()
+        )
+
     def _detect_price_key(self) -> str:
         """检测底层 place_order 接受的价格参数名（px 或 price）。"""
         import inspect
@@ -926,6 +1084,12 @@ class TradeExecutionGateway:
             "direction": sig.direction,
             "action": sig.action,
             "confidence": sig.confidence,
+            "sz": sig.sz,
+            "sl_px": sig.sl_px,
+            "tp_px": sig.tp_px,
+            "notional_usdt": sig.payload.get("notional_usdt"),
+            "tier": sig.payload.get("tier"),
+            "domain": sig.payload.get("domain"),
             "risk_decision": "allow" if result.passed else "reject",
             "executed": result.executed,
             "reason_code": result.reason_code,

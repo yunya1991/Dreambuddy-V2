@@ -1,9 +1,11 @@
 # 执行引擎中心 — 工程索引
 
-> **版本**：v1.3 | **更新日期**：2026-11-14
+> **版本**：v1.7 | **更新日期**：2026-11-14
 > **模块定位**：Dreambuddy 交易执行引擎（TEE）— 订单路由、执行算法、滑点估计、熔断与审计
 >
-> **v1.3 变更**：新增 `executors/domain_clients.py`（自 11 迁入的 `DomainTaggedOkxClient` / `DomainRoutedOkxClient` 唯一实现）；`trade_execution_gateway.py` 改用 `13-通用风控模块/core/factory.create_gate()` 替代裸 `PreTradeGate()`，13 门禁真正生效（fail-closed + 7 条规则全量加载 + `rules_evaluated` / `rule_name` 审计字段）。
+> **v1.7 变更（Phase 2 执行权落 22）**：新增 `FailClosedOkxClient`（执行权威缺失时写操作全拒）；`DomainTaggedOkxClient` 新增 `gateway` 参数，23 域写操作改经 `TradeExecutionGateway` 执行（保留 13 只读影子审计）；11 `polling_trader` 网关加载失败由 FAIL-OPEN 改为 FAIL-CLOSED；16 `exit_executor` 与 11 `restore_sl_tp` 的写操作接入 22 网关。
+> **v1.5 变更（Plan A 凭据收口）**：OKX 客户端唯一实现迁入 `executors/okx_client.py`（11 侧 `okx_simulated.py` 降为转发 shim）；新增 `executors/credentials.py`（AES-256-GCM 加密凭据库，`runtime/venue`）；`executors/live_order_bridge.py` 承接真实下单出口（原 11 `live_order_bridge.py` 已删除），审计与 kill-switch 落 `22/runtime/`。
+> **v1.4 变更**：`executors/domain_clients.py`（自 11 迁入的 `DomainTaggedOkxClient` / `DomainRoutedOkxClient` 唯一实现）；`trade_execution_gateway.py` 改用 `13-通用风控模块/core/factory.create_gate()` 替代裸 `PreTradeGate()`，13 门禁真正生效（fail-closed + 7 条规则全量加载 + `rules_evaluated` / `rule_name` 审计字段）。
 
 ## 1. 模块概览
 
@@ -51,10 +53,18 @@ TEE（Trading Execution Engine）是 Dreambuddy 的交易执行核心，负责�
 ├── trade_execution_gateway.py   # 统一执行入口（13 风控 → 22 下单，fail-closed）
 ├── x1_paper_executor.py         # X1 纸面成交记录器（意图 → 13→16→22 → 18 价格源撮合）
 ├── x1_paper_config.json         # 纸面成交配置（venue=paper，持仓周期/滑点/手续费）
-├── x1_live_executor.py          # NN 链 live 执行器（消费 50 runtime/live/outbox.jsonl → 复核 → 13 风控定容 → 持仓守卫 → 触发 11 live_order_bridge）
+├── x1_live_executor.py          # NN 链 live 执行器（消费 50 runtime/live/outbox.jsonl → 复核 → 13 风控定容 → 持仓守卫 → 触发 22 executors/live_order_bridge.py）
+├── executors/                   # 执行器与交易所凭据（Plan A，2026-11-14）
+│   ├── okx_client.py            # OKX 客户端唯一实现（自 11 okx_simulated.py 迁入）
+│   ├── credentials.py           # 交易所凭据库（AES-256-GCM，22/runtime/venue）
+│   ├── live_order_bridge.py     # 真实下单唯一出口（kill-switch/allowlist/额度守卫 + 审计）
+│   └── domain_clients.py        # 多域标签 OKX 客户端
 ├── risk_bridge.py               # 13 事前风控桥（PreTradeGate 判定 + risk_capital 真实权益 + PACA 定容，fail-closed）
 ├── runtime/
-│   └── x1_live_processed.json   # live 决策幂等去重（processed）+ 冷静期起点（last_entry）
+│   ├── x1_live_processed.json   # live 决策幂等去重（processed）+ 冷静期起点（last_entry）
+│   ├── venue/                   # 加密凭据库（credentials.enc + key，0600，gitignored）
+│   ├── okx_sim/                 # OKX 客户端审计（sim_trades_audit.jsonl）
+│   └── live_order_audit.jsonl   # 真实下单审计
 ├── audit/
 │   ├── x1_paper_fills.jsonl     # 纸面成交账本
 │   └── x1_live_fills.jsonl      # live 成交账本（venue/order_placed/order_id/fill_px 扁平字段）
@@ -73,9 +83,9 @@ TEE（Trading Execution Engine）是 Dreambuddy 的交易执行核心，负责�
 | 审计 | core/auditor.py | 全链路审计日志 |
 | V15 集成 | integrations/v15_integration.py | V15 马丁策略执行 |
 | 易经集成 | integrations/yijing_integration.py | 易经推理系统对接 |
-| live 执行（NN 灰度） | x1_live_executor.py | 50 live 决策 → 执行权/额度/kill-switch/幂等复核 → 11 live_order_bridge 下单，审计落 `audit/x1_live_fills.jsonl` |
+| live 执行（NN 灰度） | x1_live_executor.py | 50 live 决策 → 执行权/额度/kill-switch/幂等复核 → 22 `executors/live_order_bridge.py` 下单，审计落 `audit/x1_live_fills.jsonl` |
 | 事前风控 + 定容 | risk_bridge.py | 13 `PreTradeGate` 判定 + `risk_capital` 真实权益 + PACA `position_pct` 定容，名义金额 10~100 USDT、杠杆 3；任一环节异常 fail-closed |
-| 持仓守卫 | x1_live_executor.py | 真实下单前查 11 持仓，同标的已有仓位则跳过；查询失败 fail-closed |
+| 持仓守卫 | x1_live_executor.py | 真实下单前查 OKX 实盘持仓（经 22 下单桥），同标的已有仓位则跳过；查询失败 fail-closed |
 | 开仓冷静期 | x1_live_executor.py | 同标的距上次真实成功开仓不足 8h（`22_LIVE_COOLDOWN_HOURS` 可覆盖）不再建仓 |
 | 云端调度 | `dreambuddy-nn-live-chain.timer` | 每 5 分钟执行 50 `run_live.py` → 22 `x1_live_executor.py --limit 3` |
 

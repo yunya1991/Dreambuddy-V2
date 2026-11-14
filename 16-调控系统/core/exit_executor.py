@@ -37,6 +37,41 @@ except Exception as _e:
 EXECUTION_LOG_DIR = Path(__file__).parent.parent / "artifacts" / "execution_logs"
 EXECUTION_LOG_DIR.mkdir(parents=True, exist_ok=True)
 
+_22_DIR = Path(__file__).resolve().parents[2] / "22-执行引擎中心"
+
+
+def _load_venue_credentials() -> Dict:
+    """从 22 域凭据库读取交易所凭据（唯一存放地），失败返回空 dict。"""
+    try:
+        if str(_22_DIR) not in sys.path:
+            sys.path.insert(0, str(_22_DIR))
+        from executors.credentials import load_okx_config  # noqa: E402
+
+        return load_okx_config() or {}
+    except Exception:
+        return {}
+
+
+def _apply_execution_authority(raw):
+    """把 16 的下单出口收口到 22 TradeExecutionGateway。
+
+    22 可用时返回 RiskGatedOkxClient（13 风控 → 16 定容 → 22 执行）；
+    22 整体不可用时打印告警并回退 raw —— 16 只执行平仓/减仓等保护性动作，
+    阻断离场会让持仓裸奔，风险高于执行旁路。
+    """
+    try:
+        if str(_22_DIR) not in sys.path:
+            sys.path.insert(0, str(_22_DIR))
+        from trade_execution_gateway import (  # noqa: E402
+            RiskGatedOkxClient,
+            TradeExecutionGateway,
+        )
+
+        return RiskGatedOkxClient(raw, TradeExecutionGateway(okx_client=raw))
+    except Exception as e:  # noqa: BLE001
+        print(f"[离场执行器] 22 执行权威不可用，保护性离场回退 raw: {e}")
+        return raw
+
 
 class ExecutionMode(str, Enum):
     """执行模式"""
@@ -388,18 +423,19 @@ class ExitExecutor:
             sys.path.insert(0, str(v15_lib))
             from okx_client import OKXSimulatedClient
 
+            _creds = _load_venue_credentials()
             config = {
-                "api_key": os.environ.get("OKX_API_KEY", ""),
-                "secret_key": os.environ.get("OKX_SECRET_KEY", ""),
-                "passphrase": os.environ.get("OKX_PASSPHRASE", ""),
+                "api_key": _creds.get("api_key") or os.environ.get("OKX_API_KEY", ""),
+                "secret_key": _creds.get("secret_key") or os.environ.get("OKX_SECRET_KEY", ""),
+                "passphrase": _creds.get("passphrase") or os.environ.get("OKX_PASSPHRASE", ""),
                 "simulated": self.mode == "simulated",
                 "dry_run": self.mode == "dry_run",
-                "base_url": "https://www.okx.com",
-                "default_inst_id": "BTC-USDT-SWAP",
-                "default_usdt_amount": 100,
-                "default_leverage": 5.0,
+                "base_url": _creds.get("base_url") or "https://www.okx.com",
+                "default_inst_id": _creds.get("default_inst_id") or "BTC-USDT-SWAP",
+                "default_usdt_amount": float(_creds.get("default_usdt_amount") or 100),
+                "default_leverage": float(_creds.get("default_leverage") or 5.0),
             }
-            self._okx_client = OKXSimulatedClient(config=config)
+            self._okx_client = _apply_execution_authority(OKXSimulatedClient(config=config))
             return self._okx_client
         except Exception as e:
             print(f"[离场执行器] OKX 客户端初始化失败: {e}")

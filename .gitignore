@@ -132,6 +132,8 @@ BAK_M1_START
 11-易经推理系统/scripts/memory_l4/new_methodology_backtest_result.json
 11-易经推理系统/tests/data/
 10-经典指标系统/user_data/ai_integration/
+# 22 域运行时（含加密凭据库与下单审计，禁止入库）
+22-执行引擎中心/runtime/
 
 # === 工具/沙箱/会话运行时目录（本地工具生成，不纳入版本控制）===
 .bsk-home/

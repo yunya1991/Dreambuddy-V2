@@ -11,6 +11,8 @@
 from __future__ import annotations
 
 import time
+import uuid
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 # 交易域标签：13→16→22→11 执行链路只属于神经网络系统；23 自进化域经 11 下单
@@ -45,10 +47,12 @@ def shadow_decision(action: str, inst_id: str, pos_side: str, reason: str, sz: A
 
 
 class DomainTaggedOkxClient:
-    """23 域下单客户端：raw client + evo23 标签 + 13 只读影子校验。
+    """23 域下单客户端：evo23 标签 + [23域] reason + 22 Gateway 唯一执行。
 
-    - 所有下单方法注入 OKX tag=evo23、reason 前缀 [23域]
-    - 下单前先调 shadow gateway 跑 13 定审并落审计，**不阻断订单**
+    - 注入 OKX tag=evo23、reason 前缀 [23域]
+    - 传入 ``gateway`` 时：所有写操作提交 22 TradeExecutionGateway（13→16→22→raw），
+      不再直连 raw；``decision_id`` / ``expires_at`` 缺失时按 23 域兜底规则补齐
+    - 仅传 ``shadow_gateway`` 时：保留旧的 13 只读影子校验 + raw 直连（回滚用）
     - 非交易方法透传给 raw client
     """
 
@@ -58,14 +62,82 @@ class DomainTaggedOkxClient:
         shadow_gateway: Any = None,
         okx_tag: str = EVOLUTION_OKX_TAG,
         domain_tag: str = EVOLUTION_DOMAIN_TAG,
+        gateway: Any = None,
     ) -> None:
         object.__setattr__(self, "_raw", raw)
         object.__setattr__(self, "_shadow_gw", shadow_gateway)
         object.__setattr__(self, "_okx_tag", okx_tag)
         object.__setattr__(self, "_domain_tag", domain_tag)
+        object.__setattr__(self, "_gateway", gateway)
 
     def __getattr__(self, name: str) -> Any:
         return getattr(object.__getattribute__(self, "_raw"), name)
+
+    # ── 执行权：有 gateway 时必须经 gateway ──────────────────────────
+    def _submit_via_gateway(
+        self,
+        action: str,
+        inst_id: Any,
+        pos_side: str,
+        reason: str,
+        sz: Any = None,
+        *,
+        decision_id: Any = None,
+        expires_at: Any = None,
+        px: Any = None,
+        sl_px: Any = None,
+        tp_px: Any = None,
+    ) -> Any:
+        gw = object.__getattribute__(self, "_gateway")
+        if gw is None:
+            return None
+        decision = shadow_decision(action, inst_id, pos_side, reason, sz)
+        decision["source"] = "23-evolution"
+        decision["decision_id"] = (
+            str(decision_id)
+            if decision_id
+            else (f"dec-23-{inst_id or 'MULTI'}-{action}-{uuid.uuid4().hex[:8]}")
+        )
+        decision["expires_at"] = (
+            str(expires_at) if expires_at else datetime.now(timezone.utc).isoformat()
+        )
+        decision["px"] = px
+        decision["sl_px"] = sl_px
+        decision["tp_px"] = tp_px
+        decision["payload"] = {
+            "tag": object.__getattribute__(self, "_okx_tag"),
+            "domain": "23",
+        }
+        try:
+            res = gw.submit(decision)
+        except Exception as exc:  # noqa: BLE001 — 网关异常 fail-closed
+            return {"ok": False, "error": f"gateway_exc:{exc}"}
+        if not getattr(res, "executed", False):
+            if getattr(res, "passed", False) and getattr(res, "order_result", None) is not None:
+                return res.order_result
+            return {
+                "ok": False,
+                "rejected": True,
+                "error": str(getattr(res, "reason", "rejected")),
+                "reason_code": str(getattr(res, "reason_code", "")),
+                "decision_id": decision["decision_id"],
+            }
+        out = dict(getattr(res, "order_result", None) or {})
+        out.setdefault("ok", True)
+        out["decision_id"] = decision["decision_id"]
+        out["sltp_result"] = getattr(res, "sltp_result", None)
+        return out
+
+    def _usdt_to_sz(self, inst_id: Any, usdt_amount: Any) -> Any:
+        if usdt_amount is None:
+            return None
+        fn = getattr(object.__getattribute__(self, "_raw"), "_usdt_to_sz", None)
+        if callable(fn):
+            try:
+                return fn(inst_id, float(usdt_amount))
+            except Exception:  # noqa: BLE001 — 换算失败交给网关拒单
+                return None
+        return None
 
     def _shadow_check(
         self, action: str, inst_id: Any, pos_side: str, reason: str, sz: Any = None
@@ -82,6 +154,17 @@ class DomainTaggedOkxClient:
         self, inst_id: str = None, usdt_amount: float = None, reason: str = "", **kwargs: Any
     ) -> Dict:
         self._shadow_check("open", inst_id, "long", reason)
+        _via = self._submit_via_gateway(
+            "open",
+            inst_id,
+            "long",
+            reason,
+            self._usdt_to_sz(inst_id, usdt_amount),
+            decision_id=kwargs.get("decision_id"),
+            expires_at=kwargs.get("expires_at"),
+        )
+        if _via is not None:
+            return _via
         return self._raw.market_open_long(
             inst_id, usdt_amount=usdt_amount, reason=tag_reason(reason), tag=self._okx_tag
         )
@@ -90,16 +173,49 @@ class DomainTaggedOkxClient:
         self, inst_id: str = None, usdt_amount: float = None, reason: str = "", **kwargs: Any
     ) -> Dict:
         self._shadow_check("open", inst_id, "short", reason)
+        _via = self._submit_via_gateway(
+            "open",
+            inst_id,
+            "short",
+            reason,
+            self._usdt_to_sz(inst_id, usdt_amount),
+            decision_id=kwargs.get("decision_id"),
+            expires_at=kwargs.get("expires_at"),
+        )
+        if _via is not None:
+            return _via
         return self._raw.market_open_short(
             inst_id, usdt_amount=usdt_amount, reason=tag_reason(reason), tag=self._okx_tag
         )
 
     def market_close_long(self, inst_id: str = None, reason: str = "", **kwargs: Any) -> Dict:
         self._shadow_check("close", inst_id, "long", reason)
+        _via = self._submit_via_gateway(
+            "close",
+            inst_id,
+            "long",
+            reason,
+            kwargs.get("sz"),
+            decision_id=kwargs.get("decision_id"),
+            expires_at=kwargs.get("expires_at"),
+        )
+        if _via is not None:
+            return _via
         return self._raw.market_close_long(inst_id, reason=tag_reason(reason), tag=self._okx_tag)
 
     def market_close_short(self, inst_id: str = None, reason: str = "", **kwargs: Any) -> Dict:
         self._shadow_check("close", inst_id, "short", reason)
+        _via = self._submit_via_gateway(
+            "close",
+            inst_id,
+            "short",
+            reason,
+            kwargs.get("sz"),
+            decision_id=kwargs.get("decision_id"),
+            expires_at=kwargs.get("expires_at"),
+        )
+        if _via is not None:
+            return _via
         return self._raw.market_close_short(inst_id, reason=tag_reason(reason), tag=self._okx_tag)
 
     def reduce_position(
@@ -111,6 +227,17 @@ class DomainTaggedOkxClient:
         **kwargs: Any,
     ) -> Dict:
         self._shadow_check("reduce", inst_id, pos_side, reason)
+        _via = self._submit_via_gateway(
+            "reduce",
+            inst_id,
+            pos_side,
+            reason,
+            kwargs.get("sz"),
+            decision_id=kwargs.get("decision_id"),
+            expires_at=kwargs.get("expires_at"),
+        )
+        if _via is not None:
+            return _via
         return self._raw.reduce_position(
             inst_id,
             pos_side=pos_side,
@@ -131,6 +258,19 @@ class DomainTaggedOkxClient:
     ) -> Dict:
         action = "stop_loss" if stop_loss_px else "take_profit"
         self._shadow_check(action, inst_id, pos_side, reason, sz)
+        _via = self._submit_via_gateway(
+            action,
+            inst_id,
+            pos_side,
+            reason,
+            sz,
+            decision_id=kwargs.get("decision_id"),
+            expires_at=kwargs.get("expires_at"),
+            sl_px=stop_loss_px or None,
+            tp_px=take_profit_px or None,
+        )
+        if _via is not None:
+            return _via
         return self._raw.place_stop_loss_take_profit(
             inst_id=inst_id,
             pos_side=pos_side,
@@ -143,15 +283,26 @@ class DomainTaggedOkxClient:
 
     def place_order(self, **kwargs: Any) -> Dict:
         _pos_side = str(kwargs.get("pos_side") or "").lower()
-        self._shadow_check(
-            "close" if kwargs.get("reduce_only") else "open",
+        _reason = str(kwargs.get("reason") or "")
+        _action = "close" if kwargs.get("reduce_only") else "open"
+        if kwargs.get("reduce_only") and kwargs.get("pos_side"):
+            # 减仓语义：与持仓方向相反的 reduce_only 单
+            _action = "reduce"
+        self._shadow_check(_action, kwargs.get("inst_id"), _pos_side, _reason, kwargs.get("sz"))
+        _via = self._submit_via_gateway(
+            _action,
             kwargs.get("inst_id"),
             _pos_side,
-            str(kwargs.get("reason") or ""),
+            _reason,
             kwargs.get("sz"),
+            decision_id=kwargs.get("decision_id"),
+            expires_at=kwargs.get("expires_at"),
+            px=kwargs.get("px") if kwargs.get("px") is not None else kwargs.get("price"),
         )
+        if _via is not None:
+            return _via
         kwargs["tag"] = self._okx_tag
-        kwargs["reason"] = tag_reason(str(kwargs.get("reason") or ""))
+        kwargs["reason"] = tag_reason(_reason)
         return self._raw.place_order(**kwargs)
 
 

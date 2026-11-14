@@ -1674,7 +1674,7 @@ evolution/rollback 持续监控与回滚
 ```
 OKX API (K线)
     ↓
-data_fetcher.py / okx_simulated.py
+data_fetcher.py / okx_simulated.py（shim → 22/executors/okx_client.py）
     ↓
 特征工程 (bcrm2/*_features.py)
     ├── 八卦特征
@@ -2172,10 +2172,10 @@ export DREAMOS_EXIT_SELECTOR_ENABLED=1
 
 **配置项**: `td_mode = "isolated"`（可通过环境变量 `OKX_TD_MODE` 覆盖）
 
-**代码位置**: [okx_simulated.py](../../11-易经推理系统/scripts/memory_l4/okx_simulated.py)
+**代码位置**: [22-执行引擎中心/executors/okx_client.py](../../22-执行引擎中心/executors/okx_client.py)（11 侧 `okx_simulated.py` 为转发 shim，2026-11-14 Plan A 迁出）
 
 - `DEFAULT_CONFIG["td_mode"]` = `"isolated"`
-- `_load_config()` 支持从 `data/okx_sim/config.json` 和环境变量读取
+- `_load_config()` 优先级 = 环境变量 > 22 域加密凭据库 > `runtime/config.json` 非敏感项；凭据不再回落 `.env`
 - `place_order()` 从配置读取，不再硬编码 `td_mode`
 - `place_stop_loss_take_profit()` 止盈止损单同步使用配置的 td_mode
 
