@@ -83,6 +83,7 @@
 1. **war_state 状态机**：FREEZE →（连续3日总分≥60）→ 解冻中 → ACTIVE；总分<58 回冻。资产类隔离：crypto_usdt / us_stock / precious_metal 三类资产独立计算 war_state 与解冻计数器；
 2. **维度否决**：道<40 或 将<40 → 仓位≤30%；法<40 → 不开新仓；地+天均<40 → 只允许对冲或空仓；**道维度一票否决**：dao<40 立即 war_state=FREEZE 并清零解冻计数器；
 3. **四档决策**：≥75 进攻（仓位80-100%）｜60-74 防御（20-50%）｜50-59 轻仓防守（0-20%）｜<50 全禁 FREEZE（0%）。
+4. **方向倾斜阈值（2026-11-14 起）**：总分 ≥53 → long，≤47 → short，48-52 → neutral（原 65/45）。五维为分位型评分，50 即中性；历史 721 次发布总分恒为 51，原阈值导致方向永久 neutral。方向只表达相对 50 的倾斜幅度，与四档仓位分级解耦。道维 dao<40 仍为一票否决。
 
 **fail-open**：任何异常返回保守默认（FREEZE, cap=0.1, 仅 emergency）。
 
@@ -310,6 +311,7 @@
 | v1.1c | 2026-10-28 | §六 路线表 P4 状态更新为完成：42层落地最小SignalBus（signal_bus.py，Schema校验+链式过滤器F1/F2/F3/F5+总线状态原子落盘，纯只读汇聚）+43层Publisher适配器（adapters/strategic_extension_adapter.py）+registry.yaml接入声明；端到端验证通过（43信号发布accepted，source=strategic_extension贯通，shadow标记保留） | 42层SPEC §二/§21.1；runtime/bus_state.json |
 | v1.1d | 2026-10-28 | §六 路线表 P5 状态更新为完成：新增 strategic_elements_deriver.py（四要素推演：资产配比/多空配比/资金姿态/标的排序 + 分支对比 element_comparison + 分歧检测 contradiction_trigger）；四要素结果并入 signal_publisher.py payload 随信号发布到42层总线，端到端验证通过（posture=moderate，ranking_top=AVAX/USDT，当前无分歧）；测试基线 60 passed 不变 | SPEC §十二 规划；42层 runtime/bus_state.json |
 | v1.1e | 2026-10-28 | §十三 演进路径三方向实施：方向1 23系统消费侧接入完成（data_pipeline.py 5g注入点，只读42层总线，shadow透传不参与裁决权重，验证通过）；方向2 编码器接口就绪确认（受X1门槛数据积累阻塞）；方向3 四要素历史记录机制落地（strategic_elements_history.jsonl 随发布追加，训练数据积累启动）；测试基线 60 passed 不变 | SPEC §13.3/§13.4 |
+| v1.1f | 2026-11-14 | 修复战略外延信号恒 neutral（721/721，total 恒 51）：方向阈值 65/45 → 53/47；将维覆盖度基准 800 → 48 个月；云端 unit 开启 CYCLE_STATE_BRIDGE=1 承接 40 真实产出物。验证：云端 total=53 → long 0.56，42 总线已透传 | SPEC §三 |
 | v1.2 | 2026-10-28 | §十五 五维语义重构（方案A）：新增 domain_semantics.py（内部键↔交易市场语义映射，新权重 20/25/20/15/20）+ sentiment_channel.py（自建情绪通道，fail-open 中性 50）；signal_publisher.py payload 新增 semantic_view；测试基线 60 passed 不变 | SPEC §十五；v1.0 冻结决策 #2 |
 | v1.2.1 | 2026-10-28 | §15.3/§15.4 修正与待办①关闭：F&G『停更』确认为误判（18 层 2026-10-17 已完成 SQLite → PostgreSQL 迁移，采集持续正常）；sentiment_channel.py 数据源切换为 PostgreSQL 优先（复用 18 层 sink_postgres 密码发现逻辑，不硬编码凭据），回退 SQLite；综合值缺失时回退分量均值；切换后验证通过（available=true，情绪分 58，实时 F&G）；测试基线 60 passed 不变 | 38-数据库管理系统 SPEC 方案 4；PostgreSQL metrics 实测 |
 | v1.2.2 | 2026-10-28 | 同类问题排查修复 + 待办②关闭：① five_domain_feature_computer.py 的 _fetch_news_72h_limit200（7引擎 news 读取）同样读 SQLite 旧库，切换为 PostgreSQL 优先（复用 sentiment_channel.query_pg 公共查询函数），回退 SQLite，显式 db_path 保持测试语义不变；验证 news 200 条实时数据恢复；② 待办②归类微调：fedfunds_rate 央行政策子指标从道维（资金流向）移至天维（宏观政策），道维 6→5 子指标、天维 4→5 子指标等权，内部键名不变；验证移维生效（tian diff -8，dao diff 0）；测试基线 60 passed 不变 | 18 层 PG 迁移影响面排查；SPEC §15.4 待办② |
