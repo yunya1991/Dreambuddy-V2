@@ -1,0 +1,219 @@
+# 资产池定稿（S1.0-2）
+# ============================================================
+# 定位：L1 确定性数据能力的“锚定资产表”。锚定资产必须有 ≥3 年日频历史，
+#       才能支撑相关性、条件收益、分位等统计能力（S2/S3 的输入基线）。
+#
+# 边界：
+#   - 锚定资产 = 8 个（用户定稿：BTC/ETH/SOL + 纳指/标普/黄金/原油/美债）
+#   - 其他代币不在本表逐一定义：查询时经 OKX CLI 动态取数，再映射到所属类别的
+#     龙头锚定资产做统计关系（一生二、二生三）；代币基本面/叙事研究属 L2。
+#   - storage 指向 mm_metrics 的实际键（sub_category + metric_name），
+#     覆盖体检（S1.0-4）据此逐项校验行数与跨度。
+# ============================================================
+
+version: 1
+updated: "2026-11-14"
+timezone_default: UTC
+
+# 同一指标跨源重复时的取值优先级（覆盖体检、相关性计算按此去重）
+source_priority:
+  - okx
+  - fred
+  - coingecko
+  - blockchain_info
+  - panewslab
+
+quality:
+  min_rows_3y: 1095          # 3 年日频应有条数
+  max_gap_ratio: 0.01        # 允许缺口比例
+  min_non_null_ratio: 0.95   # 非空率下限
+  stale_days: 3              # 超过 3 天未更新视为陈旧
+
+anchors:
+  # ---------------- 加密（龙头 BTC） ----------------
+  - id: BTC
+    name: 比特币
+    asset_class: crypto
+    role: leader
+    aliases: [BTC, XBT, 比特币, 大饼]
+    timezone: UTC
+    enabled: true
+    instrument:
+      venue: okx
+      inst_type: SPOT
+      inst_id: BTC-USDT
+    storage:
+      sub_category: BTC
+      metric: close_usd
+      volume_metric: volume_usd
+    history:
+      granularity: 1D
+      years: 3
+      backfill: okx_history_candles
+
+  - id: ETH
+    name: 以太坊
+    asset_class: crypto
+    role: member
+    aliases: [ETH, 以太坊, 二饼]
+    timezone: UTC
+    enabled: true
+    instrument:
+      venue: okx
+      inst_type: SPOT
+      inst_id: ETH-USDT
+    storage:
+      sub_category: ETH
+      metric: close_usd
+      volume_metric: volume_usd
+    history:
+      granularity: 1D
+      years: 3
+      backfill: okx_history_candles
+
+  - id: SOL
+    name: Solana
+    asset_class: crypto
+    role: member
+    aliases: [SOL, solana, 索拉纳]
+    timezone: UTC
+    enabled: true
+    instrument:
+      venue: okx
+      inst_type: SPOT
+      inst_id: SOL-USDT
+    storage:
+      sub_category: SOL
+      metric: close_usd
+      volume_metric: volume_usd
+    history:
+      granularity: 1D
+      years: 3
+      backfill: okx_history_candles
+
+  # ---------------- 美股（龙头 SPX） ----------------
+  - id: IXIC
+    name: 纳斯达克综合指数
+    asset_class: equity_us
+    role: member
+    aliases: [IXIC, NDX, 纳指, 纳斯达克]
+    timezone: America/New_York
+    enabled: true
+    instrument:
+      venue: fred
+      series_id: NASDAQCOM
+    storage:
+      sub_category: NASDAQCOM
+      metric: value
+    history:
+      granularity: 1D
+      years: 3
+      backfill: fred_history
+
+  - id: SPX
+    name: 标普 500 指数
+    asset_class: equity_us
+    role: leader
+    aliases: [SPX, SP500, GSPC, 标普, 标普500]
+    timezone: America/New_York
+    enabled: true
+    instrument:
+      venue: fred
+      series_id: SP500
+    storage:
+      sub_category: SP500
+      metric: value
+    history:
+      granularity: 1D
+      years: 3
+      backfill: fred_history
+
+  # ---------------- 商品（龙头 XAU） ----------------
+  - id: XAU
+    name: 黄金（XAUT 代币化现货，代理伦敦金）
+    asset_class: commodity
+    role: leader
+    aliases: [XAU, GOLD, 黄金, 伦敦金]
+    timezone: UTC
+    enabled: true
+    proxy: true
+    proxy_note: "OKX XAUT-USDT 作为现货黄金代理；偏差见覆盖体检报告"
+    instrument:
+      venue: okx
+      inst_type: SPOT
+      inst_id: XAUT-USDT
+    storage:
+      sub_category: XAU
+      metric: close_usd
+      volume_metric: volume_usd
+    history:
+      granularity: 1D
+      years: 3
+      backfill: okx_history_candles
+
+  - id: WTI
+    name: WTI 原油
+    asset_class: commodity
+    role: member
+    aliases: [WTI, DCOILWTICO, 原油, 美油]
+    timezone: America/New_York
+    enabled: true
+    instrument:
+      venue: fred
+      series_id: DCOILWTICO
+    storage:
+      sub_category: DCOILWTICO
+      metric: value
+    history:
+      granularity: 1D
+      years: 3
+      backfill: fred_history
+
+  # ---------------- 利率（龙头 US10Y） ----------------
+  - id: US10Y
+    name: 美国 10 年期国债收益率
+    asset_class: rates
+    role: leader
+    aliases: [US10Y, DGS10, 美债, 十年期]
+    timezone: America/New_York
+    enabled: true
+    instrument:
+      venue: fred
+      series_id: DGS10
+    storage:
+      sub_category: DGS10
+      metric: value
+    history:
+      granularity: 1D
+      years: 3
+      backfill: fred_history
+
+# ============================================================
+# 动态资产（非锚定代币）：不进锚定表，查询时按需取数
+# ============================================================
+dynamic:
+  enabled: true
+  provider: okx
+  cli: 6-TRADING/scripts/okx_cli.py
+  universe:
+    inst_type: SPOT
+    quote: USDT
+    # 只在用户明确询问某代币时取数，不做全市场扫描
+    on_demand_only: true
+  history:
+    granularity: 1D
+    years: 3
+    endpoint: /api/v5/market/history-candles
+    fallback_endpoint: /api/v5/market/candles
+    cache_ttl_seconds: 3600
+  # 一生二、二生三：非锚定代币 → 所属类别 → 与龙头锚定资产建立统计关系
+  class_mapping:
+    crypto: crypto
+  relation:
+    method: rolling_correlation
+    benchmarks: [BTC, ETH]     # 加密货币的龙头与次龙头
+    window_days: [90, 365]
+    outputs: [corr_btc_90d, corr_btc_365d, beta_btc_90d, corr_eth_90d]
+    min_samples: 90
+    caveat: "仅统计关系，不含代币基本面研究（属 L2）"
+  boundary: "代币项目研究、叙事、团队、解锁等属 L2，L1 只输出与龙头资产的统计关系"
