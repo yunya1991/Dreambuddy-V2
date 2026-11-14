@@ -849,6 +849,8 @@ def format_series_output(
     def _fmt(v: float) -> str:
         return f"{v / scale:.{prec}f}"
 
+    u = "" if unit in ("", "%") else f" {unit}"
+
     vals = [float(p["value"]) * sign for p in points]
     last = vals[-1]
     first = vals[0]
@@ -867,9 +869,9 @@ def format_series_output(
         }
     )
     text = (
-        f"{title}：最新 {_fmt(last)}{unit}（{as_of} CST）；"
-        f"近 {days} 天 {_fmt(min(vals))}~{_fmt(max(vals))}{unit}，"
-        f"变化 {delta / scale:+.{prec}f}{unit}（{pct:+.2f}%）"
+        f"{title}：最新 {_fmt(last)}{u}（{as_of} CST）；"
+        f"近 {days} 天 {_fmt(min(vals))}~{_fmt(max(vals))}{u}，"
+        f"变化 {delta / scale:+.{prec}f}{u}（{pct:+.2f}%）"
     )
     if quality:
         text += f"；数据质量 {quality}"
