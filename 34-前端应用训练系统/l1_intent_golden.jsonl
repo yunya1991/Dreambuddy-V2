@@ -309,3 +309,55 @@
 {"message": "如何提高工作效率", "intent": "unknown", "variant": "oos"}
 {"message": "比特币是什么", "intent": "unknown", "variant": "oos"}
 {"message": "我家猫不吃东西怎么办", "intent": "unknown", "variant": "oos"}
+{"message": "近一年CPI走势", "intent": "metric_series", "variant": "formal"}
+{"message": "过去90天CPI变化", "intent": "metric_series", "variant": "formal"}
+{"message": "最近30天恐惧贪婪指数走势", "intent": "metric_series", "variant": "formal"}
+{"message": "BTC恐惧贪婪近30天变化", "intent": "metric_series", "variant": "formal"}
+{"message": "近3个月BTC价格走势", "intent": "metric_series", "variant": "formal"}
+{"message": "ETH近一年价格趋势", "intent": "metric_series", "variant": "formal"}
+{"message": "SOL最近90天走势", "intent": "metric_series", "variant": "formal"}
+{"message": "近一年黄金价格序列", "intent": "metric_series", "variant": "formal"}
+{"message": "近一年美元指数走势", "intent": "metric_series", "variant": "formal"}
+{"message": "美债近半年走势", "intent": "metric_series", "variant": "formal"}
+{"message": "纳指近90天历史数据", "intent": "metric_series", "variant": "formal"}
+{"message": "标普500近一年历史数据", "intent": "metric_series", "variant": "formal"}
+{"message": "VIX最近30天变化", "intent": "metric_series", "variant": "formal"}
+{"message": "MVRV近一年走势", "intent": "metric_series", "variant": "formal"}
+{"message": "资金费率近30天趋势", "intent": "metric_series", "variant": "formal"}
+{"message": "多空比过去90天变化", "intent": "metric_series", "variant": "formal"}
+{"message": "合约持仓量近30天走势", "intent": "metric_series", "variant": "formal"}
+{"message": "DeFi TVL近90天趋势", "intent": "metric_series", "variant": "formal"}
+{"message": "BTC市占率近30天变化", "intent": "metric_series", "variant": "formal"}
+{"message": "ETF净流入近90天走势", "intent": "metric_series", "variant": "formal"}
+{"message": "活跃地址近30天趋势", "intent": "metric_series", "variant": "formal"}
+{"message": "哈希率近一年走势", "intent": "metric_series", "variant": "formal"}
+{"message": "降息概率近一年走势", "intent": "metric_series", "variant": "formal"}
+{"message": "近一年PPI历史数据", "intent": "metric_series", "variant": "formal"}
+{"message": "M2近一年走势", "intent": "metric_series", "variant": "formal"}
+{"message": "CPI 文档在哪里", "intent": "doc_search", "variant": "negative"}
+{"message": "BTC 现在什么价格", "intent": "price_query", "variant": "negative"}
+{"message": "ETH 和 SOL 哪个强", "intent": "asset_class_trend", "variant": "negative"}
+{"message": "查询 BTC 行情", "intent": "data_query", "variant": "negative"}
+{"message": "CPI 超预期意味着什么", "intent": "data_insight", "variant": "negative"}
+{"message": "估值贵不贵", "intent": "fundamental_valuation", "variant": "negative"}
+{"message": "现在风控状态怎么样", "intent": "risk_control", "variant": "negative"}
+{"message": "恐惧贪婪指数是什么意思", "intent": "data_query", "variant": "negative"}
+{"message": "比特币今天涨了多少", "intent": "price_query", "variant": "negative"}
+{"message": "帮我查一下最新行情", "intent": "data_query", "variant": "negative"}
+{"message": "BTC链上活跃地址过去90天变化", "intent": "metric_series", "variant": "formal"}
+{"message": "最近30天链上活跃地址走势", "intent": "metric_series", "variant": "formal"}
+{"message": "近半年MVRV走势", "intent": "metric_series", "variant": "formal"}
+{"message": "过去一年MVRV变化", "intent": "metric_series", "variant": "formal"}
+{"message": "近90天ETF净流入走势", "intent": "metric_series", "variant": "formal"}
+{"message": "近180天ETF净流入走势", "intent": "metric_series", "variant": "formal"}
+{"message": "近半年BTC市占率趋势", "intent": "metric_series", "variant": "formal"}
+{"message": "过去一年BTC市占率变化", "intent": "metric_series", "variant": "formal"}
+{"message": "近半年合约持仓量变化", "intent": "metric_series", "variant": "formal"}
+{"message": "近90天多空比走势", "intent": "metric_series", "variant": "formal"}
+{"message": "最近30天新闻数走势", "intent": "metric_series", "variant": "formal"}
+{"message": "过去90天快讯数变化", "intent": "metric_series", "variant": "formal"}
+{"message": "近半年新闻数趋势", "intent": "metric_series", "variant": "formal"}
+{"message": "近半年降息概率变化", "intent": "metric_series", "variant": "formal"}
+{"message": "过去90天降息概率走势", "intent": "metric_series", "variant": "formal"}
+{"message": "近一年恐惧贪婪指数变化", "intent": "metric_series", "variant": "formal"}
+{"message": "最近90天BTC市占率走势", "intent": "metric_series", "variant": "formal"}

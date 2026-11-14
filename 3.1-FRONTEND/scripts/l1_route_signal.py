@@ -56,6 +56,7 @@ from data_query_executor import (  # noqa: E402
     exec_data_query,
     exec_event_analysis,
     exec_fundamental_valuation,
+    exec_metric_series,
     exec_path_insight,
     exec_price_query,
     exec_risk_control,
@@ -64,7 +65,7 @@ from data_query_executor import (  # noqa: E402
     settle_to_cognitive,
 )
 
-# 十意图执行器（与 data_query_executor.main 分发一一对应）
+# 十意图执行器（与 data_query_executor.main 分发一一对应；S1 新增 metric_series）
 EXECUTORS = {
     "data_query": exec_data_query,
     "data_insight": exec_data_insight,
@@ -76,6 +77,7 @@ EXECUTORS = {
     "event_analysis": exec_event_analysis,
     "risk_control": exec_risk_control,
     "price_query": exec_price_query,
+    "metric_series": exec_metric_series,
 }
 
 # ============================================================
@@ -97,7 +99,7 @@ _FALLBACK_PATTERNS = [
     (
         "event_line_query",
         re.compile(
-            r"(?=.*(事件|快讯|监管|巨鲸|解锁|ETF|地缘|美联储|政策|局势|币种))"
+            r"(?=.*(事件|快讯(?!数)|监管|巨鲸|解锁|ETF|地缘|美联储|政策|局势|币种))"
             r"(?=.*(演变|后续|进展|动态|动向|变化|趋势|局势))"
         ),
     ),
@@ -150,6 +152,22 @@ _FALLBACK_PATTERNS = [
         re.compile(
             r"风控|风险度|止盈|止损|调控状态|仓位状态|持仓风控|移动止盈|风险大不大|风险大吗|风险高不高"
             r"|风险敞口|要不要跑|要不要减仓|减仓控制|控制风险|平掉|平仓(?!量)"
+        ),
+    ),
+    (
+        # S1: 指标历史序列（指标别名 + 时间窗口/走势词双条件，避免吞掉行情对比与价格查询）
+        "metric_series",
+        re.compile(
+            r"(?=.*(CPI|PPI|M2|VIX|MVRV|SOPR|NUPL|恐惧贪婪|fear ?greed|fng|资金费率|多空比|持仓量"
+            r"|美元指数|美债|纳指|标普|BTC|ETH|SOL|黄金|活跃地址|哈希率|算力|DeFi ?TVL|TVL|ETF|降息概率"
+            r"|新闻数|快讯数))"
+            r"(?=.*(近[0-9一二三四五六七八九十两]+(天|日|周|个月|月|年)"
+            r"|过去[0-9一二三四五六七八九十两]+(天|日|周|个月|月|年)"
+            r"|最近[0-9一二三四五六七八九十两]+(天|日|周|个月|月|年)"
+            r"|(近|过去|最近)?半年"
+            r"|[0-9]+(天|日|周|个月|月|年)"
+            r"|走势|趋势|历史序列|时间序列|历史数据))",
+            re.IGNORECASE,
         ),
     ),
     (

@@ -35,11 +35,21 @@ export interface ModuleSnapshot {
     breakdown?: Record<string, unknown>;
   };
   timeseries?: Array<{
-    ts: string;
-    direction_score: number;
+    ts?: string;
+    timestamp?: string;
+    // S1: 真实序列主字段为 value；direction_score 保留兼容旧口径
+    value?: number;
+    direction_score?: number;
     velocity?: number;
     acceleration?: number;
   }>;
+  timeseries_meta?: {
+    quality?: string;
+    sample_n?: number;
+    label?: string;
+    unit?: string;
+    reason?: string;
+  };
 }
 
 // ============== 映射 ==============
@@ -180,8 +190,10 @@ export function ModuleDetail({ module: moduleKey, title }: { module: string; tit
   const ts = data!.timeseries || [];
   const tsLabel = data!.ts ? new Date(data!.ts).toLocaleString('zh-CN') : '--';
 
-  // timeseries 统计
-  const tsScores = ts.map((t) => t.direction_score).filter((v) => typeof v === 'number');
+  // timeseries 统计（S1: 真实序列优先取 value，兼容旧 direction_score）
+  const tsScores = ts
+    .map((t) => (typeof t.value === 'number' ? t.value : t.direction_score))
+    .filter((v): v is number => typeof v === 'number');
   const tsLatest = tsScores.length ? tsScores[tsScores.length - 1] : null;
   const tsMax = tsScores.length ? Math.max(...tsScores) : null;
   const tsMin = tsScores.length ? Math.min(...tsScores) : null;

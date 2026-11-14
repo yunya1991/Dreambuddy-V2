@@ -23,6 +23,63 @@ def _resolve_34_core_dir() -> str:
     return os.path.normpath(os.path.join(script_dir, "..", "..", "34-前端应用训练系统", "core"))
 
 
+def _l0_module_timeseries(module_key: str) -> dict:
+    """S1: 模块主序列（真实 mm_metrics，经 L0 datacenter.series）；FAIL-OPEN 返回空 + reason。
+
+    指标字典唯一事实源为 54 `l1agg.series_catalog`（与 L1 metric_series 执行器共用）。
+    """
+    try:
+        core_dir = _resolve_34_core_dir()
+        if core_dir not in sys.path:
+            sys.path.insert(0, core_dir)
+        agg_root = os.path.normpath(os.path.join(core_dir, "..", "..", "54-L1架构能力聚合层"))
+        if agg_root not in sys.path:
+            sys.path.insert(0, agg_root)
+        from l0_foundation import get_l0
+        from l1agg.series_catalog import module_series
+
+        spec = module_series(module_key)
+        for sub, metric in spec["series"]:
+            ctx = get_l0().fetch_context(
+                "datacenter.series",
+                {
+                    "sub_category": sub,
+                    "metric_name": metric,
+                    "days": spec["days"],
+                    "agg": "daily",
+                },
+            )
+            if ctx.get("degraded"):
+                continue
+            data = ctx.get("data") or {}
+            if not data.get("points"):
+                continue
+            meta = dict(ctx.get("meta") or {})
+            meta.update(
+                {
+                    "sub_category": sub,
+                    "metric_name": metric,
+                    "label": spec["label"],
+                    "unit": spec["unit"],
+                }
+            )
+            return {"timeseries": data["points"], "timeseries_meta": meta}
+        return {
+            "timeseries": [],
+            "timeseries_meta": {
+                "quality": "empty",
+                "reason": "no_history",
+                "label": spec["label"],
+                "unit": spec["unit"],
+            },
+        }
+    except Exception as e:
+        return {
+            "timeseries": [],
+            "timeseries_meta": {"quality": "empty", "reason": f"{type(e).__name__}: {e}"},
+        }
+
+
 def _fetch(tool: str, command: str) -> dict:
     """走统一壳层拉数据, FAIL-OPEN 返回 {}。"""
     _real = sys.stdout
@@ -920,6 +977,13 @@ def main():
         "narrative": _build_narrative(narrative_raw, ts),
         "calendar": _build_calendar(calendar_raw, ts),
     }
+
+    # ── 3. S1: 挂载真实历史序列（模块主序列，无合成数据） ────────────
+    # 回滚开关（SPEC §7-P1.8）：FUNDAMENTAL_TIMESERIES_SOURCE=off → 回退空序列
+    _ts_source = os.environ.get("FUNDAMENTAL_TIMESERIES_SOURCE", "dal").strip().lower()
+    if _ts_source not in ("off", "none"):
+        for _key, _mod in modules.items():
+            _mod.update(_l0_module_timeseries(_key))
 
     has_real = any(
         m.get("meta", {}).get("data_quality") in ("good", "partial") for m in modules.values()

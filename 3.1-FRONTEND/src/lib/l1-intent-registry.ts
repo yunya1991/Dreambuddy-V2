@@ -49,7 +49,7 @@ export const L1_INTENT_REGISTRY: L1IntentDef[] = [
     // 事件演变先于事件分析：问"后续/演变/进展"是跟踪，不是单次解读
     intent: 'event_line_query',
     fallbackPattern:
-      /(?=.*(事件|快讯|监管|巨鲸|解锁|ETF|地缘|美联储|政策|局势|币种))(?=.*(演变|后续|进展|动态|动向|变化|趋势|局势))/,
+      /(?=.*(事件|快讯(?!数)|监管|巨鲸|解锁|ETF|地缘|美联储|政策|局势|币种))(?=.*(演变|后续|进展|动态|动向|变化|趋势|局势))/,
   },
   {
     intent: 'contradiction_insight',
@@ -84,6 +84,12 @@ export const L1_INTENT_REGISTRY: L1IntentDef[] = [
     intent: 'risk_control',
     fallbackPattern:
       /风控|风险度|止盈|止损|调控状态|仓位状态|持仓风控|移动止盈|风险大不大|风险大吗|风险高不高|风险敞口|要不要跑|要不要减仓|减仓控制|控制风险|平掉|平仓(?!量)/,
+  },
+  {
+    // S1: 指标历史序列（指标别名 + 时间窗口/走势词双条件，与 l1_route_signal.py 对齐）
+    intent: 'metric_series',
+    fallbackPattern:
+      /(?=.*(CPI|PPI|M2|VIX|MVRV|SOPR|NUPL|恐惧贪婪|fear ?greed|fng|资金费率|多空比|持仓量|美元指数|美债|纳指|标普|BTC|ETH|SOL|黄金|活跃地址|哈希率|算力|DeFi ?TVL|TVL|ETF|降息概率|新闻数|快讯数))(?=.*(近[0-9一二三四五六七八九十两]+(天|日|周|个月|月|年)|过去[0-9一二三四五六七八九十两]+(天|日|周|个月|月|年)|最近[0-9一二三四五六七八九十两]+(天|日|周|个月|月|年)|(近|过去|最近)?半年|[0-9]+(天|日|周|个月|月|年)|走势|趋势|历史序列|时间序列|历史数据))/i,
   },
   {
     intent: 'price_query',
