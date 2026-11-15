@@ -1,6 +1,6 @@
 # 54 总技术文档 — 数据 → 统计 → 关系能力地图
 
-- **版本**: v2.62 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 总技术文档（v2.62 关闭 L-STAT 统计层：B-58 提交同步完成——本地 commit `ca6c55a3c6`（35 文件，manifest 50 → **93 条**）已推送 `origin/refactor/13-16-merge`，并经云端 `sudo -n -u luke -H git pull --ff-only` 落地到同一 commit，云端 `capability_manifest.yaml` 实测 **93 条 / 93 唯一**，与本地逐字一致；提交前 `pytest tests -q` 全绿 **1314** 条、ruff/black 通过；§7.2 统计层四项完成判定全部满足，可进入 G-IF1 冻结；v2.61 新增 §7.9 真数据覆盖表：本地只读快照 28 个注册资产中 24 个可用（≥250 期），AMD/GEV/SPCX/SKHYNIX 为 0 样本；93 条能力 min_n 档位与资产数闭合，lights 的 250 门槛刚好满足；5 张衍生品明细表为空、`mm_events` 仅有 `symbols` 文本列等口径缺口已登记；v2.60 关闭 K-09/K-10：`envelope.GATE_METHOD` 单一事实源声明方法级 gate 集合（能力级 6 值 + `skipped`/`calculation_failed`/`empty`/`rejected`），执行覆盖测试对 93 场景逐块递归校验；`data` 关闭 `additionalProperties` 并枚举实际使用的 12 个键；K-12 仅开槽 `quality.snapshot_at`，能力层不伪造快照时点；v2.59 关闭 K-01/K-08：`envelope.build()` 统一为能力块补 `gate`（缺省 `ok`，不覆盖既有值），一处收敛全部 93 出口；schema 能力级 `gate` 枚举补 `partial`/`degraded` 并注明方法级另有 `skipped`/`calculation_failed`/`empty`；执行覆盖测试内对 93 个场景逐个 `jsonschema.validate`（此前只校验 12 个手选出口，故 G/J 组缺 `gate` 未被发现）；新增回归测试 `test_every_capability_block_declares_gate`；v2.58 新增 §7「统计层 → 图表输出 → 信号层」串行推进顺序与接口冻结：三张接口表（统计→图表 / 图表→信号 / 信号→回测评估）+ 12 项信号层前置阻塞清单 + G-IF1/G-IF2/G-IF3 三个冻结点；实测发现 G/J 组 39 个出口的能力块缺 `gate`（违反契约，因 schema 校验测试只覆盖 12 个手选出口而未暴露）；v2.57 接入 J 组 24 个科研统计出口（D-J01/03/06/07/08/09/10/11/12/13/14/15/16/17/18/19/20/21/23/25/26/27/28/29，`capabilities/research_stats.py`，全部 `method_binding: compute`），manifest 69 → **93 条**、可执行出口 69 → **93 个**；同批补齐 `datacenter.panel`（21 项）与 `datacenter.spatial_frame`（D-J25）两个 scope 声明，并新增 `tests/test_research_stats.py`（43 passed）替换不被 pytest 收集的 `_smoke_j.py`；v2.56 接入 G 组 15 个机构统计出口（D-G01/02/03/04/05/06/07/10/11/12/13/15/18/21/24，`capabilities/institutional.py`，全部 `method_binding: compute`），manifest 54 → **69 条**、可执行出口 54 → **69 个**；v2.55 新增 D-K01/D-K02 评估层只读出口（manifest 52 → **54 条**）：D-K01 读 `relationship_registry.db` 取 Top3、D-K02 读 `reports/discovery/**` 最近一期候选，均只读不重算；同批落地 `config/discovery_space.yaml` 预注册搜索空间 + `l1agg/discovery.py` 冻结项校验；v2.54 上线 #35 后半句：`dreambuddy-mers.timer` 每日 08:20 CST 跑全量 MERS 网格（29 job / 5,220 单元），`Persistent=true` 补跑漏窗，`--prune-days 90` 只清 `relationship_eval` 历史行、`relationship_state` 永久保留；新增 `RelationshipRegistry.prune_before()` 与回归测试，unit 文件入库 `deploy/systemd/`；v2.53 关闭 §6.4.5 #35 全量真实验收——29 job / 5,220 单元（20 资产 `close_1d` + 9 个宏观/情绪/资金费率指标对齐 BTC 日轴），BH-FDR 后 `gate_pass=1,057`（20.25%），`method_gate` = ok 3,654 / not_applicable 1,566 / **failed 0**，三轮 `gate_pass` 完全一致且每轮内部复跑 `added=0`，连续三轮通过使 `stable=1,057`、其余 4,163 维持 candidate；验收中发现并修复 B11 空分桶 `float(None)` 崩溃（failed 95→0，commit `2b5b8b8a59`），可执行出口保持 **52 个**；v2.52 新增 D-A05 z-score 出口（`capabilities/stats.py::zscore`，复用 S26，`datacenter.percentile` scope 声明落地），可执行出口 51 → **52 个**；v2.51 新增 D-E20 新闻统一出口（L1S-03，`capabilities/news.py`，只读 `social_volume` 观测成统一信封 + 禁用词自检），可执行出口 50 → **51 个**；v2.50 关闭 §6.4.4 数据阻塞表 #32–#34：C11 节前效应落地（节假日由日期轴「工作日缺失」派生，接入 D-E04）、D-G25 尾部相关接线（复用 P13，下行/上行双尾 + 尾部共现样本门禁）、D-J05 周期/频谱接线（T25/T26/C14 + 历史覆盖周期数门禁），可执行出口 48 → **50 个**；v2.49 将 D-E14 二维状态按 Tier B/D 兜底落地：4×4=A（≥4,000 日）/ 3×3=B（≥2,250 日）/ 2×2=D（≥1,000 日），每格非重叠 ≥250，三档均不达标回退一维并披露 `insufficient_2d`，可执行出口保持 **48 个**；v2.48 登记 L1 交易层新增的 D-E15–D-E19 五个能力出口（趋势曲线 / 聚合曲线 / 分组看板 / 资金流向导图 / 四轴五态点亮投影），可执行出口 44 → **48 个**；v2.47 完成前端 D-A 组 14 个及 D-B08/D-B09/D-G08/D-G09 共 18 个 cue 分派，可执行出口保持 **44 个**；v2.46 接入 D-G09 波动率目标换算出口（P02），可执行出口 **44 个**；v2.45 接入 D-G08 12-1 动量出口（F14 窗口切片），可执行出口 **43 个**；v2.44 接入 D-B09 距 ATH 回撤出口（复用 D20/D21），可执行出口 **42 个**；v2.43 接入 D-B08 趋势斜率出口（T08/T09），可执行出口 **41 个**；v2.42 接入 D-A16 稳定币规模增速出口（S16 多窗口），可执行出口 **40 个**；v2.41 接入 D-A15 ETF 净流入滚动和出口（S20 滚动均值 × 窗口），可执行出口 **39 个**；v2.40 接入 D-A13 极端事件频率出口（S11 阈值 + 计数），可执行出口 **38 个**；v2.39 接入 D-A12 领先滞后相关出口（M11/M12），可执行出口 **37 个**；v2.38 接入 D-A11 双序列滚动相关出口（M04），可执行出口 **36 个**；v2.37 接入 D-A10 实际利率出口（S16 派生），可执行出口 **35 个**；v2.36 接入 D-A09 环比出口（S16），可执行出口 **34 个**；v2.35 接入 D-A08 同比出口（S16），可执行出口 **33 个**；v2.34 接入 D-A07 回撤出口（复用 D-E10 的 D20/D21 执行器），可执行出口 **32 个**；v2.33 接入 D-A06 年化波动率出口（F05），可执行出口 **31 个**；v2.32 接入 D-A04 历史分位出口（S25），可执行出口 **30 个**；v2.31 接入 D-A03 CAGR 出口（S19），可执行出口 **29 个**；v2.30 接入 D-A02 变化率出口（S15/S16），可执行出口 **28 个**；v2.29 接入 D-A01 历史序列出口（S25），可执行出口 **27 个**；v2.28 接入 D-J30 PIT/release_ts 全局出口（SC90/R02），可执行出口 **26 个**；v2.27 接入 D-G14 EWMA 波动/协方差出口（P07/T19），可执行出口 **25 个**；v2.26 接入 D-J24 相关网络与社区发现出口（M05/M21/SC71/SC72），可执行出口 **24 个**；v2.25 接入 D-J22 PCA/SVD/因子分析出口（M19/M20/SC31/SC32/SC33），可执行出口 **23 个**；v2.24 接入 D-G20 分位组合与单调性检验出口（B11/B16/Q04），可执行出口 **22 个**；v2.23 接入 D-G19 IC/ICIR/衰减表出口（B13/B14/B15/Q01/Q02/Q03），可执行出口 **21 个**；v2.22 接入 D-G16 组合 VaR/CVaR 出口（D17/D18/P09/P10），可执行出口 **20 个**；v2.21 接入 D-J02 季节强度与调整出口（C13/T10/SC91），可执行出口 **19 个**；v2.20 接入 D-J04 变点检测出口（T22/T23/SC49/SC50/SC51），可执行出口 **18 个**；v2.19 将 B06 二维交叉表纳入 D-E07，输出状态相邻期联合计数底表并与 B07 行归一化转移概率对齐，可执行出口保持 **17 个**；v2.18 接入 D-G23 事件窗均值调整 CAR + Patell/BMP（Q10/Q11），可执行出口 **17 个**；v2.17 接入 D-E14 一维相关状态→h=1/2 前瞻条件分布（R02 PIT 状态轴共享 B05/B10/R01/R08），可执行出口 **16 个**；v2.16 接入 D-E04 事件研究窗（F19/F21/F23）与 D-E09 计数与共现（R09/B17/R10）能力出口，可执行出口 **14 个**，事件数 <30 降级 partial 但保留 CAR/胜率；同步补齐前端 D-A14/D-G22 cue 分派与 D-E14 的 T-1 扩样本（云端 20 资产 / 54,653 行 `close_1d`，1 维 4 桶 @h=1 全部达标）；v2.15 冻结 D-A14/F26 的 `level` 阈值为 A 分位法（分值历史分布 p20/p60/p80 → 极低/低/偏高/高），接入 D-A14 能力出口；v2.14 接入 D-G22 显著性出口（Q06 HAC t + Q07 Deflated Sharpe），解除 h>1 重叠前瞻收益的推断阻塞；v2.13 打通宏观事件历史回填通道，为 D-E04/D-E09 解除「事件表仅 16 行」的数据阻塞；v2.12 接入 D-E12/R18 时空对齐切片；MERS S3 内部固定网格、BH-FDR、状态机与幂等注册表已交付，S5 对外推荐仍未开放；54-L1 测试 **909 通过 / 0 失败**（v2.27 全量回归；v2.16 同时修复既有日期边界测试的时间炸弹），audit **386/386 PASS**、验证覆盖率 **66.15%**；v2.11 接入 D-E11/C18 与 D-E01；v2.10 D-E05 双序列与多资产矩阵 TopK 全接线、D-E06 全 lag BH-FDR、manifest 真实执行覆盖与 audit 验证覆盖报告；v2.9 D-E02 能力出口接线与 T0.5/A8 首版交付；v2.8 方法层全部落地：`REGISTRY` 387 条全登记、`implemented=true` **386**，仅 C11 因缺交易日历不可用；v2.7 注册表放开调研族前缀并完成占位登记；v2.6 调研对齐与路线收口）
+- **版本**: v2.63 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 总技术文档（v2.63 完成 **G-IF1 冻结**：新增 §7.10 冻结记录（已冻结 / 转下游 / 图表层禁止假设三类结论），表 A 补齐 7 个漏登 `data` 键与 `quality.is_stale`/`snapshot_at`、修正能力级 `gate` 枚举 4 → 6 值；实测发现并修复契约缺口 A-7——D-E19 输出 `data.lights` 但 schema 关闭 `data` 扩展键且未登记该键（`jsonschema.validate` 实测 `Additional properties are not allowed ('lights' was unexpected)`），已在 schema 增 `data.lights` + `$defs.lights_row`/`lights_axis` 行契约并补回归测试 `test_envelope_validates_against_json_schema`；同批冻结能力块内部字段清单（表 A-1）与 `mm_events.symbols` 聚合口径；v2.62 关闭 L-STAT 统计层：B-58 提交同步完成——本地 commit `ca6c55a3c6`（35 文件，manifest 50 → **93 条**）已推送 `origin/refactor/13-16-merge`，并经云端 `sudo -n -u luke -H git pull --ff-only` 落地到同一 commit，云端 `capability_manifest.yaml` 实测 **93 条 / 93 唯一**，与本地逐字一致；提交前 `pytest tests -q` 全绿 **1314** 条、ruff/black 通过；§7.2 统计层四项完成判定全部满足，可进入 G-IF1 冻结；v2.61 新增 §7.9 真数据覆盖表：本地只读快照 28 个注册资产中 24 个可用（≥250 期），AMD/GEV/SPCX/SKHYNIX 为 0 样本；93 条能力 min_n 档位与资产数闭合，lights 的 250 门槛刚好满足；5 张衍生品明细表为空、`mm_events` 仅有 `symbols` 文本列等口径缺口已登记；v2.60 关闭 K-09/K-10：`envelope.GATE_METHOD` 单一事实源声明方法级 gate 集合（能力级 6 值 + `skipped`/`calculation_failed`/`empty`/`rejected`），执行覆盖测试对 93 场景逐块递归校验；`data` 关闭 `additionalProperties` 并枚举实际使用的 12 个键；K-12 仅开槽 `quality.snapshot_at`，能力层不伪造快照时点；v2.59 关闭 K-01/K-08：`envelope.build()` 统一为能力块补 `gate`（缺省 `ok`，不覆盖既有值），一处收敛全部 93 出口；schema 能力级 `gate` 枚举补 `partial`/`degraded` 并注明方法级另有 `skipped`/`calculation_failed`/`empty`；执行覆盖测试内对 93 个场景逐个 `jsonschema.validate`（此前只校验 12 个手选出口，故 G/J 组缺 `gate` 未被发现）；新增回归测试 `test_every_capability_block_declares_gate`；v2.58 新增 §7「统计层 → 图表输出 → 信号层」串行推进顺序与接口冻结：三张接口表（统计→图表 / 图表→信号 / 信号→回测评估）+ 12 项信号层前置阻塞清单 + G-IF1/G-IF2/G-IF3 三个冻结点；实测发现 G/J 组 39 个出口的能力块缺 `gate`（违反契约，因 schema 校验测试只覆盖 12 个手选出口而未暴露）；v2.57 接入 J 组 24 个科研统计出口（D-J01/03/06/07/08/09/10/11/12/13/14/15/16/17/18/19/20/21/23/25/26/27/28/29，`capabilities/research_stats.py`，全部 `method_binding: compute`），manifest 69 → **93 条**、可执行出口 69 → **93 个**；同批补齐 `datacenter.panel`（21 项）与 `datacenter.spatial_frame`（D-J25）两个 scope 声明，并新增 `tests/test_research_stats.py`（43 passed）替换不被 pytest 收集的 `_smoke_j.py`；v2.56 接入 G 组 15 个机构统计出口（D-G01/02/03/04/05/06/07/10/11/12/13/15/18/21/24，`capabilities/institutional.py`，全部 `method_binding: compute`），manifest 54 → **69 条**、可执行出口 54 → **69 个**；v2.55 新增 D-K01/D-K02 评估层只读出口（manifest 52 → **54 条**）：D-K01 读 `relationship_registry.db` 取 Top3、D-K02 读 `reports/discovery/**` 最近一期候选，均只读不重算；同批落地 `config/discovery_space.yaml` 预注册搜索空间 + `l1agg/discovery.py` 冻结项校验；v2.54 上线 #35 后半句：`dreambuddy-mers.timer` 每日 08:20 CST 跑全量 MERS 网格（29 job / 5,220 单元），`Persistent=true` 补跑漏窗，`--prune-days 90` 只清 `relationship_eval` 历史行、`relationship_state` 永久保留；新增 `RelationshipRegistry.prune_before()` 与回归测试，unit 文件入库 `deploy/systemd/`；v2.53 关闭 §6.4.5 #35 全量真实验收——29 job / 5,220 单元（20 资产 `close_1d` + 9 个宏观/情绪/资金费率指标对齐 BTC 日轴），BH-FDR 后 `gate_pass=1,057`（20.25%），`method_gate` = ok 3,654 / not_applicable 1,566 / **failed 0**，三轮 `gate_pass` 完全一致且每轮内部复跑 `added=0`，连续三轮通过使 `stable=1,057`、其余 4,163 维持 candidate；验收中发现并修复 B11 空分桶 `float(None)` 崩溃（failed 95→0，commit `2b5b8b8a59`），可执行出口保持 **52 个**；v2.52 新增 D-A05 z-score 出口（`capabilities/stats.py::zscore`，复用 S26，`datacenter.percentile` scope 声明落地），可执行出口 51 → **52 个**；v2.51 新增 D-E20 新闻统一出口（L1S-03，`capabilities/news.py`，只读 `social_volume` 观测成统一信封 + 禁用词自检），可执行出口 50 → **51 个**；v2.50 关闭 §6.4.4 数据阻塞表 #32–#34：C11 节前效应落地（节假日由日期轴「工作日缺失」派生，接入 D-E04）、D-G25 尾部相关接线（复用 P13，下行/上行双尾 + 尾部共现样本门禁）、D-J05 周期/频谱接线（T25/T26/C14 + 历史覆盖周期数门禁），可执行出口 48 → **50 个**；v2.49 将 D-E14 二维状态按 Tier B/D 兜底落地：4×4=A（≥4,000 日）/ 3×3=B（≥2,250 日）/ 2×2=D（≥1,000 日），每格非重叠 ≥250，三档均不达标回退一维并披露 `insufficient_2d`，可执行出口保持 **48 个**；v2.48 登记 L1 交易层新增的 D-E15–D-E19 五个能力出口（趋势曲线 / 聚合曲线 / 分组看板 / 资金流向导图 / 四轴五态点亮投影），可执行出口 44 → **48 个**；v2.47 完成前端 D-A 组 14 个及 D-B08/D-B09/D-G08/D-G09 共 18 个 cue 分派，可执行出口保持 **44 个**；v2.46 接入 D-G09 波动率目标换算出口（P02），可执行出口 **44 个**；v2.45 接入 D-G08 12-1 动量出口（F14 窗口切片），可执行出口 **43 个**；v2.44 接入 D-B09 距 ATH 回撤出口（复用 D20/D21），可执行出口 **42 个**；v2.43 接入 D-B08 趋势斜率出口（T08/T09），可执行出口 **41 个**；v2.42 接入 D-A16 稳定币规模增速出口（S16 多窗口），可执行出口 **40 个**；v2.41 接入 D-A15 ETF 净流入滚动和出口（S20 滚动均值 × 窗口），可执行出口 **39 个**；v2.40 接入 D-A13 极端事件频率出口（S11 阈值 + 计数），可执行出口 **38 个**；v2.39 接入 D-A12 领先滞后相关出口（M11/M12），可执行出口 **37 个**；v2.38 接入 D-A11 双序列滚动相关出口（M04），可执行出口 **36 个**；v2.37 接入 D-A10 实际利率出口（S16 派生），可执行出口 **35 个**；v2.36 接入 D-A09 环比出口（S16），可执行出口 **34 个**；v2.35 接入 D-A08 同比出口（S16），可执行出口 **33 个**；v2.34 接入 D-A07 回撤出口（复用 D-E10 的 D20/D21 执行器），可执行出口 **32 个**；v2.33 接入 D-A06 年化波动率出口（F05），可执行出口 **31 个**；v2.32 接入 D-A04 历史分位出口（S25），可执行出口 **30 个**；v2.31 接入 D-A03 CAGR 出口（S19），可执行出口 **29 个**；v2.30 接入 D-A02 变化率出口（S15/S16），可执行出口 **28 个**；v2.29 接入 D-A01 历史序列出口（S25），可执行出口 **27 个**；v2.28 接入 D-J30 PIT/release_ts 全局出口（SC90/R02），可执行出口 **26 个**；v2.27 接入 D-G14 EWMA 波动/协方差出口（P07/T19），可执行出口 **25 个**；v2.26 接入 D-J24 相关网络与社区发现出口（M05/M21/SC71/SC72），可执行出口 **24 个**；v2.25 接入 D-J22 PCA/SVD/因子分析出口（M19/M20/SC31/SC32/SC33），可执行出口 **23 个**；v2.24 接入 D-G20 分位组合与单调性检验出口（B11/B16/Q04），可执行出口 **22 个**；v2.23 接入 D-G19 IC/ICIR/衰减表出口（B13/B14/B15/Q01/Q02/Q03），可执行出口 **21 个**；v2.22 接入 D-G16 组合 VaR/CVaR 出口（D17/D18/P09/P10），可执行出口 **20 个**；v2.21 接入 D-J02 季节强度与调整出口（C13/T10/SC91），可执行出口 **19 个**；v2.20 接入 D-J04 变点检测出口（T22/T23/SC49/SC50/SC51），可执行出口 **18 个**；v2.19 将 B06 二维交叉表纳入 D-E07，输出状态相邻期联合计数底表并与 B07 行归一化转移概率对齐，可执行出口保持 **17 个**；v2.18 接入 D-G23 事件窗均值调整 CAR + Patell/BMP（Q10/Q11），可执行出口 **17 个**；v2.17 接入 D-E14 一维相关状态→h=1/2 前瞻条件分布（R02 PIT 状态轴共享 B05/B10/R01/R08），可执行出口 **16 个**；v2.16 接入 D-E04 事件研究窗（F19/F21/F23）与 D-E09 计数与共现（R09/B17/R10）能力出口，可执行出口 **14 个**，事件数 <30 降级 partial 但保留 CAR/胜率；同步补齐前端 D-A14/D-G22 cue 分派与 D-E14 的 T-1 扩样本（云端 20 资产 / 54,653 行 `close_1d`，1 维 4 桶 @h=1 全部达标）；v2.15 冻结 D-A14/F26 的 `level` 阈值为 A 分位法（分值历史分布 p20/p60/p80 → 极低/低/偏高/高），接入 D-A14 能力出口；v2.14 接入 D-G22 显著性出口（Q06 HAC t + Q07 Deflated Sharpe），解除 h>1 重叠前瞻收益的推断阻塞；v2.13 打通宏观事件历史回填通道，为 D-E04/D-E09 解除「事件表仅 16 行」的数据阻塞；v2.12 接入 D-E12/R18 时空对齐切片；MERS S3 内部固定网格、BH-FDR、状态机与幂等注册表已交付，S5 对外推荐仍未开放；54-L1 测试 **909 通过 / 0 失败**（v2.27 全量回归；v2.16 同时修复既有日期边界测试的时间炸弹），audit **386/386 PASS**、验证覆盖率 **66.15%**；v2.11 接入 D-E11/C18 与 D-E01；v2.10 D-E05 双序列与多资产矩阵 TopK 全接线、D-E06 全 lag BH-FDR、manifest 真实执行覆盖与 audit 验证覆盖报告；v2.9 D-E02 能力出口接线与 T0.5/A8 首版交付；v2.8 方法层全部落地：`REGISTRY` 387 条全登记、`implemented=true` **386**，仅 C11 因缺交易日历不可用；v2.7 注册表放开调研族前缀并完成占位登记；v2.6 调研对齐与路线收口）
 - **上游**: `SPEC-54-L1架构能力聚合层.md`（ADR/契约/路线）、`docs/METHOD_LIBRARY.md`（方法 SSoT）
 - **下游**: `3.1-FRONTEND/scripts/l1_route_signal.py`（L1 路由）、`34-前端应用训练系统/core/l0_foundation.py`（L0 scope）、`/api/fundamental/**`
 - **定位**: 本文是 54 的**总技术文档**——上半部（§0）回答「有哪些问题域、每个问题域用什么方法、现在缺什么」；下半部（§1–§6）是能力登记册（ID/依赖/字段/优先级/状态）。
@@ -14,7 +14,7 @@
 | 文档 | 角色 | 唯一负责的内容 | 当前版本 |
 |---|---|---|---|
 | [SPEC-54-L1架构能力聚合层.md](../SPEC-54-L1架构能力聚合层.md) | 架构与契约 | ADR、scope 出入参、门禁、路线（S1–S5）、MERS/Discovery | v1.47 |
-| **本文 TECHNICAL_DESIGN.md** | **总技术文档 + 能力登记** | 六类问题地图、四层分工（§0.5）、能力 ID `D-*`、状态列、整体进度（§6.2）、**串行推进顺序与接口冻结（§7）**、**真数据覆盖表（§7.9）**、**L-STAT 收口证据（§7.9-D6）** | **v2.62** |
+| **本文 TECHNICAL_DESIGN.md** | **总技术文档 + 能力登记** | 六类问题地图、四层分工（§0.5）、能力 ID `D-*`、状态列、整体进度（§6.2）、**串行推进顺序与接口冻结（§7）**、**真数据覆盖表（§7.9）**、**L-STAT 收口证据（§7.9-D6）**、**G-IF1 冻结记录（§7.10）** | **v2.63** |
 | [METHOD_LIBRARY.md](./METHOD_LIBRARY.md) | 方法 SSoT | 方法 ID（S/D/T/C/I/M/B/F/H/R/X/O/P/Q/SC）、口径冻结（§16）、数据前提（§15） | v1.19 |
 | [RESEARCH-TREND-PERSISTENCE-MODELS.md](./RESEARCH-TREND-PERSISTENCE-MODELS.md) | 调研 | 延续性三层拆解、Tier A/B/C、T 阶段 | v1.2 |
 | [RESEARCH-INSTITUTIONAL-L1-METHODS.md](./RESEARCH-INSTITUTIONAL-L1-METHODS.md) | 调研补强 | 机构方法（X/O/P/Q） | — |
@@ -1193,7 +1193,7 @@ L1 意图（TS/Python 双端注册表）
 
 | 冻结点 | 时点 | 冻结内容 | 未冻结的后果 |
 |---|---|---|---|
-| **G-IF1** | 统计层收口时 | `capability_result` 信封字段、`gate` 枚举、`methods` 披露、`as_of/PIT` 语义、缺失→降级约定 | 图表层按旧字段消费，G/J 组 39 个新出口全部返工 |
+| **G-IF1** | 统计层收口时 ✅ **已冻结（v2.63，§7.10）** | `capability_result` 信封字段、`gate` 枚举、`methods` 披露、`as_of/PIT` 语义、缺失→降级约定、`data.lights` 行契约、块内字段清单 | 图表层按旧字段消费，G/J 组 39 个新出口全部返工 |
 | **G-IF2** | 图表层收口时 | 四轴 `strength` 口径、`lit_pct/warm_pct` 标定口径、`lights[]` 行 schema、`band/flags` 字段 | 信号层无法启动（阈值双轨、轴名错位） |
 | **G-IF3** | 信号层开工前 | `direction_rule` 参数版本、`trading.db` 写入契约、纸面回放基线 | 回放不可复现，灰度切换无审计依据 |
 
@@ -1207,16 +1207,26 @@ L1 意图（TS/Python 双端注册表）
 | `capability` | `^D-[A-Z]\d{2}$` | 必须在 manifest 登记 | 未登记 → 契约违规 |
 | `intent` | string | 与 manifest `intent` 一致 | — |
 | `answer` | string | 非 good 时必须含「样本/降级/不足」 | `build` 抛 ValueError |
-| `data.capabilities[cid].gate` | enum(`ok`/`insufficient_samples`/`insufficient_history`/`no_data`) | 能力级门禁 | — |
+| `data.capabilities[cid].gate` | enum 6 值：`ok`/`partial`/`degraded`/`insufficient_samples`/`insufficient_history`/`no_data` | 能力级门禁（方法级另有 `skipped`/`calculation_failed`/`empty`/`rejected`，只出现在块内方法结果，不入本枚举） | schema 失败 |
 | `data.capabilities[cid].methods` | string[]，minItems 1，`^[A-Z]{1,2}\d{2}$` | **必须 ⊆ manifest.methods** | 超出 → 执行覆盖校验失败 |
 | `data.capabilities[cid].reason` | string | 降级原因 | 可选 |
 | `data.params / symbol / pair` | object / string? / [string,string] | 回显入参 | 可选 |
+| `data.name` | string? | 资产/口径显示名 | 可选 |
+| `data.as_of` | string? | **数据时点**＝已对齐观测的最后一个交易日（ISO 日期，UTC 日轴），不是运行时刻、不带时区偏移 | 可选 |
+| `data.window_days` | integer ≥1 | 回显窗口长度（自然日/交易日由 `params` 说明） | 可选 |
+| `data.source` | string? | 数据来源标识（如 `market.candles`） | 可选 |
+| `data.items` | array | 列表型明细项；**元素结构未冻结**，图表层只做透传/展示，禁止按固定列解析 | 可选 |
+| `data.notes` | string / string[] / null | 口径说明与告警；**可能为单串**，不得假定数组 | 可选 |
+| `data.assets` | object / array / null | 资产池/分组映射 | 可选 |
+| `data.lights` | array\<object\> | D-E19 轴级点亮事实（行契约见 `$defs.lights_row` / 表 B-1），**不是图种** | 无入参 → 键省略 |
 | `data.visual` | 见下 | 每信封最多 1 个 | 无图 → 省略 |
 | `quality.status` | enum(`good`/`partial`/`empty`) | 唯一质量块，只在顶层 | — |
 | `quality.sample_n` | integer ≥0 | 参与计算的有效样本 | — |
 | `quality.span` | [string,string]? | [首日, 末日] UTC | — |
+| `quality.is_stale` | boolean | 末端观测是否超过 stale 上限 | 必填 |
 | `quality.degraded_reason` | string? | partial/empty 时**必填** | 缺失 → schema 失败 |
 | `quality.sources / missing_rate / align_method / timezone` | 可选 | 数据血缘 | — |
+| `quality.snapshot_at` | string? | 数据快照时点（UTC）；**能力层不填**，只能由 19-DAL 快照层注入（K-12） | 图表层见 null → 不得自行补时点 |
 | `visual.kind` | enum(table/series/matrix/tree/graph) | — | — |
 | `visual.spec_version` | const `1.0` | 规格版本 | — |
 | `visual.title` | ≤60 字 | — | — |
@@ -1226,7 +1236,24 @@ L1 意图（TS/Python 双端注册表）
 | `visual.encodings / annotations` | object | 前端零统计 | 可选 |
 | `visual.quality_ref` | const `quality` | 指向顶层 quality | — |
 | `visual.caveat` | string ≥1 | 必填免责语 | — |
-| `visual.truncated` | boolean | 截断标记 | — |
+| `visual.truncated` | boolean | 截断标记；rows/points 超 500 时截断并置 true | — |
+| 产图门禁（V-G1/V-G2/V-G7） | — | `quality.status=="empty"` 或来源块 `gate!="ok"` 或 `L1_VISUAL_ENABLED=0` → **不产 `visual`**（键省略，不产空图） | 违规 → 空图/假图 |
+| `visual.source_capability` 约束 | 强制 `==` 信封 `capability`（ADR-V2） | 生产侧禁止输出 `T*`；T1–T4 无 manifest 实体（K-11） | 违规 → `build` 抛 ValueError |
+| `visual` 五 kind 现状 | table/series/tree/graph 有生产者；**matrix 保留但无生产者** | 图表层不得为“用上 matrix”而自造数据 | — |
+
+**表 A-1 能力块内部字段清单（图表层允许读取的全部块内字段，v2.63 冻结）**
+
+> 契约对能力块**内部**字段不做闭合（`data.capabilities[cid]` 除 `gate`/`methods` 外允许扩展键）。因此图表层只能读取下表显式登记的字段；新增读取任何其他块内字段，必须先在本表登记并同步 `$defs`，否则属契约外依赖。
+
+| 能力 | 允许读取的块内字段 | 生产者 |
+|---|---|---|
+| D-E10 | `drawdown_path[{date,drawdown}]`、`mdd` | `visual._drawdown_series` |
+| D-E12 | `window`、`window_rows[{asset,start_value,end_value,ret,n_obs,stale_ratio,first_date,last_date}]` | `visual._alignment_table` |
+| D-E15 | `prices[]`、`smoothed[{date,ema26}]`、`meta{n,windows}`、`slope_table[{window,slope,se,t,r2,hac_corrected}]` | `visual._trend_series` / `visual.slope_table` |
+| D-E16 | `points[{date,agg,ema26,members,coverage_ratio,partial_members}]`、`meta{smoothing,unit,n,members}` | `visual._aggregate_series` |
+| D-E17 | `rows[{class,symbol,label,role,last,ret_20,ret_60,ret_120,ret_250,vol_60,mdd,adx14,corr_to_leader_90d,lights_ref,lit_n,warm_n,n,stale_ratio,status,degraded_reason}]` | `visual._class_board_table` |
+| D-E18 | `nodes[]`、`edges[]`、`meta{flows,reason}`、`visual`、`truncated`、`flags` | `flow.flow_block` |
+| D-E19 | `lights[]`（行契约 `$defs.lights_row`）、`summary`、`meta{...}` | `lights.light_block` |
 
 **表 A 缺口（实测，2026-11-15）**
 
@@ -1236,8 +1263,9 @@ L1 意图（TS/Python 双端注册表）
 | A-2 | ~~schema 校验测试只覆盖 12 个手选出口~~ **已修复（v2.59）** | 执行覆盖测试现对 93 个场景逐个 `jsonschema.validate` | 全绿不再假阳性 |
 | A-3 | ~~方法级 `gate` 未入契约~~ **已修复（v2.60）** | `envelope.GATE_METHOD` 显式声明方法级集合（能力级 6 值 + `skipped`/`calculation_failed`/`empty`/`rejected`）；执行覆盖测试对 93 场景逐块递归校验 | 方法级 gate 不再是隐式约定 |
 | A-4 | ~~`data` 未闭合 `additionalProperties`~~ **已修复（v2.60）** | `data` 关闭扩展键，枚举实际使用的 12 个键（capabilities/params/symbol/pair/name/as_of/window_days/source/items/notes/assets/visual） | 图表层可做严格字段校验 |
-| A-5 | `visual.source_capability` 允许 `T1–T4` 但 manifest 无 T* 实体 | T1–T4 是图表规格标签，不是能力 ID | 制品血缘无法反查能力 |
-| A-6 | `quality.snapshot_at` 契约已开槽（v2.60），暂无生产者 | schema 已有可选字段，能力层不填（无快照事实源） | 快照戳须由 19-DAL 快照层注入，禁止能力层推断 |
+| A-5 | `visual.source_capability` 允许 `T1–T4` 但 manifest 无 T* 实体 | T1–T4 是图表规格标签，不是能力 ID | 制品血缘无法反查能力；生产侧已禁止输出 T*，实体登记归 L-CHART（K-11） |
+| A-6 | `quality.snapshot_at` 契约已开槽（v2.60），暂无生产者 | schema 已有可选字段，能力层不填（无快照事实源） | 快照戳须由 19-DAL 快照层注入，禁止能力层推断（K-12，见 §7.10 第 3 类） |
+| A-7 | ~~D-E19 的 `data.lights` 未入契约~~ **已修复（v2.63）** | 实测 `lights()` 的 `data keys = ['capabilities','lights','params']`，`jsonschema.validate` 报 `Additional properties are not allowed ('lights' was unexpected)`；AST 扫描确认其余出口 `build(data=)` 键全部 ⊆ 12 键 | schema 增 `data.lights` + `$defs.lights_row`/`lights_axis`；补回归测试 `test_envelope_validates_against_json_schema` |
 
 ### §7.5 接口表 B：图表层 → 信号层
 
@@ -1337,7 +1365,7 @@ L1 意图（TS/Python 双端注册表）
 ### §7.8 推进顺序（自本版起）
 
 1. **L-STAT 收口 ✅（v2.62 完成）**：K-01 / K-08 / K-09 / K-10 已关闭（v2.59–v2.60），K-12 契约已开槽待 19-DAL；真数据覆盖表 ✅（§7.9），B-58 提交同步 ✅（`ca6c55a3c6`，云端 manifest 93 = 本地 93）→ 统计层四项判定全满足，**当前进入下一步 G-IF1 冻结**。
-2. **G-IF1 冻结**：确认 A 表字段无遗漏后，图表层才允许开工。
+2. **G-IF1 冻结 ✅（v2.63 完成）**：表 A 字段核对无遗漏；修复 A-7（D-E19 `data.lights` 未入契约）；冻结结论见 §7.10（已冻结 / 转下游 / 图表层禁止假设），**L-CHART 允许开工**。
 3. **L-CHART**：范围先砍到 **T2 曲线 + D-E19 lights 制品**，T1 作为副产物、T3 后置；本层内关闭 K-02 / K-03 / K-06 / K-11。
 4. **G-IF2 冻结**：`lights[]` 行 schema 与阈值口径定稿。
 5. **L-SIGNAL**：只补 K-04 / K-05 / K-07 + 复跑纸面回放，不重写 `direction_rule`。
@@ -1399,5 +1427,58 @@ L1 意图（TS/Python 双端注册表）
 2. **AMD / GEV / SPCX / SKHYNIX 仍为 0 样本** → 归 B-55（云端回填），本地不得伪造；
 3. **5 张衍生品明细表为空** → 依赖它们的拥挤度/持仓类能力只能降级，需在图表层标注 `no_data` 而非静默 0；
 4. **BTC/ETH/SOL/XAU 仅 1094 期（2023-11 起）** → 二维 Tier A（≥4000 日）不可达，按 Tier B/D 兜底，契约不变；
-5. `mm_events` 无 `symbol` 列（只有 `symbols` 文本），事件类能力做标的聚合时必须先解析，属 G-IF1 需冻结的口径；
+5. `mm_events` 无 `symbol` 列（只有 `symbols` 文本），事件类能力做标的聚合时必须先解析，属 G-IF1 需冻结的口径 → **已在 §7.10 冻结**：`events` 为事件日期序列（无标的维度），`symbols` 由取数侧解析后过滤传入；
 6. **L-STAT 收口证据（v2.62）**：本地 commit `ca6c55a3c6`（35 文件，仅 `54-L1架构能力聚合层/`）→ 推送 `origin/refactor/13-16-merge` → 云端 `sudo -n -u luke -H git pull --ff-only` 落地同一 commit，云端 `capability_manifest.yaml` 实测 **93 条 / 93 唯一**（与本地一致），提交前 `pytest tests -q` **1314 条全绿**、ruff/black 通过 → 统计层完成判定四项全满足。
+
+### §7.10 G-IF1 冻结记录（v2.63，统计层 → 图表层）
+
+- **冻结点**：§7.3 G-IF1；**范围**：§7.4 接口表 A + §7.5 表 B-1 的 `lights[]` 行；**判定**：字段**无遗漏** → ✅ **已冻结，L-CHART 允许开工**（2026-11-15）。
+- **核对方法（可复现）**：① 表 A ↔ `contracts/capability_result.schema.json` 逐字段比对；② 实跑 `lights()` 信封过 `jsonschema.validate`；③ AST 扫描 `l1agg/capabilities/*.py` 全部 `build(data=)` 与 `payload` 字典键，确认 ⊆ schema；④ `pytest tests -q` 退出码 0。
+
+#### 10.1 已冻结（图表层可直接消费）
+
+| 冻结项 | 冻结值 |
+|---|---|
+| 顶层字段 | 固定 7 个 `ok/capability/intent/answer/data/quality/trace_id`，无扩展 |
+| `data` 键 | **13 个**：capabilities / params / symbol / pair / name / as_of / window_days / source / items / notes / assets / **lights** / visual |
+| 能力级 `gate` | 6 值 `ok/partial/degraded/insufficient_samples/insufficient_history/no_data` |
+| 方法级 `gate` | 10 值 = 上 6 值 + `skipped/calculation_failed/empty/rejected`（只在块内方法结果，不入 `block.gate`） |
+| `methods` | 非空、`⊆ manifest.methods`（执行覆盖校验强制） |
+| `as_of` | **数据时点**＝对齐后最后一个观测日（ISO 日期，UTC 日轴）；不是运行时刻，不带时区偏移 |
+| PIT | `mm_metric_vintages.release_ts ≤ as_of`（D-J30）；能力层只读对齐，不回溯改写历史 |
+| `quality.snapshot_at` | 可选且**能力层恒不填**（K-12）；图表层见 `null` 不得自行补 |
+| 缺失→降级 | `sample_n=0` → `empty`（`ok=false`）；`< min_n` → `partial`+`insufficient_samples`；陈旧 → `partial`+`stale_data`；`partial/empty` 必填 `degraded_reason`，且 `answer` 必含「样本/降级/不足」 |
+| `visual` 产图门禁 | V-G1/V-G2/V-G7：`quality.status=="empty"` / 来源块 `gate!="ok"` / `L1_VISUAL_ENABLED=0` → 不产图（键省略） |
+| `visual` 上限 | table.rows、series.points 各 500（超限截断 + `truncated=true`）；matrix 20×20；graph 300 节点 / 2000 边；tree 叶子须带能力或 L0 序列 |
+| `data.lights` | 行契约 `$defs.lights_row`（11 必填：symbol/class/as_of/axes/strength/summary/light_weights_hash/n/min_rows/status/flags）+ `$defs.lights_axis`（5 必填：state/strength/bucket/evidence/flags） |
+| 块内字段 | 仅 §7.4 **表 A-1** 登记的 D-E10/E12/E15/E16/E17/E18/E19 七个能力；其余不承诺 |
+| `mm_events` 聚合口径 | 事件类能力（D-E04 / D-E09 / D-G23）的 `events` 入参是**事件日期序列，无标的维度**；`mm_events.symbols` 文本列不进入能力层，跨标的聚合由取数侧解析 `symbols` 并按标的过滤后传入；能力层只回显 `event_type` |
+
+#### 10.2 转下游冻结（不阻塞图表层开工）
+
+| 项 | 归属 |
+|---|---|
+| T1–T4 实体登记（A-5） | L-CHART（K-11） |
+| 轴名错位 `adx`/`cycle`（B-1） | L-CHART（K-02，G-IF2） |
+| 阈值双轨 0.70/0.40 vs 0.7647/0.5724（B-2） | L-CHART（K-03，G-IF2） |
+| `band`/`flags` 未产出（B-3） | L-CHART（K-06，G-IF2） |
+| `snapshot_at` 生产者 | 待 19-DAL 快照层（K-12） |
+| `weights mode` / `pool_version` / 非加密 handoff（B-4/B-5/B-7） | L-SIGNAL（K-04/K-05/K-07） |
+
+#### 10.3 图表层禁止假设（硬边界）
+
+1. **禁止自行取数/重算**：不读 `trading.db`、不调 `run_capability` 重算统计量；只消费信封、`data.visual`、`data.lights`。
+2. **禁止读取未登记的块内字段**：`data.capabilities[cid]` 内部未闭合，表 A-1 之外字段属契约外依赖。
+3. **禁止改写时间语义**：`as_of` 不是运行时刻、不补时区；`snapshot_at` 不得自行生成。
+4. **禁止假定结构**：`items` 元素结构未冻结；`notes` 可能为单串而非数组。
+5. **禁止在降级态造图**：`gate != ok` 或 `quality.status == empty` 时不得产图或补 0。
+6. **禁止假定 matrix/tree 有生产者**：matrix 当前无 producer，使用前须先登记。
+7. **禁止假定事件能力有标的维度**（`symbols` 需取数侧解析）。
+8. **禁止把 `lights[].strength` 当方向分**：`light_weights`（0.40/0.25/0.15/0.20）≠ `axis_weights`（40/25/20/15），三权分立。
+9. **禁止伪造血缘**：`visual.source_capability` 必须等于信封 `capability`，不得输出 `T*`。
+
+#### 10.4 本次实测证据
+
+- **A-7 契约缺口**：`lights()` 输出 `data keys = ['capabilities','lights','params']`，旧 schema 关闭 `data` 扩展 → `Additional properties are not allowed ('lights' was unexpected)`；已补 `data.lights` 与行/轴 `$defs`，并新增回归测试 `test_envelope_validates_against_json_schema`（`tests/test_lights.py`）。
+- **AST 扫描**：`build(data=)` 键集合 = {as_of, assets, capabilities, items, name, notes, pair, params, source, symbol, window_days}，其余 93 出口无越界；`lights` 是唯一例外且已登记。
+- **回归**：schema 变更后 `pytest tests -q` 全绿（退出码 0）；`capability_manifest.yaml` 仍 **93 条**（本冻结不增删能力出口）。

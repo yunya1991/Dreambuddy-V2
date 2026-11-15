@@ -74,6 +74,11 @@
         "items": {"type": "array", "description": "列表型结果的明细项"},
         "notes": {"type": ["string", "array", "null"], "description": "口径说明/告警"},
         "assets": {"type": ["object", "array", "null"], "description": "资产池/分组映射"},
+        "lights": {
+          "type": "array",
+          "description": "D-E19 轴级点亮事实（TD §7.5 B-1 冻结行字段）：图表层交给信号层的机器制品，非图种；每行一个标的。",
+          "items": {"$ref": "#/$defs/lights_row"}
+        },
         "visual": {"$ref": "#/$defs/visual"}
       }
     },
@@ -316,6 +321,70 @@
           }
         }
       ]
+    },
+    "lights_row": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "D-E19 单标的点亮行（TD §7.5 B-1，G-IF1 冻结）。",
+      "required": [
+        "symbol",
+        "class",
+        "as_of",
+        "axes",
+        "strength",
+        "summary",
+        "light_weights_hash",
+        "n",
+        "min_rows",
+        "status",
+        "flags"
+      ],
+      "properties": {
+        "symbol": {"type": "string"},
+        "class": {"type": "string"},
+        "as_of": {"type": ["string", "null"], "description": "透传入参，无时区约束（B-6）"},
+        "axes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["trend", "inertia", "cycle", "foresight"],
+          "properties": {
+            "trend": {"$ref": "#/$defs/lights_axis"},
+            "inertia": {"$ref": "#/$defs/lights_axis"},
+            "cycle": {"$ref": "#/$defs/lights_axis"},
+            "foresight": {"$ref": "#/$defs/lights_axis"}
+          }
+        },
+        "strength": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lit_n", "warm_n", "conflict_n", "unavailable_n"],
+          "properties": {
+            "lit_n": {"type": "integer", "minimum": 0},
+            "warm_n": {"type": "integer", "minimum": 0},
+            "conflict_n": {"type": "integer", "minimum": 0},
+            "unavailable_n": {"type": "integer", "minimum": 0}
+          }
+        },
+        "light_weights_hash": {"type": "string", "minLength": 1},
+        "n": {"type": "integer", "minimum": 0},
+        "min_rows": {"type": "integer", "minimum": 1},
+        "status": {"enum": ["available", "partial", "unavailable"]},
+        "flags": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "lights_axis": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "D-E19 单轴事实：只表达统计一致性强度，不表达方向（LT-G1）。",
+      "required": ["state", "strength", "bucket", "evidence", "flags"],
+      "properties": {
+        "state": {"enum": ["lit", "warm", "dim", "conflict", "unavailable"]},
+        "strength": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "bucket": {"enum": ["high", "mid", "low", "none"]},
+        "evidence": {"type": "object"},
+        "flags": {"type": "array", "items": {"type": "string"}}
+      }
     }
   }
 }

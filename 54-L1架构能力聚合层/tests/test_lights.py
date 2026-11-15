@@ -395,6 +395,25 @@ def test_envelope_contract_and_no_direction_words():
         assert word not in dumped
 
 
+def test_envelope_validates_against_json_schema():
+    """G-IF1：`data.lights` 必须过契约（此前 schema 关闭 data 扩展键但未登记 lights）。"""
+    jsonschema = pytest.importorskip("jsonschema")
+    schema_path = os.path.join(_MODULE_ROOT, "contracts", "capability_result.schema.json")
+    with open(schema_path, "r", encoding="utf-8") as fh:
+        schema = json.load(fh)
+    out = lights(
+        [_entry("BTC", axes=_flat(0.8)), _entry("GEV", axes=_flat(0.1), n=179)],
+        weights=CONFIG_WEIGHTS,
+        thresholds=THRESHOLDS,
+    )
+    jsonschema.validate(instance=out, schema=schema)
+    row = out["data"]["lights"][0]
+    assert set(row["axes"]) == set(AXES)
+    for axis in AXES:
+        assert row["axes"][axis]["bucket"] in BUCKETS
+        assert row["axes"][axis]["state"] in STATES
+
+
 def test_envelope_good_quality_when_all_axes_available():
     out = lights([_entry(axes=_flat(0.8))], weights=CONFIG_WEIGHTS, thresholds=THRESHOLDS)
     assert out["quality"]["status"] == "good"
