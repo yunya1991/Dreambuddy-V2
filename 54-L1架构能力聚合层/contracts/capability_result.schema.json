@@ -325,7 +325,7 @@
     "lights_row": {
       "type": "object",
       "additionalProperties": false,
-      "description": "D-E19 单标的点亮行（TD §7.5 B-1，G-IF1 冻结）。",
+      "description": "D-E19 单标的点亮行（TD §7.5 B-1；G-IF1 冻结结构，G-IF2 冻结四轴强度与阈值消费口径）。",
       "required": [
         "symbol",
         "class",

@@ -5,8 +5,10 @@
 
   - `lit_pct = p70`、`warm_pct = p40`，统计区间默认 `--since 2023-11-01`；
   - **默认 `--aggregate row`（LTL-16 定稿口径，2026-11-15 用户选择）**：样本为
-    **行级合成强度** `lights.rows[].strength`（= `Σ lw·axis / Σ participating lw`，
-    与 `_classify` 的输入同一个量）。四轴量纲不一致（`inertia` 是 3 档序数，只能取
+    **行级合成强度** `lights.rows[].strength`（= `Σ lw·axis / Σ participating lw`）。
+    标定统计对象是行级强度；分档消费位置是各轴 `_classify` 与前端行级强度条，
+    三者共用同一组绝对阈值，但不承诺各轴自然呈现相同的 p70/p40 比例。
+    四轴量纲不一致（`inertia` 是 3 档序数，只能取
     `{1.0, 0.4, 0.0}`）时，池化轴分布会被高权重满值原子抬高，行级合成不受此偏；
   - `--aggregate axis` 为旧口径（四轴 `strength` 池化），只用于横向对照，**不再回写**；
   - 只消费既有事实：输入是 [visual_overview.py](../../3.1-FRONTEND/scripts/visual_overview.py)

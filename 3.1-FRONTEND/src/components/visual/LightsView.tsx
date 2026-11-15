@@ -69,8 +69,20 @@ function AxisChip({ axis }: { axis?: LightAxis }) {
   );
 }
 
-function LightCard({ row }: { row: LightRow }) {
+function LightCard({
+  row,
+  thresholds,
+}: {
+  row: LightRow;
+  thresholds?: { lit_pct?: number; warm_pct?: number };
+}) {
   const ratio = Math.max(0, Math.min(1, row.strength ?? 0));
+  const strengthClass =
+    typeof thresholds?.lit_pct === 'number' && ratio >= thresholds.lit_pct
+      ? 'bg-emerald-400'
+      : typeof thresholds?.warm_pct === 'number' && ratio >= thresholds.warm_pct
+        ? 'bg-amber-400'
+        : 'bg-slate-500';
   return (
     <div className="rounded-xl border border-slate-700/40 bg-slate-800/30 p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
@@ -87,7 +99,7 @@ function LightCard({ row }: { row: LightRow }) {
 
       <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-700/40">
         <div
-          className={`h-full rounded-full ${ratio >= 0.7 ? 'bg-emerald-400' : ratio >= 0.4 ? 'bg-amber-400' : 'bg-slate-500'}`}
+          className={`h-full rounded-full ${strengthClass}`}
           style={{ width: `${Math.round(ratio * 100)}%` }}
         />
       </div>
@@ -144,7 +156,7 @@ export function LightsView({ payload }: { payload: LightsPayload }) {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {rows.map(row => (
-          <LightCard key={row.symbol} row={row} />
+          <LightCard key={row.symbol} row={row} thresholds={thresholds} />
         ))}
       </div>
 

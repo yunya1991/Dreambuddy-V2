@@ -44,6 +44,37 @@ describe('LightsView（D-E19 五态点亮投影）', () => {
     expect(screen.queryByText(/看涨|看跌|建议/)).not.toBeInTheDocument();
   });
 
+  it('行级强度条使用后端标定阈值，不回退到硬编码默认值', () => {
+    const payload: LightsPayload = {
+      ...PAYLOAD,
+      meta: {
+        ...PAYLOAD.meta,
+        thresholds: { lit_pct: 0.764706, warm_pct: 0.5724 },
+        thresholds_uncalibrated: false,
+      },
+      rows: [{ ...PAYLOAD.rows[0], strength: 0.75 }],
+    };
+    const { container } = render(<LightsView payload={payload} />);
+
+    const bar = container.querySelector('[style*="width: 75%"]');
+    expect(bar).toHaveClass('bg-amber-400');
+    expect(bar).not.toHaveClass('bg-emerald-400');
+  });
+
+  it('后端阈值缺失时强度条置灰，不引入前端兜底阈值', () => {
+    const payload: LightsPayload = {
+      ...PAYLOAD,
+      meta: { ...PAYLOAD.meta, thresholds: undefined },
+      rows: [{ ...PAYLOAD.rows[0], strength: 0.75 }],
+    };
+    const { container } = render(<LightsView payload={payload} />);
+
+    const bar = container.querySelector('[style*="width: 75%"]');
+    expect(bar).toHaveClass('bg-slate-500');
+    expect(bar).not.toHaveClass('bg-emerald-400');
+    expect(bar).not.toHaveClass('bg-amber-400');
+  });
+
   it('后端无点亮结果时走空态，不抛异常', () => {
     render(<LightsView payload={{ ok: false, rows: [] }} />);
     expect(screen.getByText('点亮投影不可用')).toBeInTheDocument();
