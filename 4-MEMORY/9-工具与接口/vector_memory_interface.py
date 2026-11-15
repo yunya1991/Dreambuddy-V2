@@ -44,6 +44,13 @@ logger = logging.getLogger(__name__)
 # 向量维度（简化版：使用哈希向量化，生产环境可替换为 embedding 模型）
 DEFAULT_VECTOR_DIM = 256
 
+# 显式降级开关（fail-loud）：只有显式设置该环境变量时，才允许
+# fastembed 加载失败后退化为哈希向量（否则一律抛异常）。
+ALLOW_HASH_FALLBACK_ENV = "COGNITIVE_ALLOW_HASH_FALLBACK"
+
+# 向量化维度自描述键（meta 表），用于 fail-loud 一致性校验
+META_EMBED_DIM = "embed_dim"
+
 # 质量等级序（M4⑪ bulk-read：S>A>B>C>D，禁止按字母序比较——A 会误排在 C 之后）
 _QUALITY_RANK = {"S": 4, "A": 3, "B": 2, "C": 1, "D": 0}
 
@@ -257,6 +264,7 @@ class VectorMemoryInterface:
         engine: str = "auto",
         memory_id: str = "",
         distill_engine: Optional[Any] = None,
+        allow_degraded: bool = False,
     ):
         """
         初始化向量记忆接口。
@@ -267,9 +275,15 @@ class VectorMemoryInterface:
             engine: 搜索引擎 ("auto" / "sqlite_vec" / "numpy")
             memory_id: 应用记忆ID（如 "AM-TRD-001"）
             distill_engine: 动态蒸馏引擎实例（可选）
+            allow_degraded: 显式降级开关（默认 False = fail-loud）。仅在明确接受
+                「引擎无法写 vec 表 / 索引维度不一致」时置 True。
         """
         self.memory_id = memory_id
         self._distill_engine = distill_engine
+        # 降级信封：默认不降级；发生降级时在 meta（stats/healthcheck）中可见
+        self.allow_degraded = bool(allow_degraded)
+        self.degraded = False
+        self.degraded_reason = ""
 
         # 存储路径
         if storage_path is None:
@@ -299,11 +313,26 @@ class VectorMemoryInterface:
             try:
                 self.vectorizer = FastEmbedVectorizer(self.embed_model)
                 vector_dim = self.vector_dim = self.vectorizer.dim
-            except Exception:
-                logger.exception(
-                    "语义向量模型加载失败，回退哈希向量（model=%s）",
+            except Exception as exc:
+                # fail-loud：静默退化为哈希 256 维会导致向量维度混用（新记忆检索不到），
+                # 默认抛异常；只有显式开关（环境变量或 allow_degraded）才允许降级。
+                hash_fallback_allowed = (
+                    os.environ.get(ALLOW_HASH_FALLBACK_ENV) == "1" or self.allow_degraded
+                )
+                if not hash_fallback_allowed:
+                    raise RuntimeError(
+                        "语义向量模型加载失败，拒绝静默退化为哈希向量（会导致索引维度混用）："
+                        f"model={self.embed_model} error={type(exc).__name__}: {exc}。"
+                        f"如确需降级请显式设置 {ALLOW_HASH_FALLBACK_ENV}=1"
+                        " 或传 allow_degraded=True"
+                    ) from exc
+                logger.warning(
+                    "语义向量模型加载失败，已显式允许降级为 %s 维哈希向量（model=%s）",
+                    self.vector_dim,
                     self.embed_model,
                 )
+                self.degraded = True
+                self.degraded_reason = f"hash_fallback:{type(exc).__name__}"
         if self._sync_vectorizer_with_index():
             vector_dim = self.vector_dim
         self._resync_disabled = False
@@ -370,6 +399,66 @@ class VectorMemoryInterface:
             return
         if not self._sync_vectorizer_with_index():
             self._resync_disabled = True
+
+    # ============================================================
+    # 维度一致性校验（fail-loud）
+    # ============================================================
+
+    def assert_embed_consistency(self, vector: Optional[List[float]] = None) -> None:
+        """校验「索引声明维度」与「实际写入向量维度」一致，不一致抛异常。
+
+        校验对象（任一可用即比对）：
+          - meta.embed_dim：索引自描述维度（重建脚本写入）
+          - vec_memories 虚拟表声明维度
+
+        Args:
+            vector: 待写入向量；None 时比对当前向量化器维度。
+
+        Raises:
+            RuntimeError: 维度不一致（禁止混维写入，否则新记忆检索不到）。
+        """
+        actual_dim = len(vector) if vector is not None else int(self.vector_dim)
+        expected_dims: List[Tuple[str, int]] = []
+        meta_dim = self._read_meta(META_EMBED_DIM)
+        if meta_dim:
+            try:
+                expected_dims.append(("meta.embed_dim", int(meta_dim)))
+            except ValueError:
+                logger.warning("meta.embed_dim 非整数，忽略该校验项: %r", meta_dim)
+        table_dim = self._vec_table_dim()
+        if table_dim:
+            expected_dims.append(("vec_memories", table_dim))
+
+        for origin, expected_dim in expected_dims:
+            if expected_dim != actual_dim:
+                raise RuntimeError(
+                    f"向量维度不一致：索引约定 {origin}={expected_dim} 维，"
+                    f"实际写入 {actual_dim} 维（engine={self.engine}）。"
+                    "拒绝混维写入：请检查 meta.embed_model / COGNITIVE_EMBED_MODEL，"
+                    "或先用 rebuild_vector_index.py 重建索引"
+                )
+
+    def _assert_vec_write_capable(self) -> None:
+        """写入前断言：索引需要 sqlite-vec 但当前引擎写不了时必须 fail-loud。
+
+        旧行为是「engine 不是 sqlite_vec 就只 warning 后跳过」→ 新记忆不进 vec 表，
+        recall 永远检索不到。现在默认抛异常，仅 allow_degraded=True 时降级并告警。
+        """
+        needs_vec = bool(self._vec_table_dim()) or bool(self._has_legacy_vec_memories)
+        if not needs_vec or self.engine == "sqlite_vec":
+            return
+        msg = (
+            "向量索引要求 sqlite_vec 引擎写入 vec_memories，"
+            f"期望 engine=sqlite_vec，实际 engine={self.engine}；"
+            "拒绝静默跳过（会导致新写入记忆 recall 检索不到）。"
+            "如确需降级请显式传 allow_degraded=True"
+        )
+        if self.allow_degraded:
+            logger.warning("%s（已显式允许降级）", msg)
+            self.degraded = True
+            self.degraded_reason = "engine_mismatch"
+            return
+        raise RuntimeError(msg)
 
     def _apply_tx_pragmas(self) -> None:
         """应用事务纪律 PRAGMA（FAIL-OPEN，设置失败不阻塞初始化）。
@@ -484,6 +573,8 @@ class VectorMemoryInterface:
 
             # --- 数据库迁移：为旧表补充 Evidence-First 字段（FAIL-OPEN）---
             self._migrate_evidence_columns()
+            # --- 数据库迁移：为旧表补充使用频次字段（R1 升级路径可达性）---
+            self._migrate_usage_columns()
 
             # 索引
             self.db.execute("CREATE INDEX IF NOT EXISTS idx_quality ON memories(quality_level)")
@@ -528,10 +619,17 @@ class VectorMemoryInterface:
                         )
                     """)
                 except sqlite3.OperationalError as e:
-                    # 仍然可能在某些受限环境报 no such module: vec0；安全降级
-                    logger.warning(f"CREATE VIRTUAL TABLE 失败，降级 numpy: {e}")
+                    # fail-loud：静默降级到 numpy 会让新写入记忆进不了 vec 表（检索不到）
+                    if not self.allow_degraded:
+                        raise RuntimeError(
+                            "CREATE VIRTUAL TABLE vec_memories 失败，拒绝静默降级为 numpy 引擎"
+                            f"（期望 engine=sqlite_vec，实际 engine={self.engine}）：{e}"
+                        ) from e
+                    logger.warning(f"CREATE VIRTUAL TABLE 失败，已显式允许降级 numpy: {e}")
                     self.engine = "numpy"
                     self._has_legacy_vec_memories = False
+                    self.degraded = True
+                    self.degraded_reason = "vec_table_create_failed"
 
             self.db.commit()
 
@@ -553,6 +651,42 @@ class VectorMemoryInterface:
                 )
             except Exception:
                 pass  # 列已存在或其他错误，FAIL-OPEN
+
+    def _migrate_usage_columns(self) -> None:
+        """幂等迁移：补充 access_count / last_used_at（R1 升级路径可达性前置）。
+
+        recall 命中后回写这两列，TTL/升级链路才能按「被使用」判定。
+        用 PRAGMA table_info 判断列是否存在，避免依赖 ALTER TABLE 异常。
+        """
+        try:
+            existing = {
+                str(row[1])
+                for row in self.db.execute("PRAGMA table_info(memories)").fetchall()
+            }
+        except sqlite3.Error:
+            logger.exception("读取 memories 表结构失败，跳过 access_count/last_used_at 迁移")
+            return
+
+        if "access_count" not in existing:
+            try:
+                self.db.execute(
+                    "ALTER TABLE memories ADD COLUMN access_count INTEGER DEFAULT 0"
+                )
+            except sqlite3.Error:
+                logger.exception("ADD COLUMN access_count 失败（FAIL-OPEN）")
+        if "last_used_at" not in existing:
+            try:
+                self.db.execute(
+                    "ALTER TABLE memories ADD COLUMN last_used_at INTEGER"
+                )
+            except sqlite3.Error:
+                logger.exception("ADD COLUMN last_used_at 失败（FAIL-OPEN）")
+        try:
+            self.db.execute(
+                "CREATE INDEX IF NOT EXISTS idx_last_used_at ON memories(last_used_at)"
+            )
+        except sqlite3.Error:
+            logger.exception("CREATE INDEX idx_last_used_at 失败（FAIL-OPEN）")
 
     # ============================================================
     # 添加记忆
@@ -614,6 +748,9 @@ class VectorMemoryInterface:
 
         # 向量化
         vector = self.vectorizer.encode(content)
+        # fail-loud：写入前校验索引维度一致性 + 引擎可写性，禁止静默混维/丢写
+        self.assert_embed_consistency(vector)
+        self._assert_vec_write_capable()
         vector_bytes = vector_to_bytes(vector)
 
         # 插入元数据表
@@ -712,6 +849,7 @@ class VectorMemoryInterface:
             FROM vec_memories v
             JOIN memories m ON m.id = v.memory_id
             WHERE v.embedding MATCH ? AND k = ?
+              AND (m.source IS NULL OR m.source NOT IN ('rag-bridge','l0.scheduler','l1_router'))
         """
         # sqlite-vec 的 k=? 参数控制 KNN 的 K 值
         search_k = top_k * 3  # 多取一些用于标签过滤
@@ -794,6 +932,13 @@ class VectorMemoryInterface:
             conditions.append("memory_type = ?")
             params.append(memory_type_filter)
 
+        # 检索污染治理：RAG/日志类轨迹（rag-bridge 等）占绝大多数且不是经验记忆，
+        # 会挤占召回位，故在 SQL 层直接排除。
+        conditions.append(
+            "(source IS NULL OR source NOT IN "
+            "('rag-bridge','l0.scheduler','l1_router'))"
+        )
+
         if conditions:
             sql += " WHERE " + " AND ".join(conditions)
 
@@ -814,11 +959,14 @@ class VectorMemoryInterface:
             vec = bytes_to_vector(vec_bytes, self.vector_dim)
             score = cosine_similarity(query_vector, vec)
             scored.append((score, row))
-        if skipped and not scored:
+        if skipped:
+            # 不静默：维度不一致导致的丢弃必须可见（否则表现为「召回莫名变少」）
             logger.warning(
-                "numpy 检索全部跳过：%s 条向量维度与当前向量化器(%s)不一致，请检查 COGNITIVE_EMBED_MODEL/meta.embed_model",
+                "numpy 检索丢弃 %s 条向量维度与当前向量化器(%s 维)不一致的记忆，"
+                "命中 %s 条；请检查 COGNITIVE_EMBED_MODEL/meta.embed_model 或重建索引",
                 skipped,
                 self.vector_dim,
+                len(scored),
             )
 
         # 排序
@@ -949,13 +1097,30 @@ class VectorMemoryInterface:
         return cursor.rowcount > 0
 
     def delete(self, memory_id: str) -> bool:
-        """删除记忆"""
+        """删除记忆（含 vec 表级联，任何引擎都清孤儿行）。
+
+        R2：原实现仅 engine=="sqlite_vec" 时删 vec 表行，numpy 引擎会留孤儿，
+        导致 DROP/重建前的残留向量被检索到。现在无论当前引擎是什么都尝试级联删除；
+        vec 表不存在或扩展未加载（no such module: vec0）时跳过并告警。
+        """
         with self._db_lock:
             try:
                 cursor = self.db.execute("DELETE FROM memories WHERE id=?", [memory_id])
-                if self.engine == "sqlite_vec":
-                    rowid = self._get_rowid(memory_id)
-                    self.db.execute("DELETE FROM vec_memories WHERE rowid=?", [rowid])
+                rowid = self._get_rowid(memory_id)
+                # 两条独立 DELETE：vec0 对复合条件支持有限，逐条执行更稳
+                for column, value in (("rowid", rowid), ("memory_id", memory_id)):
+                    try:
+                        self.db.execute(
+                            f"DELETE FROM vec_memories WHERE {column}=?", [value]
+                        )
+                    except sqlite3.Error as e:
+                        # 表不存在 / 当前进程未加载 vec0 扩展：跳过（无孤儿可删）
+                        logger.warning(
+                            "级联删除 vec_memories.%s 跳过（memory_id=%s）：%s",
+                            column,
+                            memory_id,
+                            e,
+                        )
                 self.db.commit()
             except Exception:
                 # 事务纪律：异常路径必须回滚，杜绝 RESERVED 锁泄漏
@@ -987,6 +1152,9 @@ class VectorMemoryInterface:
             "engine": self.engine,
             "vector_dim": self.vector_dim,
             "storage_path": self.storage_path,
+            # 降级信封：向量化/索引发生显式降级时可见
+            "degraded": self.degraded,
+            "degraded_reason": self.degraded_reason,
         }
 
     def healthcheck(self) -> Dict[str, Any]:
@@ -999,6 +1167,8 @@ class VectorMemoryInterface:
             "vector_dim": self.vector_dim,
             "total_memories": total_memories,
             "sqlite_version": sqlite3.sqlite_version,
+            "degraded": self.degraded,
+            "degraded_reason": self.degraded_reason,
         }
 
     # ============================================================

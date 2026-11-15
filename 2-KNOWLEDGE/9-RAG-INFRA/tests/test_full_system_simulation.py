@@ -155,7 +155,11 @@ def test_scenario1_full_closed_loop(sim_env):
 
     # Step3: 检索并记录记忆
     r1 = search_with_feedback(
-        "Kalman 量化", top_k=5, weight_path=sim_env["weight"], map_path=sim_env["map"]
+        "Kalman 量化",
+        top_k=5,
+        weight_path=sim_env["weight"],
+        map_path=sim_env["map"],
+        enable_record=True,  # 闭环测试需显式开启（默认已改为关闸）
     )
     if not r1["results"]:
         pytest.skip("无检索结果")
@@ -379,7 +383,13 @@ def test_scenario4_batch_operations(sim_env):
     total_results = 0
     total_mappings = 0
     for q in queries:
-        r = search_with_feedback(q, top_k=3, weight_path=sim_env["weight"], map_path=sim_env["map"])
+        r = search_with_feedback(
+            q,
+            top_k=3,
+            weight_path=sim_env["weight"],
+            map_path=sim_env["map"],
+            enable_record=True,  # 闭环测试需显式开启（默认已改为关闸）
+        )
         total_results += len(r["results"])
         total_mappings += len(r["memory_mappings"])
 

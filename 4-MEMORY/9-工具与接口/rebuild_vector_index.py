@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import re
 import sqlite3
 import struct
 import sys
@@ -60,7 +61,31 @@ def main() -> int:
         action="store_true",
         help="不更新 memories.vector（仅建 vec 表）",
     )
+    ap.add_argument(
+        "--source",
+        action="append",
+        default=[],
+        help="只重建指定 source 的记忆（可重复传入，与 --ids/--where 互斥）",
+    )
+    ap.add_argument(
+        "--ids",
+        default="",
+        help="只重建指定 id（逗号分隔，与 --source/--where 互斥）",
+    )
+    ap.add_argument(
+        "--where",
+        default="",
+        help="原始 SQL 条件（谨慎使用，与 --source/--ids 互斥）",
+    )
     args = ap.parse_args()
+
+    # 选择器互斥：同时给多个筛选条件语义不清（AND/OR 混用会误伤全表）
+    selector_count = sum(
+        1 for flag in (bool(args.source), bool(args.ids.strip()), bool(args.where.strip())) if flag
+    )
+    if selector_count > 1:
+        print("[FATAL] --source / --ids / --where 三者互斥，只能选其一")
+        return 2
 
     db_path = Path(args.db)
     if not db_path.exists():
@@ -75,8 +100,35 @@ def main() -> int:
     con.enable_load_extension(False)
 
     total = con.execute("select count(*) from memories").fetchone()[0]
-    target = min(total, args.limit) if args.limit else total
+
+    # 定向重建（--source / --ids / --where）：只处理子集，避免 3GB 库全量重算
+    filters: list[str] = []
+    filter_params: list = []
+    if args.source:
+        filters.append(f"source IN ({', '.join('?' * len(args.source))})")
+        filter_params.extend(args.source)
+    id_list = [i.strip() for i in args.ids.split(",") if i.strip()]
+    if id_list:
+        filters.append(f"id IN ({', '.join('?' * len(id_list))})")
+        filter_params.extend(id_list)
+    if args.where.strip():
+        filters.append(f"({args.where.strip()})")
+    where_sql = (" AND " + " AND ".join(filters)) if filters else ""
+    filtered = bool(filters)
+
+    scoped_total = total
+    if filtered:
+        scoped_total = con.execute(
+            f"select count(*) from memories where 1=1{where_sql}", filter_params
+        ).fetchone()[0]
+        print(f"[INFO] 定向重建：条件={filters} 命中 {scoped_total}/{total} 条")
+    target = min(scoped_total, args.limit) if args.limit else scoped_total
     print(f"[INFO] db={db_path} memories={total} target={target} model={args.model}")
+    if target == 0:
+        # 零匹配时直接退出：绝不允许用空 stage 表覆盖 vec_memories（会 recall 全盲）
+        print("[INFO] 无匹配记忆，跳过重建")
+        con.close()
+        return 0
 
     t0 = time.perf_counter()
     vectorizer = FastEmbedVectorizer(args.model, threads=args.threads)
@@ -107,8 +159,8 @@ def main() -> int:
                 break
         rows = con.execute(
             "select rowid, id, content, quality_level from memories "
-            "where rowid > ? order by rowid limit ?",
-            (last_rowid, fetch_n),
+            "where rowid > ?" + where_sql + " order by rowid limit ?",
+            [last_rowid, *filter_params, fetch_n],
         ).fetchall()
         if not rows:
             break
@@ -144,23 +196,62 @@ def main() -> int:
     con.commit()
     do_swap = args.swap or not args.limit
     if do_swap:
-        con.execute("DROP TABLE IF EXISTS vec_memories")
-        con.execute(
-            "CREATE VIRTUAL TABLE vec_memories USING vec0("
-            f"embedding float[{dim}], memory_id text, quality text)"
-        )
-        con.execute(
-            "INSERT INTO vec_memories(rowid, embedding, memory_id, quality) "
-            f"SELECT rowid, embedding, memory_id, quality FROM {TMP_TABLE}"
-        )
-        con.execute(f"DROP TABLE {TMP_TABLE}")
-        # 索引自描述：写 embed_model，使所有进程无需各自配置环境变量即可用同一模型
-        con.execute("CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT)")
-        con.execute(
-            "INSERT OR REPLACE INTO meta(key, value) VALUES('embed_model', ?)", [args.model]
-        )
-        con.execute("INSERT OR REPLACE INTO meta(key, value) VALUES('embed_dim', ?)", [str(dim)])
-        con.commit()
+        # 切换段必须原子：DROP 成功但 INSERT 失败会导致 recall 全盲，故整体包在
+        # BEGIN IMMEDIATE ... COMMIT 内，任何异常一律 ROLLBACK 保留旧索引。
+        try:
+            if con.in_transaction:
+                con.commit()
+            con.execute("BEGIN IMMEDIATE")
+            if filtered:
+                # 定向重建：只替换本次重建到的 id，禁止 DROP 整表（否则清空未覆盖的记忆）
+                existing = con.execute(
+                    "select sql from sqlite_master where name='vec_memories'"
+                ).fetchone()
+                if existing is None:
+                    con.execute(
+                        "CREATE VIRTUAL TABLE vec_memories USING vec0("
+                        f"embedding float[{dim}], memory_id text, quality text)"
+                    )
+                else:
+                    m = re.search(r"float\[(\d+)\]", str(existing[0] or ""))
+                    if m and int(m.group(1)) != dim:
+                        raise RuntimeError(
+                            f"现有索引维度 {m.group(1)} 与本次模型维度 {dim} 不一致，"
+                            "禁止定向替换（请先全量重建）"
+                        )
+                    con.execute(
+                        f"DELETE FROM vec_memories WHERE rowid IN "
+                        f"(SELECT rowid FROM {TMP_TABLE})"
+                    )
+                con.execute(
+                    "INSERT INTO vec_memories(rowid, embedding, memory_id, quality) "
+                    f"SELECT rowid, embedding, memory_id, quality FROM {TMP_TABLE}"
+                )
+            else:
+                con.execute("DROP TABLE IF EXISTS vec_memories")
+                con.execute(
+                    "CREATE VIRTUAL TABLE vec_memories USING vec0("
+                    f"embedding float[{dim}], memory_id text, quality text)"
+                )
+                con.execute(
+                    "INSERT INTO vec_memories(rowid, embedding, memory_id, quality) "
+                    f"SELECT rowid, embedding, memory_id, quality FROM {TMP_TABLE}"
+                )
+            con.execute(f"DROP TABLE {TMP_TABLE}")
+            if not filtered:
+                # 索引自描述：写 embed_model，使所有进程无需各自配置环境变量即可用同一模型
+                con.execute("CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT)")
+                con.execute(
+                    "INSERT OR REPLACE INTO meta(key, value) VALUES('embed_model', ?)", [args.model]
+                )
+                con.execute(
+                    "INSERT OR REPLACE INTO meta(key, value) VALUES('embed_dim', ?)", [str(dim)]
+                )
+            con.commit()
+        except Exception as exc:
+            con.rollback()
+            print(f"[FATAL] 索引切换失败，已回滚（vec_memories 保持原状）：{exc}")
+            return 1
         print(f"[DONE] swapped vec_memories rows={written} dim={dim}")
     else:
         print(f"[DONE] rebuilt temp table {TMP_TABLE} rows={written} dim={dim} (未替换)")

@@ -131,6 +131,21 @@ def _voyager_ensure_dirs() -> None:
             pass
 
 
+class RecallResultList(list):
+    """recall 结果列表（保持 list 语义 + JSON 序列化兼容）。
+
+    附带降级信封：0 命中或索引一致性异常时置 degraded=True + degraded_reason。
+    不改 recall 函数签名（仍返回 list），字段以属性形式挂载，调用方按需读取。
+    """
+
+    degraded: bool = False
+    degraded_reason: str = ""
+
+    def envelope(self) -> Dict[str, Any]:
+        """降级信封（供 MCP/交易系统拼装 dict 响应）。"""
+        return {"degraded": self.degraded, "degraded_reason": self.degraded_reason}
+
+
 class QuarantineManager:
     """隔离区管理器（N-P1b）。
 
@@ -719,7 +734,69 @@ class CognitiveLoopEntry:
         except Exception:
             pass  # FAIL-OPEN：41 文档通道失败不影响记忆通道返回
         # ---------- END D6 ----------
-        return dicts
+
+        # ---------- R1: recall 命中回写（access_count / last_used_at，FAIL-OPEN） ----------
+        # TTL/升级链路依赖「被使用」信号；回写失败不得影响召回返回
+        self._writeback_recall_hits(dicts)
+
+        # ---------- 降级信封：0 命中 / 索引一致性异常必须可见 ----------
+        result = RecallResultList(dicts)
+        if not dicts:
+            result.degraded = True
+            result.degraded_reason = (
+                "index_inconsistent" if self._recall_index_inconsistent() else "no_hit"
+            )
+        return result
+
+    def _writeback_recall_hits(self, results: List[Dict[str, Any]]) -> None:
+        """批量回写命中记忆的 access_count/last_used_at（FAIL-OPEN）。
+
+        R1：原实现无任何 UPDATE memories，recall 命中不回写，
+        导致 access_count/last_used_at 永远为初始值、升级与 TTL 路径不可达。
+        """
+        ids = [
+            str(r.get("id"))
+            for r in results
+            if r.get("id") and not str(r.get("id")).startswith("fis-doc:")
+        ]
+        if not ids:
+            return
+        db = getattr(self._vm, "db", None)
+        if db is None:
+            return
+        placeholders = ",".join("?" * len(ids))
+        sql = (
+            "UPDATE memories SET access_count = COALESCE(access_count, 0) + 1, "
+            f"last_used_at = ? WHERE id IN ({placeholders})"
+        )
+        try:
+            lock = getattr(self._vm, "_db_lock", None)
+            if lock is not None:
+                with lock:
+                    db.execute(sql, [int(time.time())] + ids)
+                    db.commit()
+            else:
+                db.execute(sql, [int(time.time())] + ids)
+                db.commit()
+        except Exception:
+            # FAIL-OPEN：回写失败（如旧库缺列）不影响 recall 返回
+            logger.exception("recall 命中回写 access_count/last_used_at 失败（FAIL-OPEN）")
+            try:
+                if getattr(db, "in_transaction", False):
+                    db.rollback()
+            except Exception:
+                pass
+
+    def _recall_index_inconsistent(self) -> bool:
+        """索引一致性自检：meta.embed_dim / vec 表维度与向量化器不一致即为 True。"""
+        checker = getattr(self._vm, "assert_embed_consistency", None)
+        if checker is None:
+            return False
+        try:
+            checker()
+            return False
+        except Exception:
+            return True
 
     # ============================================================
     # N-P1b: 隔离区 — 恢复与状态
@@ -3057,6 +3134,9 @@ def trading_recall(
         "count": 0,
         "processes": {"meta": [], "applied": [], "process_block_markdown": ""},
         "ok": False,
+        # 降级信封：认知系统不可用同样属于降级，必须可见
+        "degraded": True,
+        "degraded_reason": "recall_unavailable",
     }
 
     try:
@@ -3106,6 +3186,9 @@ def trading_recall(
                 "process_block_markdown": process_block_md,
             },
             "ok": True,
+            # 降级信封：0 命中或索引一致性异常时可见（不改上方既有字段）
+            "degraded": bool(getattr(memories, "degraded", False)),
+            "degraded_reason": getattr(memories, "degraded_reason", "") or "",
         }
 
         # P1-3: 全局广播——召回结果发布到 shared_memory_bus（GWT 全局工作空间）

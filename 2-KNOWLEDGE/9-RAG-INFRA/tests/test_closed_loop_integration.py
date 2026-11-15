@@ -101,6 +101,7 @@ def test_tc1_search_with_feedback_returns_closed_loop_structure(isolated_env):
         top_k=3,
         weight_path=isolated_env["weight_path"],
         map_path=isolated_env["map_path"],
+        enable_record=True,  # 闭环测试需显式开启（默认已改为关闸）
     )
 
     assert isinstance(result, dict)

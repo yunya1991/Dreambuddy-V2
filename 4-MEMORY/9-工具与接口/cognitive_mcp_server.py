@@ -539,10 +539,15 @@ def _handle_recall(args: Dict[str, Any]) -> str:
     except Exception:
         pass
 
+    # 契约 C2b：0 命中或索引异常必须显式 degraded，禁止伪装成"无结果"
+    degraded = bool(getattr(results, "degraded", False)) or len(results) == 0
     response: Dict[str, Any] = {
         "memories": results,
         "count": len(results),
+        "degraded": degraded,
     }
+    if degraded:
+        response["degraded_reason"] = getattr(results, "degraded_reason", None) or "no_hit"
 
     # L4: 附带元认知信号（FOK 把握度 / JOL 学习评估 / 广播计数）
     try:

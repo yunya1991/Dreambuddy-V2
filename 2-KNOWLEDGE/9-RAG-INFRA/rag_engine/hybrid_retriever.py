@@ -10,6 +10,7 @@
 合并后按 (source_file, heading) 去重，再经 reranker 多信号重排序。
 """
 
+import os
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -250,7 +251,7 @@ def search_with_feedback(
     db_path: Optional[str] = None,
     index_path: Optional[Path] = None,
     graph_path: Optional[Path] = None,
-    enable_record: bool = True,
+    enable_record: bool = False,
     enable_boost: bool = True,
     enable_annotate: bool = True,
     weight_path: Optional[Path] = None,
@@ -271,7 +272,9 @@ def search_with_feedback(
     Args:
         query: 查询文本。
         top_k / weights / db_path / index_path / graph_path: 同 hybrid_search。
-        enable_record: 是否记录检索结果为 C 级记忆，默认 True。
+        enable_record: 是否记录检索结果为 C 级记忆，默认 False（检索写入关闸）：
+            默认不写，避免 RAG 检索日志挤占认知库召回位；仅当显式传 True
+            或设置环境变量 RAG_ENABLE_MEMORY_RECORD=1 时才写。
         enable_boost: 是否应用 boost 权重反哺，默认 True。
         enable_annotate: 是否调用 annotate_chunk 注入质量标注与降权，默认 True。
         weight_path: 权重反馈文件路径，默认 bridge/weight_feedback.json。
@@ -281,6 +284,10 @@ def search_with_feedback(
         {results: list, memory_mappings: list, boost_applied: bool,
          annotations_applied: bool, record_done: bool}
     """
+    # 检索写入关闸（P0）：默认不把 RAG 检索日志写成记忆（该类日志占认知库 96.98%，
+    # 会挤占 recall 召回位）；只有显式 enable_record=True 或环境变量开关才开启。
+    enable_record = bool(enable_record) or os.environ.get("RAG_ENABLE_MEMORY_RECORD") == "1"
+
     # 基础检索（不修改 hybrid_search，保持字节等价）
     results = hybrid_search(
         query,
