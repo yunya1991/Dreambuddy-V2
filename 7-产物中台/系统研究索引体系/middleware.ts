@@ -40,13 +40,12 @@ export function middleware(request: NextRequest) {
     );
   }
 
-  // 用相对 Location：经 nginx 反代（www.neodrm.com/admin → :3456）时，Node 运行时
-  // 无法从 Host 头可靠还原外部 origin，绝对地址会泄露内部 localhost:3456
-  const target = `/admin/login?next=${encodeURIComponent(pathname)}`;
-  return new NextResponse(null, {
-    status: 307,
-    headers: { Location: target, "Cache-Control": "no-store" },
-  });
+  // 云端经 nginx 反代时，Node 运行时无法从 Host 头还原外部 origin（next start 绑定
+  // 127.0.0.1 会把 origin 归一成 localhost:3456），因此用构建期公开 origin 兜底。
+  const origin = process.env.NEXT_PUBLIC_ADMIN_ORIGIN || request.nextUrl.origin;
+  const loginUrl = new URL("/admin/login", origin);
+  loginUrl.searchParams.set("next", pathname);
+  return NextResponse.redirect(loginUrl);
 }
 
 export const config = {
