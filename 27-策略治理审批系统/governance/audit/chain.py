@@ -11,10 +11,14 @@
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
+import os
+import time
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Iterator, List, Optional, Set
 
 from governance.utils import _audit_base_payload, _audit_emit_action, _now_ms
 
@@ -64,6 +68,45 @@ AUDIT_ACTIONS: Set[str] = {
 def _audit_hash_chain_path() -> Path:
     """27 模块审计哈希链路径（独立于 10-经典指标系统）"""
     return _AUDIT_DATA_DIR / "audit_hash_chain.jsonl"
+
+
+def _audit_chain_lock_path() -> Path:
+    """哈希链独占锁文件（SPEC-7 §9.5）：`.jsonl.lock` 与数据文件同目录"""
+    return _AUDIT_DATA_DIR / "audit_hash_chain.jsonl.lock"
+
+
+_AUDIT_LOCK_TIMEOUT_SEC = 2.0
+_AUDIT_LOCK_POLL_SEC = 0.01
+
+
+@contextmanager
+def _audit_chain_lock(timeout: float = _AUDIT_LOCK_TIMEOUT_SEC) -> Iterator[None]:
+    """对审计哈希链加独占文件锁（SPEC-7 §9.5 / R7）。
+
+    并发 append 若各自先读 tail hash 再写，会产生 prev_hash 分叉；因此
+    「读 tail hash → 计算 hash → 追加」必须在同一把锁内完成。
+    取锁超时抛 TimeoutError，由调用方 FAIL-OPEN（审计不可用时不影响主业务）。
+    """
+    lock_path = _audit_chain_lock_path()
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    fp = open(lock_path, "a+", encoding="utf-8")
+    deadline = time.monotonic() + max(0.0, float(timeout))
+    try:
+        while True:
+            try:
+                fcntl.flock(fp.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except OSError:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("audit_chain_lock_timeout") from None
+                time.sleep(_AUDIT_LOCK_POLL_SEC)
+        yield
+    finally:
+        try:
+            fcntl.flock(fp.fileno(), fcntl.LOCK_UN)
+        except Exception:
+            pass
+        fp.close()
 
 
 def _last_audit_hash() -> Optional[str]:
@@ -130,7 +173,6 @@ def strategy_factory_audit(
         审计事件记录（含 hash 用于完整性校验）
     """
     now_ms = int(_now_ms())
-    prev_hash = _last_audit_hash()
 
     event: Dict[str, Any] = {
         "ts": now_ms,
@@ -145,7 +187,26 @@ def strategy_factory_audit(
     if source_zip:
         event["source_zip"] = str(source_zip).strip()
 
-    event_hash = _compute_audit_hash(event, prev_hash)
+    # 写入哈希链：取锁 → 读 tail hash → 计算 hash → 追加 + fsync → 释放
+    # （SPEC-7 §9.5 / R7：锁内完成读改写，避免并发分叉）
+    event_hash = ""
+    prev_hash: Optional[str] = None
+    try:
+        with _audit_chain_lock():
+            prev_hash = _last_audit_hash()
+            event_hash = _compute_audit_hash(event, prev_hash)
+            event["hash"] = event_hash
+            event["prev_hash"] = prev_hash
+            p = _audit_hash_chain_path()
+            p.parent.mkdir(parents=True, exist_ok=True)
+            with open(p, "a", encoding="utf-8") as f:
+                f.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
+                f.flush()
+                os.fsync(f.fileno())
+    except Exception:
+        # FAIL-OPEN：审计链不可用不阻塞主业务
+        pass
+    # 无论是否成功入链，返回事件都带 hash/prev_hash 字段（失败时为空）
     event["hash"] = event_hash
     event["prev_hash"] = prev_hash
 
@@ -172,15 +233,6 @@ def strategy_factory_audit(
                 extra=extra,
             ),
         )
-    except Exception:
-        pass
-
-    # 写入哈希链
-    try:
-        p = _audit_hash_chain_path()
-        p.parent.mkdir(parents=True, exist_ok=True)
-        with open(p, "a", encoding="utf-8") as f:
-            f.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
     except Exception:
         pass
 

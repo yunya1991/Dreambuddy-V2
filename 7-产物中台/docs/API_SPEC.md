@@ -24,16 +24,16 @@
 | 实时流 | `/api/realtime/stream` | GET | 实时事件 SSE 流 |
 | 会议流 | `/api/meeting/stream` | GET | 会议辩论 SSE 流 |
 | 后台总览 | `/api/admin/stats/overview` | GET | 业务数据总览 |
-| 后台管理 | `/api/admin/*` | GET/POST/PATCH | 用户/策略/订单/积分等 |
+| 后台管理 | `/api/admin/*` | GET/POST/PATCH | 用户 / 策略 / 订单 / 积分 / 系统配置（写能力 v2.0，见 §3.10） |
 
 ---
 
 ## 2. 认证方式
 
-当前 API 路由未实现鉴权中间件，为内部服务接口。推荐引擎内部接口（`/api/recommendation-engine/internal/*`）通过环境变量 `RECOMMENDATION_ENGINE_API_KEY` 配置 API Key（见 `engine.py`）。
-
-- **生产部署**：应在反向代理层（如 Nginx）添加访问控制
-- **内部调用**：`engine.py` 通过 `INTERNAL_API_KEY` 环境变量传递密钥
+- **管理台 `/admin` 与 `/api/admin/**`**：`middleware.ts` 校验独立 cookie `dream-admin-session`（JWT，8h，`ADMIN_AUTH_SECRET`，与 3.1 的 `AUTH_SECRET` 隔离）。无 cookie：页面 302 `/admin/login`，API 401；每个 handler 再经 `requireAdmin()` 查库确认 `users.role === 'ADMIN'`（降权即时生效）。
+- **写接口**：同源 Origin 校验 + `Idempotency-Key` 必填 + L1 二次确认令牌（`/api/admin/confirm-token` 签发，HMAC、TTL 60s、一次性）；L2 需 27 审批记录。限流 20 写/分钟/actor（进程内，要求 `instances=1`）。
+- **内部补偿接口** `/api/admin/jobs/audit-flush`：`X-Internal-Token`。
+- **其余 API 路由**为内部服务接口，推荐引擎内部接口通过 `RECOMMENDATION_ENGINE_API_KEY`/`INTERNAL_API_KEY` 鉴权；生产部署应在反向代理层再叠加访问控制。
 
 ---
 
@@ -331,15 +331,32 @@ SSE（Server-Sent Events）实时事件流。
 | 路由 | 方法 | 说明 |
 |------|------|------|
 | `/api/admin/stats/overview` | GET | 业务数据总览（`getBusinessDataView`） |
-| `/api/admin/api-configs` | GET/POST | API 配置管理 |
-| `/api/admin/channels` | GET/POST | 通信渠道管理 |
-| `/api/admin/credits` | GET/POST | 积分管理 |
-| `/api/admin/executions` | GET | 执行记录 |
-| `/api/admin/orders` | GET | 订单管理 |
-| `/api/admin/tasks` | GET/POST | 任务管理 |
-| `/api/admin/trading-params` | GET/PATCH | 交易参数 |
 | `/api/admin/users` | GET | 用户列表 |
-| `/api/admin/users/[uid]` | GET/PATCH | 单用户详情 |
+| `/api/admin/users/[uid]` | GET/PATCH | 单用户详情 / 角色变更（L0） |
+| `/api/admin/users/[uid]/unlock` | POST | 解锁用户（L0） |
+| `/api/admin/api-configs` | GET | API 配置列表 |
+| `/api/admin/api-configs/[id]` | PATCH | 校验状态（L0） |
+| `/api/admin/channels` | GET | 通信渠道列表 |
+| `/api/admin/channels/[id]` | PATCH | 渠道启停 / 推送规则（L0） |
+| `/api/admin/credits` | GET | 积分账户列表 |
+| `/api/admin/credits/[uid]/adjust` | POST | 积分调账（分档 + 日累计 20000） |
+| `/api/admin/executions` | GET | 执行记录 |
+| `/api/admin/orders` | GET | 订单列表 |
+| `/api/admin/orders/[id]` | PATCH | 订单状态 CAS 修正（L1） |
+| `/api/admin/tasks` | GET | 任务列表 |
+| `/api/admin/tasks/[id]` | PATCH | 任务状态（L1） |
+| `/api/admin/trading-params` | GET | 交易参数列表 |
+| `/api/admin/trading-params/[uid]` | PATCH | 交易开关 / 状态（L1，BridgeSync） |
+| `/api/admin/trading-params/[uid]/reset-daily` | POST | 日重置（L1） |
+| `/api/admin/system-config` | GET/PATCH | 文件型配置（`?file=monitor\|trailing_stop`，L1） |
+| `/api/admin/system-config/propose` | POST | L2 提案（`?file=capital_control\|trailing_stop\|param_center`） |
+| `/api/admin/system-config/apply` | POST | L2 执行（审批 patch 为唯一依据） |
+| `/api/admin/confirm-token` | POST | 签发 L1 确认令牌 |
+| `/api/admin/audit-logs`、`/[opId]` | GET | 操作日志检索 / 详情 |
+| `/api/admin/audit-logs/[opId]/rollback` | POST | 按 beforeData 逆操作回滚 |
+| `/api/admin/jobs/audit-flush` | POST | 审计 outbox 补偿（`X-Internal-Token`） |
+
+**统一写响应**：`{ success, data: { opId, status, before, after, diff, warnings, requiresRestart, simulated? }, requestId, message }`；错误码见 `lib/admin/errors.ts`（`VALIDATION_FAILED` 400 / `UNAUTHENTICATED` 401 / `FORBIDDEN_ROLE` 403 / `NOT_FOUND` 404 / `CONFLICT_STALE` 409 / `RULE_BLOCKED` 422 / `RATE_LIMITED` 429 / `BRIDGE_SYNC_FAILED` 502 / `GOVERNANCE_UNAVAILABLE`、`WRITE_DISABLED` 503 / `INTERNAL_ERROR` 500）。完整语义见 [SPEC-7-管理台写能力-v2.0.md](./SPEC-7-管理台写能力-v2.0.md)。
 
 ---
 

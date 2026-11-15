@@ -1,11 +1,15 @@
 // ============================================================================
 // BridgeSync：中台写库后下发 27 治理配置（SPEC-7 §4.1 step 8 / ADR-6）
 // ----------------------------------------------------------------------------
-// 契约与 3.1-FRONTEND/src/lib/classic-system-bridge.ts 保持一致：
+// 契约与 3.1-FRONTEND/src/lib/classic-system-bridge.ts 保持一致（R1/R10 收敛）：
 //   PUT {GOVERNANCE_BASE_URL}/api/v1/config  body = 命名空间补丁
-//   · trading.live_trading_enabled —— 交易总开关（交易类，失败必须回滚）
-//   · trading.trading_status —— 交易状态
-//   · strategy_status[strategyId] —— 策略启停（非交易类，失败转待补偿）
+//   鉴权头：X-Admin-Token（GOVERNANCE_ADMIN_TOKEN）
+//
+// 命名空间契约（消费方口径见 SPEC-7 §16；变更需双端同步评审）：
+//   · trading.live_trading_enabled —— 交易总开关｜3.1 同源键｜交易类，失败必须回滚
+//   · trading.trading_status       —— 交易状态｜中台扩展键（3.1 不下发）
+//   · strategy_status[strategyId]  —— 策略启停｜中台扩展命名空间（3.1 不走 config，走 M26 changeset）
+//   扩展键仅做治理侧留痕；新增/改名视为契约变更，须同步评审 3.1 与 27 消费方。
 // 超时 ADMIN_BRIDGE_TIMEOUT_MS；任何失败都返回 ok:false，由调用方决定语义。
 // ============================================================================
 

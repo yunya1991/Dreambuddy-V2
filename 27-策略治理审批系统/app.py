@@ -346,7 +346,32 @@ def approval_decide(approval_id):
     rid = approval_engine._approval_append(updated)
     if rid is None:
         return jsonify({"ok": False, "error": "append_failed"}), 500
-    return jsonify({"ok": True, "approval_id": rid, "decision": updated["decision"]})
+
+    # 裁决写审计（SPEC-7 §16-2）：approve/reject 均留痕，hash 可校验
+    trace_id = uuid.uuid4().hex
+    event = strategy_factory_audit(
+        trace_id=trace_id,
+        stage="approval",
+        action="approve" if decision == "APPROVE" else "reject",
+        actor=actor,
+        result={
+            "approval_id": rid,
+            "decision": updated["decision"],
+            "comment": updated["comment"],
+            "requester": requester,
+            "target": str(obj.get("target") or obj.get("file") or obj.get("action") or ""),
+        },
+        strategy_id=str(obj.get("strategy_id") or "") or None,
+    )
+    return jsonify(
+        {
+            "ok": True,
+            "approval_id": rid,
+            "decision": updated["decision"],
+            "trace_id": trace_id,
+            "audit_hash": event.get("hash", ""),
+        }
+    )
 
 
 # ---------------------------------------------------------------------------

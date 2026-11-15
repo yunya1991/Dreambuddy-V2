@@ -74,3 +74,16 @@
     - 用户配置等敏感信息未透出。
 - **未接入**：无（全部五个索引底座模块均以标准对象接入真实数据，用户配置等敏感信息继续不透出）。
 - **测试覆盖**：`lib/ui-map-real-data.test.ts` 18 个测试覆盖真实数据注入与降级行为。
+
+## 管理台写能力（SPEC-7 v2.0，2026-11-15 M4 收尾）
+
+- **规格**：[SPEC-7-管理台写能力-v2.0.md](./SPEC-7-管理台写能力-v2.0.md)（唯一契约来源；接口清单见 `API_SPEC.md` §3.10，路由表见 `TECHNICAL_DESIGN.md` §5.7）。
+- **入口与鉴权**：`系统研究索引体系/middleware.ts`（cookie 存在性）+ `lib/admin/route-guard.ts`（`requireAdmin` 查库）；登录 `/admin/login` → `/api/admin/login`。
+- **写服务层**：`lib/admin/write/`
+  - `context.ts` 写上下文（同源/门禁/限流/幂等键）· `state-machines.ts` 状态机 · `diff.ts` 原因与 diff
+  - `oplog.ts` 操作日志 · `finalize.ts` 写后审计推送与响应封装 · `idempotency.ts` 幂等回放
+  - `bridge.ts` 27 治理配置下发（键契约与 `3.1-FRONTEND/src/lib/classic-system-bridge.ts` 同源，守卫用例 `m4.test.ts`）
+  - `file-config.ts` 文件白名单/快照/原子写 · `param-center.ts` param_center 覆盖与硬下限 · `governance.ts` 27 审批客户端
+- **外部依赖**：`27-策略治理审批系统`（审批/裁决/审计哈希链，`governance/audit/chain.py` 已加 `fcntl.flock`）、`4-MEMORY/9-工具与接口/param_center/repository.py`（读取 `16-调控系统/config/param_center_override.json`，硬下限 SL≥4%/TP≥12%/RR≥2/ATR∈[2,6]）。
+- **测试**：`lib/admin/write/*.test.ts`（`node --test`，M1a/M1b/M2/M3/M4 共 6 个文件）。
+

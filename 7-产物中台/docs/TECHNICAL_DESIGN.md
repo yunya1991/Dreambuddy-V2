@@ -61,7 +61,8 @@
 | 用户上下文索引 adapter | ⚠️ 规划中 | `buildUserContextUIMapOverride` 未实现；标准对象 `user-context-standard-objects.ts` 已就位 |
 | A 系列三环驾驶舱（chain） | ✅ 已实现 | `summary-only.ts` 聚合，禁止 fs/log/raw 读取 |
 | 推荐引擎 API | ✅ 已实现 | trigger / current-strategy / library / backtests / internal/strategy |
-| 后台管理 API | ✅ 已实现 | admin/* 路由集 |
+| 后台管理 API | ✅ 已实现 | 只读页面 + 受控写 v2.0：`/api/admin/**` L0/L1/L2 分级、审计留痕、可回滚（SPEC-7） |
+| 管理台鉴权与写流水线 | ✅ 已实现 | `middleware.ts` + `lib/admin/*`（route-guard / confirm-token / 限流 / 幂等 / opLog / BridgeSync） |
 | 进度自动更新脚本 | ✅ 已实现 | `progress_auto_update.py`，6 个 Task 检测 |
 | `ui-map/` 预留目录 | ⚠️ 占位 | 仅 `.gitkeep` |
 | `用户上下文索引系统/` 预留目录 | ⚠️ 占位 | 仅 `.gitkeep` |
@@ -466,18 +467,38 @@ crontab 定时触发（建议 */30 * * * *）
 | `/api/dream-agent/invoke` | POST | 调用 Dream Agent（转发至 `DREAM_AGENT_API_BASE`，发布实时事件） |
 | `/api/realtime/stream` | GET | 实时事件 SSE 流（`channel` 参数：dream-agent / meeting / system） |
 | `/api/meeting/stream` | GET | 会议辩论 SSE 流（按脚本推进，发送 conclusion） |
+| `/api/admin/login` | POST | 管理台登录（独立 cookie `dream-admin-session`，JWT 8h，与 3.1 会话隔离） |
 | `/api/admin/stats/overview` | GET | 后台业务数据总览（`getBusinessDataView`） |
-| `/api/admin/api-configs` | GET/POST | API 配置管理 |
-| `/api/admin/channels` | GET/POST | 通信渠道管理 |
-| `/api/admin/credits` | GET/POST | 积分管理 |
-| `/api/admin/executions` | GET | 执行记录 |
-| `/api/admin/orders` | GET | 订单管理 |
-| `/api/admin/strategies` | GET/POST | 策略管理 |
-| `/api/admin/strategies/[id]` | GET/PATCH | 单策略详情 |
-| `/api/admin/tasks` | GET/POST | 任务管理 |
-| `/api/admin/trading-params` | GET/PATCH | 交易参数 |
 | `/api/admin/users` | GET | 用户列表 |
-| `/api/admin/users/[uid]` | GET/PATCH | 单用户详情 |
+| `/api/admin/users/[uid]` | GET/PATCH | 单用户详情 / 角色变更（L0） |
+| `/api/admin/users/[uid]/unlock` | POST | 解锁用户（L0） |
+| `/api/admin/api-configs` | GET | API 配置列表 |
+| `/api/admin/api-configs/[id]` | PATCH | 校验状态（L0） |
+| `/api/admin/channels` | GET | 通信渠道列表 |
+| `/api/admin/channels/[id]` | PATCH | 渠道启停 / 推送规则（L0） |
+| `/api/admin/credits` | GET | 积分账户列表 |
+| `/api/admin/credits/[uid]/adjust` | POST | 积分调账（≤500 L0；501–5000 L1；>5000 拒绝；日累计 ≤20000） |
+| `/api/admin/executions` | GET | 执行记录 |
+| `/api/admin/orders` | GET | 订单列表 |
+| `/api/admin/orders/[id]` | PATCH | 订单状态 CAS 修正（L1：`PENDING→CANCELLED`、`PAID→COMPLETED`） |
+| `/api/admin/strategies` | GET | 策略列表 |
+| `/api/admin/strategies/[id]` | GET/PATCH | 策略详情 / 启停（L1，BridgeSync） |
+| `/api/admin/tasks` | GET | 任务列表 |
+| `/api/admin/tasks/[id]` | PATCH | 任务状态（L1） |
+| `/api/admin/trading-params` | GET | 交易参数列表 |
+| `/api/admin/trading-params/[uid]` | PATCH | 交易开关 / 状态（L1，BridgeSync 失败即整体回滚 + 502） |
+| `/api/admin/trading-params/[uid]/reset-daily` | POST | 日重置（L1，同日幂等） |
+| `/api/admin/system-config` | GET/PATCH | 文件型配置（`?file=monitor\|trailing_stop`，L1；`?file=param_center` 仅 GET） |
+| `/api/admin/system-config/propose` | POST | L2 提案（`?file=capital_control\|trailing_stop\|param_center`） |
+| `/api/admin/system-config/apply` | POST | L2 执行（审批记录中的 patch 为唯一执行依据，同一 approvalId 仅执行一次） |
+| `/api/admin/confirm-token` | POST | 签发 L1 二次确认令牌（HMAC，TTL 60s，nonce 一次性） |
+| `/api/admin/audit-logs` | GET | 操作日志检索 |
+| `/api/admin/audit-logs/[opId]` | GET | 单条操作详情 |
+| `/api/admin/audit-logs/[opId]/rollback` | POST | 按 `beforeData` 生成逆操作（L0/L1；L2 引导 27 `gate/rollback`） |
+| `/api/admin/jobs/audit-flush` | POST | 审计 outbox 补偿（`X-Internal-Token`，幂等批量 ≤50） |
+
+> 写接口统一流水线：鉴权（role 每请求查库）→ 分级 L0/L1/L2 → 校验 → 幂等（`Idempotency-Key`）→ CAS → dryRun → 事务 + opLog → BridgeSync / 27 审计。
+> 完整契约、失败语义矩阵与验收标准见 [SPEC-7-管理台写能力-v2.0.md](./SPEC-7-管理台写能力-v2.0.md)。
 
 ### 5.8 对外接口 — 进度更新脚本（CLI）
 
