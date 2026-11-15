@@ -76,9 +76,12 @@ def test_views_match_five_views(cfg):
     assert set(cfg.views) == {"加密", "避险", "大宗", "美股", "情绪"}
 
 
-def test_thresholds_uncalibrated_meta(cfg):
+def test_thresholds_calibrated_meta(cfg):
+    """LTL-16 已按行级合成口径标定（2026-11-15）：元数据必须显式反映已标定。"""
     meta = cfg.meta()
-    assert meta["thresholds_uncalibrated"] is True
+    assert meta["thresholds_uncalibrated"] is False
+    assert cfg.calibrated_at
+    assert 0.0 <= cfg.thresholds["warm_pct"] <= cfg.thresholds["lit_pct"] <= 1.0
     assert meta["chart_weights_mode"] == "on"
     assert len(meta["chart_weights_hash"]) == 64
 

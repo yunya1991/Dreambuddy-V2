@@ -25,6 +25,7 @@ from l1agg.capabilities import (  # noqa: E402
     supported,
     unavailable,
 )
+from l1agg.capabilities.envelope import GATE_METHOD  # noqa: E402
 from l1agg.capabilities.manifest import (  # noqa: E402
     Capability,
     Manifest,
@@ -153,6 +154,93 @@ def _series_inputs(n=120, seed=47):
     return values, _dates(n)
 
 
+def _g_panel(n_symbols=32, n=90, seed=11):
+    """G 组横截面面板：{symbol: 取值序列}。"""
+    rng = random.Random(seed)
+    return {f"S{i:02d}": [rng.gauss(0.0003, 0.02) for _ in range(n)] for i in range(n_symbols)}
+
+
+def _g_returns(n_symbols=8, n=90, seed=23):
+    """G 组 P 族面板：{symbol: 日收益序列}。"""
+    rng = random.Random(seed)
+    return {f"A{i:02d}": [rng.gauss(0.0002, 0.015) for _ in range(n)] for i in range(n_symbols)}
+
+
+def _g_macbeth(n_periods=260, n_assets=8, seed=41):
+    """G21 输入：factor/target 两个 {symbol: 序列} 面板。"""
+    rng = random.Random(seed)
+    factor = {f"B{i:02d}": [rng.gauss(0.0, 1.0) for _ in range(n_periods)] for i in range(n_assets)}
+    target = {
+        f"B{i:02d}": [rng.gauss(0.001, 0.02) for _ in range(n_periods)] for i in range(n_assets)
+    }
+    return factor, target
+
+
+def _j_walk(n=200, seed=7):
+    """J 组单序列：带漂移随机游走（趋势/频谱/复杂度/极值共用）。"""
+    rng = random.Random(seed)
+    out, level = [], 100.0
+    for _ in range(n):
+        level *= 1.0 + rng.gauss(0.0005, 0.01)
+        out.append(level)
+    return out
+
+
+def _j_partner(series, seed=8, noise=0.01):
+    rng = random.Random(seed)
+    return [v * (1.0 + rng.gauss(0.0, noise)) for v in series]
+
+
+def _j_rows(n_rows=90, n_cols=4, seed=9):
+    rng = random.Random(seed)
+    return [[rng.gauss(0.0, 1.0) for _ in range(n_cols)] for _ in range(n_rows)]
+
+
+def _j_target(rows, seed=10):
+    rng = random.Random(seed)
+    return [0.3 * sum(r) + rng.gauss(0.0, 0.1) for r in rows]
+
+
+def _j_groups(n_groups=3, n_each=40, seed=11):
+    rng = random.Random(seed)
+    return [[rng.gauss(0.1 * (i + 1), 1.0) for _ in range(n_each)] for i in range(n_groups)]
+
+
+def _j_survival(n=60, seed=12):
+    rng = random.Random(seed)
+    return {
+        "time": [abs(rng.gauss(10.0, 3.0)) + 0.1 for _ in range(n)],
+        "event": [rng.random() < 0.6 for _ in range(n)],
+        "group": [i % 2 for i in range(n)],
+        "covariate": [rng.gauss(0.0, 1.0) for _ in range(n)],
+    }
+
+
+def _j_coords(n=40, seed=13):
+    rng = random.Random(seed)
+    return [[rng.random(), rng.random()] for _ in range(n)]
+
+
+def _j_spatial_values(n=40, seed=14):
+    rng = random.Random(seed)
+    return [rng.gauss(0.0, 1.0) for _ in range(n)]
+
+
+def _j_meta(n=32, seed=15):
+    rng = random.Random(seed)
+    effects = [rng.gauss(0.2, 0.3) for _ in range(n)]
+    se = [abs(rng.gauss(0.1, 0.02)) for _ in range(n)]
+    return effects, se
+
+
+def _j_missing_rows(n_rows=80, n_cols=4, seed=16):
+    rng = random.Random(seed)
+    return [
+        [None if rng.random() < 0.1 else rng.gauss(0.0, 1.0) for _ in range(n_cols)]
+        for _ in range(n_rows)
+    ]
+
+
 # ---------------- manifest ----------------
 
 
@@ -253,7 +341,7 @@ def test_manifest_loads_and_validates():
     assert set(m.get("D-A04").methods) == {"S25"}
     assert m.get("D-A04").intent == "metric_percentile"
     assert m.get("D-A04").min_n == 30
-    assert m.get("D-A04").data_scope == ("datacenter.series",)
+    assert m.get("D-A04").data_scope == ("datacenter.percentile",)
     assert set(m.get("D-A06").methods) == {"F05"}
     assert m.get("D-A06").intent == "metric_series"
     assert m.get("D-A06").min_n == 30
@@ -278,11 +366,11 @@ def test_manifest_loads_and_validates():
     assert set(m.get("D-A11").methods) == {"M04"}
     assert m.get("D-A11").intent == "correlation_query"
     assert m.get("D-A11").min_n == 60
-    assert m.get("D-A11").data_scope == ("datacenter.series",)
+    assert m.get("D-A11").data_scope == ("datacenter.correlation",)
     assert set(m.get("D-A12").methods) == {"M11", "M12"}
     assert m.get("D-A12").intent == "correlation_query"
     assert m.get("D-A12").min_n == 120
-    assert m.get("D-A12").data_scope == ("datacenter.series",)
+    assert m.get("D-A12").data_scope == ("datacenter.correlation",)
     assert set(m.get("D-A13").methods) == {"S11"}
     assert m.get("D-A13").intent == "metric_series"
     assert m.get("D-A13").min_n == 30
@@ -362,6 +450,49 @@ def test_manifest_loads_and_validates():
             "class_board",
             "flow_graph",
             "lights",
+            "news_digest",
+            "zscore",
+            "recommend_relationship",
+            "discovery_query",
+            "cross_section_profile",
+            "group_neutralize",
+            "quantile_portfolio",
+            "dispersion_breadth",
+            "co_movement",
+            "factor_exposure",
+            "sequence_operators",
+            "inverse_volatility_weights",
+            "equal_risk_contribution",
+            "risk_contribution",
+            "covariance_shrinkage",
+            "pca_risk_decomposition",
+            "brinson_attribution",
+            "fama_macbeth",
+            "factor_crowding",
+            "trend_test",
+            "outlier_scan",
+            "smoothing_filter",
+            "spectral_envelope",
+            "state_space_filter",
+            "coherence_analysis",
+            "information_measures",
+            "transfer_entropy",
+            "complexity_measures",
+            "long_memory",
+            "tail_risk_extreme",
+            "measurement_uncertainty",
+            "interval_estimate",
+            "power_sample_size",
+            "equivalence_test",
+            "group_comparison",
+            "regression_diagnostics",
+            "robust_regression",
+            "cluster_structure",
+            "spatial_autocorrelation",
+            "survival_analysis",
+            "reliability_metrics",
+            "meta_analysis",
+            "missing_data_profile",
         }
 
 
@@ -3527,6 +3658,57 @@ def test_conditional_ic_drops_complete_rows_at_original_positions():
 # ---------------- 契约：JSON schema + 序列化 ----------------
 
 
+def _nested_gates(node, root=True):
+    """收集能力块内嵌的方法级 gate 值（跳过块自身的 gate）。"""
+    found = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key == "gate" and not root and isinstance(value, str):
+                found.append(value)
+            found.extend(_nested_gates(value, root=False))
+    elif isinstance(node, list):
+        for value in node:
+            found.extend(_nested_gates(value, root=False))
+    return found
+
+
+def test_nested_method_gates_are_declared():
+    """K-09 回归：方法级 gate 必须落在 envelope.GATE_METHOD 声明集合内。"""
+    cases = (
+        ("D-J15", {"series": _j_walk(), "components": [0.2] * 40}),
+        ("D-J20", {"X": {"X": _j_rows()}, "y": _j_target(_j_rows())}),
+        ("D-J26", {"time": [i + 1 for i in range(40)], "event": [1, 0] * 20}),
+    )
+    for capability_id, kwargs in cases:
+        out = run_capability(capability_id, **kwargs)
+        block = out["data"]["capabilities"][capability_id]
+        for value in _nested_gates(block):
+            assert value in GATE_METHOD, (capability_id, value)
+
+
+def test_every_capability_block_declares_gate():
+    """K-01 回归：能力块必须带 gate（G/J 组曾整体遗漏，见 TD §7.4 A-1）。"""
+    allowed = {
+        "ok",
+        "partial",
+        "degraded",
+        "insufficient_samples",
+        "insufficient_history",
+        "no_data",
+    }
+    cases = (
+        ("D-G01", {"panel": _g_panel()}),
+        ("D-J01", {"series": _j_walk()}),
+        ("D-J20", {"X": {"X": _j_rows()}, "y": _j_target(_j_rows())}),
+        ("D-A04", {"values": _prices(), "dates": _dates()}),
+    )
+    for capability_id, kwargs in cases:
+        out = run_capability(capability_id, **kwargs)
+        block = out["data"]["capabilities"][capability_id]
+        assert "gate" in block, capability_id
+        assert block["gate"] in allowed, (capability_id, block["gate"])
+
+
 def test_output_validates_against_json_schema():
     jsonschema = pytest.importorskip("jsonschema")
     schema_path = os.path.join(_MODULE_ROOT, "contracts", "capability_result.schema.json")
@@ -3638,7 +3820,14 @@ def test_outputs_are_json_serializable_and_deterministic():
 
 def test_manifest_matches_methods_actually_executed_across_capability_branches(monkeypatch):
     import l1agg.methods as methods
+    from l1agg.capabilities import institutional as capability_institutional
+    from l1agg.capabilities import research_stats as capability_research_stats
     from l1agg.capabilities import stats as capability_stats
+
+    jsonschema = pytest.importorskip("jsonschema")
+    schema_path = os.path.join(_MODULE_ROOT, "contracts", "capability_result.schema.json")
+    with open(schema_path, "r", encoding="utf-8") as fh:
+        schema = json.load(fh)
 
     real_run = capability_stats.run_method
     calls = []
@@ -3650,6 +3839,8 @@ def test_manifest_matches_methods_actually_executed_across_capability_branches(m
         return out
 
     monkeypatch.setattr(capability_stats, "run_method", recording_run)
+    monkeypatch.setattr(capability_institutional, "run_method", recording_run)
+    monkeypatch.setattr(capability_research_stats, "run_method", recording_run)
     monkeypatch.setattr(methods, "run", recording_run)
     observed = {cap.id: set() for cap in manifest().capabilities}
     scenarios = (
@@ -3782,12 +3973,75 @@ def test_manifest_matches_methods_actually_executed_across_capability_branches(m
                 }
             },
         ),
+        ("D-A05", {"values": _prices(80), "dates": _dates(80)}),
+        ("D-G01", {"panel": _g_panel()}),
+        (
+            "D-G02",
+            {
+                "panel": _g_panel(),
+                "groups": {f"S{i:02d}": ("tech" if i % 2 == 0 else "fin") for i in range(32)},
+            },
+        ),
+        ("D-G03", {"panel": _g_panel(), "k": 5}),
+        ("D-G04", {"panel": _g_panel()}),
+        ("D-G05", {"panel": _g_panel()}),
+        ("D-G06", {"panel": _g_panel()}),
+        ("D-G07", {"series": _prices(120), "d": 20}),
+        ("D-G07", {"series": _prices(120), "other": _prices(120, seed=9), "d": 20}),
+        ("D-G10", {"panel": _g_returns()}),
+        ("D-G11", {"panel": _g_returns()}),
+        ("D-G12", {"panel": _g_returns()}),
+        ("D-G13", {"panel": _g_returns()}),
+        ("D-G15", {"panel": _g_returns(), "k": 3}),
+        (
+            "D-G18",
+            {
+                "panel": _g_returns(),
+                "weights": {f"A{i:02d}": float(i + 1) for i in range(8)},
+                "benchmark_weights": {f"A{i:02d}": 1.0 for i in range(8)},
+                "sector": {f"A{i:02d}": ("tech" if i % 2 == 0 else "fin") for i in range(8)},
+            },
+        ),
+        ("D-G21", dict(zip(("factor", "target"), _g_macbeth(), strict=True))),
+        ("D-G24", {"panel": _g_returns(), "q": 0.2}),
+        # ---- J 组科研方法（D-J01…D-J29，24 个出口）----
+        ("D-J01", {"series": _j_walk()}),
+        ("D-J03", {"series": _j_walk(), "k": 3.0}),
+        ("D-J06", {"series": _j_walk()}),
+        ("D-J07", {"series": _j_walk()}),
+        ("D-J08", {"series": _j_walk()}),
+        ("D-J09", {"x": _j_walk(), "y": _j_partner(_j_walk())}),
+        ("D-J10", {"series": _j_walk(), "other": _j_partner(_j_walk())}),
+        ("D-J11", {"x": _j_walk(), "y": _j_partner(_j_walk()), "lag": 1}),
+        ("D-J12", {"series": _j_walk()}),
+        ("D-J13", {"series": _j_walk()}),
+        ("D-J14", {"series": _j_walk()}),
+        ("D-J15", {"series": _j_walk(), "components": [0.2] * 40}),
+        ("D-J16", {"x": _j_walk()}),
+        ("D-J16", {"x": _j_walk(), "y": _j_partner(_j_walk())}),
+        ("D-J17", {"series": _j_walk(), "effect_size": 0.3}),
+        ("D-J18", {"x": _j_walk(), "y": _j_partner(_j_walk())}),
+        ("D-J19", {"groups": _j_groups()}),
+        ("D-J20", {"X": {"X": _j_rows()}, "y": _j_target(_j_rows())}),
+        ("D-J21", {"X": {"X": _j_rows()}, "y": _j_target(_j_rows())}),
+        ("D-J23", {"X": {"X": _j_rows()}, "k": 3}),
+        ("D-J25", {"coords": _j_coords(), "values": _j_spatial_values()}),
+        ("D-J26", _j_survival()),
+        ("D-J27", {"time": _j_survival()["time"], "event": _j_survival()["event"]}),
+        (
+            "D-J28",
+            {"effects": _j_meta()[0], "se": _j_meta()[1]},
+        ),
+        ("D-J29", {"X": {"X": _j_missing_rows()}}),
     )
 
     for capability_id, kwargs in scenarios:
         calls.clear()
         out = run_capability(capability_id, **kwargs)
         assert out["ok"] is True, (capability_id, out["answer"])
+        jsonschema.validate(instance=out, schema=schema)
+        for gate_value in _nested_gates(out["data"]["capabilities"][capability_id]):
+            assert gate_value in GATE_METHOD, (capability_id, gate_value)
         blocks = out["data"]["capabilities"]
         declared_union = set()
         for block_id, block in blocks.items():

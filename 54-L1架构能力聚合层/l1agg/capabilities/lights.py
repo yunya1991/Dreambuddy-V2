@@ -79,6 +79,9 @@ _INNER_AXIS: Dict[str, str] = {
 }
 
 METHODS: List[str] = ["I37", "I39", "I36"]
+# I39 带通·周期分解的样本门槛（`fed_methods.i39_bandpass` 的 min_n），低于此不产周期事实
+I39_MIN_N = 750
+CYCLE_PERIOD_BAND: Tuple[float, float] = (30.0, 90.0)
 _UNAVAILABLE_STATUS = frozenset({"not_collected", "unavailable", "missing", "empty"})
 
 
@@ -111,8 +114,13 @@ def axes_from_direction(
     *,
     cycle: Optional[Mapping[str, Any]] = None,
     foresight_flags: Sequence[str] = (),
+    foresight_evidence: Optional[Mapping[str, Any]] = None,
 ) -> Dict[str, Dict[str, Any]]:
-    """把 `direction_rule.score/decide` 的轴值归一为点亮四轴事实（不重算）。"""
+    """把 `direction_rule.score/decide` 的轴值归一为点亮四轴事实（不重算）。
+
+    `foresight_evidence` 只做披露（I36 前瞻分布摘要），**不参与强度计算**：
+    `foresight.strength` 仍等于 `coherence` 轴归一（LT-AC3 一致性契约）。
+    """
     axes_raw = dict((scored or {}).get("axes") or {})
     weights = dict((scored or {}).get("axis_weights") or {})
     facts: Dict[str, Dict[str, Any]] = {}
@@ -123,7 +131,7 @@ def axes_from_direction(
             "axis_value": axes_raw.get(inner),
             "axis_weight": weights.get(inner),
             "flags": list(foresight_flags) if light_axis == "foresight" else [],
-            "evidence": {},
+            "evidence": dict(foresight_evidence or {}) if light_axis == "foresight" else {},
         }
     block = dict(cycle or {})
     facts["cycle"] = {
@@ -133,6 +141,59 @@ def axes_from_direction(
         "evidence": dict(block.get("evidence") or {}),
     }
     return facts
+
+
+def _number(value: Any) -> Optional[float]:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def cycle_from_bandpass(result: Mapping[str, Any], *, capability: str = "I39") -> Dict[str, Any]:
+    """I39 带通输出 → 点亮 `cycle` 轴块（零重算：只读 I39 已发布字段）。
+
+    `strength = clamp01(|cycle_tail| / amplitude)`——当前周期偏离中枢的程度相对
+    **自身振幅**（I39 的 `amplitude` 是 log 价差段的总体标准差），无外部常数；
+    `period_days` 缺失/越出 30–90 → 显式 flags，不伪造相位。
+    """
+    data = dict(result or {})
+    period = _number(data.get("period_days"))
+    amplitude = _number(data.get("amplitude"))
+    points = data.get("cycle") or ()
+    tail = None
+    if isinstance(points, (list, tuple)) and points:
+        last = points[-1]
+        tail = _number(last.get("value")) if isinstance(last, Mapping) else _number(last)
+
+    flags: List[str] = []
+    if period is None:
+        flags.append("period_missing")
+    elif not CYCLE_PERIOD_BAND[0] <= period <= CYCLE_PERIOD_BAND[1]:
+        flags.append("period_out_of_band")
+
+    strength: Optional[float] = None
+    if amplitude is None or amplitude <= 0.0:
+        flags.append("amplitude_unavailable")
+    elif tail is None:
+        flags.append("cycle_missing")
+    else:
+        strength = _clamp01(abs(tail) / amplitude)
+
+    return {
+        "strength": strength,
+        "capability": capability,
+        "flags": flags,
+        "evidence": {
+            "period_days": period,
+            "phase_deg": _number(data.get("phase_deg")),
+            "amplitude": amplitude,
+            "cycle_last": tail,
+            "cycle_slope": _number(data.get("cycle_slope")),
+            "n": data.get("n"),
+        },
+    }
 
 
 # ------------------------------------------------------------ 权重/阈值
@@ -323,6 +384,7 @@ def light_entry(
             entry.get("scored") or {},
             cycle=entry.get("cycle"),
             foresight_flags=[str(flag) for flag in entry.get("foresight_flags") or ()],
+            foresight_evidence=entry.get("foresight_evidence"),
         )
 
     axes_out: Dict[str, Dict[str, Any]] = {}

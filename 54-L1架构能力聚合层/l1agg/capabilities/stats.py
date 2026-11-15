@@ -30,6 +30,51 @@ from .envelope import (
     quality_for,
     unavailable,
 )
+from .eval_exports import discovery_query, recommend_relationship
+from .institutional import (
+    brinson_attribution,
+    co_movement,
+    covariance_shrinkage,
+    cross_section_profile,
+    dispersion_breadth,
+    equal_risk_contribution,
+    factor_crowding,
+    factor_exposure,
+    fama_macbeth,
+    group_neutralize,
+    inverse_volatility_weights,
+    pca_risk_decomposition,
+    quantile_portfolio,
+    risk_contribution,
+    sequence_operators,
+)
+from .news import news_digest
+from .research_stats import (
+    cluster_structure,
+    coherence_analysis,
+    complexity_measures,
+    equivalence_test,
+    group_comparison,
+    information_measures,
+    interval_estimate,
+    long_memory,
+    measurement_uncertainty,
+    meta_analysis,
+    missing_data_profile,
+    outlier_scan,
+    power_sample_size,
+    regression_diagnostics,
+    reliability_metrics,
+    robust_regression,
+    smoothing_filter,
+    spatial_autocorrelation,
+    spectral_envelope,
+    state_space_filter,
+    survival_analysis,
+    tail_risk_extreme,
+    transfer_entropy,
+    trend_test,
+)
 from .visual import build_visual
 
 INTENT_SEASONALITY = "seasonality_query"
@@ -74,6 +119,8 @@ MIN_CHANGE = 2
 MIN_CAGR = 2
 MIN_PERCENTILE = 30
 MIN_PERCENTILE_LOOKBACK = 60
+MIN_ZSCORE = 30
+MIN_ZSCORE_LOOKBACK = 60
 MIN_VOL_WINDOW = 60
 MIN_YOY_SAMPLE = 13
 MIN_MOM_SAMPLE = 2
@@ -4024,6 +4071,144 @@ def percentile_rank(
     )
 
 
+# ---------------- D-A05 z-score ----------------
+
+
+def zscore(
+    values: Sequence[Any],
+    *,
+    lookback: Optional[int] = None,
+    dates: Optional[Sequence[Any]] = None,
+    unit: Optional[str] = None,
+    name: str = "",
+    symbol: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """末值相对样本的 z-score（winsorize p1/p99），复用方法层 S26（D-A05 口径）。
+
+    只做窗口切片与参数校验，`μ/σ/截断` 全部由 S26 执行；`σ≈0` 时 z=None 并降级
+    `zero_variance`，不伪造 0。
+    """
+    px = _floats(values)
+    if len(px) != len(values) or not all(math.isfinite(value) for value in px):
+        return unavailable(
+            capability="D-A05",
+            intent=INTENT_PERCENTILE,
+            reason="序列包含无效值",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if dates and len(ds) != len(px):
+        return unavailable(
+            capability="D-A05",
+            intent=INTENT_PERCENTILE,
+            reason="日期轴与数值长度不一致或日期无效",
+            trace_id=trace_id,
+        )
+    if lookback is None:
+        k = len(px)
+    else:
+        try:
+            k = int(lookback)
+        except (TypeError, ValueError):
+            return unavailable(
+                capability="D-A05",
+                intent=INTENT_PERCENTILE,
+                reason="lookback 参数无效",
+                trace_id=trace_id,
+            )
+        if k < MIN_ZSCORE:
+            return unavailable(
+                capability="D-A05",
+                intent=INTENT_PERCENTILE,
+                reason=f"lookback {k} < {MIN_ZSCORE}，z-score 无统计意义",
+                trace_id=trace_id,
+            )
+
+    window = px[-k:]
+    if len(window) < MIN_ZSCORE:
+        return unavailable(
+            capability="D-A05",
+            intent=INTENT_PERCENTILE,
+            reason=f"有效样本 {len(window)} < {MIN_ZSCORE}",
+            trace_id=trace_id,
+        )
+    window_dates = ds[-len(window) :] if ds else []
+
+    result_call = _call("S26", window)
+    if result_call["gate"] != "ok":
+        return unavailable(
+            capability="D-A05",
+            intent=INTENT_PERCENTILE,
+            reason="z-score 计算失败",
+            trace_id=trace_id,
+        )
+    result = result_call["result"]
+
+    q = quality_for(
+        len(window),
+        min_n=MIN_ZSCORE,
+        span=_span(window_dates) if window_dates else None,
+        sources=["datacenter.percentile"],
+        align_method="trailing_sample",
+        timezone="UTC",
+    )
+    truncated = k > len(px)
+    short_lookback = len(window) < MIN_ZSCORE_LOOKBACK
+    zero_variance = result.get("z") is None
+    reasons = []
+    if truncated:
+        reasons.append("lookback_truncated")
+    if short_lookback:
+        reasons.append("short_lookback")
+    if zero_variance:
+        reasons.append("zero_variance")
+    if reasons:
+        q = _degrade(q, ",".join(reasons))
+
+    head = f"{symbol} " if symbol else ""
+    label = name or "序列"
+    unit_text = f" {unit}" if unit else ""
+    notes = []
+    if truncated:
+        notes.append(f"可用历史仅 {len(window)} 期，不足 lookback={k}")
+    if short_lookback:
+        notes.append("样本较短，z 值精度有限")
+    if zero_variance:
+        notes.append("样本方差接近 0，z 值不可计算")
+    note = f"；{'；'.join(notes)}" if notes else ""
+    z_text = "不可计算" if zero_variance else f"{result['z']:+.4f}"
+    answer = (
+        f"{head}{label} 末值相对最近 {len(window)} 期均值 {result['mean']:.6g}{unit_text}"
+        f" 的 z 值为 {z_text}（σ={result['std']:.6g}，p1/p99 截断后计算，n={result['n']}）"
+        f"{note}。{CAVEAT}。"
+    )
+    return build(
+        capability="D-A05",
+        intent=INTENT_PERCENTILE,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-A05": {
+                    "gate": "ok" if q["status"] == STATUS_GOOD else "partial",
+                    "methods": ["S26"],
+                    "zscore": result.get("z"),
+                    "mean": result.get("mean"),
+                    "std": result.get("std"),
+                    "winsorized": bool(result.get("winsorized")),
+                    "lookback": len(window),
+                    "sample_n": result.get("n"),
+                }
+            },
+            "params": {"min_n": MIN_ZSCORE, "lookback": k},
+            "name": name or None,
+            "symbol": symbol or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
 # ---------------- D-A06 年化波动率 ----------------
 
 
@@ -4558,7 +4743,7 @@ def rolling_correlation(
         len(xs),
         min_n=MIN_ROLLING_CORR,
         span=_span(ds),
-        sources=["datacenter.series"],
+        sources=["datacenter.correlation"],
         align_method="paired_complete_case",
         timezone="UTC",
     )
@@ -4675,7 +4860,7 @@ def lead_lag_correlation(
         len(xs),
         min_n=MIN_CCF,
         span=_span(ds),
-        sources=["datacenter.series"],
+        sources=["datacenter.correlation"],
         align_method="paired_complete_case",
         timezone="UTC",
     )
@@ -6110,6 +6295,7 @@ _EXECUTORS = {
     "D-E17": class_board,
     "D-E18": flow_graph,
     "D-E19": lights,
+    "D-E20": news_digest,
     "D-G14": ewma_risk,
     "D-G16": portfolio_risk,
     "D-G19": ic_profile,
@@ -6127,6 +6313,7 @@ _EXECUTORS = {
     "D-A02": change_rate,
     "D-A03": cagr,
     "D-A04": percentile_rank,
+    "D-A05": zscore,
     "D-A06": annualized_volatility,
     "D-A07": drawdown,
     "D-A08": yoy_change,
@@ -6141,6 +6328,47 @@ _EXECUTORS = {
     "D-B09": ath_drawdown,
     "D-G08": momentum_12_1,
     "D-G09": vol_target_scale,
+    "D-K01": recommend_relationship,
+    "D-K02": discovery_query,
+    "D-G01": cross_section_profile,
+    "D-G02": group_neutralize,
+    "D-G03": quantile_portfolio,
+    "D-G04": dispersion_breadth,
+    "D-G05": co_movement,
+    "D-G06": factor_exposure,
+    "D-G07": sequence_operators,
+    "D-G10": inverse_volatility_weights,
+    "D-G11": equal_risk_contribution,
+    "D-G12": risk_contribution,
+    "D-G13": covariance_shrinkage,
+    "D-G15": pca_risk_decomposition,
+    "D-G18": brinson_attribution,
+    "D-G21": fama_macbeth,
+    "D-G24": factor_crowding,
+    "D-J01": trend_test,
+    "D-J03": outlier_scan,
+    "D-J06": smoothing_filter,
+    "D-J07": spectral_envelope,
+    "D-J08": state_space_filter,
+    "D-J09": coherence_analysis,
+    "D-J10": information_measures,
+    "D-J11": transfer_entropy,
+    "D-J12": complexity_measures,
+    "D-J13": long_memory,
+    "D-J14": tail_risk_extreme,
+    "D-J15": measurement_uncertainty,
+    "D-J16": interval_estimate,
+    "D-J17": power_sample_size,
+    "D-J18": equivalence_test,
+    "D-J19": group_comparison,
+    "D-J20": regression_diagnostics,
+    "D-J21": robust_regression,
+    "D-J23": cluster_structure,
+    "D-J25": spatial_autocorrelation,
+    "D-J26": survival_analysis,
+    "D-J27": reliability_metrics,
+    "D-J28": meta_analysis,
+    "D-J29": missing_data_profile,
 }
 
 
@@ -6151,6 +6379,47 @@ _EXECUTOR_INTENTS = {
     "D-E06": INTENT_CORRELATION,
     "D-E11": INTENT_CROSS,
     "D-A07": INTENT_DRAWDOWN,
+    "D-K01": "relationship_recommend",
+    "D-K02": "discovery_query",
+    "D-G01": "cross_section_query",
+    "D-G02": "cross_section_query",
+    "D-G03": "cross_section_query",
+    "D-G04": "cross_section_query",
+    "D-G05": "cross_section_query",
+    "D-G06": "factor_model_query",
+    "D-G07": "sequence_operator",
+    "D-G10": "risk_allocation_query",
+    "D-G11": "risk_allocation_query",
+    "D-G12": "risk_allocation_query",
+    "D-G13": "risk_allocation_query",
+    "D-G15": "risk_allocation_query",
+    "D-G18": "attribution_query",
+    "D-G21": "cross_section_regression",
+    "D-G24": "crowding_query",
+    "D-J01": "trend_test",
+    "D-J03": "outlier_query",
+    "D-J06": "signal_decomposition",
+    "D-J07": "signal_decomposition",
+    "D-J08": "signal_decomposition",
+    "D-J09": "signal_decomposition",
+    "D-J10": "information_query",
+    "D-J11": "information_query",
+    "D-J12": "complexity_query",
+    "D-J13": "complexity_query",
+    "D-J14": "extreme_value",
+    "D-J15": "uncertainty_query",
+    "D-J16": "uncertainty_query",
+    "D-J17": "experiment_design",
+    "D-J18": "experiment_design",
+    "D-J19": "group_comparison",
+    "D-J20": "regression_diagnostic",
+    "D-J21": "regression_diagnostic",
+    "D-J23": "clustering_query",
+    "D-J25": "spatial_query",
+    "D-J26": "survival_query",
+    "D-J27": "reliability_query",
+    "D-J28": "meta_analysis",
+    "D-J29": "missing_data_query",
 }
 
 

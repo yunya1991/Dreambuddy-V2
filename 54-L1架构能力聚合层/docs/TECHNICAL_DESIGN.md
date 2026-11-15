@@ -1,6 +1,6 @@
 # 54 总技术文档 — 数据 → 统计 → 关系能力地图
 
-- **版本**: v2.54 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 总技术文档（v2.54 上线 #35 后半句：`dreambuddy-mers.timer` 每日 08:20 CST 跑全量 MERS 网格（29 job / 5,220 单元），`Persistent=true` 补跑漏窗，`--prune-days 90` 只清 `relationship_eval` 历史行、`relationship_state` 永久保留；新增 `RelationshipRegistry.prune_before()` 与回归测试，unit 文件入库 `deploy/systemd/`；v2.53 关闭 §6.4.5 #35 全量真实验收——29 job / 5,220 单元（20 资产 `close_1d` + 9 个宏观/情绪/资金费率指标对齐 BTC 日轴），BH-FDR 后 `gate_pass=1,057`（20.25%），`method_gate` = ok 3,654 / not_applicable 1,566 / **failed 0**，三轮 `gate_pass` 完全一致且每轮内部复跑 `added=0`，连续三轮通过使 `stable=1,057`、其余 4,163 维持 candidate；验收中发现并修复 B11 空分桶 `float(None)` 崩溃（failed 95→0，commit `2b5b8b8a59`），可执行出口保持 **52 个**；v2.52 新增 D-A05 z-score 出口（`capabilities/stats.py::zscore`，复用 S26，`datacenter.percentile` scope 声明落地），可执行出口 51 → **52 个**；v2.51 新增 D-E20 新闻统一出口（L1S-03，`capabilities/news.py`，只读 `social_volume` 观测成统一信封 + 禁用词自检），可执行出口 50 → **51 个**；v2.50 关闭 §6.4.4 数据阻塞表 #32–#34：C11 节前效应落地（节假日由日期轴「工作日缺失」派生，接入 D-E04）、D-G25 尾部相关接线（复用 P13，下行/上行双尾 + 尾部共现样本门禁）、D-J05 周期/频谱接线（T25/T26/C14 + 历史覆盖周期数门禁），可执行出口 48 → **50 个**；v2.49 将 D-E14 二维状态按 Tier B/D 兜底落地：4×4=A（≥4,000 日）/ 3×3=B（≥2,250 日）/ 2×2=D（≥1,000 日），每格非重叠 ≥250，三档均不达标回退一维并披露 `insufficient_2d`，可执行出口保持 **48 个**；v2.48 登记 L1 交易层新增的 D-E15–D-E19 五个能力出口（趋势曲线 / 聚合曲线 / 分组看板 / 资金流向导图 / 四轴五态点亮投影），可执行出口 44 → **48 个**；v2.47 完成前端 D-A 组 14 个及 D-B08/D-B09/D-G08/D-G09 共 18 个 cue 分派，可执行出口保持 **44 个**；v2.46 接入 D-G09 波动率目标换算出口（P02），可执行出口 **44 个**；v2.45 接入 D-G08 12-1 动量出口（F14 窗口切片），可执行出口 **43 个**；v2.44 接入 D-B09 距 ATH 回撤出口（复用 D20/D21），可执行出口 **42 个**；v2.43 接入 D-B08 趋势斜率出口（T08/T09），可执行出口 **41 个**；v2.42 接入 D-A16 稳定币规模增速出口（S16 多窗口），可执行出口 **40 个**；v2.41 接入 D-A15 ETF 净流入滚动和出口（S20 滚动均值 × 窗口），可执行出口 **39 个**；v2.40 接入 D-A13 极端事件频率出口（S11 阈值 + 计数），可执行出口 **38 个**；v2.39 接入 D-A12 领先滞后相关出口（M11/M12），可执行出口 **37 个**；v2.38 接入 D-A11 双序列滚动相关出口（M04），可执行出口 **36 个**；v2.37 接入 D-A10 实际利率出口（S16 派生），可执行出口 **35 个**；v2.36 接入 D-A09 环比出口（S16），可执行出口 **34 个**；v2.35 接入 D-A08 同比出口（S16），可执行出口 **33 个**；v2.34 接入 D-A07 回撤出口（复用 D-E10 的 D20/D21 执行器），可执行出口 **32 个**；v2.33 接入 D-A06 年化波动率出口（F05），可执行出口 **31 个**；v2.32 接入 D-A04 历史分位出口（S25），可执行出口 **30 个**；v2.31 接入 D-A03 CAGR 出口（S19），可执行出口 **29 个**；v2.30 接入 D-A02 变化率出口（S15/S16），可执行出口 **28 个**；v2.29 接入 D-A01 历史序列出口（S25），可执行出口 **27 个**；v2.28 接入 D-J30 PIT/release_ts 全局出口（SC90/R02），可执行出口 **26 个**；v2.27 接入 D-G14 EWMA 波动/协方差出口（P07/T19），可执行出口 **25 个**；v2.26 接入 D-J24 相关网络与社区发现出口（M05/M21/SC71/SC72），可执行出口 **24 个**；v2.25 接入 D-J22 PCA/SVD/因子分析出口（M19/M20/SC31/SC32/SC33），可执行出口 **23 个**；v2.24 接入 D-G20 分位组合与单调性检验出口（B11/B16/Q04），可执行出口 **22 个**；v2.23 接入 D-G19 IC/ICIR/衰减表出口（B13/B14/B15/Q01/Q02/Q03），可执行出口 **21 个**；v2.22 接入 D-G16 组合 VaR/CVaR 出口（D17/D18/P09/P10），可执行出口 **20 个**；v2.21 接入 D-J02 季节强度与调整出口（C13/T10/SC91），可执行出口 **19 个**；v2.20 接入 D-J04 变点检测出口（T22/T23/SC49/SC50/SC51），可执行出口 **18 个**；v2.19 将 B06 二维交叉表纳入 D-E07，输出状态相邻期联合计数底表并与 B07 行归一化转移概率对齐，可执行出口保持 **17 个**；v2.18 接入 D-G23 事件窗均值调整 CAR + Patell/BMP（Q10/Q11），可执行出口 **17 个**；v2.17 接入 D-E14 一维相关状态→h=1/2 前瞻条件分布（R02 PIT 状态轴共享 B05/B10/R01/R08），可执行出口 **16 个**；v2.16 接入 D-E04 事件研究窗（F19/F21/F23）与 D-E09 计数与共现（R09/B17/R10）能力出口，可执行出口 **14 个**，事件数 <30 降级 partial 但保留 CAR/胜率；同步补齐前端 D-A14/D-G22 cue 分派与 D-E14 的 T-1 扩样本（云端 20 资产 / 54,653 行 `close_1d`，1 维 4 桶 @h=1 全部达标）；v2.15 冻结 D-A14/F26 的 `level` 阈值为 A 分位法（分值历史分布 p20/p60/p80 → 极低/低/偏高/高），接入 D-A14 能力出口；v2.14 接入 D-G22 显著性出口（Q06 HAC t + Q07 Deflated Sharpe），解除 h>1 重叠前瞻收益的推断阻塞；v2.13 打通宏观事件历史回填通道，为 D-E04/D-E09 解除「事件表仅 16 行」的数据阻塞；v2.12 接入 D-E12/R18 时空对齐切片；MERS S3 内部固定网格、BH-FDR、状态机与幂等注册表已交付，S5 对外推荐仍未开放；54-L1 测试 **909 通过 / 0 失败**（v2.27 全量回归；v2.16 同时修复既有日期边界测试的时间炸弹），audit **386/386 PASS**、验证覆盖率 **66.15%**；v2.11 接入 D-E11/C18 与 D-E01；v2.10 D-E05 双序列与多资产矩阵 TopK 全接线、D-E06 全 lag BH-FDR、manifest 真实执行覆盖与 audit 验证覆盖报告；v2.9 D-E02 能力出口接线与 T0.5/A8 首版交付；v2.8 方法层全部落地：`REGISTRY` 387 条全登记、`implemented=true` **386**，仅 C11 因缺交易日历不可用；v2.7 注册表放开调研族前缀并完成占位登记；v2.6 调研对齐与路线收口）
+- **版本**: v2.61 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 总技术文档（v2.61 新增 §7.9 真数据覆盖表：本地只读快照 28 个注册资产中 24 个可用（≥250 期），AMD/GEV/SPCX/SKHYNIX 为 0 样本；93 条能力 min_n 档位与资产数闭合，lights 的 250 门槛刚好满足；5 张衍生品明细表为空、`mm_events` 仅有 `symbols` 文本列等口径缺口已登记；v2.60 关闭 K-09/K-10：`envelope.GATE_METHOD` 单一事实源声明方法级 gate 集合（能力级 6 值 + `skipped`/`calculation_failed`/`empty`/`rejected`），执行覆盖测试对 93 场景逐块递归校验；`data` 关闭 `additionalProperties` 并枚举实际使用的 12 个键；K-12 仅开槽 `quality.snapshot_at`，能力层不伪造快照时点；v2.59 关闭 K-01/K-08：`envelope.build()` 统一为能力块补 `gate`（缺省 `ok`，不覆盖既有值），一处收敛全部 93 出口；schema 能力级 `gate` 枚举补 `partial`/`degraded` 并注明方法级另有 `skipped`/`calculation_failed`/`empty`；执行覆盖测试内对 93 个场景逐个 `jsonschema.validate`（此前只校验 12 个手选出口，故 G/J 组缺 `gate` 未被发现）；新增回归测试 `test_every_capability_block_declares_gate`；v2.58 新增 §7「统计层 → 图表输出 → 信号层」串行推进顺序与接口冻结：三张接口表（统计→图表 / 图表→信号 / 信号→回测评估）+ 12 项信号层前置阻塞清单 + G-IF1/G-IF2/G-IF3 三个冻结点；实测发现 G/J 组 39 个出口的能力块缺 `gate`（违反契约，因 schema 校验测试只覆盖 12 个手选出口而未暴露）；v2.57 接入 J 组 24 个科研统计出口（D-J01/03/06/07/08/09/10/11/12/13/14/15/16/17/18/19/20/21/23/25/26/27/28/29，`capabilities/research_stats.py`，全部 `method_binding: compute`），manifest 69 → **93 条**、可执行出口 69 → **93 个**；同批补齐 `datacenter.panel`（21 项）与 `datacenter.spatial_frame`（D-J25）两个 scope 声明，并新增 `tests/test_research_stats.py`（43 passed）替换不被 pytest 收集的 `_smoke_j.py`；v2.56 接入 G 组 15 个机构统计出口（D-G01/02/03/04/05/06/07/10/11/12/13/15/18/21/24，`capabilities/institutional.py`，全部 `method_binding: compute`），manifest 54 → **69 条**、可执行出口 54 → **69 个**；v2.55 新增 D-K01/D-K02 评估层只读出口（manifest 52 → **54 条**）：D-K01 读 `relationship_registry.db` 取 Top3、D-K02 读 `reports/discovery/**` 最近一期候选，均只读不重算；同批落地 `config/discovery_space.yaml` 预注册搜索空间 + `l1agg/discovery.py` 冻结项校验；v2.54 上线 #35 后半句：`dreambuddy-mers.timer` 每日 08:20 CST 跑全量 MERS 网格（29 job / 5,220 单元），`Persistent=true` 补跑漏窗，`--prune-days 90` 只清 `relationship_eval` 历史行、`relationship_state` 永久保留；新增 `RelationshipRegistry.prune_before()` 与回归测试，unit 文件入库 `deploy/systemd/`；v2.53 关闭 §6.4.5 #35 全量真实验收——29 job / 5,220 单元（20 资产 `close_1d` + 9 个宏观/情绪/资金费率指标对齐 BTC 日轴），BH-FDR 后 `gate_pass=1,057`（20.25%），`method_gate` = ok 3,654 / not_applicable 1,566 / **failed 0**，三轮 `gate_pass` 完全一致且每轮内部复跑 `added=0`，连续三轮通过使 `stable=1,057`、其余 4,163 维持 candidate；验收中发现并修复 B11 空分桶 `float(None)` 崩溃（failed 95→0，commit `2b5b8b8a59`），可执行出口保持 **52 个**；v2.52 新增 D-A05 z-score 出口（`capabilities/stats.py::zscore`，复用 S26，`datacenter.percentile` scope 声明落地），可执行出口 51 → **52 个**；v2.51 新增 D-E20 新闻统一出口（L1S-03，`capabilities/news.py`，只读 `social_volume` 观测成统一信封 + 禁用词自检），可执行出口 50 → **51 个**；v2.50 关闭 §6.4.4 数据阻塞表 #32–#34：C11 节前效应落地（节假日由日期轴「工作日缺失」派生，接入 D-E04）、D-G25 尾部相关接线（复用 P13，下行/上行双尾 + 尾部共现样本门禁）、D-J05 周期/频谱接线（T25/T26/C14 + 历史覆盖周期数门禁），可执行出口 48 → **50 个**；v2.49 将 D-E14 二维状态按 Tier B/D 兜底落地：4×4=A（≥4,000 日）/ 3×3=B（≥2,250 日）/ 2×2=D（≥1,000 日），每格非重叠 ≥250，三档均不达标回退一维并披露 `insufficient_2d`，可执行出口保持 **48 个**；v2.48 登记 L1 交易层新增的 D-E15–D-E19 五个能力出口（趋势曲线 / 聚合曲线 / 分组看板 / 资金流向导图 / 四轴五态点亮投影），可执行出口 44 → **48 个**；v2.47 完成前端 D-A 组 14 个及 D-B08/D-B09/D-G08/D-G09 共 18 个 cue 分派，可执行出口保持 **44 个**；v2.46 接入 D-G09 波动率目标换算出口（P02），可执行出口 **44 个**；v2.45 接入 D-G08 12-1 动量出口（F14 窗口切片），可执行出口 **43 个**；v2.44 接入 D-B09 距 ATH 回撤出口（复用 D20/D21），可执行出口 **42 个**；v2.43 接入 D-B08 趋势斜率出口（T08/T09），可执行出口 **41 个**；v2.42 接入 D-A16 稳定币规模增速出口（S16 多窗口），可执行出口 **40 个**；v2.41 接入 D-A15 ETF 净流入滚动和出口（S20 滚动均值 × 窗口），可执行出口 **39 个**；v2.40 接入 D-A13 极端事件频率出口（S11 阈值 + 计数），可执行出口 **38 个**；v2.39 接入 D-A12 领先滞后相关出口（M11/M12），可执行出口 **37 个**；v2.38 接入 D-A11 双序列滚动相关出口（M04），可执行出口 **36 个**；v2.37 接入 D-A10 实际利率出口（S16 派生），可执行出口 **35 个**；v2.36 接入 D-A09 环比出口（S16），可执行出口 **34 个**；v2.35 接入 D-A08 同比出口（S16），可执行出口 **33 个**；v2.34 接入 D-A07 回撤出口（复用 D-E10 的 D20/D21 执行器），可执行出口 **32 个**；v2.33 接入 D-A06 年化波动率出口（F05），可执行出口 **31 个**；v2.32 接入 D-A04 历史分位出口（S25），可执行出口 **30 个**；v2.31 接入 D-A03 CAGR 出口（S19），可执行出口 **29 个**；v2.30 接入 D-A02 变化率出口（S15/S16），可执行出口 **28 个**；v2.29 接入 D-A01 历史序列出口（S25），可执行出口 **27 个**；v2.28 接入 D-J30 PIT/release_ts 全局出口（SC90/R02），可执行出口 **26 个**；v2.27 接入 D-G14 EWMA 波动/协方差出口（P07/T19），可执行出口 **25 个**；v2.26 接入 D-J24 相关网络与社区发现出口（M05/M21/SC71/SC72），可执行出口 **24 个**；v2.25 接入 D-J22 PCA/SVD/因子分析出口（M19/M20/SC31/SC32/SC33），可执行出口 **23 个**；v2.24 接入 D-G20 分位组合与单调性检验出口（B11/B16/Q04），可执行出口 **22 个**；v2.23 接入 D-G19 IC/ICIR/衰减表出口（B13/B14/B15/Q01/Q02/Q03），可执行出口 **21 个**；v2.22 接入 D-G16 组合 VaR/CVaR 出口（D17/D18/P09/P10），可执行出口 **20 个**；v2.21 接入 D-J02 季节强度与调整出口（C13/T10/SC91），可执行出口 **19 个**；v2.20 接入 D-J04 变点检测出口（T22/T23/SC49/SC50/SC51），可执行出口 **18 个**；v2.19 将 B06 二维交叉表纳入 D-E07，输出状态相邻期联合计数底表并与 B07 行归一化转移概率对齐，可执行出口保持 **17 个**；v2.18 接入 D-G23 事件窗均值调整 CAR + Patell/BMP（Q10/Q11），可执行出口 **17 个**；v2.17 接入 D-E14 一维相关状态→h=1/2 前瞻条件分布（R02 PIT 状态轴共享 B05/B10/R01/R08），可执行出口 **16 个**；v2.16 接入 D-E04 事件研究窗（F19/F21/F23）与 D-E09 计数与共现（R09/B17/R10）能力出口，可执行出口 **14 个**，事件数 <30 降级 partial 但保留 CAR/胜率；同步补齐前端 D-A14/D-G22 cue 分派与 D-E14 的 T-1 扩样本（云端 20 资产 / 54,653 行 `close_1d`，1 维 4 桶 @h=1 全部达标）；v2.15 冻结 D-A14/F26 的 `level` 阈值为 A 分位法（分值历史分布 p20/p60/p80 → 极低/低/偏高/高），接入 D-A14 能力出口；v2.14 接入 D-G22 显著性出口（Q06 HAC t + Q07 Deflated Sharpe），解除 h>1 重叠前瞻收益的推断阻塞；v2.13 打通宏观事件历史回填通道，为 D-E04/D-E09 解除「事件表仅 16 行」的数据阻塞；v2.12 接入 D-E12/R18 时空对齐切片；MERS S3 内部固定网格、BH-FDR、状态机与幂等注册表已交付，S5 对外推荐仍未开放；54-L1 测试 **909 通过 / 0 失败**（v2.27 全量回归；v2.16 同时修复既有日期边界测试的时间炸弹），audit **386/386 PASS**、验证覆盖率 **66.15%**；v2.11 接入 D-E11/C18 与 D-E01；v2.10 D-E05 双序列与多资产矩阵 TopK 全接线、D-E06 全 lag BH-FDR、manifest 真实执行覆盖与 audit 验证覆盖报告；v2.9 D-E02 能力出口接线与 T0.5/A8 首版交付；v2.8 方法层全部落地：`REGISTRY` 387 条全登记、`implemented=true` **386**，仅 C11 因缺交易日历不可用；v2.7 注册表放开调研族前缀并完成占位登记；v2.6 调研对齐与路线收口）
 - **上游**: `SPEC-54-L1架构能力聚合层.md`（ADR/契约/路线）、`docs/METHOD_LIBRARY.md`（方法 SSoT）
 - **下游**: `3.1-FRONTEND/scripts/l1_route_signal.py`（L1 路由）、`34-前端应用训练系统/core/l0_foundation.py`（L0 scope）、`/api/fundamental/**`
 - **定位**: 本文是 54 的**总技术文档**——上半部（§0）回答「有哪些问题域、每个问题域用什么方法、现在缺什么」；下半部（§1–§6）是能力登记册（ID/依赖/字段/优先级/状态）。
@@ -14,7 +14,7 @@
 | 文档 | 角色 | 唯一负责的内容 | 当前版本 |
 |---|---|---|---|
 | [SPEC-54-L1架构能力聚合层.md](../SPEC-54-L1架构能力聚合层.md) | 架构与契约 | ADR、scope 出入参、门禁、路线（S1–S5）、MERS/Discovery | v1.47 |
-| **本文 TECHNICAL_DESIGN.md** | **总技术文档 + 能力登记** | 六类问题地图、四层分工（§0.5）、能力 ID `D-*`、状态列、整体进度（§6.2） | **v2.50** |
+| **本文 TECHNICAL_DESIGN.md** | **总技术文档 + 能力登记** | 六类问题地图、四层分工（§0.5）、能力 ID `D-*`、状态列、整体进度（§6.2）、**串行推进顺序与接口冻结（§7）**、**真数据覆盖表（§7.9）** | **v2.61** |
 | [METHOD_LIBRARY.md](./METHOD_LIBRARY.md) | 方法 SSoT | 方法 ID（S/D/T/C/I/M/B/F/H/R/X/O/P/Q/SC）、口径冻结（§16）、数据前提（§15） | v1.19 |
 | [RESEARCH-TREND-PERSISTENCE-MODELS.md](./RESEARCH-TREND-PERSISTENCE-MODELS.md) | 调研 | 延续性三层拆解、Tier A/B/C、T 阶段 | v1.2 |
 | [RESEARCH-INSTITUTIONAL-L1-METHODS.md](./RESEARCH-INSTITUTIONAL-L1-METHODS.md) | 调研补强 | 机构方法（X/O/P/Q） | — |
@@ -341,19 +341,21 @@ L1 意图（TS/Python 双端注册表）
 >
 > 全量 `method_audit.py --scope all` 已于 2026-11-15 13:21 UTC 重跑并写入 [docs/method_audit.json](./method_audit.json)：**implemented 392 / passed 392 / failed 0**，`catalog_total=243`、`research_catalog_total=149`、`registered_total=392`。`l1agg.eval.harness.audit()` 同步为 **243/243 PASS**；六类检查共 **1,458** 项，真实执行 715、不适用 476、缺失 267，**适用检查覆盖率 72.81%**（meta 243/243、gate 243/243、determinism 117/243、synthetic 104/243、null 3/5 适用、reference 5/5 适用）。PASS 不等于完整验证覆盖；上段 154 仅为 v2.3 时点记录，现已被完全包含。
 
-**能力层接线（v2.53 补 D-K01/D-K02 评估层只读出口；v2.52 补 D-A05；v2.51 补 D-E20；v2.50 补 D-G25/D-J05 并扩展 D-E04 节前分支；v2.48 补 D-E15～D-E19；v2.46 补 D-G09；v2.45 补 D-G08；v2.44 补 D-B09；v2.43 补 D-B08；v2.42 补 D-A16；v2.41 补 D-A15；v2.40 补 D-A13；v2.39 补 D-A12；v2.38 补 D-A11；v2.37 补 D-A10；v2.36 补 D-A09；v2.35 补 D-A08；v2.34 补 D-A07；v2.33 补 D-A06；v2.32 补 D-A04；v2.31 补 D-A03；v2.30 补 D-A02；v2.29 补 D-A01；v2.28 补 D-J30；v2.27 补 D-G14；v2.26 补 D-J24；v2.25 补 D-J22；v2.24 补 D-G20；v2.23 补 D-G19；v2.22 补 D-G16；v2.21 补 D-J02；v2.20 补 D-J04；v2.19 补 D-E07/B06；v2.18 补 D-G23；v2.17 补 D-E14；v2.16 补 D-E04/D-E09；v2.15 接入 D-A14；v2.14 扩到 G 组）**：`l1agg/capabilities/` 当前共有 **54 个可执行出口**（A 组 D-A01/D-A02/D-A03/D-A04/D-A05/D-A06/D-A07/D-A08/D-A09/D-A10/D-A11/D-A12/D-A13/D-A14/D-A15/D-A16 + B 组 D-B08/D-B09 + E 组 19 个（含 D-E20 新闻统一出口）+ G 组 D-G08/D-G09/D-G14/D-G16/D-G19/D-G20/D-G22/D-G23/D-G25 + J 组 D-J02/D-J04/D-J05/D-J22/D-J24/D-J30 + K 组 D-K01/D-K02），端到端产出 `CapabilityResult`，并对跨条件分支累计的真实方法调用做 manifest 覆盖校验：
+**能力层接线（v2.57 补 J 组 24 个科研统计出口；v2.56 补 G 组 15 个机构统计出口；v2.53 补 D-K01/D-K02 评估层只读出口；v2.52 补 D-A05；v2.51 补 D-E20；v2.50 补 D-G25/D-J05 并扩展 D-E04 节前分支；v2.48 补 D-E15～D-E19；v2.46 补 D-G09；v2.45 补 D-G08；v2.44 补 D-B09；v2.43 补 D-B08；v2.42 补 D-A16；v2.41 补 D-A15；v2.40 补 D-A13；v2.39 补 D-A12；v2.38 补 D-A11；v2.37 补 D-A10；v2.36 补 D-A09；v2.35 补 D-A08；v2.34 补 D-A07；v2.33 补 D-A06；v2.32 补 D-A04；v2.31 补 D-A03；v2.30 补 D-A02；v2.29 补 D-A01；v2.28 补 D-J30；v2.27 补 D-G14；v2.26 补 D-J24；v2.25 补 D-J22；v2.24 补 D-G20；v2.23 补 D-G19；v2.22 补 D-G16；v2.21 补 D-J02；v2.20 补 D-J04；v2.19 补 D-E07/B06；v2.18 补 D-G23；v2.17 补 D-E14；v2.16 补 D-E04/D-E09；v2.15 接入 D-A14；v2.14 扩到 G 组）**：`l1agg/capabilities/` 当前共有 **93 个可执行出口**（A 组 D-A01/D-A02/D-A03/D-A04/D-A05/D-A06/D-A07/D-A08/D-A09/D-A10/D-A11/D-A12/D-A13/D-A14/D-A15/D-A16 + B 组 D-B08/D-B09 + E 组 19 个（含 D-E20 新闻统一出口）+ G 组 D-G01/D-G02/D-G03/D-G04/D-G05/D-G06/D-G07/D-G08/D-G09/D-G10/D-G11/D-G12/D-G13/D-G14/D-G15/D-G16/D-G18/D-G19/D-G20/D-G21/D-G22/D-G23/D-G24/D-G25 + J 组 D-J01/D-J02/D-J03/D-J04/D-J05/D-J06/D-J07/D-J08/D-J09/D-J10/D-J11/D-J12/D-J13/D-J14/D-J15/D-J16/D-J17/D-J18/D-J19/D-J20/D-J21/D-J22/D-J23/D-J24/D-J25/D-J26/D-J27/D-J28/D-J29/D-J30 + K 组 D-K01/D-K02），端到端产出 `CapabilityResult`，并对跨条件分支累计的真实方法调用做 manifest 覆盖校验：
 
 | 文件 | 职责 |
 |---|---|
-| `capability_manifest.yaml` | 能力 → 意图 / scope / executor / 方法 / `min_n` 的**唯一事实源**（54 条） |
+| `capability_manifest.yaml` | 能力 → 意图 / scope / executor / 方法 / `min_n` 的**唯一事实源**（93 条） |
 | `l1agg/capabilities/manifest.py` | 加载 + 绑定校验 + `validate_execution`：跨条件分支累计真实成功调用，拒绝未绑定调用与声明但从未执行的方法 |
 | `l1agg/eval/harness.py` | 六类检查按 `executed/missing/not_applicable` 统计；方法级、检查级与全局覆盖率进入 JSON/CLI 报告，PASS 不再冒充全覆盖 |
 | `l1agg/capabilities/envelope.py` | 统一信封组装 + 契约守卫（`quality` 只在顶层、partial 必带 `degraded_reason`、`answer` 非空） |
-| `l1agg/capabilities/stats.py` | 48 个编排函数：`conditional_return` / `conditional_distribution` / `drawdown`（D-E10 与 D-A07 共用，注入 `capability_id`） / `seasonality` / `percentile_forward` / `state_transition` / `correlation` / `conditional_ic` / `alignment_slice` / `portfolio_risk` / `ic_profile` / `quantile_monotonic` / `hac_significance` / `crowding` / `event_study`（含 D-E04 节前效应 `pre_holiday` 分支） / `event_car_significance` / `seasonal_adjustment` / `change_point` / `tail_dependence` / `cycle_spectrum` / `count_series` / `trend` / `dimension_reduction` / `correlation_network` / `ewma_risk` / `pit_alignment` / `history_series` / `change_rate` / `cagr` / `percentile_rank` / `zscore` / `annualized_volatility` / `yoy_change` / `mom_change` / `real_rate` / `rolling_correlation` / `lead_lag_correlation` / `extreme_frequency` / `etf_flow_rolling` / `stablecoin_growth` / `slope_trend` / `ath_drawdown` / `momentum_12_1` / `vol_target_scale` / `aggregate_curve` / `class_board` / `flow_graph` / `lights` + `run_capability(id, **kw)` 调度 |
+| `l1agg/capabilities/stats.py` | 87 个编排函数（本文件自实现 48 + 复用 `institutional.py` 15 + 复用 `research_stats.py` 24）：`conditional_return` / `conditional_distribution` / `drawdown`（D-E10 与 D-A07 共用，注入 `capability_id`） / `seasonality` / `percentile_forward` / `state_transition` / `correlation` / `conditional_ic` / `alignment_slice` / `portfolio_risk` / `ic_profile` / `quantile_monotonic` / `hac_significance` / `crowding` / `event_study`（含 D-E04 节前效应 `pre_holiday` 分支） / `event_car_significance` / `seasonal_adjustment` / `change_point` / `tail_dependence` / `cycle_spectrum` / `count_series` / `trend` / `dimension_reduction` / `correlation_network` / `ewma_risk` / `pit_alignment` / `history_series` / `change_rate` / `cagr` / `percentile_rank` / `zscore` / `annualized_volatility` / `yoy_change` / `mom_change` / `real_rate` / `rolling_correlation` / `lead_lag_correlation` / `extreme_frequency` / `etf_flow_rolling` / `stablecoin_growth` / `slope_trend` / `ath_drawdown` / `momentum_12_1` / `vol_target_scale` / `aggregate_curve` / `class_board` / `flow_graph` / `lights` + `run_capability(id, **kw)` 调度 |
 | `l1agg/capabilities/eval_exports.py` | 2 个评估层只读出口：`recommend_relationship`（D-K01 读 `relationship_registry.db`）/ `discovery_query`（D-K02 读 `reports/discovery/**`）；只读、不重算、不写库，`method_binding: display` |
+| `l1agg/capabilities/institutional.py` | 15 个机构统计出口：`cross_section_profile`（D-G01）/ `group_neutralize`（D-G02）/ `quantile_portfolio`（D-G03）/ `dispersion_breadth`（D-G04）/ `co_movement`（D-G05）/ `factor_exposure`（D-G06）/ `sequence_operators`（D-G07）/ `inverse_volatility_weights`（D-G10）/ `equal_risk_contribution`（D-G11）/ `risk_contribution`（D-G12）/ `covariance_shrinkage`（D-G13）/ `pca_risk_decomposition`（D-G15）/ `brinson_attribution`（D-G18）/ `fama_macbeth`（D-G21）/ `factor_crowding`（D-G24）；一律经 `l1agg.methods.run` 调 X/O/P/Q 族方法，零重算 |
+| `l1agg/capabilities/research_stats.py` | 24 个科研统计出口：`trend_test`（D-J01）/ `outlier_scan`（D-J03）/ `smoothing_filter`（D-J06）/ `spectral_envelope`（D-J07）/ `state_space_filter`（D-J08）/ `coherence_analysis`（D-J09）/ `information_measures`（D-J10）/ `transfer_entropy`（D-J11）/ `complexity_measures`（D-J12）/ `long_memory`（D-J13）/ `tail_risk_extreme`（D-J14）/ `measurement_uncertainty`（D-J15）/ `interval_estimate`（D-J16）/ `power_sample_size`（D-J17）/ `equivalence_test`（D-J18）/ `group_comparison`（D-J19）/ `regression_diagnostics`（D-J20）/ `robust_regression`（D-J21）/ `cluster_structure`（D-J23）/ `spatial_autocorrelation`（D-J25）/ `survival_analysis`（D-J26）/ `reliability_metrics`（D-J27）/ `meta_analysis`（D-J28）/ `missing_data_profile`（D-J29）；一律经 `l1agg.methods.run` 调 SC 族方法，`_call` 把 `ValueError`/数值退化收敛为 `insufficient_history`/`calculation_failed` 后 FAIL-OPEN，零重算 |
 | `contracts/capability_result.schema.json` | JSON Schema（测试用 `jsonschema` 逐条校验输出） |
 
-54 个出口为：D-A01、D-A02、D-A03、D-A04、D-A05、D-A06、D-A07、D-A08、D-A09、D-A10、D-A11、D-A12、D-A13、D-A14、D-A15、D-A16、D-B08、D-B09、D-E01～D-E12（不含场景包 D-E13）、D-E14、D-E15、D-E16、D-E17、D-E18、D-E19、D-E20、D-G08、D-G09、D-G14、D-G16、D-G19、D-G20、D-G22、D-G23、D-G25、D-J02、D-J04、D-J05、D-J22、D-J24、D-J30、D-K01、D-K02。D-E20 新接新闻统一出口（L1S-03）：只把 `mm_metrics.social_volume` 的 `news_count_24h` / `social_volume` 日频观测按日对齐成统一信封（`capability/intent/answer/data/quality`），零重算、不做情绪打分；`answer` 经 `scan_forbidden` 自检禁用词（看涨/看跌/建议/目标价/多头/空头/推荐），命中即抛 `ValueError`；库中无新闻条目表，故仅出计数与热度摘要，绝不编造标题/正文/链接；窗口内有效观测 <2 天 → `status=empty` 降级，新闻条数部分缺失 → `status=partial` + `news_metric_partial`。D-G09 新接波动率目标换算出口：价格先转日简单收益（数据整形），由 P02 计算窗口内实现年化波动与 `scale = target_vol / realized_vol`（target_vol 默认 0.10、window 默认 20、periods 默认 365），能力层不重算波动；收益样本 <60、`target_vol≤0` 或非数值、`window<2`、`periods<1`、日期长度不一致或含非有限值为空；`window` 超过收益长度时截断并降级 `window_truncated`，实现波动为 0 时降级 `zero_volatility` 且系数记 0.0；系数仅描述样本内目标/实现波动之比，不构成交易建议。D-G08 新接 12-1 动量出口：按「跳过最近 `skip` 期（默认 21）、回溯 `lookback` 期（默认 252）」切片后由 F14 真实执行动量/波动/风险调整动量（能力层只做窗口切片与百分比换算），输出 `momentum_12_1/lookback/skip/vol/risk_adjusted/window_start_ts/window_end_ts/truncated/sample_n`；价格样本 <60、`lookback<2`、`skip<0`、非整数参数、日期长度不一致或含非有限值为空；历史不足 `lookback+skip+1` 时截断 lookback 并降级 `short_history`，窗口起点非正降级 `base_zero`。D-B09 新接距 ATH 回撤出口：复用 D-E10 的 `drawdown` 执行器（D20 回撤画像 + D21 持续期），能力层只做 max/索引取点与别名映射，输出 TD 约定的 `drawdown_from_ath/ath/ath_ts`（分别等于 `current_drawdown/peak_price/peak_ts`）并保留 `mdd/duration_days/recovery_days`；价格样本 <2 或全无效值为空，样本 <250 降级 `insufficient_samples`。D-B08 新接趋势斜率出口：取最近 `window` 期（默认 90，下限 30）由 T08 计算对数价格 OLS 斜率与 R²、T09 计算名义 t/p，输出 `slope/r2/window/t/p/hac_corrected/sample_n`，显式标注 `hac_corrected=false`，t/p 只用于相对比较；样本 <60 降级 `short_window` 但保留结果，样本 <30 或 `window<30` 为 empty。D-A16 新接稳定币规模增速出口：S16 逐窗口真实执行 `x_t/x_{t-w}-1` 并折算百分比，能力层只组装多窗口结果，输出 `growth_{k}d/windows/sample_n`；`windows` 可配（默认 7/30），有效样本 <30 降级 `insufficient_samples` 但保留结果，窗口超出历史降级 `short_history`，基期为 0 降级 `base_zero` 并将该窗口置 None，全部窗口不可算 FAIL-OPEN 为 empty。D-A15 新接净流入滚动和出口：S20 真实执行滚动均值，能力层以「均值 × 窗口长度」算术还原滚动和，不做任何分布估计；`windows` 可配（默认 7/30，输出 `sum_{k}d`），有效样本 <30 降级 `insufficient_samples` 但保留结果，窗口超出历史长度降级 `short_history` 并将该窗口置 None，全部窗口不可算 FAIL-OPEN 为 empty。D-A13 新接极端事件频率出口：未给 `threshold` 时由 S11 分位（`quantile` 默认 0.95，取 pN）给出阈值，计数为纯聚合不引入额外估计量，输出 `days/ratio/threshold/side/quantile/sample_n`；样本 <30 且未提供阈值时阈值不可确定为空，提供阈值时 <30 降级 `insufficient_samples` 但保留计数；`side` 支持 above/below/abs。D-A12 新接领先滞后相关出口：paired complete-case 后由 M11 输出 lag −max_lag…+max_lag（默认 10）的相关/p/BH-FDR q/显著性，M12 输出最优 lag，能力层组装 `corr_by_lag[]` 与 `best_lag/best_corr/best_p_adj`；有效配对 <120 降级 `insufficient_history` 但保留结果，配对 <2、`max_lag<1` 或超过配对样本、日期长度不一致为 empty；结论不自动等于因果或未来可预测。D-A11 新接双序列滚动相关出口：按原始位置 paired complete-case 后由 M04 计算滚动 Pearson 相关（`window` 默认 30），输出 `corr`（最近窗口）/`mean_r`/`window`/`n_windows`/`sample_n`；有效配对 <60 降级 `insufficient_samples` 但保留结果，配对 <2、`window<2` 或超过配对样本、日期长度不一致为 empty。D-A10 新接实际利率出口：名义利率（如 DGS10）减 CPI 同比通胀，通胀唯一由 S16（`k=period`，默认 12）真实执行并折算为百分点，能力层只做差值组合，输出 `real_rate/nominal/inflation/base_ts/period/sample_n`；CPI 基期为 0 时通胀与实际利率均不可计算并降级 `inflation_unavailable`，历史 <2 个完整周期降级 `short_history`；样本不足以覆盖 period、`period<1`、双序列长度不一致、日期长度不一致或含非有限值为空。D-A09 新接环比出口：由 S16 以 `k=1` 计算 `x_t/x_{t-1}-1`，输出 `mom/base_ts/sample_n`；至少 2 个有效点，基期为 0 时 `mom=None` 并降级 `mom_unavailable`；样本 <2 为空。D-A08 新接同比出口：由 S16 计算 `x_t/x_{t-period}-1`（period 默认 12），输出 `yoy/base_ts/period/sample_n`；历史长度 <2×period+1 降级 `short_history`，基期为 0 时 `yoy=None` 并降级 `yoy_unavailable`；样本 ≤period 或 period<1 为空。D-A07 新接回撤出口：与 D-E10 共用 `drawdown` 执行器并由调度层注入 `capability_id`，D20/D21 真实执行，输出 TD 约定的 `drawdown/peak_ts` 并保留 `mdd/current_drawdown/duration_days/drawdown_path`；`prices<2` 为空，样本 <250 期降级 `insufficient_samples`。D-A06 新接年化波动率出口：取最近 `window` 期（缺省全样本）由 F05 计算日简单收益标准差 × √365，输出 `volatility/mean_ret/window/sample_n`；有效样本 <60 期降级 `short_window`，样本 <30 或 `window<30` 为空。D-A04 新接历史分位出口：取最近 `lookback` 期（缺省全样本）由 S25 计算末值经验分位，输出 `percentile/value/lookback/sample_n`；窗口 <60 期降级 `short_lookback`，`lookback` 超过可用历史时降级 `lookback_truncated` 并按可用样本计算；样本 <30 或 `lookback<30` 为空。D-A03 新接 CAGR 出口：首末值 + 年数（有日期轴按日历天数、否则按 n-1 天），跨度不足 1 年降级 `short_span`；起止值非正为空。D-A02 新接区间变化率出口：序列末值与 `window` 期前值比较，S15 输出绝对变化、S16 输出变化率；基期值为 0 时变化率不可用降级 `change_pct_unavailable` 并保留绝对变化。D-A01 新接单序列历史序列出口：日期轴必填且与数值等长，按 `freq` 取日/周/月区间最后观测（同日重复取最后）输出 `points[]/span/unit`，当前历史分位复用 S25；缺失率 >20% 降级 `sparse_series`。D-J30 新接 SC90 PIT 时间校验（`available ≤ used`，支持 ISO 与数值时间戳）与 R02 `pit=true` 前瞻分布：`release_ts`/`used_ts` 缺省视为观测时刻，PIT 违规降级 partial 并披露前视风险，过滤后可见样本不足 PIT 窗口时不产出前瞻分布。D-G14 新接 P07 EWMA 组合协方差（λ 默认 0.94）与 T19 逐资产 EWMA 波动序列：多资产面板按原始行 complete-case 后共享同一矩阵，单资产仅走 T19 且不输出协方差，风险结构只描述样本内统计。D-G16 新接 P09 参数法组合 VaR、P10 历史法组合 VaR/CVaR，并以 D17/D18 并列输出逐资产历史 VaR/CVaR；各资产收益按最小公共长度对齐，权重归一化与统计计算全部由方法层完成。D-G19 新接 B13/B14 与 Q01/Q02 的 IC/RankIC/ICIR、Q03 因子 IC 衰减，以及可选价格输入的 B15 价格动量重叠/非重叠 IC 衰减；Q03 收益轴通过首项补 0、右移已对齐 forward 防止多移一期，缺价格时保留核心五方法结果并显式降级。D-G20 新接 B16 分位组统计、B11 组均值严格单调性与 Q04 分位序号 Spearman 检验；factor/forward 按原始位置 complete-case 后共享同一样本轴，spread 仅作描述性统计而非策略收益。D-J02 新接 C13 月度季节强度、T10 robust STL 与 SC91 X-13 风格分解，原始组件与强度并列输出；日期轴必填，历史不足 3 年降级为描述性结论。D-J04 新接 T22/SC49 两种 CUSUM、T23 近似 PELT、SC50 精确 PELT 与 SC51 Pettitt，并列输出原始结果与断点日期映射；SC47 Kalman 与 SC48 互谱相干不属于本出口。D-G23 新接 Q10 均值调整 CAR 与 Q11 Patell/BMP，价格轴事件下标先转为同日收盘收益下标；事件数 <30 或标准化检验不可用时降级并保留 CAR。D-E14 新接一维相关状态条件分布：R02 PIT 桶标签由 B05/B10/R01/R08 共享，默认 h=1/2、4 桶，主期限不足降 2 桶，弱后续期限单独降级；h>1 不输出朴素 t/p。D-J22 新接 M19 相关阵 PCA、M20 载荷、SC31 sklearn PCA、SC32 SVD 与 SC33 因子分析；多变量面板按原始行 complete-case 后共享同一数据矩阵，仅描述数据结构、不生成交易方向。D-J24 新接 M05 相关矩阵、M21 相关距离层次聚类与 SC71/SC72 网络中心性/社区发现：|ρ|≥threshold 生成无向邻接，图规模低于方法门禁时降级披露，仅描述同期相关关系。D-G25 新接 P13 尾部相关：≥2 资产收益面板按原始行 complete-case 后按横截面均值 ≤q 分位切尾，算样本内两两 Pearson；上行尾用收益符号取反后复用同一方法（`upper_tail_by_sign_flip=true`），输出 `rho_down/rho_up/rho_full/amplification/n_tail`；对齐样本 <60 为空，尾部共现 <30 天降级 `tail_events_lt_30`，只描述同期共跌共涨。D-J05 新接 T25 主周期 + T26 周期强度 + C14 月度一致性：`cycles=span_days/period` 与 `period_to_reference=period/1,460` 显式返回；min_n=60、min_span_days=2920，跨度不足降级 `cycles_lt_2`、缺日期轴降级 `dates_missing`，只描述频谱事实。D-E04 新增 `pre_holiday`/`holidays` 分支：C11 由日期轴「工作日缺失=节假日」派生日历（>10 工作日连续缺口按数据缺口排除），节前样本 <30 降级 `holiday_events_lt_30`，无工作日缺口（7×24/周度）为空。其余出口沿用既有门禁与降级口径；二维 D-E14 已接线（v2.49），各出口实际结论均受样本门禁约束。
+93 个出口为：D-A01、D-A02、D-A03、D-A04、D-A05、D-A06、D-A07、D-A08、D-A09、D-A10、D-A11、D-A12、D-A13、D-A14、D-A15、D-A16、D-B08、D-B09、D-E01～D-E12（不含场景包 D-E13）、D-E14、D-E15、D-E16、D-E17、D-E18、D-E19、D-E20、D-G01、D-G02、D-G03、D-G04、D-G05、D-G06、D-G07、D-G08、D-G09、D-G10、D-G11、D-G12、D-G13、D-G14、D-G15、D-G16、D-G18、D-G19、D-G20、D-G21、D-G22、D-G23、D-G24、D-G25、D-J01、D-J02、D-J03、D-J04、D-J05、D-J06、D-J07、D-J08、D-J09、D-J10、D-J11、D-J12、D-J13、D-J14、D-J15、D-J16、D-J17、D-J18、D-J19、D-J20、D-J21、D-J22、D-J23、D-J24、D-J25、D-J26、D-J27、D-J28、D-J29、D-J30、D-K01、D-K02。D-E20 新接新闻统一出口（L1S-03）：只把 `mm_metrics.social_volume` 的 `news_count_24h` / `social_volume` 日频观测按日对齐成统一信封（`capability/intent/answer/data/quality`），零重算、不做情绪打分；`answer` 经 `scan_forbidden` 自检禁用词（看涨/看跌/建议/目标价/多头/空头/推荐），命中即抛 `ValueError`；库中无新闻条目表，故仅出计数与热度摘要，绝不编造标题/正文/链接；窗口内有效观测 <2 天 → `status=empty` 降级，新闻条数部分缺失 → `status=partial` + `news_metric_partial`。D-G09 新接波动率目标换算出口：价格先转日简单收益（数据整形），由 P02 计算窗口内实现年化波动与 `scale = target_vol / realized_vol`（target_vol 默认 0.10、window 默认 20、periods 默认 365），能力层不重算波动；收益样本 <60、`target_vol≤0` 或非数值、`window<2`、`periods<1`、日期长度不一致或含非有限值为空；`window` 超过收益长度时截断并降级 `window_truncated`，实现波动为 0 时降级 `zero_volatility` 且系数记 0.0；系数仅描述样本内目标/实现波动之比，不构成交易建议。D-G08 新接 12-1 动量出口：按「跳过最近 `skip` 期（默认 21）、回溯 `lookback` 期（默认 252）」切片后由 F14 真实执行动量/波动/风险调整动量（能力层只做窗口切片与百分比换算），输出 `momentum_12_1/lookback/skip/vol/risk_adjusted/window_start_ts/window_end_ts/truncated/sample_n`；价格样本 <60、`lookback<2`、`skip<0`、非整数参数、日期长度不一致或含非有限值为空；历史不足 `lookback+skip+1` 时截断 lookback 并降级 `short_history`，窗口起点非正降级 `base_zero`。D-B09 新接距 ATH 回撤出口：复用 D-E10 的 `drawdown` 执行器（D20 回撤画像 + D21 持续期），能力层只做 max/索引取点与别名映射，输出 TD 约定的 `drawdown_from_ath/ath/ath_ts`（分别等于 `current_drawdown/peak_price/peak_ts`）并保留 `mdd/duration_days/recovery_days`；价格样本 <2 或全无效值为空，样本 <250 降级 `insufficient_samples`。D-B08 新接趋势斜率出口：取最近 `window` 期（默认 90，下限 30）由 T08 计算对数价格 OLS 斜率与 R²、T09 计算名义 t/p，输出 `slope/r2/window/t/p/hac_corrected/sample_n`，显式标注 `hac_corrected=false`，t/p 只用于相对比较；样本 <60 降级 `short_window` 但保留结果，样本 <30 或 `window<30` 为 empty。D-A16 新接稳定币规模增速出口：S16 逐窗口真实执行 `x_t/x_{t-w}-1` 并折算百分比，能力层只组装多窗口结果，输出 `growth_{k}d/windows/sample_n`；`windows` 可配（默认 7/30），有效样本 <30 降级 `insufficient_samples` 但保留结果，窗口超出历史降级 `short_history`，基期为 0 降级 `base_zero` 并将该窗口置 None，全部窗口不可算 FAIL-OPEN 为 empty。D-A15 新接净流入滚动和出口：S20 真实执行滚动均值，能力层以「均值 × 窗口长度」算术还原滚动和，不做任何分布估计；`windows` 可配（默认 7/30，输出 `sum_{k}d`），有效样本 <30 降级 `insufficient_samples` 但保留结果，窗口超出历史长度降级 `short_history` 并将该窗口置 None，全部窗口不可算 FAIL-OPEN 为 empty。D-A13 新接极端事件频率出口：未给 `threshold` 时由 S11 分位（`quantile` 默认 0.95，取 pN）给出阈值，计数为纯聚合不引入额外估计量，输出 `days/ratio/threshold/side/quantile/sample_n`；样本 <30 且未提供阈值时阈值不可确定为空，提供阈值时 <30 降级 `insufficient_samples` 但保留计数；`side` 支持 above/below/abs。D-A12 新接领先滞后相关出口：paired complete-case 后由 M11 输出 lag −max_lag…+max_lag（默认 10）的相关/p/BH-FDR q/显著性，M12 输出最优 lag，能力层组装 `corr_by_lag[]` 与 `best_lag/best_corr/best_p_adj`；有效配对 <120 降级 `insufficient_history` 但保留结果，配对 <2、`max_lag<1` 或超过配对样本、日期长度不一致为 empty；结论不自动等于因果或未来可预测。D-A11 新接双序列滚动相关出口：按原始位置 paired complete-case 后由 M04 计算滚动 Pearson 相关（`window` 默认 30），输出 `corr`（最近窗口）/`mean_r`/`window`/`n_windows`/`sample_n`；有效配对 <60 降级 `insufficient_samples` 但保留结果，配对 <2、`window<2` 或超过配对样本、日期长度不一致为 empty。D-A10 新接实际利率出口：名义利率（如 DGS10）减 CPI 同比通胀，通胀唯一由 S16（`k=period`，默认 12）真实执行并折算为百分点，能力层只做差值组合，输出 `real_rate/nominal/inflation/base_ts/period/sample_n`；CPI 基期为 0 时通胀与实际利率均不可计算并降级 `inflation_unavailable`，历史 <2 个完整周期降级 `short_history`；样本不足以覆盖 period、`period<1`、双序列长度不一致、日期长度不一致或含非有限值为空。D-A09 新接环比出口：由 S16 以 `k=1` 计算 `x_t/x_{t-1}-1`，输出 `mom/base_ts/sample_n`；至少 2 个有效点，基期为 0 时 `mom=None` 并降级 `mom_unavailable`；样本 <2 为空。D-A08 新接同比出口：由 S16 计算 `x_t/x_{t-period}-1`（period 默认 12），输出 `yoy/base_ts/period/sample_n`；历史长度 <2×period+1 降级 `short_history`，基期为 0 时 `yoy=None` 并降级 `yoy_unavailable`；样本 ≤period 或 period<1 为空。D-A07 新接回撤出口：与 D-E10 共用 `drawdown` 执行器并由调度层注入 `capability_id`，D20/D21 真实执行，输出 TD 约定的 `drawdown/peak_ts` 并保留 `mdd/current_drawdown/duration_days/drawdown_path`；`prices<2` 为空，样本 <250 期降级 `insufficient_samples`。D-A06 新接年化波动率出口：取最近 `window` 期（缺省全样本）由 F05 计算日简单收益标准差 × √365，输出 `volatility/mean_ret/window/sample_n`；有效样本 <60 期降级 `short_window`，样本 <30 或 `window<30` 为空。D-A04 新接历史分位出口：取最近 `lookback` 期（缺省全样本）由 S25 计算末值经验分位，输出 `percentile/value/lookback/sample_n`；窗口 <60 期降级 `short_lookback`，`lookback` 超过可用历史时降级 `lookback_truncated` 并按可用样本计算；样本 <30 或 `lookback<30` 为空。D-A03 新接 CAGR 出口：首末值 + 年数（有日期轴按日历天数、否则按 n-1 天），跨度不足 1 年降级 `short_span`；起止值非正为空。D-A02 新接区间变化率出口：序列末值与 `window` 期前值比较，S15 输出绝对变化、S16 输出变化率；基期值为 0 时变化率不可用降级 `change_pct_unavailable` 并保留绝对变化。D-A01 新接单序列历史序列出口：日期轴必填且与数值等长，按 `freq` 取日/周/月区间最后观测（同日重复取最后）输出 `points[]/span/unit`，当前历史分位复用 S25；缺失率 >20% 降级 `sparse_series`。D-J30 新接 SC90 PIT 时间校验（`available ≤ used`，支持 ISO 与数值时间戳）与 R02 `pit=true` 前瞻分布：`release_ts`/`used_ts` 缺省视为观测时刻，PIT 违规降级 partial 并披露前视风险，过滤后可见样本不足 PIT 窗口时不产出前瞻分布。D-G14 新接 P07 EWMA 组合协方差（λ 默认 0.94）与 T19 逐资产 EWMA 波动序列：多资产面板按原始行 complete-case 后共享同一矩阵，单资产仅走 T19 且不输出协方差，风险结构只描述样本内统计。D-G16 新接 P09 参数法组合 VaR、P10 历史法组合 VaR/CVaR，并以 D17/D18 并列输出逐资产历史 VaR/CVaR；各资产收益按最小公共长度对齐，权重归一化与统计计算全部由方法层完成。D-G19 新接 B13/B14 与 Q01/Q02 的 IC/RankIC/ICIR、Q03 因子 IC 衰减，以及可选价格输入的 B15 价格动量重叠/非重叠 IC 衰减；Q03 收益轴通过首项补 0、右移已对齐 forward 防止多移一期，缺价格时保留核心五方法结果并显式降级。D-G20 新接 B16 分位组统计、B11 组均值严格单调性与 Q04 分位序号 Spearman 检验；factor/forward 按原始位置 complete-case 后共享同一样本轴，spread 仅作描述性统计而非策略收益。D-J02 新接 C13 月度季节强度、T10 robust STL 与 SC91 X-13 风格分解，原始组件与强度并列输出；日期轴必填，历史不足 3 年降级为描述性结论。D-J04 新接 T22/SC49 两种 CUSUM、T23 近似 PELT、SC50 精确 PELT 与 SC51 Pettitt，并列输出原始结果与断点日期映射；SC47 Kalman 与 SC48 互谱相干不属于本出口。D-G23 新接 Q10 均值调整 CAR 与 Q11 Patell/BMP，价格轴事件下标先转为同日收盘收益下标；事件数 <30 或标准化检验不可用时降级并保留 CAR。D-E14 新接一维相关状态条件分布：R02 PIT 桶标签由 B05/B10/R01/R08 共享，默认 h=1/2、4 桶，主期限不足降 2 桶，弱后续期限单独降级；h>1 不输出朴素 t/p。D-J22 新接 M19 相关阵 PCA、M20 载荷、SC31 sklearn PCA、SC32 SVD 与 SC33 因子分析；多变量面板按原始行 complete-case 后共享同一数据矩阵，仅描述数据结构、不生成交易方向。D-J24 新接 M05 相关矩阵、M21 相关距离层次聚类与 SC71/SC72 网络中心性/社区发现：|ρ|≥threshold 生成无向邻接，图规模低于方法门禁时降级披露，仅描述同期相关关系。D-G25 新接 P13 尾部相关：≥2 资产收益面板按原始行 complete-case 后按横截面均值 ≤q 分位切尾，算样本内两两 Pearson；上行尾用收益符号取反后复用同一方法（`upper_tail_by_sign_flip=true`），输出 `rho_down/rho_up/rho_full/amplification/n_tail`；对齐样本 <60 为空，尾部共现 <30 天降级 `tail_events_lt_30`，只描述同期共跌共涨。D-J05 新接 T25 主周期 + T26 周期强度 + C14 月度一致性：`cycles=span_days/period` 与 `period_to_reference=period/1,460` 显式返回；min_n=60、min_span_days=2920，跨度不足降级 `cycles_lt_2`、缺日期轴降级 `dates_missing`，只描述频谱事实。D-E04 新增 `pre_holiday`/`holidays` 分支：C11 由日期轴「工作日缺失=节假日」派生日历（>10 工作日连续缺口按数据缺口排除），节前样本 <30 降级 `holiday_events_lt_30`，无工作日缺口（7×24/周度）为空。其余出口沿用既有门禁与降级口径；二维 D-E14 已接线（v2.49），各出口实际结论均受样本门禁约束。
 
 ### 2.5 G 组：机构统计方法（25 项，调研见 RESEARCH-INSTITUTIONAL-L1-METHODS.md）
 
@@ -361,30 +363,30 @@ L1 意图（TS/Python 双端注册表）
 
 | ID | 能力 | 分级 | 优先级 | 状态 |
 |---|---|---|---|---|
-| D-G01 | 横截面 z-score / rank | D1 | P2 | ⬜ |
-| D-G02 | 组内中性化（板块/规模） | D1 | P2 | ⬜ |
-| D-G03 | 分位组合与多空价差 | D2 | P2 | ⬜ |
-| D-G04 | 横截面离散度 / 市场宽度 | D1 | P2 | ⬜ |
-| D-G05 | 同向率矩阵 | D1 | P2 | ⬜ |
-| D-G06 | 因子暴露 / 特质收益（Barra 简化） | D3 | P3 | ⬜ |
-| D-G07 | 序列算子族（15 个：delay/delta/ts_rank/decay_linear…） | D1 | P2 | ⬜ |
+| D-G01 | 横截面 z-score / rank | D1 | P2 | ✅ 已接线（`capabilities/institutional.py::cross_section_profile`）：X01 横截面 z-score + X02 百分位并列输出，n≥30 |
+| D-G02 | 组内中性化（板块/规模） | D1 | P2 | ✅ 已接线（`capabilities/institutional.py::group_neutralize`）：X03 组内去均值，输出残差与组均值，n≥30 |
+| D-G03 | 分位组合与多空价差 | D2 | P2 | ✅ 已接线（`capabilities/institutional.py::quantile_portfolio`）：X04 等频分桶 + X05 多空价差与 Welch t，n≥30 |
+| D-G04 | 横截面离散度 / 市场宽度 | D1 | P2 | ✅ 已接线（`capabilities/institutional.py::dispersion_breadth`）：X06 离散度 + X07 市场宽度并列输出，n≥30 |
+| D-G05 | 同向率矩阵 | D1 | P2 | ✅ 已接线（`capabilities/institutional.py::co_movement`）：X08 横截面同向率，n≥30 |
+| D-G06 | 因子暴露 / 特质收益（Barra 简化） | D3 | P3 | ✅ 已接线（`capabilities/institutional.py::factor_exposure`）：X09 横截面因子回归 + X10 特质收益，n≥120；缺 factor 时退化为等权市场代理（口径显式披露） |
+| D-G07 | 序列算子族（15 个：delay/delta/ts_rank/decay_linear…） | D1 | P2 | ✅ 已接线（`capabilities/institutional.py::sequence_operators`）：O01–O08/O11–O15 单序列算子 + O09/O10 双序列（提供 `other` 时）；d 缺省 20，n≥120 |
 | D-G08 | 固定公式因子（12-1 动量、20 日 ts_rank） | D1 | P1 | ✅ 已接线（`capabilities/stats.py::momentum_12_1`）：F14 在「跳过最近 skip 期、回溯 lookback 期」切片上真实执行动量/波动/风险调整动量，输出 `momentum_12_1/lookback/skip/vol/risk_adjusted/sample_n`；min_n=60，历史不足时截断 lookback 并降级 `short_history`；20 日 ts_rank 属 D-G07 序列算子族，未随本能力接线 |
 | D-G09 | 波动率目标换算 | D1 | P1 | ✅ 已接线（`capabilities/stats.py::vol_target_scale`）：价格先转日简单收益（数据整形），由 P02 计算窗口实现年化波动与 `scale = target_vol / realized_vol`；target_vol 默认 0.10、window 默认 20、periods 默认 365；收益样本 <60 为空，window 超长截断降级 `window_truncated`，实现波动为 0 降级 `zero_volatility`；系数仅为样本内比值，不构成交易建议 |
-| D-G10 | 逆波动权重 | D1 | P2 | ⬜ |
-| D-G11 | 等风险贡献权重 | D3 | P3 | ⬜ |
-| D-G12 | 风险贡献分解 | D1 | P3 | ⬜ |
-| D-G13 | 协方差收缩（Ledoit-Wolf） | D3 | P3 | ⬜ |
+| D-G10 | 逆波动权重 | D1 | P2 | ✅ 已接线（`capabilities/institutional.py::inverse_volatility_weights`）：P03 逆波动权重，n≥60 |
+| D-G11 | 等风险贡献权重 | D3 | P3 | ✅ 已接线（`capabilities/institutional.py::equal_risk_contribution`）：P04 ERC 迭代权重与风险贡献极差，n≥60 |
+| D-G12 | 风险贡献分解 | D1 | P3 | ✅ 已接线（`capabilities/institutional.py::risk_contribution`）：P05 风险贡献占比与总风险，n≥60 |
+| D-G13 | 协方差收缩（Ledoit-Wolf） | D3 | P3 | ✅ 已接线（`capabilities/institutional.py::covariance_shrinkage`）：P06 收缩强度 δ 与收缩后协方差（sklearn/analytic 双后端），n≥60 |
 | D-G14 | EWMA 波动/协方差（λ=0.94/0.97） | D1 | P1 | ✅ 已接线（`capabilities/stats.py::ewma_risk`）：P07 EWMA 组合协方差（λ 默认 0.94、init_window 20、年化 365）+ T19 逐资产 EWMA 波动序列并列输出；多资产面板按原始行 complete-case，单资产仅走 T19 且不输出协方差；min_n=60，仅描述样本内风险结构 |
-| D-G15 | PCA 风险分解 | D3 | P3 | ⬜ |
+| D-G15 | PCA 风险分解 | D3 | P3 | ✅ 已接线（`capabilities/institutional.py::pca_risk_decomposition`）：P08 主成分方差解释比例 TopK，n≥60 |
 | D-G16 | 组合 VaR / CVaR | D1 | P2 | ✅ 已接线（`capabilities/stats.py::portfolio_risk`）：P09 参数法组合 VaR + P10 历史法组合 VaR/CVaR，D17/D18 并列输出逐资产历史 VaR/CVaR；min_n=60，按最小公共长度对齐，损失正数口径 |
 | D-G17 | 水下曲线 / 回撤画像 | D1 | P1 | ✅ D20/D21/F09/F10/R11 已实现，并经 D-E10 接线（`capabilities/stats.py::drawdown`） |
-| D-G18 | Brinson 归因 | D1 | P3 | ⬜ |
+| D-G18 | Brinson 归因 | D1 | P3 | ✅ 已接线（`capabilities/institutional.py::brinson_attribution`）：P12 配置/选择/交互/主动收益四分解，n≥60 |
 | D-G19 | IC / ICIR / 衰减表 | D2 | P2 | ✅ 已接线（`capabilities/stats.py::ic_profile`）：B13/B14 + Q01/Q02 输出 IC/RankIC/ICIR，Q03 输出因子 IC 衰减，可选 prices 执行 B15 价格动量衰减；min_n=250，Q03 收益轴右移防错配，缺价格降级保留核心结果 |
 | D-G20 | 分位单调性检验 | D2 | P2 | ✅ 已接线（`capabilities/stats.py::quantile_monotonic`）：B16 输出各分位组统计与最高减最低 spread，B11 检验组均值严格单调，Q04 输出分位序号与组均值 Spearman rho/p；min_n=250，complete-case 对齐，spread 仅为描述性统计 |
-| D-G21 | Fama-MacBeth 横截面回归 | D3 | P3 | ⬜ |
+| D-G21 | Fama-MacBeth 横截面回归 | D3 | P3 | ✅ 已接线（`capabilities/institutional.py::fama_macbeth`）：Q05 λ/se/t/期数/标的数，n≥250 期 |
 | D-G22 | Deflated Sharpe / Newey-West t | D2 | P3 | ✅ |
 | D-G23 | 事件窗 CAR + Patell/BMP | D2 | P2 | ✅ 已接线（2026-11-15，`capabilities/stats.py::event_car_significance`）：Q10 均值调整 CAR + Q11 Patell/BMP；价格轴事件下标转为同日收盘收益下标；事件数 <30 或 Q11 不可用时降级 partial，保留 Q10 CAR |
-| D-G24 | 因子拥挤度 | D2 | P3 | ⬜ |
+| D-G24 | 因子拥挤度 | D2 | P3 | ✅ 已接线（`capabilities/institutional.py::factor_crowding`）：P13 下行/全样本相关 + P14 相关稳定性（std_rho/|mean_rho|），n≥60；估值价差需外部估值数据，未提供时显式披露 |
 | D-G25 | 尾部相关 | D2 | P2 | ✅ 已接线（2026-11-15，`capabilities/stats.py::tail_dependence`）：P13 横截面均值分位切尾后两两 Pearson（下行尾），上行尾用符号取反复用同一方法；输出 rho_down/rho_up/rho_full/n_tail/amplification；min_n=60，尾部共现 <30 天降级 `tail_events_lt_30` |
 
 **分层关系**：A/B/C = 数据维度能力；E = 关系表达；**G = 机构统计方法补强**。G 组不改变 L1 定性——仍只输出历史统计与样本量。
@@ -395,35 +397,30 @@ L1 意图（TS/Python 双端注册表）
 
 | ID | 能力 | 分级 | 优先级 | 状态 |
 |---|---|---|---|---|
-| D-J01 | 趋势检验（Mann-Kendall + Sen） | D2 | P2 | ⬜ |
-| D-J02 | 季节强度与调整（STL/X-13 风格） | D2 | P2 | ✅ 已接线（`capabilities/stats.py::seasonal_adjustment`）：C13/T10/SC91 原始结果与季节强度并列输出，min_n=60、min_span_days=1095；不足 3 年保留结果并降级 |
-| D-J03 | 异常点识别（AO/LS/TC） | D1 | P2 | ⬜ |
-| D-J04 | 变点检测（CUSUM/PELT/Pettitt） | D2 | P2 | ✅ 已接线（`capabilities/stats.py::change_point`）：T22/SC49 CUSUM、T23 近似 PELT、SC50 精确 PELT、SC51 Pettitt，min_n=60；SC47/SC48 不属于本能力 |
-| D-J05 | 周期/频谱（FFT/Welch/Lomb-Scargle） | D2 | P2 | ✅ 已接线（2026-11-15，`capabilities/stats.py::cycle_spectrum`）：T25 去趋势主周期 + T26 周期强度，C14 月度一致性并列；`cycles=span_days/period`、`period_to_reference=period/1,460`；min_n=60、min_span_days=2920，跨度不足降级 `cycles_lt_2` |
-| D-J06 | 小波/滤波平滑（DWT/SG/Butterworth） | D1 | P3 | ⬜ |
-| D-J07 | Hilbert 包络/瞬时相位 | D1 | P3 | ⬜ |
-| D-J08 | Kalman 状态估计 | D3 | P3 | ⬜ |
-| D-J09 | 互谱相干 | D2 | P3 | ⬜ |
-| D-J10 | 熵/互信息/KL 散度 | D2 | P2 | ⬜ |
-| D-J11 | 传递熵 | D2 | P3 | ⬜ |
-| D-J12 | 复杂度（LZ/样本熵/排列熵） | D2 | P2 | ⬜ |
-| D-J13 | DFA / Hurst | D2 | P2 | ⬜ |
-| D-J14 | 极值拟合与重现水平（GEV/GPD） | D3 | P3 | ⬜ |
-| D-J15 | 不确定度合成（GUM） | D1 | P2 | ⬜ |
-| D-J16 | 预测/容忍/共形区间 | D2 | P2 | ⬜ |
-| D-J17 | 功效与样本量 | D2 | P3 | ⬜ |
-| D-J18 | 等效性检验（TOST） | D2 | P3 | ⬜ |
-| D-J19 | ANOVA/ANCOVA/事后比较 | D2 | P2 | ⬜ |
-| D-J20 | 回归诊断（VIF/BP/White/DW/Cook） | D2 | P2 | ⬜ |
-| D-J21 | 稳健回归/分位回归 | D3 | P3 | ⬜ |
-| D-J22 | PCA/SVD/因子分析 | D3 | P2 | ✅ 已接线（`capabilities/stats.py::dimension_reduction`）：M19/M20/SC31/SC32/SC33 并列，面板 complete-case 共享同一数据矩阵，min_n=60；仅描述数据结构 |
-| D-J23 | 聚类与轮廓系数 | D3 | P3 | ⬜ |
-| D-J24 | 相关网络与社区发现 | D3 | P3 | ✅ 已接线（`capabilities/stats.py::correlation_network`）：M05 相关矩阵按 |ρ|≥threshold 生成邻接，SC71 度/介数/接近中心性，SC72 Louvain 社区与模块度，M21 相关距离层次聚类；min_n=60、≥2 变量，图规模低于方法门禁时降级为描述 |
-| D-J25 | 空间自相关/变异函数 | D2 | P3 | ⬜ |
-| D-J26 | 生存分析（KM/log-rank/Cox） | D3 | P3 | ⬜ |
-| D-J27 | 可靠性/控制图（X̄-R/EWMA/CUSUM） | D1 | P3 | ⬜ |
-| D-J28 | Meta 分析与异质性 | D3 | P3 | ⬜ |
-| D-J29 | 缺失机制与插补 | D3 | P2 | ⬜ |
+| D-J01 | 趋势检验（Mann-Kendall + Sen） | D2 | P2 | ✅ 已接线（`capabilities/research_stats.py::trend_test`）：SC52 Mann-Kendall τ/z/p + SC53 Sen 斜率与 CI，n≥30 |
+| D-J03 | 异常点识别（AO/LS/TC） | D1 | P2 | ✅ 已接线（`capabilities/research_stats.py::outlier_scan`）：SC92 稳健 z 阈值（`k` 默认 3），输出异常点索引与阈值，n≥30 |
+| D-J06 | 小波/滤波平滑（DWT/SG/Butterworth） | D1 | P3 | ✅ 已接线（`capabilities/research_stats.py::smoothing_filter`）：SC44 Savitzky-Golay + SC42 小波能量 + SC45 Butterworth 低通，n≥30 |
+| D-J07 | Hilbert 包络/瞬时相位 | D1 | P3 | ✅ 已接线（`capabilities/research_stats.py::spectral_envelope`）：SC46 Hilbert 包络/瞬时相位 + SC42 小波分解层级能量，n≥30 |
+| D-J08 | Kalman 状态估计 | D3 | P3 | ✅ 已接线（`capabilities/research_stats.py::state_space_filter`）：SC47 局部水平状态空间`process_var`/`obs_var` 可配，输出滤波状态序列与末状态，n≥30 |
+| D-J09 | 互谱相干 | D2 | P3 | ✅ 已接线（`capabilities/research_stats.py::coherence_analysis`）：SC48 互谱相干 + SC43 Welch PSD，输出频率轴/相干谱/峰值频率，n≥30 |
+| D-J10 | 熵/互信息/KL 散度 | D2 | P2 | ✅ 已接线（`capabilities/research_stats.py::information_measures`）：SC55 香农熵 + SC56 互信息 + SC58 KL/JS；单序列只跑 SC55，提供 `other` 才出配对量，n≥30 |
+| D-J11 | 传递熵 | D2 | P3 | ✅ 已接线（`capabilities/research_stats.py::transfer_entropy`）：SC57 双向传递熵与净流向（`lag` 可配），n≥30 |
+| D-J12 | 复杂度（LZ/样本熵/排列熵） | D2 | P2 | ✅ 已接线（`capabilities/research_stats.py::complexity_measures`）：SC59 Lempel-Ziv（归一化 `c` + `c_raw`）+ SC60 样本熵 + SC61 排列熵，n≥30 |
+| D-J13 | DFA / Hurst | D2 | P2 | ✅ 已接线（`capabilities/research_stats.py::long_memory`）：SC62 多尺度 DFA 与 Hurst 指数，输出尺度表与 H，n≥30 |
+| D-J14 | 极值拟合与重现水平（GEV/GPD） | D3 | P3 | ✅ 已接线（`capabilities/research_stats.py::tail_risk_extreme`）：SC63 GEV + SC64 GPD + SC65 重现水平（`return_period` 默认 10），n≥30 |
+| D-J15 | 不确定度合成（GUM） | D1 | P2 | ✅ 已接线（`capabilities/research_stats.py::measurement_uncertainty`）：SC09 合成不确定度 `u_c`（仅当提供 `components`）+ SC11 容忍区间；无分量输入时只出容忍区间并显式披露 `u_c/U` 未计算 |
+| D-J16 | 预测/容忍/共形区间 | D2 | P2 | ✅ 已接线（`capabilities/research_stats.py::interval_estimate`）：单序列只跑 SC11 容忍区间；提供 `{x,y}` 时由 SC10 预测区间 + SC12 分割共形区间并列，n≥30 |
+| D-J17 | 功效与样本量 | D2 | P3 | ✅ 已接线（`capabilities/research_stats.py::power_sample_size`）：SC01 当前功效 + SC02 目标样本量 `n_star`（`effect_size` 缺省用 mean/sd），n≥30 |
+| D-J18 | 等效性检验（TOST） | D2 | P3 | ✅ 已接线（`capabilities/research_stats.py::equivalence_test`）：SC03 TOST 双单侧检验，`bound` 缺省按样本自适应并返回 `equivalent` 布尔，n≥30 |
+| D-J19 | ANOVA/ANCOVA/事后比较 | D2 | P2 | ✅ 已接线（`capabilities/research_stats.py::group_comparison`）：SC25 单因素 ANOVA F/p + SC30 Tukey HSD；`groups` 内部展开为扁平多键以通过方法层 `_sample_n` 门禁，每组 ≥30 |
+| D-J20 | 回归诊断（VIF/BP/White/DW/Cook） | D2 | P2 | ✅ 已接线（`capabilities/research_stats.py::regression_diagnostics`）：SC20 VIF + SC21 Breusch-Pagan + SC22 White + SC23 Durbin-Watson + SC24 Cook 距离，n≥30 |
+| D-J21 | 稳健回归/分位回归 | D3 | P3 | ✅ 已接线（`capabilities/research_stats.py::robust_regression`）：SC17 分位回归（`taus` 默认 0.1/0.5/0.9）+ SC18 Huber 稳健回归，n≥30 |
+| D-J23 | 聚类与轮廓系数 | D3 | P3 | ✅ 已接线（`capabilities/research_stats.py::cluster_structure`）：SC36 K-Means + SC37 轮廓系数 + SC38 层次聚类，输出标签与簇诊断，n≥30 |
+| D-J25 | 空间自相关/变异函数 | D2 | P3 | ✅ 已接线（`capabilities/research_stats.py::spatial_autocorrelation`）：SC67 Moran's I + SC68 Geary's C + SC69 实验变异函数，`k` 近邻可配，n≥30 |
+| D-J26 | 生存分析（KM/log-rank/Cox） | D3 | P3 | ✅ 已接线（`capabilities/research_stats.py::survival_analysis`）：SC73 Kaplan-Meier + SC76 Weibull；提供 `group` 走 SC74 log-rank、提供 `covariate` 走 SC75 Cox，n≥30 |
+| D-J27 | 可靠性/控制图（X̄-R/EWMA/CUSUM） | D1 | P3 | ✅ 已接线（`capabilities/research_stats.py::reliability_metrics`）：SC77 MTBF/失效率 + SC78 EWMA/控制限告警（`lam`/`L` 可配），n≥30 |
+| D-J28 | Meta 分析与异质性 | D3 | P3 | ✅ 已接线（`capabilities/research_stats.py::meta_analysis`）：SC79 固定效应 + SC80 随机效应 + SC81 异质性 I²/τ² + SC82 漏斗图 + SC83 Trim-and-fill，需 `effects`+`se` |
+| D-J29 | 缺失机制与插补 | D3 | P2 | ✅ 已接线（`capabilities/research_stats.py::missing_data_profile`）：SC84 缺失机制 + SC85 KNN 插补 + SC86 马氏离群 + SC87 缺失模式，n≥30 |
 | D-J30 | 质量校验（重复/一致性/PIT） | D1 | P1 | ✅ |
 
 **分层关系**：A/B/C = 数据维度；E = 关系表达；G = 机构方法；**J = 科研统计（通用化）**。J 组使 L1 可用于运营、实验、传感器、气候、医学等任意时序数据场景。
@@ -435,8 +432,8 @@ L1 意图（TS/Python 双端注册表）
 
 | ID | 能力 | 数据来源 | 分级 | 优先级 | 状态 |
 |---|---|---|---|---|---|
-| D-K01 | 方法推荐（relationship_recommend） | `relationship_registry.db`（只读） | D1（读预计算） | P1 | ⬜ |
-| D-K02 | 发现查询（discovery_query） | `reports/discovery/**`（只读） | D1（读预计算） | P2 | ⬜ |
+| D-K01 | 方法推荐（relationship_recommend） | `relationship_registry.db`（只读） | D1（读预计算） | P1 | ✅ 已接线（`capabilities/eval_exports.py::recommend_relationship`，Top3 / RankIC 绝对值排序 / candidate 降级） |
+| D-K02 | 发现查询（discovery_query） | `reports/discovery/**`（只读） | D1（读预计算） | P2 | ✅ 已接线（`capabilities/eval_exports.py::discovery_query`，最近一期 / 恒标 candidate / 无候选降级） |
 
 **约束**：只读预计算产物 → 无实时随机性；注册表/报告缺失时回落方法库默认顺序（FAIL-OPEN）。
 
@@ -450,12 +447,16 @@ L1 意图（TS/Python 双端注册表）
 | `datacenter.percentile` | ✅ 已声明（D-A04/D-A05 已落地） | D-A04/05 | 同上（服务端统计） |
 | `datacenter.correlation` | ✅ 已声明（D-A11/A12 已落地） | D-A11/12 | 同上（双序列对齐） |
 | `datacenter.social_volume` | ✅ 既有（只读） | D-E20 | 同上（`mm_metrics.sub_category='social_volume'` 的 `news_count_24h`/`social_volume` 日频观测） |
+| `datacenter.panel` | ✅ 已声明（G 组 14 项 + J 组 7 项已落地） | D-G01/02/03/04/05/06/10/11/12/13/15/18/21/24、D-J19/20/21/23/26/27/29 | 同一数据集的多标的 / 多组观测（横截面与面板口径，服务端统计） |
+| `datacenter.spatial_frame` | ✅ 已声明（D-J25 已落地） | D-J25 | 坐标 + 观测值（空间自相关 / 变异函数） |
 | `market.candles` | ✅ 已落地（S1，1D/1W/1M 日频派生 + 1H OHLC + 日线 OHLC 合并） | D-A07、D-B00–B09 | `mm_metrics` 日频/小时级（`{symbol}/USDT` high/low） |
 | `datacenter.record` | ✅ 既有 | D-A 组当前值 | 18 落库最新记录 |
 | `market.ticker` | ✅ 既有 | 实时价/24h 高低 | OKX ticker |
 | `yijing.bdsm` / `yijing.bcrm2` | ✅ 既有 | D-C01/02 | 快照 JSON |
 | `event.state` / `riskcontrol.trailing` | ✅ 既有 | D-C03/04 | 快照/日志 |
 | `evolution.contradiction` / `evolution.snapshot` | ✅ 既有 | D-C05/06 | 演化产物 |
+| `registry.relationship_eval` | ✅ 已声明（D-K01 已落地） | D-K01 | `data/relationship_registry.db`（`file:...?mode=ro` 只读） |
+| `reports.discovery` | ✅ 已声明（D-K02 已落地） | D-K02 | `reports/discovery/<YYYYMMDD-HHMM>/`（manifest.json + findings.jsonl，只读） |
 
 ---
 
@@ -496,7 +497,83 @@ L1 意图（TS/Python 双端注册表）
 - 场景包 SPEC = 某类问题的**固定编排**（当前已交付延续性画像 `D-E13`、T0.5 与 D-E14 一维首版 + 二维 Tier B/D 阶梯；Tier A 4×4 随样本到 4,000 日自动升档，契约不变）。
 - 新增能力流程：本文登记 → SPEC 补契约（如涉及新 scope）→ 实现 + 测试 → 更新状态列并附代码位置。
 
-### 6.1 本版更改（v2.54 MERS 每日调度 + 90 天保留；v2.53 MERS S3 全量真实数据验收；v2.52 D-A05 z-score；v2.51 D-E20 新闻统一出口；v2.50 C11 节前效应 + D-G25 尾部相关 + D-J05 周期/频谱；v2.49 D-E14 二维 Tier B/D 兜底；v2.48 L1 交易层 D-E15～D-E19；v2.47 前端 D-A/D-B/D-G cue 分派；v2.46 D-G09 波动率目标换算；v2.45 D-G08 12-1 动量；v2.44 D-B09 距 ATH 回撤；v2.43 D-B08 趋势斜率；v2.42 D-A16 稳定币增速；v2.41 D-A15 ETF 净流入滚动和；v2.40 D-A13 极端事件频率；v2.39 D-A12 领先滞后相关；v2.38 D-A11 双序列滚动相关；v2.37 D-A10 实际利率；v2.36 D-A09 环比；v2.35 D-A08 同比；v2.34 D-A07 回撤；v2.33 D-A06 年化波动率；v2.32 D-A04 历史分位；v2.31 D-A03 CAGR；v2.30 D-A02 变化率；v2.29 D-A01 历史序列；v2.28 D-J30 PIT/release_ts 全局能力；v2.27 D-G14 EWMA 波动/协方差；v2.26 D-J24 相关网络与社区发现；v2.25 D-J22 PCA/SVD/因子分析；v2.24 D-G20 分位组合与单调性检验；v2.23 D-G19 IC/ICIR/衰减表；v2.22 D-G16 组合 VaR/CVaR；v2.21 D-J02 季节强度与调整；v2.20 D-J04 变点检测；v2.19 D-E07/B06 联合计数；v2.18 D-G23 事件窗 CAR + Patell/BMP；v2.17 D-E14 一维条件分布；v2.16 D-E04/D-E09 事件与计数出口；v2.15 D-A14/F26 A 分位法 level；v2.14 D-G22 显著性出口；v2.13 事件历史回填通道；v2.12 D-E12/R18；v2.11 C18/D-E01/MERS；v2.10 配对/推断/执行覆盖；v2.9 D-E02 接线与 T0.5 交付；v2.8 方法层全部落地）
+### 6.1 本版更改（v2.61 真数据覆盖表；v2.60 K-09/K-10 契约收口；v2.59 K-01/K-08 契约收口；v2.58 §7 串行推进顺序 + 接口盘点；v2.57 J 组 24 个科研统计出口；v2.56 G 组 15 个机构统计出口；v2.55 D-K01/D-K02 评估层出口 + discovery_space 预注册；v2.54 MERS 每日调度 + 90 天保留；v2.53 MERS S3 全量真实数据验收；v2.52 D-A05 z-score；v2.51 D-E20 新闻统一出口；v2.50 C11 节前效应 + D-G25 尾部相关 + D-J05 周期/频谱；v2.49 D-E14 二维 Tier B/D 兜底；v2.48 L1 交易层 D-E15～D-E19；v2.47 前端 D-A/D-B/D-G cue 分派；v2.46 D-G09 波动率目标换算；v2.45 D-G08 12-1 动量；v2.44 D-B09 距 ATH 回撤；v2.43 D-B08 趋势斜率；v2.42 D-A16 稳定币增速；v2.41 D-A15 ETF 净流入滚动和；v2.40 D-A13 极端事件频率；v2.39 D-A12 领先滞后相关；v2.38 D-A11 双序列滚动相关；v2.37 D-A10 实际利率；v2.36 D-A09 环比；v2.35 D-A08 同比；v2.34 D-A07 回撤；v2.33 D-A06 年化波动率；v2.32 D-A04 历史分位；v2.31 D-A03 CAGR；v2.30 D-A02 变化率；v2.29 D-A01 历史序列；v2.28 D-J30 PIT/release_ts 全局能力；v2.27 D-G14 EWMA 波动/协方差；v2.26 D-J24 相关网络与社区发现；v2.25 D-J22 PCA/SVD/因子分析；v2.24 D-G20 分位组合与单调性检验；v2.23 D-G19 IC/ICIR/衰减表；v2.22 D-G16 组合 VaR/CVaR；v2.21 D-J02 季节强度与调整；v2.20 D-J04 变点检测；v2.19 D-E07/B06 联合计数；v2.18 D-G23 事件窗 CAR + Patell/BMP；v2.17 D-E14 一维条件分布；v2.16 D-E04/D-E09 事件与计数出口；v2.15 D-A14/F26 A 分位法 level；v2.14 D-G22 显著性出口；v2.13 事件历史回填通道；v2.12 D-E12/R18；v2.11 C18/D-E01/MERS；v2.10 配对/推断/执行覆盖；v2.9 D-E02 接线与 T0.5 交付；v2.8 方法层全部落地）
+
+**v2.61（本版，真数据覆盖表 / L-STAT 收口）**
+
+| 变更 | 数据 / 本文位置 | 结论 |
+|---|---|---|
+| 资产级覆盖 | §7.9-A，`19-数据访问层/data/dreambuddy_core.db`（`mode=ro`，2026-11-15 23:32 快照） | 28 个注册资产中 24 个 ≥250 期；AMD/GEV/SPCX/SKHYNIX 为 0 样本（归 B-55 云端回填） |
+| 能力档位闭合 | §7.9-B，`capability_manifest.yaml` | 93 条能力 min_n 分布 2/3/13/30/60/100/120/250/500，与 24 个可用资产闭合；250 档 17 条刚好满足 lights `min_rows` |
+| 数据域核查 | §7.9-C | candles/panel/mm_metrics/social/PIT 充足；5 张衍生品明细表全空、`mm_fear_greed` 1 行 → 相关能力只能降级 |
+| 新口径缺口 | §7.9-D | `mm_events` 只有 `symbols` 文本列（无 `symbol`），标的聚合需先解析，纳入 G-IF1 冻结范围；BTC/ETH/SOL/XAU 仅 1094 期，二维 Tier A 不可达 |
+| L-STAT 判定 | §7.2 | 覆盖表 ✅；剩余 B-58 提交同步（云端 manifest 必须同为 93）后即可进入 G-IF1 |
+
+**v2.60（K-09 / K-10 契约收口）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| K-09 方法级 gate 入契约 | `l1agg/capabilities/envelope.py`（`GATE_CAPABILITY` / `GATE_METHOD`） | 方法级取值不再靠隐式约定；能力级 6 值与 schema 枚举同源 |
+| K-09 回归校验 | `tests/test_capabilities.py::_nested_gates` + 执行覆盖循环 | 93 个场景逐块递归检查内嵌 gate，越界即失败；另加 `test_nested_method_gates_are_declared` 三例定型 |
+| K-10 `data` 闭合 | `contracts/capability_result.schema.json` | 由 `additionalProperties: false` 驱动实测枚举：name/as_of/window_days/source/items/notes/assets 7 个新键 + 既有 5 键，共 12 键 |
+| K-12 契约开槽 | schema `quality.snapshot_at` | 只开可选槽位，能力层不填（无快照事实源），待 19-DAL 注入 |
+| 验证 | `pytest tests -q` | 全绿，1313 → **1314** 条 |
+
+**v2.59（K-01 / K-08 契约收口）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| K-01 能力块补 `gate` | `l1agg/capabilities/envelope.py::build` | 单点兜底：`data.capabilities[*]` 缺省补 `gate="ok"`，不覆盖既有 `partial`/`degraded`；G/J 组 39 出口一次性收敛，无需逐个函数改 |
+| K-08 schema 覆盖 93 出口 | `tests/test_capabilities.py::test_manifest_matches_methods_actually_executed_across_capability_branches` | 执行覆盖循环内逐个 `jsonschema.validate`，与执行覆盖同一套场景，避免第二套输入漂移 |
+| **新发现并修复**：`gate` 枚举不完整 | `contracts/capability_result.schema.json` | 实测 D-A04 等 12 处产出 `gate=partial`、3 处 `degraded`，原枚举只有 4 值 → 枚举补 `partial`/`degraded`，并注明方法级另有 `skipped`/`calculation_failed`/`empty` |
+| 回归测试 | `tests/test_capabilities.py::test_every_capability_block_declares_gate` | 锁住 `D-G01`/`D-J01`/`D-J20`/`D-A04` 四类代表，防止再次整体遗漏 |
+| 验证 | `pytest tests -q` | 全绿（新增 1 条用例；原 1312 → 1313） |
+
+**v2.58（§7 串行推进顺序与接口冻结）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| 推进节奏定稿 | §7.1–§7.2 | 统计层 → 图表输出 → 信号层；**写代码串行、只读调研可并行**；三层各给可判定完成定义（统计层要求云端 manifest 同为 93） |
+| 三个接口冻结点 | §7.3 | G-IF1（统计层收口）/ G-IF2（图表层收口）/ G-IF3（信号层开工前），未冻结不得进下一层 |
+| 接口表 A：统计层 → 图表层 | §7.4 + `contracts/capability_result.schema.json` | 盘点信封 25 个字段与 `visual` 五种 kind 分支；发现 6 项缺口 |
+| 接口表 B：图表层 → 信号层 | §7.5 + `capabilities/lights.py` / `config/direction_rule.yaml` / `handoff.py` | 盘点 `lights[]` 行、`meta`、规则 12 组参数、`FinalDecisionSignal v1.1`；发现 8 项缺口 |
+| 接口表 C：信号层 → 回测/评估/22 | §7.6 | 列 8 个交接字段；`trading.db` signal 表 DDL 本轮未逐列核对（标注为缺口） |
+| 信号层前置阻塞清单 | §7.7 | K-01…K-12，P0 四项：缺 `gate`（39 出口）/ 轴名错位 / 阈值双轨 / 动态权重开关未开 |
+| **实测缺陷（新增）** | 实测 `D-G01`/`D-J01`/`D-J20` block keys | 能力块缺 `gate`，违反 schema `required: ["gate","methods"]`；`tests/test_capabilities.py:3737-3752` 的 schema 校验只覆盖 12 个手选出口，故全绿为假阳性 |
+
+**v2.57（批次 B-23…B-46：J 组 24 个科研统计出口）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| 单序列族 10 项 | `capabilities/research_stats.py`（`trend_test` / `outlier_scan` / `smoothing_filter` / `spectral_envelope` / `state_space_filter` / `complexity_measures` / `long_memory` / `tail_risk_extreme` / `power_sample_size` / `meta_analysis`）、manifest D-J01/D-J03/D-J06/D-J07/D-J08/D-J12/D-J13/D-J14/D-J17/D-J28、§2.7 | 分别复用 SC52+SC53 / SC92 / SC42+SC44+SC45 / SC42+SC46 / SC47 / SC59+SC60+SC61 / SC62 / SC63+SC64+SC65 / SC01+SC02 / SC79–SC83；`min_n=30`，一律经 `l1agg.methods.run` |
+| 双序列族 5 项 | `capabilities/research_stats.py`（`coherence_analysis` / `information_measures` / `transfer_entropy` / `interval_estimate` / `equivalence_test`）、manifest D-J09/D-J10/D-J11/D-J16/D-J18、§2.7 | 分别复用 SC48+SC43 / SC55(+SC56+SC58 提供 `other` 时) / SC57 / SC10+SC12（提供 `{x,y}`）或 SC11（单序列）/ SC03；全部可选分支显式披露降级原因 |
+| 面板 / 分组族 5 项 | `capabilities/research_stats.py`（`group_comparison` / `regression_diagnostics` / `robust_regression` / `cluster_structure` / `missing_data_profile`）、manifest D-J19/D-J20/D-J21/D-J23/D-J29、§2.7 | 分别复用 SC25+SC30 / SC20–SC24 / SC17+SC18 / SC36–SC38 / SC84–SC87；D-J19 内部把 `groups` 展开成扁平多键，避免方法层 `_sample_n` 把「组数」误判为样本量 |
+| 时间 / 空间 / 可靠性族 4 项 | `capabilities/research_stats.py`（`spatial_autocorrelation` / `survival_analysis` / `reliability_metrics` / `measurement_uncertainty`）、manifest D-J25/D-J26/D-J27/D-J15、§2.7 | 分别复用 SC67+SC68+SC69 / SC73+SC76(+SC74/SC75) / SC77+SC78 / SC09+SC11；D-J15 无 `components` 时不伪造 `u_c`，只出 SC11 容忍区间并披露 |
+| 门禁与 FAIL-OPEN | `capabilities/research_stats.py::_call`、`_empty` | `ValueError` → `insufficient_history`、数值退化 → `calculation_failed`，一律收敛为 `empty` 信封；短样本不抛异常。D-J19 的 `k_groups` 改取原始 `groups` 长度，避免扁平化后 KeyError |
+| 计数同步 | 本文头部 + §2.5 四处 + §2.7 二十四行 + §3 两个 scope 行、母 SPEC | 可执行出口 69 → **93 个**，manifest **93 条**；§2.5 新增 `research_stats.py` 行、`stats.py` 编排函数 63 → 87；§3 补 `datacenter.panel` / `datacenter.spatial_frame` 两行 |
+| 测试 | `tests/test_research_stats.py`（43 passed，替换不被 pytest 收集的 `_smoke_j.py`）、`tests/test_capabilities.py` | 覆盖 24 项正向断言、可选分支（J10 无 `other` / J15 无 `components` / J16 单序列 / J26 无 `group`）、11 项短样本 fail-open 参数化、JSON 确定性、`method_binding=compute`、methods 排序去重；执行覆盖新增 24 个 executor 白名单 + 25 条 scenario（J16 两条）+ `research_stats.run_method` 双重 monkeypatch；54-L1 全量 **1312 passed** |
+
+**v2.56（批次 B-08…B-22：G 组 15 个机构统计出口）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| 横截面族 6 项 | `capabilities/institutional.py`（`cross_section_profile` / `group_neutralize` / `quantile_portfolio` / `dispersion_breadth` / `co_movement` / `factor_exposure`）、manifest D-G01…D-G06、§2.7 | 分别复用 X01+X02 / X03 / X04+X05 / X06+X07 / X08 / X09+X10；门禁 n：横截面 30、因子回归 120；缺 `factor` 时 X09 退化为等权市场代理并在 answer 明示 |
+| 序列算子 D-G07 | `capabilities/institutional.py::sequence_operators`、manifest D-G07、§2.7 | O01–O08 + O11–O15 单序列 + O09/O10 双序列（提供 `other` 时）；`d` 缺省 20 并按样本安全截断；n≥120 |
+| 组合风险族 6 项 | `capabilities/institutional.py`（`inverse_volatility_weights` / `equal_risk_contribution` / `risk_contribution` / `covariance_shrinkage` / `pca_risk_decomposition` / `brinson_attribution`）、manifest D-G10/D-G11/D-G12/D-G13/D-G15/D-G18、§2.7 | 分别复用 P03 / P04 / P05 / P06 / P08 / P12；n≥60；协方差收缩并列 `sklearn` / `analytic` 后端 |
+| 回归与拥挤度 | `capabilities/institutional.py`（`fama_macbeth` / `factor_crowding`）、manifest D-G21/D-G24、§2.7 | D-G21 复用 Q05（λ/se/t/期数/标的数，n≥250 期）；D-G24 复用 P13 + P14，稳定性输出 `std_rho/|mean_rho|` 标量，估值价差未提供时显式披露而非伪造 |
+| 一致性修复 | `capabilities/institutional.py`、`capability_manifest.yaml` | ① P08 `ratio` 为 list，原 `.values()` 误用 → `sum(ratio)`；② P14 `stability` 为 dict，原按 float 格式化 → 标量派生；③ O09/O10 需要 `{"x","y"}` 而原传裸序列 → 修正并写入 D-G07 manifest 声明，使 `methods ⊆ manifest` 与执行覆盖双向闭合；15 个 answer 统一补「样本」披露以匹配信封硬校验 |
+| 计数同步 | 本文头部 + §2.5 三处 + §2.7 + §3、母 SPEC | 可执行出口 54 → **69 个**，manifest **69 条**；§2.5 新增 `institutional.py` 行、`stats.py` 编排函数 48 → 63 |
+| 测试 | `tests/test_institutional.py`（25 passed）、`tests/test_capabilities.py` | 覆盖信封契约、`methods ⊆ manifest`、非 good 必含「样本」、输出确定性、空态降级（横截面 <3 标的 / 算子短序列 / P 族短样本 / Q05 <250 期）、O09/O10 双序列路径、D-G24 稳定性标量；54-L1 全量 **1269 passed** |
+
+**v2.55（批次 B-06/B-07：Discovery 搜索空间预注册 + 评估层只读出口）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| Discovery 搜索空间 | `config/discovery_space.yaml`、`l1agg/discovery.py::load_space` | 预注册冻结项全部机器校验：`seed=42`、6 变换、20 方法（须在 `REGISTRY` 登记且不越出预注册子集）、价格前瞻收益 h∈{1,5,20}、序列池 ≤40 且资产序列必须能解析到 `asset_pool.yaml` 的 `anchors[].storage.sub_category`、双序列 ≤300 对、预算 ≤5,000 单元/≤10 分钟/≤50 发现、BH-FDR 强制开（alpha=0.05）、去重阈值 0.95、分段固定 70/30 且 holdout 一致率 ≥0.6；输出 `space_hash` 供 manifest 复现；全量空间超预算属预注册常态，发现器按固定枚举顺序确定性截断 |
+| D-K01 方法推荐 | `capabilities/eval_exports.py::recommend_relationship`、`capability_manifest.yaml`（D-K01 / `registry.relationship_eval`）、§2.7、§3 | 只读 `data/relationship_registry.db`（`file:...?mode=ro`），`WHERE target=? AND horizon=? AND gate_pass=1 AND status IN ('stable','candidate') ORDER BY abs(rank_ic) DESC, n DESC LIMIT 3`；Top1 `stable` → `good`，`candidate` → `partial` + `candidate_only`；注册表缺失/不可读 → `empty`；不重算、不写库 |
+| D-K02 发现查询 | `capabilities/eval_exports.py::discovery_query`、`capability_manifest.yaml`（D-K02 / `reports.discovery`）、§2.7、§3 | 只读最近一期 `reports/discovery/<YYYYMMDD-HHMM>/`（取同时有 `manifest.json` + `findings.jsonl` 的最大目录名），按 RankIC 绝对值排序截断，输出恒标 `status=candidate`；本期 0 候选 → `partial` + `no_findings`（统计事实，非数据缺失）；报告目录缺失 → `empty` |
+| 计数同步 | 本文头部 + §2.5 三处 + §2.7 + §3、母 SPEC | 可执行出口 52 → **54 个**，manifest **54 条**；§2.5 新增 `eval_exports.py` 行并补 K 组边界段 |
+| 测试 | `tests/test_discovery_space.py`（13 passed）、`tests/test_eval_exports.py`（9 passed）、`tests/test_capabilities.py` | 空间：哈希确定性 / 方法登记 / 资产可解析 / 9 类篡改拒绝（seed、变换、方法、资产、重复、预算、FDR、分段、配对上限）；出口：缺表空态、无匹配空态、candidate 降级、stable 提级、gate_pass=0 排除、最新报告优先、无候选降级、批量调度器路由；54-L1 全量 **1244 passed** |
 
 **v2.54（本版，上线 #35 云端周期调度 + registry 保留策略）**
 
@@ -962,7 +1039,7 @@ L1 意图（TS/Python 双端注册表）
 | 文档 | 目标版本 | 同步内容 |
 |---|---|---|
 | [METHOD_LIBRARY.md](./METHOD_LIBRARY.md) | v1.19 | v1.19：C11 节假日前效应落地（日历由日期轴派生），核心 243 方法 `implemented=true` 达 243、占位 0；D-G25/D-J05 接线不改方法口径（P13/T25/T26/C14 均为既有方法）；v1.18：D-E14 一维相关状态条件分布接线，可执行出口 16 个 |
-| [SPEC-54-L1架构能力聚合层.md](../SPEC-54-L1架构能力聚合层.md) | v1.47 | v1.47：关闭 §6.4.4 #32–#34（C11 节前效应接入 D-E04、D-G25 尾部相关、D-J05 周期/频谱），可执行出口 48 → 50 个；v1.21：D-G20 接入 B16 分位组统计、B11 严格单调性与 Q04 Spearman 检验 |
+| [SPEC-54-L1架构能力聚合层.md](../SPEC-54-L1架构能力聚合层.md) | v1.56 | v1.56：J 组 24 个科研统计出口（D-J01/03/06…D-J29）接入，可执行出口 69 → 93 个，manifest 93 条，新增 `datacenter.panel` / `datacenter.spatial_frame` scope；v1.55：G 组 15 项接入；v1.47：关闭 §6.4.4 #32–#34（C11 节前效应接入 D-E04、D-G25 尾部相关、D-J05 周期/频谱） |
 | [SPEC-54-延续性统计分析模块.md](../SPEC-54-延续性统计分析模块.md) | v1.5 | T0.5/A8 首版经 D-E02 出口交付（h=1 PIT，含降桶降级披露）；R02 `pit=true` 已实现；不改 A1–A7 冻结口径 |
 | 三份 RESEARCH 文档 | 保持原文（仅同步能力计数） | 作为调研证据，不改写方法结论；RESEARCH-SCIENTIFIC 的能力出口计数同步为 14，分别支撑延续性分层、机构研究协议与科研可复现/PIT 校验 |
 
@@ -1076,3 +1153,239 @@ L1 意图（TS/Python 双端注册表）
 **下一步**：数据阻塞已清零，剩余 3 项为 S 级路线（#37 S5 对外推荐、#36 Tier A 样本纵深）与验收基础设施（#38 S1 11 模块历史查询验收）。#35 的全量验收已通过，其遗留的**云端周期调度 + registry 保留策略**已登记在 #35 缺口说明与 §6.3 第 2 条，不另开编号。
 
 **文档治理**：见 §0.4；实测数字只在 METHOD_LIBRARY §15 独立维护，其他文档只能引用或保留标注「引自 §15」的决策摘要，执行时按最新快照重算。
+
+---
+
+## §7 统计层 → 图表输出 → 信号层：串行推进顺序与接口冻结（v2.58）
+
+### §7.1 决策：写代码串行，只读调研可并行
+
+2026-11-15 用户决定推进节奏为 **统计层 → 图表输出 → 信号层**（先看到数据结果，再谈信号）。本层执行口径：
+
+- **串行的是写代码**：同一时刻只允许一个层产生代码变更；
+- **可并行的是只读调研**（接口盘点、字段核对、口径比对），不产生写冲突；
+- **禁止**跨层代偿：信号层不得直接调 `run_capability` 重算统计量，图表层不得读 `trading.db`。
+
+理由：三层依赖是单向的（统计量 → 制品 → 方向），倒序做信号层等于用未标定阈值猜方向；并行做三层会让 manifest 计数、阈值口径、字段契约三类错误同时扩散。
+
+### §7.2 三层范围与可判定完成定义
+
+| 层 | 范围 | 完成判定（全部满足才算 ✅） |
+|---|---|---|
+| L-STAT 统计层 | 93 个能力出口 + 方法层 386 个 `implemented` | ① `pytest tests -q` 全绿；② 93 条 manifest 与 `_EXECUTORS` 双向闭合；③ 真数据覆盖表（能力 × 资产 × 样本量）产出；④ 云端与本地 manifest 计数一致（B-58 提交同步） |
+| L-CHART 图表层 | T1 表格 / T2 曲线 / T3 树图 + D-E15–D-E19 制品 | ① `visual` 规格过 `capability_result.schema.json`；② T2 曲线 + D-E19 lights 制品可复跑；③ 阈值口径定稿并回写 `config/chart_weights.yaml`；④ `artifacts/` 落盘幂等 |
+| L-SIGNAL 信号层 | `direction_rule` → `signal` 表 → `handoff` → 22 | ① 四轴→方向映射无缺口；② `params_hash` 含资产池版本；③ 纸面回放基线复跑一致；④ 非加密标的降级路径明确 |
+
+**图表层交付物必须包含两类**：给人看的图 + 给信号层读的机器制品（`lights[]`）。只交前者，信号层必然返工。
+
+### §7.3 三个接口冻结点（不能拖到下一层）
+
+| 冻结点 | 时点 | 冻结内容 | 未冻结的后果 |
+|---|---|---|---|
+| **G-IF1** | 统计层收口时 | `capability_result` 信封字段、`gate` 枚举、`methods` 披露、`as_of/PIT` 语义、缺失→降级约定 | 图表层按旧字段消费，G/J 组 39 个新出口全部返工 |
+| **G-IF2** | 图表层收口时 | 四轴 `strength` 口径、`lit_pct/warm_pct` 标定口径、`lights[]` 行 schema、`band/flags` 字段 | 信号层无法启动（阈值双轨、轴名错位） |
+| **G-IF3** | 信号层开工前 | `direction_rule` 参数版本、`trading.db` 写入契约、纸面回放基线 | 回放不可复现，灰度切换无审计依据 |
+
+### §7.4 接口表 A：统计层 → 图表层
+
+**生产者**：`l1agg/capabilities/*.py` 的 `build()`；**契约**：`contracts/capability_result.schema.json`；**消费者**：`build_visual`、前端渲染、`artifacts/` 落盘。
+
+| 字段 | 类型 / 约束 | 口径 | 缺失/降级 |
+|---|---|---|---|
+| `ok` | boolean | `status=empty` → false | L1 据此转 L2 |
+| `capability` | `^D-[A-Z]\d{2}$` | 必须在 manifest 登记 | 未登记 → 契约违规 |
+| `intent` | string | 与 manifest `intent` 一致 | — |
+| `answer` | string | 非 good 时必须含「样本/降级/不足」 | `build` 抛 ValueError |
+| `data.capabilities[cid].gate` | enum(`ok`/`insufficient_samples`/`insufficient_history`/`no_data`) | 能力级门禁 | — |
+| `data.capabilities[cid].methods` | string[]，minItems 1，`^[A-Z]{1,2}\d{2}$` | **必须 ⊆ manifest.methods** | 超出 → 执行覆盖校验失败 |
+| `data.capabilities[cid].reason` | string | 降级原因 | 可选 |
+| `data.params / symbol / pair` | object / string? / [string,string] | 回显入参 | 可选 |
+| `data.visual` | 见下 | 每信封最多 1 个 | 无图 → 省略 |
+| `quality.status` | enum(`good`/`partial`/`empty`) | 唯一质量块，只在顶层 | — |
+| `quality.sample_n` | integer ≥0 | 参与计算的有效样本 | — |
+| `quality.span` | [string,string]? | [首日, 末日] UTC | — |
+| `quality.degraded_reason` | string? | partial/empty 时**必填** | 缺失 → schema 失败 |
+| `quality.sources / missing_rate / align_method / timezone` | 可选 | 数据血缘 | — |
+| `visual.kind` | enum(table/series/matrix/tree/graph) | — | — |
+| `visual.spec_version` | const `1.0` | 规格版本 | — |
+| `visual.title` | ≤60 字 | — | — |
+| `visual.source_capability` | `^D-[A-Z]\d{2}$` 或 `T1–T4` | 血缘 | — |
+| `visual.n_scope` | enum(global/per_row/per_cell) | 样本口径 | — |
+| `visual.dataset` | 按 kind 分支 | table: columns/rows/groups；series: points/meta；matrix: 20×20 上限；tree: root；graph: nodes/edges | — |
+| `visual.encodings / annotations` | object | 前端零统计 | 可选 |
+| `visual.quality_ref` | const `quality` | 指向顶层 quality | — |
+| `visual.caveat` | string ≥1 | 必填免责语 | — |
+| `visual.truncated` | boolean | 截断标记 | — |
+
+**表 A 缺口（实测，2026-11-15）**
+
+| # | 缺口 | 证据 | 影响 |
+|---|---|---|---|
+| A-1 | ~~**G/J 组 39 个出口的能力块缺 `gate`**~~ **已修复（v2.59）** | 实测 `D-G01`/`D-J01`/`D-J20` 修复前 block keys 均无 `gate` | `envelope.build()` 统一补 `gate`（缺省 `ok`，不覆盖既有值），一处收敛全部 93 出口 |
+| A-2 | ~~schema 校验测试只覆盖 12 个手选出口~~ **已修复（v2.59）** | 执行覆盖测试现对 93 个场景逐个 `jsonschema.validate` | 全绿不再假阳性 |
+| A-3 | ~~方法级 `gate` 未入契约~~ **已修复（v2.60）** | `envelope.GATE_METHOD` 显式声明方法级集合（能力级 6 值 + `skipped`/`calculation_failed`/`empty`/`rejected`）；执行覆盖测试对 93 场景逐块递归校验 | 方法级 gate 不再是隐式约定 |
+| A-4 | ~~`data` 未闭合 `additionalProperties`~~ **已修复（v2.60）** | `data` 关闭扩展键，枚举实际使用的 12 个键（capabilities/params/symbol/pair/name/as_of/window_days/source/items/notes/assets/visual） | 图表层可做严格字段校验 |
+| A-5 | `visual.source_capability` 允许 `T1–T4` 但 manifest 无 T* 实体 | T1–T4 是图表规格标签，不是能力 ID | 制品血缘无法反查能力 |
+| A-6 | `quality.snapshot_at` 契约已开槽（v2.60），暂无生产者 | schema 已有可选字段，能力层不填（无快照事实源） | 快照戳须由 19-DAL 快照层注入，禁止能力层推断 |
+
+### §7.5 接口表 B：图表层 → 信号层
+
+**生产者**：`l1agg/capabilities/lights.py::light_block`（D-E19）；**消费者**：`l1agg/direction_rule.py::decide`、`l1agg/handoff.py::build_final_decision`。
+
+**B-1 `lights[]` 行字段（D-E19 能力块）**
+
+| 字段 | 取值 / 约束 | 口径 |
+|---|---|---|
+| `gate` | `ok` / `empty` | 无入参 → `empty` + `reason=no_entries` |
+| `methods` | `[I37, I39, I36]` | 固定三方法 |
+| `lights[].symbol` | string | 透传 entry |
+| `lights[].class` | string | `entry.class` 或 `entry.view`，缺省「未分类」 |
+| `lights[].as_of` | string? | 透传，**无时区约束** |
+| `lights[].axes.{trend,inertia,cycle,foresight}` | object | 四轴固定顺序 |
+| `…axes[*].state` | enum(`lit`/`warm`/`dim`/`conflict`/`unavailable`) | `conflict` 仅 trend=lit 且 foresight 命中 `CONFLICT_FLAGS` |
+| `…axes[*].strength` | float ∈[0,1] 或 null | null → `axis_missing` |
+| `…axes[*].bucket` | enum(high/mid/low/none) | 由阈值切分 |
+| `…axes[*].evidence` | object | 零重算，仅回显方法事实 |
+| `…axes[*].flags` | string[] | 轴级旗标 |
+| `lights[].strength` | float 或 null | 按 `light_weights` 归一的加权合成（**不是**方向分） |
+| `lights[].summary` | `{lit_n,warm_n,conflict_n,unavailable_n}` | 四轴计数 |
+| `lights[].light_weights_hash` | string | 权重+阈值指纹 |
+| `lights[].n` / `min_rows` | int | 样本行数与门槛（默认 250） |
+| `lights[].status` | `available` / `partial` | 四轴齐全才 available |
+| `meta.light_weights` / `_hash` / `_source` / `_mode` / `weights_degraded` | — | 三权分立审计字段 |
+| `meta.thresholds` | `{lit_pct, warm_pct}` | 当前配置值 |
+| `meta.thresholds_uncalibrated` | boolean | `calibrated_at` 为空 → true |
+| `meta.conflict_flags` | `[vix_pct_ge_0.90, vix_divergence, curve_inverted]` | 只读旗标白名单 |
+
+**B-2 `direction_rule` 入参（`config/direction_rule.yaml`，`dr-1.1.0`）**
+
+| 参数 | 值 | 说明 |
+|---|---|---|
+| `windows` / `window_weights` | `[20,60,120,250]` / `[0.15,0.25,0.30,0.30]` | 多窗一致性 |
+| `axis_weights` | `trend 40 / adx 25 / inertia 20 / coherence 15 / gap 0` | **与 lights 轴名不同** |
+| `gap_axis` | `enabled: false` | 协整均衡缺口，未启用 |
+| `strength_mode` | `abs_total` | 备选 `quantile_dispersion`（ref 0.10） |
+| `midas` | `enabled: false` | Beta 多项式混合频率 |
+| `adx_bands` | `[0,20,0] / [20,25,0.5] / [25,100,1]` | ADX 分档打分 |
+| `ema` | fast 12 / slow 26 / trend 50 | — |
+| `flat_threshold` / `exit_threshold` | 30 / 12 | 进场 / 迟滞平仓 |
+| `hysteresis_confirm_bars` / `min_hold_bars` | 2 / 6 | 迟滞与最短持有 |
+| `use_same_direction` / `use_significance` / `hac_alpha` | true / true / 0.05 | 显著性门 |
+| `seasonality_mode` | `record_only` | 只记录不打分 |
+
+**B-3 `handoff` 契约（`49-交易框架协议/contracts/final_decision_signal.v1.1.json`）**
+
+入参 `signal` 必填：`as_of`、`symbol`、`rule_version`、`params_hash`、`direction∈{-1,0,1}`、`strength∈[0,1]`；可选 `band`、`flags`。
+出参：`signal_id`=`l1-chart|dec-l1-…`、`ts`、`symbol`（仅 `*-USDT-SWAP`）、`direction`（short/neutral/long）、`confidence`=`strength`、`horizon`、`risk_exposure_hint`、`expires_at`（默认 TTL 15 min）、`mode∈{live,paper,shadow}`、`payload{decision_id, action, position_tier, position_mult, notional_usdt, adapter="54-l1", as_of, l1_direction, l1_strength, l1_band, l1_flags, rule_version, params_hash}`；仓位档 `probe<0.55 ≤ standard<0.75 ≤ trend`。
+
+**表 B 缺口（P0 级为主）**
+
+| # | 缺口 | 证据 | 影响 |
+|---|---|---|---|
+| B-1 | **轴名错位**：lights 四轴 `trend/inertia/cycle/foresight` vs 规则五轴 `trend/adx/inertia/coherence/gap` | `lights._INNER_AXIS` 只映射 foresight→coherence；`cycle` 靠 I39 外部传入；`adx` 在 lights 无对应轴 | 信号层不能直接消费 `lights[]`，必须补 `adx` 事实与 cycle 权重 |
+| B-2 | 阈值双轨：`lights.DEFAULT_THRESHOLDS` = 0.70/0.40，`config` = 0.764706/0.572400 | 前者是兜底默认，后者是行级池化标定值 | 同一批次两条口径混用 → 灯态不可复现 |
+| B-3 | `band` / `flags` 未被 lights 产出 | `handoff` 读 `signal.band`、`signal.flags` | 信号表需补字段，否则 handoff 丢上下文 |
+| B-4 | `params_hash` 不含资产池版本 | `config/weights.yaml` 无 `pool_version`（LTL-15 未落） | 池变更后回放不可靠 |
+| B-5 | 动态权重开关未开 | `weights.yaml mode: "off"`（LTL-09） | 轴向权重固定 40/25/20/15，无灰度验证 |
+| B-6 | `as_of` 无时区/TTL 约定 | lights 透传、handoff 自造 `ts` | 跨时区回放可能错位 |
+| B-7 | 非加密标的无法 handoff | `execution_symbol` 只认 `BINDINGS.asset_class=="crypto"`，其余抛 `HandoffError` | 20 资产池里仅 BTC/ETH 可执行，其余只能 shadow |
+| B-8 | 三权分立易被误用 | `light_weights`(0.40/0.25/0.15/0.20) ≠ `axis_weights`(40/25/20/15) | 若混用，图表强度会被当成方向分 |
+
+### §7.6 接口表 C：信号层 → 回测 / 评估 / 22 执行
+
+| 字段 | 生产者 | 消费者 | 约束 |
+|---|---|---|---|
+| `decision_id` | `handoff` | 22 幂等 / outbox 去重（L1X-03） | `(symbol, as_of, direction, rule_version, params_hash)` 确定性派生 |
+| `signal_id` | `handoff` | 22 | `l1-chart|{decision_id}` |
+| `direction` / `strength` | `direction_rule` | `handoff`、回放 | -1/0/1；[0,1] |
+| `params_hash` | `direction_rule` | 22、回放、灰度审计 | 参数变更必须升 `version` |
+| `weights_hash` | 动态权重层 | 审计（L1D-08） | `off` 时为静态先验指纹 |
+| `position_tier` / `position_mult` | `handoff` | 22 | probe/standard/trend；= strength |
+| `expires_at` / `mode` | `handoff` | 22 | TTL 15 min；live/paper/shadow |
+| `band` / `flags` | `direction_rule` | 22、评估层 | **当前 lights 侧未产出**（B-3） |
+
+**表 C 缺口**：`trading.db` 的 `signal` 表 DDL 与上表字段未做逐列核对（本轮只盘点 6 个代码/配置资产）；`paper_replay` 与 `handoff` 的 `mode` 语义需对齐；评估层读 `signal` 表的 PIT 口径未定义。
+
+### §7.7 信号层前置阻塞清单
+
+| 优先级 | 编号 | 阻塞项 | 解除条件 | 归属层 |
+|---|---|---|---|---|
+| **P0** | K-01 | ~~G/J 组 39 出口能力块缺 `gate`~~ **✅ 已关闭（v2.59）** | `envelope.build()` 统一补 `gate`（缺省 `ok`）；回归测试 `test_every_capability_block_declares_gate` | L-STAT（G-IF1） |
+| **P0** | K-02 | lights 四轴与规则五轴错位（缺 `adx`、`cycle` 未权重化） | 冻结映射表：`adx` 由哪个能力产出、`cycle` 权重从 I39 取值规则 | L-CHART（G-IF2） |
+| **P0** | K-03 | 阈值双轨 0.70/0.40 vs 0.7647/0.5724 | 定稿唯一口径 → 回写 config → 复算 45 期快照 | L-CHART（G-IF2） |
+| **P0** | K-04 | `weights.yaml mode: off` | 明确灰度档位与注入条件后才可开工 | L-SIGNAL（G-IF3） |
+| P1 | K-05 | `pool_version` 未入 `params_hash` | 资产池版本纳入派生 | L-SIGNAL |
+| P1 | K-06 | `band`/`flags` 未产出 | lights 或信号侧补齐并写契约 | L-CHART/G-IF2 |
+| P1 | K-07 | 非加密标的无 handoff 路径 | 明确 shadow-only 或新增标的映射白名单 | L-SIGNAL |
+| P1 | K-08 | ~~schema 校验覆盖不足（仅 12 出口）~~ **✅ 已关闭（v2.59）** | 执行覆盖测试内对 93 个场景逐个 `jsonschema.validate`；同批发现并修复 `gate` 枚举缺 `partial`/`degraded` | L-STAT |
+| P2 | K-09 | ~~方法级 `gate` 未入契约~~ **✅ 已关闭（v2.60）** | `envelope.GATE_METHOD` 单一事实源 + 递归校验 | L-STAT |
+| P2 | K-10 | ~~`data` 未闭合 `additionalProperties`~~ **✅ 已关闭（v2.60）** | 枚举 12 个真实键后关闭扩展 | L-STAT |
+| P2 | K-11 | `visual.source_capability` 的 T* 无实体 | T1–T4 登记为图表规格 ID | L-CHART |
+| P2 | K-12 | `quality.sources` 无快照戳 | **🟡 契约已开槽（v2.60）**：`quality.snapshot_at` 已入 schema；待 19-DAL 快照层提供值，能力层不伪造 | L-STAT |
+
+### §7.8 推进顺序（自本版起）
+
+1. **L-STAT 收口**：K-01 / K-08 / K-09 / K-10 已关闭（v2.59–v2.60），K-12 契约已开槽待 19-DAL；剩余 **真数据覆盖表 → B-58 提交同步（云端 manifest 必须同为 93）** → 满足后进入 G-IF1 冻结。
+2. **G-IF1 冻结**：确认 A 表字段无遗漏后，图表层才允许开工。
+3. **L-CHART**：范围先砍到 **T2 曲线 + D-E19 lights 制品**，T1 作为副产物、T3 后置；本层内关闭 K-02 / K-03 / K-06 / K-11。
+4. **G-IF2 冻结**：`lights[]` 行 schema 与阈值口径定稿。
+5. **L-SIGNAL**：只补 K-04 / K-05 / K-07 + 复跑纸面回放，不重写 `direction_rule`。
+6. **G-IF3 冻结**：回放基线与 `signal` 表契约确认后再开灰度。
+
+### §7.9 真数据覆盖表（v2.61，L-STAT 收口证据）
+
+**口径**：`19-数据访问层/data/dreambuddy_core.db`（261 MB，本地只读副本，`mode=ro` 打开，快照时间 2026-11-15 23:32）；资产与指标取 `config/asset_pool.yaml` 的 `storage.sub_category` + `storage.metric`，不做任何推定。
+
+**A. 资产级覆盖（28 个注册资产）**
+
+| 资产 | sub_category / metric | 样本 | 起 | 止 | 门禁判定 |
+|---|---|---|---|---|---|
+| BTC | BTC / close_usd | 1094 | 2023-11-15 | 2026-11-12 | ≥250 ✅、≥750 ✅、≥4000 ❌ |
+| ETH | ETH / close_usd | 1094 | 2023-11-15 | 2026-11-12 | 同上 |
+| SOL | SOL / close_usd | 1094 | 2023-11-15 | 2026-11-12 | 同上 |
+| XAU | XAU / close_usd | 1094 | 2023-11-15 | 2026-11-12 | 同上 |
+| IXIC | NASDAQCOM / value | 14263 | 1971-02-05 | 2026-11-15 | 全档 ✅（含 ≥4000） |
+| SPX | SP500 / value | 2718 | 2016-11-07 | 2026-11-15 | ≥250 ✅、≥4000 ❌ |
+| WTI | DCOILWTICO / value | 9742 | 1986-01-02 | 2026-11-15 | 全档 ✅ |
+| US10Y | DGS10 / value | 16403 | 1962-01-02 | 2026-11-15 | 全档 ✅ |
+| VIX | VIXCLS / value | 9517 | 1990-01-02 | 2026-11-15 | 全档 ✅ |
+| T10Y2Y | T10Y2Y / value | 12607 | 1976-06-01 | 2026-11-09 | 全档 ✅ |
+| BZ | DCOILBRENTEU / value | 757 | 2023-11-15 | 2026-11-11 | ≥250 ✅ |
+| NG | DHHNGSP / value | 746 | 2023-11-15 | 2026-11-11 | ≥250 ✅、≥750 ❌ |
+| XAG | XAG / close_usd | 290 | 2026-01-27 | 2026-11-12 | ≥250 ✅（临界） |
+| XCU | XCU / close_usd | 255 | 2026-03-03 | 2026-11-12 | ≥250 ✅（临界） |
+| DJIA / NVDA / AAPL / MSFT / AMZN / GOOGL / META / TSLA / SPY / QQQ | 同名 / close_usd | 各 752 | 2023-11-15 | 2026-11-13 | ≥250 ✅、≥750 ✅ |
+| **AMD / GEV / SPCX / SKHYNIX** | 同名 / close_usd | **0** | — | — | **全档 ❌（本地无数据）** |
+
+合计 28 个资产：**24 个可用（≥250 期）**，4 个为 0 样本。≥750 期 22 个，≥4000 期 5 个。
+
+**B. 能力门禁档位 × 达标资产数**
+
+| min_n 档 | 能力数 | 达标资产数 | 说明 |
+|---|---|---|---|
+| 2 / 3 / 13 | 4 / 1 / 2 | 24 | 变化率、计数、同比类，无样本压力 |
+| 30 | 38 | 24 | J 组科研统计全部落此档 |
+| 60 | 26 | 24 | 相关/季节/横截面 |
+| 100 / 120 | 1 / 3 | 24 | 状态转移、领先滞后 |
+| 250 | 17 | 24 | lights 行门槛（`min_rows=250`）刚好满足 |
+| 500 | 1 | 22 | XAG/XCU 不达标 |
+
+**C. 数据域覆盖**
+
+| 域 | 实测 | 结论 |
+|---|---|---|
+| `market.candles`（36 条能力） | 20 个加密对 `close_1d` 各 3377 期 + 28 资产日线 | 充足 |
+| `datacenter.panel`（21 条） | 同上，≥3 标的成立 | 充足 |
+| `mm_metrics`（9 条） | `funding_rate` 8005、`etf_flow` 11872、`stablecoins_top_10` 8008、`tether_current` 8398 | 充足 |
+| `datacenter.social_volume`（1 条） | `social_volume` 2453 | 充足 |
+| `mm_events`（3 条） | `mm_events` 548 行（字段 `symbols`，无 `symbol` 列） | 事件数够 30，但**跨标的聚合需按 `symbols` 解析** |
+| `mm_metric_vintages`（PIT） | 1,289,146 行 | 充足 |
+| **空数据域** | `mm_funding_rate` / `mm_open_interest` / `mm_long_short_ratio` / `mm_taker_volume` / `mm_liquidation` 均 **0 行**；`mm_fear_greed` **1 行** | 拥挤度/持仓类能力本地只能 fail-open；`crypto_fear_greed`（7506 期）可替代情绪源 |
+
+**D. 结论与后续**
+
+1. **L-STAT 覆盖表 ✅**：93 条能力的 `min_n` 与 24 个可用资产可闭合，lights 的 250 门槛刚好满足；
+2. **AMD / GEV / SPCX / SKHYNIX 仍为 0 样本** → 归 B-55（云端回填），本地不得伪造；
+3. **5 张衍生品明细表为空** → 依赖它们的拥挤度/持仓类能力只能降级，需在图表层标注 `no_data` 而非静默 0；
+4. **BTC/ETH/SOL/XAU 仅 1094 期（2023-11 起）** → 二维 Tier A（≥4000 日）不可达，按 Tier B/D 兜底，契约不变；
+5. `mm_events` 无 `symbol` 列（只有 `symbols` 文本），事件类能力做标的聚合时必须先解析，属 G-IF1 需冻结的口径。

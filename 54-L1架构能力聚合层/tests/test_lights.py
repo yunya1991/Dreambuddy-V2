@@ -27,9 +27,12 @@ from l1agg.capabilities.lights import (  # noqa: E402
     AXES,
     BUCKETS,
     CONFLICT_FLAGS,
+    CYCLE_PERIOD_BAND,
     DEFAULT_THRESHOLDS,
+    I39_MIN_N,
     STATES,
     axes_from_direction,
+    cycle_from_bandpass,
     light_block,
     lights,
     normalize_axis,
@@ -97,6 +100,71 @@ def test_axes_from_direction_maps_internal_axes():
     assert facts["cycle"]["capability"] == "I39"
     # adx 不进入点亮轴
     assert set(facts) == set(AXES)
+
+
+# ------------------------------------------------------------ I39 cycle 接线
+
+
+def test_cycle_from_bandpass_normalizes_by_own_amplitude():
+    result = {
+        "period_days": 45.0,
+        "amplitude": 0.04,
+        "phase_deg": -12.5,
+        "cycle_slope": 0.0002,
+        "cycle": [{"index": 998, "value": 0.01}, {"index": 999, "value": 0.02}],
+        "n": 1000,
+    }
+    block = cycle_from_bandpass(result)
+    assert block["strength"] == pytest.approx(0.5, abs=1e-6)
+    assert block["capability"] == "I39"
+    assert block["flags"] == []
+    assert block["evidence"]["period_days"] == pytest.approx(45.0)
+    assert block["evidence"]["cycle_last"] == pytest.approx(0.02)
+    assert I39_MIN_N == 750
+    assert CYCLE_PERIOD_BAND == (30.0, 90.0)
+
+
+def test_cycle_from_bandpass_clamps_and_flags():
+    saturated = cycle_from_bandpass(
+        {"period_days": 30.0, "amplitude": 0.01, "cycle": [{"value": 0.05}]}
+    )
+    assert saturated["strength"] == 1.0
+
+    no_period = cycle_from_bandpass({"amplitude": 0.02, "cycle": [{"value": 0.01}]})
+    assert no_period["strength"] == pytest.approx(0.5)
+    assert "period_missing" in no_period["flags"]
+
+    out_of_band = cycle_from_bandpass(
+        {"period_days": 120.0, "amplitude": 0.02, "cycle": [{"value": 0.01}]}
+    )
+    assert "period_out_of_band" in out_of_band["flags"]
+
+    zero_amp = cycle_from_bandpass({"period_days": 45.0, "amplitude": 0.0})
+    assert zero_amp["strength"] is None
+    assert "amplitude_unavailable" in zero_amp["flags"]
+
+    no_tail = cycle_from_bandpass({"period_days": 45.0, "amplitude": 0.02, "cycle": []})
+    assert no_tail["strength"] is None
+    assert "cycle_missing" in no_tail["flags"]
+
+
+def test_cycle_block_feeds_light_entry_via_axes_from_direction():
+    entry = _entry(
+        n=1200,
+        scored={
+            "axes": {"trend": 40.0, "inertia": 5.0, "coherence": 0.0},
+            "axis_weights": {"trend": 40.0, "inertia": 20.0, "coherence": 15.0},
+        },
+        cycle=cycle_from_bandpass(
+            {"period_days": 45.0, "amplitude": 0.04, "cycle": [{"value": 0.03}]}
+        ),
+        min_rows=1090,
+    )
+    block = _block([entry])
+    row = block["lights"][0]
+    assert row["axes"]["cycle"]["state"] in STATES
+    assert row["axes"]["cycle"]["strength"] == pytest.approx(0.75, abs=1e-6)
+    assert row["axes"]["trend"]["strength"] == pytest.approx(1.0)
 
 
 # ------------------------------------------------------------ 五档边界

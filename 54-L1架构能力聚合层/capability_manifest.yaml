@@ -39,11 +39,20 @@ capabilities:
   - id: D-A04
     intent: metric_percentile
     mode: deterministic
-    data_scope: [datacenter.series]
+    data_scope: [datacenter.percentile]
     executor: capabilities.stats.percentile_rank
     methods: [S25]
     min_n: 30
     notes: 末值在最近 lookback 期历史中的分位（S25：100×count(X≤x_last)/n，无未来函数），输出 percentile/value/lookback/sample_n；lookback 缺省取全样本，指定时须 ≥30；窗口 <60 期降级 short_lookback，lookback 超过可用历史降级 lookback_truncated 并按可用样本计算；样本 <30、非法 lookback、长度不一致或日期无效 FAIL-OPEN 为 empty
+  - id: D-A05
+    intent: metric_percentile
+    mode: deterministic
+    data_scope: [datacenter.percentile]
+    executor: capabilities.stats.zscore
+    methods: [S26]
+    min_n: 30
+    method_binding: compute
+    notes: 末值相对样本的 z-score，winsorize p1/p99 后取 (v-μ)/σ，输出 zscore/mean/std/winsorized/lookback/sample_n；σ≈0 → z=None 且降级 zero_variance（不伪造 0）；lookback 缺省全样本、指定须 ≥30；窗口 <60 期降级 short_lookback，lookback 超历史降级 lookback_truncated 并按可用样本计算；样本 <30 / 非法 lookback / 长度不一致 / 日期无效 FAIL-OPEN 为 empty
   - id: D-A06
     intent: metric_series
     mode: deterministic
@@ -87,7 +96,7 @@ capabilities:
   - id: D-A11
     intent: correlation_query
     mode: deterministic
-    data_scope: [datacenter.series]
+    data_scope: [datacenter.correlation]
     executor: capabilities.stats.rolling_correlation
     methods: [M04]
     min_n: 60
@@ -95,7 +104,7 @@ capabilities:
   - id: D-A12
     intent: correlation_query
     mode: deterministic
-    data_scope: [datacenter.series]
+    data_scope: [datacenter.correlation]
     executor: capabilities.stats.lead_lag_correlation
     methods: [M11, M12]
     min_n: 120
@@ -420,3 +429,423 @@ capabilities:
     min_n: 500
     method_binding: display
     notes: 四轴（趋势/惯性/周期/前瞻）五态点亮投影；轴强度 = |轴值|/轴权重（零重算），cycle 取 I39 外部归一值不自行估计；lit/warm 阈值默认 p70/p40 且未标定时显式打标；样本门按 asset_pool per-anchor（代币化标的 250 硬门）独立控制，展示层不重算统计量
+
+  - id: D-E20
+    intent: trend_query
+    mode: deterministic
+    data_scope: [datacenter.social_volume]
+    executor: capabilities.news.news_digest
+    methods: [S01, S03]
+    min_n: 2
+    method_binding: display
+    notes: 新闻统一出口（L1S-03）；只出 social_volume 日频计数与热度观测的统一信封，零重算、无方向措辞（scan_forbidden 自检）；库中无新闻条目表，故不编造标题/正文/链接；观测不足 2 天 → status=empty 降级
+
+  - id: D-K01
+    intent: relationship_recommend
+    mode: deterministic
+    data_scope: [registry.relationship_eval]
+    executor: capabilities.eval_exports.recommend_relationship
+    methods: [M01, M02, M11, B11, B13, B14, R01, R03, R04, F19]
+    min_n: 250
+    method_binding: display
+    notes: 评估层只读出口（SPEC §14.7）；只读 relationship_registry.db（`file:...?mode=ro`），按 |RankIC| DESC, n DESC 取 Top3，仅 status∈(stable,candidate) 且 gate_pass=1；不重算方法、不写库；Top1 为 candidate 时 status=partial + degraded_reason=candidate_only；明确不做买卖方向与仓位
+
+  - id: D-K02
+    intent: discovery_query
+    mode: deterministic
+    data_scope: [reports.discovery]
+    executor: capabilities.eval_exports.discovery_query
+    methods: [M01, M02, M11, M12, B01, B02, B03, B04, B05, B11, B12, B13, B14, B15, R01, R02, R03, R04, SC52, SC62]
+    min_n: 250
+    method_binding: display
+    notes: 评估层只读出口（SPEC §15.6）；只读最近一期 reports/discovery/<YYYYMMDD-HHMM>/（manifest.json + findings.jsonl），按 |RankIC| 排序截断，输出恒标 status=candidate；不扫描、不重算、不写库；无候选 → status=partial + degraded_reason=no_findings；禁止因果与预测措辞
+
+  - id: D-G01
+    intent: cross_section_query
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.institutional.cross_section_profile
+    methods: [X01, X02]
+    min_n: 30
+    method_binding: compute
+    notes: 横截面 z-score + 百分位（X01/X02），只取最近一期；输出 z/pct 全量映射，结论只讲相对位置
+
+  - id: D-G02
+    intent: cross_section_query
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.institutional.group_neutralize
+    methods: [X03]
+    min_n: 30
+    method_binding: compute
+    notes: 分组去均值中性化（X03），groups 必须是 {symbol→标签} 映射；残差只表组内相对位置
+
+  - id: D-G03
+    intent: cross_section_query
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.institutional.quantile_portfolio
+    methods: [X04, X05]
+    min_n: 30
+    method_binding: compute
+    notes: 分位桶排序（X04）+ 最高减最低桶均值差与 Welch t（X05）；价差为横截面描述，不构成多空建议
+
+  - id: D-G04
+    intent: cross_section_query
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.institutional.dispersion_breadth
+    methods: [X06, X07]
+    min_n: 30
+    method_binding: compute
+    notes: 横截面离散度（X06）+ 市场宽度（X07）；仅描述当期分化
+
+  - id: D-G05
+    intent: cross_section_query
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.institutional.co_movement
+    methods: [X08]
+    min_n: 30
+    method_binding: compute
+    notes: 同向率（X08）：两两同涨同跌占比，平盘不计入分子；只表联动程度
+
+  - id: D-G06
+    intent: factor_model_query
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.institutional.factor_exposure
+    methods: [X09, X10]
+    min_n: 120
+    method_binding: compute
+    notes: 横截面因子回归（X09）+ 特质收益（X10）；factor 缺省为等权市场代理（退化为去均值），须在 notes 声明
+
+  - id: D-G07
+    intent: sequence_operator
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.institutional.sequence_operators
+    methods: [O01, O02, O03, O04, O05, O06, O07, O08, O09, O10, O11, O12, O13, O14, O15]
+    min_n: 30
+    method_binding: compute
+    notes: 时序算子族 15 个（O01–O08 + O09/O10 双序列 + O11–O15），d 缺省 20；O09/O10 仅在提供 other 时计算；输出各算子当期值投影
+
+  - id: D-G10
+    intent: risk_allocation_query
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.institutional.inverse_volatility_weights
+    methods: [P03]
+    min_n: 60
+    method_binding: compute
+    notes: 逆波动权重（P03）；权重为波动倒数归一化，不含预期收益
+
+  - id: D-G11
+    intent: risk_allocation_query
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.institutional.equal_risk_contribution
+    methods: [P04]
+    min_n: 60
+    method_binding: compute
+    notes: 等风险贡献权重（P04）；输出权重与风险贡献极差，不含预期收益
+
+  - id: D-G12
+    intent: risk_allocation_query
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.institutional.risk_contribution
+    methods: [P05]
+    min_n: 60
+    method_binding: compute
+    notes: 风险贡献分解（P05）；weights 可从输入注入，缺省等权；基于历史协方差
+
+  - id: D-G13
+    intent: risk_allocation_query
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.institutional.covariance_shrinkage
+    methods: [P06]
+    min_n: 60
+    method_binding: compute
+    notes: Ledoit-Wolf 协方差收缩（P06）；输出 δ 与收缩后协方差，只改估计噪声
+
+  - id: D-G15
+    intent: risk_allocation_query
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.institutional.pca_risk_decomposition
+    methods: [P08]
+    min_n: 60
+    method_binding: compute
+    notes: PCA 风险分解（P08）；k 缺省 3，输出主成分方差占比与载荷
+
+  - id: D-G18
+    intent: attribution_query
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.institutional.brinson_attribution
+    methods: [P12]
+    min_n: 60
+    method_binding: compute
+    notes: Brinson 归因（P12）；需 weights/benchmark_weights/sector 对齐，输出配置/选股/交互/主动收益
+
+  - id: D-G21
+    intent: cross_section_regression
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.institutional.fama_macbeth
+    methods: [Q05]
+    min_n: 250
+    method_binding: compute
+    notes: Fama-MacBeth（Q05）；factor/target 支持 T×N 矩阵或 {symbol→series} 面板，输出 λ/se/t/期数/标的数
+
+  - id: D-G24
+    intent: crowding_query
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.institutional.factor_crowding
+    methods: [P13, P14]
+    min_n: 60
+    method_binding: compute
+    notes: 因子拥挤度：尾部相关（P13）+ 相关稳定性（P14）；估值价差需估值数据，未提供时明确标注不计算
+
+  - id: D-J01
+    intent: trend_test
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.research_stats.trend_test
+    methods: [SC52, SC53]
+    min_n: 30
+    method_binding: compute
+    notes: Mann-Kendall 趋势检验（SC52）+ Sen 斜率（SC53）；输出 τ/z/p/趋势判定/斜率 CI
+
+  - id: D-J03
+    intent: outlier_query
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.research_stats.outlier_scan
+    methods: [SC92]
+    min_n: 30
+    method_binding: compute
+    notes: 稳健 z 异常点识别（SC92）；k 缺省 3.0，输出异常点索引/σ/阈值
+
+  - id: D-J06
+    intent: signal_decomposition
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.research_stats.smoothing_filter
+    methods: [SC42, SC44, SC45]
+    min_n: 30
+    method_binding: compute
+    notes: 平滑滤波：Savitzky-Golay（SC44）+ 小波能量（SC42）+ Butterworth 低通（SC45）
+
+  - id: D-J07
+    intent: signal_decomposition
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.research_stats.spectral_envelope
+    methods: [SC42, SC46]
+    min_n: 30
+    method_binding: compute
+    notes: Hilbert 包络与瞬时相位（SC46）+ 小波能量（SC42）；只描述周期结构
+
+  - id: D-J08
+    intent: signal_decomposition
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.research_stats.state_space_filter
+    methods: [SC47]
+    min_n: 30
+    method_binding: compute
+    notes: Kalman 局部水平滤波（SC47）；process_var/obs_var 可覆盖，输出去噪状态与对数似然
+
+  - id: D-J09
+    intent: signal_decomposition
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.research_stats.coherence_analysis
+    methods: [SC48, SC43]
+    min_n: 30
+    method_binding: compute
+    notes: 互谱相干（SC48）+ 小波相干（SC43）；输入 {x,y} 双序列，输出峰值相干与频率
+
+  - id: D-J10
+    intent: information_query
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.research_stats.information_measures
+    methods: [SC55, SC56, SC58]
+    min_n: 30
+    method_binding: compute
+    notes: 香农熵（SC55）+ 互信息（SC56，提供 other 时）+ KL/JS（SC58）；bins 缺省 10
+
+  - id: D-J11
+    intent: information_query
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.research_stats.transfer_entropy
+    methods: [SC57]
+    min_n: 30
+    method_binding: compute
+    notes: 传递熵（SC57）；输入 {x,y} 双序列，输出 x→y / y→x / 净信息流，不构成因果结论
+
+  - id: D-J12
+    intent: complexity_query
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.research_stats.complexity_measures
+    methods: [SC59, SC60, SC61]
+    min_n: 30
+    method_binding: compute
+    notes: Lempel-Ziv（SC59）+ 样本熵（SC60）+ 排列熵（SC61）；只刻画不规则程度
+
+  - id: D-J13
+    intent: complexity_query
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.research_stats.long_memory
+    methods: [SC62]
+    min_n: 30
+    method_binding: compute
+    notes: DFA α 与 Hurst 指数（SC62）；n_scales 缺省 10，H>0.5 仅表示历史长记忆
+
+  - id: D-J14
+    intent: extreme_value
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.research_stats.tail_risk_extreme
+    methods: [SC63, SC64, SC65]
+    min_n: 30
+    method_binding: compute
+    notes: GEV 块极大（SC63）+ GPD 超阈值（SC64）+ 重现水平（SC65）
+
+  - id: D-J15
+    intent: uncertainty_query
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.research_stats.measurement_uncertainty
+    methods: [SC09, SC11]
+    min_n: 30
+    method_binding: compute
+    notes: GUM 合成不确定度（SC09）+ 容忍区间（SC11）；k/coverage/confidence 可覆盖
+
+  - id: D-J16
+    intent: uncertainty_query
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.research_stats.interval_estimate
+    methods: [SC10, SC11, SC12]
+    min_n: 30
+    method_binding: compute
+    notes: 预测区间（SC10，需 {x,y}）+ 分割共形区间（SC12）+ 容忍区间（SC11，单序列）
+
+  - id: D-J17
+    intent: experiment_design
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.research_stats.power_sample_size
+    methods: [SC01, SC02]
+    min_n: 30
+    method_binding: compute
+    notes: 统计功效（SC01）+ 所需样本量（SC02）；effect_size 缺省按样本估计
+
+  - id: D-J18
+    intent: experiment_design
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.research_stats.equivalence_test
+    methods: [SC03]
+    min_n: 30
+    method_binding: compute
+    notes: TOST 等效性检验（SC03）；bound 缺省由样本离散度推导，输出 p 与等效判定
+
+  - id: D-J19
+    intent: group_comparison
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.research_stats.group_comparison
+    methods: [SC25, SC30]
+    min_n: 30
+    method_binding: compute
+    notes: 单因素 ANOVA（SC25）+ Tukey HSD 事后比较（SC30）；输入 groups 列表（每组一个数值数组）
+
+  - id: D-J20
+    intent: regression_diagnostic
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.research_stats.regression_diagnostics
+    methods: [SC20, SC21, SC22, SC23, SC24]
+    min_n: 30
+    method_binding: compute
+    notes: VIF（SC20）+ Breusch-Pagan（SC21）+ Reset（SC22）+ DW（SC23）+ 影响点（SC24）；需 X 与可选 y
+
+  - id: D-J21
+    intent: regression_diagnostic
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.research_stats.robust_regression
+    methods: [SC17, SC18]
+    min_n: 30
+    method_binding: compute
+    notes: 分位数回归（SC17）+ Huber 稳健回归（SC18）；taus 缺省 (0.1, 0.5, 0.9)
+
+  - id: D-J23
+    intent: clustering_query
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.research_stats.cluster_structure
+    methods: [SC36, SC37, SC38]
+    min_n: 30
+    method_binding: compute
+    notes: 层次聚类（SC36）+ K-Means（SC37）+ 轮廓系数（SC38）；k 缺省 3，只刻画相似性结构
+
+  - id: D-J25
+    intent: spatial_query
+    mode: deterministic
+    data_scope: [datacenter.spatial_frame]
+    executor: capabilities.research_stats.spatial_autocorrelation
+    methods: [SC67, SC68, SC69]
+    min_n: 30
+    method_binding: compute
+    notes: Moran's I（SC67）+ Geary's C（SC68）+ 半变异函数（SC69）；需 coords 与 values
+
+  - id: D-J26
+    intent: survival_query
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.research_stats.survival_analysis
+    methods: [SC73, SC74, SC75, SC76]
+    min_n: 30
+    method_binding: compute
+    notes: Kaplan-Meier（SC73）+ Log-rank（SC74，提供 group 时）+ Cox（SC75，提供 covariate 时）+ Weibull（SC76）
+
+  - id: D-J27
+    intent: reliability_query
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.research_stats.reliability_metrics
+    methods: [SC77, SC78]
+    min_n: 30
+    method_binding: compute
+    notes: MTBF/失效率（SC77）+ EWMA 控制图（SC78）；lam/L 可覆盖
+
+  - id: D-J28
+    intent: meta_analysis
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.research_stats.meta_analysis
+    methods: [SC79, SC80, SC81, SC82, SC83]
+    min_n: 30
+    method_binding: compute
+    notes: 固定效应（SC79）+ 随机效应（SC80）+ 异质性（SC81）+ 漏斗图（SC82）+ Trim-and-fill（SC83）；需 effect 与 se
+
+  - id: D-J29
+    intent: missing_data_query
+    mode: deterministic
+    data_scope: [datacenter.panel]
+    executor: capabilities.research_stats.missing_data_profile
+    methods: [SC84, SC85, SC86, SC87]
+    min_n: 30
+    method_binding: compute
+    notes: 缺失机制（SC84）+ KNN 插补（SC85）+ 马氏离群（SC86）+ 缺失模式（SC87）

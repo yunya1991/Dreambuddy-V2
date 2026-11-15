@@ -60,7 +60,8 @@ light_weights:
   foresight: 0.20
 
 # ---------------- 点亮阈值（B-LT7：由 scripts/calibrate_light.py 按分位标定） ----------------
+# 口径（LTL-16 定稿，2026-11-15）：行级合成强度 `rows[].strength` 池化，45 期快照 / 303 有效行。
 thresholds:
-  lit_pct: 0.70         # 默认 p70，未标定时启用
-  warm_pct: 0.40        # 默认 p40
-  calibrated_at: ""     # 空 = 未标定 → lights.meta.thresholds_uncalibrated=true
+  lit_pct: 0.764706     # p70（行级合成口径）
+  warm_pct: 0.572400    # p40（行级合成口径）
+  calibrated_at: "2026-11-15"     # 空 = 未标定 → lights.meta.thresholds_uncalibrated=true

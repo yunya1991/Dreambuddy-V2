@@ -28,6 +28,7 @@
     },
     "data": {
       "type": "object",
+      "additionalProperties": false,
       "description": "结构化结果；禁止嵌套 quality / answer",
       "not": {
         "anyOf": [
@@ -44,7 +45,15 @@
             "required": ["gate", "methods"],
             "properties": {
               "gate": {
-                "enum": ["ok", "insufficient_samples", "insufficient_history", "no_data"]
+                "enum": [
+                  "ok",
+                  "partial",
+                  "degraded",
+                  "insufficient_samples",
+                  "insufficient_history",
+                  "no_data"
+                ],
+                "description": "能力级门禁：ok=完整；partial=部分窗口/分支不可算但保留结果；degraded=计算成功但结果降级（如弱周期）；其余为样本/历史/数据不足。方法级 gate 另有 skipped/calculation_failed/empty，不在本枚举内。"
               },
               "methods": {
                 "type": "array",
@@ -58,6 +67,13 @@
         "params": {"type": "object"},
         "symbol": {"type": ["string", "null"]},
         "pair": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2},
+        "name": {"type": ["string", "null"], "description": "资产/口径显示名"},
+        "as_of": {"type": ["string", "null"], "description": "数据时点（UTC）"},
+        "window_days": {"type": ["integer", "null"], "minimum": 1},
+        "source": {"type": ["string", "null"], "description": "数据来源标识"},
+        "items": {"type": "array", "description": "列表型结果的明细项"},
+        "notes": {"type": ["string", "array", "null"], "description": "口径说明/告警"},
+        "assets": {"type": ["object", "array", "null"], "description": "资产池/分组映射"},
         "visual": {"$ref": "#/$defs/visual"}
       }
     },
@@ -81,6 +97,10 @@
           "description": "status != good 时必填：insufficient_samples / no_history / stale_data / seasonality_depth_lt_5y 等"
         },
         "sources": {"type": "array", "items": {"type": "string"}},
+        "snapshot_at": {
+          "type": ["string", "null"],
+          "description": "数据快照时点（UTC）；由 19-DAL 快照层提供，能力层不得自行推断填充（K-12）"
+        },
         "missing_rate": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
         "align_method": {"type": ["string", "null"]},
         "timezone": {"type": ["string", "null"]}

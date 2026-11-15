@@ -21,6 +21,13 @@ STATUS_EMPTY = "empty"
 
 _INSUFFICIENT = "insufficient_samples"
 
+# 能力级 gate（与 schema properties.data.properties.capabilities...gate 枚举一致）
+GATE_CAPABILITY = frozenset(
+    {"ok", "partial", "degraded", "insufficient_samples", "insufficient_history", "no_data"}
+)
+# 方法级 gate（嵌在能力块的 evidence/方法结果里，语义比能力级更细）
+GATE_METHOD = GATE_CAPABILITY | frozenset({"skipped", "calculation_failed", "empty", "rejected"})
+
 
 def quality(
     *,
@@ -233,6 +240,17 @@ def build(
     if "answer" in data:
         raise ValueError("data 内禁止嵌套 answer（answer 固定顶层）")
     payload = dict(data)
+    # 契约兜底：能力块必须带 gate（TD §7.4 A-1：G/J 组曾整体遗漏该字段）
+    blocks = payload.get("capabilities")
+    if isinstance(blocks, Mapping):
+        payload["capabilities"] = {
+            key: (
+                {**block, "gate": block.get("gate") or "ok"}
+                if isinstance(block, Mapping)
+                else block
+            )
+            for key, block in blocks.items()
+        }
     if visual is not None:
         payload["visual"] = _check_visual(capability, visual)
     leaked = _internal_keys(payload)
