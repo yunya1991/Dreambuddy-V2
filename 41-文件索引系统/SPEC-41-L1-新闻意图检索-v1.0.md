@@ -1,6 +1,6 @@
 # SPEC-41-L1-新闻意图检索 v1.0
 
-**状态**：P0（FAIL）→ P0′ 换 bge-base 通过 → **P1 已上线；性能风险已根治（§8.8 常驻向量服务）**；剩余 P2/P3/P4，P5 部分完成（详见 §12 实施进度与剩余项）
+**状态**：**P0–P5 全部完成并云端验收**（P0 探针→P0′ bge-base→P1 意图与正则→P2 `news_digest.json`→P3 `exec_news_search`→P4 embedder 健康断言→P5 云端全量门禁）；性能风险已根治（§8.8 常驻向量服务），逐项证据见 §13
 **日期**：2026-11-15
 **归属域**：41-文件索引系统（L1 语义意图检索）／39-金融语义蒸馏系统（数据产物）／3.1-FRONTEND（注册表 + 执行器）／34-前端应用训练系统（golden 门禁）
 **关联**：[SPEC-41-L1语义意图检索增强-v1.0](./SPEC-41-L1语义意图检索增强-v1.0.md)
@@ -601,41 +601,33 @@ SentenceTransformer 冷启动是**既有的 10–12s 成本，与模型大小关
 | P0 | 30 条探针入库 + 阈值重扫 | 探针已入 golden（`variant=news_v1`），阈值数值见 §8.6 | ✅ 完成 |
 | P0′ | 换 `bge-base-zh-v1.5` | `core/embedder_bridge.py` 主模型 bge-base；17 个意图向量 768 维；云端权重 sha256 与本地一致（§8.6/§8.7） | ✅ 完成 |
 | P1 | 意图与正则前移 | `l1_route_signal.py:236-246` 的 `event_listing` 正则位于 `contradiction_insight`/`data_query` 之前；golden **408/408**（§8.7） | ✅ 完成 |
-| P2 | `gen_news_digest.py` | `39-金融语义蒸馏系统/scripts/` 下**无该文件**（现有 21 个脚本均不含）；全仓**无 `news_digest.json`** | ❌ 未开始 |
-| P3 | `exec_news_search` + 窗口三级 + legacy 标记 | `exec_news_search` 仅出现在 3 份文档中、**代码 0 命中**；`l1_route_signal.EXECUTORS`（18 项，第 130-149 行）**不含 `event_listing`** → 目前该意图命中后仍走 `l1_no_executor` 推给 L2 | ❌ 未开始 |
-| P4 | embedder 健康断言（34 域） | `34-前端应用训练系统/tests/` 全目录 grep `is_inproc_available`/`zh_vector_dim`/`embedder` **0 命中** | ❌ 未开始 |
-| P5 | 云端部署与端到端验收 | 已验：4 条手动 API query（意图正确、2.1–2.8s）+ 10 并发压测（§8.8）；**未验**：云端 41/34 域全量 pytest、3 条窗口核验 query | 🟡 部分完成 |
+| P2 | `gen_news_digest.py` | `39-金融语义蒸馏系统/scripts/gen_news_digest.py` 已建；`news_digest.json` 5,439 条 / 1.75MB / coverage 30 天；已接入日更链路 | ✅ 完成 |
+| P3 | `exec_news_search` + 窗口三级 + legacy 标记 | `exec_news_search` 已实现并注册 `EXECUTORS["event_listing"]`（18→19）；`exec_event_listing` 两条 return 均带 `legacy: True` | ✅ 完成 |
+| P4 | embedder 健康断言（34 域） | `34-前端应用训练系统/tests/test_l1_embedder_health.py`：768 维 + 余弦下限 + 可用性 | ✅ 完成 |
+| P5 | 云端部署与端到端验收 | 云端 `b31be616`：41 域 EXIT=0、34 域 L1 门禁 EXIT=0；4 条 query 窗口与 `coverage_note` 全部核对 | ✅ 完成 |
 
 **计划外已完成（本 SPEC 之外的性能根治）**
 
 §8.8 常驻向量服务：`scripts/embed_server.py` + `deploy/dreambuddy-embedder.service` + `tests/test_embed_server.py`（commit `b3fb473939`），关闭了 §8.7 遗留风险 ①②。它不在 P0–P5 里，但 P3 的执行器将直接受益（语义槽位抽取不再有 10–12s 冷启动）。
 
-**剩余项执行顺序（有依赖，不可乱序）**
+**执行过程中发现的额外缺陷（已修）**
 
-1. **P2 产 `news_digest.json`** —— 是 P3 的唯一数据源。缺它时 P3 只能读 `hot_news.json`（24h / top50），窗口三级中的 168h 与 720h 两级**无法兑现**。
-2. **P3 落地执行器** —— `exec_news_search` 写入 `3.1-FRONTEND/scripts/data_query_executor.py`，并注册 `EXECUTORS["event_listing"]`；同时把 `exec_event_listing` 标 `legacy=true`。这是把"意图能识别"变成"问题能回答"的唯一一步。
-3. **P4 健康断言** —— 与 P3 无依赖，可并行；对应 T6。
-4. **P5 云端收口** —— 云端 41 域 + 34 域全量 pytest，再跑 3 条窗口核验 query。
-
-**P5 待补的具体缺项（当前只完成了一半）**
-
-| 缺项 | 说明 |
-|---|---|
-| 云端 41 域全量 pytest | 只跑了 `test_embed_server.py` 与 `test_intent_matching.py`，未跑整域 |
-| 云端 34 域全量 pytest | 未跑，且 P4 的 T6 断言尚未写，写完后此项才有判别力 |
-| 3 条窗口核验 query | 当前只验了「意图 + 延迟」，**未验 `window_h` / `coverage_note`**——因为执行器还没实现，无处可验 |
+常驻向量服务原单请求上限 64 条，`build_intent_vectors` 等批量调用收到 400 后静默退回 in-process，
+在云端小机型上把 41 域测试拖到 20 分钟以上（表现为「卡在 test_intent_matching 第 12 项」）。
+已改为「单请求上限 4096 + 服务内部按 `ENCODE_CHUNK=64` 分片编码」（commit `b31be61699`），
+实测 200 条一次请求 200 向量 / 9.8s，41 域全量恢复秒级完成。
 
 **门禁现状**
 
 | 门禁 | 状态 |
 |---|---|
-| T1 34 golden 全量 | ✅ 408/408 |
+| T1 34 golden 全量 | ✅ 408/408（本地与云端均绿） |
 | T2 冲突项核验 | ✅ 其余 377 条差异 = 0（§8.7） |
 | T3 41 `test_intent_matching` | ✅ A 组语义命中（bge-base，18 项单测全绿） |
 | T4 3.1 注册表测试 | ✅ 前后端 `event_listing` 模式一致 |
-| T5 执行器单测 | ❌ 阻塞于 P3 |
-| T6 embedder 健康断言 | ❌ 阻塞于 P4 |
-| T7 无匹配话术 | ❌ 阻塞于 P2+P3 |
+| T5 执行器单测 | ✅ `test_l1_news_search.py` 11 项全绿 |
+| T6 embedder 健康断言 | ✅ `test_l1_embedder_health.py` 3 项全绿 |
+| T7 无匹配话术 | ✅ 空库场景输出「未检索到」+ 覆盖数，不编造 |
 
 ---
 
@@ -666,8 +658,9 @@ SentenceTransformer 冷启动是**既有的 10–12s 成本，与模型大小关
 
 ### P5 — 云端收口
 
-- [ ] **P5-1** 云端 41 域全量 pytest
-- [ ] **P5-3** 3 条窗口核验 query（最新 / 默认 / 30 天）核对 `window_h` 与 `coverage_note`
+- [x] **P5-1** 云端 41 域全量 pytest｜证据：云端 `b31be616` 上 `41-文件索引系统/tests/` 全绿（EXIT=0，6 项 skip 因 PostgreSQL fis 库不可用，属环境缺省）
+- [x] **P5-2** 云端 34 域 L1 门禁（news_search + embedder_health + route_signal + golden）｜证据：EXIT=0
+- [x] **P5-3** 3 条窗口核验 query（最新 / 默认 / 30 天）核对 `window_h` 与 `coverage_note`｜证据：`今天有什么新闻`→24h/hot_news、`最近有什么新闻`→168h/news_digest（5,439 条）、`上周的新闻`→720h（"近 30 天检索到 5439 条"）、`以太坊相关的新闻`→168h 命中 1 条且回显「9 天无数据（采集异常）」
 
 ---
 

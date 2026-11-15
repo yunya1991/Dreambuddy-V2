@@ -211,13 +211,13 @@
 | 文档 | 路径 | 版本 |
 |------|------|------|
 | 母 SPEC（L1 能力聚合层） | [54-L1架构能力聚合层/SPEC-54-L1架构能力聚合层.md](../54-L1架构能力聚合层/SPEC-54-L1架构能力聚合层.md) | v1.20（21 个可执行出口；D-G19 IC/ICIR/衰减表接入） |
-| 统计图表化 SPEC（T1–T4 图 + L1 三层） | [54-L1架构能力聚合层/SPEC-54-统计图表化能力.md](../54-L1架构能力聚合层/SPEC-54-统计图表化能力.md) | v0.19（S0 外露闸 + S1 曲线生产者 + B18 vintage + T1/T2/T3 已验收） |
+| 统计图表化 SPEC（T1–T4 图 + L1 三层） | [54-L1架构能力聚合层/SPEC-54-统计图表化能力.md](../54-L1架构能力聚合层/SPEC-54-统计图表化能力.md) | v0.20（P0 六项 + L1D-03…09 + L1X-01…04 + DOC-01/02 全部验收；P2 三项已收口） |
 | 延续性统计分析 SPEC（T0） | [54-L1架构能力聚合层/SPEC-54-延续性统计分析模块.md](../54-L1架构能力聚合层/SPEC-54-延续性统计分析模块.md) | v1.6（T0 已实现，T2/D-E14 一维首版） |
 | 技术设计 | [54-L1架构能力聚合层/docs/TECHNICAL_DESIGN.md](../54-L1架构能力聚合层/docs/TECHNICAL_DESIGN.md) | 门禁/信封/能力层分工 |
 | 方法库 SSoT | [54-L1架构能力聚合层/docs/METHOD_LIBRARY.md](../54-L1架构能力聚合层/docs/METHOD_LIBRARY.md) | 方法编号 I35–I39 冲突已修正 |
-| 能力清单（可见性） | [54-L1架构能力聚合层/capability_manifest.yaml](../54-L1架构能力聚合层/capability_manifest.yaml) | 14 出口，`visibility: public\|internal`（ADR-V14） |
+| 能力清单（可见性） | [54-L1架构能力聚合层/capability_manifest.yaml](../54-L1架构能力聚合层/capability_manifest.yaml) | 22 出口（含并行线 D-G16/G19/G20/G23、D-J02/J04），`visibility: public\|internal`（ADR-V14） |
 | 评审报告 | [54-L1架构能力聚合层/SPEC评审报告-统计图表化能力-v0.1.md](../54-L1架构能力聚合层/SPEC评审报告-统计图表化能力-v0.1.md) | 2026-11-15（有条件通过 4.38/5） |
-| L1 交易层代码 | [54-L1架构能力聚合层/l1agg/trading/](../54-L1架构能力聚合层/l1agg/trading/) | `direction_rule` / `exit_rule` / `paper_replay` / `sizing` / `risk` / `outbox`（只产信号，执行交 22） |
+| L1 交易层代码 | [54-L1架构能力聚合层/l1agg/trading/](../54-L1架构能力聚合层/l1agg/trading/) | `direction_rule` / `exit_rule` / `paper_replay` / `sizing` / `risk` / `cluster` / `weights` / `comparison` / `outbox`（只产信号，执行交 22） |
 
 ---
 
@@ -251,7 +251,7 @@
 | 33-REA逆向解析工程 | [33-REA逆向解析工程/README.md](../33-REA逆向解析工程/README.md) | ✅ 文档齐全（PoE设计哲学v1.1+假设验证v1.1+同行评审v1.0+SPEC v0.3+TASKS v1.0） | Evidence-First工程逆向解析 + PoE工程证明协议 |
 | 34-前端应用训练系统 | [34-前端应用训练系统/README.md](../34-前端应用训练系统/README.md) | ✅ README+SPEC（P0-P4全部完成） | 前端应用独立学习训练模块：主动训练(多源采集+统计训练)+被动训练(Trae在线辅导) |
 | 35-广义认知系统协作模块 | [35-广义认知系统协作模块/README.md](../35-广义认知系统协作模块/README.md) · [INDEX.md](../35-广义认知系统协作模块/INDEX.md) | ✅ 文档齐全（认知进化SPEC v0.2+统一PoE框架v2.0+协作契约v1.6） | 跨系统协作设计SSoT：SPEC收敛+协作接口契约+PoE统一框架（纯文档统筹层） |
-| 41-文件索引系统 · 新闻意图检索 | [41-文件索引系统/SPEC-41-L1-新闻意图检索-v1.0.md](../41-文件索引系统/SPEC-41-L1-新闻意图检索-v1.0.md) **v1.0** | 🟢 P0′+P1 已上线、性能风险已根治（§8.6–§8.8）；**剩余 P2/P3/P4，P5 部分完成（§12 有逐项代码证据 + 门禁现状）** | L1 `event_listing` 升级方案 A：标签契约（39 的 11 topic/13 event_type 为 canonical，`od_event_type` 单向降级）、罗列 vs 演变划界规则、窗口三级（默认 168h / 上限 720h）、`exec_news_search` + 39 侧 `news_digest.json`、30 条 golden 探针 |
+| 41-文件索引系统 · 新闻意图检索 | [41-文件索引系统/SPEC-41-L1-新闻意图检索-v1.0.md](../41-文件索引系统/SPEC-41-L1-新闻意图检索-v1.0.md) **v1.0** | ✅ **P0–P5 全部完成并云端验收**（T1–T7 全绿，逐项证据见 §13） | L1 `event_listing` 升级方案 A：标签契约（39 的 11 topic/13 event_type 为 canonical，`od_event_type` 单向降级）、罗列 vs 演变划界规则、窗口三级（默认 168h / 上限 720h）、`exec_news_search` + 39 侧 `news_digest.json`、30 条 golden 探针 |
 | 1-ARCHITECTURE/dreamos | [1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md](../1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md) | ⚠️ 部分完整 | DreamOS CLI |
 | **0-系统文档管理/4-工具与自动化** | [4-工具与自动化/README.md](./4-工具与自动化/README.md) | ✅ 已建成 4 脚本 | doc_lint/doc_coverage/index_generator/link_checker |
 | **0-系统文档管理/3-文档治理/audits** | [audits/2026-08_月度审计报告.md](./3-文档治理/audits/2026-08_月度审计报告.md) | ✅ 首份报告 | 月度审计报告归档 |
