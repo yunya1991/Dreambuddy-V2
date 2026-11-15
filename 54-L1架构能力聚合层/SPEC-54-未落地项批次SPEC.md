@@ -1,14 +1,14 @@
 # SPEC-54 未落地项批次（Batch SPEC）
 
-- **版本**: v0.2
+- **版本**: v0.3
 - **日期**: 2026-11-15
-- **状态**: 🟢 前五批已收口（B-00…B-46 全部落地，B-47 部分关闭）；新登记第六批（B-49…B-58：L1 统计交易信号层与交付物收口）
+- **状态**: 🟢 前五批已收口（B-00…B-46 全部落地，B-47 部分关闭）；第六批 B-58 已关闭（提交 + 三段式同步，云端 manifest 93 = 本地 93），**L-STAT 统计层收口**，可进入 G-IF1 冻结
 - **上游**（唯一事实源，不另立口径）：
   - [TECHNICAL_DESIGN.md](./docs/TECHNICAL_DESIGN.md) §6.4.5/§6.4.6 里程碑（总计 40 项：✅ 37 / 待办 3）、§3 能力 → L0 scope 映射
   - [SPEC-54-统计图表化能力.md](./SPEC-54-统计图表化能力.md) §12.2 台账（L1S-03…06）
   - [SPEC-54-L1架构能力聚合层.md](./SPEC-54-L1架构能力聚合层.md) §3 S1–S5 / B1–B3
   - [SPEC-54-L1交易层.md](./SPEC-54-L1交易层.md) §13 LTL 台账（v0.16，**v0.2 新增上游**）
-  - [capability_manifest.yaml](./capability_manifest.yaml)（能力出口唯一事实源，**实测 93 条**；`git show HEAD` 为 50 条，差额 43 条仍未提交，见 §4）
+  - [capability_manifest.yaml](./capability_manifest.yaml)（能力出口唯一事实源，**实测并已提交 93 条**；B-58 于 v0.3 关闭后 `git show HEAD` 同为 93 条，见 §4）
 - **下游**: `l1agg/capabilities/*`、`l1agg/trading/*`、`scripts/*`、`3.1-FRONTEND`、`33-REA`/`48-涌现`（T4 消费）
 
 > **一句话**：把「已登记但未接线 / 未落盘 / 未对齐」的存量缺口按批次收口，不改任何已验收的冻结口径。
@@ -126,7 +126,7 @@ D-J01 / 03 / 06 / 07 / 08 / 09 / 10 / 11 / 12 / 13 / 14 / 15 / 16 / 17 / 18 / 19
 | B-55 | LTL-14 尾项 | 云端回填 AMD/GEV/SPCX/SKHYNIX（本地只读副本仍 `MISSING`） | 🟡 代码已闭合（per-anchor `min_rows`），数据待云端回填 |
 | B-56 | 母 SPEC v1.49 | 「金融价尺系统」子 SPEC（`SPEC-54-金融价尺系统.md` + 评审报告，均未跟踪）落地 | ⏸️ **暂不纳入落地项**（2026-11-15 用户决定：仍在探讨阶段；本批次不排期、不实施） |
 | B-57 | §1.4 缺口 | 补 `tests/test_research_stats.py`（J 组 24 项 pytest 断言，替换不被收集的 `_smoke_j.py` 脚本） | ✅ 已落地：43 passed；`_smoke_j.py` 已删除 |
-| B-58 | §0.2 纪律 | 前五批交付物提交与三段式同步（`git show HEAD` manifest 仍 50 条，云端无 J/G/E20/A05/K 组与交易层改动） | ⬜ 阻塞级：不提交则上述 ✅ 在云端均不生效 |
+| B-58 | §0.2 纪律 | 前五批交付物提交与三段式同步（`git show HEAD` manifest 仍 50 条，云端无 J/G/E20/A05/K 组与交易层改动） | ✅ 已关闭（v0.3）：本地 commit `ca6c55a3c6`（35 文件，仅 `54-L1架构能力聚合层/`，+9084/−9037）→ 推送 `origin/refactor/13-16-merge` → 云端 `sudo -n -u luke -H git pull --ff-only` 落地同一 commit；云端 manifest **93 条 / 93 唯一** = 本地；提交前 `pytest` 1314 全绿、ruff/black 通过 |
 
 ---
 
@@ -157,6 +157,7 @@ D-J01 / 03 / 06 / 07 / 08 / 09 / 10 / 11 / 12 / 13 / 14 / 15 / 16 / 17 / 18 / 19
 | 2026-11-15 | 台账修数 | **header 事实数纠正**：原文「实测 50 条」→ **93 条**；`git show HEAD:capability_manifest.yaml` = **50 条**（差额 43 条全在工作区未提交）；TD 里程碑总数口径由「42 项 ⬜/🟡」更正为「40 项：✅37 / 待办 3」 | `git diff --stat capability_manifest.yaml` → 432 insertions / 3 deletions；`git status --porcelain` 见 §4 |
 | 2026-11-15 | B-56 | **范围冻结**：用户决定「金融价尺系统」仍处探讨阶段，暂不纳入落地项；本批 §1.5 B-56 状态 ⬜ → ⏸️，子 SPEC 头部加 ⏸️ 标注，母 SPEC v1.49 历史行加注，§4 登记解冻条件 | `SPEC-54-金融价尺系统.md` 头部状态已改；`l1agg/fns/` 未创建任何文件（`git status` 无该目录） |
 | 2026-11-15 | B-47 / B-48 | **第五批收口**：B-47 关闭——母 SPEC §3 阶段表与阶段验收表两处 S3 由 🟡 → 🟢（写入 `5e692267` 全量验收：29 job / 5,220 单元、`gate_pass=1,057`、`failed=0`、三轮幂等 `added=0`；及 v2.54 每日调度），S4 由 ⬜ → 🟡 并显式列出未闭环项（二维 T2 需每资产 ≥4,000 日，当前 BTC/ETH 3,377 天；F1–F12 PIT 特征），S2 保持 🟡（方法/出口已就绪，剩完整四类榜单契约）；B-48 立项——新增 §5 立项卡（DoD / P1–P3 前置缺陷 / In-Out 范围 / G1–G5 门禁 / 依赖顺序与风险），状态 🟡 已立项未开工 | 母 SPEC v1.56 §3 两处已同步；本文件 §1.5 状态列 + §4 两条「已关闭」+ §5 立项卡 |
+| 2026-11-15 | B-58 | **提交与三段式同步关闭（L-STAT 收口）**：精确 `git add -- 54-L1架构能力聚合层`，不夹带 `0-系统文档管理/INDEX.md`、`18-数据获取中心/*.gz`、`3.1-FRONTEND/scripts/visual_overview.py`、`33-REA/*` 四个并行线的改动；pre-commit 首轮被 ruff/black 拦下（ruff 自动修 13 处 + 8 处手改：3 处 `# noqa: E402`、2 处 `zip(strict=False)`、2 处 `dict(zip(...))`、1 处标量解包；black 格式化 16 文件），修完复跑全绿后提交 | 本地 commit `ca6c55a3c6`（35 文件，+9084/−9037）；`pytest tests -q` **1314 全绿**；推送 `origin/refactor/13-16-merge`；云端 `sudo -n -u luke -H git pull --ff-only` → HEAD `ca6c55a3`；云端 manifest **93 条 / 93 唯一** = 本地 |
 | 2026-11-15 | B-23…B-46 / B-57 | **J 组回归转为 pytest 门禁（替换人工脚本）**：新增 `tests/test_research_stats.py`（24 项正向 `_assert_contract`、可选分支 J10/J15/J16/J26、11 项短样本 fail-open 参数化、JSON 确定性、`method_binding=compute` 且 `mode=deterministic`、methods 排序去重）；`tests/test_capabilities.py` 执行覆盖新增 24 个白名单 + 25 条 scenario（J16 单/双序列两条，J15 带 `components`、J26 带 group+covariate、J10 带 `other`）+ `research_stats.run_method` monkeypatch；修复 D-J17 场景改用显式 `effect_size=0.3` 使 SC02 收敛；删除 `tests/_smoke_j.py` | `pytest tests/test_research_stats.py` **43 passed**；`pytest tests/test_capabilities.py` 全绿（`coverage == 1.0`）；54-L1 全量 **1312 passed**；TD v2.57 与母 SPEC v1.56 已同步计数与 24 行状态 |
 
 ---
@@ -166,7 +167,7 @@ D-J01 / 03 / 06 / 07 / 08 / 09 / 10 / 11 / 12 / 13 / 14 / 15 / 16 / 17 / 18 / 19
 | 日期 | 发现 | 建议 |
 |---|---|---|
 | 2026-11-15 | **B-56「金融价尺系统」冻结**：用户决定仍在探讨阶段，暂不纳入落地项；本批次 §1.5 已标 ⏸️，母 SPEC v1.49 的历史行同步加注 | 待主线（统计层 → 图表输出 → 信号层）跑通后再复审；解冻前不得在 `l1agg/fns/` 建任何代码，避免半成品入口混入 manifest 计数 |
-| 2026-11-15 | **交付物全部未提交（阻塞级）**：`git show HEAD:capability_manifest.yaml` 仅 **50** 条，工作区 **93** 条（+432 行）；未跟踪文件含 `capabilities/{institutional,research_stats,news,eval_exports}.py`、`discovery.py`、`persistence/artifacts.py`、`config/discovery_space.yaml`、`scripts/{calibrate_light,light_history}.py` 及 9 个测试文件；已修改未提交含 `capability_manifest.yaml` / `lights.py` / `stats.py` / `chart_weights.yaml` / 三份 SPEC / TD。即 B-00…B-46 的 ✅ 全部只存在于本地，云端仍是最早 50 条版本 | 按 B-58 一次性精确 `git add` + 分段 commit + push + 云端 `pull --ff-only`；提交前先确认并行线（LTL-16/交易层）已停手，避免 manifest 与 `lights.py` 冲突 |
+| 2026-11-15 | **交付物全部未提交（阻塞级，已关闭，B-58）**：`git show HEAD:capability_manifest.yaml` 曾仅 **50** 条，工作区 **93** 条（+432 行）；未跟踪文件含 `capabilities/{institutional,research_stats,news,eval_exports}.py`、`discovery.py`、`persistence/artifacts.py`、`config/discovery_space.yaml`、`scripts/{calibrate_light,light_history}.py` 及 9 个测试文件；已修改未提交含 `capability_manifest.yaml` / `lights.py` / `stats.py` / `chart_weights.yaml` / 三份 SPEC / TD。即 B-00…B-46 的 ✅ 全部只存在于本地，云端仍是最早 50 条版本 | ✅ 已按 B-58 一次性精确 `git add` + commit `ca6c55a3c6` + push + 云端 `pull --ff-only` 关闭；云端 manifest 实测 93 = 本地 93 |
 | 2026-11-15 | **J 组无 pytest 覆盖**（已关闭）：`tests/_smoke_j.py` 以 `_` 开头，pytest 不收集；`tests/test_capabilities.py` 仅引用 6 个 `D-J*`。当时 24 项能力靠人工跑脚本回归 | ✅ B-57 已补 `tests/test_research_stats.py`（43 passed）并扩展执行覆盖到 24 项，`_smoke_j.py` 已删除 |
 | 2026-11-15 | **D-A14（`crowding`）manifest `data_scope: [mm_metrics]`，但 TD §3 scope 表无 `mm_metrics` 行** | 单独立项补 §3 `mm_metrics` scope 行（勿在本批顺手加） |
 | 2026-11-15 | **母 SPEC §3 `S3 🟡` 行文案过期**（已关闭，B-47）：§3 阶段表与阶段验收表两处已同步为 🟢 并写入 `5e692267` / v2.54 调度证据；S4 同步为 🟡 + 明确未闭环项 | ✅ 已随母 SPEC v1.56 同步，冻结口径未改 |
