@@ -1,0 +1,23 @@
+[Unit]
+Description=DreamBuddy L1 常驻向量服务（bge-base-zh-v1.5 768 维）
+Documentation=file:///home/luke/dreambuddy/41-文件索引系统/SPEC-41-L1-新闻意图检索-v1.0.md
+After=network.target
+
+[Service]
+Type=simple
+User=luke
+Group=luke
+WorkingDirectory=/home/luke/dreambuddy/41-文件索引系统
+Environment="HOME=/home/luke"
+Environment="HF_HUB_OFFLINE=1"
+Environment="L1_ZH_MODEL=BAAI/bge-base-zh-v1.5"
+Environment="L1_EMBED_HOST=127.0.0.1"
+Environment="L1_EMBED_PORT=8099"
+ExecStart=/home/luke/venv-trading/bin/python scripts/embed_server.py
+Restart=always
+RestartSec=3
+# 单份模型 ~900MB；上限 2G 兜住异常膨胀，超限由 systemd 重启而非拖垮整机
+MemoryMax=2G
+
+[Install]
+WantedBy=multi-user.target
