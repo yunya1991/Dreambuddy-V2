@@ -52,6 +52,11 @@ export const MONITOR_WRITABLE_LEAVES = ["enabled", "max_idle_minutes"] as const;
 export const MONITOR_MAX_IDLE_MINUTES_MIN = 1;
 export const MONITOR_MAX_IDLE_MINUTES_MAX = 1440;
 
+/** trailing_stop 白名单可写 key 与取值范围（SPEC-7 §10） */
+export const TRAILING_STOP_SECONDS_MIN = 0;
+export const TRAILING_STOP_SECONDS_MAX = 86400;
+export const TRAILING_STOP_OUTPUT_DIR_MAX_LEN = 200;
+
 /** 回滚动作标识 */
 export const ROLLBACK_ACTION = "rollback";
 

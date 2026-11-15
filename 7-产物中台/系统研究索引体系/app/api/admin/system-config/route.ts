@@ -1,11 +1,14 @@
 // ============================================================================
 // /api/admin/system-config —— 文件型系统配置（SPEC-7 §6.2 / §10）
 // ----------------------------------------------------------------------------
-// GET  ?file=monitor  读取当前配置（只读，供 UI 展示）
-// PATCH ?file=monitor 白名单 key 写入（L1：原因 ≥10 字 + confirmToken）
-//   · patch: { "systems.<name>.enabled": bool, "systems.<name>.max_idle_minutes": 1..1440 }
+// GET  ?file=<key>  读取当前配置（只读，供 UI 展示）
+// PATCH ?file=<key> 白名单 key 写入（L1：原因 ≥10 字 + confirmToken）
+//   · 可写 key 由 FILE_WRITE_SPECS 注册表决定：monitor / trailing_stop
+//     monitor       patch: { "systems.<name>.enabled": bool, "systems.<name>.max_idle_minutes": 1..1440 }
+//     trailing_stop patch: { trigger_cooldown_sec, auto_close_after_sec, report.enabled, report.output_dir }
 //   · expectedMtimeMs 可选，用于乐观并发（文件被外部改动 → 409）
-//   · 快照写入 .admin-backups/，原子 rename，回读比对，requiresRestart=false（D4）
+//   · 快照写入 .admin-backups/，原子 rename，回读比对
+//   · requiresRestart 按 key：monitor=false（D4 在线生效）；trailing_stop=true
 // ============================================================================
 
 import { z } from "zod";
@@ -20,12 +23,15 @@ import { assertReason, buildDiff } from "@/lib/admin/write/diff";
 import { createOpLog, updateOpLog } from "@/lib/admin/write/oplog";
 import { dryRunResponseData, finalizeOp, opResponseData } from "@/lib/admin/write/finalize";
 import {
+  fileWriteSpec,
   isAdminFileKey,
-  planMonitorPatch,
+  isWritableFileKey,
+  planFilePatch,
   readConfigFile,
   serializeFileWrite,
   writeConfigAtomic,
   type FileSnapshot,
+  type WritableFileKey,
 } from "@/lib/admin/write/file-config";
 
 export const dynamic = "force-dynamic";
@@ -37,10 +43,26 @@ const schema = z.object({
   confirmToken: z.string().optional(),
 });
 
+function requestedFile(request: Request): string {
+  return new URL(request.url).searchParams.get("file") || "";
+}
+
 function resolveFileKey(request: Request) {
-  const file = new URL(request.url).searchParams.get("file") || "";
+  const file = requestedFile(request);
   if (!isAdminFileKey(file)) {
     throw new AdminError("VALIDATION_FAILED", `不支持的 file 参数：${file || "(空)"}`);
+  }
+  return file;
+}
+
+/** 写入口只接受注册表内的 fileKey（capital_* 仅 L2 提案，不走本端点） */
+function resolveWritableFileKey(request: Request): WritableFileKey {
+  const file = requestedFile(request);
+  if (!isWritableFileKey(file)) {
+    throw new AdminError(
+      "VALIDATION_FAILED",
+      `不支持的 file 参数：${file || "(空)"}（可写：monitor / trailing_stop）`,
+    );
   }
   return file;
 }
@@ -67,7 +89,8 @@ export async function PATCH(request: Request) {
   try {
     const ctx = await beginWrite(request);
     requestId = ctx.requestId;
-    const key = resolveFileKey(request);
+    const key = resolveWritableFileKey(request);
+    const spec = fileWriteSpec(key);
 
     const body = await readJsonBody(request);
     const parsed = schema.safeParse(body);
@@ -91,14 +114,19 @@ export async function PATCH(request: Request) {
       throw new AdminError("CONFLICT_STALE", "配置文件已被外部修改，请刷新后重试");
     }
 
-    const plan = planMonitorPatch(snapshot.data, parsed.data.patch);
+    const plan = planFilePatch(key, snapshot.data, parsed.data.patch);
     const diff = buildDiff(plan.before, plan.after);
 
     if (ctx.dryRun) {
-      return apiOk(dryRunResponseData({ before: plan.before, after: plan.after, diff }), {
-        requestId,
-        message: "dryRun 校验通过（未写文件）",
-      });
+      return apiOk(
+        dryRunResponseData({
+          before: plan.before,
+          after: plan.after,
+          diff,
+          requiresRestart: spec.requiresRestart,
+        }),
+        { requestId, message: "dryRun 校验通过（未写文件）" },
+      );
     }
 
     const token = parsed.data.confirmToken;
@@ -148,9 +176,11 @@ export async function PATCH(request: Request) {
 
     const withSnapshot = await updateOpLog(prisma, op.id, { snapshotPath });
     const finalized = await finalizeOp(withSnapshot);
-    return apiOk(opResponseData(finalized), {
+    return apiOk(opResponseData(finalized, { requiresRestart: spec.requiresRestart }), {
       requestId,
-      message: "监控配置已写入（下一轮 ≤60 分钟生效，无需重启）",
+      message: spec.requiresRestart
+        ? `${spec.label}配置已写入，需重启下游服务后生效`
+        : `${spec.label}配置已写入（下一轮 ≤60 分钟生效，无需重启）`,
     });
   } catch (error) {
     return apiFail(error instanceof Error ? error : new Error(String(error)), requestId);

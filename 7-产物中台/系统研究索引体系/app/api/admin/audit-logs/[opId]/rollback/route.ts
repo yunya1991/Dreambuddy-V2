@@ -43,8 +43,9 @@ import { createOpLog, updateOpLog } from "@/lib/admin/write/oplog";
 import { finalizeOp, opResponseData } from "@/lib/admin/write/finalize";
 import { bridgeFailureWarning, syncStrategyStatus, syncTradingConfig } from "@/lib/admin/write/bridge";
 import {
-  isAdminFileKey,
-  planMonitorPatch,
+  fileWriteSpec,
+  isWritableFileKey,
+  planFilePatch,
   readConfigFile,
   serializeFileWrite,
   writeConfigAtomic,
@@ -173,16 +174,18 @@ export async function POST(request: Request, { params }: { params: { opId: strin
 
     // 文件型配置：不能进 DB 事务，单独走「快照 → 原子写 → 回读」
     if (op.action === SYSTEM_CONFIG_ACTION) {
-      const rolledFile = await rollbackFileConfig(
+      const rolled = await rollbackFileConfig(
         op,
         parsed.data.expectedMtimeMs ?? null,
         reason,
         baseLogInput,
       );
-      const finalized = await finalizeOp(rolledFile);
-      return apiOk(opResponseData(finalized), {
+      const finalized = await finalizeOp(rolled.log);
+      return apiOk(opResponseData(finalized, { requiresRestart: rolled.requiresRestart }), {
         requestId,
-        message: "配置已回滚（下一轮 ≤60 分钟生效，无需重启）",
+        message: rolled.requiresRestart
+          ? "配置已回滚，需重启下游服务后生效"
+          : "配置已回滚（下一轮 ≤60 分钟生效，无需重启）",
       });
     }
 
@@ -617,10 +620,10 @@ async function rollbackFileConfig(
     ip: string | null;
     userAgent: string | null;
   },
-): Promise<AdminOperationLog> {
+): Promise<{ log: AdminOperationLog; requiresRestart: boolean }> {
   const key = op.targetId;
-  if (!isAdminFileKey(key)) {
-    throw new AdminError("RULE_BLOCKED", `未知的配置文件：${key}`);
+  if (!isWritableFileKey(key)) {
+    throw new AdminError("RULE_BLOCKED", `未知的可写配置文件：${key}`);
   }
   if (expectedMtimeMs === null) {
     throw new AdminError("VALIDATION_FAILED", "回滚文件配置需要 expectedMtimeMs（并发控制必填）");
@@ -640,7 +643,7 @@ async function rollbackFileConfig(
     throw new AdminError("RULE_BLOCKED", "存在原始值缺失（null）的配置项，无法自动回滚");
   }
 
-  const plan = planMonitorPatch(snapshot.data, Object.fromEntries(entries));
+  const plan = planFilePatch(key, snapshot.data, Object.fromEntries(entries));
   const diff = buildDiff(plan.before, plan.after);
 
   const op_ = await createOpLog(prisma, {
@@ -671,5 +674,5 @@ async function rollbackFileConfig(
     where: { id: op.id },
     data: { status: "ROLLED_BACK", rolledBackAt: new Date() },
   });
-  return withSnapshot;
+  return { log: withSnapshot, requiresRestart: fileWriteSpec(key).requiresRestart };
 }

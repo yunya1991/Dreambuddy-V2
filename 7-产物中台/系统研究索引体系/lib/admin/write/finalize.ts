@@ -29,7 +29,15 @@ export interface WriteResponseData {
   simulated?: boolean;
 }
 
-export function opResponseData(op: AdminOperationLog): WriteResponseData {
+export interface WriteResponseOptions {
+  /** 文件型配置：写入后是否需重启下游服务（SPEC-7 §10） */
+  requiresRestart?: boolean;
+}
+
+export function opResponseData(
+  op: AdminOperationLog,
+  options: WriteResponseOptions = {},
+): WriteResponseData {
   return {
     opId: op.id,
     status: op.status,
@@ -37,7 +45,7 @@ export function opResponseData(op: AdminOperationLog): WriteResponseData {
     after: op.afterData ?? null,
     diff: op.diff ?? null,
     warnings: Array.isArray(op.warnings) ? (op.warnings as unknown[]) : [],
-    requiresRestart: false,
+    requiresRestart: options.requiresRestart ?? false,
   };
 }
 
@@ -45,6 +53,7 @@ export function dryRunResponseData(input: {
   before: unknown;
   after: unknown;
   diff: unknown;
+  requiresRestart?: boolean;
 }): WriteResponseData {
   return {
     opId: null,
@@ -53,7 +62,7 @@ export function dryRunResponseData(input: {
     after: input.after,
     diff: input.diff,
     warnings: [],
-    requiresRestart: false,
+    requiresRestart: input.requiresRestart ?? false,
     simulated: true,
   };
 }
