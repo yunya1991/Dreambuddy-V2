@@ -289,6 +289,7 @@ DAL_DB_PATH=./data/dreambuddy_core.db python -m alembic -c dreambuddy_dal/migrat
 | PRAGMA 完整性检查 | `dreambuddy_dal/implementations/sqlite_unified/integrity.py` | MIGRATION_PLAN §4.2 |
 | WAL checkpoint + 备份轮转 | `dreambuddy_dal/implementations/sqlite_unified/rotate.py` | MIGRATION_PLAN §4.3 |
 | Cron 三件套 CLI 入口 | `dreambuddy_dal/cron_runner.py` | — |
+| As-Of vintage 迁移/回填（mm_metrics → mm_metric_vintages） | `scripts/migrate_metric_vintage.py` | 34 层 `L0-接口规范-fetchContext.md` §6 |
 | launchd plist 模板 | `launchd/com.dreambuddy.dal.*.plist` | MIGRATION_PLAN §4.1 |
 | 消费方双写接入（易经） | `11-易经推理系统/scripts/memory_l4/trading_utils.py` `_dal_write_trade_if_enabled` | — |
 | 消费方双写接入（V15） | `14-V15经典马丁策略/core/v15_trader.py` `_dal_write_martin_trade_if_enabled` | — |
@@ -307,6 +308,7 @@ DAL_DB_PATH=./data/dreambuddy_core.db python -m alembic -c dreambuddy_dal/migrat
 | G-4 回滚演练现场执行 | 切读前 | gate_check G-4 手动传入 |
 | G-5 冷备份异地副本验证 | 切读前 | gate_check G-5 backup_db_path |
 | DualWrite 14 天观察期 | 切读后 | MIGRATION_PLAN §3.3 |
+| 采集端写 `mm_metric_vintages`（`observed_at`=采集时刻），否则 As-Of 只能回放迁移快照 | 待排期 | SPEC-54 ADR-V20；34 层 L0 规范 §6 |
 
 ---
 

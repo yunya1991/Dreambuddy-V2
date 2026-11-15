@@ -112,6 +112,7 @@ v3.1 Frontend = SACG 四层可视化 + 双交易模式 UI + 三屏交易系统 +
 | 经典系统 | `/dashboard/classic` | 2 (含 [subtab]) | 8个组件 (Indicator/GovernanceFlow/Phase/Generation/Management/Signals等) | ✅ |
 | 基本面 | `/dashboard/fundamental` | 1 | 17个组件 (Flow/Macro/Onchain/Valuation/Sentiment/Intermarket/Breadth/WhaleTracker/UTXOAge/MVRVZone/SentimentHeatmap等) | ✅ |
 | 新闻 | `/dashboard/news` | 1 | HotNewsPanel (热点雷达 Top10 + Top3 头条外链) | ✅ |
+| 数据与图表 | `/dashboard/visual` | 1 | VisualWorkbench + 5 类渲染器 (Tree/Graph/Series/Table/Renderer) | ✅ |
 | 三屏系统 | `/dashboard/three-screens` | 6 (总览+screen1/2/3+pipeline+[screen]) | Screen1/2/3Panel + PipelineView + 3个charts | ✅ |
 | SACG 监控 | `/dashboard/monitor` | 5 (总览+compute/graph/arrange/sense) | 5个组件 (ReflectorPanel/CrossValidationPanel/SenseConfidenceGauge/SACGOverview/DAGGraphView) | ✅ |
 | 记忆管理 | `/dashboard/memory` | 5 (总览+user/dze/skills/docs) | 6个组件 (RecordExperienceForm/MemoryTimeline/DZEChainView/SkillIndexView/DocIndexView/MemoryTabNav) | ✅ |
@@ -139,23 +140,27 @@ v3.1 Frontend = SACG 四层可视化 + 双交易模式 UI + 三屏交易系统 +
 
 ### 2.3 侧边栏导航
 
-侧边栏定义在 [dashboard/layout.tsx](../../3.1-FRONTEND/src/app/dashboard/layout.tsx) 中，共 12 个一级导航项:
+侧边栏单一事实源为 [src/lib/navigation.ts](../../3.1-FRONTEND/src/lib/navigation.ts) 的 `NAV_ITEMS`（侧栏 / 移动端 / ⌘K 命令面板均派生于此），共 17 个一级导航项，按 `section` 分组:
 
-| 序号 | 标签 | 路由 | 图标 | 备注 |
-|------|------|------|------|------|
-| 1 | 概览 | `/dashboard` | ◉ | 主控台 |
-| 2 | AI 交易 | `/dashboard/trade` | ⚡ | ChatPanel + SSE 流式 |
-| 3 | 交易榜单 | `/dashboard/ranking` | 🏆 | 决策排行+预填单 |
-| 4 | 经典系统 | `/dashboard/classic` | 📊 | C0-C8 全链 |
-| 5 | 基本面 | `/dashboard/fundamental` | 📈 | 17个分析组件 |
-| 6 | 新闻 | `/dashboard/news` | 📰 | 24h 热点影响力榜 + 头条外链 |
-| 7 | 三屏系统 | `/dashboard/three-screens` | 🖥 | Elder 三屏 |
-| 8 | SACG 监控 | `/dashboard/monitor` | 🔍 | 四层可视化 |
-| 9 | 记忆管理 | `/dashboard/memory` | 🧠 | 用户/DZE/技能/文档 |
-| 10 | 设置 | `/dashboard/settings` | ⚙ | API/交易/策略/渠道 |
-| 11 | 治理 | `/dashboard/governance` | 🏛 | 治理流程 |
-| 12 | 人工审批 | `/board/approval` | 🛡️ | Badge 显示待审批数 |
-| 13 | 报告 | `/dashboard/reports` | 📋 | 产物中台 |
+| 分组 | 序号 | 标签 | 路由 | 图标 | 备注 |
+|------|------|------|------|------|------|
+| 平台 | 1 | Agent 工作台 | `/dashboard/agent` | 🤖 | 多会话工作台 |
+| 平台 | 2 | 基本面 | `/dashboard/fundamental` | 📈 | 17个分析组件 |
+| 平台 | 3 | 新闻 | `/dashboard/news` | 📰 | 24h 热点影响力榜 + 头条外链 |
+| 平台 | 4 | 数据与图表 | `/dashboard/visual` | 📉 | 统计图表化（树/图/序列/表） |
+| 平台 | 5 | 今日热门资产 | `/dashboard/ranking` | 🔥 | 决策排行+预填单 |
+| 平台 | 6 | 三屏系统 | `/dashboard/three-screens` | 🖥 | Elder 三屏 |
+| 平台 | 7 | 插件 | `/dashboard/plugins` | 🧩 | 插件市场与审计 |
+| 产品 | 8 | AI 交易 | `/dashboard/trade` | ⚡ | ChatPanel + SSE 流式 |
+| 产品 | 9 | 策略构建 | `/dashboard/classic` | 📊 | C0-C8 全链 |
+| 产品 | 10 | 策略管理 | `/dashboard/governance` | 🏛 | 治理流程 |
+| 运营 | 11 | 概览 | `/dashboard` | ◉ | 主控台 |
+| 运营 | 12 | Agent工作监控 | `/dashboard/monitor` | 🔍 | 四层可视化 |
+| 运营 | 13 | 记忆管理 | `/dashboard/memory` | 🧠 | 用户/DZE/技能/文档 |
+| 运营 | 14 | 人工审批 | `/dashboard/board/approval` | 🛡️ | Badge 显示待审批数 |
+| 运营 | 15 | 报告 | `/dashboard/reports` | 📋 | 产物中台 |
+| 运营 | 16 | 用量与审计 | `/dashboard/usage` | 🧾 | 算力计费与审计 |
+| 设置 | 17 | 通用设置 | `/dashboard/settings` | ⚙ | API/交易/策略/渠道 |
 
 侧边栏特性:
 - 可折叠（折叠时宽 56px / 展开时 192px）
@@ -192,6 +197,7 @@ src/app/
 │   │   └── [subtab]/page.tsx          → 经典子标签 (动态路由)
 │   ├── fundamental/page.tsx           → 基本面分析
 │   ├── news/page.tsx                  → 新闻监控（一级入口，原基本面 tab 拆出）
+│   ├── visual/page.tsx                → 数据与图表（统计图表化 T1–T4）
 │   │
 │   ├── three-screens/
 │   │   ├── page.tsx                   → 三屏总览
@@ -553,6 +559,14 @@ src/components/
     │
     ├── news/                     → 新闻域 (1个组件)
     │   └── HotNewsPanel.tsx      → 热点雷达 Top10 + Top3 头条外链
+    │
+    ├── visual/                   → 统计图表化域（实际位于 src/components/visual/，非 features/）
+    │   ├── VisualWorkbench.tsx   → 工作台（数据源选择 + 渲染）
+    │   ├── VisualRenderer.tsx    → 渲染分发
+    │   ├── TreeView.tsx          → 树视图
+    │   ├── GraphView.tsx         → 关系图
+    │   ├── SeriesView.tsx        → 序列/曲线
+    │   └── TableView.tsx         → 表格
     │
     ├── classic/                  → 经典交易域 (8个组件)
     │   ├── IndicatorPanel.tsx    → 指标面板

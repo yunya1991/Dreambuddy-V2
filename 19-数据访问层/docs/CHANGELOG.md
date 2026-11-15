@@ -6,6 +6,27 @@
 
 ---
 
+## [Unreleased]（As-Of vintage 追加表落地 — 2026-11-15）
+
+> 🧪 **阶段**: 云端生产库已完成迁移（975,548 行）；**读路径验证通过，写路径未接**
+> **契约依据**: SPEC-54 ADR-V20（修订数据不可覆盖）+ V-AC27（vintage 隔离）；读侧规范见 [34-L0-接口规范-fetchContext.md §6](../../34-前端应用训练系统/L0-接口规范-fetchContext.md)
+
+### Added
+- **Added** [migrate_metric_vintage.py](../scripts/migrate_metric_vintage.py) — `mm_metrics` → `mm_metric_vintages` 幂等迁移/回填：
+  - 建追加式表 `mm_metric_vintages`（PK = `source + sub_category + metric_name + period_ts + observed_at`，`WITHOUT ROWID`）+ 索引 `idx_vintages_replay`
+  - `observed_at := timestamp`（首次落库时刻）回填；`INSERT OR IGNORE` 幂等；支持 `--dry-run` / `--no-backup`
+- **Added** 云端执行记录（2026-11-15）：先 `.backup` 到 `data/backups/dreambuddy_core.db.<ts>.pre-vintage.bak`（98MB），再 `--no-backup` 迁移，`vintage_after = 975548`
+- **Added** As-Of 回放验证（DGS10/value/days=30）：`as_of` 取 T-30d/T-15d/T-7d 时最后一点分别为 2026-10-08/10-23/11-06，`meta.vintage=true`；不传 `as_of` 时为 2026-11-15，证明期间不回看未来
+
+### 已知缺口（不阻塞，须排期）
+- **写路径未接**：全仓无任何采集端写 `mm_metric_vintages`（仅迁移脚本写、`l0_foundation` 读、测试造数），表不随采集增长，As-Of 仅能回放迁移快照
+- **回填语义限制**：`observed_at = period_ts` 无法还原历史真实发布时刻；旧值已被 `mm_metrics` 的 `INSERT OR REPLACE` 覆盖
+
+### 运维提示
+- `sqlite3` 以非属主身份打开 `dreambuddy_core.db` 会报 `attempt to write a readonly database`；只读核查请用 `sudo -u luke` 或 `file:<path>?immutable=1`
+
+---
+
 ## [Unreleased]（P3 完成：Cron 三件套 + AES256 加密备份 + launchd 调度 — 2026-08-24）
 
 > 🧪 **阶段**: P3 100%（backup + integrity + rotate + cron_runner CLI + 3 个 launchd plist 模板）。全阶段 P0→P3 完成。

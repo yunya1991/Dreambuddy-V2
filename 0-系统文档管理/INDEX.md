@@ -1,6 +1,6 @@
 # 全项目文档索引 — INDEX
 
-> **版本**: v2.19 | **更新日期**: 2026-11-15
+> **版本**: v2.20 | **更新日期**: 2026-11-15
 > **定位（视角 B）**: **文档导航中枢，不是架构内容本身**。由 0-系统文档管理 维护，告诉你「到哪里找什么文档」。
 > **架构唯一事实源（SSoT）**: 所有架构争议以 [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v4.2** 为准（L0/L1/L2 三层 + L2 内部新 SACG + 认知 C1-C4 + 置信度门控）。被取代的旧架构文档已加「已归档」横幅，禁止作为实现依据。
 > **维护**: 每次新增/删除文档时同步更新；由 `4-工具与自动化/doc_coverage.py` 自动校验（已建成）
@@ -70,6 +70,7 @@
 | ★ **SPEC-B 交互内核与会话可用性** | [3.1-FRONTEND/docs/SPEC-20261111-B-交互内核与会话可用性.md](../3.1-FRONTEND/docs/SPEC-20261111-B-交互内核与会话可用性.md) **v0.1.0** | AgentPart/PartRenderer/ToolCard/PlanCardView + 会话持久化/虚拟化/输入器/⌘K，G-B1~G-B8 | 📝 待评审 |
 | ★ **SPEC-C 契约与传输治理** | [3.1-FRONTEND/docs/SPEC-20261111-C-契约与传输治理.md](../3.1-FRONTEND/docs/SPEC-20261111-C-契约与传输治理.md) **v0.1.0** | 信封/错误码/SSE v1/PlanCard 漂移/Query/鉴权/认知-DSH 代理/边界门禁，G-C1~G-C8 | 📝 待评审 |
 | ★ **SPEC 新闻模块独立与头条外链** | [3.1-FRONTEND/docs/SPEC-20261115-新闻模块独立与头条外链.md](../3.1-FRONTEND/docs/SPEC-20261115-新闻模块独立与头条外链.md) **v0.2.0** | 新闻 tab 提升为与基本面同级的 `/dashboard/news` 一级入口 + Top3 头条 `source_url` 外链（含 http(s) 守卫），G1~G6；零后端/零契约变更 | ✅ 已实施 |
+| ★ **L0 接口规范（含 As-Of 回放）** | [34-前端应用训练系统/L0-接口规范-fetchContext.md](../34-前端应用训练系统/L0-接口规范-fetchContext.md) **v0.3** | 10 scope 收敛 + `datacenter.series` 登记 + §6 As-Of vintage 语义（`observed_at <= as_of`、fail-closed、回填限制） | ✅ 已实施 |
 | ★ **SKILL 编排主 SPEC** | [1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md](../1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md) | HC-1~HC-9 硬约束 + 三路径编排 + M2五组件 + 8.1 F1-F20 | ✅ 落地中 |
 | ★ **SKILL 模仿进化 SPEC** | [1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md](../1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md) **v0.3** | 路径B模仿+路径C联网兜底+ImitationCounter+token埋点 | ✅ 172/172 GREEN |
 | ★ **广义认知系统协作** | [35-广义认知系统协作模块/README.md](../35-广义认知系统协作模块/README.md) · [INDEX.md](../35-广义认知系统协作模块/INDEX.md) | 跨系统协作设计 SSoT：SPEC 收敛 + 协作接口契约 + PoE 统一框架（纯文档统筹层，不含代码） | ✅ v1.6（契约治理已落地） |
@@ -205,6 +206,19 @@
 | 实盘出关 ADR | [52-lobehub协议集成/decisions/ADR-001-脑暴出关.md](../52-lobehub协议集成/decisions/ADR-001-脑暴出关.md) | 2026-11-11（已采纳灰度：auditor + 1 次/周 + 只执行 dispatch 胜方） |
 | 蒸馏桥 | [52-lobehub协议集成/bridge/distill_bridge.py](../52-lobehub协议集成/bridge/distill_bridge.py) | 20 tests；积压已消化（52 写 / 36 去重）；每日守护 `ops/supervisor.py` |
 
+### 54-L1架构能力聚合层
+
+| 文档 | 路径 | 版本 |
+|------|------|------|
+| 母 SPEC（L1 能力聚合层） | [54-L1架构能力聚合层/SPEC-54-L1架构能力聚合层.md](../54-L1架构能力聚合层/SPEC-54-L1架构能力聚合层.md) | v1.20（21 个可执行出口；D-G19 IC/ICIR/衰减表接入） |
+| 统计图表化 SPEC（T1–T4 图 + L1 三层） | [54-L1架构能力聚合层/SPEC-54-统计图表化能力.md](../54-L1架构能力聚合层/SPEC-54-统计图表化能力.md) | v0.19（S0 外露闸 + S1 曲线生产者 + B18 vintage + T1/T2/T3 已验收） |
+| 延续性统计分析 SPEC（T0） | [54-L1架构能力聚合层/SPEC-54-延续性统计分析模块.md](../54-L1架构能力聚合层/SPEC-54-延续性统计分析模块.md) | v1.6（T0 已实现，T2/D-E14 一维首版） |
+| 技术设计 | [54-L1架构能力聚合层/docs/TECHNICAL_DESIGN.md](../54-L1架构能力聚合层/docs/TECHNICAL_DESIGN.md) | 门禁/信封/能力层分工 |
+| 方法库 SSoT | [54-L1架构能力聚合层/docs/METHOD_LIBRARY.md](../54-L1架构能力聚合层/docs/METHOD_LIBRARY.md) | 方法编号 I35–I39 冲突已修正 |
+| 能力清单（可见性） | [54-L1架构能力聚合层/capability_manifest.yaml](../54-L1架构能力聚合层/capability_manifest.yaml) | 14 出口，`visibility: public\|internal`（ADR-V14） |
+| 评审报告 | [54-L1架构能力聚合层/SPEC评审报告-统计图表化能力-v0.1.md](../54-L1架构能力聚合层/SPEC评审报告-统计图表化能力-v0.1.md) | 2026-11-15（有条件通过 4.38/5） |
+| L1 交易层代码 | [54-L1架构能力聚合层/l1agg/trading/](../54-L1架构能力聚合层/l1agg/trading/) | `direction_rule` / `exit_rule` / `paper_replay` / `sizing` / `risk` / `outbox`（只产信号，执行交 22） |
+
 ---
 
 ## L3 — 辅助系统与实验性模块
@@ -221,7 +235,7 @@
 | experiments/ | [experiments/](../experiments/) | ❌ 无文档 | AB 交易实验 |
 | 9-基本面分析 | [9-基本面分析/docs/](../9-基本面分析/docs/) | 🟡 docs/目录(待补标准文档) | 基本面7引擎数据采集与分析 |
 | 18-数据获取中心 | [18-数据获取中心/docs/](../18-数据获取中心/docs/) | ✅ 5文档齐全 | 多源数据采集中心（行情/新闻/链上） |
-| 19-数据访问层 | [19-数据访问层/docs/](../19-数据访问层/docs/) | ✅ 8文档(含SCHEMA_DESIGN/CONNECTION_GOVERNANCE) | DAL数据访问层，Silver/Gold层 |
+| 19-数据访问层 | [19-数据访问层/docs/](../19-数据访问层/docs/) | ✅ 8文档(含SCHEMA_DESIGN/CONNECTION_GOVERNANCE) | DAL数据访问层，Silver/Gold层；**As-Of vintage**：`mm_metric_vintages` 追加表（2026-11-15 云端回填 975,548 行，写路径待接） |
 | 20-数据清洗中心 | [20-数据清洗中心/docs/](../20-数据清洗中心/docs/) | ✅ 6文档齐全 | Silver层数据清洗管道 |
 | 21-特征工程中心 | [21-特征工程中心/docs/](../21-特征工程中心/docs/) | ✅ 6文档齐全 | 特征工程与Gold层构建 |
 | 22-执行引擎中心 | [22-执行引擎中心/docs/README.md](../22-执行引擎中心/docs/README.md) | ✅ 5文档齐全 | TEE执行引擎核心 |
