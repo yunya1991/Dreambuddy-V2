@@ -29,6 +29,7 @@ export interface CreateOpLogInput {
   diff?: unknown | null;
   status?: AdminOpStatus;
   warnings?: unknown | null;
+  approvalId?: string | null;
   snapshotPath?: string | null;
   ip?: string | null;
   userAgent?: string | null;
@@ -61,6 +62,7 @@ export async function createOpLog(
       diff: jsonOrUndefined(input.diff),
       status: input.status ?? "PENDING_AUDIT",
       warnings: jsonOrUndefined(input.warnings),
+      approvalId: input.approvalId ?? undefined,
       snapshotPath: input.snapshotPath ?? undefined,
       ip: input.ip ?? undefined,
       userAgent: input.userAgent ?? undefined,

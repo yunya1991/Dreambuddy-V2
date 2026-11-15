@@ -311,6 +311,44 @@ def approval_check_ok(approval_id):
     return jsonify({"ok": ok, "approval_id": approval_id})
 
 
+@app.route("/api/v1/approvals/<approval_id>/decide", methods=["POST"])
+def approval_decide(approval_id):
+    """裁决审批请求（SPEC-7 §16-2）：APPROVE / REJECT 追加同 id 记录。
+
+    - approval_engine._approval_lookup 倒序取最后一条同 id 记录，故裁决即追加
+    - 审批人与发起人相同 → 403（L2 双人原则）
+    """
+    import time as _time
+
+    if not _require_admin():
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+    body = request.get_json(force=True) or {}
+    decision = str(body.get("decision") or "").strip().upper()
+    if decision not in ("APPROVE", "REJECT"):
+        return jsonify({"ok": False, "error": "invalid_decision"}), 400
+    actor = str(body.get("actor") or "").strip()
+    if not actor:
+        return jsonify({"ok": False, "error": "actor_required"}), 400
+
+    obj = approval_engine._approval_lookup(approval_id)
+    if obj is None:
+        return jsonify({"ok": False, "error": "not_found"}), 404
+    requester = str(obj.get("requester") or obj.get("created_by") or "").strip()
+    if requester and requester == actor:
+        return jsonify({"ok": False, "error": "self_approval_forbidden"}), 403
+
+    updated = dict(obj)
+    updated["decision"] = "approved" if decision == "APPROVE" else "rejected"
+    updated["approver"] = actor
+    updated["comment"] = str(body.get("comment") or "")
+    updated["ts"] = int(_time.time() * 1000)
+    updated["decided_ts"] = updated["ts"]
+    rid = approval_engine._approval_append(updated)
+    if rid is None:
+        return jsonify({"ok": False, "error": "append_failed"}), 500
+    return jsonify({"ok": True, "approval_id": rid, "decision": updated["decision"]})
+
+
 # ---------------------------------------------------------------------------
 # 审计 API
 # ---------------------------------------------------------------------------

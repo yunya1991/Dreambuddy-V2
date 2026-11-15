@@ -98,9 +98,33 @@ export const ADMIN_FILE_KEYS = {
   trailing_stop: "16-调控系统/config/trailing_stop.json",
   capital_control: "16-调控系统/config/capital_control.json",
   capital_allocator: "16-调控系统/config/capital_allocator.json",
+  param_center: "16-调控系统/config/param_center_override.json",
 } as const;
 
 export type AdminFileKey = keyof typeof ADMIN_FILE_KEYS;
+
+/** L2 可提案文件（SPEC-7 §6.4）；apply 自动执行仅 param_center / trailing_stop */
+export const ADMIN_L2_FILE_KEYS = [
+  "capital_control",
+  "capital_allocator",
+  "trailing_stop",
+  "param_center",
+] as const;
+
+export type AdminL2FileKey = (typeof ADMIN_L2_FILE_KEYS)[number];
+
+/** param_center 覆盖硬下限（G3：SL≥4% / TP≥12% / RR≥2 / ATR∈[2,6]） */
+export const PARAM_CENTER_FLOORS = {
+  slFloorMin: 0.04,
+  tpFloorMin: 0.12,
+  rrRatioMin: 2,
+  atrMultMin: 2,
+  atrMultMax: 6,
+} as const;
+
+/** L2 动作标识（opLog.action / confirmToken.action） */
+export const L2_PROPOSE_ACTION = "system-config.propose";
+export const L2_APPLY_ACTION = "system-config.apply";
 
 /** 写操作级别 */
 export const ADMIN_LEVELS = ["L0", "L1", "L2"] as const;

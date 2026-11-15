@@ -19,7 +19,7 @@ import logging
 import sys
 import time
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +53,16 @@ _AGGREGATED_TTL = 7200
 
 # 聚合缓存持久化文件（跨进程共享：runner 写入 → polling_trader 读取）
 _AGGREGATED_CACHE_FILE = _THIS.parent / "data" / "aggregated_params.json"
+
+# L2 审批覆盖文件（中台 /api/admin/system-config/apply 写入，SPEC-7 §6.4/§16-3）
+_OVERRIDE_FILE = _PROJECT_ROOT / "16-调控系统" / "config" / "param_center_override.json"
+
+# 硬下限（G3）：任何来源（静态表/聚合缓存/覆盖文件）都不得突破
+_FLOOR_SL = 0.04
+_FLOOR_TP = 0.12
+_FLOOR_RR = 2.0
+_FLOOR_ATR_MIN = 2.0
+_FLOOR_ATR_MAX = 6.0
 
 
 # ============================================================================
@@ -91,6 +101,11 @@ class ParamRepository:
         self._disk_load_interval: float = 60.0  # 最少 60 秒重新加载一次
         # 从磁盘加载聚合缓存（跨进程共享）
         self._load_aggregated_from_disk()
+        # L2 审批覆盖文件（中台写入；无文件/异常时保持 None，不影响既有链路）
+        self._override: Optional[Dict[str, object]] = None
+        self._override_mtime: float = -1.0
+        self._last_override_load: float = 0.0
+        self._load_override_from_disk()
 
     def _load_aggregated_from_disk(self) -> None:
         """从 JSON 文件加载聚合缓存（跨进程共享）。"""
@@ -150,7 +165,91 @@ class ParamRepository:
         except Exception as exc:
             logger.warning("保存聚合缓存失败: %s", exc)
 
+    def _load_override_from_disk(self) -> None:
+        """加载 L2 审批覆盖文件（SPEC-7 §16-3）。
+
+        - 只记录文件里出现的键，未出现的维度沿用原有链路
+        - 载入即按硬下限钳制：文件里即使写了更小的值也不会生效
+        - FAIL-SAFE：缺失/损坏只忽略覆盖，不影响既有链路
+        """
+        self._last_override_load = time.time()
+        try:
+            if not _OVERRIDE_FILE.exists():
+                self._override = None
+                self._override_mtime = -1.0
+                return
+            mtime = _OVERRIDE_FILE.stat().st_mtime
+            if self._override is not None and abs(mtime - self._override_mtime) < 1e-6:
+                return
+            import json
+
+            data = json.loads(_OVERRIDE_FILE.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise ValueError("override 顶层必须是对象")
+
+            override: Dict[str, object] = {}
+            if "sl_floor" in data:
+                override["sl_floor"] = max(float(data["sl_floor"]), _FLOOR_SL)
+            if "tp_floor" in data:
+                override["tp_floor"] = max(float(data["tp_floor"]), _FLOOR_TP)
+            if "rr_ratio_target" in data:
+                override["rr_ratio_target"] = max(float(data["rr_ratio_target"]), _FLOOR_RR)
+            atr = data.get("atr_mult_range")
+            if isinstance(atr, (list, tuple)) and len(atr) == 2:
+                low = min(max(float(atr[0]), _FLOOR_ATR_MIN), _FLOOR_ATR_MAX)
+                high = min(max(float(atr[1]), _FLOOR_ATR_MIN), _FLOOR_ATR_MAX)
+                if low > high:
+                    low, high = high, low
+                override["atr_mult_range"] = (low, high)
+
+            self._override = override or None
+            self._override_mtime = mtime
+            if self._override:
+                logger.info("ParamRepository: 已加载 param_center 覆盖 %s", self._override)
+        except Exception as exc:
+            logger.warning("加载 param_center 覆盖失败（忽略覆盖，保持既有链路）: %s", exc)
+            self._override = None
+
+    def _effective(self, params: SLTPParams) -> SLTPParams:
+        """应用 L2 覆盖；无覆盖时原样返回，保持既有 FAIL-OPEN 语义。
+
+        有覆盖时：各维度 max(基础值, 覆盖值, 硬下限)，ATR 取覆盖区间并钳制到 [2,6]，
+        保证 SL≥4% / TP≥12% / RR≥2 / ATR∈[2,6]（G3）。
+        """
+        if (time.time() - self._last_override_load) > self._disk_load_interval:
+            self._load_override_from_disk()
+        override = self._override
+        if not override:
+            return params
+        sl = max(params.sl_floor, float(override.get("sl_floor", 0.0)), _FLOOR_SL)
+        tp = max(params.tp_floor, float(override.get("tp_floor", 0.0)), _FLOOR_TP)
+        rr = max(
+            params.rr_ratio_target,
+            float(override.get("rr_ratio_target", 0.0)),
+            _FLOOR_RR,
+        )
+        atr = override.get("atr_mult_range") or params.atr_mult_range
+        low = min(max(float(atr[0]), _FLOOR_ATR_MIN), _FLOOR_ATR_MAX)
+        high = min(max(float(atr[1]), _FLOOR_ATR_MIN), _FLOOR_ATR_MAX)
+        if low > high:
+            low, high = high, low
+        return SLTPParams(
+            sl_floor=sl,
+            tp_floor=tp,
+            rr_ratio_target=rr,
+            atr_mult_range=(low, high),
+        )
+
     def get(
+        self,
+        symbol: str,
+        market_regime: str = _DEFAULT_REGIME,
+        use_cache: bool = True,
+    ) -> SLTPParams:
+        """查询 SL/TP 参数（对外接口）：结果统一应用 L2 覆盖与硬下限。"""
+        return self._effective(self._get_raw(symbol, market_regime, use_cache))
+
+    def _get_raw(
         self,
         symbol: str,
         market_regime: str = _DEFAULT_REGIME,
