@@ -23,6 +23,7 @@ from data_center.collectors.tradefin import (
     fed_calendar_collector,
     jin10_collector,
     macro_calendar_collector,
+    odaily_newsflash_adapter,
     sec_edgar_collector,
     sina_finance_collector,
     wallstreetcn_collector,
@@ -39,6 +40,7 @@ COLLECTORS = {
     "wallstreetcn": wallstreetcn_collector,
     "cls": cls_telegraph_collector,
     "jin10": jin10_collector,
+    "odaily_newsflash": odaily_newsflash_adapter,
 }
 
 CN_SOURCES = ("sina_finance", "wallstreetcn", "cls", "jin10")
