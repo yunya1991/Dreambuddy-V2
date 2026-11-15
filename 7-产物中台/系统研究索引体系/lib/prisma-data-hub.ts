@@ -6,18 +6,20 @@
 //   2. Prisma SQLite 数据库 (业务数据沉淀) — 通过此模块访问
 // ============================================================================
 
-import { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
+// 显式 .ts 后缀：node --test（ESM type stripping）需要真实扩展名
+import { prisma } from "./prisma.ts";
 
-let prismaInstance: PrismaClient | null = null;
-
+/**
+ * 统一复用 lib/prisma 单例（connection_limit=5），避免多处 new PrismaClient。
+ * 新代码请直接 `import { prisma } from "@/lib/prisma"`。
+ */
 export function getPrisma(): PrismaClient {
-  if (!prismaInstance) {
-    prismaInstance = new PrismaClient({
-      log: [],
-    });
-  }
-  return prismaInstance;
+  return prisma;
 }
+
+// 兼容既有调用方（app/api/ops/traces 等直接解构 prisma）
+export { prisma };
 
 // ============================================================================
 // 策略业务数据 (User Strategy Precipitation)

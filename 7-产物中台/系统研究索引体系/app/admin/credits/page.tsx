@@ -1,6 +1,8 @@
 import { AdminTopBar } from "@/components/admin/AdminTopBar";
 import { getAdminCreditsList } from "@/lib/admin-queries";
 import { formatDateTime } from "@/lib/utils/admin-format";
+import { evaluateWriteGate } from "@/lib/admin/gate";
+import { CreditsAdjustButton } from "@/components/admin/write/CreditsAdjustButton";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +16,7 @@ export default async function AdminCreditsPage({
   const search = typeof searchParams.search === "string" ? searchParams.search : "";
 
   const { items, total } = await getAdminCreditsList(page, pageSize, search);
+  const writeEnabled = evaluateWriteGate().enabled;
 
   return (
     <>
@@ -41,11 +44,12 @@ export default async function AdminCreditsPage({
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">用户</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-right">余额</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">创建时间</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {items.length === 0 ? (
-                  <tr><td colSpan={3} className="px-4 py-12 text-center text-gray-400 text-sm">暂无积分账户</td></tr>
+                  <tr><td colSpan={4} className="px-4 py-12 text-center text-gray-400 text-sm">暂无积分账户</td></tr>
                 ) : (
                   items.map((c) => (
                     <tr key={String(c.id)} className="hover:bg-gray-50 transition-colors">
@@ -57,6 +61,18 @@ export default async function AdminCreditsPage({
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-500">
                         {c.createdAt ? formatDateTime(c.createdAt) : "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        {c.uid ? (
+                          <CreditsAdjustButton
+                            uid={c.uid}
+                            balance={Number(c.balance || 0)}
+                            expectedUpdatedAt={c.updatedAt}
+                            writeEnabled={writeEnabled}
+                          />
+                        ) : (
+                          <span className="text-xs text-gray-400">缺少 uid</span>
+                        )}
                       </td>
                     </tr>
                   ))

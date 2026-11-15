@@ -19,6 +19,8 @@ const navItems: AdminNavItem[] = [
   { href: "/admin/credits", label: "积分管理", icon: "💎", group: "财务" },
   { href: "/admin/orders", label: "充值订单", icon: "📦", group: "财务" },
   { href: "/admin/other", label: "数据沉淀", icon: "📂", group: "系统" },
+  { href: "/admin/system-config", label: "系统配置", icon: "⚙️", group: "系统" },
+  { href: "/admin/audit", label: "操作审计", icon: "🧾", group: "系统" },
 ];
 
 export function AdminSidebar({ currentPath }: { currentPath: string }) {

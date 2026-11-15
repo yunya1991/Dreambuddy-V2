@@ -1,6 +1,9 @@
 import { AdminTopBar } from "@/components/admin/AdminTopBar";
 import { getAdminChannelList } from "@/lib/admin-queries";
 import { formatDateTime } from "@/lib/utils/admin-format";
+import { evaluateWriteGate } from "@/lib/admin/gate";
+import { RowActionButton } from "@/components/admin/write/RowActionButton";
+import { CHANNEL_UPDATE_ACTION } from "@/lib/admin/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +17,7 @@ export default async function AdminChannelsPage({
   const search = typeof searchParams.search === "string" ? searchParams.search : "";
 
   const { items, total } = await getAdminChannelList(page, pageSize, search);
+  const writeEnabled = evaluateWriteGate().enabled;
 
   return (
     <>
@@ -42,11 +46,12 @@ export default async function AdminChannelsPage({
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">类型</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">所属用户</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">创建时间</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {items.length === 0 ? (
-                  <tr><td colSpan={4} className="px-4 py-12 text-center text-gray-400 text-sm">暂无渠道配置</td></tr>
+                  <tr><td colSpan={5} className="px-4 py-12 text-center text-gray-400 text-sm">暂无渠道配置</td></tr>
                 ) : (
                   items.map((c) => (
                     <tr key={String(c.id)} className="hover:bg-gray-50 transition-colors">
@@ -54,6 +59,25 @@ export default async function AdminChannelsPage({
                       <td className="px-4 py-3 text-xs text-gray-600">{c.type || c.provider || "—"}</td>
                       <td className="px-4 py-3 text-xs text-gray-600">{c.userDisplayName || c.userEmail || "—"}</td>
                       <td className="px-4 py-3 text-xs text-gray-500">{c.createdAt ? formatDateTime(c.createdAt) : "—"}</td>
+                      <td className="px-4 py-3">
+                        {c.isOnline !== undefined && c.updatedAt ? (
+                          <RowActionButton
+                            label={c.isOnline ? "下线渠道" : "上线渠道"}
+                            endpoint={`/api/admin/channels/${encodeURIComponent(String(c.id))}`}
+                            method="PATCH"
+                            level="L0"
+                            payload={{
+                              isOnline: !c.isOnline,
+                              expectedUpdatedAt: c.updatedAt,
+                            }}
+                            confirmText={`确认${c.isOnline ? "下线" : "上线"}渠道「${c.name || "未命名"}」？立即生效并写入审计。`}
+                            danger={c.isOnline}
+                            writeEnabled={writeEnabled}
+                          />
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}

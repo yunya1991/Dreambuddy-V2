@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { getAdminTradingParamsList } from "@/lib/admin-queries";
 import { apiSuccess, apiError, parseListQuery, calculateMeta } from "@/lib/types/admin-api";
+import { requireAdminOrResponse } from "@/lib/admin/route-guard";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
+  const denied = await requireAdminOrResponse();
+  if (denied) return denied;
   try {
     const url = new URL(request.url);
     const q = parseListQuery(url);

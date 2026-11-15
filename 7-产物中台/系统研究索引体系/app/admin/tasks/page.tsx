@@ -1,6 +1,9 @@
 import { AdminTopBar } from "@/components/admin/AdminTopBar";
 import { getAdminTaskList } from "@/lib/admin-queries";
 import { formatDateTime } from "@/lib/utils/admin-format";
+import { evaluateWriteGate } from "@/lib/admin/gate";
+import { RowActionButton } from "@/components/admin/write/RowActionButton";
+import { TASK_STATUS_ACTION } from "@/lib/admin/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +18,7 @@ export default async function AdminTasksPage({
   const status = typeof searchParams.status === "string" ? searchParams.status : "";
 
   const { items, total } = await getAdminTaskList(page, pageSize, search, status);
+  const writeEnabled = evaluateWriteGate().enabled;
 
   return (
     <>
@@ -48,12 +52,13 @@ export default async function AdminTasksPage({
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-center">状态</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">用户</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">创建时间</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-12 text-center text-gray-400 text-sm">
+                    <td colSpan={6} className="px-4 py-12 text-center text-gray-400 text-sm">
                       暂无任务数据
                     </td>
                   </tr>
@@ -89,6 +94,36 @@ export default async function AdminTasksPage({
                         {!t.uid && <span className="text-gray-400">—</span>}
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-500">{formatDateTime(t.createdAt)}</td>
+                      <td className="px-4 py-3">
+                        {t.status === "ACTIVE" ? (
+                          <RowActionButton
+                            label="暂停任务"
+                            endpoint={`/api/admin/tasks/${encodeURIComponent(t.id)}`}
+                            method="PATCH"
+                            level="L1"
+                            action={TASK_STATUS_ACTION}
+                            targetId={t.id}
+                            payload={{ status: "PAUSED", expectedUpdatedAt: t.updatedAt }}
+                            confirmText={`确认暂停任务「${t.name}」？`}
+                            danger
+                            writeEnabled={writeEnabled}
+                          />
+                        ) : t.status === "PAUSED" || t.status === "FAILED" ? (
+                          <RowActionButton
+                            label="恢复任务"
+                            endpoint={`/api/admin/tasks/${encodeURIComponent(t.id)}`}
+                            method="PATCH"
+                            level="L1"
+                            action={TASK_STATUS_ACTION}
+                            targetId={t.id}
+                            payload={{ status: "ACTIVE", expectedUpdatedAt: t.updatedAt }}
+                            confirmText={`确认恢复任务「${t.name}」为 ACTIVE？`}
+                            writeEnabled={writeEnabled}
+                          />
+                        ) : (
+                          <span className="text-xs text-gray-400">{t.status === "COMPLETED" ? "已结束" : "—"}</span>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}

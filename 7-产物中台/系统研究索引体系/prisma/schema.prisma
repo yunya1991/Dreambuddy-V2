@@ -702,3 +702,45 @@ model RankingMonitor {
 
   @@map("ranking_monitors")
 }
+
+// ============================================
+// 管理台写操作日志（SPEC-7 §7 唯一新增表）
+// 状态：PENDING_AUDIT / APPLIED / APPLIED_WITH_WARNINGS / FAILED /
+//       ROLLED_BACK / PENDING_APPROVAL / REJECTED
+// 注意：DDL 只能由云端 DBA 执行，禁止 prisma migrate / db push
+// ============================================
+
+model AdminOperationLog {
+  id             String    @id @default(cuid())
+  requestId      String    @unique
+  idempotencyKey String?   @unique
+  nonce          String?   @unique
+  actorUid       String
+  actorRole      String
+  level          String
+  action         String
+  targetType     String
+  targetId       String
+  reason         String?
+  beforeData     Json?
+  afterData      Json?
+  diff           Json?
+  status         String    @default("PENDING_AUDIT")
+  warnings       Json?
+  errorCode      String?
+  errorMessage   String?
+  approvalId     String?
+  auditHash      String?
+  snapshotPath   String?
+  ip             String?
+  userAgent      String?
+  createdAt      DateTime  @default(now())
+  appliedAt      DateTime?
+  rolledBackAt   DateTime?
+  auditFlushedAt DateTime?
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+  @@index([actorUid, createdAt])
+  @@map("admin_operation_logs")
+}

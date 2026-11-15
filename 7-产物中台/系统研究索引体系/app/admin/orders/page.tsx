@@ -1,6 +1,9 @@
 import { AdminTopBar } from "@/components/admin/AdminTopBar";
 import { getAdminOrderList } from "@/lib/admin-queries";
 import { formatDateTime } from "@/lib/utils/admin-format";
+import { evaluateWriteGate } from "@/lib/admin/gate";
+import { RowActionButton } from "@/components/admin/write/RowActionButton";
+import { ORDER_UPDATE_ACTION } from "@/lib/admin/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +17,7 @@ export default async function AdminOrdersPage({
   const search = typeof searchParams.search === "string" ? searchParams.search : "";
 
   const { items, total } = await getAdminOrderList(page, pageSize, search);
+  const writeEnabled = evaluateWriteGate().enabled;
 
   return (
     <>
@@ -43,11 +47,12 @@ export default async function AdminOrdersPage({
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-right">金额</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-center">状态</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">创建时间</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {items.length === 0 ? (
-                  <tr><td colSpan={5} className="px-4 py-12 text-center text-gray-400 text-sm">暂无订单</td></tr>
+                  <tr><td colSpan={6} className="px-4 py-12 text-center text-gray-400 text-sm">暂无订单</td></tr>
                 ) : (
                   items.map((o) => (
                     <tr key={String(o.id)} className="hover:bg-gray-50 transition-colors">
@@ -65,6 +70,29 @@ export default async function AdminOrdersPage({
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-500">
                         {o.createdAt ? formatDateTime(o.createdAt) : "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        {o.updatedAt && (o.status === "PENDING" || o.status === "PAID") ? (
+                          <RowActionButton
+                            label={o.status === "PENDING" ? "取消订单" : "确认完成"}
+                            endpoint={`/api/admin/orders/${encodeURIComponent(String(o.id))}`}
+                            method="PATCH"
+                            level="L1"
+                            action={ORDER_UPDATE_ACTION}
+                            targetId={String(o.id)}
+                            payload={{
+                              status: o.status === "PENDING" ? "CANCELLED" : "COMPLETED",
+                              expectedUpdatedAt: o.updatedAt,
+                            }}
+                            confirmText={`确认将订单 ${String(o.id).slice(0, 16)} 置为 ${
+                              o.status === "PENDING" ? "CANCELLED（取消）" : "COMPLETED（完成）"
+                            }？不涉及金额变动。`}
+                            danger={o.status === "PENDING"}
+                            writeEnabled={writeEnabled}
+                          />
+                        ) : (
+                          <span className="text-xs text-gray-400">不可操作</span>
+                        )}
                       </td>
                     </tr>
                   ))

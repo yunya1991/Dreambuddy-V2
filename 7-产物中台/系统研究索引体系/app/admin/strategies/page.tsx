@@ -1,6 +1,9 @@
 import { AdminTopBar } from "@/components/admin/AdminTopBar";
 import { getAdminStrategyList } from "@/lib/admin-queries";
 import { formatDateTime } from "@/lib/utils/admin-format";
+import { evaluateWriteGate } from "@/lib/admin/gate";
+import { RowActionButton } from "@/components/admin/write/RowActionButton";
+import { STRATEGY_STATUS_ACTION } from "@/lib/admin/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +18,7 @@ export default async function AdminStrategiesPage({
   const status = typeof searchParams.status === "string" ? searchParams.status : "";
 
   const { items, total } = await getAdminStrategyList(page, pageSize, search, status);
+  const writeEnabled = evaluateWriteGate().enabled;
 
   return (
     <>
@@ -50,12 +54,13 @@ export default async function AdminStrategiesPage({
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">用户</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">创建时间</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">更新时间</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-gray-400 text-sm">
+                    <td colSpan={7} className="px-4 py-12 text-center text-gray-400 text-sm">
                       暂无策略数据
                     </td>
                   </tr>
@@ -94,6 +99,36 @@ export default async function AdminStrategiesPage({
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-600">{formatDateTime(s.createdAt)}</td>
                       <td className="px-4 py-3 text-xs text-gray-600">{formatDateTime(s.updatedAt)}</td>
+                      <td className="px-4 py-3">
+                        {s.status === "APPLIED" || s.status === "applied" ? (
+                          <RowActionButton
+                            label="暂停策略"
+                            endpoint={`/api/admin/strategies/${encodeURIComponent(s.id)}`}
+                            method="PATCH"
+                            level="L1"
+                            action={STRATEGY_STATUS_ACTION}
+                            targetId={s.id}
+                            payload={{ status: "PAUSED", expectedUpdatedAt: s.updatedAt }}
+                            confirmText={`确认暂停策略「${s.name}」？将下发 27 策略状态。`}
+                            danger
+                            writeEnabled={writeEnabled}
+                          />
+                        ) : s.status === "PAUSED" || s.status === "paused" ? (
+                          <RowActionButton
+                            label="恢复策略"
+                            endpoint={`/api/admin/strategies/${encodeURIComponent(s.id)}`}
+                            method="PATCH"
+                            level="L1"
+                            action={STRATEGY_STATUS_ACTION}
+                            targetId={s.id}
+                            payload={{ status: "APPLIED", expectedUpdatedAt: s.updatedAt }}
+                            confirmText={`确认恢复策略「${s.name}」为 APPLIED？将下发 27 策略状态。`}
+                            writeEnabled={writeEnabled}
+                          />
+                        ) : (
+                          <span className="text-xs text-gray-400">按状态机不可操作</span>
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  本地（macOS）审计 outbox 补偿：每 60 秒调用一次内部端点（SPEC-7 §9-3）
+  安装：
+    cp deploy/launchd/com.dreambuddy.admin-audit-flush.plist ~/Library/LaunchAgents/
+    launchctl load -w ~/Library/LaunchAgents/com.dreambuddy.admin-audit-flush.plist
+  令牌来源：~/.config/dreambuddy/admin.env（ADMIN_INTERNAL_TOKEN=xxx），禁止写入本文件
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.dreambuddy.admin-audit-flush</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>. "$HOME/.config/dreambuddy/admin.env" 2>/dev/null; curl -sS -X POST -H "X-Internal-Token: ${ADMIN_INTERNAL_TOKEN}" http://127.0.0.1:3456/api/admin/jobs/audit-flush >/dev/null 2>&1</string>
+  </array>
+
+  <key>StartInterval</key>
+  <integer>60</integer>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/dreambuddy-admin-audit-flush.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/dreambuddy-admin-audit-flush.err.log</string>
+</dict>
+</plist>

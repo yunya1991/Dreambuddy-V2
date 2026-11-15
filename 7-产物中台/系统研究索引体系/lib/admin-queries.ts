@@ -28,10 +28,17 @@ export interface AdminUserListItem {
   email: string;
   displayName: string;
   emailVerified: boolean;
+  /** 角色（FREE/PRO/ADMIN），角色调整按钮据此计算目标值 */
+  role: string;
   createdAt: string;
   lastLoginAt: string | null;
   strategyCount: number;
   apiConfigCount: number;
+  /** 写操作 CAS 依据 */
+  updatedAt: string;
+  /** 锁定状态（解锁按钮据此启用） */
+  lockedUntil: string | null;
+  loginAttempts: number;
 }
 
 export async function getAdminUserList(
@@ -78,10 +85,14 @@ export async function getAdminUserList(
     email: u.email || "—",
     displayName: u.displayName || u.email?.split("@")[0] || "未设置",
     emailVerified: u.emailVerified || false,
+    role: u.role || "FREE",
     createdAt: safeDate(u.createdAt),
     lastLoginAt: u.lastLoginAt ? safeDate(u.lastLoginAt) : null,
     strategyCount: strategyCounts[u.uid] || 0,
     apiConfigCount: apiConfigCounts[u.uid] || 0,
+    updatedAt: safeDate(u.updatedAt),
+    lockedUntil: u.lockedUntil ? safeDate(u.lockedUntil) : null,
+    loginAttempts: Number(u.loginAttempts) || 0,
   }));
 
   return { items, total };
@@ -318,6 +329,7 @@ export interface AdminTaskListItem {
   userDisplayName: string;
   name: string;
   status: string;
+  updatedAt?: string;
   createdAt: string;
 }
 
@@ -372,6 +384,7 @@ export async function getAdminTaskList(
       userDisplayName: strategy?.user?.displayName || strategy?.user?.email || "",
       name: t.name || t.description || "未命名任务",
       status: t.status || "unknown",
+      updatedAt: safeDate(t.updatedAt),
       createdAt: safeDate(t.createdAt),
     };
   });
@@ -487,6 +500,9 @@ export interface AdminApiConfigListItem {
   category: string;
   provider: string;
   type: string;
+  label?: string;
+  isVerified?: boolean;
+  updatedAt?: string;
   createdAt: string;
 }
 
@@ -530,6 +546,9 @@ export async function getAdminApiConfigList(
     category: c.category || c.type || "general",
     provider: c.provider || c.exchange || "unknown",
     type: c.type || c.category || "unknown",
+    label: c.label || "",
+    isVerified: Boolean(c.isVerified),
+    updatedAt: safeDate(c.updatedAt),
     createdAt: safeDate(c.createdAt),
   }));
 
@@ -686,6 +705,8 @@ export interface AdminChannelItem {
   type?: string;
   provider?: string;
   status?: string;
+  isOnline?: boolean;
+  updatedAt?: string;
   createdAt: string;
 }
 
@@ -726,6 +747,8 @@ export async function getAdminChannelList(
     type: c.type || c.category || "",
     provider: c.provider || "",
     status: c.status || "unknown",
+    isOnline: typeof c.isOnline === "boolean" ? c.isOnline : undefined,
+    updatedAt: safeDate(c.updatedAt),
     createdAt: safeDate(c.createdAt),
   }));
   if (like) {
@@ -752,6 +775,8 @@ export interface AdminCreditsItem {
   userDisplayName?: string;
   balance: number;
   createdAt: string;
+  /** 写操作 CAS 依据 */
+  updatedAt: string;
 }
 
 export async function getAdminCreditsList(
@@ -789,6 +814,7 @@ export async function getAdminCreditsList(
     userDisplayName: c.user?.displayName || c.user?.email || "",
     balance: Number(c.balance || c.amount || 0),
     createdAt: safeDate(c.createdAt),
+    updatedAt: safeDate(c.updatedAt || c.createdAt),
   }));
   if (like) {
     const low = like.toLowerCase();
@@ -813,6 +839,8 @@ export interface AdminOrderItem {
   userDisplayName?: string;
   amount: number;
   status: string;
+  credits?: number;
+  updatedAt?: string;
   createdAt: string;
 }
 
@@ -851,6 +879,8 @@ export async function getAdminOrderList(
     userDisplayName: o.user?.displayName || o.user?.email || "",
     amount: Number(o.amount || o.price || 0),
     status: o.status || o.paymentStatus || "unknown",
+    credits: Number(o.credits || 0),
+    updatedAt: safeDate(o.updatedAt),
     createdAt: safeDate(o.createdAt),
   }));
   if (like) {
@@ -878,6 +908,9 @@ export interface AdminTradingParamsItem {
   status: string;
   todayTradeCount: number;
   totalTradeCount: number;
+  isTradingEnabled?: boolean;
+  profileUpdatedAt?: string;
+  updatedAt?: string;
   createdAt: string;
 }
 
@@ -901,7 +934,16 @@ export async function getAdminTradingParamsList(
         skip: (safePage - 1) * safePageSize,
         take: safePageSize,
         orderBy: { createdAt: "desc" as const },
-        include: { user: { select: { email: true, displayName: true, uid: true } } },
+        include: {
+          user: {
+            select: {
+              email: true,
+              displayName: true,
+              uid: true,
+              profile: { select: { isTradingEnabled: true, updatedAt: true } },
+            },
+          },
+        },
       });
       total = Number(await model.count()) || 0;
       if (items.length > 0 || total > 0) break;
@@ -917,6 +959,9 @@ export async function getAdminTradingParamsList(
     status: tp.status || "unknown",
     todayTradeCount: Number(tp.todayTradeCount || tp.dailyTradeCount || 0),
     totalTradeCount: Number(tp.totalTradeCount || tp.tradeCount || 0),
+    isTradingEnabled: Boolean(tp.user?.profile?.isTradingEnabled),
+    profileUpdatedAt: safeDate(tp.user?.profile?.updatedAt),
+    updatedAt: safeDate(tp.updatedAt),
     createdAt: safeDate(tp.createdAt),
   }));
   if (like) {

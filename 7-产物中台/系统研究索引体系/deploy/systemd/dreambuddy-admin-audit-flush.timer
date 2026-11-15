@@ -1,0 +1,11 @@
+[Unit]
+Description=每分钟触发管理台审计 outbox 补偿
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+AccuracySec=5s
+Unit=dreambuddy-admin-audit-flush.service
+
+[Install]
+WantedBy=timers.target

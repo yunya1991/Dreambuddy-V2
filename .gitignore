@@ -313,3 +313,6 @@ scheduler_data/
 
 # 51-OKX CLI 敏感 token
 51-OKX CLI 系统/runtime/audit/bridge_token
+
+# 管理台写能力：文件配置写入快照（运行期产物）
+/.admin-backups/

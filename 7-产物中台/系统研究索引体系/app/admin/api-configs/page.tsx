@@ -1,6 +1,9 @@
 import { AdminTopBar } from "@/components/admin/AdminTopBar";
 import { getAdminApiConfigList } from "@/lib/admin-queries";
 import { formatDateTime } from "@/lib/utils/admin-format";
+import { evaluateWriteGate } from "@/lib/admin/gate";
+import { RowActionButton } from "@/components/admin/write/RowActionButton";
+import { API_CONFIG_UPDATE_ACTION } from "@/lib/admin/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +17,7 @@ export default async function AdminApiConfigsPage({
   const search = typeof searchParams.search === "string" ? searchParams.search : "";
 
   const { items, total } = await getAdminApiConfigList(page, pageSize, search);
+  const writeEnabled = evaluateWriteGate().enabled;
 
   return (
     <>
@@ -46,12 +50,13 @@ export default async function AdminApiConfigsPage({
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">类型</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">用户</th>
                   <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">创建时间</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-left">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-12 text-center text-gray-400 text-sm">
+                    <td colSpan={5} className="px-4 py-12 text-center text-gray-400 text-sm">
                       暂无 API 配置
                     </td>
                   </tr>
@@ -75,6 +80,29 @@ export default async function AdminApiConfigsPage({
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-500">
                         {c.createdAt ? formatDateTime(c.createdAt) : "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        {c.updatedAt ? (
+                          <RowActionButton
+                            label={c.isVerified ? "标记未校验" : "标记已校验"}
+                            endpoint={`/api/admin/api-configs/${encodeURIComponent(String(c.id))}`}
+                            method="PATCH"
+                            level="L0"
+                            action={API_CONFIG_UPDATE_ACTION}
+                            targetId={String(c.id)}
+                            payload={{
+                              isVerified: !c.isVerified,
+                              lastVerifiedAt: c.isVerified ? null : Date.now(),
+                              expectedUpdatedAt: c.updatedAt,
+                            }}
+                            confirmText={`确认将「${c.provider || c.type}」的 API 配置标记为${
+                              c.isVerified ? "未校验" : "已校验"
+                            }？仅改标记，不触碰密钥。`}
+                            writeEnabled={writeEnabled}
+                          />
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
                       </td>
                     </tr>
                   ))

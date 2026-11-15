@@ -16,15 +16,18 @@
   "dependencies": {
     "@mdx-js/react": "^3.0.0",
     "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
     "clsx": "^2.1.0",
     "flexsearch": "^0.8.212",
     "gray-matter": "^4.0.3",
     "lucide-react": "^0.400.0",
     "marked": "^18.0.2",
     "next": "^14.2.0",
+    "next-auth": "5.0.0-beta.32",
     "next-mdx-remote": "^4.4.1",
     "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "react-dom": "^18.3.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
