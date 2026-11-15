@@ -311,7 +311,8 @@ REA 逆向解析已封装 MCP，是**默认求解器**；记忆只负责**指路
 > **实施状态（2026-11-16）**：分级 TTL 引擎已落地到 `memory_ttl_manager.py --db-cycle`——C=7d / B=14d / A+S≤500（S 不淘汰）/ 白名单初始仅 `{rag-bridge,l0.scheduler,l1_router}` / 两阶段（先删 vec 行 → `memory_ttl_pending` 宽限 7 天 → 阶段二写 `memory_traces` 树梢痕迹后经 `VectorMemoryInterface.delete` 物理删除）/ 痕迹每叶 ≤20、全局 ≤5000 / 默认 dry-run + `--limit` 限批。
 > 生产库只读 dry-run 实测候选 **285,560** 条（C 级 7 天 + 从未使用 + 白名单内）。
 > **本地禁止写生产表**（CLAUDE.md：云端 `43.160.201.117` 是唯一写入口），阶段一/二须在云端 `sudo -u luke` 执行，前置 `sqlite3 .backup`，建议 `--limit 20000 --stage 1` 分批跑。
-> 单测 7 项（`tests/test_memory_ttl_db.py`）：分级判据 / 白名单 / dry-run 不写 / 阶段一保行删索引 / 阶段二痕迹归位 / 每叶容量门 / A 超限删最旧。
+> 单测 8 项（`tests/test_memory_ttl_db.py`）：分级判据 / 白名单 / dry-run 不写 / 阶段一保行删索引 / 轨迹来源零痕迹 / 阶段二痕迹归位 / 每叶容量门 / A 超限删最旧。
+> **轨迹零痕迹已实现（2026-11-16）**：`NO_TRACE_SOURCES = {rag-bridge,l0.scheduler,l1_router}`，阶段二对这些来源只物理删除、不写 `memory_traces`（对应 §3.7 第 6 条与 G11「rag-bridge 零痕迹」）。
 
 ### P2 去重与巩固
 

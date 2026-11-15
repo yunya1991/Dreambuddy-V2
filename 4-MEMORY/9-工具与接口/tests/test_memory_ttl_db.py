@@ -156,7 +156,8 @@ def _tree() -> MemoryTree:
     return MemoryTree(nodes)
 
 
-def test_stage2_after_grace_traces_and_purges(tmp_path, fake_vm):
+def test_stage2_after_grace_purges_without_trace_for_trajectory(tmp_path, fake_vm):
+    """轨迹来源（rag-bridge 等）不留痕：阶段二只物理删除，不写 memory_traces（G11）。"""
     db = _mkdb(tmp_path, _rows())
     ttl.run_db_ttl_cycle(db_path=db, dry_run=False, scope=SCOPE, now=NOW, stage="1")
     later = NOW + timedelta(days=ttl.TTL_GRACE_DAYS + 1)
@@ -165,7 +166,23 @@ def test_stage2_after_grace_traces_and_purges(tmp_path, fake_vm):
     )
     assert report["stage2"]["eligible"] == 2
     assert _count(db, "SELECT count(*) FROM memories WHERE id IN ('c_old','b_old')") == 0
-    assert _count(db, "SELECT count(*) FROM memory_traces") == 2
+    assert _count(db, "SELECT count(*) FROM memory_traces") == 0
+    assert report["stage2"]["trace_skipped_trajectory"] == 2
+    assert report["pending_total"] == 0
+
+
+def test_stage2_after_grace_traces_and_purges(tmp_path, fake_vm):
+    rows = [("m_old", "C", "manual", 8, 0, "手工经验 幂等写入")]
+    db = _mkdb(tmp_path, rows)
+    scope = ("manual",)
+    ttl.run_db_ttl_cycle(db_path=db, dry_run=False, scope=scope, now=NOW, stage="1")
+    later = NOW + timedelta(days=ttl.TTL_GRACE_DAYS + 1)
+    report = ttl.run_db_ttl_cycle(
+        db_path=db, dry_run=False, scope=scope, now=later, tree=_tree(), stage="2"
+    )
+    assert report["stage2"]["eligible"] == 1
+    assert _count(db, "SELECT count(*) FROM memories WHERE id='m_old'") == 0
+    assert _count(db, "SELECT count(*) FROM memory_traces") == 1
     con = sqlite3.connect(db)
     from sqlite3 import Row
 
@@ -179,11 +196,13 @@ def test_stage2_after_grace_traces_and_purges(tmp_path, fake_vm):
 
 
 def test_stage2_resolves_leaf_node_from_tree(tmp_path, fake_vm):
-    rows = [("c1", "C", "rag-bridge", 8, 0, "新闻快讯 回填 幂等写入")]
+    rows = [("c1", "C", "manual", 8, 0, "新闻快讯 回填 幂等写入")]
     db = _mkdb(tmp_path, rows)
-    ttl.run_db_ttl_cycle(db_path=db, dry_run=False, scope=SCOPE, now=NOW, stage="1")
+    ttl.run_db_ttl_cycle(db_path=db, dry_run=False, scope=("manual",), now=NOW, stage="1")
     later = NOW + timedelta(days=ttl.TTL_GRACE_DAYS + 1)
-    ttl.run_db_ttl_cycle(db_path=db, dry_run=False, scope=SCOPE, now=later, tree=_tree(), stage="2")
+    ttl.run_db_ttl_cycle(
+        db_path=db, dry_run=False, scope=("manual",), now=later, tree=_tree(), stage="2"
+    )
     con = sqlite3.connect(db)
     project, node_path = con.execute("SELECT project, node_path FROM memory_traces").fetchone()
     con.close()
@@ -193,11 +212,13 @@ def test_stage2_resolves_leaf_node_from_tree(tmp_path, fake_vm):
 
 def test_trace_leaf_cap(tmp_path, fake_vm, monkeypatch):
     monkeypatch.setattr(ttl, "TRACE_PER_LEAF", 2)
-    rows = [(f"c{i}", "C", "rag-bridge", 8, 0, f"新闻快讯 回填 第{i}条") for i in range(4)]
+    rows = [(f"c{i}", "C", "manual", 8, 0, f"新闻快讯 回填 第{i}条") for i in range(4)]
     db = _mkdb(tmp_path, rows)
-    ttl.run_db_ttl_cycle(db_path=db, dry_run=False, scope=SCOPE, now=NOW, stage="1")
+    ttl.run_db_ttl_cycle(db_path=db, dry_run=False, scope=("manual",), now=NOW, stage="1")
     later = NOW + timedelta(days=ttl.TTL_GRACE_DAYS + 1)
-    ttl.run_db_ttl_cycle(db_path=db, dry_run=False, scope=SCOPE, now=later, tree=_tree(), stage="2")
+    ttl.run_db_ttl_cycle(
+        db_path=db, dry_run=False, scope=("manual",), now=later, tree=_tree(), stage="2"
+    )
     assert _count(db, "SELECT count(*) FROM memory_traces") == 2
 
 

@@ -555,6 +555,9 @@ TTL_GRACE_DAYS = 7  # 阶段一 → 阶段二宽限期
 TRACE_PER_LEAF = 20  # 每叶节点痕迹上限
 TRACE_GLOBAL = 5000  # 全局痕迹上限
 TTL_SCOPE_DEFAULT = ("rag-bridge", "l0.scheduler", "l1_router")
+# 轨迹类来源不留痕（SPEC §3.7 第 6 条 / G11「rag-bridge 零痕迹」）：
+# 它们本不该入库，删除属脏数据修复，不是「遗忘」。
+NO_TRACE_SOURCES = frozenset(TTL_SCOPE_DEFAULT)
 ORPHAN_NODE = "_orphan"  # 无法归属项目时的兜底树节点
 
 
@@ -725,7 +728,13 @@ def _stage2(
     con, tree, now: datetime, dry_run: bool, db_path: str | Path = _DB_DEFAULT
 ) -> dict[str, Any]:
     """阶段二：降为树梢痕迹 + 物理删除主表行（经 VectorMemoryInterface.delete）。"""
-    stats: dict[str, Any] = {"eligible": 0, "traces": 0, "purged": 0, "errors": 0}
+    stats: dict[str, Any] = {
+        "eligible": 0,
+        "traces": 0,
+        "trace_skipped_trajectory": 0,
+        "purged": 0,
+        "errors": 0,
+    }
     if not _has_table(con, "memory_ttl_pending"):
         return stats
     rows = con.execute(
@@ -743,6 +752,9 @@ def _stage2(
     # Phase A：先写痕迹并提交，释放写锁（否则 VectorMemoryInterface 的独立连接会被锁住）
     for row in rows:
         content = row["content"] or ""
+        if row["source"] in NO_TRACE_SOURCES:
+            stats["trace_skipped_trajectory"] += 1
+            continue
         keywords = ",".join(tokenize(content[:200] + " " + (row["tags"] or ""))[:12])
         project, node_path = _resolve_trace_node(tree, content[:200] + " " + (row["tags"] or ""))
         try:
