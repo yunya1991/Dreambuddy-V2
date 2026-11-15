@@ -22,7 +22,8 @@ async function runOverview(symbols: string[]): Promise<any> {
   const scriptPath = path.join(process.cwd(), 'scripts', 'visual_overview.py');
   const args = [scriptPath];
   if (symbols.length > 0) args.push('--symbols', symbols.join(','));
-  const { stdout } = await execFileAsync('python3', args, {
+  const pythonBin = process.env.COGNITIVE_PYTHON || process.env.PYTHON || 'python3';
+  const { stdout } = await execFileAsync(pythonBin, args, {
     maxBuffer: 20 * 1024 * 1024,
     timeout: 25000,
   });
