@@ -200,12 +200,19 @@ def judge_anchor(
     anchor: Anchor,
     metrics: List[Dict[str, Any]],
     detail: Dict[str, Any],
-    quality: Dict[str, Any],
+    pool,
     now: int,
 ) -> Dict[str, Any]:
-    """按资产池 quality 门禁判定单个锚定资产（7×24 与交易日两套口径）。"""
+    """按资产池门禁判定单个标的（7×24 与交易日两套口径）。
+
+    质量下限优先取 per-anchor `history.min_rows`（B-LT5），未声明才回落全局
+    `quality.min_rows_3y(_trading)`——否则 OKX 代币化美股（250/179/193/158）
+    会被 1090 全判不合格。
+    """
     src = _source_of(anchor)
     sub, metric = anchor.storage_key
+    quality = pool.quality
+    min_rows = pool.min_rows_for(anchor)
     row = next(
         (
             m
@@ -214,7 +221,7 @@ def judge_anchor(
         ),
         None,
     )
-    trading_calendar = src == "fred"
+    trading_calendar = src in ("fred", "nasdaq", "yfinance")
     if row is None:
         return {
             "id": anchor.id,
@@ -223,6 +230,7 @@ def judge_anchor(
             "status": "MISSING",
             "reasons": ["窗口内无数据"],
             "n": 0,
+            "min_rows": min_rows,
             "span_days": 0,
             "gap_ratio": None,
             "stale_days": None,
@@ -231,6 +239,9 @@ def judge_anchor(
             "longest_gap_days": 0,
             "proxy": anchor.proxy,
             "proxy_note": anchor.proxy_note,
+            "tokenized": anchor.tokenized,
+            "history_lt_3y": anchor.history_lt_3y,
+            "view_class": anchor.view_class,
         }
 
     denominator = (
@@ -239,7 +250,6 @@ def judge_anchor(
     present = detail.get("distinct_days") or row["span_days"]
     gap_ratio = round(max(0.0, 1 - present / denominator), 4)
     stale_days = max(0, (_day_index(now) - _day_index(row["ts_max"])))
-    min_rows = int(quality.get("min_rows_3y_trading" if trading_calendar else "min_rows_3y", 0))
     max_gap = float(
         quality.get("max_gap_ratio_trading" if trading_calendar else "max_gap_ratio", 0.01)
     )
@@ -261,6 +271,7 @@ def judge_anchor(
         "status": "PASS" if not reasons else "FAIL",
         "reasons": reasons,
         "n": row["n"],
+        "min_rows": min_rows,
         "span_days": row["span_days"],
         "gap_ratio": gap_ratio,
         "stale_days": stale_days,
@@ -272,6 +283,9 @@ def judge_anchor(
         "ts_max": row["ts_max"],
         "proxy": anchor.proxy,
         "proxy_note": anchor.proxy_note,
+        "tokenized": anchor.tokenized,
+        "history_lt_3y": anchor.history_lt_3y,
+        "view_class": anchor.view_class,
     }
 
 
@@ -294,13 +308,13 @@ def audit(
         conn.close()
 
     anchors = []
-    for anchor in pool.anchors:
+    for anchor in pool.all_anchors():
         if not anchor.enabled:
             continue
         src = _source_of(anchor)
         sub, metric = anchor.storage_key
         detail = details.get(f"{src}|{sub}|{metric}", {})
-        anchors.append(judge_anchor(anchor, metrics, detail, pool.quality, now))
+        anchors.append(judge_anchor(anchor, metrics, detail, pool, now))
 
     top = sorted(metrics, key=lambda m: m["n"], reverse=True)[:top_n]
     worst = sorted(
@@ -343,16 +357,25 @@ def render_markdown(result: Dict[str, Any]) -> str:
         "",
         "## 1. 锚定资产达标",
         "",
-        "| 资产 | source | series | n | 跨度(天) | 缺口率 | 非空率 | 陈旧(天) | 异常点 | 判定 |",
-        "|---|---|---|---:|---:|---:|---:|---:|---:|---|",
+        "| 资产 | 类别 | source | series | n/下限 | 跨度(天) | 缺口率 | 非空率 | 陈旧(天) | 异常点 | 判定 |",
+        "|---|---|---|---|---:|---:|---:|---:|---:|---:|---|",
     ]
     for x in result["anchors"]:
         gap = "-" if x["gap_ratio"] is None else f"{x['gap_ratio']:.2%}"
         stale = "-" if x["stale_days"] is None else str(x["stale_days"])
+        tag = (
+            "PASS"
+            if x["status"] == "PASS"
+            else ("MISSING" if x["status"] == "MISSING" else "**FAIL**")
+        )
+        if x.get("history_lt_3y"):
+            tag += "（短历史）"
+        if x.get("tokenized"):
+            tag += "（代币化）"
         lines.append(
-            f"| {x['id']} | {x['source']} | `{x['series']}` | {x['n']} | {x['span_days']} | "
-            f"{gap} | {x['non_null_ratio']:.1%} | {stale} | {x['outliers']} | "
-            f"{'PASS' if x['status'] == 'PASS' else '**FAIL**'} |"
+            f"| {x['id']} | {x.get('view_class', '')} | {x['source']} | `{x['series']}` | "
+            f"{x['n']}/{x.get('min_rows', 0)} | {x['span_days']} | "
+            f"{gap} | {x['non_null_ratio']:.1%} | {stale} | {x['outliers']} | {tag} |"
         )
     fails = [x for x in result["anchors"] if x["status"] != "PASS"]
     if fails:
@@ -370,8 +393,11 @@ def render_markdown(result: Dict[str, Any]) -> str:
         "## 2. 口径说明",
         "",
         "- **7×24 市场**（`okx` 标的）：缺口率分母为日历日，阈值 `max_gap_ratio`。",
-        "- **交易日市场**（`fred` 序列）：缺口率分母为工作日（含美股假日），阈值 `max_gap_ratio_trading`；"
-        "行数下限用 `min_rows_3y_trading`，避免把周末与休市误判为缺口。",
+        "- **交易日市场**（`fred` / `nasdaq` 序列）：缺口率分母为工作日（含美股假日），"
+        "阈值 `max_gap_ratio_trading`；行数下限用 per-anchor `history.min_rows`"
+        "（未声明才回落 `min_rows_3y_trading`），避免把周末与休市误判为缺口。",
+        "- **短历史/代币化**（`history_lt_3y` / `tokenized`）：OKX 代币化美股历史不足 3 年，"
+        "按 per-anchor `min_rows: 250` 判定；`n<250` 一律禁止点亮（LT-G6）。",
         "- 缺口率 = 1 − 实际覆盖日数 / 应有日数；窗口内首个/末个数据点之间按天对齐。",
         "",
         "## 3. 数据规模 Top series",

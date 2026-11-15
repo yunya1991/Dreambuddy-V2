@@ -19,6 +19,9 @@ _DEFAULT_PATH = os.path.join(
     "asset_pool.yaml",
 )
 
+# 交易日市场（缺口率分母用工作日）；其余（okx 等 7×24）用日历日
+_TRADING_VENUES = ("fred", "nasdaq", "yfinance")
+
 
 class AssetPoolError(ValueError):
     """资产池结构非法（缺字段/重复 id/类别无龙头等）。"""
@@ -47,6 +50,14 @@ class Anchor:
     backfill: str = ""
     proxy: bool = False
     proxy_note: str = ""
+    # v2：展示层五类视图（加密/避险/大宗/美股/情绪），底层 asset_class 仍取 40 层
+    view_class: str = ""
+    # v2：代币化标的（OKX *-USDT-SWAP，非证券本体），必须同时 proxy=True
+    tokenized: bool = False
+    # v2：per-anchor 质量下限（覆盖全局 quality）；0 = 未声明，回落全局
+    min_rows: int = 0
+    history_lt_3y: bool = False
+    history_note: str = ""
 
     @property
     def storage_key(self) -> Tuple[str, str]:
@@ -68,22 +79,31 @@ class AssetPool:
     quality: Dict[str, Any]
     anchors: Tuple[Anchor, ...]
     dynamic: Dict[str, Any] = field(default_factory=dict)
+    # v2：扩展池（历史 < 3 年或非首屏），anchors 保持核心 8 个不变
+    extended: Tuple[Anchor, ...] = ()
+    pools: Dict[str, Tuple[str, ...]] = field(default_factory=dict)
+    view_order: Tuple[str, ...] = ()
 
     # ------------------------------------------------------------ 查询
+    def all_anchors(self) -> List[Anchor]:
+        """核心锚定 + 扩展池（顺序：核心在前）。"""
+        return list(self.anchors) + list(self.extended)
+
     def resolve(self, key: str) -> Optional[Anchor]:
         """按 id 或别名解析（大小写不敏感，忽略首尾空格）。"""
         if not key:
             return None
         probe = key.strip().lower()
-        for anchor in self.anchors:
+        for anchor in self.all_anchors():
             if anchor.id.lower() == probe:
                 return anchor
             if any(alias.lower() == probe for alias in anchor.aliases):
                 return anchor
         return None
 
-    def by_class(self, asset_class: str) -> List[Anchor]:
-        return [a for a in self.anchors if a.asset_class == asset_class]
+    def by_class(self, asset_class: str, *, include_extended: bool = False) -> List[Anchor]:
+        source = self.all_anchors() if include_extended else list(self.anchors)
+        return [a for a in source if a.asset_class == asset_class]
 
     def leader_of(self, asset_class: str) -> Optional[Anchor]:
         for anchor in self.by_class(asset_class):
@@ -102,12 +122,46 @@ class AssetPool:
         for anchor in self.anchors:
             yield anchor.id, anchor.storage_key
 
+    # ------------------------------------------------------------ v2：五类视图 / 首屏池
+    def views(self) -> List[str]:
+        """展示层五类视图（按 view_order 排序；未声明的类排最后）。"""
+        declared = list(self.view_order)
+        extra: List[str] = []
+        for anchor in self.all_anchors():
+            if anchor.view_class and anchor.view_class not in declared + extra:
+                extra.append(anchor.view_class)
+        return declared + extra
+
+    def by_view(self, view: str) -> List[Anchor]:
+        return [a for a in self.all_anchors() if a.view_class == view]
+
+    def pool(self, name: str = "default") -> List[Anchor]:
+        """首屏/扩展池成员（未配置或 id 不可解析抛 AssetPoolError）。"""
+        ids = self.pools.get(name)
+        if not ids:
+            raise AssetPoolError(f"资产池 pools.{name} 未配置")
+        out: List[Anchor] = []
+        for key in ids:
+            anchor = self.resolve(key)
+            if anchor is None:
+                raise AssetPoolError(f"pools.{name} 引用了不存在的标的: {key}")
+            out.append(anchor)
+        return out
+
+    def min_rows_for(self, anchor: Anchor) -> int:
+        """per-anchor 质量下限；未声明时按 venue 回落全局（交易日 / 7×24 两套口径）。"""
+        if anchor.min_rows:
+            return int(anchor.min_rows)
+        trading = (anchor.venue or "") in _TRADING_VENUES
+        key = "min_rows_3y_trading" if trading else "min_rows_3y"
+        return int(self.quality.get(key, 0))
+
     # ------------------------------------------------------------ 校验
     def validate(self) -> List[str]:
         """返回错误列表（空 = 通过）。"""
         errors: List[str] = []
         ids, aliases = set(), {}
-        for anchor in self.anchors:
+        for anchor in self.all_anchors():
             if not anchor.id:
                 errors.append("anchor 缺少 id")
                 continue
@@ -125,15 +179,35 @@ class AssetPool:
                 errors.append(f"{anchor.id} 缺少 storage.sub_category/metric")
             if not anchor.instrument_id:
                 errors.append(f"{anchor.id} 缺少 instrument.inst_id / series_id")
+            if anchor.role not in ("leader", "co_leader", "member"):
+                errors.append(f"{anchor.id} role 非法: {anchor.role}")
+            if anchor.view_class and self.view_order and anchor.view_class not in self.view_order:
+                errors.append(f"{anchor.id} view_class 非法: {anchor.view_class}")
+            if anchor.tokenized and not anchor.proxy:
+                errors.append(f"{anchor.id} tokenized=true 必须同时 proxy=true（代理必须标注）")
+
+        # 核心锚定：必须 ≥3 年日频，且每类恰好 1 个 leader
+        for anchor in self.anchors:
             if anchor.years < 3:
                 errors.append(f"{anchor.id} history.years={anchor.years} < 3（S2/S3 无法统计）")
-            if anchor.role not in ("leader", "member"):
-                errors.append(f"{anchor.id} role 非法: {anchor.role}")
 
         for asset_class in self.classes():
             leaders = [a for a in self.by_class(asset_class) if a.role == "leader"]
             if len(leaders) != 1:
                 errors.append(f"类别 {asset_class} 的龙头数量为 {len(leaders)}（必须恰好 1 个）")
+
+        # 扩展池：允许 history_lt_3y 降级，但必须显式声明 per-anchor min_rows（B-LT5）
+        for anchor in self.extended:
+            if anchor.history_lt_3y:
+                if anchor.min_rows <= 0:
+                    errors.append(f"{anchor.id} history_lt_3y=true 必须声明 history.min_rows")
+            elif anchor.years < 3:
+                errors.append(f"{anchor.id} history.years={anchor.years} < 3 且未标 history_lt_3y")
+
+        for name, keys in self.pools.items():
+            for key in keys:
+                if self.resolve(key) is None:
+                    errors.append(f"pools.{name} 引用了不存在的标的: {key}")
 
         benchmarks = (self.dynamic.get("relation") or {}).get("benchmarks") or []
         for bench in benchmarks:
@@ -165,6 +239,11 @@ def _parse_anchor(raw: Dict[str, Any]) -> Anchor:
         granularity=str(history.get("granularity", "1D")),
         years=int(history.get("years", 0)),
         backfill=str(history.get("backfill", "")),
+        min_rows=int(history.get("min_rows", 0) or 0),
+        history_lt_3y=bool(history.get("history_lt_3y", False)),
+        history_note=str(history.get("note", "")),
+        view_class=str(raw.get("view_class", "")),
+        tokenized=bool(raw.get("tokenized", False)),
         proxy=bool(raw.get("proxy", False)),
         proxy_note=str(raw.get("proxy_note", "")),
     )
@@ -190,6 +269,12 @@ def load(path: Optional[str] = None, *, validate: bool = True) -> AssetPool:
         quality=dict(raw.get("quality") or {}),
         anchors=tuple(_parse_anchor(a) for a in anchors_raw),
         dynamic=dict(raw.get("dynamic") or {}),
+        extended=tuple(_parse_anchor(a) for a in (raw.get("extended_anchors") or [])),
+        pools={
+            str(name): tuple(str(s) for s in (ids or []))
+            for name, ids in (raw.get("pools") or {}).items()
+        },
+        view_order=tuple(str(v) for v in (raw.get("view_order") or [])),
     )
     if validate:
         errors = pool.validate()
@@ -216,11 +301,14 @@ def main(argv=None) -> int:  # pragma: no cover - 手工排查用
                 "ok": True,
                 "version": pool.version,
                 "anchors": len(pool.anchors),
+                "extended": len(pool.extended),
                 "classes": {cls: [a.id for a in pool.by_class(cls)] for cls in pool.classes()},
                 "leaders": {
                     cls: (pool.leader_of(cls).id if pool.leader_of(cls) else "")
                     for cls in pool.classes()
                 },
+                "views": {view: [a.id for a in pool.by_view(view)] for view in pool.views()},
+                "pools": {name: list(ids) for name, ids in pool.pools.items()},
                 "dynamic": pool.dynamic.get("enabled", False),
             },
             ensure_ascii=False,

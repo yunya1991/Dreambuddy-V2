@@ -1,0 +1,22 @@
+# 动态排名配置（SPEC-54-L1交易层 §4.0 约束 2 / §5.0 L1 层）
+# ============================================================
+# 定位：基座之外的方法按「近期有效性」竞争**非基座槽位**，每槽位只取 TopK。
+# 基座（I35–I39 + 6 条机制）永不进入本排名，见 config/baseline_methods.yaml。
+#
+# 口径：
+#   reliability = abs(IC)，滚动 window 个交易日，purge/embargo 各 embargo 日；
+#   score       = reliability × stability（stability 由调用方给，缺省 1.0）；
+#   可算性       = implemented 且 sample_n ≥ spec.min_n；
+#   确定性       = 同输入同 method_rank_hash；并列按 method_id 升序。
+# ============================================================
+
+version: "mr-1.0.0"
+updated: "2026-11-15"
+
+window: 250          # reliability 滚动窗口（交易日）
+purge: 10            # 特征与标签之间的隔离期（防止重叠标签泄漏）
+embargo: 10          # 相邻窗口之间的隔离期
+topk: 2              # 每个非基座槽位的候选方法数
+min_obs: 250         # 参与排名的全局最小样本（单方法仍以 spec.min_n 为准）
+stability_weight: 1.0
+tie_break: method_id # 分数并列时的确定性排序键

@@ -67,6 +67,42 @@ def _ar1(n=400, seed=7, phi=0.6, mu=0.001, sigma=0.01):
     return out
 
 
+def _portfolio_returns(n=160, seed=23):
+    rng = random.Random(seed)
+    return {
+        "BTC": [rng.gauss(0.0002, 0.015) for _ in range(n)],
+        "ETH": [rng.gauss(0.0003, 0.02) for _ in range(n)],
+    }
+
+
+def _ic_inputs(n=320, seed=31):
+    rng = random.Random(seed)
+    factor = [math.sin(i / 11.0) + rng.gauss(0.0, 0.1) for i in range(n)]
+    forward = [0.01 * value + rng.gauss(0.0, 0.002) for value in factor]
+    prices = [100.0]
+    for value in forward[1:]:
+        prices.append(prices[-1] * (1.0 + value))
+    return factor, forward, prices
+
+
+def _quantile_inputs(n=320):
+    factor = [math.sin(i / 11.0) + 0.2 * math.cos(i / 7.0) for i in range(n)]
+    forward = [0.01 * value for value in factor]
+    return factor, forward
+
+
+def _panel_inputs(n=320, seed=23):
+    """四变量面板（D-J22 输入）：前两列与公共因子强相关，第三列为独立噪声。"""
+    rng = random.Random(seed)
+    base = [math.sin(i / 13.0) + 0.2 * math.cos(i / 5.0) for i in range(n)]
+    return {
+        "alpha": [value + rng.gauss(0.0, 0.05) for value in base],
+        "beta": [0.5 * value + rng.gauss(0.0, 0.02) for value in base],
+        "gamma": [rng.gauss(0.0, 1.0) for _ in range(n)],
+        "delta": [0.3 * value + rng.gauss(0.0, 0.3) for value in base],
+    }
+
+
 def _alignment_kwargs(n=40):
     return {
         "series": {
@@ -97,6 +133,26 @@ def _correlation_state(n=3400):
     return factor, _prices(n, seed=17, drift=0.0002, vol=0.01)
 
 
+def _pit_inputs(n=320, seed=41):
+    """PIT 指标与同步价格（D-J30 输入）：低频指标驱动价格，便于构造前瞻分布。"""
+    rng = random.Random(seed)
+    indicator = [math.sin(i / 17.0) + rng.gauss(0.0, 0.05) for i in range(n)]
+    prices = [100.0]
+    for i in range(1, n):
+        prices.append(prices[-1] * (1.0 + 0.01 * indicator[i - 1]))
+    return indicator, prices
+
+
+def _series_inputs(n=120, seed=47):
+    """连续日频单序列（D-A01 输入）。"""
+    rng = random.Random(seed)
+    values, level = [], 100.0
+    for _ in range(n):
+        level *= 1.0 + rng.gauss(0.0004, 0.008)
+        values.append(level)
+    return values, _dates(n)
+
+
 # ---------------- manifest ----------------
 
 
@@ -106,6 +162,24 @@ def test_manifest_loads_and_validates():
     ids = [cap.id for cap in m.capabilities]
     assert len(ids) == len(set(ids))
     assert {
+        "D-A01",
+        "D-A02",
+        "D-A03",
+        "D-A04",
+        "D-A06",
+        "D-A07",
+        "D-A08",
+        "D-A09",
+        "D-A10",
+        "D-A11",
+        "D-A12",
+        "D-A13",
+        "D-A15",
+        "D-A16",
+        "D-B08",
+        "D-B09",
+        "D-G08",
+        "D-G09",
         "D-A14",
         "D-E01",
         "D-E02",
@@ -120,12 +194,28 @@ def test_manifest_loads_and_validates():
         "D-E11",
         "D-E12",
         "D-E14",
+        "D-G16",
+        "D-G19",
+        "D-G20",
         "D-G22",
         "D-G23",
         "D-J02",
         "D-J04",
+        "D-J22",
+        "D-J24",
+        "D-G14",
+        "D-J30",
     } <= set(ids)
     assert {"M01", "M02", "M03", "M04", "M05", "M06", "M07"} <= set(m.get("D-E05").methods)
+    assert set(m.get("D-G16").methods) == {"D17", "D18", "P09", "P10"}
+    assert m.get("D-G16").intent == "metric_series"
+    assert m.get("D-G16").min_n == 60
+    assert set(m.get("D-G19").methods) == {"B13", "B14", "B15", "Q01", "Q02", "Q03"}
+    assert m.get("D-G19").intent == "metric_series"
+    assert m.get("D-G19").min_n == 250
+    assert set(m.get("D-G20").methods) == {"B11", "B16", "Q04"}
+    assert m.get("D-G20").intent == "metric_series"
+    assert m.get("D-G20").min_n == 250
     assert set(m.get("D-G22").methods) == {"Q06", "Q07"}
     assert set(m.get("D-G23").methods) == {"Q10", "Q11"}
     assert set(m.get("D-E07").methods) == {"B02", "B06", "B07", "B08", "B09"}
@@ -133,8 +223,96 @@ def test_manifest_loads_and_validates():
     assert m.get("D-J02").min_n == 60
     assert m.get("D-J02").min_span_days == 1095
     assert set(m.get("D-J04").methods) == {"T22", "T23", "SC49", "SC50", "SC51"}
+    assert set(m.get("D-J22").methods) == {"M19", "M20", "SC31", "SC32", "SC33"}
+    assert m.get("D-J22").intent == "metric_series"
+    assert m.get("D-J22").min_n == 60
+    assert set(m.get("D-J24").methods) == {"M05", "M21", "SC71", "SC72"}
+    assert m.get("D-J24").intent == "metric_series"
+    assert m.get("D-J24").min_n == 60
+    assert set(m.get("D-G14").methods) == {"P07", "T19"}
+    assert m.get("D-G14").intent == "metric_series"
+    assert m.get("D-G14").min_n == 60
+    assert set(m.get("D-J30").methods) == {"SC90", "R02"}
+    assert m.get("D-J30").intent == "metric_percentile"
+    assert m.get("D-J30").min_n == 250
+    assert m.get("D-J30").mode == "deterministic"
     assert m.get("D-A14").intent == "metric_percentile"
     assert set(m.get("D-A14").methods) == {"F26"}
+    assert set(m.get("D-A01").methods) == {"S25"}
+    assert m.get("D-A01").intent == "metric_series"
+    assert m.get("D-A01").min_n == 30
+    assert m.get("D-A01").data_scope == ("datacenter.series",)
+    assert set(m.get("D-A02").methods) == {"S15", "S16"}
+    assert m.get("D-A02").intent == "metric_series"
+    assert m.get("D-A02").min_n == 2
+    assert m.get("D-A02").data_scope == ("datacenter.series",)
+    assert set(m.get("D-A03").methods) == {"S19"}
+    assert m.get("D-A03").intent == "metric_series"
+    assert m.get("D-A03").min_n == 2
+    assert m.get("D-A03").data_scope == ("datacenter.series",)
+    assert set(m.get("D-A04").methods) == {"S25"}
+    assert m.get("D-A04").intent == "metric_percentile"
+    assert m.get("D-A04").min_n == 30
+    assert m.get("D-A04").data_scope == ("datacenter.series",)
+    assert set(m.get("D-A06").methods) == {"F05"}
+    assert m.get("D-A06").intent == "metric_series"
+    assert m.get("D-A06").min_n == 30
+    assert m.get("D-A06").data_scope == ("datacenter.series",)
+    assert set(m.get("D-A07").methods) == {"D20", "D21"}
+    assert m.get("D-A07").intent == "drawdown_query"
+    assert m.get("D-A07").min_n == 250
+    assert m.get("D-A07").data_scope == ("market.candles",)
+    assert set(m.get("D-A08").methods) == {"S16"}
+    assert m.get("D-A08").intent == "metric_series"
+    assert m.get("D-A08").min_n == 13
+    assert m.get("D-A08").data_scope == ("datacenter.series",)
+    assert set(m.get("D-A09").methods) == {"S16"}
+    assert m.get("D-A09").intent == "metric_series"
+    assert m.get("D-A09").min_n == 2
+    assert m.get("D-A09").data_scope == ("datacenter.series",)
+    assert set(m.get("D-A10").methods) == {"S16"}
+    assert m.get("D-A10").intent == "metric_derived"
+    assert m.get("D-A10").min_n == 13
+    assert m.get("D-A10").data_scope == ("datacenter.series",)
+    assert m.get("D-A10").mode == "deterministic"
+    assert set(m.get("D-A11").methods) == {"M04"}
+    assert m.get("D-A11").intent == "correlation_query"
+    assert m.get("D-A11").min_n == 60
+    assert m.get("D-A11").data_scope == ("datacenter.series",)
+    assert set(m.get("D-A12").methods) == {"M11", "M12"}
+    assert m.get("D-A12").intent == "correlation_query"
+    assert m.get("D-A12").min_n == 120
+    assert m.get("D-A12").data_scope == ("datacenter.series",)
+    assert set(m.get("D-A13").methods) == {"S11"}
+    assert m.get("D-A13").intent == "metric_series"
+    assert m.get("D-A13").min_n == 30
+    assert m.get("D-A13").data_scope == ("datacenter.series",)
+    assert set(m.get("D-A15").methods) == {"S20"}
+    assert m.get("D-A15").intent == "metric_series"
+    assert m.get("D-A15").min_n == 30
+    assert m.get("D-A15").data_scope == ("datacenter.series",)
+    assert set(m.get("D-A16").methods) == {"S16"}
+    assert m.get("D-A16").intent == "metric_series"
+    assert m.get("D-A16").min_n == 30
+    assert m.get("D-A16").data_scope == ("datacenter.series",)
+    assert set(m.get("D-B08").methods) == {"T08", "T09"}
+    assert m.get("D-B08").intent == "technical_indicator"
+    assert m.get("D-B08").min_n == 60
+    assert m.get("D-B08").data_scope == ("market.candles",)
+    assert set(m.get("D-B09").methods) == {"D20", "D21"}
+    assert m.get("D-B09").intent == "technical_indicator"
+    assert m.get("D-B09").min_n == 250
+    assert m.get("D-B09").data_scope == ("market.candles",)
+    assert set(m.get("D-G08").methods) == {"F14"}
+    assert m.get("D-G08").intent == "metric_derived"
+    assert m.get("D-G08").min_n == 60
+    assert m.get("D-G08").data_scope == ("market.candles",)
+    assert m.get("D-G08").mode == "deterministic"
+    assert set(m.get("D-G09").methods) == {"P02"}
+    assert m.get("D-G09").intent == "metric_derived"
+    assert m.get("D-G09").min_n == 60
+    assert m.get("D-G09").data_scope == ("market.candles",)
+    assert m.get("D-G09").mode == "deterministic"
     for cap in m.capabilities:
         assert cap.executor.split(".")[-1] in {
             "seasonality",
@@ -146,6 +324,9 @@ def test_manifest_loads_and_validates():
             "drawdown",
             "percentile_forward",
             "alignment_slice",
+            "portfolio_risk",
+            "ic_profile",
+            "quantile_monotonic",
             "hac_significance",
             "crowding",
             "event_study",
@@ -154,6 +335,31 @@ def test_manifest_loads_and_validates():
             "change_point",
             "count_series",
             "trend",
+            "dimension_reduction",
+            "correlation_network",
+            "ewma_risk",
+            "pit_alignment",
+            "history_series",
+            "change_rate",
+            "cagr",
+            "percentile_rank",
+            "annualized_volatility",
+            "yoy_change",
+            "mom_change",
+            "real_rate",
+            "rolling_correlation",
+            "lead_lag_correlation",
+            "extreme_frequency",
+            "etf_flow_rolling",
+            "stablecoin_growth",
+            "slope_trend",
+            "ath_drawdown",
+            "momentum_12_1",
+            "vol_target_scale",
+            "aggregate_curve",
+            "class_board",
+            "flow_graph",
+            "lights",
         }
 
 
@@ -243,6 +449,1951 @@ def test_hac_significance_degenerate_series_degrades_partial():
     block = out["data"]["capabilities"]["D-G22"]
     assert block["deflated_sharpe"] is None
     assert block["newey_west"]["t_nw"] is None
+
+
+# ---------------- D-G16 组合 VaR / CVaR ----------------
+
+
+def test_portfolio_risk_returns_portfolio_and_per_asset_tail_risk():
+    series = _portfolio_returns()
+    dates = _dates(len(series["BTC"]))
+    out = run_capability(
+        "D-G16",
+        series=series,
+        weights={"BTC": 0.6, "ETH": 0.4},
+        dates=dates,
+        name="核心组合",
+    )
+    assert out["ok"] is True
+    assert out["capability"] == "D-G16"
+    assert out["intent"] == "metric_series"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 160
+    assert out["quality"]["align_method"] == "min_common_length"
+    assert out["quality"]["span"] == [dates[0], dates[-1]]
+    block = out["data"]["capabilities"]["D-G16"]
+    assert block["methods"] == ["D17", "D18", "P09", "P10"]
+    assert block["symbols"] == ["BTC", "ETH"]
+    assert block["portfolio"]["parametric"]["var"] > 0
+    assert block["portfolio"]["historical"]["cvar"] >= block["portfolio"]["historical"]["var_hist"]
+    assert set(block["assets"]) == {"BTC", "ETH"}
+    assert block["assets"]["BTC"]["var"]["n"] == 160
+    assert block["assets"]["ETH"]["cvar"]["n"] == 160
+    assert out["data"]["params"]["quantile"] == 0.05
+    assert out["data"]["params"]["as_of"] == dates[-1]
+    assert "损失正数口径" in out["answer"] and "历史统计" in out["answer"]
+
+
+def test_portfolio_risk_reuses_methods_and_aligns_min_common_length():
+    import l1agg.methods as methods
+
+    series = _portfolio_returns(140, seed=29)
+    series["ETH"].extend([0.01, -0.02, 0.03])
+    weights = {"BTC": 2.0, "ETH": 1.0}
+    out = run_capability("D-G16", series=series, weights=weights, quantile=0.1)
+    block = out["data"]["capabilities"]["D-G16"]
+    payload = {"series": series, "weights": weights}
+    assert out["quality"]["sample_n"] == 140
+    assert block["portfolio"]["parametric"] == methods.run("P09", payload)["result"]
+    assert block["portfolio"]["historical"] == methods.run("P10", payload, quantile=0.1)["result"]
+    for symbol in ("BTC", "ETH"):
+        aligned = series[symbol][:140]
+        assert block["assets"][symbol]["var"] == methods.run("D17", aligned, q=10.0)["result"]
+        assert block["assets"][symbol]["cvar"] == methods.run("D18", aligned, q=10.0)["result"]
+
+
+def test_portfolio_risk_empty_or_insufficient_history_fails_open():
+    short = run_capability("D-G16", series=_portfolio_returns(59))
+    assert short["ok"] is False
+    assert short["quality"]["status"] == STATUS_EMPTY
+    assert "60" in short["answer"]
+    empty = run_capability("D-G16", series={})
+    assert empty["ok"] is False
+    assert empty["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-G19 IC / ICIR / 衰减表 ----------------
+
+
+def test_ic_profile_returns_research_and_price_decay_tables():
+    import l1agg.methods as methods
+
+    factor, forward, prices = _ic_inputs()
+    dates = _dates(len(factor))
+    out = run_capability(
+        "D-G19",
+        factor=factor,
+        forward=forward,
+        prices=prices,
+        dates=dates,
+        name="TEST",
+    )
+    assert out["ok"] is True
+    assert out["capability"] == "D-G19"
+    assert out["intent"] == "metric_series"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == len(factor)
+    assert out["quality"]["align_method"] == "paired_complete_case"
+    assert out["quality"]["span"] == [dates[0], dates[-1]]
+    block = out["data"]["capabilities"]["D-G19"]
+    assert block["methods"] == ["B13", "B14", "B15", "Q01", "Q02", "Q03"]
+    assert block["ic"]["ic"] > 0.5
+    assert block["rank_ic"]["rank_ic"] > 0.5
+    assert block["research_ic"]["ic"] == block["ic"]["ic"]
+    expected_h1 = methods.run("Q01", {"factor": factor[:-1], "forward": forward[:-1]})["result"][
+        "ic"
+    ]
+    assert block["ic_decay"]["ic_by_h"]["1"] == expected_h1
+    assert block["icir"]["n_periods"] == 16
+    assert block["ic_decay"]["horizons"] == [1, 3, 5, 10, 20]
+    assert [item["h"] for item in block["price_ic_decay"]["items"]] == [1, 3, 5, 10, 20]
+    assert out["data"]["params"]["as_of"] == dates[-1]
+    assert "IC=" in out["answer"] and "ICIR=" in out["answer"]
+    assert "历史统计" in out["answer"]
+
+
+def test_ic_profile_reuses_all_six_methods_after_complete_case_alignment():
+    import l1agg.methods as methods
+
+    factor, forward, prices = _ic_inputs()
+    dirty_factor, dirty_forward = list(factor), list(forward)
+    for index, pair in {
+        3: (None, forward[3]),
+        41: (factor[41], "invalid"),
+        127: (None, None),
+    }.items():
+        dirty_factor[index], dirty_forward[index] = pair
+    keep = [i for i in range(len(factor)) if i not in {3, 41, 127}]
+    aligned_factor = [factor[i] for i in keep]
+    aligned_forward = [forward[i] for i in keep]
+    pair = {"factor": aligned_factor, "target": aligned_forward}
+    decay_pair = {"factor": aligned_factor, "returns": [0.0] + aligned_forward[:-1]}
+    horizons = (1, 5, 20)
+
+    out = run_capability(
+        "D-G19",
+        factor=dirty_factor,
+        forward=dirty_forward,
+        prices=prices,
+        window=25,
+        horizons=horizons,
+    )
+    block = out["data"]["capabilities"]["D-G19"]
+    assert out["quality"]["sample_n"] == len(keep)
+    assert block["ic"] == methods.run("B13", pair)["result"]
+    assert block["rank_ic"] == methods.run("B14", pair)["result"]
+    assert block["research_ic"] == methods.run("Q01", pair)["result"]
+    assert block["icir"] == methods.run("Q02", pair, window=25)["result"]
+    assert block["ic_decay"] == methods.run("Q03", decay_pair, horizons=horizons)["result"]
+    assert (
+        block["price_ic_decay"]
+        == methods.run("B15", prices, lookback=20, horizons=horizons)["result"]
+    )
+
+
+def test_ic_profile_missing_price_degrades_and_short_pairs_fail_open():
+    factor, forward, _ = _ic_inputs()
+    partial = run_capability("D-G19", factor=factor, forward=forward)
+    assert partial["ok"] is True
+    assert partial["quality"]["status"] == STATUS_PARTIAL
+    assert partial["quality"]["degraded_reason"] == "price_history_unavailable"
+    block = partial["data"]["capabilities"]["D-G19"]
+    assert block["methods"] == ["B13", "B14", "Q01", "Q02", "Q03"]
+    assert block["price_ic_decay"] is None
+    assert "B15" in partial["answer"] and "降级" in partial["answer"]
+
+    short = run_capability("D-G19", factor=factor[:249], forward=forward[:249])
+    assert short["ok"] is False
+    assert short["quality"]["status"] == STATUS_EMPTY
+    assert "250" in short["answer"]
+    empty = run_capability("D-G19", factor=[], forward=[])
+    assert empty["ok"] is False and empty["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-G20 分位组合 / 单调性检验 ----------------
+
+
+def test_quantile_monotonic_returns_group_stats_and_spearman_test():
+    factor, forward = _quantile_inputs()
+    dates = _dates(len(factor))
+    out = run_capability("D-G20", factor=factor, forward=forward, dates=dates, k=5, name="TEST")
+
+    assert out["ok"] is True
+    assert out["capability"] == "D-G20"
+    assert out["intent"] == "metric_series"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == len(factor)
+    assert out["quality"]["align_method"] == "paired_complete_case"
+    assert out["quality"]["span"] == [dates[0], dates[-1]]
+    block = out["data"]["capabilities"]["D-G20"]
+    assert block["methods"] == ["B11", "B16", "Q04"]
+    grouped = block["group_stats"]
+    assert grouped["k"] == 5 and grouped["n"] == len(factor)
+    assert len(grouped["table"]) == 5
+    assert sum(row["n"] for row in grouped["table"]) == len(factor)
+    assert grouped["spread"] > 0
+    assert block["monotonic"]["monotonic"] == "increasing"
+    assert block["monotonic"]["rho_bin"] == pytest.approx(1.0)
+    quantile_test = block["quantile_test"]
+    assert quantile_test["monotonic"] == "increasing"
+    assert quantile_test["rho"] > 0.99
+    assert quantile_test["p"] < 0.05
+    assert quantile_test["bucket_returns"] == {
+        str(row["bucket"]): row["mean"] for row in grouped["table"]
+    }
+    assert out["data"]["params"]["as_of"] == dates[-1]
+    assert "描述性" in out["answer"] and "历史统计" in out["answer"]
+    assert not any(word in out["answer"] for word in ("将会", "预计", "必然"))
+
+
+def test_quantile_monotonic_reuses_methods_after_complete_case():
+    import l1agg.methods as methods
+
+    factor, forward = _quantile_inputs(300)
+    dirty_factor, dirty_forward = list(factor), list(forward)
+    missing = {3, 41, 127, 269}
+    dirty_factor[3] = None
+    dirty_forward[41] = "invalid"
+    dirty_factor[127] = None
+    dirty_forward[127] = None
+    dirty_forward[269] = float("nan")
+    keep = [i for i in range(len(factor)) if i not in missing]
+    aligned_factor = [factor[i] for i in keep]
+    aligned_forward = [forward[i] for i in keep]
+    pair = {"factor": aligned_factor, "target": aligned_forward}
+
+    out = run_capability("D-G20", factor=dirty_factor, forward=dirty_forward, k=4)
+    block = out["data"]["capabilities"]["D-G20"]
+    assert out["quality"]["sample_n"] == len(keep)
+    assert block["group_stats"] == methods.run("B16", pair, k=4)["result"]
+    assert block["monotonic"] == methods.run("B11", pair, k=4)["result"]
+    assert block["quantile_test"] == methods.run("Q04", pair, k=4)["result"]
+
+
+def test_quantile_monotonic_short_or_invalid_input_fails_open():
+    factor, forward = _quantile_inputs()
+    short = run_capability("D-G20", factor=factor[:249], forward=forward[:249])
+    assert short["ok"] is False
+    assert short["quality"]["status"] == STATUS_EMPTY
+    assert "250" in short["answer"]
+
+    empty = run_capability("D-G20", factor=[], forward=[])
+    assert empty["ok"] is False and empty["quality"]["status"] == STATUS_EMPTY
+
+    invalid_k = run_capability("D-G20", factor=factor, forward=forward, k=1)
+    assert invalid_k["ok"] is False
+    assert invalid_k["quality"]["status"] == STATUS_EMPTY
+
+
+def _network_inputs(n=160, groups=6, size=6, seed=41, phi=0.9):
+    """多簇相关网络（D-J24 输入）：每组共享独立 AR(1) 因子，组内高相关、组间近似独立。"""
+    rng = random.Random(seed)
+    series = {}
+    for group in range(groups):
+        factor = [rng.gauss(0.0, 1.0)]
+        for _ in range(n - 1):
+            factor.append(phi * factor[-1] + rng.gauss(0.0, 1.0))
+        for member in range(size):
+            weight = 1.0 - 0.08 * member
+            series[f"g{group}v{member}"] = [
+                weight * value + rng.gauss(0.0, 0.03) for value in factor
+            ]
+    return series
+
+
+def _ewma_inputs(n=160, assets=3, seed=51):
+    """三资产收益面板（D-G14 输入）：低频正弦 + 独立噪声，模拟日收益量级。"""
+    rng = random.Random(seed)
+    return {
+        f"asset{index}": [
+            rng.gauss(0.0, 0.012) + 0.002 * math.sin(position / 9.0 + index)
+            for position in range(n)
+        ]
+        for index in range(assets)
+    }
+
+
+# ---------------- D-J22 PCA / SVD / 因子分析 ----------------
+
+DIMENSION_METHODS = ["M19", "M20", "SC31", "SC32", "SC33"]
+
+
+def test_dimension_reduction_returns_pca_svd_and_factor_results():
+    series = _panel_inputs()
+    dates = _dates(320)
+    out = run_capability("D-J22", series=series, dates=dates, k=3, name="TEST")
+    assert out["ok"] is True
+    assert out["capability"] == "D-J22"
+    assert out["intent"] == "metric_series"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 320
+    assert out["quality"]["align_method"] == "panel_complete_case"
+    assert out["quality"]["span"] == [dates[0], dates[-1]]
+    block = out["data"]["capabilities"]["D-J22"]
+    assert block["methods"] == DIMENSION_METHODS
+    assert block["variables"] == sorted(series)
+    assert block["pca_variance"]["k"] == 3
+    assert len(block["pca_variance"]["ratio"]) == 3
+    assert 0.0 < block["pca_variance"]["ratio"][0] <= 1.0
+    assert block["pca_variance"]["cum_ratio"][-1] >= block["pca_variance"]["ratio"][0]
+    assert set(block["pca_loadings"]["loadings"][0]) == set(series)
+    assert block["sklearn_pca"]["k"] == 3
+    assert len(block["svd"]["s"]) == 3
+    assert block["factor_analysis"]["k"] == 3
+    assert out["data"]["params"]["min_n"] == 60
+    assert out["data"]["params"]["as_of"] == dates[-1]
+    assert "历史统计" in out["answer"] and "不构成交易信号" in out["answer"]
+
+
+def test_dimension_reduction_reuses_methods_after_panel_complete_case():
+    import l1agg.methods as methods
+
+    series = _panel_inputs(260, seed=31)
+    dirty = {name: list(values) for name, values in series.items()}
+    missing = {3, 41, 127}
+    for index in missing:
+        dirty["alpha"][index] = None
+        dirty["beta"][index] = "bad"
+        dirty["gamma"][index] = float("nan")
+        dirty["delta"][index] = None
+    keep = [index for index in range(260) if index not in missing]
+    cleaned = {name: [series[name][index] for index in keep] for name in sorted(series)}
+    payload = {"series": cleaned}
+    matrix_payload = {
+        "X": [[cleaned[name][position] for name in cleaned] for position in range(len(keep))]
+    }
+
+    out = run_capability("D-J22", series=dirty, k=2)
+    block = out["data"]["capabilities"]["D-J22"]
+    assert out["quality"]["sample_n"] == len(keep)
+    assert block["pca_variance"] == methods.run("M19", payload, k=2)["result"]
+    assert block["pca_loadings"] == methods.run("M20", payload, k=2)["result"]
+    assert block["sklearn_pca"] == methods.run("SC31", matrix_payload, k=2)["result"]
+    assert block["svd"] == methods.run("SC32", matrix_payload, k=2)["result"]
+    assert block["factor_analysis"] == methods.run("SC33", matrix_payload, k=2)["result"]
+
+
+def test_dimension_reduction_short_or_invalid_input_fails_open():
+    series = _panel_inputs()
+    short = run_capability("D-J22", series={name: values[:59] for name, values in series.items()})
+    assert short["ok"] is False
+    assert short["quality"]["status"] == STATUS_EMPTY
+    assert "60" in short["answer"]
+
+    empty = run_capability("D-J22", series={})
+    assert empty["ok"] is False and empty["quality"]["status"] == STATUS_EMPTY
+
+    invalid_k = run_capability("D-J22", series=series, k=0)
+    assert invalid_k["ok"] is False and invalid_k["quality"]["status"] == STATUS_EMPTY
+
+    single = run_capability("D-J22", series={"alpha": series["alpha"]})
+    assert single["ok"] is False and single["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-J24 相关网络与社区发现 ----------------
+
+NETWORK_METHODS = ["M05", "M21", "SC71", "SC72"]
+
+
+def test_correlation_network_returns_centrality_communities_and_clusters():
+    series = _network_inputs()
+    dates = _dates(160)
+    out = run_capability("D-J24", series=series, dates=dates, k=6, threshold=0.5, name="TEST")
+    assert out["ok"] is True
+    assert out["capability"] == "D-J24"
+    assert out["intent"] == "metric_series"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 160
+    assert out["quality"]["align_method"] == "panel_complete_case"
+    assert out["quality"]["span"] == [dates[0], dates[-1]]
+    block = out["data"]["capabilities"]["D-J24"]
+    assert block["methods"] == NETWORK_METHODS
+    assert block["nodes"] == sorted(series)
+    assert block["n_edges"] > 0
+    assert block["threshold"] == 0.5
+    assert block["centrality"]["n_nodes"] == 36
+    assert len(block["centrality"]["betweenness"]) == 36
+    assert isinstance(block["centrality"]["top_node"], int)
+    assert block["communities"]["n_communities"] == 6
+    assert block["communities"]["modularity"] > 0.3
+    assert len(block["hierarchical"]["labels"]) == 36
+    assert block["hierarchical"]["n_clusters"] == 6
+    assert out["data"]["params"]["min_n"] == 60
+    assert "历史统计" in out["answer"] and "不构成交易信号" in out["answer"]
+
+
+def test_correlation_network_reuses_methods_after_panel_complete_case():
+    import l1agg.methods as methods
+
+    series = _network_inputs(140, size=5, seed=43)
+    dirty = {name: list(values) for name, values in series.items()}
+    missing = {5, 77, 139}
+    for index in missing:
+        dirty["g0v0"][index] = None
+        dirty["g1v0"][index] = "bad"
+        dirty["g2v0"][index] = float("nan")
+        dirty["g3v0"][index] = None
+    keep = [index for index in range(140) if index not in missing]
+    cleaned = {name: [series[name][index] for index in keep] for name in sorted(series)}
+    payload = {"series": cleaned}
+    matrix_result = methods.run("M05", payload)["result"]
+    names = matrix_result["names"]
+    adjacency = [
+        [
+            0.0 if left == right or abs(matrix_result["matrix"][left][right]) < 0.5 else 1.0
+            for right in names
+        ]
+        for left in names
+    ]
+    graph_payload = {"adj": adjacency}
+
+    out = run_capability("D-J24", series=dirty, k=6, threshold=0.5)
+    block = out["data"]["capabilities"]["D-J24"]
+    assert out["quality"]["sample_n"] == len(keep)
+    assert block["correlation"] == matrix_result
+    assert block["hierarchical"] == methods.run("M21", payload, k=6)["result"]
+    assert block["centrality"] == methods.run("SC71", graph_payload)["result"]
+    assert block["communities"] == methods.run("SC72", graph_payload)["result"]
+
+
+def test_correlation_network_short_or_invalid_input_fails_open():
+    series = _network_inputs()
+    short = run_capability("D-J24", series={name: values[:59] for name, values in series.items()})
+    assert short["ok"] is False
+    assert short["quality"]["status"] == STATUS_EMPTY
+    assert "60" in short["answer"]
+
+    empty = run_capability("D-J24", series={})
+    assert empty["ok"] is False and empty["quality"]["status"] == STATUS_EMPTY
+
+    invalid_threshold = run_capability("D-J24", series=series, threshold=1.5)
+    assert invalid_threshold["ok"] is False
+    assert invalid_threshold["quality"]["status"] == STATUS_EMPTY
+
+    invalid_k = run_capability("D-J24", series=series, k=0)
+    assert invalid_k["ok"] is False and invalid_k["quality"]["status"] == STATUS_EMPTY
+
+
+def test_correlation_network_small_graph_degrades_open():
+    series = _network_inputs(n=120, groups=1, size=3, seed=47)
+    out = run_capability("D-J24", series=series, k=2, threshold=0.5)
+    assert out["ok"] is True
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert "门禁" in out["quality"]["degraded_reason"]
+
+
+# ---------------- D-G14 EWMA 波动 / 协方差 ----------------
+
+
+def test_ewma_risk_returns_panel_covariance_and_volatility_series():
+    panel = _ewma_inputs()
+    dates = _dates(160)
+    out = run_capability("D-G14", series=panel, dates=dates, lam=0.94, periods=365, name="TEST")
+    assert out["ok"] is True
+    assert out["capability"] == "D-G14"
+    assert out["intent"] == "metric_series"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 160
+    assert out["quality"]["align_method"] == "panel_complete_case"
+    assert out["quality"]["span"] == [dates[0], dates[-1]]
+    block = out["data"]["capabilities"]["D-G14"]
+    assert block["methods"] == ["P07", "T19"]
+    assert block["lam"] == 0.94
+    assert block["covariance"]["symbols"] == sorted(panel)
+    assert len(block["covariance"]["cov"]) == 3
+    assert len(block["covariance"]["cov"][0]) == 3
+    assert set(block["covariance"]["vol"]) == set(panel)
+    assert set(block["volatility_series"]) == set(panel)
+    for result in block["volatility_series"].values():
+        assert len(result["series"]) == 160
+        assert result["lam"] == 0.94
+    assert out["data"]["params"]["min_n"] == 60
+    assert out["data"]["params"]["periods"] == 365
+    assert "历史统计" in out["answer"] and "不构成交易信号" in out["answer"]
+
+
+def test_ewma_risk_reuses_methods_after_panel_complete_case():
+    import l1agg.methods as methods
+
+    panel = _ewma_inputs(140, seed=53)
+    dirty = {name: list(values) for name, values in panel.items()}
+    missing = {4, 66, 139}
+    for index in missing:
+        dirty["asset0"][index] = None
+        dirty["asset1"][index] = "bad"
+        dirty["asset2"][index] = float("nan")
+    keep = [index for index in range(140) if index not in missing]
+    cleaned = {name: [panel[name][index] for index in keep] for name in sorted(panel)}
+
+    out = run_capability("D-G14", series=dirty, lam=0.94, periods=365)
+    block = out["data"]["capabilities"]["D-G14"]
+    assert out["quality"]["sample_n"] == len(keep)
+    assert (
+        block["covariance"]
+        == methods.run("P07", {"series": cleaned}, lam=0.94, periods=365)["result"]
+    )
+    for name in cleaned:
+        assert (
+            block["volatility_series"][name]
+            == methods.run("T19", {"series": cleaned[name]}, lam=0.94)["result"]
+        )
+
+
+def test_ewma_risk_single_asset_runs_volatility_only():
+    panel = _ewma_inputs()
+    out = run_capability("D-G14", series={"asset0": panel["asset0"]}, lam=0.94)
+    assert out["ok"] is True
+    block = out["data"]["capabilities"]["D-G14"]
+    assert block["methods"] == ["T19"]
+    assert "covariance" not in block
+    assert len(block["volatility_series"]["asset0"]["series"]) == 160
+
+
+def test_ewma_risk_short_or_invalid_input_fails_open():
+    panel = _ewma_inputs()
+    short = run_capability("D-G14", series={name: values[:59] for name, values in panel.items()})
+    assert short["ok"] is False
+    assert short["quality"]["status"] == STATUS_EMPTY
+    assert "60" in short["answer"]
+
+    empty = run_capability("D-G14", series={})
+    assert empty["ok"] is False and empty["quality"]["status"] == STATUS_EMPTY
+
+    invalid_lam = run_capability("D-G14", series=panel, lam=1.5)
+    assert invalid_lam["ok"] is False
+    assert invalid_lam["quality"]["status"] == STATUS_EMPTY
+
+    invalid_periods = run_capability("D-G14", series=panel, periods=0)
+    assert invalid_periods["ok"] is False
+    assert invalid_periods["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-A01 历史序列 ----------------
+
+
+def test_history_series_returns_points_span_and_percentile():
+    values, dates = _series_inputs()
+    out = run_capability("D-A01", values=values, dates=dates, name="恐惧贪婪", unit="分")
+    assert out["ok"] is True
+    assert out["capability"] == "D-A01"
+    assert out["intent"] == "metric_series"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 120
+    assert out["quality"]["span"] == [dates[0], dates[-1]]
+    assert out["quality"]["align_method"] == "series_last_per_daily"
+    block = out["data"]["capabilities"]["D-A01"]
+    assert block["methods"] == ["S25"]
+    assert block["freq"] == "daily"
+    assert len(block["points"]) == 120
+    assert block["points"][0] == {"date": dates[0], "value": round(values[0], 6)}
+    assert block["span"] == [dates[0], dates[-1]]
+    assert block["unit"] == "分"
+    assert block["percentile"]["value"] == round(values[-1], 6)
+    assert 0.0 <= block["percentile"]["percentile"] <= 100.0
+    assert out["data"]["params"]["min_n"] == 30
+    assert "处于历史" in out["answer"]
+
+
+def test_history_series_downsamples_week_and_month_with_last_observation():
+    import l1agg.methods as methods
+
+    values, dates = _series_inputs(n=90, seed=53)
+    daily = run_capability("D-A01", values=values, dates=dates, freq="daily")
+    daily_block = daily["data"]["capabilities"]["D-A01"]
+    assert daily_block["percentile"] == methods.run("S25", values)["result"]
+
+    weekly = run_capability("D-A01", values=values, dates=dates, freq="week")
+    weekly_block = weekly["data"]["capabilities"]["D-A01"]
+    assert weekly_block["freq"] == "weekly"
+    assert 12 <= len(weekly_block["points"]) <= 14
+    assert weekly_block["points"][-1]["date"] == dates[-1]
+    assert weekly_block["points"][-1]["value"] == round(values[-1], 6)
+    weeks = [
+        datetime.date.fromisoformat(point["date"]).isocalendar()[:2]
+        for point in weekly_block["points"]
+    ]
+    assert len(weeks) == len(set(weeks))
+
+    monthly = run_capability("D-A01", values=values, dates=dates, freq="monthly")
+    monthly_block = monthly["data"]["capabilities"]["D-A01"]
+    assert [point["date"][:7] for point in monthly_block["points"]] == [
+        "2024-01",
+        "2024-02",
+        "2024-03",
+    ]
+    assert monthly_block["points"][-1]["value"] == round(values[-1], 6)
+
+    duplicated = run_capability(
+        "D-A01",
+        values=[10.0, 12.0] + values[2:],
+        dates=["2024-01-01", "2024-01-01"] + dates[2:],
+    )
+    dup_block = duplicated["data"]["capabilities"]["D-A01"]
+    assert dup_block["points"][0] == {"date": "2024-01-01", "value": 12.0}
+
+
+def test_history_series_flags_sparse_series():
+    values, dates = _series_inputs(n=40)
+    start = datetime.date.fromisoformat(dates[0])
+    sparse_dates = [(start + datetime.timedelta(days=3 * i)).isoformat() for i in range(40)]
+    out = run_capability("D-A01", values=values, dates=sparse_dates)
+    assert out["ok"] is True
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "sparse_series"
+    assert out["quality"]["missing_rate"] > 0.6
+    block = out["data"]["capabilities"]["D-A01"]
+    assert block["gate"] == "partial"
+    assert len(block["points"]) == 40
+    assert "缺失率" in out["answer"]
+
+
+def test_history_series_short_or_invalid_input_fails_open():
+    values, dates = _series_inputs()
+    short = run_capability("D-A01", values=values[:29], dates=dates[:29])
+    assert short["ok"] is False
+    assert short["quality"]["status"] == STATUS_EMPTY
+    assert "30" in short["answer"]
+
+    mismatch = run_capability("D-A01", values=values, dates=dates[:-1])
+    assert mismatch["ok"] is False and mismatch["quality"]["status"] == STATUS_EMPTY
+
+    bad_freq = run_capability("D-A01", values=values, dates=dates, freq="quarter")
+    assert bad_freq["ok"] is False and bad_freq["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-A02 变化率 ----------------
+
+
+def test_change_rate_returns_diff_and_pct():
+    values, dates = _series_inputs(n=12, seed=67)
+    out = run_capability("D-A02", values=values, dates=dates, window=5, name="持仓量", unit="手")
+    assert out["ok"] is True
+    assert out["capability"] == "D-A02"
+    assert out["intent"] == "metric_series"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 12
+    assert out["quality"]["align_method"] == "window_endpoints"
+    block = out["data"]["capabilities"]["D-A02"]
+    assert block["methods"] == ["S15", "S16"]
+    assert block["window"] == 5
+    assert block["change"] == round(values[-1] - values[-6], 6)
+    assert block["change_pct"] == round(values[-1] / values[-6] - 1.0, 6)
+    assert out["data"]["params"]["min_n"] == 2
+    assert "变化率" in out["answer"]
+
+
+def test_change_rate_reuses_s15_and_s16():
+    import l1agg.methods as methods
+
+    values, _ = _series_inputs(n=10, seed=71)
+    out = run_capability("D-A02", values=values, window=3)
+    block = out["data"]["capabilities"]["D-A02"]
+    assert block["change"] == methods.run("S15", values, k=3)["result"]["diff"]
+    assert block["change_pct"] == methods.run("S16", values, k=3)["result"]["pct"]
+
+
+def test_change_rate_degrades_when_base_value_is_zero():
+    values = [0.0, 1.0, 2.0, 3.0, 4.0]
+    out = run_capability("D-A02", values=values, window=4)
+    assert out["ok"] is True
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "change_pct_unavailable"
+    block = out["data"]["capabilities"]["D-A02"]
+    assert block["gate"] == "partial"
+    assert block["change"] == 4.0
+    assert block["change_pct"] is None
+    assert "变化率不可用" in out["answer"]
+
+
+def test_change_rate_short_or_invalid_input_fails_open():
+    single = run_capability("D-A02", values=[100.0])
+    assert single["ok"] is False and single["quality"]["status"] == STATUS_EMPTY
+
+    too_wide = run_capability("D-A02", values=[100.0, 101.0], window=2)
+    assert too_wide["ok"] is False and too_wide["quality"]["status"] == STATUS_EMPTY
+    assert "window" in too_wide["answer"]
+
+    zero_window = run_capability("D-A02", values=[100.0, 101.0], window=0)
+    assert zero_window["ok"] is False and zero_window["quality"]["status"] == STATUS_EMPTY
+
+    invalid = run_capability("D-A02", values=[100.0, float("nan")])
+    assert invalid["ok"] is False and invalid["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-A03 CAGR ----------------
+
+
+def test_cagr_returns_annualized_growth():
+    out = run_capability(
+        "D-A03",
+        values=[100.0, 200.0],
+        dates=["2022-01-01", "2024-01-01"],
+        name="净值",
+    )
+    assert out["ok"] is True
+    assert out["capability"] == "D-A03"
+    assert out["intent"] == "metric_series"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 2
+    assert out["quality"]["align_method"] == "first_last"
+    assert out["quality"]["span"] == ["2022-01-01", "2024-01-01"]
+    block = out["data"]["capabilities"]["D-A03"]
+    assert block["methods"] == ["S19"]
+    assert block["years"] == 2.0
+    assert block["cagr"] == round(2.0 ** (365.0 / 730.0) - 1.0, 6)
+    assert out["data"]["params"]["min_n"] == 2
+    assert out["data"]["params"]["days"] == 730.0
+    assert "CAGR" in out["answer"]
+
+
+def test_cagr_reuses_s19():
+    import l1agg.methods as methods
+
+    values = [100.0, 80.0, 121.0]
+    out = run_capability("D-A03", values=values, dates=_dates(3))
+    block = out["data"]["capabilities"]["D-A03"]
+    expected = methods.run("S19", values, days=2.0)["result"]
+    assert block["cagr"] == expected["cagr"]
+    assert block["years"] == expected["years"]
+    assert block["n"] == expected["n"]
+
+
+def test_cagr_degrades_for_span_under_one_year():
+    out = run_capability(
+        "D-A03",
+        values=[100.0, 110.0],
+        dates=["2024-01-01", "2024-04-10"],
+    )
+    assert out["ok"] is True
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "short_span"
+    block = out["data"]["capabilities"]["D-A03"]
+    assert block["gate"] == "partial"
+    assert block["years"] < 1.0
+    assert block["cagr"] > 0.0
+    assert "不足 1 年" in out["answer"]
+
+
+def test_cagr_invalid_input_fails_open():
+    single = run_capability("D-A03", values=[100.0])
+    assert single["ok"] is False and single["quality"]["status"] == STATUS_EMPTY
+    assert "2" in single["answer"]
+
+    non_positive = run_capability("D-A03", values=[0.0, 100.0])
+    assert non_positive["ok"] is False
+    assert non_positive["quality"]["status"] == STATUS_EMPTY
+
+    same_day = run_capability("D-A03", values=[100.0, 110.0], dates=["2024-01-01", "2024-01-01"])
+    assert same_day["ok"] is False and same_day["quality"]["status"] == STATUS_EMPTY
+
+    bad_dates = run_capability("D-A03", values=[100.0, 110.0], dates=["2024-01-01"])
+    assert bad_dates["ok"] is False and bad_dates["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-A04 历史分位 ----------------
+
+
+def test_percentile_rank_returns_trailing_percentile():
+    values, dates = _series_inputs(120, seed=91)
+    out = run_capability("D-A04", values=values, dates=dates, lookback=60, name="资金费率")
+    assert out["ok"] is True
+    assert out["capability"] == "D-A04"
+    assert out["intent"] == "metric_percentile"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 60
+    assert out["quality"]["align_method"] == "trailing_sample"
+    assert out["quality"]["span"] == [dates[-60], dates[-1]]
+    block = out["data"]["capabilities"]["D-A04"]
+    assert block["methods"] == ["S25"]
+    assert block["lookback"] == 60
+    assert block["sample_n"] == 60
+    assert block["value"] == round(values[-1], 6)
+    assert 0.0 <= block["percentile"] <= 100.0
+    assert out["data"]["params"]["min_n"] == 30
+    assert out["data"]["params"]["lookback"] == 60
+    assert "分位" in out["answer"]
+
+
+def test_percentile_rank_reuses_s25():
+    import l1agg.methods as methods
+
+    values, _ = _series_inputs(90, seed=97)
+    out = run_capability("D-A04", values=values, lookback=45)
+    block = out["data"]["capabilities"]["D-A04"]
+    expected = methods.run("S25", values[-45:])["result"]
+    assert block["percentile"] == expected["percentile"]
+    assert block["value"] == expected["value"]
+    assert block["sample_n"] == expected["n"]
+
+
+def test_percentile_rank_degrades_for_short_or_truncated_lookback():
+    values, dates = _series_inputs(120, seed=101)
+    short = run_capability("D-A04", values=values, lookback=40, dates=dates)
+    assert short["ok"] is True
+    assert short["quality"]["status"] == STATUS_PARTIAL
+    assert short["quality"]["degraded_reason"] == "short_lookback"
+    assert short["data"]["capabilities"]["D-A04"]["gate"] == "partial"
+    assert "样本" in short["answer"]
+
+    truncated = run_capability("D-A04", values=values, lookback=200)
+    assert truncated["ok"] is True
+    assert truncated["quality"]["status"] == STATUS_PARTIAL
+    assert truncated["quality"]["degraded_reason"] == "lookback_truncated"
+    assert truncated["data"]["capabilities"]["D-A04"]["lookback"] == 120
+    assert "可用历史" in truncated["answer"]
+
+
+def test_percentile_rank_invalid_input_fails_open():
+    short = run_capability("D-A04", values=_series_inputs(29, seed=103)[0])
+    assert short["ok"] is False and short["quality"]["status"] == STATUS_EMPTY
+    assert "30" in short["answer"]
+
+    small_lookback = run_capability("D-A04", values=_series_inputs(60, seed=105)[0], lookback=10)
+    assert small_lookback["ok"] is False
+    assert small_lookback["quality"]["status"] == STATUS_EMPTY
+
+    bad_dates = run_capability("D-A04", values=_series_inputs(40, seed=107)[0], dates=_dates(39))
+    assert bad_dates["ok"] is False and bad_dates["quality"]["status"] == STATUS_EMPTY
+
+    invalid = run_capability("D-A04", values=[None] * 40)
+    assert invalid["ok"] is False and invalid["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-A06 年化波动率 ----------------
+
+
+def test_annualized_volatility_returns_full_envelope():
+    values, dates = _series_inputs(150, seed=111)
+    out = run_capability("D-A06", values=values, dates=dates, window=120, name="BTC 价格")
+    assert out["ok"] is True
+    assert out["capability"] == "D-A06"
+    assert out["intent"] == "metric_series"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 120
+    assert out["quality"]["align_method"] == "trailing_sample"
+    assert out["quality"]["span"] == [dates[-120], dates[-1]]
+    block = out["data"]["capabilities"]["D-A06"]
+    assert block["methods"] == ["F05"]
+    assert block["window"] == 120
+    assert block["sample_n"] == 120
+    assert block["volatility"] > 0.0
+    assert out["data"]["params"] == {"min_n": 30, "window": 120, "ann_factor": 365}
+    assert "年化波动率" in out["answer"]
+
+
+def test_annualized_volatility_reuses_f05():
+    import l1agg.methods as methods
+
+    values, _ = _series_inputs(100, seed=113)
+    out = run_capability("D-A06", values=values, window=80)
+    block = out["data"]["capabilities"]["D-A06"]
+    expected = methods.run("F05", values[-80:])["result"]
+    assert block["volatility"] == expected["vol"]
+    assert block["mean_ret"] == expected["mean_ret"]
+    assert block["sample_n"] == expected["n"]
+
+
+def test_annualized_volatility_degrades_for_short_window():
+    values, _ = _series_inputs(90, seed=115)
+    out = run_capability("D-A06", values=values, window=40)
+    assert out["ok"] is True
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "short_window"
+    assert out["data"]["capabilities"]["D-A06"]["gate"] == "partial"
+    assert "样本较短" in out["answer"]
+
+
+def test_annualized_volatility_invalid_input_fails_open():
+    short = run_capability("D-A06", values=_series_inputs(29, seed=117)[0])
+    assert short["ok"] is False and short["quality"]["status"] == STATUS_EMPTY
+
+    small_window = run_capability("D-A06", values=_series_inputs(90, seed=119)[0], window=20)
+    assert small_window["ok"] is False and small_window["quality"]["status"] == STATUS_EMPTY
+
+    bad_dates = run_capability("D-A06", values=_series_inputs(60, seed=121)[0], dates=_dates(59))
+    assert bad_dates["ok"] is False and bad_dates["quality"]["status"] == STATUS_EMPTY
+
+    invalid = run_capability("D-A06", values=[100.0] * 59 + [None])
+    assert invalid["ok"] is False and invalid["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-A07 回撤 ----------------
+
+
+def _drawdown_prices(n: int = 300) -> list:
+    rising = [100.0 + i for i in range(n * 2 // 3)]
+    falling = [rising[-1] - (i + 1) * 0.5 for i in range(n - len(rising))]
+    return rising + falling
+
+
+def test_drawdown_alias_returns_full_envelope():
+    prices = _drawdown_prices()
+    dates = _dates(len(prices))
+    out = run_capability("D-A07", prices=prices, dates=dates, symbol="BTC-USDT")
+    assert out["ok"] is True
+    assert out["capability"] == "D-A07"
+    assert out["intent"] == "drawdown_query"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 300
+    assert out["quality"]["align_method"] == "utc_daily_close"
+    assert out["quality"]["span"] == [dates[0], dates[-1]]
+    block = out["data"]["capabilities"]["D-A07"]
+    assert block["methods"] == ["D20", "D21"]
+    assert block["drawdown"] == round(1.0 - prices[-1] / max(prices), 6)
+    assert block["peak_ts"] == dates[prices.index(max(prices))]
+    assert block["mdd"] > 0.0
+    assert out["data"]["params"]["min_n"] == 250
+    assert "回撤" in out["answer"]
+
+
+def test_drawdown_alias_matches_d_e10_executor():
+    prices = _drawdown_prices()
+    dates = _dates(len(prices))
+    alias = run_capability("D-A07", prices=prices, dates=dates)
+    base = run_capability("D-E10", prices=prices, dates=dates)
+    alias_block = alias["data"]["capabilities"]["D-A07"]
+    base_block = base["data"]["capabilities"]["D-E10"]
+    assert alias_block["drawdown"] == base_block["current_drawdown"]
+    assert alias_block["peak_ts"] == base_block["peak_date"]
+    assert alias_block["mdd"] == base_block["mdd"]
+    assert alias_block["duration_days"] == base_block["duration_days"]
+    assert alias_block["drawdown_path"] == base_block["drawdown_path"]
+    assert base["capability"] == "D-E10"
+
+
+def test_drawdown_alias_degrades_for_short_history():
+    prices = _drawdown_prices()[:100]
+    out = run_capability("D-A07", prices=prices)
+    assert out["ok"] is True
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "insufficient_samples"
+    assert "样本不足" in out["answer"]
+
+
+def test_drawdown_alias_invalid_input_fails_open():
+    single = run_capability("D-A07", prices=[100.0])
+    assert single["ok"] is False
+    assert single["capability"] == "D-A07"
+    assert single["quality"]["status"] == STATUS_EMPTY
+
+    empty = run_capability("D-A07", prices=[])
+    assert empty["ok"] is False and empty["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-A08 同比 ----------------
+
+
+def _yoy_values(n: int = 36) -> list:
+    return [100.0 + i * 2.0 for i in range(n)]
+
+
+def test_yoy_change_returns_full_envelope():
+    values = _yoy_values()
+    dates = _dates(36)
+    out = run_capability("D-A08", values=values, dates=dates, name="CPI", unit="点")
+    assert out["ok"] is True
+    assert out["capability"] == "D-A08"
+    assert out["intent"] == "metric_series"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 36
+    assert out["quality"]["align_method"] == "period_offset"
+    assert out["quality"]["span"] == [dates[-13], dates[-1]]
+    block = out["data"]["capabilities"]["D-A08"]
+    assert block["methods"] == ["S16"]
+    assert block["period"] == 12
+    assert block["yoy"] == round(values[-1] / values[-13] - 1.0, 6)
+    assert block["base_ts"] == dates[-13]
+    assert out["data"]["params"] == {"min_n": 13, "period": 12}
+    assert "同比" in out["answer"]
+
+
+def test_yoy_change_reuses_s16():
+    import l1agg.methods as methods
+
+    values = _yoy_values(30)
+    out = run_capability("D-A08", values=values, period=6)
+    block = out["data"]["capabilities"]["D-A08"]
+    expected = methods.run("S16", values, k=6)["result"]
+    assert block["yoy"] == expected["pct"]
+    assert block["sample_n"] == expected["n"]
+    assert block["period"] == 6
+
+
+def test_yoy_change_degrades_for_short_history_or_zero_base():
+    short = run_capability("D-A08", values=_yoy_values(18))
+    assert short["ok"] is True
+    assert short["quality"]["status"] == STATUS_PARTIAL
+    assert short["quality"]["degraded_reason"] == "short_history"
+    assert "2 个完整周期" in short["answer"]
+
+    zero_base = _yoy_values(25)
+    zero_base[12] = 0.0
+    out = run_capability("D-A08", values=zero_base)
+    assert out["ok"] is True
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "yoy_unavailable"
+    assert out["data"]["capabilities"]["D-A08"]["yoy"] is None
+    assert "基期值为 0" in out["answer"]
+
+
+def test_yoy_change_invalid_input_fails_open():
+    covered = run_capability("D-A08", values=_yoy_values(12))
+    assert covered["ok"] is False and covered["quality"]["status"] == STATUS_EMPTY
+
+    bad_period = run_capability("D-A08", values=_yoy_values(20), period=0)
+    assert bad_period["ok"] is False and bad_period["quality"]["status"] == STATUS_EMPTY
+
+    bad_dates = run_capability("D-A08", values=_yoy_values(20), dates=_dates(19))
+    assert bad_dates["ok"] is False and bad_dates["quality"]["status"] == STATUS_EMPTY
+
+    invalid = run_capability("D-A08", values=_yoy_values(20)[:-1] + [None])
+    assert invalid["ok"] is False and invalid["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-A09 环比 ----------------
+
+
+def test_mom_change_returns_full_envelope():
+    values = _yoy_values(12)
+    dates = _dates(12)
+    out = run_capability("D-A09", values=values, dates=dates, name="社融", unit="亿元")
+    assert out["ok"] is True
+    assert out["capability"] == "D-A09"
+    assert out["intent"] == "metric_series"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 12
+    assert out["quality"]["align_method"] == "period_offset"
+    assert out["quality"]["span"] == [dates[-2], dates[-1]]
+    block = out["data"]["capabilities"]["D-A09"]
+    assert block["methods"] == ["S16"]
+    assert block["mom"] == round(values[-1] / values[-2] - 1.0, 6)
+    assert block["base_ts"] == dates[-2]
+    assert out["data"]["params"] == {"min_n": 2, "period": 1}
+    assert "环比" in out["answer"]
+
+
+def test_mom_change_reuses_s16():
+    import l1agg.methods as methods
+
+    values = _yoy_values(8)
+    out = run_capability("D-A09", values=values)
+    block = out["data"]["capabilities"]["D-A09"]
+    expected = methods.run("S16", values, k=1)["result"]
+    assert block["mom"] == expected["pct"]
+    assert block["sample_n"] == expected["n"]
+
+
+def test_mom_change_degrades_for_zero_base():
+    out = run_capability("D-A09", values=[100.0, 0.0, 50.0])
+    assert out["ok"] is True
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "mom_unavailable"
+    assert out["data"]["capabilities"]["D-A09"]["mom"] is None
+    assert "基期值为 0" in out["answer"]
+
+
+def test_mom_change_invalid_input_fails_open():
+    single = run_capability("D-A09", values=[100.0])
+    assert single["ok"] is False and single["quality"]["status"] == STATUS_EMPTY
+
+    invalid = run_capability("D-A09", values=[100.0, None])
+    assert invalid["ok"] is False and invalid["quality"]["status"] == STATUS_EMPTY
+
+    bad_dates = run_capability("D-A09", values=_yoy_values(5), dates=_dates(4))
+    assert bad_dates["ok"] is False and bad_dates["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-A10 实际利率 ----------------
+
+
+def _real_rate_inputs(n: int = 36) -> tuple:
+    nominal = [4.0 + 0.01 * i for i in range(n)]
+    cpi = [100.0 + 0.2 * i for i in range(n)]
+    return nominal, cpi
+
+
+def test_real_rate_returns_full_envelope():
+    import l1agg.methods as methods
+
+    nominal, cpi = _real_rate_inputs()
+    dates = _dates(36)
+    out = run_capability("D-A10", nominal=nominal, cpi=cpi, dates=dates)
+    assert out["ok"] is True
+    assert out["capability"] == "D-A10"
+    assert out["intent"] == "metric_derived"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 36
+    assert out["quality"]["align_method"] == "period_offset"
+    assert out["quality"]["span"] == [dates[-13], dates[-1]]
+    block = out["data"]["capabilities"]["D-A10"]
+    assert block["methods"] == ["S16"]
+    assert block["period"] == 12
+    pct = methods.run("S16", cpi, k=12)["result"]["pct"]
+    inflation = round(pct * 100.0, 6)
+    assert block["inflation"] == inflation
+    assert block["nominal"] == round(nominal[-1], 6)
+    assert block["real_rate"] == round(nominal[-1] - inflation, 6)
+    assert block["base_ts"] == dates[-13]
+    assert out["data"]["params"] == {"min_n": 13, "period": 12, "unit": "%"}
+    assert "实际利率" in out["answer"]
+
+
+def test_real_rate_reuses_s16():
+    import l1agg.methods as methods
+
+    nominal, cpi = _real_rate_inputs(30)
+    out = run_capability("D-A10", nominal=nominal, cpi=cpi, period=6)
+    block = out["data"]["capabilities"]["D-A10"]
+    expected = methods.run("S16", cpi, k=6)["result"]
+    assert block["inflation"] == round(expected["pct"] * 100.0, 6)
+    assert block["sample_n"] == expected["n"]
+    assert block["period"] == 6
+
+
+def test_real_rate_degrades_for_short_history_or_zero_base():
+    nominal, cpi = _real_rate_inputs(18)
+    short = run_capability("D-A10", nominal=nominal, cpi=cpi)
+    assert short["ok"] is True
+    assert short["quality"]["status"] == STATUS_PARTIAL
+    assert short["quality"]["degraded_reason"] == "short_history"
+    assert "2 个完整周期" in short["answer"]
+
+    nominal, cpi = _real_rate_inputs(25)
+    cpi[12] = 0.0
+    out = run_capability("D-A10", nominal=nominal, cpi=cpi)
+    assert out["ok"] is True
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "inflation_unavailable"
+    assert out["data"]["capabilities"]["D-A10"]["real_rate"] is None
+    assert out["data"]["capabilities"]["D-A10"]["inflation"] is None
+    assert "基期值为 0" in out["answer"]
+
+
+def test_real_rate_invalid_input_fails_open():
+    nominal, cpi = _real_rate_inputs(12)
+    covered = run_capability("D-A10", nominal=nominal, cpi=cpi)
+    assert covered["ok"] is False and covered["quality"]["status"] == STATUS_EMPTY
+
+    mismatched = run_capability(
+        "D-A10", nominal=_real_rate_inputs(20)[0], cpi=_real_rate_inputs(19)[1]
+    )
+    assert mismatched["ok"] is False and mismatched["quality"]["status"] == STATUS_EMPTY
+
+    bad_period = run_capability(
+        "D-A10", nominal=_real_rate_inputs(20)[0], cpi=_real_rate_inputs(20)[1], period=0
+    )
+    assert bad_period["ok"] is False and bad_period["quality"]["status"] == STATUS_EMPTY
+
+    bad_dates = run_capability(
+        "D-A10", nominal=_real_rate_inputs(20)[0], cpi=_real_rate_inputs(20)[1], dates=_dates(19)
+    )
+    assert bad_dates["ok"] is False and bad_dates["quality"]["status"] == STATUS_EMPTY
+
+    invalid = run_capability(
+        "D-A10", nominal=_real_rate_inputs(20)[0][:-1] + [None], cpi=_real_rate_inputs(20)[1]
+    )
+    assert invalid["ok"] is False and invalid["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-A11 双序列滚动相关 ----------------
+
+
+def _corr_pair(n: int = 80) -> tuple:
+    x = [100.0 + 0.2 * i for i in range(n)]
+    y = [50.0 + 0.1 * i for i in range(n)]
+    return x, y
+
+
+def test_rolling_correlation_returns_full_envelope():
+    x, y = _corr_pair(90)
+    dates = _dates(90)
+    out = run_capability("D-A11", x=x, y=y, window=30, dates=dates)
+    assert out["ok"] is True
+    assert out["capability"] == "D-A11"
+    assert out["intent"] == "correlation_query"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 90
+    assert out["quality"]["align_method"] == "paired_complete_case"
+    assert out["quality"]["span"] == [dates[0], dates[-1]]
+    block = out["data"]["capabilities"]["D-A11"]
+    assert block["methods"] == ["M04"]
+    assert block["window"] == 30
+    assert block["n_windows"] == 61
+    assert block["corr"] == 1.0
+    assert block["mean_r"] == 1.0
+    assert block["sample_n"] == 90
+    assert out["data"]["params"] == {"min_n": 60, "window": 30}
+    assert "滚动 Pearson 相关" in out["answer"]
+
+
+def test_rolling_correlation_reuses_m04():
+    import l1agg.methods as methods
+
+    x, y = _corr_pair(70)
+    out = run_capability("D-A11", x=x, y=y, window=40)
+    block = out["data"]["capabilities"]["D-A11"]
+    expected = methods.run("M04", {"x": x, "y": y}, window=40)["result"]
+    assert block["corr"] == [value for value in expected["r"] if value is not None][-1]
+    assert block["mean_r"] == expected["mean_r"]
+    assert block["n_windows"] == expected["n_windows"]
+    assert block["sample_n"] == expected["sample_n"]
+
+
+def test_rolling_correlation_degrades_for_short_sample():
+    x, y = _corr_pair(40)
+    out = run_capability("D-A11", x=x, y=y, window=30)
+    assert out["ok"] is True
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "insufficient_samples"
+    assert "样本不足" in out["answer"]
+    assert out["data"]["capabilities"]["D-A11"]["corr"] is not None
+
+
+def test_rolling_correlation_invalid_input_fails_open():
+    x, y = _corr_pair(20)
+
+    single = run_capability("D-A11", x=[1.0], y=[1.0])
+    assert single["ok"] is False and single["quality"]["status"] == STATUS_EMPTY
+
+    bad_window = run_capability("D-A11", x=x, y=y, window=1)
+    assert bad_window["ok"] is False and bad_window["quality"]["status"] == STATUS_EMPTY
+
+    too_wide = run_capability("D-A11", x=x, y=y, window=30)
+    assert too_wide["ok"] is False and too_wide["quality"]["status"] == STATUS_EMPTY
+
+    bad_dates = run_capability("D-A11", x=x, y=y, dates=_dates(19))
+    assert bad_dates["ok"] is False and bad_dates["quality"]["status"] == STATUS_EMPTY
+
+    invalid = run_capability("D-A11", x=x, y=[None] * 20)
+    assert invalid["ok"] is False and invalid["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-A12 领先滞后相关 ----------------
+
+
+def test_lead_lag_correlation_returns_full_envelope():
+    x, y = _corr_pair(150)
+    dates = _dates(150)
+    out = run_capability("D-A12", x=x, y=y, max_lag=10, dates=dates)
+    assert out["ok"] is True
+    assert out["capability"] == "D-A12"
+    assert out["intent"] == "correlation_query"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 150
+    assert out["quality"]["align_method"] == "paired_complete_case"
+    assert out["quality"]["span"] == [dates[0], dates[-1]]
+    block = out["data"]["capabilities"]["D-A12"]
+    assert block["methods"] == ["M11", "M12"]
+    assert block["max_lag"] == 10
+    assert len(block["corr_by_lag"]) == 21
+    assert [row["lag"] for row in block["corr_by_lag"]] == list(range(-10, 11))
+    assert block["best_lag"] in range(-10, 11)
+    assert block["best_corr"] == 1.0
+    assert block["sample_n"] == 150
+    assert out["data"]["params"] == {"min_n": 120, "max_lag": 10}
+    assert "最优 lag" in out["answer"]
+
+
+def test_lead_lag_correlation_reuses_m11_m12():
+    import l1agg.methods as methods
+
+    x, y = _corr_pair(140)
+    out = run_capability("D-A12", x=x, y=y, max_lag=8)
+    block = out["data"]["capabilities"]["D-A12"]
+    family = methods.run("M11", {"x": x, "y": y}, max_lag=8)["result"]
+    optimum = methods.run("M12", {"x": x, "y": y}, max_lag=8)["result"]
+    assert block["corr_by_lag"] == [
+        {
+            "lag": lag,
+            "r": family["r"][i],
+            "p": family["p"][i],
+            "q": family["q"][i],
+            "significant": family["significant"][i],
+        }
+        for i, lag in enumerate(family["lags"])
+    ]
+    assert block["best_lag"] == optimum["lag"]
+    assert block["best_corr"] == optimum["r"]
+    assert block["best_p_adj"] == optimum["q"]
+
+
+def test_lead_lag_correlation_degrades_for_short_sample():
+    x, y = _corr_pair(100)
+    out = run_capability("D-A12", x=x, y=y, max_lag=10)
+    assert out["ok"] is True
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "insufficient_history"
+    assert "样本不足" in out["answer"]
+    assert out["data"]["capabilities"]["D-A12"]["best_lag"] is not None
+
+
+def test_lead_lag_correlation_invalid_input_fails_open():
+    x, y = _corr_pair(150)
+
+    single = run_capability("D-A12", x=[1.0], y=[1.0])
+    assert single["ok"] is False and single["quality"]["status"] == STATUS_EMPTY
+
+    bad_lag = run_capability("D-A12", x=x, y=y, max_lag=0)
+    assert bad_lag["ok"] is False and bad_lag["quality"]["status"] == STATUS_EMPTY
+
+    too_wide = run_capability("D-A12", x=x, y=y, max_lag=150)
+    assert too_wide["ok"] is False and too_wide["quality"]["status"] == STATUS_EMPTY
+
+    bad_dates = run_capability("D-A12", x=x, y=y, max_lag=10, dates=_dates(149))
+    assert bad_dates["ok"] is False and bad_dates["quality"]["status"] == STATUS_EMPTY
+
+    invalid = run_capability("D-A12", x=x, y=[None] * 150)
+    assert invalid["ok"] is False and invalid["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-A13 极端事件频率 ----------------
+
+
+def _extreme_values(n: int = 100) -> list:
+    values = [0.01] * (n - 5)
+    values += [0.40, -0.45, 0.50, -0.60, 0.70]
+    return values
+
+
+def test_extreme_frequency_returns_full_envelope():
+    import l1agg.methods as methods
+
+    values = _extreme_values(100)
+    dates = _dates(100)
+    out = run_capability("D-A13", values=values, dates=dates)
+    assert out["ok"] is True
+    assert out["capability"] == "D-A13"
+    assert out["intent"] == "metric_series"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 100
+    assert out["quality"]["span"] == [dates[0], dates[-1]]
+    block = out["data"]["capabilities"]["D-A13"]
+    assert block["methods"] == ["S11"]
+    assert block["side"] == "above"
+    assert block["quantile"] == 0.95
+    p95 = methods.run("S11", values)["result"]["p95"]
+    assert block["threshold"] == round(p95, 6)
+    days = sum(1 for value in values if value >= p95)
+    assert block["days"] == days
+    assert block["ratio"] == round(days / 100, 6)
+    assert block["sample_n"] == 100
+    assert out["data"]["params"] == {"min_n": 30, "side": "above"}
+    assert "极端事件" in out["answer"]
+
+
+def test_extreme_frequency_reuses_s25():
+    import l1agg.methods as methods
+
+    values = _extreme_values(120)
+    out = run_capability("D-A13", values=values, quantile=0.9)
+    block = out["data"]["capabilities"]["D-A13"]
+    p90 = methods.run("S11", values)["result"]["p90"]
+    assert block["threshold"] == round(p90, 6)
+    assert block["days"] == sum(1 for value in values if value >= p90)
+    assert block["quantile"] == 0.9
+
+
+def test_extreme_frequency_degrades_for_short_sample_with_threshold():
+    values = _extreme_values(20)
+    out = run_capability("D-A13", values=values, threshold=0.3)
+    assert out["ok"] is True
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "insufficient_samples"
+    assert "样本不足" in out["answer"]
+    block = out["data"]["capabilities"]["D-A13"]
+    assert block["methods"] == []
+    assert block["threshold"] == 0.3
+    assert block["days"] == sum(1 for value in values if value >= 0.3)
+
+    no_threshold = run_capability("D-A13", values=values)
+    assert no_threshold["ok"] is False
+    assert no_threshold["quality"]["status"] == STATUS_EMPTY
+
+
+def test_extreme_frequency_invalid_input_fails_open():
+    values = _extreme_values(120)
+
+    single = run_capability("D-A13", values=[0.1])
+    assert single["ok"] is False and single["quality"]["status"] == STATUS_EMPTY
+
+    bad_side = run_capability("D-A13", values=values, side="between")
+    assert bad_side["ok"] is False and bad_side["quality"]["status"] == STATUS_EMPTY
+
+    bad_threshold = run_capability("D-A13", values=values, threshold=float("nan"))
+    assert bad_threshold["ok"] is False and bad_threshold["quality"]["status"] == STATUS_EMPTY
+
+    bad_quantile = run_capability("D-A13", values=values, quantile=1.5)
+    assert bad_quantile["ok"] is False and bad_quantile["quality"]["status"] == STATUS_EMPTY
+
+    bad_dates = run_capability("D-A13", values=values, dates=_dates(119))
+    assert bad_dates["ok"] is False and bad_dates["quality"]["status"] == STATUS_EMPTY
+
+    invalid = run_capability("D-A13", values=values[:-1] + [None])
+    assert invalid["ok"] is False and invalid["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-B08 趋势斜率 ----------------
+
+
+def _trend_prices(n: int = 120) -> list:
+    return [100.0 * math.exp(0.002 * i) for i in range(n)]
+
+
+def test_slope_trend_returns_full_envelope():
+    prices = _trend_prices(120)
+    dates = _dates(120)
+    out = run_capability("D-B08", prices=prices, dates=dates)
+    assert out["ok"] is True
+    assert out["capability"] == "D-B08"
+    assert out["intent"] == "technical_indicator"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 90
+    assert out["quality"]["span"] == [dates[30], dates[-1]]
+    block = out["data"]["capabilities"]["D-B08"]
+    assert block["methods"] == ["T08", "T09"]
+    assert block["window"] == 90
+    assert block["slope"] == pytest.approx(0.002, abs=1e-9)
+    assert block["r2"] == 1.0
+    assert block["hac_corrected"] is False
+    assert block["sample_n"] == 90
+    assert out["data"]["params"] == {"min_n": 60, "window": 90}
+    assert "趋势斜率" in out["answer"]
+
+
+def test_slope_trend_matches_methods():
+    import l1agg.methods as methods
+
+    prices = _trend_prices(150)
+    out = run_capability("D-B08", prices=prices, window=60)
+    block = out["data"]["capabilities"]["D-B08"]
+    sample = prices[-60:]
+    t08 = methods.run("T08", sample)["result"]
+    t09 = methods.run("T09", sample)["result"]
+    assert block["slope"] == t08["slope_per_day"]
+    assert block["r2"] == t08["r2"]
+    assert block["t"] == t09["t"]
+    assert block["p"] == t09["p"]
+
+
+def test_slope_trend_degrades_for_short_window():
+    out = run_capability("D-B08", prices=_trend_prices(45))
+    assert out["ok"] is True
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "short_window"
+    assert "样本不足" in out["answer"]
+    block = out["data"]["capabilities"]["D-B08"]
+    assert block["sample_n"] == 45
+    assert block["slope"] is not None
+
+
+def test_slope_trend_invalid_input_fails_open():
+    prices = _trend_prices(120)
+
+    short = run_capability("D-B08", prices=prices[:20])
+    assert short["ok"] is False and short["quality"]["status"] == STATUS_EMPTY
+
+    bad_window = run_capability("D-B08", prices=prices, window=10)
+    assert bad_window["ok"] is False and bad_window["quality"]["status"] == STATUS_EMPTY
+
+    bad_type = run_capability("D-B08", prices=prices, window="ninety")
+    assert bad_type["ok"] is False and bad_type["quality"]["status"] == STATUS_EMPTY
+
+    bad_dates = run_capability("D-B08", prices=prices, dates=_dates(119))
+    assert bad_dates["ok"] is False and bad_dates["quality"]["status"] == STATUS_EMPTY
+
+    invalid = run_capability("D-B08", prices=prices[:-1] + [None])
+    assert invalid["ok"] is False and invalid["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-B09 距 ATH 回撤 ----------------
+
+
+def _ath_prices(n: int = 300) -> list:
+    return [100.0 + i for i in range(n - 1)] + [150.0]
+
+
+def test_ath_drawdown_returns_full_envelope():
+    prices = _ath_prices(300)
+    dates = _dates(300)
+    out = run_capability("D-B09", prices=prices, dates=dates)
+    assert out["ok"] is True
+    assert out["capability"] == "D-B09"
+    assert out["intent"] == "technical_indicator"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 300
+    assert out["quality"]["span"] == [dates[0], dates[-1]]
+    block = out["data"]["capabilities"]["D-B09"]
+    assert block["methods"] == ["D20", "D21"]
+    assert block["ath"] == 398.0
+    assert block["ath_ts"] == dates[298]
+    assert block["drawdown_from_ath"] == round(1.0 - 150.0 / 398.0, 6)
+    assert block["drawdown_from_ath"] == block["current_drawdown"]
+    assert "回撤" in out["answer"]
+
+
+def test_ath_drawdown_matches_methods():
+    import l1agg.methods as methods
+
+    prices = _ath_prices(260)
+    out = run_capability("D-B09", prices=prices)
+    block = out["data"]["capabilities"]["D-B09"]
+    d20 = methods.run("D20", prices)["result"]
+    d21 = methods.run("D21", prices)["result"]
+    assert block["mdd"] == d20["mdd"]
+    assert block["duration_days"] == d21["duration_days"]
+    assert block["recovery_days"] == d21["recovery_days"]
+    assert block["drawdown_from_ath"] == round(1.0 - prices[-1] / max(prices), 6)
+
+
+def test_ath_drawdown_degrades_for_short_history():
+    out = run_capability("D-B09", prices=_ath_prices(30))
+    assert out["ok"] is True
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "insufficient_samples"
+    assert "样本不足" in out["answer"]
+    assert out["data"]["capabilities"]["D-B09"]["drawdown_from_ath"] is not None
+
+
+def test_ath_drawdown_invalid_input_fails_open():
+    single = run_capability("D-B09", prices=[100.0])
+    assert single["ok"] is False and single["quality"]["status"] == STATUS_EMPTY
+
+    blank = run_capability("D-B09", prices=[])
+    assert blank["ok"] is False and blank["quality"]["status"] == STATUS_EMPTY
+
+    all_none = run_capability("D-B09", prices=[None, None])
+    assert all_none["ok"] is False and all_none["quality"]["status"] == STATUS_EMPTY
+
+    short_dates = run_capability("D-B09", prices=_ath_prices(30), dates=_dates(10))
+    assert short_dates["ok"] is True
+    assert short_dates["data"]["capabilities"]["D-B09"]["ath_ts"] is None
+
+
+# ---------------- D-G08 12-1 动量 ----------------
+
+
+def _momentum_prices(n: int = 280) -> list:
+    return [100.0 + i for i in range(n)]
+
+
+def test_momentum_12_1_returns_full_envelope():
+    prices = _momentum_prices(280)
+    dates = _dates(280)
+    out = run_capability("D-G08", prices=prices, dates=dates)
+    assert out["ok"] is True
+    assert out["capability"] == "D-G08"
+    assert out["intent"] == "metric_derived"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 253
+    block = out["data"]["capabilities"]["D-G08"]
+    assert block["methods"] == ["F14"]
+    assert block["lookback"] == 252
+    assert block["skip"] == 21
+    assert block["sample_n"] == 253
+    assert block["truncated"] is False
+    assert block["momentum_12_1"] == round(prices[258] / prices[6] - 1.0, 6)
+    assert block["window_start_ts"] == dates[6]
+    assert block["window_end_ts"] == dates[258]
+    assert "12-1 动量" in out["answer"]
+
+
+def test_momentum_12_1_matches_methods():
+    import l1agg.methods as methods
+
+    prices = _momentum_prices(280)
+    out = run_capability("D-G08", prices=prices)
+    block = out["data"]["capabilities"]["D-G08"]
+    f14 = methods.run("F14", prices[6:259], k=252)["result"]
+    assert block["momentum_12_1"] == f14["momentum"]
+    assert block["vol"] == f14["vol"]
+    assert block["risk_adjusted"] == f14["ratio"]
+
+
+def test_momentum_12_1_degrades_when_history_is_short():
+    out = run_capability("D-G08", prices=_momentum_prices(120))
+    assert out["ok"] is True
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "short_history"
+    block = out["data"]["capabilities"]["D-G08"]
+    assert block["truncated"] is True
+    assert block["lookback"] == 120 - 21 - 1
+    assert block["sample_n"] == 99
+    assert "历史数据不足" in out["answer"]
+    assert block["momentum_12_1"] is not None
+
+
+def test_momentum_12_1_invalid_input_fails_open():
+    short = run_capability("D-G08", prices=_momentum_prices(59))
+    assert short["ok"] is False and short["quality"]["status"] == STATUS_EMPTY
+
+    blank = run_capability("D-G08", prices=[])
+    assert blank["ok"] is False and blank["quality"]["status"] == STATUS_EMPTY
+
+    bad_lookback = run_capability("D-G08", prices=_momentum_prices(280), lookback=1)
+    assert bad_lookback["ok"] is False
+
+    bad_skip = run_capability("D-G08", prices=_momentum_prices(280), skip=-1)
+    assert bad_skip["ok"] is False
+
+    bad_type = run_capability("D-G08", prices=_momentum_prices(280), lookback="twelve")
+    assert bad_type["ok"] is False
+
+    bad_dates = run_capability("D-G08", prices=_momentum_prices(280), dates=_dates(10))
+    assert bad_dates["ok"] is False
+
+    invalid = run_capability("D-G08", prices=_momentum_prices(279) + [None])
+    assert invalid["ok"] is False and invalid["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-G09 波动率目标换算 ----------------
+
+
+def _vol_target_prices(n: int = 120) -> list:
+    return [100.0 * math.exp(0.001 * i + 0.02 * math.sin(i / 3.0)) for i in range(n)]
+
+
+def test_vol_target_scale_returns_full_envelope():
+    prices = _vol_target_prices(120)
+    dates = _dates(120)
+    out = run_capability("D-G09", prices=prices, dates=dates)
+    assert out["ok"] is True
+    assert out["capability"] == "D-G09"
+    assert out["intent"] == "metric_derived"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 119
+    block = out["data"]["capabilities"]["D-G09"]
+    assert block["methods"] == ["P02"]
+    assert block["window"] == 20
+    assert block["periods"] == 365
+    assert block["returns_n"] == 119
+    assert block["target_vol"] == 0.1
+    assert abs(block["scale"] * block["realized_vol"] - 0.1) < 1e-5
+    assert "波动率目标换算" in out["answer"]
+
+
+def test_vol_target_scale_matches_methods():
+    import l1agg.methods as methods
+
+    prices = _vol_target_prices(120)
+    out = run_capability("D-G09", prices=prices, symbol="BTC")
+    block = out["data"]["capabilities"]["D-G09"]
+    rets = [prices[i] / prices[i - 1] - 1.0 for i in range(1, len(prices))]
+    p02 = methods.run("P02", {"BTC": rets}, target_vol=0.1, window=20, periods=365)["result"]
+    assert block["scale"] == p02["scale"]["BTC"]
+    assert block["realized_vol"] == p02["realized"]["BTC"]
+    assert block["target_vol"] == p02["target_vol"]
+    assert block["returns_n"] == p02["n"]
+
+
+def test_vol_target_scale_degrades_on_zero_vol_and_truncated_window():
+    flat = run_capability("D-G09", prices=[100.0] * 120)
+    assert flat["ok"] is True
+    assert flat["quality"]["status"] == STATUS_PARTIAL
+    assert flat["quality"]["degraded_reason"] == "zero_volatility"
+    assert flat["data"]["capabilities"]["D-G09"]["scale"] == 0.0
+    assert "样本不足" in flat["answer"]
+
+    short = run_capability("D-G09", prices=_vol_target_prices(70), window=200)
+    assert short["ok"] is True
+    assert short["quality"]["status"] == STATUS_PARTIAL
+    assert short["quality"]["degraded_reason"] == "window_truncated"
+    assert short["data"]["capabilities"]["D-G09"]["window"] == 69
+    assert "截断" in short["answer"]
+
+
+def test_vol_target_scale_invalid_input_fails_open():
+    assert (
+        run_capability("D-G09", prices=_vol_target_prices(60))["quality"]["status"] == STATUS_EMPTY
+    )
+    assert run_capability("D-G09", prices=[])["quality"]["status"] == STATUS_EMPTY
+    assert run_capability("D-G09", prices=_vol_target_prices(120), target_vol=0)["ok"] is False
+    assert run_capability("D-G09", prices=_vol_target_prices(120), target_vol="x")["ok"] is False
+    assert run_capability("D-G09", prices=_vol_target_prices(120), window=1)["ok"] is False
+    assert run_capability("D-G09", prices=_vol_target_prices(120), periods=0)["ok"] is False
+    assert run_capability("D-G09", prices=_vol_target_prices(120), dates=_dates(10))["ok"] is False
+    invalid = run_capability("D-G09", prices=_vol_target_prices(119) + [None])
+    assert invalid["ok"] is False and invalid["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-A15 净流入滚动和 ----------------
+
+
+def _flow_values(n: int = 40) -> list:
+    return [float((i % 9) - 4) * 10 for i in range(n)]
+
+
+def test_etf_flow_rolling_returns_full_envelope():
+    values = _flow_values(40)
+    dates = _dates(40)
+    out = run_capability("D-A15", values=values, dates=dates)
+    assert out["ok"] is True
+    assert out["capability"] == "D-A15"
+    assert out["intent"] == "metric_series"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 40
+    assert out["quality"]["span"] == [dates[0], dates[-1]]
+    block = out["data"]["capabilities"]["D-A15"]
+    assert block["methods"] == ["S20"]
+    assert block["windows"] == [7, 30]
+    assert block["sum_7d"] == pytest.approx(sum(values[-7:]), abs=1e-4)
+    assert block["sum_30d"] == pytest.approx(sum(values[-30:]), abs=1e-4)
+    assert block["sample_n"] == 40
+    assert out["data"]["params"] == {"min_n": 30, "windows": [7, 30]}
+    assert "滚动和" in out["answer"]
+
+
+def test_etf_flow_rolling_matches_s20_series():
+    import l1agg.methods as methods
+
+    values = _flow_values(50)
+    out = run_capability("D-A15", values=values, windows=(5, 10))
+    block = out["data"]["capabilities"]["D-A15"]
+    for k in (5, 10):
+        series = methods.run("S20", values, k=k)["result"]["series"]
+        last = [value for value in series if value is not None][-1]
+        assert block[f"sum_{k}d"] == round(last * k, 6)
+    assert block["windows"] == [5, 10]
+
+
+def test_etf_flow_rolling_degrades_for_short_sample_and_window():
+    short = run_capability("D-A15", values=_flow_values(20), windows=(7,))
+    assert short["ok"] is True
+    assert short["quality"]["status"] == STATUS_PARTIAL
+    assert short["quality"]["degraded_reason"] == "insufficient_samples"
+    assert "样本不足" in short["answer"]
+    assert short["data"]["capabilities"]["D-A15"]["sum_7d"] is not None
+
+    narrow = run_capability("D-A15", values=_flow_values(10), windows=(7, 30))
+    assert narrow["ok"] is True
+    assert narrow["quality"]["status"] == STATUS_PARTIAL
+    assert "short_history" in narrow["quality"]["degraded_reason"]
+    block = narrow["data"]["capabilities"]["D-A15"]
+    assert block["sum_7d"] is not None
+    assert block["sum_30d"] is None
+
+
+def test_etf_flow_rolling_invalid_input_fails_open():
+    values = _flow_values(40)
+
+    no_window = run_capability("D-A15", values=values[:5])
+    assert no_window["ok"] is False and no_window["quality"]["status"] == STATUS_EMPTY
+
+    bad_window = run_capability("D-A15", values=values, windows=(0,))
+    assert bad_window["ok"] is False and bad_window["quality"]["status"] == STATUS_EMPTY
+
+    bad_type = run_capability("D-A15", values=values, windows=("seven",))
+    assert bad_type["ok"] is False and bad_type["quality"]["status"] == STATUS_EMPTY
+
+    empty_windows = run_capability("D-A15", values=values, windows=())
+    assert empty_windows["ok"] is False and empty_windows["quality"]["status"] == STATUS_EMPTY
+
+    bad_dates = run_capability("D-A15", values=values, dates=_dates(39))
+    assert bad_dates["ok"] is False and bad_dates["quality"]["status"] == STATUS_EMPTY
+
+    invalid = run_capability("D-A15", values=values[:-1] + [None])
+    assert invalid["ok"] is False and invalid["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-A16 稳定币规模增速 ----------------
+
+
+def _supply_values(n: int = 40) -> list:
+    return [1000.0 + 5.0 * i for i in range(n)]
+
+
+def test_stablecoin_growth_returns_full_envelope():
+    import l1agg.methods as methods
+
+    values = _supply_values(40)
+    dates = _dates(40)
+    out = run_capability("D-A16", values=values, dates=dates)
+    assert out["ok"] is True
+    assert out["capability"] == "D-A16"
+    assert out["intent"] == "metric_series"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 40
+    assert out["quality"]["span"] == [dates[0], dates[-1]]
+    block = out["data"]["capabilities"]["D-A16"]
+    assert block["methods"] == ["S16"]
+    assert block["windows"] == [7, 30]
+    for k in (7, 30):
+        pct = methods.run("S16", values, k=k)["result"]["pct"]
+        assert block[f"growth_{k}d"] == round(pct * 100, 6)
+    assert block["sample_n"] == 40
+    assert out["data"]["params"] == {"min_n": 30, "windows": [7, 30]}
+    assert "增速" in out["answer"]
+
+
+def test_stablecoin_growth_matches_s16_pct():
+    import l1agg.methods as methods
+
+    values = _supply_values(50)
+    out = run_capability("D-A16", values=values, windows=(7, 14))
+    block = out["data"]["capabilities"]["D-A16"]
+    for k in (7, 14):
+        pct = methods.run("S16", values, k=k)["result"]["pct"]
+        assert block[f"growth_{k}d"] == round(pct * 100, 6)
+    assert block["windows"] == [7, 14]
+
+
+def test_stablecoin_growth_degrades_for_short_sample_and_zero_base():
+    short = run_capability("D-A16", values=_supply_values(20), windows=(7,))
+    assert short["ok"] is True
+    assert short["quality"]["status"] == STATUS_PARTIAL
+    assert short["quality"]["degraded_reason"] == "insufficient_samples"
+    assert "样本不足" in short["answer"]
+
+    narrow = run_capability("D-A16", values=_supply_values(10), windows=(7, 30))
+    assert narrow["ok"] is True
+    assert "short_history" in narrow["quality"]["degraded_reason"]
+    block = narrow["data"]["capabilities"]["D-A16"]
+    assert block["growth_7d"] is not None
+    assert block["growth_30d"] is None
+
+    zero = _supply_values(40)
+    zero[-8] = 0.0
+    out = run_capability("D-A16", values=zero)
+    assert out["ok"] is True
+    assert "base_zero" in out["quality"]["degraded_reason"]
+    assert out["data"]["capabilities"]["D-A16"]["growth_7d"] is None
+    assert out["data"]["capabilities"]["D-A16"]["growth_30d"] is not None
+
+
+def test_stablecoin_growth_invalid_input_fails_open():
+    values = _supply_values(40)
+
+    no_window = run_capability("D-A16", values=values[:5])
+    assert no_window["ok"] is False and no_window["quality"]["status"] == STATUS_EMPTY
+
+    bad_window = run_capability("D-A16", values=values, windows=(0,))
+    assert bad_window["ok"] is False and bad_window["quality"]["status"] == STATUS_EMPTY
+
+    bad_type = run_capability("D-A16", values=values, windows=("seven",))
+    assert bad_type["ok"] is False and bad_type["quality"]["status"] == STATUS_EMPTY
+
+    empty_windows = run_capability("D-A16", values=values, windows=())
+    assert empty_windows["ok"] is False and empty_windows["quality"]["status"] == STATUS_EMPTY
+
+    bad_dates = run_capability("D-A16", values=values, dates=_dates(39))
+    assert bad_dates["ok"] is False and bad_dates["quality"]["status"] == STATUS_EMPTY
+
+    invalid = run_capability("D-A16", values=values[:-1] + [None])
+    assert invalid["ok"] is False and invalid["quality"]["status"] == STATUS_EMPTY
+
+
+# ---------------- D-J30 PIT / release_ts 全局校验 ----------------
+
+
+def test_pit_alignment_validates_release_ts_and_returns_pit_distribution():
+    indicator, prices = _pit_inputs()
+    dates = _dates(len(indicator))
+    out = run_capability("D-J30", indicator=indicator, prices=prices, dates=dates, name="资金费率")
+    assert out["ok"] is True
+    assert out["capability"] == "D-J30"
+    assert out["intent"] == "metric_percentile"
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert out["quality"]["sample_n"] == 320
+    assert out["quality"]["align_method"] == "release_ts_pit"
+    assert out["quality"]["span"] == [dates[0], dates[-1]]
+    block = out["data"]["capabilities"]["D-J30"]
+    assert block["methods"] == ["SC90", "R02"]
+    assert block["pit_check"]["pass"] is True
+    assert block["pit_check"]["n"] == 320
+    assert block["pit_check"]["n_violations"] == 0
+    assert block["r02"]["pit"] is True
+    assert 0.0 <= block["r02"]["current_percentile"] <= 100.0
+    assert block["r02"]["by_horizon"][0]["h"] == 1
+    assert block["release_ts_applied"] is False
+    assert out["data"]["params"]["min_n"] == 250
+    assert out["data"]["params"]["buckets"] == 4
+    assert "PIT 校验通过" in out["answer"]
+    assert "历史统计" in out["answer"]
+
+
+def test_pit_alignment_reuses_sc90_and_r02_without_recomputing():
+    import l1agg.methods as methods
+
+    indicator, prices = _pit_inputs(n=300, seed=43)
+    dates = _dates(300)
+    out = run_capability("D-J30", indicator=indicator, prices=prices, dates=dates)
+    block = out["data"]["capabilities"]["D-J30"]
+    assert block["pit_check"] == methods.run("SC90", {"available": dates, "used": dates})["result"]
+    expected = methods.run(
+        "R02",
+        {
+            "indicator": indicator,
+            "price": prices,
+            "timestamps": dates,
+            "align_method": "release_ts_pit",
+        },
+        buckets=4,
+        horizons=(1,),
+        label="指标",
+        pit=True,
+        window=250,
+    )["result"]
+    assert block["r02"] == expected
+
+
+def test_pit_alignment_flags_release_after_use_and_degrades():
+    indicator, prices = _pit_inputs(n=300)
+    dates = _dates(300)
+    lagged = [
+        (datetime.date.fromisoformat(day) + datetime.timedelta(days=5)).isoformat() for day in dates
+    ]
+    out = run_capability(
+        "D-J30",
+        indicator=indicator,
+        prices=prices,
+        dates=dates,
+        release_ts=lagged,
+        used_ts=dates,
+    )
+    assert out["ok"] is True
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "pit_violations"
+    block = out["data"]["capabilities"]["D-J30"]
+    assert block["pit_check"]["pass"] is False
+    assert block["pit_check"]["n_violations"] == 300
+    assert block["pit_check"]["max_lag"] > 0
+    assert block["release_ts_applied"] is True
+    assert block["r02"]["pit"] is True
+    assert "前视风险" in out["answer"]
+
+    stale = [
+        (datetime.date.fromisoformat(day) + datetime.timedelta(days=60)).isoformat()
+        for day in dates
+    ]
+    stale_out = run_capability(
+        "D-J30",
+        indicator=indicator,
+        prices=prices,
+        dates=dates,
+        release_ts=stale,
+        used_ts=dates,
+    )
+    assert stale_out["ok"] is True
+    assert stale_out["quality"]["status"] == STATUS_PARTIAL
+    stale_block = stale_out["data"]["capabilities"]["D-J30"]
+    assert stale_block["r02"] is None
+    assert "未输出前瞻分布" in stale_out["answer"]
+
+
+def test_pit_alignment_short_or_invalid_input_fails_open():
+    indicator, prices = _pit_inputs()
+    short = run_capability("D-J30", indicator=indicator[:249], prices=prices[:249])
+    assert short["ok"] is False
+    assert short["quality"]["status"] == STATUS_EMPTY
+    assert "250" in short["answer"]
+
+    mismatch = run_capability("D-J30", indicator=indicator, prices=prices[:-1])
+    assert mismatch["ok"] is False and mismatch["quality"]["status"] == STATUS_EMPTY
+
+    invalid = run_capability("D-J30", indicator=indicator, prices=prices, buckets=1)
+    assert invalid["ok"] is False and invalid["quality"]["status"] == STATUS_EMPTY
+
+    bad_window = run_capability("D-J30", indicator=indicator, prices=prices, window=1)
+    assert bad_window["ok"] is False and bad_window["quality"]["status"] == STATUS_EMPTY
 
 
 # ---------------- D-A14 拥挤度（F26 + A 分位法 level） ----------------
@@ -1191,6 +3342,55 @@ def test_output_validates_against_json_schema():
         ),
         run_capability("D-E12", **_alignment_kwargs()),
         run_capability("D-E08", factor=_prices(), forward=_prices(seed=4)),
+        run_capability("D-G16", series=_portfolio_returns(), dates=_dates(160)),
+        run_capability(
+            "D-G19",
+            **dict(zip(("factor", "forward", "prices"), _ic_inputs(), strict=True)),
+        ),
+        run_capability(
+            "D-G20", **dict(zip(("factor", "forward"), _quantile_inputs(), strict=True))
+        ),
+        run_capability("D-J22", series=_panel_inputs(), k=3),
+        run_capability("D-J24", series=_network_inputs(), k=2, threshold=0.5),
+        run_capability("D-G14", series=_ewma_inputs(), lam=0.94, periods=365),
+        run_capability(
+            "D-J30",
+            **dict(zip(("indicator", "prices"), _pit_inputs(), strict=True), dates=_dates(320)),
+        ),
+        run_capability(
+            "D-A01",
+            **dict(zip(("values", "dates"), _series_inputs(90, seed=59), strict=True)),
+        ),
+        run_capability("D-A02", values=_series_inputs(8, seed=73)[0], window=2),
+        run_capability("D-A03", values=[100.0, 200.0], dates=["2022-01-01", "2024-01-01"]),
+        run_capability("D-A04", values=_series_inputs(90, seed=67)[0], lookback=60),
+        run_capability("D-A06", values=_series_inputs(90, seed=69)[0], window=60),
+        run_capability("D-A07", prices=_drawdown_prices(), dates=_dates(300)),
+        run_capability("D-A08", values=_yoy_values(), dates=_dates(36)),
+        run_capability("D-A09", values=_yoy_values(12), dates=_dates(12)),
+        run_capability(
+            "D-A10",
+            **dict(zip(("nominal", "cpi"), _real_rate_inputs(), strict=True), dates=_dates(36)),
+        ),
+        run_capability(
+            "D-A11",
+            **dict(zip(("x", "y"), _corr_pair(90), strict=True)),
+            window=30,
+            dates=_dates(90),
+        ),
+        run_capability(
+            "D-A12",
+            **dict(zip(("x", "y"), _corr_pair(150), strict=True)),
+            max_lag=10,
+            dates=_dates(150),
+        ),
+        run_capability("D-A13", values=_extreme_values(120), dates=_dates(120)),
+        run_capability("D-A15", values=_flow_values(40), dates=_dates(40)),
+        run_capability("D-A16", values=_supply_values(40), dates=_dates(40)),
+        run_capability("D-B08", prices=_trend_prices(120), dates=_dates(120)),
+        run_capability("D-B09", prices=_ath_prices(300), dates=_dates(300)),
+        run_capability("D-G08", prices=_momentum_prices(280), dates=_dates(280)),
+        run_capability("D-G09", prices=_vol_target_prices(120), dates=_dates(120)),
         run_capability("D-G22", series=_ar1(400)),
         run_capability("D-J02", series=_seasonal_adjustment_series(), dates=_dates(120)),
         run_capability("D-J04", series=_change_point_series(), dates=_dates(120)),
@@ -1285,6 +3485,60 @@ def test_manifest_matches_methods_actually_executed_across_capability_branches(m
             },
         ),
         ("D-E12", _alignment_kwargs()),
+        ("D-G16", {"series": _portfolio_returns(), "weights": {"BTC": 0.6, "ETH": 0.4}}),
+        (
+            "D-G19",
+            dict(zip(("factor", "forward", "prices"), _ic_inputs(), strict=True)),
+        ),
+        ("D-G20", dict(zip(("factor", "forward"), _quantile_inputs(), strict=True))),
+        ("D-J22", {"series": _panel_inputs(), "k": 3}),
+        ("D-J24", {"series": _network_inputs(), "k": 2, "threshold": 0.5}),
+        ("D-G14", {"series": _ewma_inputs(), "lam": 0.94, "periods": 365}),
+        (
+            "D-J30",
+            dict(
+                zip(("indicator", "prices"), _pit_inputs(), strict=True),
+                dates=_dates(320),
+            ),
+        ),
+        (
+            "D-A01",
+            dict(zip(("values", "dates"), _series_inputs(90, seed=61), strict=True)),
+        ),
+        ("D-A02", {"values": _series_inputs(8, seed=83)[0], "window": 2}),
+        ("D-A03", {"values": [100.0, 145.0], "dates": ["2021-01-01", "2023-06-01"]}),
+        ("D-A04", {"values": _series_inputs(90, seed=71)[0], "lookback": 30}),
+        ("D-A06", {"values": _series_inputs(90, seed=73)[0], "window": 60}),
+        ("D-A07", {"prices": _drawdown_prices(), "dates": _dates(300)}),
+        ("D-A08", {"values": _yoy_values(), "dates": _dates(36)}),
+        ("D-A09", {"values": _yoy_values(12), "dates": _dates(12)}),
+        (
+            "D-A10",
+            dict(zip(("nominal", "cpi"), _real_rate_inputs(), strict=True), dates=_dates(36)),
+        ),
+        (
+            "D-A11",
+            dict(
+                zip(("x", "y"), _corr_pair(90), strict=True),
+                window=30,
+                dates=_dates(90),
+            ),
+        ),
+        (
+            "D-A12",
+            dict(
+                zip(("x", "y"), _corr_pair(150), strict=True),
+                max_lag=10,
+                dates=_dates(150),
+            ),
+        ),
+        ("D-A13", {"values": _extreme_values(120), "dates": _dates(120)}),
+        ("D-A15", {"values": _flow_values(40), "dates": _dates(40)}),
+        ("D-A16", {"values": _supply_values(40), "dates": _dates(40)}),
+        ("D-B08", {"prices": _trend_prices(120), "dates": _dates(120)}),
+        ("D-B09", {"prices": _ath_prices(300), "dates": _dates(300)}),
+        ("D-G08", {"prices": _momentum_prices(280), "dates": _dates(280)}),
+        ("D-G09", {"prices": _vol_target_prices(120), "dates": _dates(120)}),
         ("D-G22", {"series": _ar1(300)}),
         ("D-J02", {"series": _seasonal_adjustment_series(), "dates": _dates(120)}),
         ("D-J04", {"series": _change_point_series(), "dates": _dates(120)}),

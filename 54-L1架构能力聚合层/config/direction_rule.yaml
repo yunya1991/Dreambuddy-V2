@@ -1,0 +1,34 @@
+# L1-D 方向规则参数（SPEC-54 §4.7 / §4.11 定稿）
+# ============================================================
+# 边界（硬约束）：
+#   - 本文件只被 l1agg/direction_rule.py 读取；规则是纯函数，禁止 LLM / 随机 / 采样；
+#   - 改任何数值必须同时升 version（params_hash 会随之变化，signal 表据此回放）；
+#   - seasonality 本期只记录不参与打分（BTC 日线深度不足 5 年，见 B14）。
+# ============================================================
+
+direction_rule:
+  version: "dr-1.1.0"
+  windows: [20, 60, 120, 250]
+  window_weights: [0.15, 0.25, 0.30, 0.30]
+  # 四轴 + 可选 gap 轴（SPEC §4.13，gap 默认 0 = 关闭，不进入 axes）
+  axis_weights: {trend: 40, adx: 25, inertia: 20, coherence: 15, gap: 0}
+  gap_axis:
+    enabled: false          # 协整 I35 的 equilibrium_gap：价格高于均衡 → 负分（均值回归）
+    neutral: 0.0
+    scale: 1.0
+    sign: "mean_reversion"
+    weight: 10
+  strength_mode: "abs_total"   # abs_total | quantile_dispersion（I36 预测离散度）
+  dispersion_ref: 0.10
+  # MIDAS 混合频率权重（§4.12 第 2 条）：默认关闭，开启后 window_weights 由 Beta 多项式生成
+  midas: {enabled: false, theta1: 1.0, theta2: 3.0}
+  adx_bands: [[0, 20, 0.0], [20, 25, 0.5], [25, 100, 1.0]]
+  ema: {fast: 12, slow: 26, trend: 50}
+  flat_threshold: 30      # |total| < 30 → direction=0（进场阈值）
+  exit_threshold: 12      # |total| < 12 连续 2 根 → 平仓（迟滞，L1D-04 使用）
+  hysteresis_confirm_bars: 2
+  min_hold_bars: 6
+  use_same_direction: true
+  use_significance: true
+  hac_alpha: 0.05
+  seasonality_mode: "record_only"

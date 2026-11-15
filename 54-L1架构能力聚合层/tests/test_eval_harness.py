@@ -62,7 +62,7 @@ def test_audit_bootstrap_batch_all_pass():
     report = audit(["M01", "M02", "M03", "M04", "M05", "M06", "M07", "M11", "M12", "M24", "M25"])
     assert report["summary"]["failed"] == 0, report["failed"]
     assert report["summary"]["passed"] == 11
-    assert report["summary"]["catalog_total"] == 238
+    assert report["summary"]["catalog_total"] == 243
 
 
 def test_audit_checks_are_six():

@@ -147,3 +147,41 @@ def test_leaders_by_class_covers_all_classes():
     grouped = R.leaders_by_class()
     for cls in R.CLASS_IDS:
         assert grouped.get(cls), f"{cls} 无任何龙头"
+
+
+def test_default_pool_scope():
+    """「数据与图表」默认池：BTC/黄金/原油/三大指数/VIX/美股代币龙头。"""
+    pool = R.default_pool()
+    assert pool[0] == "BTC"
+    assert len(pool) == len(set(pool))
+    assert all(R.is_bound(sym) for sym in pool), [sym for sym in pool if not R.is_bound(sym)]
+    classes = [R.class_of(sym) for sym in pool]
+    assert classes.count("us_index") == 3
+    for cls in ("crypto", "precious_metal", "energy", "macro", "us_stock"):
+        assert cls in classes, cls
+    assert "VIX" in pool
+    # 返回副本，调用方修改不污染注册表（ETH 已在首屏内，改用池外标的做探针）
+    pool.append("DOGE")
+    assert "DOGE" not in R.default_pool()
+
+
+def test_unbound_tokenized_stocks_visible():
+    assert R.is_bound("COIN") is False
+    assert "未采集" in (R.unbound_reason("COIN") or "")
+    assert "未采集" in (R.unbound_reason("MSTR") or "")
+
+
+def test_frontend_script_uses_registry_pool():
+    """前端脚本不得自带资产白名单：默认池必须来自 leader_registry。"""
+    import importlib.util
+
+    repo = os.path.dirname(os.path.abspath(_MODULE_ROOT))
+    script = os.path.join(repo, "3.1-FRONTEND", "scripts", "visual_overview.py")
+    assert os.path.isfile(script), script
+    spec = importlib.util.spec_from_file_location("_visual_overview", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    symbols, base, _ = mod._parse_args([])
+    assert symbols == R.default_pool()[:12]
+    assert base == "BTC"
+    assert not hasattr(mod, "DEFAULT_ASSETS")

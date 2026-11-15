@@ -1,7 +1,7 @@
 # 54 方法库 — 数学 / 统计学 / 金融学经典确定性方法
 
-- **版本**: v1.18 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 方法清单全部落地（核心 238 + 调研族 149 = 目录 387；已实现 **386**，仅 C11 因缺交易日历登记不可用）；v1.18 接入 D-E14 一维相关状态条件分布，可执行出口 **16 个**，R02/B11/R08 仅新增可选编排参数，默认口径不变；v1.17 接入 D-E04 事件研究窗（F19/F21/F23）与 D-E09 计数与共现（R09/B17/R10）能力出口，可执行出口 **14 个**，方法口径不变；v1.16 冻结 F26 `level` 阈值为 A 分位法（分值历史分布 p20/p60/p80 → 极低/低/偏高/高），接入 D-A14 能力出口；v1.15 接入 D-G22 显著性出口（Q06 HAC t + Q07 Deflated Sharpe），方法口径不变；v1.14 接入 D-E12/R18 时空对齐切片，v1.13 接入 D-E01 与 D-E11/C18，MERS S3 内部计算内核已交付且不改变方法口径；v1.12 D-E02 能力出口接线与 T0.5/A8 首版交付；v1.11 补齐 X/O/P/Q/SC 149 条与核心 66 条真实实现，audit **386/386 PASS**、测试 **666 例全绿**；v1.10 放开注册表校验支持调研族前缀并完成占位登记；v1.9 调研对齐：新增 R02 `pit=false/pit=true` 双口径与 T0.5 合法输入边界，路线修正为 S0–S7，明确能力出口仅覆盖登记范围子集及 h>1 的 Newey-West/HAC 前置；v1.8 新增 §16「日线收盘锚点」冻结口径（1d `ts`=UTC 日首、`bar_close`/`snapshot_last`、跨资产同锚点）；v1.3 增 §0.1 四层边界与 §16 口径冻结；v1.4 修正 §14/§15 过期数据事实，新增三套路线编号映射；v1.5 S3 批 22 方法落地（`l1agg/methods/conditional.py`，audit 45/45 PASS）并补 §16 冻结口径；v1.6 S6 批 62 方法落地（`descriptive.py`/`timeseries.py`/`inference.py`，audit 154/154 PASS，测试 349 例全绿）并补 §16 冻结口径；v1.7 C 组 17 方法落地（`seasonal.py`，audit 171/171 PASS，测试 393 例全绿）并新增 S7 能力层接线（`l1agg/capabilities/` + `capability_manifest.yaml`）
-- **扩展**: 机构方法补强见 [RESEARCH-INSTITUTIONAL-L1-METHODS.md](./RESEARCH-INSTITUTIONAL-L1-METHODS.md)（横截面 X 12、算子 O 15、风险 P 14、研究协议 Q 16）；科研统计补强见 [RESEARCH-SCIENTIFIC-METHODS.md](./RESEARCH-SCIENTIFIC-METHODS.md)（SC01–SC92）。**149 条已全部实现并登记**（`l1agg/methods/research_*.py`），目录合计 387 条 = 核心 238 + 调研族 149，已实现 386 条。
+- **版本**: v1.18 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 方法清单全部落地（核心 243 + 调研族 149 = 目录 392；已实现 **391**，仅 C11 因缺交易日历登记不可用）；v1.18 接入 D-E14 一维相关状态条件分布，可执行出口 **16 个**，R02/B11/R08 仅新增可选编排参数，默认口径不变；v1.17 接入 D-E04 事件研究窗（F19/F21/F23）与 D-E09 计数与共现（R09/B17/R10）能力出口，可执行出口 **14 个**，方法口径不变；v1.16 冻结 F26 `level` 阈值为 A 分位法（分值历史分布 p20/p60/p80 → 极低/低/偏高/高），接入 D-A14 能力出口；v1.15 接入 D-G22 显著性出口（Q06 HAC t + Q07 Deflated Sharpe），方法口径不变；v1.14 接入 D-E12/R18 时空对齐切片，v1.13 接入 D-E01 与 D-E11/C18，MERS S3 内部计算内核已交付且不改变方法口径；v1.12 D-E02 能力出口接线与 T0.5/A8 首版交付；v1.11 补齐 X/O/P/Q/SC 149 条与核心 66 条真实实现，audit **386/386 PASS**、测试 **666 例全绿**；v1.10 放开注册表校验支持调研族前缀并完成占位登记；v1.9 调研对齐：新增 R02 `pit=false/pit=true` 双口径与 T0.5 合法输入边界，路线修正为 S0–S7，明确能力出口仅覆盖登记范围子集及 h>1 的 Newey-West/HAC 前置；v1.8 新增 §16「日线收盘锚点」冻结口径（1d `ts`=UTC 日首、`bar_close`/`snapshot_last`、跨资产同锚点）；v1.3 增 §0.1 四层边界与 §16 口径冻结；v1.4 修正 §14/§15 过期数据事实，新增三套路线编号映射；v1.5 S3 批 22 方法落地（`l1agg/methods/conditional.py`，audit 45/45 PASS）并补 §16 冻结口径；v1.6 S6 批 62 方法落地（`descriptive.py`/`timeseries.py`/`inference.py`，audit 154/154 PASS，测试 349 例全绿）并补 §16 冻结口径；v1.7 C 组 17 方法落地（`seasonal.py`，audit 171/171 PASS，测试 393 例全绿）并新增 S7 能力层接线（`l1agg/capabilities/` + `capability_manifest.yaml`）
+- **扩展**: 机构方法补强见 [RESEARCH-INSTITUTIONAL-L1-METHODS.md](./RESEARCH-INSTITUTIONAL-L1-METHODS.md)（横截面 X 12、算子 O 15、风险 P 14、研究协议 Q 16）；科研统计补强见 [RESEARCH-SCIENTIFIC-METHODS.md](./RESEARCH-SCIENTIFIC-METHODS.md)（SC01–SC92）。**149 条已全部实现并登记**（`l1agg/methods/research_*.py`），目录合计 392 条 = 核心 243 + 调研族 149，已实现 391 条。
 - **定位**: L1 的「算法选择表」。意图识别只负责选方法，方法只负责**确定性计算**，最终统一用「关系表达原语」把数据状态与价格表现对齐。
 - **不做**: 不做推理、不做因果推断、不做机器学习预测、不做 LLM 生成。所有方法满足「同输入同输出」。
 - **配套**: [SPEC-54](../SPEC-54-L1架构能力聚合层.md)（契约）、[TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md)（能力登记）、[数据前提](#§15-数据前提与禁区)
@@ -56,7 +56,7 @@
 | 检验 | H | 18 | 这个规律是不是噪音 |
 | **关系表达原语** | R | 18 | 数据状态 → 价格表现（最终出口） |
 
-> **注册表口径（v1.11）**：核心目录 238 = 10 组容量；调研族 149 = X12 + O15 + P14 + Q16 + SC92。`REGISTRY` 实际登记 **387** 条（核心 238 + 调研 149），其中 `implemented=true` **386** 条；`implemented=false` 仅 **1** 条（C11 缺交易日历/节假日表，按纪律登记不可用）。`all_specs(scope=...)` 支持 `core`(238)/`research`(149)/`all`(387)，默认 `core` 以保持 `catalog_total == 238`。
+> **注册表口径（v1.11）**：核心目录 243 = 10 组容量；调研族 149 = X12 + O15 + P14 + Q16 + SC92。`REGISTRY` 实际登记 **392** 条（核心 243 + 调研 149），其中 `implemented=true` **391** 条；`implemented=false` 仅 **1** 条（C11 缺交易日历/节假日表，按纪律登记不可用）。`all_specs(scope=...)` 支持 `core`(243)/`research`(149)/`all`(392)，默认 `core` 以保持 `catalog_total == 243`。
 
 ---
 
@@ -186,7 +186,7 @@
 
 ---
 
-## §6 技术指标（I，34）
+## §6 技术指标（I，39）
 
 > 数据源：`market.candles`（OKX 真实 K 线）。实现优先 `pandas_ta`（已装），缺失时 pandas 纯实现。
 
@@ -226,6 +226,11 @@
 | I32 | 趋势强度 ADX | 14 | adx | pandas_ta |
 | I33 | 资金流 MFI | 14 | mfi | pandas_ta |
 | I34 | 换手/成交额比 | turnover/vol | ratio | pandas |
+| I35 | 协整 / 误差修正 | Engle-Granger：y=a+b·x，残差 ADF；`gap=末残差`，`gap_z` 标准化（min_n=500） | beta, alpha, gap, gap_z, half_life, adf_p, cointegrated | statsmodels |
+| I36 | 分位回归（Growth-at-Risk） | τ=0.1/0.5/0.9，末样本预测 `q10/q50/q90`，`dispersion=q90−q10`（min_n=500） | q10, q50, q90, dispersion, slopes | statsmodels |
+| I37 | Kalman / DFM 局部线性趋势 | level+slope 状态空间，常方差非 MLE；`±1σ` 置信带 + `slope_se`（min_n=250） | level, slope, level_sigma, slope_se, band, path | numpy |
+| I38 | DMA / 区制权重 | 预测似然加权 + 遗忘因子 λ=0.99（Raftery & Karny）（min_n=750） | weights, best, switched, entropy, effective_n | numpy |
+| I39 | 带通滤波 / 周期分解 | 因果 MA(short)−MA(long) 带通，rFFT 峰值定周期，sin/cos 投影定相位（min_n=750） | period_days, amplitude, phase_deg, cycle_slope, cycle | numpy |
 
 ---
 
@@ -391,7 +396,7 @@
 | event_study | F19–F23, H01 | R04 | 事件表 + 价格 |
 | state_transition | B04, B07–B09 | R07 | 状态序列 ≥100 点 |
 | drawdown_query | D20–D21, F09–F10 | R11 | 价格序列 ≥250 点 |
-| technical_indicator | I01–I34（先 I01/I07/I12/I17） | R08, R13 | candles ≥120 根 |
+| technical_indicator | I01–I39（先 I01/I07/I12/I17） | R08, R13 | candles ≥120 根 |
 | cross_check | M23–M25, C18 + 既有 6 scope | R14, R16 | 多资产对齐 |
 | significance_query | Q06–Q07 | —（输出 `t_nw/se/lag` 与 `dsr/sr0/n_trials`） | 收益序列 ≥250 点 |
 | relationship_recommend | 只读 MERS 注册表（§14），不实时计算 | —（输出 method_id + 门禁字段） | 注册表存在 |

@@ -1,21 +1,37 @@
-# 资产池定稿（S1.0-2）
+# 资产池定稿 v2（S1.0-2 → SPEC-54-L1交易层 §2，2026-11-15）
 # ============================================================
-# 定位：L1 确定性数据能力的“锚定资产表”。锚定资产必须有 ≥3 年日频历史，
-#       才能支撑相关性、条件收益、分位等统计能力（S2/S3 的输入基线）。
+# 定位：L1 确定性数据能力的「资产表」，分两层：
+#   - anchors（核心锚定，8 个）：必须有 ≥3 年日频历史，支撑相关性/条件收益/分位
+#     （S2/S3 输入基线）。**本段结构保持 v1 不变**（test_asset_pool.py 断言 8 个）。
+#   - extended_anchors（扩展池）：五类视图成员，按类别展开时懒加载（ADR-V6）。
+#     其中 OKX 代币化美股/短历史标的历史 < 3 年，用 per-anchor
+#     history.min_rows + history_lt_3y 显式降级（B-LT5），不得静默判不合格。
 #
-# 边界：
-#   - 锚定资产 = 8 个（用户定稿：BTC/ETH/SOL + 纳指/标普/黄金/原油/美债）
-#   - 其他代币不在本表逐一定义：查询时经 OKX CLI 动态取数，再映射到所属类别的
-#     龙头锚定资产做统计关系（一生二、二生三）；代币基本面/叙事研究属 L2。
-#   - storage 指向 mm_metrics 的实际键（sub_category + metric_name），
-#     覆盖体检（S1.0-4）据此逐项校验行数与跨度。
+# 定源规则（硬约束，SPEC §2.3）：
+#   1. per-symbol 唯一定源：instrument.venue 显式声明，运行时不再跨源择优；
+#      source_priority 只用于同一 (sub_category, metric) 重复入库时去重。
+#   2. 长历史优先：Nasdaq/FRED 有 ≥750 天的一律用 Nasdaq/FRED；仅当二者缺失
+#      才用 OKX（AMD/GEV/SPCX/SKHYNIX）。
+#   3. 历史不足显式降级：sample_n < min_rows → status=partial，
+#      n < 250 → degraded_reason=history_lt_250 且禁止点亮。
+#   4. 代理必须标注：proxy=true（DJIA→DIA、SPCX→代币化标的、XAU→XAUT），
+#      tokenized=true 表示代币化标的（非证券本体）。
+#   5. 回填幂等：INSERT OR REPLACE，云端可重复执行。
+#   6. 质量下限 per-anchor 覆盖：anchors[].history.min_rows 覆盖全局 quality；
+#      全局 quality 段不动（1090/740 断言继续成立）。
+#
+# 候选（实测可入池、默认不进首屏，DAL 尚未回填，故不写入本表）：
+#   MSTR / COIN / HOOD / PLTR / ORCL —— OKX *-USDT-SWAP，约 250 天（2026-02/03 起）。
+#   DIA / BRK —— 无可用的可回填序列。
+#
+# 边界：其他代币不在本表逐一定义（dynamic 段按需取数）；代币基本面/叙事属 L2。
 # ============================================================
 
-version: 1
-updated: "2026-11-14"
+version: 2
+updated: "2026-11-15"
 timezone_default: UTC
 
-# 同一指标跨源重复时的取值优先级（覆盖体检、相关性计算按此去重）
+# 同一指标跨源重复时的取值优先级（仅去重，不做跨源择优）
 source_priority:
   - okx
   - fred
@@ -23,19 +39,29 @@ source_priority:
   - blockchain_info
   - panewslab
 
+# 展示层五类视图（底层 asset_class 仍取 40 层，禁止另立枚举）
+view_order:
+  - 加密
+  - 避险
+  - 大宗
+  - 美股
+  - 情绪
+
 quality:
   min_rows_3y: 1090          # 7×24 市场（okx）：3 年日历日 1095/1096，留 0.5% 容忍
-  min_rows_3y_trading: 740   # 交易日市场（fred）：3 年约 756 个工作日，留 2% 容忍
+  min_rows_3y_trading: 740   # 交易日市场（fred/nasdaq）：3 年约 756 个工作日，留 2% 容忍
   max_gap_ratio: 0.01        # 7×24 市场缺口率上限（日历日口径）
   max_gap_ratio_trading: 0.06 # 交易日市场缺口率上限（工作日口径，含美股假日约 4%）
   min_non_null_ratio: 0.95   # 非空率下限
   stale_days: 3              # 超过 3 天未更新视为陈旧
 
+# ============================================================ 核心锚定（8 个，≥3 年）
 anchors:
   # ---------------- 加密（龙头 BTC） ----------------
   - id: BTC
     name: 比特币
     asset_class: crypto
+    view_class: 加密
     role: leader
     aliases: [BTC, XBT, 比特币, 大饼]
     timezone: UTC
@@ -52,10 +78,12 @@ anchors:
       granularity: 1D
       years: 3
       backfill: okx_history_candles
+      min_rows: 1090
 
   - id: ETH
     name: 以太坊
     asset_class: crypto
+    view_class: 加密
     role: member
     aliases: [ETH, 以太坊, 二饼]
     timezone: UTC
@@ -72,10 +100,12 @@ anchors:
       granularity: 1D
       years: 3
       backfill: okx_history_candles
+      min_rows: 1090
 
   - id: SOL
     name: Solana
     asset_class: crypto
+    view_class: 加密
     role: member
     aliases: [SOL, solana, 索拉纳]
     timezone: UTC
@@ -92,13 +122,15 @@ anchors:
       granularity: 1D
       years: 3
       backfill: okx_history_candles
+      min_rows: 1090
 
-  # ---------------- 美股（龙头 SPX） ----------------
+  # ---------------- 美股指数（龙头 SPX） ----------------
   - id: IXIC
     name: 纳斯达克综合指数
     asset_class: equity_us
+    view_class: 美股
     role: member
-    aliases: [IXIC, NDX, 纳指, 纳斯达克]
+    aliases: [IXIC, NDX, US100, 纳指, 纳斯达克]
     timezone: America/New_York
     enabled: true
     instrument:
@@ -111,12 +143,14 @@ anchors:
       granularity: 1D
       years: 3
       backfill: fred_history
+      min_rows: 740
 
   - id: SPX
     name: 标普 500 指数
     asset_class: equity_us
+    view_class: 美股
     role: leader
-    aliases: [SPX, SP500, GSPC, 标普, 标普500]
+    aliases: [SPX, SP500, US500, GSPC, 标普, 标普500]
     timezone: America/New_York
     enabled: true
     instrument:
@@ -129,16 +163,19 @@ anchors:
       granularity: 1D
       years: 3
       backfill: fred_history
+      min_rows: 740
 
-  # ---------------- 商品（龙头 XAU） ----------------
+  # ---------------- 避险（龙头 XAU） ----------------
   - id: XAU
     name: 黄金（XAUT 代币化现货，代理伦敦金）
     asset_class: commodity
+    view_class: 避险
     role: leader
     aliases: [XAU, GOLD, 黄金, 伦敦金]
     timezone: UTC
     enabled: true
     proxy: true
+    tokenized: true
     proxy_note: "OKX XAUT-USDT 作为现货黄金代理；偏差见覆盖体检报告"
     instrument:
       venue: okx
@@ -152,12 +189,15 @@ anchors:
       granularity: 1D
       years: 3
       backfill: okx_history_candles
+      min_rows: 1090
 
+  # ---------------- 大宗（龙头 WTI） ----------------
   - id: WTI
     name: WTI 原油
     asset_class: commodity
+    view_class: 大宗
     role: member
-    aliases: [WTI, DCOILWTICO, 原油, 美油]
+    aliases: [WTI, CL, DCOILWTICO, 原油, 美油]
     timezone: America/New_York
     enabled: true
     instrument:
@@ -170,11 +210,13 @@ anchors:
       granularity: 1D
       years: 3
       backfill: fred_history
+      min_rows: 740
 
-  # ---------------- 利率（龙头 US10Y） ----------------
+  # ---------------- 情绪与利率（龙头 US10Y） ----------------
   - id: US10Y
     name: 美国 10 年期国债收益率
     asset_class: rates
+    view_class: 情绪
     role: leader
     aliases: [US10Y, DGS10, 美债, 十年期]
     timezone: America/New_York
@@ -189,6 +231,383 @@ anchors:
       granularity: 1D
       years: 3
       backfill: fred_history
+      min_rows: 740
+
+# ============================================================ 扩展池（五类视图成员，懒加载）
+# 定源口径：Nasdaq/FRED 有 ≥3 年日频的一律用它们（min_rows 740）；
+#           OKX 代币化美股历史短，一律 min_rows 250 + history_lt_3y: true。
+extended_anchors:
+  # ---------------- 避险 ----------------
+  - id: XAG
+    name: 白银
+    asset_class: precious_metal
+    view_class: 避险
+    role: member
+    aliases: [XAG, SILVER, 白银]
+    timezone: UTC
+    enabled: true
+    instrument:
+      venue: okx
+      inst_type: SWAP
+      inst_id: XAG-USDT-SWAP
+    storage:
+      sub_category: XAG
+      metric: close_usd
+      volume_metric: volume_usd
+    history:
+      granularity: 1D
+      years: 1
+      history_lt_3y: true
+      backfill: okx_history_candles
+      min_rows: 250
+      note: "2026-01-27 起 290 天；可点亮（≥250），3 年深结论不可用"
+
+  # ---------------- 大宗 ----------------
+  - id: BZ
+    name: 布伦特原油
+    asset_class: energy
+    view_class: 大宗
+    role: member
+    aliases: [BZ, BRENT, DCOILBRENTEU, 布伦特]
+    timezone: America/New_York
+    enabled: true
+    proxy: true
+    proxy_note: "FRED 布伦特现货"
+    instrument:
+      venue: fred
+      series_id: DCOILBRENTEU
+    storage:
+      sub_category: DCOILBRENTEU
+      metric: value
+    history:
+      granularity: 1D
+      years: 3
+      backfill: fred_history
+      min_rows: 740
+
+  - id: NG
+    name: Henry Hub 天然气
+    asset_class: energy
+    view_class: 大宗
+    role: member
+    aliases: [NG, DHHNGSP, 天然气]
+    timezone: America/New_York
+    enabled: true
+    proxy: true
+    proxy_note: "FRED 天然气现货"
+    instrument:
+      venue: fred
+      series_id: DHHNGSP
+    storage:
+      sub_category: DHHNGSP
+      metric: value
+    history:
+      granularity: 1D
+      years: 3
+      backfill: fred_history
+      min_rows: 740
+
+  - id: XCU
+    name: 铜
+    asset_class: industrial_metal
+    view_class: 大宗
+    role: member
+    aliases: [XCU, COPPER, 铜]
+    timezone: UTC
+    enabled: true
+    instrument:
+      venue: okx
+      inst_type: SWAP
+      inst_id: XCU-USDT-SWAP
+    storage:
+      sub_category: XCU
+      metric: close_usd
+      volume_metric: volume_usd
+    history:
+      granularity: 1D
+      years: 1
+      history_lt_3y: true
+      backfill: okx_history_candles
+      min_rows: 250
+      note: "2026-03-03 起 255 天"
+
+  # ---------------- 美股：指数 ----------------
+  - id: DJIA
+    name: 道琼斯工业平均（DIA 代理）
+    asset_class: us_index
+    view_class: 美股
+    role: co_leader
+    aliases: [DJIA, DJI, DIA, 道指, 道琼斯]
+    timezone: America/New_York
+    enabled: true
+    proxy: true
+    proxy_note: "DIA（道指 ETF）代理；Nasdaq API 无 ^DJI 历史，FRED DJIA 停更"
+    instrument:
+      venue: nasdaq
+      inst_id: DJIA
+    storage:
+      sub_category: DJIA
+      metric: close_usd
+    history:
+      granularity: 1D
+      years: 3
+      backfill: nasdaq_history
+      min_rows: 740
+
+  # ---------------- 美股：龙头个股（Nasdaq，3 年日频） ----------------
+  - id: NVDA
+    name: 英伟达
+    asset_class: us_stock
+    view_class: 美股
+    role: leader
+    aliases: [NVDA, 英伟达]
+    timezone: America/New_York
+    enabled: true
+    instrument: {venue: nasdaq, inst_id: NVDA}
+    storage: {sub_category: NVDA, metric: close_usd}
+    history: {granularity: 1D, years: 3, backfill: nasdaq_history, min_rows: 740}
+
+  - id: AAPL
+    name: 苹果
+    asset_class: us_stock
+    view_class: 美股
+    role: member
+    aliases: [AAPL, 苹果]
+    timezone: America/New_York
+    enabled: true
+    instrument: {venue: nasdaq, inst_id: AAPL}
+    storage: {sub_category: AAPL, metric: close_usd}
+    history: {granularity: 1D, years: 3, backfill: nasdaq_history, min_rows: 740}
+
+  - id: MSFT
+    name: 微软
+    asset_class: us_stock
+    view_class: 美股
+    role: member
+    aliases: [MSFT, 微软]
+    timezone: America/New_York
+    enabled: true
+    instrument: {venue: nasdaq, inst_id: MSFT}
+    storage: {sub_category: MSFT, metric: close_usd}
+    history: {granularity: 1D, years: 3, backfill: nasdaq_history, min_rows: 740}
+
+  - id: AMZN
+    name: 亚马逊
+    asset_class: us_stock
+    view_class: 美股
+    role: member
+    aliases: [AMZN, 亚马逊]
+    timezone: America/New_York
+    enabled: true
+    instrument: {venue: nasdaq, inst_id: AMZN}
+    storage: {sub_category: AMZN, metric: close_usd}
+    history: {granularity: 1D, years: 3, backfill: nasdaq_history, min_rows: 740}
+
+  - id: GOOGL
+    name: 谷歌
+    asset_class: us_stock
+    view_class: 美股
+    role: member
+    aliases: [GOOGL, GOOG, 谷歌]
+    timezone: America/New_York
+    enabled: true
+    instrument: {venue: nasdaq, inst_id: GOOGL}
+    storage: {sub_category: GOOGL, metric: close_usd}
+    history: {granularity: 1D, years: 3, backfill: nasdaq_history, min_rows: 740}
+
+  - id: META
+    name: Meta
+    asset_class: us_stock
+    view_class: 美股
+    role: member
+    aliases: [META, 脸书, Facebook]
+    timezone: America/New_York
+    enabled: true
+    instrument: {venue: nasdaq, inst_id: META}
+    storage: {sub_category: META, metric: close_usd}
+    history: {granularity: 1D, years: 3, backfill: nasdaq_history, min_rows: 740}
+
+  - id: TSLA
+    name: 特斯拉
+    asset_class: us_stock
+    view_class: 美股
+    role: member
+    aliases: [TSLA, 特斯拉]
+    timezone: America/New_York
+    enabled: true
+    instrument: {venue: nasdaq, inst_id: TSLA}
+    storage: {sub_category: TSLA, metric: close_usd}
+    history: {granularity: 1D, years: 3, backfill: nasdaq_history, min_rows: 740}
+
+  # ---------------- 美股：OKX 代币化标的（历史 < 250，禁止点亮） ----------------
+  # 定源硬规则：不得因全局 source_priority 把 nasdaq 的 752 天砍成 OKX 的 250 天。
+  - id: AMD
+    name: AMD（OKX 代币化美股永续）
+    asset_class: us_stock
+    view_class: 美股
+    role: member
+    aliases: [AMD, 超威]
+    timezone: UTC
+    enabled: true
+    proxy: true
+    tokenized: true
+    proxy_note: "OKX AMD-USDT-SWAP 代币化标的，非证券本体"
+    instrument: {venue: okx, inst_type: SWAP, inst_id: AMD-USDT-SWAP}
+    storage: {sub_category: AMD, metric: close_usd, volume_metric: volume_usd}
+    history:
+      granularity: 1D
+      years: 1
+      history_lt_3y: true
+      backfill: okx_history_candles
+      min_rows: 250
+      note: "实测 250 根（2026-03-10 起），恰达门槛；待云端回填"
+
+  - id: GEV
+    name: GE Vernova（OKX 代币化美股永续）
+    asset_class: us_stock
+    view_class: 美股
+    role: member
+    aliases: [GEV, GE Vernova]
+    timezone: UTC
+    enabled: true
+    proxy: true
+    tokenized: true
+    proxy_note: "OKX GEV-USDT-SWAP 代币化标的，非证券本体"
+    instrument: {venue: okx, inst_type: SWAP, inst_id: GEV-USDT-SWAP}
+    storage: {sub_category: GEV, metric: close_usd, volume_metric: volume_usd}
+    history:
+      granularity: 1D
+      years: 1
+      history_lt_3y: true
+      backfill: okx_history_candles
+      min_rows: 250
+      note: "实测 179 根（2026-05-20 起）→ history_lt_250，禁止点亮"
+
+  - id: SPCX
+    name: SpaceX 相关代币化标的（SPCX）
+    asset_class: us_stock
+    view_class: 美股
+    role: member
+    aliases: [SPCX, SpaceX]
+    timezone: UTC
+    enabled: true
+    proxy: true
+    tokenized: true
+    proxy_note: "OKX SPCX-USDT-SWAP 代币化标的，非证券本体"
+    instrument: {venue: okx, inst_type: SWAP, inst_id: SPCX-USDT-SWAP}
+    storage: {sub_category: SPCX, metric: close_usd, volume_metric: volume_usd}
+    history:
+      granularity: 1D
+      years: 1
+      history_lt_3y: true
+      backfill: okx_history_candles
+      min_rows: 250
+      note: "实测 193 根（2026-05-06 起）→ history_lt_250，禁止点亮"
+
+  - id: SKHYNIX
+    name: SK 海力士（OKX 代币化美股永续）
+    asset_class: us_stock
+    view_class: 美股
+    role: member
+    aliases: [SKHYNIX, SK HYNIX, 000660.KS, 海力士]
+    timezone: UTC
+    enabled: true
+    proxy: true
+    tokenized: true
+    proxy_note: "OKX SKHYNIX-USDT-SWAP 代币化标的，非证券本体"
+    instrument: {venue: okx, inst_type: SWAP, inst_id: SKHYNIX-USDT-SWAP}
+    storage: {sub_category: SKHYNIX, metric: close_usd, volume_metric: volume_usd}
+    history:
+      granularity: 1D
+      years: 1
+      history_lt_3y: true
+      backfill: okx_history_candles
+      min_rows: 250
+      note: "listTime 2026-06-10，实测约 158 根 → history_lt_250，禁止点亮"
+
+  # ---------------- 美股：ETF ----------------
+  - id: SPY
+    name: 标普500 ETF
+    asset_class: us_etf
+    view_class: 美股
+    role: member
+    aliases: [SPY]
+    timezone: America/New_York
+    enabled: true
+    instrument: {venue: nasdaq, inst_id: SPY}
+    storage: {sub_category: SPY, metric: close_usd}
+    history: {granularity: 1D, years: 3, backfill: nasdaq_history, min_rows: 740}
+
+  - id: QQQ
+    name: 纳指100 ETF
+    asset_class: us_etf
+    view_class: 美股
+    role: member
+    aliases: [QQQ]
+    timezone: America/New_York
+    enabled: true
+    instrument: {venue: nasdaq, inst_id: QQQ}
+    storage: {sub_category: QQQ, metric: close_usd}
+    history: {granularity: 1D, years: 3, backfill: nasdaq_history, min_rows: 740}
+
+  # ---------------- 情绪 ----------------
+  - id: VIX
+    name: VIX 波动率指数
+    asset_class: macro
+    view_class: 情绪
+    role: member
+    aliases: [VIX, VIXCLS, 恐慌指数, 波动率]
+    timezone: America/New_York
+    enabled: true
+    instrument: {venue: fred, series_id: VIXCLS}
+    storage: {sub_category: VIXCLS, metric: value}
+    history: {granularity: 1D, years: 3, backfill: fred_history, min_rows: 740}
+
+  - id: T10Y2Y
+    name: 10Y-2Y 期限利差
+    asset_class: rates_credit
+    view_class: 情绪
+    role: member
+    aliases: [T10Y2Y, 期限利差]
+    timezone: America/New_York
+    enabled: true
+    instrument: {venue: fred, series_id: T10Y2Y}
+    storage: {sub_category: T10Y2Y, metric: value}
+    history: {granularity: 1D, years: 3, backfill: fred_history, min_rows: 740}
+
+# ============================================================ 首屏 / 扩展池（前端零硬编码）
+# default = 「数据与图表」首屏 12 个（= visual_overview 的 [:12] 上限），五类均有覆盖；
+# extended = 按类别展开时懒加载，含全部代币化美股（短历史，禁止点亮）。
+pools:
+  default:
+    - BTC
+    - ETH
+    - XAU
+    - XAG
+    - CL
+    - BZ
+    - NG
+    - US500
+    - US100
+    - DJIA
+    - NVDA
+    - VIX
+  extended:
+    - AAPL
+    - MSFT
+    - AMZN
+    - GOOGL
+    - META
+    - TSLA
+    - AMD
+    - GEV
+    - SPCX
+    - SKHYNIX
+    - SPY
+    - QQQ
+    - XCU
+    - T10Y2Y
+    - US10Y
 
 # ============================================================
 # 动态资产（非锚定代币）：不进锚定表，查询时按需取数

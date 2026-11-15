@@ -6,7 +6,7 @@
   - V-AC6：`partial` 表格首列 `degraded_reason`；
   - V-AC7：`L1_VISUAL_ENABLED=0` 全无 `visual`；
   - V-AC1（B10）：14 个基线出口契约冻结；
-  - T1 元表：能力清单表 + 方法审计 386×6 矩阵表。
+  - T1 元表：能力清单表 + 方法审计全量×6 矩阵表。
 """
 
 import datetime
@@ -299,7 +299,7 @@ def test_capability_table_covers_manifest():
     assert [col["key"] for col in table["columns"]][:2] == ["id", "intent"]
 
 
-def test_method_audit_table_is_386_by_6_matrix():
+def test_method_audit_table_is_full_by_6_matrix():
     path = os.path.join(_MODULE_ROOT, "docs", "method_audit.json")
     if not os.path.exists(path):
         pytest.skip("method_audit.json 未生成")
@@ -406,6 +406,33 @@ def test_d_e15_visual_is_series_with_smoothing_meta():
     assert meta["n"] == 700
     assert meta["periods"] == [12, 26, 50]
     assert meta["slope_windows"] == [20, 60, 120, 250]
+
+
+def test_d_e15_kalman_block_is_additive_not_replacing_ema():
+    """§4.12 第 1 条：Kalman 结果放 payload 顶层，`meta.smoothing` 必须仍是 EMA。"""
+    out = run_capability("D-E15", **_trend_kwargs())
+    block = out["data"]["capabilities"]["D-E15"]
+    kalman = block["kalman"]
+    assert kalman is not None
+    assert "I37" in block["methods"]
+    assert kalman["band"][0] < kalman["level"] < kalman["band"][1]
+    assert kalman["level_sigma"] > 0
+    assert kalman["slope_se"] > 0
+    assert len(kalman["trail"]) == min(500, len(block["prices"]))
+    assert kalman["trail"][-1]["date"] is not None
+    assert block["meta"]["smoothing"] == {"method": "EMA", "periods": [12, 26, 50]}
+    assert out["data"]["visual"]["dataset"]["meta"]["smoothing"] == {
+        "method": "EMA",
+        "window": 26,
+    }
+
+
+def test_d_e15_kalman_degrades_below_250_points():
+    out = run_capability("D-E15", **_trend_kwargs(n=120))
+    block = out["data"]["capabilities"]["D-E15"]
+    assert block["kalman"] is None
+    assert "I37" not in block["methods"]
+    assert "kalman_unavailable" in block["meta"]["degraded_reasons"]
 
 
 def test_d_e15_visual_validates_against_schema():

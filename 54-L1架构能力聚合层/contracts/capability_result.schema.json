@@ -184,6 +184,10 @@
                         "smoothed": {"type": ["number", "null"]},
                         "upper": {"type": ["number", "null"]},
                         "lower": {"type": ["number", "null"]},
+                        "agg": {"type": ["number", "null"]},
+                        "members": {"type": "object"},
+                        "coverage_ratio": {"type": ["number", "null"]},
+                        "partial_members": {"type": "boolean"},
                         "extra": {"type": "object"}
                       }
                     }
@@ -280,7 +284,7 @@
                       "properties": {
                         "src": {"type": "string"},
                         "dst": {"type": "string"},
-                        "kind": {"enum": ["corr", "lead_lag", "same_direction"]},
+                        "kind": {"enum": ["corr", "lead_lag", "same_direction", "flow"]},
                         "weight": {"type": ["number", "null"]},
                         "p_adj": {"type": ["number", "null"]}
                       }

@@ -1,0 +1,66 @@
+# 图表权重（SPEC-54-L1交易层 §4.1 / B-LT3 三权分立，P0-2）
+# ============================================================
+# 定位：**只影响展示合成**（D-E16 聚合曲线 / D-E17 类别排序），不进入任何决策路径。
+#
+# 硬约束（LT-G2 机器断言）：
+#   - 本文件的三段权重与 `config/weights.yaml`（交易轴权重 axis_weights）、
+#     `light_weights`（点亮四轴）**字段名/配置段/hash 三者互不共用**；
+#   - `chart_weights` / `chart_weights_hash` **禁止**出现在
+#     `paper_replay` / `direction_rule` 的入参或 `signal` 字段中；
+#   - 默认 `on`（无否决门，允许前端滑块调参），调参只改展示，
+#     变更必须写 `chart_weights_hash` + `source ∈ {config, ui, equal}`。
+#
+# 校验分层（§4.3 规则 5）：
+#   - 加载期 fail-closed：范围越界 / 和≠1（容差 sum_tolerance）→ 抛 ChartWeightsError；
+#   - 运行期若仍非法 → 降级等权 + `weights_degraded=true`（build_visual 是 FAIL-OPEN，
+#     不允许整图静默消失）。
+#
+# 成员裁剪（§4.3 规则 3）：`n < min_rows` 的成员权重置 0 并标 `insufficient_history`，
+# 其余权重重新归一；**禁止**用短样本静默参与加权。
+# ============================================================
+
+version: cw-1.0.0
+updated: "2026-11-15"
+mode: "on"          # on（默认，无门禁）| off（回滚档：展示一律等权）
+
+constraints:
+  min_weight: 0.0     # 单成员权重下限（允许 0 = 显式剔除）
+  max_weight: 0.60    # 单成员权重上限（防止单标的绑架聚合曲线）
+  sum_tolerance: 1.0e-6
+  min_rows: 250       # 短样本裁剪门槛（与 stats.MIN_TREND / LT-G6 一致）
+
+# ---------------- 成员权重（与 pools.default 一一对应，和 = 1） ----------------
+chart_weights:
+  BTC: 0.20         # 加密
+  ETH: 0.10
+  XAU: 0.12         # 避险
+  XAG: 0.04
+  CL: 0.10          # 大宗
+  BZ: 0.06
+  NG: 0.04
+  US500: 0.12       # 美股
+  US100: 0.10
+  DJIA: 0.05
+  NVDA: 0.05
+  VIX: 0.02         # 情绪
+
+# ---------------- 类别权重（五类视图，和 = 1） ----------------
+views:
+  加密: 0.30
+  避险: 0.20
+  大宗: 0.20
+  美股: 0.25
+  情绪: 0.05
+
+# ---------------- 点亮四轴权重（与 chart_weights / axis_weights 互不共用） ----------------
+light_weights:
+  trend: 0.40
+  inertia: 0.25
+  cycle: 0.15
+  foresight: 0.20
+
+# ---------------- 点亮阈值（B-LT7：由 scripts/calibrate_light.py 按分位标定） ----------------
+thresholds:
+  lit_pct: 0.70         # 默认 p70，未标定时启用
+  warm_pct: 0.40        # 默认 p40
+  calibrated_at: ""     # 空 = 未标定 → lights.meta.thresholds_uncalibrated=true

@@ -153,12 +153,16 @@ def run(
     dry_run: bool = False,
     bar: str = "1D",
     only=None,
+    include_extended: bool = False,
 ) -> dict:
     cutoff = int(
         (datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=365 * years)).timestamp()
         * 1000
     )
-    targets = [a for a in pool.anchors if a.venue == "okx" and a.enabled]
+    # 默认只回填核心锚定（okx）；扩展池（OKX 代币化美股等）需显式 --extended。
+    # 指定 --only 时在核心 + 扩展池里查（否则 AMD/GEV/SPCX/SKHYNIX 无法单独回填）。
+    source = pool.all_anchors() if (include_extended or only) else list(pool.anchors)
+    targets = [a for a in source if a.venue == "okx" and a.enabled]
     if only:
         wanted = {s.strip().upper() for s in only}
         targets = [a for a in targets if a.id.upper() in wanted]
@@ -177,7 +181,12 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="OKX 日频价格回填（S1.0-3）")
     parser.add_argument("--db", default=_DEFAULT_DB, help="SQLite 数据库路径")
     parser.add_argument("--years", type=int, default=3)
-    parser.add_argument("--only", default="", help="逗号分隔的资产 id，如 BTC,XAU")
+    parser.add_argument("--only", default="", help="逗号分隔的资产 id，如 BTC,XAU,AMD")
+    parser.add_argument(
+        "--extended",
+        action="store_true",
+        help="同时回填扩展池（OKX 代币化美股 AMD/GEV/SPCX/SKHYNIX 等）",
+    )
     parser.add_argument("--bar", default="1D")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--json", action="store_true")
@@ -196,6 +205,7 @@ def main(argv=None) -> int:
         dry_run=args.dry_run,
         bar=args.bar,
         only=[s for s in args.only.split(",") if s.strip()],
+        include_extended=args.extended,
     )
     if args.json:
         print(json.dumps(result, ensure_ascii=False))

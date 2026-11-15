@@ -1,6 +1,6 @@
 # 54 总技术文档 — 数据 → 统计 → 关系能力地图
 
-- **版本**: v2.21 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 总技术文档（v2.21 接入 D-J02 季节强度与调整出口（C13/T10/SC91），可执行出口 **19 个**；v2.20 接入 D-J04 变点检测出口（T22/T23/SC49/SC50/SC51），可执行出口 **18 个**；v2.19 将 B06 二维交叉表纳入 D-E07，输出状态相邻期联合计数底表并与 B07 行归一化转移概率对齐，可执行出口保持 **17 个**；v2.18 接入 D-G23 事件窗均值调整 CAR + Patell/BMP（Q10/Q11），可执行出口 **17 个**；v2.17 接入 D-E14 一维相关状态→h=1/2 前瞻条件分布（R02 PIT 状态轴共享 B05/B10/R01/R08），可执行出口 **16 个**；v2.16 接入 D-E04 事件研究窗（F19/F21/F23）与 D-E09 计数与共现（R09/B17/R10）能力出口，可执行出口 **14 个**，事件数 <30 降级 partial 但保留 CAR/胜率；同步补齐前端 D-A14/D-G22 cue 分派与 D-E14 的 T-1 扩样本（云端 20 资产 / 54,653 行 `close_1d`，1 维 4 桶 @h=1 全部达标）；v2.15 冻结 D-A14/F26 的 `level` 阈值为 A 分位法（分值历史分布 p20/p60/p80 → 极低/低/偏高/高），接入 D-A14 能力出口；v2.14 接入 D-G22 显著性出口（Q06 HAC t + Q07 Deflated Sharpe），解除 h>1 重叠前瞻收益的推断阻塞；v2.13 打通宏观事件历史回填通道，为 D-E04/D-E09 解除「事件表仅 16 行」的数据阻塞；v2.12 接入 D-E12/R18 时空对齐切片；MERS S3 内部固定网格、BH-FDR、状态机与幂等注册表已交付，S5 对外推荐仍未开放；54-L1 测试 **760 通过 / 0 失败**（v2.21 全量回归；v2.16 同时修复既有日期边界测试的时间炸弹），audit **386/386 PASS**、验证覆盖率 **66.15%**；v2.11 接入 D-E11/C18 与 D-E01；v2.10 D-E05 双序列与多资产矩阵 TopK 全接线、D-E06 全 lag BH-FDR、manifest 真实执行覆盖与 audit 验证覆盖报告；v2.9 D-E02 能力出口接线与 T0.5/A8 首版交付；v2.8 方法层全部落地：`REGISTRY` 387 条全登记、`implemented=true` **386**，仅 C11 因缺交易日历不可用；v2.7 注册表放开调研族前缀并完成占位登记；v2.6 调研对齐与路线收口）
+- **版本**: v2.48 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 总技术文档（v2.48 登记 L1 交易层新增的 D-E15–D-E19 五个能力出口（趋势曲线 / 聚合曲线 / 分组看板 / 资金流向导图 / 四轴五态点亮投影），可执行出口 44 → **48 个**；v2.47 完成前端 D-A 组 14 个及 D-B08/D-B09/D-G08/D-G09 共 18 个 cue 分派，可执行出口保持 **44 个**；v2.46 接入 D-G09 波动率目标换算出口（P02），可执行出口 **44 个**；v2.45 接入 D-G08 12-1 动量出口（F14 窗口切片），可执行出口 **43 个**；v2.44 接入 D-B09 距 ATH 回撤出口（复用 D20/D21），可执行出口 **42 个**；v2.43 接入 D-B08 趋势斜率出口（T08/T09），可执行出口 **41 个**；v2.42 接入 D-A16 稳定币规模增速出口（S16 多窗口），可执行出口 **40 个**；v2.41 接入 D-A15 ETF 净流入滚动和出口（S20 滚动均值 × 窗口），可执行出口 **39 个**；v2.40 接入 D-A13 极端事件频率出口（S11 阈值 + 计数），可执行出口 **38 个**；v2.39 接入 D-A12 领先滞后相关出口（M11/M12），可执行出口 **37 个**；v2.38 接入 D-A11 双序列滚动相关出口（M04），可执行出口 **36 个**；v2.37 接入 D-A10 实际利率出口（S16 派生），可执行出口 **35 个**；v2.36 接入 D-A09 环比出口（S16），可执行出口 **34 个**；v2.35 接入 D-A08 同比出口（S16），可执行出口 **33 个**；v2.34 接入 D-A07 回撤出口（复用 D-E10 的 D20/D21 执行器），可执行出口 **32 个**；v2.33 接入 D-A06 年化波动率出口（F05），可执行出口 **31 个**；v2.32 接入 D-A04 历史分位出口（S25），可执行出口 **30 个**；v2.31 接入 D-A03 CAGR 出口（S19），可执行出口 **29 个**；v2.30 接入 D-A02 变化率出口（S15/S16），可执行出口 **28 个**；v2.29 接入 D-A01 历史序列出口（S25），可执行出口 **27 个**；v2.28 接入 D-J30 PIT/release_ts 全局出口（SC90/R02），可执行出口 **26 个**；v2.27 接入 D-G14 EWMA 波动/协方差出口（P07/T19），可执行出口 **25 个**；v2.26 接入 D-J24 相关网络与社区发现出口（M05/M21/SC71/SC72），可执行出口 **24 个**；v2.25 接入 D-J22 PCA/SVD/因子分析出口（M19/M20/SC31/SC32/SC33），可执行出口 **23 个**；v2.24 接入 D-G20 分位组合与单调性检验出口（B11/B16/Q04），可执行出口 **22 个**；v2.23 接入 D-G19 IC/ICIR/衰减表出口（B13/B14/B15/Q01/Q02/Q03），可执行出口 **21 个**；v2.22 接入 D-G16 组合 VaR/CVaR 出口（D17/D18/P09/P10），可执行出口 **20 个**；v2.21 接入 D-J02 季节强度与调整出口（C13/T10/SC91），可执行出口 **19 个**；v2.20 接入 D-J04 变点检测出口（T22/T23/SC49/SC50/SC51），可执行出口 **18 个**；v2.19 将 B06 二维交叉表纳入 D-E07，输出状态相邻期联合计数底表并与 B07 行归一化转移概率对齐，可执行出口保持 **17 个**；v2.18 接入 D-G23 事件窗均值调整 CAR + Patell/BMP（Q10/Q11），可执行出口 **17 个**；v2.17 接入 D-E14 一维相关状态→h=1/2 前瞻条件分布（R02 PIT 状态轴共享 B05/B10/R01/R08），可执行出口 **16 个**；v2.16 接入 D-E04 事件研究窗（F19/F21/F23）与 D-E09 计数与共现（R09/B17/R10）能力出口，可执行出口 **14 个**，事件数 <30 降级 partial 但保留 CAR/胜率；同步补齐前端 D-A14/D-G22 cue 分派与 D-E14 的 T-1 扩样本（云端 20 资产 / 54,653 行 `close_1d`，1 维 4 桶 @h=1 全部达标）；v2.15 冻结 D-A14/F26 的 `level` 阈值为 A 分位法（分值历史分布 p20/p60/p80 → 极低/低/偏高/高），接入 D-A14 能力出口；v2.14 接入 D-G22 显著性出口（Q06 HAC t + Q07 Deflated Sharpe），解除 h>1 重叠前瞻收益的推断阻塞；v2.13 打通宏观事件历史回填通道，为 D-E04/D-E09 解除「事件表仅 16 行」的数据阻塞；v2.12 接入 D-E12/R18 时空对齐切片；MERS S3 内部固定网格、BH-FDR、状态机与幂等注册表已交付，S5 对外推荐仍未开放；54-L1 测试 **909 通过 / 0 失败**（v2.27 全量回归；v2.16 同时修复既有日期边界测试的时间炸弹），audit **386/386 PASS**、验证覆盖率 **66.15%**；v2.11 接入 D-E11/C18 与 D-E01；v2.10 D-E05 双序列与多资产矩阵 TopK 全接线、D-E06 全 lag BH-FDR、manifest 真实执行覆盖与 audit 验证覆盖报告；v2.9 D-E02 能力出口接线与 T0.5/A8 首版交付；v2.8 方法层全部落地：`REGISTRY` 387 条全登记、`implemented=true` **386**，仅 C11 因缺交易日历不可用；v2.7 注册表放开调研族前缀并完成占位登记；v2.6 调研对齐与路线收口）
 - **上游**: `SPEC-54-L1架构能力聚合层.md`（ADR/契约/路线）、`docs/METHOD_LIBRARY.md`（方法 SSoT）
 - **下游**: `3.1-FRONTEND/scripts/l1_route_signal.py`（L1 路由）、`34-前端应用训练系统/core/l0_foundation.py`（L0 scope）、`/api/fundamental/**`
 - **定位**: 本文是 54 的**总技术文档**——上半部（§0）回答「有哪些问题域、每个问题域用什么方法、现在缺什么」；下半部（§1–§6）是能力登记册（ID/依赖/字段/优先级/状态）。
@@ -13,8 +13,8 @@
 
 | 文档 | 角色 | 唯一负责的内容 | 当前版本 |
 |---|---|---|---|
-| [SPEC-54-L1架构能力聚合层.md](../SPEC-54-L1架构能力聚合层.md) | 架构与契约 | ADR、scope 出入参、门禁、路线（S1–S5）、MERS/Discovery | v1.18 |
-| **本文 TECHNICAL_DESIGN.md** | **总技术文档 + 能力登记** | 六类问题地图、四层分工（§0.5）、能力 ID `D-*`、状态列、整体进度（§6.2） | **v2.21** |
+| [SPEC-54-L1架构能力聚合层.md](../SPEC-54-L1架构能力聚合层.md) | 架构与契约 | ADR、scope 出入参、门禁、路线（S1–S5）、MERS/Discovery | v1.44 |
+| **本文 TECHNICAL_DESIGN.md** | **总技术文档 + 能力登记** | 六类问题地图、四层分工（§0.5）、能力 ID `D-*`、状态列、整体进度（§6.2） | **v2.48** |
 | [METHOD_LIBRARY.md](./METHOD_LIBRARY.md) | 方法 SSoT | 方法 ID（S/D/T/C/I/M/B/F/H/R/X/O/P/Q/SC）、口径冻结（§16）、数据前提（§15） | v1.16 |
 | [RESEARCH-TREND-PERSISTENCE-MODELS.md](./RESEARCH-TREND-PERSISTENCE-MODELS.md) | 调研 | 延续性三层拆解、Tier A/B/C、T 阶段 | v1.2 |
 | [RESEARCH-INSTITUTIONAL-L1-METHODS.md](./RESEARCH-INSTITUTIONAL-L1-METHODS.md) | 调研补强 | 机构方法（X/O/P/Q） | — |
@@ -70,7 +70,7 @@
 |---|---|---|---|
 | UTC 日收盘、跨源去重、低频 ffill、stale 上限 | 口径见 `align.py`，原语 R18；`market.candles` 1d 另有**收盘锚点** `bar_close`/`snapshot_last`（跨资产统计须同锚点） | D-E12 ✅ | ✅ `l1agg/align.py` / `capabilities/stats.py::alignment_slice` / `l0_foundation.py::_fetch_market_candles` |
 | 价格轴派生 1D/1W/1M | S20–S23 | D-B00（🟡→✅） | ✅ `market.candles` |
-| 前视规避（PIT，`as_of` / 宏观 `release_ts`） | SC90、R02 | D-J30 ⬜ | ✅ R02 `pit=true` 已实现（`conditional.py`：逐时点滚动分位 + `release_ts≤as_of` 过滤）；✅ SC90 方法层已实现；⬜ 全局 PIT/release_ts 能力（D-J30）未接线，滚动窗口本身不能替代发布日期与修订处理 |
+| 前视规避（PIT，`as_of` / 宏观 `release_ts`） | SC90、R02 | D-J30 ✅ | ✅ R02 `pit=true` 已实现（`conditional.py`：逐时点滚动分位 + `release_ts≤as_of` 过滤）；✅ SC90 方法层已实现；✅ D-J30 全局能力已接线（`stats.py::pit_alignment`：SC90 校验可用时间≤使用时间 + R02 PIT 前瞻分布，违规降级披露） |
 | 缺口/陈旧度披露 | S02 | 所有能力 `quality` | ✅ 信封字段已有 |
 
 #### 0.2.2 数据 ↔ 价格相关性
@@ -120,7 +120,7 @@
 | 收益自相关 ACF/PACF | T01–T02、F12 | D-E08 🟡 | ✅ 方法层（`timeseries.py`） |
 | 连胜/连败长度 | F18 | D-E13 ✅ | ✅ 已交付（场景包 + `timeseries.py::f18_runs`） |
 | 反转比例（上期涨→本期跌） | F17 | D-E13 🟡 | ✅ 方法层（`timeseries.py::f17_reversal`） |
-| 动量 / ROC / 动量排序 | F14–F16 | D-G08 ⬜（12-1 动量） | ✅ F14–F16 方法层已实现（`timeseries.py`）；⬜ 能力未接线 |
+| 动量 / ROC / 动量排序 | F14–F16 | D-G08 ✅（12-1 动量） | ✅ 能力出口 `momentum_12_1`（F14 在 skip 后窗口真实执行动量/波动/风险调整动量；F15/F16 方法层已实现，跨资产排序未接线） |
 | 波动聚集 | T17–T19、F13 | D-G14 🟡（EWMA） | ✅ 方法层（`timeseries.py`） |
 | 惯性强度（方差比） | T14 | D-E13 ✅ | ✅ 已交付（场景包 + `timeseries.py::t14_variance_ratio`） |
 
@@ -130,10 +130,10 @@
 
 | 子问题 | 方法 ID | 能力 ID | 实现状态 |
 |---|---|---|---|
-| 斜率 + 显著性 | T08–T09 | D-B08 🟡 / D-E13 ✅ | 场景包已交付（无 HAC） |
+| 斜率 + 显著性 | T08–T09 | D-B08 ✅ / D-E13 ✅ | ✅ 能力出口 `slope_trend`（T08 斜率/R² + T09 名义 t/p，`hac_corrected=false` 显式披露） |
 | Hurst 长记忆 | T13 | D-E13 ✅ | 已交付（n<2000 标 low） |
 | AR(1) 半衰期 | T20–T21 | D-E13 ✅ | 已交付 |
-| IC 衰减（重叠 + 相位） | B13–B15 | D-E13 ✅ / D-G19 🟡（方法层已实现） | 场景包已交付；`conditional.py` |
+| IC 衰减（重叠 + 相位） | B13–B15 | D-E13 ✅ / D-G19 ✅（已接线） | 场景包已交付；`conditional.py` |
 | 方向态转移矩阵 | B04、B07–B09 | D-E07 ✅（D-E13 内含方向态） | ✅ 方法与能力已接线（`inference.py` / `capabilities/stats.py`） |
 | 单资产状态→历史同状态前瞻分布 | B02/B05 + R01/R02 | T0.5 ✅（S3→S4，经 D-E02 出口交付） | ✅ R02 `pit=true` + A8 场景编排（`persistence/profile.py::conditional_distribution`）+ D-E02 能力出口与前端分派均已接线；首版 h=1、4 桶（样本不足自动降 2 桶并披露），禁止全样本分位边界 |
 | Newey-West / Deflated Sharpe | Q06/Q07（SC 组） | D-G22 ✅ | 方法层 `research_pq.py`；能力层 `capabilities/stats.py::hac_significance`（`significance_query`，deterministic，`min_n=250`）。h>1 重叠前瞻收益须经此出口再作显著性结论；DSR 退化时降级 partial 仍保留 HAC t |
@@ -145,8 +145,8 @@
 | 等宽/等频/阈值分箱 | B01–B03 | D-E07 ✅ | ✅ 方法与状态转移能力已接线；分箱本身由方法注册表提供 |
 | 二维交叉表 | B06 | D-E07 ✅ | ✅ 已纳入 manifest 与 `state_transition`，输出 `state_t × state_{t+1}` 联合计数底表；B07 对同一状态轴做行归一化 |
 | 条件分布（状态 → 前瞻） | B05、B10 + R01/R02/R08 | D-E14 ✅（一维） | ✅ 已接线（`capabilities/stats.py::conditional_distribution`）：输入已压缩的一维相关状态，R02 `pit=true` 统一生成 PIT 桶标签，B05/B10/R01/R08 复用同一状态轴；默认 h=1/2、4 桶，主期限不足降 2 桶，弱后续期限单独降级，h>1 不输出朴素 t/p。**T-1 已入库** 20 资产 / 54,653 行；2 维 4×4 仍需 ≥4000 天/资产，未在一维出口中冒充完成 |
-| 降维（PCA/聚类） | M19–M22、SC31–SC38 | D-J22 ⬜ | ✅ 方法层已实现（`correlation.py`/`research_sc_a.py`）；⬜ 能力未接线 |
-| 相关网络 / 社区 | M21、SC71–SC72 | D-J24 ⬜ | ✅ 方法层已实现（`correlation.py`/`research_sc_b.py`）；⬜ 能力未接线 |
+| 降维（PCA/聚类） | M19–M22、SC31–SC38 | D-J22 ✅ | ✅ 方法层已实现；✅ D-J22 已接线（M19/M20/SC31/SC32/SC33 五方法并列）；M21 已归入 D-J24 网络聚类，M22 等聚类方法仍属 D-J23 未接线 |
+| 相关网络 / 社区 | M05、M21、SC71–SC72 | D-J24 ✅ | ✅ 方法层已实现（`correlation.py`/`research_sc_b.py`）；✅ 已接线（M05 相关矩阵 → |ρ| 阈值邻接 → SC71 中心性 + SC72 Louvain + M21 层次聚类） | ≥60 点/≥2 变量 |
 | 状态爆炸控制 | 门禁：每桶非重叠 n≥250 | — | **规则已定（T2）**；首版限 1–2 维 |
 
 > **D-E14 不直接消费完整 N×N 矩阵**。相关状态先压缩为调研定义的 F1–F12，例如 F1 平均相关度、F2 第一特征值占比、F4 相关突变 z-score、F8 相关稳定性，再与 F11 趋势斜率 t、F12 波动率分位组合；T2 首版仍只选 1–2 维，避免状态数乘积导致每桶样本崩塌。
@@ -251,22 +251,22 @@ L1 意图（TS/Python 双端注册表）
 
 | ID | 能力 | 数据依赖 | 确定性计算 | 输出字段 | L1 意图 | mode | 优先级 | 状态 |
 |---|---|---|---|---|---|---|---|---|
-| D-A01 | 历史序列 | 单序列 | 区间取点 + 降采样(日/周/月) | `points[], span, unit` | metric_series | deterministic | P0 | ⬜ |
-| D-A02 | 变化率 | 单序列 | `(v_t/v_{t-n})-1` | `change, change_pct, window` | metric_series | deterministic | P0 | ⬜ |
-| D-A03 | CAGR | 正指数型序列 | 首末值 + 年数 | `cagr, years` | metric_series | deterministic | P1 | ⬜ |
-| D-A04 | 历史分位 | 单序列 | 经验分位（线性插值） | `percentile, lookback, sample_n` | metric_percentile | deterministic | P1 | 🟡（9 有估值分位可参考） |
+| D-A01 | 历史序列 | 单序列 | 区间取点 + 降采样(日/周/月) | `points[], span, unit` | metric_series | deterministic | P0 | ✅ |
+| D-A02 | 变化率 | 单序列 | `(v_t/v_{t-n})-1` | `change, change_pct, window` | metric_series | deterministic | P0 | ✅ |
+| D-A03 | CAGR | 正指数型序列 | 首末值 + 年数 | `cagr, years` | metric_series | deterministic | P1 | ✅ |
+| D-A04 | 历史分位 | 单序列 | 末值在最近 lookback 期的经验分位 | `percentile, value, lookback, sample_n` | metric_percentile | deterministic | P1 | ✅ S25 + `capabilities.stats.percentile_rank`；`lookback` 缺省全样本，窗口 <60 期降级 `short_lookback`，lookback 超可用历史降级 `lookback_truncated` |
 | D-A05 | z-score | 单序列 | `(v-μ)/σ`（winsorize p1/p99） | `zscore, mean, std` | metric_percentile | deterministic | P1 | ⬜ |
-| D-A06 | 年化波动率 | 单序列 | 日收益率标准差 × √365 | `volatility, window` | metric_series | deterministic | P1 | 🟡（多处有实现） |
-| D-A07 | 回撤 | 单序列 | `v/max(prefix)-1` | `drawdown, peak_ts` | drawdown_query | deterministic | P1 | ⬜ |
-| D-A08 | 同比 | 月频宏观序列 | 与 12 期前比较 | `yoy, base_ts` | metric_series | deterministic | P1 | 🟡（CPI 同比已有） |
-| D-A09 | 环比 | 月频/日频 | 与上一期比较 | `mom, base_ts` | metric_series | deterministic | P1 | ⬜ |
-| D-A10 | 实际利率 | `DGS10` + `CPIAUCSL` | 10Y 收益率 − CPI 同比 | `real_rate, nominal, inflation` | metric_derived | deterministic | P1 | ⬜ |
-| D-A11 | 双序列滚动相关性 | 两条序列 | Pearson，30/90d 窗口 | `corr, window, sample_n` | correlation_query | deterministic | P2 | 🟡（23/11 有相关计算） |
-| D-A12 | 领先滞后相关 | 两条序列 | lag 0–10 的相关系数序列 | `best_lag, corr_by_lag[]` | correlation_query | deterministic | P2 | ⬜ |
-| D-A13 | 极端事件频率 | 单序列 | 超阈值天数 / 占比 | `days, ratio, threshold` | metric_series | deterministic | P2 | ⬜ |
+| D-A06 | 年化波动率 | 单序列 | 日收益率标准差 × √365 | `volatility, mean_ret, window, sample_n` | metric_series | deterministic | P1 | ✅ F05 + `capabilities.stats.annualized_volatility`；`window` 缺省全样本，有效样本 <60 期降级 `short_window` |
+| D-A07 | 回撤 | 单序列 | `v/max(prefix)-1` | `drawdown, peak_ts` | drawdown_query | deterministic | P1 | ✅ 与 D-E10 共用 `capabilities.stats.drawdown`（注入 `capability_id=D-A07`），D20/D21 真实执行；`prices<2` 为空，样本 <250 期降级 |
+| D-A08 | 同比 | 月频宏观序列 | 与 12 期前比较 | `yoy, base_ts` | metric_series | deterministic | P1 | ✅ S16（period 可配，默认 12）+ `capabilities.stats.yoy_change`；历史 <2 个完整周期降级 `short_history`，基期 0 降级 `yoy_unavailable` |
+| D-A09 | 环比 | 月频/日频 | 与上一期比较 | `mom, base_ts` | metric_series | deterministic | P1 | ✅ S16（k=1）+ `capabilities.stats.mom_change`；基期 0 降级 `mom_unavailable` |
+| D-A10 | 实际利率 | `DGS10` + `CPIAUCSL` | 10Y 收益率 − CPI 同比 | `real_rate, nominal, inflation` | metric_derived | deterministic | P1 | ✅ S16 派生 + `capabilities.stats.real_rate`；通胀由 S16（period 默认 12）折算百分点，CPI 基期 0 降级 `inflation_unavailable`，历史 <2 个完整周期降级 `short_history` |
+| D-A11 | 双序列滚动相关性 | 两条序列 | Pearson，30/90d 窗口 | `corr, window, sample_n` | correlation_query | deterministic | P2 | ✅ M04 + `capabilities.stats.rolling_correlation`：paired complete-case 后输出 `corr/mean_r/window/n_windows/sample_n`；有效配对 <60 降级 `insufficient_samples` 但保留结果 |
+| D-A12 | 领先滞后相关 | 两条序列 | lag 0–10 的相关系数序列 | `best_lag, corr_by_lag[]` | correlation_query | deterministic | P2 | ✅ M11 + M12 + `capabilities.stats.lead_lag_correlation`：M11 输出 lag −max_lag…+max_lag 的相关/p/BH-FDR q，M12 输出最优 lag；有效配对 <120 降级 `insufficient_history` 但保留结果 |
+| D-A13 | 极端事件频率 | 单序列 | 超阈值天数 / 占比 | `days, ratio, threshold` | metric_series | deterministic | P2 | ✅ S11（缺省阈值）+ `capabilities.stats.extreme_frequency`；计数为纯聚合，样本 <30 且无阈值即 empty，有阈值降级 `insufficient_samples` |
 | D-A14 | 拥挤度 | 资金费率 + 多空比 + 未平仓 | 分位加权合成 + A 分位法四档 | `score, components, weights, level, percentile, thresholds, window, as_of` | metric_percentile | deterministic | P2 | ✅ F26 + `capabilities.stats.crowding`；`level` 按分值历史分布 p20/p60/p80 分档，样本不足/分布退化降级不补阈值 |
-| D-A15 | ETF 净流入滚动和 | ETF 净流入序列 | 7/30d 滚动求和 | `sum_7d, sum_30d` | metric_series | deterministic | P2 | ⬜ |
-| D-A16 | 稳定币增速 | USDT/USDC 规模序列 | 7/30d 增速 | `growth_7d, growth_30d` | metric_series | deterministic | P2 | ⬜ |
+| D-A15 | ETF 净流入滚动和 | ETF 净流入序列 | 7/30d 滚动求和 | `sum_7d, sum_30d` | metric_series | deterministic | P2 | ✅ S20 滚动均值 × 窗口长度（算术还原）+ `capabilities.stats.etf_flow_rolling`；`windows` 可配（默认 7/30），样本 <30 降级 `insufficient_samples`，窗口超历史降级 `short_history` |
+| D-A16 | 稳定币增速 | USDT/USDC 规模序列 | 7/30d 增速 | `growth_7d, growth_30d` | metric_series | deterministic | P2 | ✅ S16 逐窗口执行 + `capabilities.stats.stablecoin_growth`；`windows` 可配（默认 7/30），样本 <30 降级 `insufficient_samples`，窗口超历史降级 `short_history`，基期 0 降级 `base_zero` |
 
 ### 2.2 B 组：技术指标（10 项，依赖 `market.candles`）
 
@@ -284,8 +284,8 @@ L1 意图（TS/Python 双端注册表）
 | D-B05 | 布林带位置 | candles(close) | 20 期均值 ±2σ | `boll_pos, upper, lower` | technical_indicator | deterministic | P1 | ✅ L1 已接入（I14/I15） |
 | D-B06 | 量能比 | candles(volume) | 当前量 / N 日均量 | `vol_ratio, base_vol` | technical_indicator | deterministic | P1 | ✅ L1 已接入（I17） |
 | D-B07 | 支撑/压力位 | candles(high/low) | 近 N 日极值 + 触碰次数 | `support, resistance, touches` | technical_indicator | deterministic | P2 | ✅ L1 已接入（I20–I23）；日线 OHLC 不全时回退 1H，无 OHLC 则 `insufficient_history` |
-| D-B08 | 趋势斜率 | candles(close) | 线性回归斜率（标准化） | `slope, r2, window` | technical_indicator | deterministic | P2 | 🟡 |
-| D-B09 | 距 ATH 回撤 | candles(全历史/缓存) | `price/max-1` | `drawdown_from_ath, ath, ath_ts` | technical_indicator | deterministic | P2 | ⬜ |
+| D-B08 | 趋势斜率 | candles(close) | 线性回归斜率（标准化） | `slope, r2, window` | technical_indicator | deterministic | P2 | ✅ T08 + T09（名义 t/p）+ `capabilities.stats.slope_trend`；默认 90 日窗口、下限 30，样本 <60 降级 `short_window`；明确 `hac_corrected=false` |
+| D-B09 | 距 ATH 回撤 | candles(全历史/缓存) | `price/max-1` | `drawdown_from_ath, ath, ath_ts` | technical_indicator | deterministic | P2 | ✅ 复用 D-E10 的 D20/D21 执行器 + `capabilities.stats.ath_drawdown`；`drawdown_from_ath/ath/ath_ts` 为 `current_drawdown/peak_price/peak_ts` 的别名映射，样本 <250 降级 `insufficient_samples` |
 
 > **L1 接入（2026-11-14）**：`l1agg/candles.py`（D-B00，L0 信封 → `CandleSet`，含 `has_ohlc/is_stale`）+ `l1agg/methods/technical.py`（I 组方法）+ `l1agg/technical.py`（`analyze()` 编排，意图 `technical_indicator`，`n<120` 只回 `insufficient_history`，无 OHLC 时 D-B04/D-B07 显式降级，绝不伪造高低点）。测试：`tests/test_technical_indicators.py`。
 
@@ -300,7 +300,7 @@ L1 意图（TS/Python 双端注册表）
 | D-C05 | 四维一致性 | `evolution.contradiction` | `dims[], verdict` | cross_check | gated | P2 | ✅ |
 | D-C06 | 周期状态/战略承接 | `evolution.snapshot` + 43 | `cycle, phase, strategic` | conditional_outlook | gated | P2 | ✅ |
 
-### 2.4 E 组：统计关系与价格表达（14 项，方法库驱动）
+### 2.4 E 组：统计关系与价格表达（19 项，方法库驱动）
 
 > 方法定义见 [METHOD_LIBRARY.md](./METHOD_LIBRARY.md)（238 方法 / 18 关系原语）。本组是「数据状态 → 价格表现」的固定统计出口，禁用因果与预测措辞。
 
@@ -320,6 +320,11 @@ L1 意图（TS/Python 双端注册表）
 | D-E12 | 时空对齐切片 | R18 | 多资产同日数据 | cross_check | P2 | ✅ `capabilities/stats.py::alignment_slice` 已接线；样本不足与空窗口显式降级 |
 | **D-E13** | **趋势延续性画像（场景包）** | T13 + T14 + T20/T21 + F18 + B07/B08 + T08/T09 + B13–B15 | 日频价格 ≥250 点（当前纵深见 METHOD_LIBRARY §15） | conditional_return（子集） | **P0** | ✅ 已交付（2026-11-14，27 用例） |
 | **D-E14** | **相关状态条件分布（场景包）** | 一维相关状态 + B05/B10/R01/R02/R08 | 对齐样本 + **每桶非重叠 ≥250** | conditional_distribution | P2 | ✅ 一维首版已接线（2026-11-15，`capabilities/stats.py::conditional_distribution`）：R02 PIT 4 桶输出 h=1/2，主期限不足降 2 桶，弱后续期限单独降级；h>1 不输出朴素 t/p。二维 4×4 仍需 ≥4000 天/资产，见 #31 |
+| D-E15 | 趋势曲线/多窗口斜率 | I02, T08, I32, I37 | 价格 ≥250 点 | trend_query | P2 | ✅ 已接线（`capabilities/stats.py::trend`）：EMA(12/26/50) 平滑 + 多窗口对数价格斜率(20/60/120/250) + ADX14，可选 I37 Kalman 局部线性趋势；对外只给统计事实 |
+| D-E16 | 多成员加权聚合曲线 | S16 | 多资产同日 ≥60 点 | trend_query | P2 | ✅ 已接线（`capabilities/stats.py::aggregate_curve`）：成员先按自身首日 rebase 再按 `chart_weights` 加权，缺口不向前填充，逐点输出 `coverage_ratio/partial_members`；纯聚合展示，不含交易方向 |
+| D-E17 | 五类分组看板 | S16, S25, M01, I32 | 跨资产公共日期轴 ≥60 点 | cross_check | P2 | ✅ 已接线（`capabilities/stats.py::class_board`）：`ret_60` 与 D-E12 同口径，组内按 `ret_60` 降序，`lit_n/warm_n` 直接消费 D-E19 计数（零重算）；样本低于 per-anchor 质量门时标 `degraded_reason` 并禁止点亮 |
+| D-E18 | 资金流向导图 | M01, M02 | 多资产对齐 ≥60 点 | data_insight | P2 | ✅ 已接线（`capabilities/stats.py::flow_graph`）：ETF 净流入按滚动窗口 z-score 转 flow 边，无 flow 数据时降级 corr-only 且绝不伪造边；边严格 5 键 `src/dst/kind/weight/p_adj` |
+| D-E19 | 四轴五态点亮投影 | I37, I36（cycle 轴取 I39 外部归一值） | per-anchor 250（代币化）/ 500 | trend_query | P2 | ✅ 已接线（`capabilities/stats.py::lights`）：轴强度 = \|轴值\|/轴权重（零重算），`lit/warm` 阈值默认 p70/p40 且未标定时显式打标；展示层不重算统计量 |
 
 > **D-E13/D-E14 是场景编排，不新增方法 ID**：D-E13 = D-E07（状态转移）+ D-E08（分箱/IC）+ T 组方法的固定出口，一次调用输出「7 个度量 + 一句话」；D-E14 是「相关状态 → 前瞻分布」的条件化版本。实现、门禁与 T/S 映射见 [SPEC-54-延续性统计分析模块.md](../SPEC-54-延续性统计分析模块.md) 与 [SPEC-54-L1 §3.5](../SPEC-54-L1架构能力聚合层.md)。
 >
@@ -331,22 +336,22 @@ L1 意图（TS/Python 双端注册表）
 
 **方法层先行（v2.3，统计学注册库全量补全）**：S6 批 62 方法落地——`descriptive.py`（S 组 26 + D 组 22）、`timeseries.py`（T 组 21 + F 组 12）、`inference.py`（H 组 13 + B 组 8 + M 组 2 + R 组 6）。注册表累计 **154 方法**，`method_audit.py` 全 PASS，`tests` 349 例全绿。当时跳过需要 statsmodels/scipy 拟合、FFT 或外部数据的 T05/T06/T10/T18/T23/T25/T26、D14/D15（v1.11 已全部补齐实现）。口径冻结见 [METHOD_LIBRARY §16](./METHOD_LIBRARY.md)。
 
-> **当前计数（v2.8，勿再引用 154 为总量）**：注册表 `REGISTRY` 实际登记 **387 条 = 核心 238 + 调研族 149**；其中 `implemented=true` **386 条**；`implemented=false` 仅 **1 条**（C11 缺交易日历/节假日表，按纪律登记不可用）。方法库目录同为 **387 条**（X12/O15/P14/Q16/SC92），已无“只有编号占位”的方法。`all_specs(scope=...)` 支持 `core`(238)/`research`(149)/`all`(387)，默认 `core` 以保持 `catalog_total == 238`。
+> **当前计数（v2.25，勿再引用 154 为总量）**：注册表 `REGISTRY` 实际登记 **392 条 = 核心 243 + 调研族 149**；其中 `implemented=true` **391 条**；`implemented=false` 仅 **1 条**（C11 缺交易日历/节假日表，按纪律登记不可用）。核心 243 含 v2.25 前已落地的 I35–I39 美联储方法。方法库目录同为 **392 条**（X12/O15/P14/Q16/SC92），已无“只有编号占位”的方法。`all_specs(scope=...)` 支持 `core`(243)/`research`(149)/`all`(392)，默认 `core` 以保持 `catalog_total == 243`。
 >
-> 全量 `method_audit.py --scope all` 已于 2026-11-15 重跑并写入 [docs/method_audit.json](./method_audit.json)：**implemented 386 / passed 386 / failed 0**，`catalog_total=238`、`research_catalog_total=149`、`registered_total=387`；六类检查共 2316 项，真实执行 1028、不适用 762、缺失 526，适用检查覆盖率 **66.15%**。`pytest tests -q` → **695 passed**。PASS 不等于完整验证覆盖；上段 154 仅为 v2.3 时点记录，现已被完全包含。
+> 全量 `method_audit.py --scope all` 于 2026-11-15 的快照仍为 I35–I39 接入前口径（`catalog_total=238`），已写入 [docs/method_audit.json](./method_audit.json) 待重跑：**implemented 386 / passed 386 / failed 0**，`research_catalog_total=149`、`registered_total=387`；六类检查共 2316 项，真实执行 1028、不适用 762、缺失 526，适用检查覆盖率 **66.15%**。`pytest tests -q` → **772 passed**。PASS 不等于完整验证覆盖；上段 154 仅为 v2.3 时点记录，现已被完全包含。
 
-**能力层接线（v2.21 补 D-J02；v2.20 补 D-J04；v2.19 补 D-E07/B06；v2.18 补 D-G23；v2.17 补 D-E14；v2.16 补 D-E04/D-E09；v2.15 接入 D-A14；v2.14 扩到 G 组）**：`l1agg/capabilities/` 当前共有 **19 个可执行出口**（A 组 1 个 + E 组 14 个 + G 组 D-G22/D-G23 + J 组 D-J02/D-J04），端到端产出 `CapabilityResult`，并对跨条件分支累计的真实方法调用做 manifest 覆盖校验：
+**能力层接线（v2.48 补 D-E15～D-E19；v2.46 补 D-G09；v2.45 补 D-G08；v2.44 补 D-B09；v2.43 补 D-B08；v2.42 补 D-A16；v2.41 补 D-A15；v2.40 补 D-A13；v2.39 补 D-A12；v2.38 补 D-A11；v2.37 补 D-A10；v2.36 补 D-A09；v2.35 补 D-A08；v2.34 补 D-A07；v2.33 补 D-A06；v2.32 补 D-A04；v2.31 补 D-A03；v2.30 补 D-A02；v2.29 补 D-A01；v2.28 补 D-J30；v2.27 补 D-G14；v2.26 补 D-J24；v2.25 补 D-J22；v2.24 补 D-G20；v2.23 补 D-G19；v2.22 补 D-G16；v2.21 补 D-J02；v2.20 补 D-J04；v2.19 补 D-E07/B06；v2.18 补 D-G23；v2.17 补 D-E14；v2.16 补 D-E04/D-E09；v2.15 接入 D-A14；v2.14 扩到 G 组）**：`l1agg/capabilities/` 当前共有 **48 个可执行出口**（A 组 D-A01/D-A02/D-A03/D-A04/D-A06/D-A07/D-A08/D-A09/D-A10/D-A11/D-A12/D-A13/D-A14/D-A15/D-A16 + B 组 D-B08/D-B09 + E 组 19 个 + G 组 D-G08/D-G09/D-G14/D-G16/D-G19/D-G20/D-G22/D-G23 + J 组 D-J02/D-J04/D-J22/D-J24/D-J30），端到端产出 `CapabilityResult`，并对跨条件分支累计的真实方法调用做 manifest 覆盖校验：
 
 | 文件 | 职责 |
 |---|---|
-| `capability_manifest.yaml` | 能力 → 意图 / scope / executor / 方法 / `min_n` 的**唯一事实源**（19 条） |
+| `capability_manifest.yaml` | 能力 → 意图 / scope / executor / 方法 / `min_n` 的**唯一事实源**（48 条） |
 | `l1agg/capabilities/manifest.py` | 加载 + 绑定校验 + `validate_execution`：跨条件分支累计真实成功调用，拒绝未绑定调用与声明但从未执行的方法 |
 | `l1agg/eval/harness.py` | 六类检查按 `executed/missing/not_applicable` 统计；方法级、检查级与全局覆盖率进入 JSON/CLI 报告，PASS 不再冒充全覆盖 |
 | `l1agg/capabilities/envelope.py` | 统一信封组装 + 契约守卫（`quality` 只在顶层、partial 必带 `degraded_reason`、`answer` 非空） |
-| `l1agg/capabilities/stats.py` | 17 个编排函数：`conditional_return` / `conditional_distribution` / `drawdown` / `seasonality` / `percentile_forward` / `state_transition` / `correlation` / `conditional_ic` / `alignment_slice` / `hac_significance` / `crowding` / `event_study` / `event_car_significance` / `seasonal_adjustment` / `change_point` / `count_series` / `trend` + `run_capability(id, **kw)` 调度 |
+| `l1agg/capabilities/stats.py` | 45 个编排函数：`conditional_return` / `conditional_distribution` / `drawdown`（D-E10 与 D-A07 共用，注入 `capability_id`） / `seasonality` / `percentile_forward` / `state_transition` / `correlation` / `conditional_ic` / `alignment_slice` / `portfolio_risk` / `ic_profile` / `quantile_monotonic` / `hac_significance` / `crowding` / `event_study` / `event_car_significance` / `seasonal_adjustment` / `change_point` / `count_series` / `trend` / `dimension_reduction` / `correlation_network` / `ewma_risk` / `pit_alignment` / `history_series` / `change_rate` / `cagr` / `percentile_rank` / `annualized_volatility` / `yoy_change` / `mom_change` / `real_rate` / `rolling_correlation` / `lead_lag_correlation` / `extreme_frequency` / `etf_flow_rolling` / `stablecoin_growth` / `slope_trend` / `ath_drawdown` / `momentum_12_1` / `vol_target_scale` / `aggregate_curve` / `class_board` / `flow_graph` / `lights` + `run_capability(id, **kw)` 调度 |
 | `contracts/capability_result.schema.json` | JSON Schema（测试用 `jsonschema` 逐条校验输出） |
 
-19 个出口为：D-A14、D-E01～D-E12（不含场景包 D-E13）、D-E14、D-E15、D-G22、D-G23、D-J02、D-J04。D-J02 新接 C13 月度季节强度、T10 robust STL 与 SC91 X-13 风格分解，原始组件与强度并列输出；日期轴必填，历史不足 3 年降级为描述性结论。D-J04 新接 T22/SC49 两种 CUSUM、T23 近似 PELT、SC50 精确 PELT 与 SC51 Pettitt，并列输出原始结果与断点日期映射；SC47 Kalman 与 SC48 互谱相干不属于本出口。D-G23 新接 Q10 均值调整 CAR 与 Q11 Patell/BMP，价格轴事件下标先转为同日收盘收益下标；事件数 <30 或标准化检验不可用时降级并保留 CAR。D-E14 新接一维相关状态条件分布：R02 PIT 桶标签由 B05/B10/R01/R08 共享，默认 h=1/2、4 桶，主期限不足降 2 桶，弱后续期限单独降级；h>1 不输出朴素 t/p。其余出口沿用既有门禁与降级口径；二维 D-E14 仍未接线，各出口实际结论均受样本门禁约束。
+48 个出口为：D-A01、D-A02、D-A03、D-A04、D-A06、D-A07、D-A08、D-A09、D-A10、D-A11、D-A12、D-A13、D-A14、D-A15、D-A16、D-B08、D-B09、D-E01～D-E12（不含场景包 D-E13）、D-E14、D-E15、D-E16、D-E17、D-E18、D-E19、D-G08、D-G09、D-G14、D-G16、D-G19、D-G20、D-G22、D-G23、D-J02、D-J04、D-J22、D-J24、D-J30。D-G09 新接波动率目标换算出口：价格先转日简单收益（数据整形），由 P02 计算窗口内实现年化波动与 `scale = target_vol / realized_vol`（target_vol 默认 0.10、window 默认 20、periods 默认 365），能力层不重算波动；收益样本 <60、`target_vol≤0` 或非数值、`window<2`、`periods<1`、日期长度不一致或含非有限值为空；`window` 超过收益长度时截断并降级 `window_truncated`，实现波动为 0 时降级 `zero_volatility` 且系数记 0.0；系数仅描述样本内目标/实现波动之比，不构成交易建议。D-G08 新接 12-1 动量出口：按「跳过最近 `skip` 期（默认 21）、回溯 `lookback` 期（默认 252）」切片后由 F14 真实执行动量/波动/风险调整动量（能力层只做窗口切片与百分比换算），输出 `momentum_12_1/lookback/skip/vol/risk_adjusted/window_start_ts/window_end_ts/truncated/sample_n`；价格样本 <60、`lookback<2`、`skip<0`、非整数参数、日期长度不一致或含非有限值为空；历史不足 `lookback+skip+1` 时截断 lookback 并降级 `short_history`，窗口起点非正降级 `base_zero`。D-B09 新接距 ATH 回撤出口：复用 D-E10 的 `drawdown` 执行器（D20 回撤画像 + D21 持续期），能力层只做 max/索引取点与别名映射，输出 TD 约定的 `drawdown_from_ath/ath/ath_ts`（分别等于 `current_drawdown/peak_price/peak_ts`）并保留 `mdd/duration_days/recovery_days`；价格样本 <2 或全无效值为空，样本 <250 降级 `insufficient_samples`。D-B08 新接趋势斜率出口：取最近 `window` 期（默认 90，下限 30）由 T08 计算对数价格 OLS 斜率与 R²、T09 计算名义 t/p，输出 `slope/r2/window/t/p/hac_corrected/sample_n`，显式标注 `hac_corrected=false`，t/p 只用于相对比较；样本 <60 降级 `short_window` 但保留结果，样本 <30 或 `window<30` 为 empty。D-A16 新接稳定币规模增速出口：S16 逐窗口真实执行 `x_t/x_{t-w}-1` 并折算百分比，能力层只组装多窗口结果，输出 `growth_{k}d/windows/sample_n`；`windows` 可配（默认 7/30），有效样本 <30 降级 `insufficient_samples` 但保留结果，窗口超出历史降级 `short_history`，基期为 0 降级 `base_zero` 并将该窗口置 None，全部窗口不可算 FAIL-OPEN 为 empty。D-A15 新接净流入滚动和出口：S20 真实执行滚动均值，能力层以「均值 × 窗口长度」算术还原滚动和，不做任何分布估计；`windows` 可配（默认 7/30，输出 `sum_{k}d`），有效样本 <30 降级 `insufficient_samples` 但保留结果，窗口超出历史长度降级 `short_history` 并将该窗口置 None，全部窗口不可算 FAIL-OPEN 为 empty。D-A13 新接极端事件频率出口：未给 `threshold` 时由 S11 分位（`quantile` 默认 0.95，取 pN）给出阈值，计数为纯聚合不引入额外估计量，输出 `days/ratio/threshold/side/quantile/sample_n`；样本 <30 且未提供阈值时阈值不可确定为空，提供阈值时 <30 降级 `insufficient_samples` 但保留计数；`side` 支持 above/below/abs。D-A12 新接领先滞后相关出口：paired complete-case 后由 M11 输出 lag −max_lag…+max_lag（默认 10）的相关/p/BH-FDR q/显著性，M12 输出最优 lag，能力层组装 `corr_by_lag[]` 与 `best_lag/best_corr/best_p_adj`；有效配对 <120 降级 `insufficient_history` 但保留结果，配对 <2、`max_lag<1` 或超过配对样本、日期长度不一致为 empty；结论不自动等于因果或未来可预测。D-A11 新接双序列滚动相关出口：按原始位置 paired complete-case 后由 M04 计算滚动 Pearson 相关（`window` 默认 30），输出 `corr`（最近窗口）/`mean_r`/`window`/`n_windows`/`sample_n`；有效配对 <60 降级 `insufficient_samples` 但保留结果，配对 <2、`window<2` 或超过配对样本、日期长度不一致为 empty。D-A10 新接实际利率出口：名义利率（如 DGS10）减 CPI 同比通胀，通胀唯一由 S16（`k=period`，默认 12）真实执行并折算为百分点，能力层只做差值组合，输出 `real_rate/nominal/inflation/base_ts/period/sample_n`；CPI 基期为 0 时通胀与实际利率均不可计算并降级 `inflation_unavailable`，历史 <2 个完整周期降级 `short_history`；样本不足以覆盖 period、`period<1`、双序列长度不一致、日期长度不一致或含非有限值为空。D-A09 新接环比出口：由 S16 以 `k=1` 计算 `x_t/x_{t-1}-1`，输出 `mom/base_ts/sample_n`；至少 2 个有效点，基期为 0 时 `mom=None` 并降级 `mom_unavailable`；样本 <2 为空。D-A08 新接同比出口：由 S16 计算 `x_t/x_{t-period}-1`（period 默认 12），输出 `yoy/base_ts/period/sample_n`；历史长度 <2×period+1 降级 `short_history`，基期为 0 时 `yoy=None` 并降级 `yoy_unavailable`；样本 ≤period 或 period<1 为空。D-A07 新接回撤出口：与 D-E10 共用 `drawdown` 执行器并由调度层注入 `capability_id`，D20/D21 真实执行，输出 TD 约定的 `drawdown/peak_ts` 并保留 `mdd/current_drawdown/duration_days/drawdown_path`；`prices<2` 为空，样本 <250 期降级 `insufficient_samples`。D-A06 新接年化波动率出口：取最近 `window` 期（缺省全样本）由 F05 计算日简单收益标准差 × √365，输出 `volatility/mean_ret/window/sample_n`；有效样本 <60 期降级 `short_window`，样本 <30 或 `window<30` 为空。D-A04 新接历史分位出口：取最近 `lookback` 期（缺省全样本）由 S25 计算末值经验分位，输出 `percentile/value/lookback/sample_n`；窗口 <60 期降级 `short_lookback`，`lookback` 超过可用历史时降级 `lookback_truncated` 并按可用样本计算；样本 <30 或 `lookback<30` 为空。D-A03 新接 CAGR 出口：首末值 + 年数（有日期轴按日历天数、否则按 n-1 天），跨度不足 1 年降级 `short_span`；起止值非正为空。D-A02 新接区间变化率出口：序列末值与 `window` 期前值比较，S15 输出绝对变化、S16 输出变化率；基期值为 0 时变化率不可用降级 `change_pct_unavailable` 并保留绝对变化。D-A01 新接单序列历史序列出口：日期轴必填且与数值等长，按 `freq` 取日/周/月区间最后观测（同日重复取最后）输出 `points[]/span/unit`，当前历史分位复用 S25；缺失率 >20% 降级 `sparse_series`。D-J30 新接 SC90 PIT 时间校验（`available ≤ used`，支持 ISO 与数值时间戳）与 R02 `pit=true` 前瞻分布：`release_ts`/`used_ts` 缺省视为观测时刻，PIT 违规降级 partial 并披露前视风险，过滤后可见样本不足 PIT 窗口时不产出前瞻分布。D-G14 新接 P07 EWMA 组合协方差（λ 默认 0.94）与 T19 逐资产 EWMA 波动序列：多资产面板按原始行 complete-case 后共享同一矩阵，单资产仅走 T19 且不输出协方差，风险结构只描述样本内统计。D-G16 新接 P09 参数法组合 VaR、P10 历史法组合 VaR/CVaR，并以 D17/D18 并列输出逐资产历史 VaR/CVaR；各资产收益按最小公共长度对齐，权重归一化与统计计算全部由方法层完成。D-G19 新接 B13/B14 与 Q01/Q02 的 IC/RankIC/ICIR、Q03 因子 IC 衰减，以及可选价格输入的 B15 价格动量重叠/非重叠 IC 衰减；Q03 收益轴通过首项补 0、右移已对齐 forward 防止多移一期，缺价格时保留核心五方法结果并显式降级。D-G20 新接 B16 分位组统计、B11 组均值严格单调性与 Q04 分位序号 Spearman 检验；factor/forward 按原始位置 complete-case 后共享同一样本轴，spread 仅作描述性统计而非策略收益。D-J02 新接 C13 月度季节强度、T10 robust STL 与 SC91 X-13 风格分解，原始组件与强度并列输出；日期轴必填，历史不足 3 年降级为描述性结论。D-J04 新接 T22/SC49 两种 CUSUM、T23 近似 PELT、SC50 精确 PELT 与 SC51 Pettitt，并列输出原始结果与断点日期映射；SC47 Kalman 与 SC48 互谱相干不属于本出口。D-G23 新接 Q10 均值调整 CAR 与 Q11 Patell/BMP，价格轴事件下标先转为同日收盘收益下标；事件数 <30 或标准化检验不可用时降级并保留 CAR。D-E14 新接一维相关状态条件分布：R02 PIT 桶标签由 B05/B10/R01/R08 共享，默认 h=1/2、4 桶，主期限不足降 2 桶，弱后续期限单独降级；h>1 不输出朴素 t/p。D-J22 新接 M19 相关阵 PCA、M20 载荷、SC31 sklearn PCA、SC32 SVD 与 SC33 因子分析；多变量面板按原始行 complete-case 后共享同一数据矩阵，仅描述数据结构、不生成交易方向。D-J24 新接 M05 相关矩阵、M21 相关距离层次聚类与 SC71/SC72 网络中心性/社区发现：|ρ|≥threshold 生成无向邻接，图规模低于方法门禁时降级披露，仅描述同期相关关系。其余出口沿用既有门禁与降级口径；二维 D-E14 仍未接线，各出口实际结论均受样本门禁约束。
 
 ### 2.5 G 组：机构统计方法（25 项，调研见 RESEARCH-INSTITUTIONAL-L1-METHODS.md）
 
@@ -361,19 +366,19 @@ L1 意图（TS/Python 双端注册表）
 | D-G05 | 同向率矩阵 | D1 | P2 | ⬜ |
 | D-G06 | 因子暴露 / 特质收益（Barra 简化） | D3 | P3 | ⬜ |
 | D-G07 | 序列算子族（15 个：delay/delta/ts_rank/decay_linear…） | D1 | P2 | ⬜ |
-| D-G08 | 固定公式因子（12-1 动量、20 日 ts_rank） | D1 | P1 | ⬜ |
-| D-G09 | 波动率目标换算 | D1 | P1 | ⬜ |
+| D-G08 | 固定公式因子（12-1 动量、20 日 ts_rank） | D1 | P1 | ✅ 已接线（`capabilities/stats.py::momentum_12_1`）：F14 在「跳过最近 skip 期、回溯 lookback 期」切片上真实执行动量/波动/风险调整动量，输出 `momentum_12_1/lookback/skip/vol/risk_adjusted/sample_n`；min_n=60，历史不足时截断 lookback 并降级 `short_history`；20 日 ts_rank 属 D-G07 序列算子族，未随本能力接线 |
+| D-G09 | 波动率目标换算 | D1 | P1 | ✅ 已接线（`capabilities/stats.py::vol_target_scale`）：价格先转日简单收益（数据整形），由 P02 计算窗口实现年化波动与 `scale = target_vol / realized_vol`；target_vol 默认 0.10、window 默认 20、periods 默认 365；收益样本 <60 为空，window 超长截断降级 `window_truncated`，实现波动为 0 降级 `zero_volatility`；系数仅为样本内比值，不构成交易建议 |
 | D-G10 | 逆波动权重 | D1 | P2 | ⬜ |
 | D-G11 | 等风险贡献权重 | D3 | P3 | ⬜ |
 | D-G12 | 风险贡献分解 | D1 | P3 | ⬜ |
 | D-G13 | 协方差收缩（Ledoit-Wolf） | D3 | P3 | ⬜ |
-| D-G14 | EWMA 波动/协方差（λ=0.94/0.97） | D1 | P1 | 🟡 波动腿已实现（`timeseries.py::t19_ewma_vol`）；✅ EWMA 波动/协方差方法层已实现（`research_pq.py::P07`），⬜ 协方差能力未接线 |
+| D-G14 | EWMA 波动/协方差（λ=0.94/0.97） | D1 | P1 | ✅ 已接线（`capabilities/stats.py::ewma_risk`）：P07 EWMA 组合协方差（λ 默认 0.94、init_window 20、年化 365）+ T19 逐资产 EWMA 波动序列并列输出；多资产面板按原始行 complete-case，单资产仅走 T19 且不输出协方差；min_n=60，仅描述样本内风险结构 |
 | D-G15 | PCA 风险分解 | D3 | P3 | ⬜ |
-| D-G16 | 组合 VaR / CVaR | D1 | P2 | 🟡 单资产 VaR/CVaR 已实现（`descriptive.py::d17_var`/`d18_cvar`）；✅ 组合层方法已实现（`research_pq.py::P09/P10`），⬜ 能力未接线 |
+| D-G16 | 组合 VaR / CVaR | D1 | P2 | ✅ 已接线（`capabilities/stats.py::portfolio_risk`）：P09 参数法组合 VaR + P10 历史法组合 VaR/CVaR，D17/D18 并列输出逐资产历史 VaR/CVaR；min_n=60，按最小公共长度对齐，损失正数口径 |
 | D-G17 | 水下曲线 / 回撤画像 | D1 | P1 | ✅ D20/D21/F09/F10/R11 已实现，并经 D-E10 接线（`capabilities/stats.py::drawdown`） |
 | D-G18 | Brinson 归因 | D1 | P3 | ⬜ |
-| D-G19 | IC / ICIR / 衰减表 | D2 | P2 | ✅ B13–B15（`conditional.py`）与 Q01/Q02/Q03（`research_pq.py`，IC/RankIC、ICIR、IC 衰减）方法层已实现；⬜ 能力未接线 |
-| D-G20 | 分位单调性检验 | D2 | P2 | 🟡 B11/B16 已实现（`conditional.py`）；B11 已随 D-E08 接线，B16 分组统计尚未接入完整分位组合出口 |
+| D-G19 | IC / ICIR / 衰减表 | D2 | P2 | ✅ 已接线（`capabilities/stats.py::ic_profile`）：B13/B14 + Q01/Q02 输出 IC/RankIC/ICIR，Q03 输出因子 IC 衰减，可选 prices 执行 B15 价格动量衰减；min_n=250，Q03 收益轴右移防错配，缺价格降级保留核心结果 |
+| D-G20 | 分位单调性检验 | D2 | P2 | ✅ 已接线（`capabilities/stats.py::quantile_monotonic`）：B16 输出各分位组统计与最高减最低 spread，B11 检验组均值严格单调，Q04 输出分位序号与组均值 Spearman rho/p；min_n=250，complete-case 对齐，spread 仅为描述性统计 |
 | D-G21 | Fama-MacBeth 横截面回归 | D3 | P3 | ⬜ |
 | D-G22 | Deflated Sharpe / Newey-West t | D2 | P3 | ✅ |
 | D-G23 | 事件窗 CAR + Patell/BMP | D2 | P2 | ✅ 已接线（2026-11-15，`capabilities/stats.py::event_car_significance`）：Q10 均值调整 CAR + Q11 Patell/BMP；价格轴事件下标转为同日收盘收益下标；事件数 <30 或 Q11 不可用时降级 partial，保留 Q10 CAR |
@@ -409,15 +414,15 @@ L1 意图（TS/Python 双端注册表）
 | D-J19 | ANOVA/ANCOVA/事后比较 | D2 | P2 | ⬜ |
 | D-J20 | 回归诊断（VIF/BP/White/DW/Cook） | D2 | P2 | ⬜ |
 | D-J21 | 稳健回归/分位回归 | D3 | P3 | ⬜ |
-| D-J22 | PCA/SVD/因子分析 | D3 | P2 | ⬜ |
+| D-J22 | PCA/SVD/因子分析 | D3 | P2 | ✅ 已接线（`capabilities/stats.py::dimension_reduction`）：M19/M20/SC31/SC32/SC33 并列，面板 complete-case 共享同一数据矩阵，min_n=60；仅描述数据结构 |
 | D-J23 | 聚类与轮廓系数 | D3 | P3 | ⬜ |
-| D-J24 | 相关网络与社区发现 | D3 | P3 | ⬜ |
+| D-J24 | 相关网络与社区发现 | D3 | P3 | ✅ 已接线（`capabilities/stats.py::correlation_network`）：M05 相关矩阵按 |ρ|≥threshold 生成邻接，SC71 度/介数/接近中心性，SC72 Louvain 社区与模块度，M21 相关距离层次聚类；min_n=60、≥2 变量，图规模低于方法门禁时降级为描述 |
 | D-J25 | 空间自相关/变异函数 | D2 | P3 | ⬜ |
 | D-J26 | 生存分析（KM/log-rank/Cox） | D3 | P3 | ⬜ |
 | D-J27 | 可靠性/控制图（X̄-R/EWMA/CUSUM） | D1 | P3 | ⬜ |
 | D-J28 | Meta 分析与异质性 | D3 | P3 | ⬜ |
 | D-J29 | 缺失机制与插补 | D3 | P2 | ⬜ |
-| D-J30 | 质量校验（重复/一致性/PIT） | D1 | P1 | ⬜ |
+| D-J30 | 质量校验（重复/一致性/PIT） | D1 | P1 | ✅ |
 
 **分层关系**：A/B/C = 数据维度；E = 关系表达；G = 机构方法；**J = 科研统计（通用化）**。J 组使 L1 可用于运营、实验、传感器、气候、医学等任意时序数据场景。
 
@@ -488,9 +493,250 @@ L1 意图（TS/Python 双端注册表）
 - 场景包 SPEC = 某类问题的**固定编排**（当前已交付延续性画像 `D-E13`、T0.5 与 D-E14/T2 一维首版；二维 T2 仍待样本与状态特征）。
 - 新增能力流程：本文登记 → SPEC 补契约（如涉及新 scope）→ 实现 + 测试 → 更新状态列并附代码位置。
 
-### 6.1 本版更改（v2.21 D-J02 季节强度与调整；v2.20 D-J04 变点检测；v2.19 D-E07/B06 联合计数；v2.18 D-G23 事件窗 CAR + Patell/BMP；v2.17 D-E14 一维条件分布；v2.16 D-E04/D-E09 事件与计数出口；v2.15 D-A14/F26 A 分位法 level；v2.14 D-G22 显著性出口；v2.13 事件历史回填通道；v2.12 D-E12/R18；v2.11 C18/D-E01/MERS；v2.10 配对/推断/执行覆盖；v2.9 D-E02 接线与 T0.5 交付；v2.8 方法层全部落地）
+### 6.1 本版更改（v2.48 L1 交易层 D-E15～D-E19；v2.47 前端 D-A/D-B/D-G cue 分派；v2.46 D-G09 波动率目标换算；v2.45 D-G08 12-1 动量；v2.44 D-B09 距 ATH 回撤；v2.43 D-B08 趋势斜率；v2.42 D-A16 稳定币增速；v2.41 D-A15 ETF 净流入滚动和；v2.40 D-A13 极端事件频率；v2.39 D-A12 领先滞后相关；v2.38 D-A11 双序列滚动相关；v2.37 D-A10 实际利率；v2.36 D-A09 环比；v2.35 D-A08 同比；v2.34 D-A07 回撤；v2.33 D-A06 年化波动率；v2.32 D-A04 历史分位；v2.31 D-A03 CAGR；v2.30 D-A02 变化率；v2.29 D-A01 历史序列；v2.28 D-J30 PIT/release_ts 全局能力；v2.27 D-G14 EWMA 波动/协方差；v2.26 D-J24 相关网络与社区发现；v2.25 D-J22 PCA/SVD/因子分析；v2.24 D-G20 分位组合与单调性检验；v2.23 D-G19 IC/ICIR/衰减表；v2.22 D-G16 组合 VaR/CVaR；v2.21 D-J02 季节强度与调整；v2.20 D-J04 变点检测；v2.19 D-E07/B06 联合计数；v2.18 D-G23 事件窗 CAR + Patell/BMP；v2.17 D-E14 一维条件分布；v2.16 D-E04/D-E09 事件与计数出口；v2.15 D-A14/F26 A 分位法 level；v2.14 D-G22 显著性出口；v2.13 事件历史回填通道；v2.12 D-E12/R18；v2.11 C18/D-E01/MERS；v2.10 配对/推断/执行覆盖；v2.9 D-E02 接线与 T0.5 交付；v2.8 方法层全部落地）
 
-**v2.21（本版，D-J02 季节强度与调整能力出口）**
+**v2.48（本版，L1 交易层 D-E15～D-E19 能力登记）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-E15–D-E19 能力出口 | `capabilities/stats.py::{trend, aggregate_curve, class_board, flow_graph, lights}`、`capability_manifest.yaml`、[SPEC-54-L1交易层.md](../SPEC-54-L1交易层.md) | D-E15 趋势曲线（`technical_indicator`，min_n=250）：I02/T08/I32 多窗口斜率 + ADX14，可选 I37 Kalman；D-E16 聚合曲线（`metric_series`，min_n=60）：成员按首日 rebase 后按 `chart_weights` 加权，缺口不 ffill，逐点披露 `coverage_ratio/partial_members`；D-E17 分组看板（`cross_check`，min_n=60）：`ret_60` 与 D-E12 同口径，`lit_n/warm_n` 直接读 D-E19 计数（零重算）；D-E18 资金流向（`data_insight`，min_n=60）：M01/M02 建边，无 flow 数据降级 corr-only 且绝不伪造边；D-E19 点亮投影（`trend_query`，min_n=500）：轴强度 = 轴值/轴权重零重算，`lit/warm` 默认 p70/p40，未标定显式打标；可执行出口 44→48 |
+| 交易层配置与积木 | `config/{asset_pool, chart_weights, weights, baseline_methods, method_rank, direction_rule}.yaml`、`l1agg/trading/**` | 资产池、图表权重、轴权重、基线方法、方法排名与方向规则全部配置化，阈值不硬编码；`l1agg/trading` 提供 batch / cluster / comparison / exit_rule / outbox / paper_replay / risk / rule_inputs / sizing / store / weight_switch，回放与实盘共用同一存储与幂等契约 |
+| 验证 | `tests/test_{lights, aggregate, flow_graph, chart_weights, weights, fed_methods, batch_replay, ...}.py` | 54-L1 全量 `pytest tests -q` 全绿（不计并行开发中的 calibrate_light）；`ruff check` / `ruff format` 通过 |
+
+**v2.47（前端 D-A/D-B/D-G cue 分派）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| 前端专用 cue 与分派 | `3.1-FRONTEND/scripts/l1_route_signal.py`、`data_query_executor.py::exec_stat_query`、`src/lib/l1-intent-registry.ts` | 新增 D-A01/D-A02/D-A03/D-A04/D-A06/D-A07/D-A08/D-A09/D-A10/D-A11/D-A12/D-A13/D-A15/D-A16 与 D-B08/D-B09/D-G08/D-G09 共 **18 个能力分派**；专用 cue 先于宽词，避免 ATH→普通回撤、历史分位→前瞻分位、12-1 动量→因子 IC 等截胡；不新增能力出口，仍为 44 个 |
+| 取数与对齐契约 | 同上 | 指标经 `resolve_metric → datacenter.series`，值/日期成对过滤并沿用 sign/scale；同比/环比取月频 1825 天；实际利率将 DGS10 与 CPIAUCSL 月频序列按 `YYYY-MM` 对齐；滚动相关/领先滞后在双资产分派中复用共同交易日与统一收盘锚点；D-B09 取 1825 天，其余价格能力取 730 天；缺指标、缺序列、缺第二标的均显式 degraded |
+| 验证与金标 | `34-前端应用训练系统/tests/test_l1_route_signal.py`、`l1_intent_golden.jsonl`、§6.4 #39/#40 | 新增 18 条 stat_query 金标；Python 路由/分派 **78 passed**，TypeScript 注册表 **19 passed**；覆盖 capability ID、kwargs、月份对齐、双资产 89 个同步收益及缺失数据 FAIL-OPEN；ruff、ruff format、Prettier 全通过；#39/#40 标记完成（未提交，未操作云端） |
+
+**v2.46（D-G09 波动率目标换算）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-G09 能力出口 | `capabilities/stats.py::vol_target_scale`、`capability_manifest.yaml` | 复用 `metric_derived`（deterministic，`min_n=60`，data_scope `market.candles`）：价格转日简单收益（数据整形）后由 P02 计算窗口实现年化波动与 `scale = target_vol / realized_vol`；可执行出口 43→44 |
+| 输入与结果契约 | 同上 | `prices` 必填；`target_vol` 默认 0.10、`window` 默认 20、`periods` 默认 365；输出 `scale/target_vol/realized_vol/window/periods/returns_n/sample_n`；收益 <60、`target_vol≤0`、`window<2`、`periods<1`、日期长度不一致、含非有限值为空；`window` 超长截断降级 `window_truncated`，实现波动为 0 降级 `zero_volatility` |
+| 方法层契约坑 | 同上 | P02 为面板方法，必须传**扁平** `{sym: returns}`；传 `{"returns": {...}}` 会让 `_sample_n` 计为 1 而被门禁挡成 insufficient_samples |
+| 验证与清单 | 54-L1 全量、§6.4 #30 | 新增 4 例（完整信封 / 与 P02 逐项相等 / 零波动与窗口截断双降级 / 6 类非法输入 FAIL-OPEN），纳入 4 处白名单；`pytest tests --ignore=tests/test_paper_replay.py` → **1060 passed / 0 failed**；本次修改文件 ruff 通过；#30 标记完成（未提交） |
+
+**v2.45（D-G08 12-1 动量）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-G08 能力出口 | `capabilities/stats.py::momentum_12_1`、`capability_manifest.yaml` | 复用 `metric_derived`（deterministic，`min_n=60`，data_scope `market.candles`）：按「跳过最近 `skip` 期（默认 21）、回溯 `lookback` 期（默认 252）」切片后由 F14 真实执行，能力层只做窗口切片与百分比换算；可执行出口 42→43 |
+| 输入与结果契约 | 同上 | `prices` 必填；输出 `momentum_12_1/lookback/skip/vol/risk_adjusted/window_start_ts/window_end_ts/truncated/sample_n`；历史不足 `lookback+skip+1` 时截断 lookback 并降级 `short_history`，窗口起点非正降级 `base_zero` |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：280 点完整信封（窗口 253 点、起点/终点日期对齐）、与 F14 逐项相等、120 点降级 `short_history`（lookback 截断为 98）、样本 <60 / lookback<2 / skip<0 / 非整数参数 / 日期长度不一致 / 含 None FAIL-OPEN；纳入 ID 集合、executor 白名单、JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 全量、§6.4 #29 | `pytest tests --ignore=tests/test_paper_replay.py` → **1056 passed / 0 failed**；本次修改文件 ruff check / ruff format 通过；#29 标记完成（未提交） |
+
+**v2.44（D-B09 距 ATH 回撤）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-B09 能力出口 | `capabilities/stats.py::ath_drawdown`、`capability_manifest.yaml` | 复用 D-E10 `drawdown` 执行器（`technical_indicator`，`min_n=250`，data_scope `market.candles`）：D20/D21 真实执行，能力层只做 max/索引取点与别名映射，输出 `drawdown_from_ath/ath/ath_ts`（= `current_drawdown/peak_price/peak_ts`）；可执行出口 41→42 |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：300 点完整信封（ATH=398、`ath_ts` 对齐峰值日、回撤 0.623116）、与 D20/D21 逐项相等、30 点降级 `insufficient_samples` 但保留结果、单点/空序列/全 None FAIL-OPEN 且日期长度不足时 `ath_ts=None` 不崩溃；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 全量、§6.4 #28 | `pytest tests --ignore=tests/test_paper_replay.py` → **993 passed / 0 failed**（能力模块 169 passed）；本次修改文件 ruff check / ruff format 通过；#28 标记完成（未提交） |
+
+**v2.43（D-B08 趋势斜率）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-B08 能力出口 | `capabilities/stats.py::slope_trend`、`capability_manifest.yaml` | 新增 `technical_indicator`（deterministic，`min_n=60`）：T08 输出对数价格 OLS 斜率与 R²，T09 输出名义 t/p；`window` 默认 90、下限 30；可执行出口 40→41 |
+| 输入与结果契约 | 同上 | `prices` 必填；输出 `slope/r2/window/t/p/hac_corrected/sample_n`；显式 `hac_corrected=false`，answer 声明「名义 t 未做 HAC 修正，仅作相对比较」 |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：120 点完整信封（窗口截取 90 点、slope≈0.002、r2=1）、与 T08/T09 逐项相等、45 点降级 `short_window` 但保留结果、样本 <30 / window<30 / 非整数 window / 日期长度不一致 / 含 None FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 全量、§6.4 #27 | `pytest tests --ignore=tests/test_paper_replay.py` → **989 passed / 0 failed**（能力模块 165 passed）；本次修改文件 ruff check / ruff format 通过；#27 标记完成（未提交） |
+
+**v2.42（D-A16 稳定币增速）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-A16 能力出口 | `capabilities/stats.py::stablecoin_growth`、`capability_manifest.yaml` | 复用 `metric_series`（deterministic，`min_n=30`）：S16 逐窗口真实执行 `x_t/x_{t-w}-1` 并折算百分比，能力层只组装多窗口；`windows` 可配（默认 7/30）；可执行出口 39→40 |
+| 输入与结果契约 | 同上 | `values` 为稳定币规模序列；输出 `growth_{k}d/windows/sample_n`；`dates` 可选但给定时须等长可解析 |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：40 点完整信封（与 S16 逐项相等）、自定义窗口一致、20 点降级 `insufficient_samples` / 10 点 30d 窗口降级 `short_history` / 基期 0 降级 `base_zero` 且该窗口 None、样本不足以覆盖任何窗口/window=0/非整数/空 windows/日期长度不一致/含 None FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 全量、§6.4 #26 | `pytest tests --ignore=tests/test_paper_replay.py` → **985 passed / 0 failed**（73 个能力相关测试通过）；本次修改文件 ruff check / ruff format 通过；#26 标记完成（未提交） |
+
+**v2.41（D-A15 ETF 净流入滚动和）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-A15 能力出口 | `capabilities/stats.py::etf_flow_rolling`、`capability_manifest.yaml` | 复用 `metric_series`（deterministic，`min_n=30`）：S20 真实执行滚动均值，能力层以「均值 × 窗口长度」算术还原滚动和，不重算分布；`windows` 可配（默认 7/30）；可执行出口 38→39 |
+| 输入与结果契约 | 同上 | `values` 必填；输出 `sum_{k}d/windows/sample_n`；`dates` 可选但给定时须等长可解析；货币单位仅用于 answer 展示 |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：40 点完整信封（`sum_7d/sum_30d` 等于末窗和）、与 S20 逐项相等（自定义窗口）、20 点降级 `insufficient_samples` / 10 点 30d 窗口降级 `short_history` 且该窗口 None、样本不足以覆盖任何窗口/window=0/非整数 window/空 windows/日期长度不一致/含 None FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 全量、§6.4 #25 | `pytest tests --ignore=tests/test_paper_replay.py` → **969 passed / 0 failed**（能力模块 157 passed）；本次修改文件 ruff check / ruff format 通过；#25 标记完成（未提交） |
+
+**v2.40（D-A13 极端事件频率）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-A13 能力出口 | `capabilities/stats.py::extreme_frequency`、`capability_manifest.yaml` | 复用 `metric_series`（deterministic，`min_n=30`）：未给 `threshold` 时由 S11 分位（`quantile` 默认 0.95）给出阈值，计数为纯聚合；`side` 支持 above/below/abs；可执行出口 37→38 |
+| 输入与结果契约 | 同上 | `values` 必填；输出 `days/ratio/threshold/side/quantile/sample_n`；`dates` 可选但给定时须等长可解析；阈值来源在 answer 中显式披露 |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：100 点完整信封（阈值与 days 均与 S11 一致）、quantile=0.9 复用 S11、20 点显式阈值降级 `insufficient_samples` 保留计数 / 20 点无阈值 empty、样本 <2/side 非法/NaN 阈值/quantile 越界/日期长度不一致/含 None FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 全量、§6.4 #24 | `pytest tests --ignore=tests/test_paper_replay.py` → **965 passed / 0 failed**（能力模块 153 passed）；本次修改文件 ruff check / ruff format 通过；#24 标记完成（未提交） |
+
+**v2.39（D-A12 领先滞后相关）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-A12 能力出口 | `capabilities/stats.py::lead_lag_correlation`、`capability_manifest.yaml` | 新增 `correlation_query`（deterministic，`min_n=120`）：paired complete-case 后由 M11 输出 lag −max_lag…+max_lag（默认 10）的相关/p/BH-FDR q/显著性，M12 输出最优 lag；可执行出口 36→37 |
+| 输入与结果契约 | 同上 | `x`/`y` 必填，`dates` 可选但给定时须与原序列等长可解析；输出 `best_lag/best_corr/best_p_adj/corr_by_lag[]/max_lag/sample_n`，`align_method=paired_complete_case` |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：150 点完整信封（21 个 lag、`best_corr==1.0`）、与 M11/M12 逐项相等、100 点降级 `insufficient_history` 但保留结果、配对 <2/`max_lag<1`/max_lag 超配对样本/日期长度不一致/全无效值 FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 全量、§6.4 #23 | `pytest tests --ignore=tests/test_paper_replay.py` → **961 passed / 0 failed**（能力模块 149 passed）；本次修改文件 ruff check / ruff format 通过；#23 标记完成（未提交） |
+
+**v2.38（D-A11 双序列滚动相关）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-A11 能力出口 | `capabilities/stats.py::rolling_correlation`、`capability_manifest.yaml` | 新增 `correlation_query`（deterministic，`min_n=60`）：按原始位置 paired complete-case 后由 M04 计算滚动 Pearson 相关（`window` 默认 30）；可执行出口 35→36 |
+| 输入与结果契约 | 同上 | `x`/`y` 必填，`dates` 可选但给定时须与原序列等长可解析（配对后同步过滤）；输出 `corr`（最近窗口）/`mean_r`/`window`/`n_windows`/`sample_n`，`align_method=paired_complete_case` |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：90 点完整信封（`corr==1.0`、`n_windows==61`）、与方法层 M04 逐项相等、40 点降级 `insufficient_samples` 但保留结果、配对 <2/`window<2`/window 超过配对样本/日期长度不一致/全无效值 FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖（M04 在降级分支走 `_call_soft`，仍为同一方法实现） |
+| 验证与清单 | 54-L1 全量、§6.4 #22 | `pytest tests --ignore=tests/test_paper_replay.py` → **957 passed / 0 failed**（能力模块 145 passed）；本次修改文件 ruff check / ruff format 通过；#22 标记完成（未提交） |
+
+**v2.37（D-A10 实际利率）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-A10 能力出口 | `capabilities/stats.py::real_rate`、`capability_manifest.yaml` | 新增 `metric_derived`（deterministic，`min_n=13`）：通胀唯一由 S16（`k=period`，默认 12）真实执行并折算百分点，能力层只做 `名义 − 通胀` 差值组合；可执行出口 34→35 |
+| 输入与结果契约 | 同上 | `nominal`/`cpi` 必填且等长；输出 `real_rate/nominal/inflation/base_ts/period/sample_n`，`dates` 可选但给定时须等长可解析；`span` 取通胀基期→最新 |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：36 期完整信封（`real_rate==nominal−inflation`、`base_ts=dates[-13]`、`align_method=period_offset`）、与方法层 S16 逐项相等、18 期降级 `short_history` + 基期 0 降级 `inflation_unavailable`、样本不足以覆盖 period/`period=0`/双序列长度不一致/日期长度不一致/含 None FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 全量、§6.4 #21 | `pytest tests --ignore=tests/test_paper_replay.py` → **953 passed / 0 failed**（能力模块 141 passed）；本次修改文件 ruff check / ruff format 通过；#21 标记完成（未提交） |
+
+**v2.36（D-A09 环比）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-A09 能力出口 | `capabilities/stats.py::mom_change`、`capability_manifest.yaml` | 复用 `metric_series`（deterministic，`min_n=2`）：S16 以固定 `k=1` 计算 `x_t/x_{t-1}-1`；可执行出口 33→34 |
+| 输入与结果契约 | 同上 | `values` 必填；输出 `mom/base_ts/sample_n`；`dates` 可选但给定时须等长可解析（`base_ts` 取上一期日期、`span` 取上一期→最新） |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：36 期完整信封（`mom==round(v[-1]/v[-2]-1,6)`、`base_ts=dates[-2]`、`align_method=period_offset`）、与方法层 S16（k=1）逐项相等、基期 0 降级 `mom_unavailable`、样本 <2/日期长度不一致/含 None FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 全量、§6.4 #20 | `pytest tests --ignore=tests/test_paper_replay.py` → **949 passed / 0 failed**（能力模块 137 passed）；本次修改文件 ruff check / ruff format 通过；#20 标记完成（未提交） |
+
+**v2.35（D-A08 同比）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-A08 能力出口 | `capabilities/stats.py::yoy_change`、`capability_manifest.yaml` | 复用 `metric_series`（deterministic，`min_n=13`）：S16 计算 `x_t/x_{t-period}-1`（`period` 默认 12）；可执行出口 32→33 |
+| 输入与结果契约 | 同上 | `values` 必填；输出 `yoy/base_ts/period/sample_n`，`dates` 可选但给定时须等长可解析（`base_ts` 取基期日期、`span` 取基期→最新）；样本 ≤period 或 `period<1` 直接 empty |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：36 期完整信封（`yoy==round(v[-1]/v[-13]-1,6)`、`base_ts=dates[-13]`、`align_method=period_offset`）、与方法层 S16 逐项相等、18 期降级 `short_history` + 基期 0 降级 `yoy_unavailable`、样本不足覆盖 period/`period=0`/日期长度不一致/含 None FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 能力相关全量、§6.4 #19 | `pytest tests --ignore=tests/test_paper_replay.py` → **945 passed / 0 failed**（能力模块 133 passed）；本次修改文件 ruff check / ruff format 通过；#19 标记完成（未提交） |
+
+**v2.34（D-A07 回撤）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-A07 能力出口 | `capabilities/stats.py::drawdown`（参数化 `capability_id`/`intent`）、`capability_manifest.yaml` | 复用 `drawdown_query`（deterministic，`min_n=250`）：与 D-E10 共用执行器，调度层经 `_EXECUTOR_INTENTS` 注入 `capability_id=D-A07`，D20 最大回撤 + D21 持续/收复天数真实执行；可执行出口 31→32 |
+| 输入与结果契约 | 同上 | `prices` 必填；输出 TD 约定的 `drawdown/peak_ts`，并保留 `mdd/current_drawdown/duration_days/drawdown_path` 等既有字段；`dates` 可选（缺失时 `peak_ts=None`）；`prices<2` 直接 empty |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：300 点完整信封（`drawdown==round(1-price_last/max,6)`、`peak_ts` 对齐高点日期）、与 D-E10 同输入逐项相等、100 点降级 `insufficient_samples`、1 点/空序列 FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 能力相关全量、§6.4 #18 | `pytest tests --ignore=tests/test_paper_replay.py` → **941 passed / 0 failed**（能力模块 129 passed）；本次修改文件 ruff check / ruff format 通过；#18 标记完成（未提交） |
+
+**v2.33（D-A06 年化波动率）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-A06 能力出口 | `capabilities/stats.py::annualized_volatility`、`capability_manifest.yaml` | 复用 `metric_series`（deterministic，`min_n=30`）：F05 日简单收益标准差 × √365；可执行出口 30→31 |
+| 输入与结果契约 | 同上 | `values` 必填；`window` 缺省取全样本、指定时须 ≥30；输出 `volatility/mean_ret/window/sample_n`；`dates` 可选但给定时须等长可解析；样本 <30、`window<30`、长度不一致或含无效值均直接 empty |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：120 期窗口完整信封（`align_method=trailing_sample`）、与方法层 F05 逐项相等、40 期窗口降级 `short_window`、29 点/`window=20`/日期长度不一致/含 None FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 能力相关全量、§6.4 #17 | `pytest tests --ignore=tests/test_paper_replay.py` → **937 passed / 0 failed**（能力模块 125 passed）；本次修改文件 ruff check / ruff format 通过；#17 标记完成（未提交） |
+
+**v2.32（D-A04 历史分位）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-A04 能力出口 | `capabilities/stats.py::percentile_rank`、`capability_manifest.yaml` | 复用 `metric_percentile`（deterministic，`min_n=30`）：S25 经验分位（`100×count(X≤x_last)/n`，无未来函数）；可执行出口 29→30 |
+| 输入与结果契约 | 同上 | `values` 必填；`lookback` 缺省取全样本、指定时须 ≥30；输出 `percentile/value/lookback/sample_n`；`dates` 可选但给定时须等长可解析；样本 <30、非法 lookback、长度不一致均直接 empty |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：60 期窗口完整信封（`align_method=trailing_sample`）、与方法层 S25 逐项相等、窗口 <60 降级 `short_lookback` + lookback 超历史降级 `lookback_truncated`、29 点/`lookback=10`/日期长度不一致/含 None FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 能力相关全量、§6.4 #16 | `pytest tests --ignore=tests/test_paper_replay.py` → **933 passed / 0 failed**（能力模块 121 passed）；本次修改文件 ruff check / ruff format 通过；#16 标记完成（未提交） |
+
+**v2.31（D-A03 CAGR）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-A03 能力出口 | `capabilities/stats.py::cagr`、`capability_manifest.yaml` | 复用 `metric_series`（deterministic，`min_n=2`）：S19 输出 `cagr/years/n`；可执行出口 28→29 |
+| 输入与结果契约 | 同上 | `values` 必填；`dates` 可选，给定时按首末日历天数折算年数，否则按 `n-1` 天；起止值非正、首末日期跨度非正直接 empty；跨度 <1 年降级 `short_span` 并提示年化仅供参考 |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：两年翻倍完整信封、与方法层 S19 逐项相等、跨度 <1 年降级、1 点/非正起止值/同日/日期长度不一致 FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 能力相关全量、§6.4 #15 | `pytest tests --ignore=tests/test_paper_replay.py` → **929 passed / 0 failed**；本次修改文件 ruff check / ruff format 通过、`git diff --check` 干净；#15 标记完成（未提交） |
+
+**v2.30（D-A02 变化率）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-A02 能力出口 | `capabilities/stats.py::change_rate`、`capability_manifest.yaml` | 复用 `metric_series`（deterministic，`min_n=2`）：S15 绝对变化 + S16 变化率并列输出；可执行出口 27→28 |
+| 输入与结果契约 | 同上 | `values` 必填，`window` 默认 1；`window<1` 或样本不足以覆盖区间直接 empty；`dates` 可选但给定时须等长可解析；基期值为 0 时 `change_pct=None`、降级 `change_pct_unavailable`，绝对变化照常输出 |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：区间变化完整信封、与方法层 S15/S16 逐项相等、基期 0 降级保留绝对变化、1 点/window 越界/window=0/NaN FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 能力相关全量、§6.4 #14 | `pytest tests --ignore=tests/test_paper_replay.py` → **925 passed / 0 failed**；本次修改文件 ruff check / ruff format 通过、`git diff --check` 干净；#14 标记完成（未提交） |
+
+**v2.29（D-A01 历史序列）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-A01 能力出口 | `capabilities/stats.py::history_series`、`capability_manifest.yaml` | 复用 `metric_series`（deterministic，`min_n=30`）：单序列按日/周/月区间取最后观测，输出 `points[]/span/unit`，当前历史分位由 S25 真实执行；可执行出口 26→27 |
+| 输入与结果契约 | 同上 | `values/dates` 必填且等长、日期轴必须可解析；`freq ∈ {daily,weekly,monthly}`（兼容 day/week/month 与首字母）；同日重复取最后观测；能力层只做区间取点与降采样，不重算分位 |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：日频完整信封与 S25 分位、周/月降采样与同日去重、缺失率 >20% 触发 `sparse_series`、29 点/长度不一致/非法 freq FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 能力相关全量、§6.4 #13 | `pytest tests --ignore=tests/test_paper_replay.py` → **920 passed / 0 failed**；`tests/test_paper_replay.py` 属并行开发中的未跟踪交易模块（`l1agg/trading/` 17:01 仍在改），失败与本次改动无关；本次修改文件 ruff check / ruff format 通过、`git diff --check` 干净；#13 标记完成（未提交） |
+
+**v2.28（D-J30 PIT/release_ts 全局能力）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-J30 能力出口 | `capabilities/stats.py::pit_alignment`、`capability_manifest.yaml` | 复用 `metric_percentile`（deterministic，`min_n=250`）：SC90 校验每条样本「可用时间 ≤ 使用时间」+ R02 `pit=true` 逐时点滚动分位前瞻分布；可执行出口 25→26 |
+| 输入与结果契约 | 同上 | `indicator/prices/dates` 必填且等长，`release_ts`（数据发布时刻）与 `used_ts`（使用时刻）可选、缺省视为观测时刻；并列输出 `pit_check`（pass/n_violations/max_lag）与 `r02`（当前分位、分桶、按期限前瞻分布）；能力层不重算统计量 |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：默认 PIT 通过完整信封、与方法层 SC90/R02 逐项相等、release_ts 滞后 5 天触发 `pit_violations` 且 R02 仍按 release_ts 过滤 / 滞后 60 天可见窗口不足不出前瞻分布、249 点/长度不一致/非法 buckets/非法 window FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 全量、§6.4 #12 | `pytest tests` 全量 **913 passed / 0 failed**（退出码 0）；本次修改文件 ruff check / ruff format 通过、`git diff --check` 干净；#12 标记完成（未提交） |
+
+**v2.27（D-G14 EWMA 波动/协方差能力出口）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-G14 能力出口 | `capabilities/stats.py::ewma_risk`、`capability_manifest.yaml` | 复用 `metric_series`（deterministic，`min_n=60`）：P07 EWMA 组合协方差（λ 默认 0.94、init_window 20、年化 365）+ T19 逐资产 EWMA 波动序列并列输出；可执行出口 24→25 |
+| 输入与结果契约 | 同上 | 多资产面板按原始行 complete-case 后共享同一矩阵；输出 `covariance`（符号/协方差/年化波动）与 `volatility_series`（逐资产）；单资产仅执行 T19 且不输出协方差；仅描述样本内风险结构，不生成交易方向 |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：多资产完整信封、脏数据清洗后与 P07/T19 逐项相等、单资产仅 T19、59 点/空面板/非法 lam（≥1）/非法 periods FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 全量、§6.4 #11 | `pytest tests` 全量 **909 passed / 0 failed**（退出码 0）；本次修改文件 ruff check / ruff format 通过、`git diff --check` 干净；#11 标记完成（未提交） |
+
+**v2.26（D-J24 相关网络与社区发现能力出口）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-J24 能力出口 | `capabilities/stats.py::correlation_network`、`capability_manifest.yaml` | 复用 `metric_series`（deterministic，`min_n=60`）：M05 相关矩阵 → |ρ|≥threshold 无向邻接 → SC71 中心性 + SC72 Louvain 社区 + M21 层次聚类；可执行出口 23→24 |
+| 输入与结果契约 | 同上 | 多变量面板按原始行 complete-case 后共享同一数据矩阵；输出节点、边（含 rho）、中心性、社区与模块度、层次聚类标签并列结果；仅描述同期相关关系，不生成交易方向 |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 4 例：36 节点网络完整结果与信封、脏数据清洗后与方法层逐项相等、59 点/空面板/非法 threshold/非法 k FAIL-OPEN、图规模低于方法门禁时降级为 partial；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 全量、§6.4 #10 | `pytest tests` 全量退出码 0，按 v2.25 的 772 例加新增 4 例记为 **776 passed / 0 failed**；本次修改文件 ruff / black 通过；#10 标记完成（未提交） |
+
+**v2.25（D-J22 PCA/SVD/因子分析能力出口）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-J22 能力出口 | `capabilities/stats.py::dimension_reduction`、`capability_manifest.yaml` | 复用 `metric_series`（deterministic，`min_n=60`）：真实执行 M19 相关阵 PCA、M20 载荷、SC31 sklearn PCA、SC32 SVD、SC33 因子分析；可执行出口 22→23 |
+| 输入与结果契约 | 同上 | 多变量面板按原始行 complete-case，五方法共享同一数据矩阵；输出各分位解释方差、载荷、奇异值与因子载荷并列结果；仅描述数据结构，不生成交易方向 |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 3 例：五方法完整结果与信封、脏数据清洗后与方法层逐项相等、59 点/空面板/非法 k/单变量 FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 顺带修正 | `capability_manifest.yaml`、`tests/test_methods_s2.py`、`tests/test_eval_harness.py` | D-E15 补声明条件分支实际执行的 I37 Kalman；方法目录计数 238→243（I35–I39 已实现） |
+| 验证与清单 | 54-L1 全量、§6.4 #9 | `pytest tests` 全量退出码 0，按 v2.24 的 769 例加新增 3 例记为 **772 passed / 0 failed**；本次修改文件 ruff / black 通过；#9 标记完成（未提交） |
+
+**v2.24（D-G20 分位组合与单调性检验能力出口）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-G20 能力出口 | `capabilities/stats.py::quantile_monotonic`、`capability_manifest.yaml` | 复用 `metric_series`（deterministic，`min_n=250`）：真实执行 B16 分位组统计、B11 组均值严格单调性与 Q04 分位序号 Spearman 检验；可执行出口 21→22 |
+| 输入与结果契约 | 同上 | factor 与已对齐 forward 按原始位置 complete-case，三方法共享同一配对样本轴；B16 输出各桶均值/中位/胜率/样本量与最高减最低 spread，B11 输出严格单调方向与 rho_bin，Q04 输出 rho/p/bucket_returns；spread 仅为描述性统计，非策略收益 |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 3 例：三方法完整结果与信封、脏数据清洗后与方法层结果逐项相等、249 点/空输入/非法 k FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 全量、§6.4 #8 | `pytest tests` 全量退出码 0，按既有 766 例加新增 3 例记为 **769 passed / 0 failed**；本次修改文件 ruff / black 通过；#8 标记完成（未提交） |
+
+**v2.23（D-G19 IC/ICIR/衰减表能力出口）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-G19 能力出口 | `capabilities/stats.py::ic_profile`、`capability_manifest.yaml` | 复用 `metric_series`（deterministic，`min_n=250`）：真实执行 B13/B14、Q01/Q02/Q03，并在有效 prices 输入时执行 B15；可执行出口 20→21 |
+| 输入与结果契约 | 同上 | factor/forward 按原始位置 complete-case；B13/B14 与 Q01/Q02 并列输出 IC/RankIC/分段 ICIR，Q03 输出多期限因子 IC 衰减，B15 输出价格动量重叠/非重叠 IC 衰减；Q03 的 returns 首项补 0、其余为右移一期 forward，避免 h=1 错配 |
+| 降级与执行覆盖 | `tests/test_capabilities.py` | 新增 3 例：六方法完整结果与 h=1 对齐、脏数据 complete-case 后六方法结果逐项相等、缺价格 partial 与短样本/空输入 empty；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 全量、§6.4 #7 | `pytest tests` 全量退出码 0，按既有 763 例加新增 3 例记为 **766 passed / 0 failed**；本次修改文件 ruff / black 通过；#7 标记完成（未提交） |
+
+**v2.22（D-G16 组合 VaR/CVaR 能力出口）**
+
+| 变更 | 代码 / 本文位置 | 结论 |
+|---|---|---|
+| D-G16 能力出口 | `capabilities/stats.py::portfolio_risk`、`capability_manifest.yaml` | 复用 `metric_series`（deterministic，`min_n=60`）：真实执行 P09 参数法组合 VaR、P10 历史法组合 VaR/CVaR，以及 D17/D18 逐资产历史 VaR/CVaR；可执行出口 19→20 |
+| 输入与结果契约 | 同上 | 输入各资产收益与可选权重，按最小公共长度对齐；P09/P10 共用同一面板和权重，P10 有效分位同步给 D17/D18；权重归一化、协方差与尾部分位全部在方法层计算，组合与逐资产结果并列输出，损失为正数口径 |
+| 执行覆盖 | `tests/test_capabilities.py` | 新增 3 例：四方法结果与完整信封、最小公共长度对齐及方法层结果逐项相等、59 点/空面板 FAIL-OPEN；纳入 JSON Schema 与 manifest 真实执行覆盖 |
+| 验证与清单 | 54-L1 全量、§6.4 #6 | `pytest tests` 全量退出码 0，按既有 760 例加新增 3 例记为 **763 passed / 0 failed**；本次修改文件 ruff / black 通过；#6 标记完成（未提交） |
+
+**v2.21（D-J02 季节强度与调整能力出口）**
 
 | 变更 | 代码 / 本文位置 | 结论 |
 |---|---|---|
@@ -663,7 +909,7 @@ L1 意图（TS/Python 双端注册表）
 | 文档 | 目标版本 | 同步内容 |
 |---|---|---|
 | [METHOD_LIBRARY.md](./METHOD_LIBRARY.md) | v1.17 | v1.17：D-E04（F19/F21/F23）与 D-E09（R09/B17/R10）接线，可执行出口 14 个；v1.16：F26 `level` 冻结为 A 分位法（分值历史分布 p20/p60/p80）；方法口径未因接线改变 |
-| [SPEC-54-L1架构能力聚合层.md](../SPEC-54-L1架构能力聚合层.md) | v1.13 | v1.13：D-E04/D-E09 能力出口已接线，可执行出口 14 个；v1.12：D-A14 `level` 冻结为 A 分位法；S5 对外推荐仍未开放 |
+| [SPEC-54-L1架构能力聚合层.md](../SPEC-54-L1架构能力聚合层.md) | v1.21 | v1.21：D-G20 接入 B16 分位组统计、B11 严格单调性与 Q04 Spearman 检验，可执行出口 22 个；v1.20：D-G19 IC/ICIR/衰减表出口已接线；S5 对外推荐仍未开放 |
 | [SPEC-54-延续性统计分析模块.md](../SPEC-54-延续性统计分析模块.md) | v1.5 | T0.5/A8 首版经 D-E02 出口交付（h=1 PIT，含降桶降级披露）；R02 `pit=true` 已实现；不改 A1–A7 冻结口径 |
 | 三份 RESEARCH 文档 | 保持原文（仅同步能力计数） | 作为调研证据，不改写方法结论；RESEARCH-SCIENTIFIC 的能力出口计数同步为 14，分别支撑延续性分层、机构研究协议与科研可复现/PIT 校验 |
 
@@ -673,7 +919,7 @@ L1 意图（TS/Python 双端注册表）
 |---|---|---|---|
 | SPEC S1 ↔ 方法 S1 | 🟡 核心底座完成 + 11 模块本地验收通过 | `market.candles`、UTC 对齐、前瞻收益、价格回显、日线同锚点；`fundamental_snapshot._l0_module_timeseries` 本地只读快照实测 **11/11 模块 timeseries 非空**（sample_n：macro 254、onchain 88、sentiment 90、valuation 11、flow 69、breadth 11、capital_flow 31、intermarket 87、news 39、narrative 90、calendar 15） | valuation/breadth/calendar 为 partial（样本 11/15 天，远低于请求窗口），需 18 侧补历史；通过 ≠ 样本充分 |
 | SPEC S2 ↔ 方法 S2 | 🟡 方法完成、能力部分接线 | M01–M07/M11–M12/M24–M25 方法；D-E05 双序列与矩阵 TopK、D-E06 BH-FDR、D-E11/C18 可执行；D-A14 拥挤度合成（A 分位法四档）已接线 | 完整四类榜单契约（稳定推荐仍归 MERS/S5） |
-| SPEC S3 ↔ 方法 S3/S6/S7；T0=S3 子集 | 🟡 方法、能力与 MERS S3 内核部分交付 | S3 批 22 方法、S6 扩展、17 个 manifest 出口（含 D-A14/D-E01/D-E02/D-E04/D-E09/D-E12/D-E14/D-G22/D-G23）；T0/D-E13 已交付；R02 `pit=true` 与 MERS 180 单元内部内核已实现；事件历史已云端回填入库（`mm_events=550`）；前端 cue 分派已补 D-A14/D-G22（路由 + 执行器 + 单测三处对齐） | S3 全量真实数据验收；D-E14 样本纵深；云端周期调度 |
+| SPEC S3 ↔ 方法 S3/S6/S7；T0=S3 子集 | 🟡 方法、能力与 MERS S3 内核部分交付 | S3 批 22 方法、S6 扩展、22 个 manifest 出口（含 D-A14/D-E01/D-E02/D-E04/D-E09/D-E12/D-E14/D-G16/D-G19/D-G20/D-G22/D-G23/D-J02/D-J04）；T0/D-E13 已交付；R02 `pit=true` 与 MERS 180 单元内部内核已实现；事件历史已云端回填入库（`mm_events=550`）；前端 cue 分派已补 D-A14/D-G22（路由 + 执行器 + 单测三处对齐） | S3 全量真实数据验收；D-E14 样本纵深；云端周期调度 |
 | **T0.5=S3→S4** | ✅ 首版已交付（v2.9） | R02 `pit=true` + A8 编排 + D-E02 出口与前端分派；h=1、4 桶 PIT 滚动分位，样本不足自动降 2 桶并披露 `effective_n/nonoverlap_n` | 真实数据纵深不足时按契约降级；h>1 显著性须走 D-G22 出口（已接线） |
 | SPEC S4 ↔ T2 | ⬜ | 条件分布非点预测的契约已明确；h>1 显著性出口 D-G22（Q06/Q07）已接线 | T-1 扩样本、T1a/T1b、F1–F12 状态特征、1–2 维场景出口；每桶非重叠 ≥250 的样本纵深仍未满足 |
 | SPEC S5 ↔ T3及后续 | ⬜ | MERS S3 内部内核、BH-FDR、holdout 同号、状态机、幂等注册表与随机负例已交付 | walk-forward 完整验收、Discovery、只读推荐/发现出口；不得提前开放 `relationship_recommend` |
@@ -705,36 +951,36 @@ L1 意图（TS/Python 双端注册表）
 
 | # | 能力 ID | 能力名 | 优先级 | 状态 | 缺口说明 | 预计工作量 |
 |---|---------|--------|--------|------|----------|-----------|
-| 6 | **D-G16** | 组合 VaR/CVaR | P2 | ⬜ | 单资产 VaR/CVaR（D17/D18）与组合层（P09/P10）方法已实现；能力未接线 | 1h |
-| 7 | **D-G19** | IC/ICIR/衰减表 | P2 | ⬜ | B13–B15 与 Q01/Q02/Q03（IC/RankIC、ICIR、IC 衰减）方法已实现；能力未接线 | 1h |
-| 8 | **D-G20** | 分位单调性检验（B16） | P2 | ⬜ | B11/B16 已实现；B11 已随 D-E08 接线，B16 分组统计未接入完整分位组合出口 | 0.5h |
-| 9 | **D-J22** | PCA/SVD/因子分析 | P2 | ⬜ | M19–M22、SC31–SC38 方法已实现；能力未接线 | 1h |
-| 10 | **D-J24** | 相关网络与社区发现 | P2 | ⬜ | M21、SC71–SC72 方法已实现；能力未接线 | 1h |
-| 11 | **D-G14** | EWMA 波动/协方差 | P1 | 🟡 | 波动腿已实现（T19）；EWMA 波动/协方差（P07）方法已实现；协方差能力未接线 | 0.5h |
-| 12 | **D-J30** | PIT/release_ts 全局能力 | P1 | ⬜ | R02 `pit=true` 与 SC90 方法已实现；全局 PIT/release_ts 能力未接线 | 1h |
+| 6 | **D-G16** | 组合 VaR/CVaR | P2 | ✅ 2026-11-15（未提交） | 已交付 manifest + `portfolio_risk`：P09/P10 组合参数法/历史法风险与 D17/D18 逐资产历史风险并列输出；最小公共长度对齐、权重归一化与统计计算复用方法层，54-L1 全量 763 例通过 | 已完成 |
+| 7 | **D-G19** | IC/ICIR/衰减表 | P2 | ✅ 2026-11-15（未提交） | 已交付 manifest + `ic_profile`：B13/B14/Q01/Q02/Q03 核心五方法 + 有效价格时 B15 真实执行；Q03 收益轴右移防错配，缺价格降级、短样本 empty，54-L1 全量 766 例通过 | 已完成 |
+| 8 | **D-G20** | 分位单调性检验（B16） | P2 | ✅ 2026-11-15（未提交） | 已交付 manifest + `quantile_monotonic`：B16 分位组统计、B11 严格单调性与 Q04 Spearman rho/p 真实执行；complete-case 共享样本轴，spread 明确为描述性统计，短样本/空输入/非法 k 均为 empty，54-L1 全量 769 例通过 | 已完成 |
+| 9 | **D-J22** | PCA/SVD/因子分析 | P2 | ✅ 2026-11-15（未提交） | 已交付 manifest + `dimension_reduction`：M19/M20/SC31/SC32/SC33 真实执行，面板 complete-case 共享数据矩阵，仅描述数据结构；聚类 M21/M22 归 D-J23；54-L1 全量 772 例通过 | 已完成 |
+| 10 | **D-J24** | 相关网络与社区发现 | P2 | ✅ 2026-11-15（未提交） | 已交付 manifest + `correlation_network`：M05 相关矩阵 → |ρ| 阈值邻接 → SC71 中心性 + SC72 Louvain 社区 + M21 层次聚类；面板 complete-case，仅描述同期相关、不生成交易方向；图规模不足方法门禁时降级披露；54-L1 全量 776 例通过 | 已完成 |
+| 11 | **D-G14** | EWMA 波动/协方差 | P1 | ✅ 2026-11-15（未提交） | 已交付 manifest + `ewma_risk`：P07 EWMA 组合协方差与 T19 逐资产 EWMA 波动序列并列输出，多资产面板 complete-case，单资产仅 T19；非法 lam/periods 与 59 点样本为空；54-L1 全量 909 例通过 | 已完成 |
+| 12 | **D-J30** | PIT/release_ts 全局能力 | P1 | ✅ 2026-11-15（未提交） | 已交付 manifest + `pit_alignment`：SC90 校验「可用时间 ≤ 使用时间」（release_ts/used_ts 支持 ISO 与数值时间戳）+ R02 `pit=true` 前瞻分布并列输出；PIT 违规降级 partial 并披露前视风险，过滤后可见窗口不足不出前瞻分布，249 点/长度不一致/非法 buckets/window 为空；54-L1 全量 913 例通过 | 已完成 |
 
 #### 6.4.3 中期交付（P0 基础能力）
 
 | # | 能力 ID | 能力名 | 优先级 | 状态 | 缺口说明 | 预计工作量 |
 |---|---------|--------|--------|------|----------|-----------|
-| 13 | **D-A01** | 历史序列 | P0 | ⬜ | 未实现 | 0.5h |
-| 14 | **D-A02** | 变化率 | P0 | ⬜ | 未实现 | 0.5h |
-| 15 | **D-A03** | CAGR | P1 | ⬜ | 未实现 | 0.5h |
-| 16 | **D-A04** | 历史分位 | P1 | 🟡 | 9 有估值分位可参考 | 0.5h |
-| 17 | **D-A06** | 年化波动率 | P1 | 🟡 | 多处有实现 | 0.5h |
-| 18 | **D-A07** | 回撤 | P1 | ⬜ | 未实现 | 0.5h |
-| 19 | **D-A08** | 同比 | P1 | 🟡 | CPI 同比已有 | 0.5h |
-| 20 | **D-A09** | 环比 | P1 | ⬜ | 未实现 | 0.5h |
-| 21 | **D-A10** | 实际利率 | P1 | ⬜ | DGS10 + CPIAUCSL | 0.5h |
-| 22 | **D-A11** | 双序列滚动相关 | P2 | 🟡 | 23/11 有相关计算 | 0.5h |
-| 23 | **D-A12** | 领先滞后相关 | P2 | ⬜ | 未实现 | 0.5h |
-| 24 | **D-A13** | 极端事件频率 | P2 | ⬜ | 未实现 | 0.5h |
-| 25 | **D-A15** | ETF 净流入滚动和 | P2 | ⬜ | 未实现 | 0.5h |
-| 26 | **D-A16** | 稳定币增速 | P2 | ⬜ | 未实现 | 0.5h |
-| 27 | **D-B08** | 趋势斜率 | P2 | 🟡 | 场景包已交付（无 HAC） | 0.5h |
-| 28 | **D-B09** | 距 ATH 回撤 | P2 | ⬜ | 未实现 | 0.5h |
-| 29 | **D-G08** | 12-1 动量 | P1 | ⬜ | F14–F16 方法已实现；能力未接线 | 0.5h |
-| 30 | **D-G09** | 波动率目标换算 | P1 | ⬜ | 未实现 | 0.5h |
+| 13 | **D-A01** | 历史序列 | P0 | ✅ 2026-11-15（未提交） | 已交付 manifest + `history_series`：单序列区间取点 + 日/周/月降采样（每区间取最后观测，同日重复取最后），输出 `points[]/span/unit`；当前历史分位由 S25 真实执行；日期轴必填且等长，缺失率 >20% 降级 partial，29 点/长度不一致/非法 freq 为空；能力相关 920 例通过 | 已完成 |
+| 14 | **D-A02** | 变化率 | P0 | ✅ 2026-11-15（未提交） | 已交付 manifest + `change_rate`：S15 绝对变化 + S16 变化率并列输出，`window` 默认 1；基期 0 降级 `change_pct_unavailable` 保留绝对变化，1 点/window 越界/window=0/NaN 为空；能力相关 925 例通过 | 已完成 |
+| 15 | **D-A03** | CAGR | P1 | ✅ 2026-11-15（未提交） | 已交付 manifest + `cagr`：S19 真实执行，含日期轴时按首末日期实际天数折算年数（缺日期回退 n−1），输出 `cagr/years/span/days`；跨度不足 1 年降级 `short_span`，非正价格/天数≤0/1 点为空；能力相关 929 例通过 | 已完成 |
+| 16 | **D-A04** | 历史分位 | P1 | ✅ 2026-11-15（未提交） | 已交付 manifest + `percentile_rank`：S25 真实执行末值经验分位，`lookback` 缺省全样本（须 ≥30），输出 `percentile/value/lookback/sample_n`；窗口 <60 期降级 `short_lookback`，lookback 超可用历史降级 `lookback_truncated`，29 点/非法 lookback/长度不一致为空；能力相关 933 例通过 | 已完成 |
+| 17 | **D-A06** | 年化波动率 | P1 | ✅ 2026-11-15（未提交） | 已交付 manifest + `annualized_volatility`：F05 真实执行（日简单收益 σ × √365），`window` 缺省全样本（须 ≥30），输出 `volatility/mean_ret/window/sample_n`；有效样本 <60 期降级 `short_window`，29 点/window<30/长度不一致/含无效值为空；能力相关 937 例通过 | 已完成 |
+| 18 | **D-A07** | 回撤 | P1 | ✅ 2026-11-15（未提交） | 已交付 manifest + 复用 `drawdown`（注入 `capability_id=D-A07`）：D20/D21 真实执行，输出 `drawdown/peak_ts` 及 `mdd/current_drawdown/duration_days/drawdown_path`；与 D-E10 同输入逐项一致；`prices<2` 为空，100 点样本降级 `insufficient_samples`；能力相关 941 例通过 | 已完成 |
+| 19 | **D-A08** | 同比 | P1 | ✅ 2026-11-15（未提交） | 已交付 manifest + `yoy_change`：S16 真实执行 `x_t/x_{t-period}-1`（`period` 默认 12），输出 `yoy/base_ts/period/sample_n`；历史 <2 个完整周期降级 `short_history`，基期 0 降级 `yoy_unavailable`，样本 ≤period 或 period<1 为空；能力相关 945 例通过 | 已完成 |
+| 20 | **D-A09** | 环比 | P1 | ✅ 2026-11-15（未提交） | 已交付 manifest + `mom_change`：S16 以 `k=1` 真实执行 `x_t/x_{t-1}-1`，输出 `mom/base_ts/sample_n`；基期 0 降级 `mom_unavailable`，样本 <2 或日期长度不一致为空；能力相关 949 例通过 | 已完成 |
+| 21 | **D-A10** | 实际利率 | P1 | ✅ 2026-11-15（未提交） | 已交付 manifest + `real_rate`：通胀由 S16（`k=period`，默认 12）真实执行并折算百分点，能力层只做 `名义 − 通胀` 差值，输出 `real_rate/nominal/inflation/base_ts/period/sample_n`；CPI 基期 0 降级 `inflation_unavailable`，历史 <2 个完整周期降级 `short_history`，样本不足以覆盖 period、period<1、双序列/日期长度不一致或含无效值为空；能力相关 953 例通过 | 已完成 |
+| 22 | **D-A11** | 双序列滚动相关 | P2 | ✅ 2026-11-15（未提交） | 已交付 manifest + `rolling_correlation`：M04 真实执行滚动 Pearson 相关（window 默认 30），输出 `corr/mean_r/window/n_windows/sample_n`；有效配对 <60 降级 `insufficient_samples` 但保留结果，配对 <2、window<2 或超样本、日期长度不一致为 empty；能力相关 957 例通过 | 已完成 |
+| 23 | **D-A12** | 领先滞后相关 | P2 | ✅ 2026-11-15（未提交） | 已交付 manifest + `lead_lag_correlation`：M11 输出 lag −max_lag…+max_lag（默认 10）的相关/p/BH-FDR q/显著性，M12 输出最优 lag；输出 `best_lag/best_corr/best_p_adj/corr_by_lag[]`；有效配对 <120 降级 `insufficient_history` 但保留结果，配对 <2、max_lag<1 或超样本、日期长度不一致为 empty；能力相关 961 例通过 | 已完成 |
+| 24 | **D-A13** | 极端事件频率 | P2 | ✅ 2026-11-15（未提交） | 已交付 manifest + `extreme_frequency`：阈值缺省由 S11 分位（quantile 默认 0.95）给出，`side` 支持 above/below/abs，输出 `days/ratio/threshold/side/quantile/sample_n`；样本 <30 且无阈值为空，显式阈值 <30 降级 `insufficient_samples` 但保留计数；能力相关 965 例通过 | 已完成 |
+| 25 | **D-A15** | ETF 净流入滚动和 | P2 | ✅ 2026-11-15（未提交） | 已交付 manifest + `etf_flow_rolling`：S20 真实执行滚动均值，能力层以「均值 × 窗口长度」算术还原滚动和（不重算分布），`windows` 可配（默认 7/30），输出 `sum_{k}d/windows/sample_n`；样本 <30 降级 `insufficient_samples` 但保留结果，窗口超历史降级 `short_history` 并将该窗口置 None，全部窗口不可算为空；能力相关 969 例通过 | 已完成 |
+| 26 | **D-A16** | 稳定币增速 | P2 | ✅ 2026-11-15（未提交） | 已交付 manifest + `stablecoin_growth`：S16 逐窗口真实执行并折算百分比，能力层只组装多窗口，`windows` 可配（默认 7/30），输出 `growth_{k}d/windows/sample_n`；样本 <30 降级 `insufficient_samples` 但保留结果，窗口超历史降级 `short_history`，基期 0 降级 `base_zero` 并将该窗口置 None，全部窗口不可算为空；能力相关 985 例通过 | 已完成 |
+| 27 | **D-B08** | 趋势斜率 | P2 | ✅ 2026-11-15（未提交） | 已交付 manifest + `slope_trend`：T08 对数价格 OLS 斜率/R² + T09 名义 t/p，显式 `hac_corrected=false`；`window` 默认 90、下限 30，样本 <60 降级 `short_window` 但保留结果，样本 <30 或 window<30 为空；能力相关 165 例通过 | 已完成 |
+| 28 | **D-B09** | 距 ATH 回撤 | P2 | ✅ 2026-11-15（未提交） | 已交付 manifest + `ath_drawdown`：复用 D-E10 `drawdown`（D20/D21 真实执行），输出 `drawdown_from_ath/ath/ath_ts` 别名（= current_drawdown/peak_price/peak_ts），样本 <250 降级 `insufficient_samples`，价格 <2 或全无效值为空；能力相关 169 例通过 | 已完成 |
+| 29 | **D-G08** | 12-1 动量 | P1 | ✅ 2026-11-15（未提交） | 已交付 manifest + `momentum_12_1`：按 skip/lookback 切片后由 F14 真实执行动量/波动/风险调整动量，输出 `momentum_12_1/lookback/skip/vol/risk_adjusted/window_start_ts/window_end_ts/truncated/sample_n`；历史不足时截断 lookback 并降级 `short_history`，样本 <60、lookback<2、skip<0、非整数参数、日期长度不一致为空；20 日 ts_rank 属 D-G07 未随本能力接线；本次全量 1056 例通过 | 已完成 |
+| 30 | **D-G09** | 波动率目标换算 | P1 | ✅ 2026-11-15（未提交） | 已交付 manifest + `vol_target_scale`：价格转日简单收益后由 P02 计算窗口实现年化波动与 `scale = target_vol / realized_vol`（默认 target 0.10 / window 20 / periods 365），输出 `scale/target_vol/realized_vol/window/periods/returns_n/sample_n`；收益 <60、`target_vol≤0`、`window<2`、`periods<1`、日期长度不一致为空；window 超长降级 `window_truncated`，零波动降级 `zero_volatility`；本次全量 1060 例通过 | 已完成 |
 
 #### 6.4.4 数据阻塞（需更多样本或新数据源）
 
@@ -753,25 +999,25 @@ L1 意图（TS/Python 双端注册表）
 | 36 | **S4 T2 条件外推表达** | 🟡 | T0.5 与 D-E14 一维 h=1/2 首版已交付（#1 ✅）；T2 的二维 4×4 仍受样本纵深阻塞（#31），不能据一维出口宣称全部完成 | 剩余受 #31 阻塞 |
 | 37 | **S5 对外推荐** | ⬜ | MERS/Discovery 通过 holdout、walk-forward、BH-FDR 和随机负例后，才开放稳定推荐与发现查询 | 8h |
 
-#### 6.4.6 基础设施未完成项
+#### 6.4.6 基础设施项
 
 | # | 项目 | 状态 | 缺口说明 | 预计工作量 |
 |---|------|------|----------|-----------|
 | 38 | **S1 11 模块历史查询验收** | 🟡 | 11/11 timeseries 非空，但 valuation/breadth/calendar 为 partial | 2h |
-| 39 | **前端 D-A 组 cue 分派** | ⬜ | D-A01~D-A16 除 D-A14 外未接入前端 | 2h |
-| 40 | **前端 D-B 组 cue 分派** | ⬜ | D-B08/D-B09 未接入前端 | 1h |
+| 39 | **前端 D-A 组 cue 分派** | ✅ | 已接入 D-A01~D-A16 中除既有 D-A14 外的 14 个出口；指标/实际利率/双资产分派及降级边界均有本地测试 | 已完成 |
+| 40 | **前端 D-B 组 cue 分派** | ✅ | 已接入 D-B08/D-B09/D-G08/D-G09；ATH 取 1825 天，专用 cue 优先于宽词 | 已完成 |
 
 ---
 
 **统计**：
 - **可立即交付**：0 项待办 + 5 项已完成（#1-#5）
-- **短期交付**：7 项（#6-#12）
-- **中期交付**：18 项（#13-#30）
+- **短期交付**：0 项待办 + 25 项已完成（#6-#30）
+- **中期交付**：0 项（#29-#30 已完成）
 - **数据阻塞**：4 项（#31-#34）
 - **S 级路线**：3 项（#35-#37）
-- **基础设施**：3 项（#38-#40）
-- **总计**：40 项（✅ 5 项，待办/阻塞 35 项）
+- **基础设施**：1 项待办 + 2 项已完成（#38-#40）
+- **总计**：40 项（✅ 32 项，待办/阻塞 8 项）
 
-**下一步**：清理 #6，随后按顺序进入 #7-#8，每完成一项更新状态并记录 commit hash（如已提交）。
+**下一步**：短期交付已清零，剩余 8 项为数据阻塞（#31-#34）、S 级路线（#35-#37）与验收基础设施（#38）；按编号下一项为 #35（S2/S3 全量真实数据验收，需云端窗口）。本轮仅完成 #39/#40 本地闭环，未执行云端验收。
 
 **文档治理**：见 §0.4；实测数字只在 METHOD_LIBRARY §15 独立维护，其他文档只能引用或保留标注「引自 §15」的决策摘要，执行时按最新快照重算。

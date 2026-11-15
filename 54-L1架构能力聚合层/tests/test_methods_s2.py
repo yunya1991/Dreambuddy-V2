@@ -38,7 +38,7 @@ def _wave(n=N):
 
 def test_catalog_covers_method_library():
     specs = all_specs()
-    assert len(specs) == 238  # §1 分类总览容量
+    assert len(specs) == 243  # §1 分类总览容量 + I35–I39 美联储方法
     assert get("M01").implemented is True
     assert get("T18").implemented is True
 

@@ -62,14 +62,27 @@ class Binding:
     freq: str = "daily"
     proxy: bool = False
     note: str = ""
+    # 代币化标的（OKX *-USDT-SWAP，非证券本体）：proxy 必为 True
+    tokenized: bool = False
 
     @property
     def series_id(self) -> str:
         return f"{self.sub_category}::{self.metric_name}"
 
 
-def _b(symbol, asset_class, label, sub, metric, unit="USD", freq="daily", proxy=False, note=""):
-    return Binding(symbol, asset_class, label, sub, metric, unit, freq, proxy, note)
+def _b(
+    symbol,
+    asset_class,
+    label,
+    sub,
+    metric,
+    unit="USD",
+    freq="daily",
+    proxy=False,
+    note="",
+    tokenized=False,
+):
+    return Binding(symbol, asset_class, label, sub, metric, unit, freq, proxy, note, tokenized)
 
 
 # ── 已绑定：当前 DAL 中确有长历史的龙头（2026-11-14 核对 ≥120 天）──────────
@@ -122,6 +135,47 @@ BINDINGS: Dict[str, Binding] = {
     "AMZN": _b("AMZN", "us_stock", "亚马逊", "AMZN", "close_usd", note="Nasdaq 日线，752 点/3 年"),
     "GOOGL": _b("GOOGL", "us_stock", "谷歌", "GOOGL", "close_usd", note="Nasdaq 日线，752 点/3 年"),
     "META": _b("META", "us_stock", "Meta", "META", "close_usd", note="Nasdaq 日线，752 点/3 年"),
+    # us_stock：OKX 代币化美股永续（历史短，<250 天禁止点亮；不得跨源择优砍掉 Nasdaq 长历史）
+    "AMD": _b(
+        "AMD",
+        "us_stock",
+        "AMD",
+        "AMD",
+        "close_usd",
+        proxy=True,
+        tokenized=True,
+        note="OKX AMD-USDT-SWAP，250 点（2026-03-10 起，恰达 250 门槛）",
+    ),
+    "GEV": _b(
+        "GEV",
+        "us_stock",
+        "GE Vernova",
+        "GEV",
+        "close_usd",
+        proxy=True,
+        tokenized=True,
+        note="OKX GEV-USDT-SWAP，179 点（2026-05-20 起）→ history_lt_250，禁止点亮",
+    ),
+    "SPCX": _b(
+        "SPCX",
+        "us_stock",
+        "SpaceX 代币化标的",
+        "SPCX",
+        "close_usd",
+        proxy=True,
+        tokenized=True,
+        note="OKX SPCX-USDT-SWAP，193 点（2026-05-06 起）→ history_lt_250，禁止点亮",
+    ),
+    "SKHYNIX": _b(
+        "SKHYNIX",
+        "us_stock",
+        "SK 海力士",
+        "SKHYNIX",
+        "close_usd",
+        proxy=True,
+        tokenized=True,
+        note="OKX SKHYNIX-USDT-SWAP，约 158 点（listTime 2026-06-10）→ history_lt_250，禁止点亮",
+    ),
     # us_etf
     "SPY": _b("SPY", "us_etf", "标普500 ETF", "SPY", "close_usd", note="Nasdaq 日线，752 点/3 年"),
     "QQQ": _b("QQQ", "us_etf", "纳指100 ETF", "QQQ", "close_usd", note="Nasdaq 日线，752 点/3 年"),
@@ -212,7 +266,91 @@ BINDINGS: Dict[str, Binding] = {
 UNBOUND: Dict[str, str] = {
     # apac_index：OKX JP225-USDT-SWAP 2026-09 才上线，仅 67 天，达不到 250 天门禁
     "JP225": "历史不足（OKX 永续 2026-09 上线，67 天 < 250 天；待继续累积或换源）",
+    # us_stock 代币龙头：40 已定义，DAL 尚未回填
+    "COIN": "未采集（OKX COIN-USDT-SWAP 待回填）",
+    "MSTR": "未采集（OKX MSTR-USDT-SWAP 待回填）",
 }
+
+
+# ── 默认资产池（「数据与图表」首屏 12 个，用户 2026-11-15 确认，五类覆盖）──────
+# 加密 2 / 避险 2 / 大宗 3 / 美股 4（3 指数 + NVDA）/ 情绪 1；与 asset_pool.yaml
+# pools.default 同口径，前端零硬编码（visual_overview 取 [:12]）。
+DEFAULT_POOL: Tuple[str, ...] = (
+    "BTC",
+    "ETH",
+    "XAU",
+    "XAG",
+    "CL",
+    "BZ",
+    "NG",
+    "US500",
+    "US100",
+    "DJIA",
+    "NVDA",
+    "VIX",
+)
+
+# ── 扩展池：按类别展开时懒加载（ADR-V6）；含 OKX 代币化美股（短历史，禁止点亮）──
+EXTENDED_POOL: Tuple[str, ...] = (
+    "AAPL",
+    "MSFT",
+    "AMZN",
+    "GOOGL",
+    "META",
+    "TSLA",
+    "AMD",
+    "GEV",
+    "SPCX",
+    "SKHYNIX",
+    "SPY",
+    "QQQ",
+    "XCU",
+    "T10Y2Y",
+    "US10Y",
+    "TLT",
+    "DXY",
+)
+
+# 展示层五类视图 → 40 层大类（分类仍以 40 为 SSoT，此处只做分组）
+VIEW_CLASSES: Dict[str, Tuple[str, ...]] = {
+    "加密": ("crypto",),
+    "避险": ("precious_metal",),
+    "大宗": ("energy", "industrial_metal"),
+    "美股": ("us_index", "us_stock", "us_etf"),
+    "情绪": ("macro", "rates_credit"),
+}
+
+
+def default_pool() -> List[str]:
+    """返回默认资产池（新列表，调用方可自由增删）。"""
+    return list(DEFAULT_POOL)
+
+
+def extended_pool() -> List[str]:
+    """返回扩展池（新列表）。"""
+    return list(EXTENDED_POOL)
+
+
+def view_of(symbol: str) -> Optional[str]:
+    """标的 → 展示层五类视图（未知返回 None）。"""
+    cls = class_of(symbol)
+    if cls is None:
+        return None
+    for view, classes in VIEW_CLASSES.items():
+        if cls in classes:
+            return view
+    return None
+
+
+def pool_by_view(pool: Optional[List[str]] = None) -> Dict[str, List[str]]:
+    """按五类视图分组默认池（保持 DEFAULT_POOL 顺序；未知类不进分组）。"""
+    members = default_pool() if pool is None else list(pool)
+    out: Dict[str, List[str]] = {view: [] for view in VIEW_CLASSES}
+    for sym in members:
+        view = view_of(sym)
+        if view is not None:
+            out[view].append(sym)
+    return {view: syms for view, syms in out.items() if syms}
 
 
 def resolve(symbol: str) -> Optional[Binding]:
@@ -258,8 +396,11 @@ def leaders_by_class() -> Dict[str, List[str]]:
 def coverage(db_path: str, min_days: int = 250) -> List[Dict[str, object]]:
     """逐龙头核对 DAL 实际历史深度（只读，不写库）。
 
-    Returns: [{symbol, class, status(available/missing/not_collected),
-               sample_n, span, series_id, proxy, note}]
+    状态机（SPEC §2.3.3）：0 行 → missing；0 < n < min_days → partial 且带
+    degraded_reason（n<250 时固定 history_lt_250，禁止点亮）；n ≥ min_days → available。
+
+    Returns: [{symbol, class, status, degraded_reason, sample_n, span,
+               series_id, proxy, tokenized, note}]
     """
     rows: List[Dict[str, object]] = []
     conn = None
@@ -273,10 +414,12 @@ def coverage(db_path: str, min_days: int = 250) -> List[Dict[str, object]]:
                 "label": b.label,
                 "series_id": b.series_id,
                 "proxy": b.proxy,
+                "tokenized": b.tokenized,
                 "note": b.note,
                 "sample_n": 0,
                 "span": "",
                 "status": "missing",
+                "degraded_reason": "",
             }
             if conn is not None:
                 sql = (
@@ -285,9 +428,16 @@ def coverage(db_path: str, min_days: int = 250) -> List[Dict[str, object]]:
                     "FROM mm_metrics WHERE sub_category = ? AND metric_name = ?"
                 )
                 n, lo, hi = conn.execute(sql, (b.sub_category, b.metric_name)).fetchone()
-                rec["sample_n"] = int(n or 0)
+                n = int(n or 0)
+                rec["sample_n"] = n
                 rec["span"] = f"{lo}~{hi}" if lo else ""
-                rec["status"] = "available" if int(n or 0) >= min_days else "missing"
+                if n == 0:
+                    rec["status"] = "missing"
+                elif n < min_days:
+                    rec["status"] = "partial"
+                    rec["degraded_reason"] = "history_lt_250" if n < 250 else "history_lt_min"
+                else:
+                    rec["status"] = "available"
             rows.append(rec)
         for sym, reason in UNBOUND.items():
             rows.append(
@@ -297,10 +447,12 @@ def coverage(db_path: str, min_days: int = 250) -> List[Dict[str, object]]:
                     "label": sym,
                     "series_id": "",
                     "proxy": False,
+                    "tokenized": False,
                     "note": reason,
                     "sample_n": 0,
                     "span": "",
                     "status": "not_collected",
+                    "degraded_reason": "not_collected",
                 }
             )
     finally:

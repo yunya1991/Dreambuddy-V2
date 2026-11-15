@@ -22,7 +22,7 @@ SPEC_VERSION = "1.0"
 COMPOSITE_CAPABILITY = "T3"
 MAX_NODES = 300
 MAX_EDGES = 2000
-GRAPH_EDGE_KINDS = ("corr", "lead_lag", "same_direction")
+GRAPH_EDGE_KINDS = ("corr", "lead_lag", "same_direction", "flow")
 
 # 加密资产白名单：只有这些资产允许使用加密巨鲸口径的资金净流（B8）
 CRYPTO_SYMBOLS = frozenset(

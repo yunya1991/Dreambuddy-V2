@@ -1,8 +1,8 @@
 # SPEC-54 统计图表化能力（CapabilityVisual）
 
-- **版本**: v0.11（S0 外露闸 + S1 曲线生产者 + B18 vintage + T1 表格 + T2 曲线 + **T3 全景思维导图已实现并过测** · 待接前端）
+- **版本**: v0.22（动态权重接入实盘切换：三档灰度 off/shadow/on + 跨运行状态恢复 + 等权否决门注入判定 · L1D-11 已验收）
 - **日期**: 2026-11-15
-- **状态**: 🟢 有条件通过（4.38/5）；B1–B5 已关闭；B6/B11/B12 文档层关闭且 **S0/S1 已落地（68+ 用例通过）**；B13–B17 已定稿；**B18 vintage 回放已实现（迁移脚本 + As-Of 查询 + 4 用例）**；**T1 表格已实现（D-E12 8 列表 + 能力清单表 + 审计 386×6 矩阵，B10 基线冻结）**；**T2 曲线已实现（D-E10 回撤 series + D-E15 价格/EMA26 series + 斜率表 6 列）**；**T3 已实现（`overview.py` tree + graph，B8 降级契约落码，`test_visual.py` 24 例全绿，全量 758 例通过）**；B19/B20 仍待决策；方法编号冲突已修正为 I35–I39
+- **状态**: 🟢 有条件通过（4.38/5）；B1–B5 已关闭；B6/B11/B12 文档层关闭且 **S0/S1 已落地（68+ 用例通过）**；B13–B17 已定稿；**B18 vintage 回放已实现（迁移脚本 + As-Of 查询 + 4 用例）**；**T1 表格已实现（D-E12 8 列表 + 能力清单表 + 审计全量×6 矩阵，B10 基线冻结）**；**T2 曲线已实现（D-E10 回撤 series + D-E15 价格/EMA26 series + 斜率表 6 列）**；**T3 已实现（`overview.py` tree + graph，B8 降级契约落码，`test_visual.py` 24 例全绿）**；**L1D-01 已验收（`direction_rule.py` + `config/direction_rule.yaml`，四轴 40/25/20/15，13 例全绿）**；**L1D-02 已验收（`trading.db` 五表 + signal/fill 只追加触发器，7 例全绿）**；**L1X-01 已验收（`l1agg/handoff.py` + 49 契约加法式 `l1-chart`，7 例全绿；契约 5/5 + 示例 5/5 OK）**；**L1X-02 已验收（22 `_PRECHECK_SOURCES` 覆盖 `l1-chart`，6 例全绿）**；**L1D-03 已验收（能力块→规则入参零重算，5 例）**；**L1D-04 已验收（四条平仓规则 + `min_hold_bars` 绕过止损，8 例）**；**L1D-05 已验收（纸面回放 7 例）**；**L1D-06/07 已验收（vol targeting 仓位 + 五项风控/kill switch，12 例）**；**L1X-03 已验收（outbox 幂等 dedupKey + 失败重投，7 例）**；**DOC-01/02 已验收（INDEX v2.20 补 54 小节 + 49 §3.8 更名加注）**；**P2 三项已验收（L1X-04 簇敞口 7 例 / L1D-08 动态权重 6 例 / L1D-09 对照打分 8 例）**；B19/B20 仍待决策；方法编号冲突已修正为 I35–I39
 - **上游**: `SPEC-54-L1架构能力聚合层.md`（ADR-3/6 只做确定性计算）、`docs/TECHNICAL_DESIGN.md`、`docs/METHOD_LIBRARY.md`、`.trae/documents/系统图表可视化能力-评估调研报告.md`
 - **下游**: `contracts/capability_result.schema.json`、`3.1-FRONTEND/src/components/visual/`、`33-REA逆向解析工程/core/reflection/thought_tree.py`、`48-涌现架构`
 
@@ -249,6 +249,16 @@ direction_rule:
 
 > 说明：`direction_rule` 的「方向」是统计外推的**标签**，对外不可见；它不与 L2 结论做二选一，而是并列写入 `comparison` 表做事后收益对照（ADR-V17）。
 
+**持仓管理（`sizing`，L1D-06）**：`vol_scale = clip(TARGET_VOL / max(volatility, 1e-4), 0, 3.0)`（`TARGET_VOL=0.02`）；`notional = equity_usdt × strength × vol_scale`；`qty = notional / price`（8 位）；`direction=0` → `reject_reason="no_direction"` 且不下单。`volatility` 必须来自 L1-S 统计块，本层**不重算波动率**；风控越界时**不截断、直接拒**（便于审计）。
+
+**风控五项（`risk`，L1D-07，ADR-V16）**：常量 `max_notional_usdt=500` / `max_daily_loss_usdt=100` / `max_positions=3` / `max_leverage=2.0` / `max_gross_exposure_usdt=1500`（`RISK_VERSION=risk-1.0.0`，改值必须升版本）；`L1_KILL_SWITCH=1` **只停新开仓**（`is_new=False` 的平/减仓放行，否则会把仓位锁死）；拒单顺序 `kill_switch → max_daily_loss → max_positions → max_leverage → max_gross_exposure → cluster_exposure → max_notional`，命中即拒，并由 `record_rejected_order()` 写入 `order.status='rejected'` + `reject_reason`。
+
+**簇敞口（`cluster`，L1X-04，V-AC21）**：簇由 D-E05 矩阵 `|ρ|≥0.70` 并查集聚类；判定式 `(同簇现存敞口 + 新单) / (总敞口 + 新单) ≤ cluster_exposure_cap_pct=0.50`，越界 `reject_reason="cluster_exposure"`（`risk.check_order` 中排在 `max_gross_exposure` 与 `max_notional` 之间）。
+
+**对照打分（`comparison`，L1D-09，ADR-V17）**：同 `(as_of, symbol)` 单行；`l1_direction/l1_strength` 写入即不可变（L2 覆盖 → `ComparisonError`），`l2_verdict` 首写优先；事后按三重障碍（±`2.0×ATR` 或 10 根先到者）打分并扣 `5 bps/边 + 0.5×ATR` 滑点，回写 `realized_ret/scored_at`。
+
+**动态轴权重（`weights`，L1D-08，ADR-V18/V19，默认关闭）**：`enabled=False` 直接返回 `STATIC_WEIGHTS`；开启时四轴权重 ∈[0.05,0.40]、和=1、单次换手 L1 ≤0.15，且必须先过等权否决门（`n≥250`、超额均值 >0、单边 p<0.05），否则退回 `EQUAL_WEIGHTS` 并记 `weight_fallback=true`；`weights_hash` 写入 `signal.inputs_snapshot`（不改表结构）。
+
 ### 4.8 `visibility` 契约与执行外露闸（B12 处置）
 
 | 层 | 变更 | 判据 |
@@ -378,7 +388,7 @@ L1(w_t, w_{t−1}) ≤ 0.15                                  # 单次换手上�
 
 - 默认**周度**再平衡（`rebalance="W-MON"`）；再平衡之间权重**完全冻结**，日内绝不改权重。
 - 估计窗口 `expanding`，最少 500 个交易日；标签必须已实现（`as_of + barrier_days ≤ now`）。
-- **纸面回放期间权重锁定**为 `weights_version` 初始值，不允许边回放边调参（否则回放无意义）。
+- **纸面回放期间权重锁定**为 `weights_version` 初始值，不允许边回放边调参（否则回放无意义）；实现为 `replay(weights_locked=True)`。
 
 **启用守护（缺一不可）**：
 
@@ -388,6 +398,20 @@ L1(w_t, w_{t−1}) ≤ 0.15                                  # 单次换手上�
 4. `weights_version` + `weights_hash` 写入 `signal`，同 hash 必须复现同权重。
 
 **落库字段**（`signal` 表扩展）：`weights_version`、`weights_hash`、`weights_effective_date`、`axis_weights{trend,adx,inertia,coherence,gap}`、`weight_sources{prior,ic,stability,uncertainty}`。
+
+**实盘切换（v0.22 落地，L1D-11）**：
+
+| 档位 | 计算 | 注入 `decide` | 用途 |
+|---|---|---|---|
+| `off`（默认） | 否 | 否（静态 40/25/20/15） | 与引入前字节一致；`signal` 仍记静态 `weights_hash` |
+| `shadow` | 是，落库 `weights_hash`/`axis_weights`/`weight_sources` | 否 | 不改交易行为地积累「动态 vs 静态」对照证据 |
+| `on` | 是 | **过等权否决门才注入** | 生产启用；否决未过不注入，沿用静态先验并记 `weight_fallback` |
+
+- 开关优先级：调用方参数 > 环境变量 `L1_DYNAMIC_WEIGHTS` > `config/weights.yaml` > `off`；非法值抛 `WeightSwitchError`（fail-closed，不静默降级）。
+- 跨运行状态：`previous_weights` / `last_effective_date` / `weight_fallback` 由 `weight_switch.load_state()` 从 `trading.db.signal` 最后一条带权重记录恢复，同 ISO 周内**权重与注入判定一起冻结**（避免「上周被否决、本周冻结却按优化权重注入」的错位）。
+- 等权对照口径：`excess_j = fwd_j × Σ_i (w_prev_i − 0.25) × unit_axis_i,j`，只用已实现标签；轴值一律取 `axis_weights=1` 的**单位轴值**，避免注入后的加权分数反过来污染 IC 估计（IC 对正数缩放不变，σ 同步缩放，故 reliability 一致）。
+- 落库口径：`recorded_weights()` 统一决定写进 `signal` 的权重 —— `off` 与「否决期」一律记静态先验 40/25/20/15（等权只作统计零假设、不落地，否则下一轮对照退化为「等权 vs 等权 = 全 0」，`oos_gate` 永久不过）；`shadow` 与 `on` 记同一口径，差别只在是否注入 `decide`。
+- 晋级/回滚：只改 `config/weights.yaml` 或环境变量，不改代码；`signal.weights_hash` 全程可审计，回滚到 `off` 后新信号立即回到静态先验，历史信号不受影响。
 
 **「真实曲线」的形态变化**：D-E15 的 `series` 从单线改为「原值 + Kalman level + `±1σ` 带」，曲线图因此自带置信区间；`slope` 同时给 `slope_se`，斜率是否"真的斜"一眼可辨。
 
@@ -404,6 +428,18 @@ L1(w_t, w_{t−1}) ≤ 0.15                                  # 单次换手上�
 > I01–I34 已被方法库占用（实测 `I.` 前缀连续无空号），新方法一律从 **I35** 续号；B14 的带通/STL 由 I39 承担。
 
 > 五条都必须走方法层登记（`METHOD_LIBRARY.md` + `REGISTRY`），能力层不直接实现；`min_n` 不足一律 `status=partial`，不得静默降级。
+
+**落地状态（v0.21，逐条可核）**：
+
+| ID | 实现位置 | 出口 | 审计 |
+|---|---|---|---|
+| I35 | `l1agg/methods/fed_methods.py::i35_cointegration` | `equilibrium_gap{beta,alpha,gap,gap_z,half_life,adf_p,cointegrated}` → `direction_rule` gap 轴 | audit PASS |
+| I36 | `fed_methods.py::i36_quantile_regression` | `q10/q50/q90/dispersion` → `strength_mode="quantile_dispersion"` | audit PASS |
+| I37 | `fed_methods.py::i37_kalman` | D-E15 `capabilities["D-E15"]["kalman"]`（level/slope/±1σ/slope_se/trail），`meta.smoothing` 保持 EMA | audit PASS |
+| I38 | `fed_methods.py::i38_dma` | `weights{models}/best/switched/entropy/effective_n`，可作动态权重先验 | audit PASS |
+| I39 | `fed_methods.py::i39_bandpass` | `period_days/amplitude/phase_deg/cycle_slope` | audit PASS |
+
+工具函数（§4.12 第 2/4/6/8 条）：`midas_weights`（MIDAS）、`taylor_gap`（泰勒规则显式系数）、`fci_composite`（Ledoit-Wolf + 风险平价）、`uncertainty_index`（Jurado λ_u∈[0,0.5]）。§4.13 四源合成与周度冻结已落 `l1agg/trading/weights.py`，五个字段已落 `signal` 表（schema v2）；**实盘切换三档已接 `paper_replay.replay(weights_mode=…, weight_state=…, db_path=…)`（默认 `off`，见 §4.13「实盘切换」）**。B18 写入路径已接：`market_macro_impl.upsert_metric` 每次采集先 `INSERT OR IGNORE` 到 `mm_metric_vintages`（PK 含 `observed_at`），主表覆盖不再消灭旧观测。
 
 ---
 
@@ -489,7 +525,7 @@ def build(*, capability, intent, answer, data, quality_block, trace_id=None,
 | **T3 思维导图** | `overview.py` 组合视图（tree）+ 共振网络（graph） | B8 降级契约（✅ 已落地：`test_visual.py` 7 例） |
 | **L1-D 方向层**（内部） | `direction_rule` 纯函数（4 窗口）+ `signal` 表；**纸面回放 3 个月** | S1 + 参数确认（B13/B14 已定稿） |
 | **P1.5 动态权重**（内部） | 四源权重 + 等权基准对照 + Kalman「真实曲线」；先作为 `direction_rule` 的可选层，默认关闭 | I37 Kalman + I36 分位回归 + ADR-V18/V19；**必须先跑等权对照** |
-| **L1-X 执行层**（内部） | 复用 `14-V15/lib/okx_client.py`（默认 `dry_run`）+ vol targeting + 风控五项 + 簇敞口 + kill switch | S0 + L1-D 回放 + B16 账户 + 动态权重对照结果 |
+| **L1-X 信号交接层**（内部） | **L1 不持有下单客户端**：`direction_rule` → `signal` 表 → 幂等 outbox（dedupKey）→ **22 执行**；vol targeting / 风控五项 / 簇敞口 / kill switch 在 L1 侧只做前置校验 | S0 + L1-D 回放 + B16 账户 + 与 22 `FinalDecisionSignal v1.1` 映射（见 §12 `L1X-01/02`） |
 | **T4 反思** | 制品落盘 → `thought_tree.py` 读取、48-涌现消费；comparison 用三重障碍 + purge/embargo | B9 + B15（已定稿） |
 | **P2 增强** | I39 带通/STL 周期轴；T3 用 Ledoit-Wolf + 风险平价配权；D-E06 稳定性检验 | T4 之后 |
 
@@ -534,3 +570,100 @@ def build(*, capability, intent, answer, data, quality_block, trace_id=None,
 | v0.9 | 2026-11-15 | **T1 表格 + B10 基线冻结落地**：新增 `l1agg/capabilities/visual.py`（`build_visual` 纯函数 + V-G1/G2/G3/G4/G7 门禁 + D-E12 固定 8 列表 + 能力清单表 + 审计 386×6 矩阵）与 `envelope.build(visual=...)` 契约校验（source_capability 必须等于信封能力、rows≤500、spec_version 白名单）；`table.dataset` 增可选 `groups`；D-E12 接图；`BASELINE_OUTLETS` 14 条冻结为测试常量；`tests/test_visual.py` 9 例 · 全量 **739 passed** |
 | v0.10 | 2026-11-15 | **T2 曲线落地**：`visual.py` 增 `series` 生产者 —— D-E10 回撤路径（`y`=drawdown，首点 0 / 末点=`current_drawdown` / `max`=`mdd`，无 dates 用索引作 x）与 D-E15 价格+EMA26（`y`=原始价、`smoothed`=EMA26，`meta.smoothing{method:"EMA",window:26}`+`unit/n/periods/slope_windows`）；D-E15 能力块增 `prices` 尾部原始价（加法式，零口径变更）与 `slope_table()` 固定 6 列（`window/slope/se/t/r2/hac_corrected`，空窗口保留 null）；`envelope` 增 series V-G8 校验（非空 points、`meta.smoothing{method,window}`、`meta.n`）；schema `series.points` 增 `smoothed/upper/lower`、`dataset.meta`；`test_visual.py` 17 例全绿 |
 | v0.11 | 2026-11-15 | **T3 全景思维导图落地（B8 关闭）**：新增 `l1agg/capabilities/overview.py` —— `build_tree`（根→类别→指标，静态 `TREE_LAYOUT` 逐叶按字段路径原样投影；D-E12 逐行 `n_obs`；S5/资金流/缺源一律 `value=null`+`meta.reason`）与 `build_graph`（仅 D-E05 `gate=="ok"` 产出，节点≤300 / 边≤2000 / `kind` 白名单 / 边必带 `weight`+`p_adj`）；B8 降级契约为代码：`SERIES_REGISTRY` 白名单 + `CRYPTO_SYMBOLS` 作用域 + `proxy/unit/sign_flip` 必填校验；`validate_tree_dataset`/`validate_graph_dataset` 同时被 `envelope._check_visual` 的 tree/graph 分支复用；schema `source_capability` 放宽为 `^(D-[A-Z]\d{2}|T[1-4])$`、graph 边补 `weight/p_adj`；`test_visual.py` 24 例全绿 · 全量 **758 passed** |
+| v0.12 | 2026-11-15 | **L1D-01 方向规则落地**：新增 `config/direction_rule.yaml`（`dr-1.0.0`，windows `[20,60,120,250]`、权重 `[0.15,0.25,0.30,0.30]`、进阶 30 / 退出 12 / 迟滞 2 根）与 `l1agg/direction_rule.py`（纯函数 `score/decide`，四轴 40/25/20/15，`t` 与 `slope` 异号记不一致，缺窗口按剩余权重归一 + `degraded_windows`，`p_adj>hac_alpha` 强度轴折半 + `hac_insignificant`，周期律仅记录不进分，`params_hash=sha256(规范参数)`，方向/强度/分档/flags/inputs_snapshot 全落记录）；`tests/test_direction_rule.py` 13 例全绿 |
+| v0.13 | 2026-11-15 | **L1D-02 五表账本落地**：新增 `l1agg/trading/store.py` —— `data/trading.db` 建 `signal/order/fill/position/comparison` 五表（外键、CHECK 约束、`UNIQUE(as_of,symbol,rule_version)`）；`signal`/`fill` 由 SQLite 触发器拒绝 UPDATE/DELETE（只追加为机器约束）；`migrate()` 幂等（`IF NOT EXISTS` + `user_version=1`，二次执行 `created=[]`）；`append_signal()` 校验必填/`direction∈{-1,0,1}`/`strength∈[0,1]` 并把 JSON 字段规范序列化；`list_signals()` 仅供内部回放；`tests/test_trading_store.py` 7 例全绿 |
+| v0.14 | 2026-11-15 | **L1→22 交接打通**：① `l1agg/handoff.py` —— `signal`→`FinalDecisionSignal v1.1`（crypto 龙头映射 `*-USDT-SWAP`，非加密显式 `HandoffError`；`decision_id` 由 `(symbol,as_of,direction,rule_version,params_hash)` 确定性派生；`payload` 带 `adapter=54-l1`/`as_of`/`l1_*`），映射后过 49 契约 jsonschema；② 49 契约按 ADR-0003 **加法式**增补 `source=l1-chart`（`if/then` 保持 23/50 原 12 字段必填），manifest 重冻（`spec_version=v0.15`），`validate_contracts` 5/5 + 示例 5/5 OK；③ 22 网关 `_PRECHECK_SOURCES=(23-evolution,l1-chart)` + `_precheck_decision`（缺 `decision_id` / `expires_at` 过期即拒，reason 带来源），`from_dict` 的 `action` 增加 `payload.action` 兜底（契约口径，23/50 顶层优先不变）；`test_handoff.py` 7 + `test_l1_chart_gate.py` 6 全绿 |
+| v0.15 | 2026-11-15 | **L1D-03/04 落地**：① `l1agg/trading/rule_inputs.py` —— `build_inputs()` 把 `D-E15/D-E11/D-G22/D-E03` 能力块投影为规则入参（零重算；`gate!=ok` → `None`；`p_adj` 缺省由 `t_nw` 的 `erfc` 双侧 p 换算）；② `l1agg/trading/exit_rule.py` —— 四条平仓规则（方向反转 / `|total|<12` 连续 2 根 / `ADX<20 且 EMA mixed` / 硬止损）+ `min_hold_bars=6` 守卫 + 止损绕过；`test_rule_inputs_exit.py` 14 例全绿 · 54 套件 **811 passed / 6 既有失败**（`test_capabilities.py` 的 `D-G19` 未接线，非本批引入） |
+| v0.16 | 2026-11-15 | **L1D-05 纸面回放落地**：新增 `l1agg/trading/paper_replay.py` —— `replay()` 从 `warmup=250` 起逐根「`stats.trend` → `rule_inputs.build_inputs` → `direction_rule.decide` → `exit_rule.evaluate`」，**信号在下一根收盘成交**（`pending` 机制，避免同根信息偏差）；输出 `signals`（含 `inputs_snapshot`/`params_hash`）、`trades`、`metrics{bars,n_entries,n_closed,win_rate,avg_ret,cum_ret,turnover}`、`replay_key=sha256(signals 五字段规范投影)`；`persist_signals()` 写 `trading.db` 并把 `UNIQUE` 冲突计为 `duplicates`（断点重放不重复）；`tests/test_paper_replay.py` **7 passed** |
+| v0.17 | 2026-11-15 | **L1D-06/07 持仓管理与风控落地**：① `l1agg/trading/sizing.py` —— vol targeting（`clip(0.02/vol,0,3)`）→ `notional=equity×strength×scale` → `qty=notional/price`，`direction=0` 不下单，波动率只取 L1-S 输入不重算；② `l1agg/trading/risk.py` —— 五项常量（500/100/3/2.0/1500）+ `RISK_VERSION`、`L1_KILL_SWITCH`（只停新开仓、平减仓放行）、六类拒因固定顺序、`record_rejected_order()` 写 `order(status='rejected', reject_reason)`；§4.7 补两组常量口径；`tests/test_sizing_risk.py` **12 passed** |
+| v0.18 | 2026-11-15 | **L1X-03 outbox 幂等投递落地**：新增 `l1agg/trading/outbox.py` —— 独立 `data/outbox.db`（不改五表），`dedup_key=sha256({"decision_id":…})`（无 `decision_id` 时退化为 `symbol/as_of/direction/rule_version/params_hash`）；`enqueue()` 同键返回 `duplicate` 且不改原行；状态机 `queued→sent`/`queued→failed→sent`，`replay_pending()` 把发送异常/`False` 记 `failed` 并 `attempts+1`，已 `sent` 永不再发；`tests/test_outbox.py` **7 passed** |
+| v0.19 | 2026-11-15 | **DOC-01/02 收尾**：① `0-系统文档管理/INDEX.md` v2.20 新增「54-L1架构能力聚合层」小节（母 SPEC / 本 SPEC / T0 SPEC / 技术设计 / 方法库 / 能力清单 / 评审报告 / `l1agg/trading/` 共 8 条）；`link_checker.py` 610 链接 / 2 条断链均为 `archive/trae-documents/` 存量；② `49-交易框架协议/SPEC.md` §3.8 更名「L1 闭环工具面 MCP」并加命名澄清注（L1-S public / L1-D internal / L1-X 只把 `l1-chart` 交接 22，ADR-0003），10 工具契约不变 |
+| v0.20 | 2026-11-15 | **P2 三项收口**：① `l1agg/trading/cluster.py` —— D-E05 矩阵 `|ρ|≥0.70` 并查集聚类 + 同簇敞口占比闸门，`risk.check_order` 新增 `cluster_exposure_usdt`（`cluster_exposure_cap_pct=0.50`，拒因 `cluster_exposure`），`sizing` 透传（7 例）；② `l1agg/trading/weights.py` —— 四轴动态权重（∈[0.05,0.40]、换手 ≤0.15、`weights_hash`），等权否决门 `n≥250 且超额>0 且 p<0.05`，不达标退回等权 + `weight_fallback`，**默认关闭**（6 例）；③ `l1agg/trading/comparison.py` —— 对照表同键幂等 + L2 不可覆盖 L1-D + 三重障碍事后打分（扣 5bps/边 + 0.5×ATR）回写 `realized_ret/scored_at`（8 例）；§4.7 补齐四组口径；54 套件 **867 tests / 867 passed** |
+| v0.21 | 2026-11-15 | **美联储方法逐条落地**：① 新增 `l1agg/methods/fed_methods.py` —— I35 协整（临界值 ADF）、I36 分位回归（QuantReg）、I37 Kalman 局部线性趋势（常方差、非 MLE）、I38 DMA 遗忘因子、I39 带通/周期；`GROUP_CAPACITY["I"]=34→39`，audit **242/242 PASS**（catalog 243、登记 392）；② D-E15 增 `kalman` 块（level/slope/±1σ/slope_se/trail），`meta.smoothing` 仍为 EMA，<250 点降级 `kalman_unavailable`；③ `direction_rule` v1.1.0 —— `axis_weights` 参数化 + 可选 `gap` 轴（默认关闭、均值回归符号、±1 截断）+ `midas` 开关 + `strength_mode=quantile_dispersion`；④ `weights.py` v1.1.0 —— `prior×(|IC|+ε)/(σ+ε)` → simplex → clip → α=0.1 部分调整 → 换手限速，周度 `W-MON` 冻结、回放锁、`λ_u` 收缩、`weight_sources` 五源；⑤ `store.py` schema v2 —— `signal` 增 5 个权重字段（幂等 ALTER）；⑥ B18 写入路径接上 `mm_metric_vintages`（`upsert_metric` 先追加观测再覆盖主表，同秒修订 observed_at 单调 +1s）；新增 `tests/test_fed_methods.py`（I35–I39 + 4 工具，14 例）、`test_weights.py` 7 例、`test_direction_rule.py` 7 例、`test_visual.py` 2 例、`test_trading_store.py` 2 例、DAL `tests/test_mm_metric_vintage_write.py` 3 例；54 套件 **904 passed** |
+| v0.22 | 2026-11-15 | **动态权重接入实盘切换（L1D-11）**：新增 `l1agg/trading/weight_switch.py` —— 三档灰度 `off`（默认，静态 40/25/20/15，字节不变）/ `shadow`（算并落库、不注入）/ `on`（过等权否决门才注入）；开关「显式参数 > `L1_DYNAMIC_WEIGHTS` > `config/weights.yaml` > off」，非法值 `WeightSwitchError` fail-closed；`load_state()` 从 `trading.db.signal` 恢复 `previous_weights`/`last_effective_date`/`weight_fallback`，同 ISO 周内**权重与注入判定一起冻结**；`oos_excess_series()` 用已实现标签构造等权对照（不引入前视）；`apply_to_params()` 注入后 `params_hash` 随之变化可回放；`recorded_weights()` 让否决期落静态先验（避免等权对照退化成全 0、门永久锁死）；`paper_replay.replay()` 逐根用**单位轴值**（`axis_weights=1`，IC 对正数缩放不变）估权重、把 5 个权重字段落 `signal`、payload 增 `weights{mode,n_updates,n_frozen,n_fallback}`，并支持 `db_path` 跨运行续状态；新增 `tests/test_weight_switch.py` **10 例** + `test_paper_replay.py` **+5 例**；本次相关 5 套件 **63 passed**，54 全量通过。**真实数据实测（BTC/USDT 日线 700 根，2024-12-15~2026-11-14）**：65 次周度再平衡全部被等权否决门拦下（`n=250`，`excess_mean≈-1.1e-4`，`p≈0.83`），故 `on` 与 `off` 决策、胜率、换手完全一致——接线与门禁按预期工作，但静态先验在样本外尚未跑赢等权，**动态权重暂不具备开闸证据**（晋级需先让 `oos_excess` 转正） |
+
+---
+
+## §12 待完成项台账与验收（2026-11-15）
+
+
+> 本表是 L1（统计图表 → 方向 → 交接 22）的唯一待办台账。**每完成一项**：把状态改为 `✅ 已验收`，在「验收证据」列补命令/文件/测试结果，并在 §12.3 追加一行；未验收不得改状态。L1 不持有下单客户端，交易统一由 22 执行。
+
+### 12.1 状态图例
+
+`⬜ 待办` · `🟡 进行中` · `✅ 已验收` · `⛔ 阻塞`
+
+### 12.2 台账
+
+#### A. L1-S 公开面（数据 / 衍生数据 / 图表 / 新闻）
+
+| ID | 级别 | 事项 | 验收标准（可复测） | 状态 | 验收证据 |
+|---|---|---|---|---|---|
+| L1S-01 | P0 | 基本面下新增「数据与图表」tab（当前只有独立页 `/dashboard/visual`） | 基本面 tabs 出现该 tab；切换后渲染 tree/graph/series/table；`pnpm tsc --noEmit` 通过；空数据降级不报错 | ✅ 已验收（2026-11-15） | 抽出 `components/visual/VisualWorkbench.tsx` 双端复用；`fundamental/page.tsx` 新增 `charts` tab；`npx tsc --noEmit` exit 0；`jest src/components/visual` 2 passed；`fundamental-panels-query` 5 passed |
+| L1S-02 | P0 | 资产池改为后端龙头注册表驱动（BTC/黄金/原油/三大美股指数/美股代币龙头/VIX），前端零硬编码 | `/api/visual/overview` 返回的 `assets` 与 `leader_registry` 绑定集合一致；未绑定资产显式 `unavailable`；单测断言默认池 | ✅ 已验收（2026-11-15） | `leader_registry.DEFAULT_POOL/default_pool()`（10 个：BTC/XAU/CL/US500/US100/DJIA/VIX/NVDA/AAPL/TSLA）；`visual_overview.py` 删除 `DEFAULT_ASSETS` 改读注册表；COIN/MSTR 入 `UNBOUND` 显式登记；`pytest test_leader_registry.py` 13 passed；实跑 `assets` 与注册表一致、`unavailable=[]`、5 张图 |
+| L1S-03 | P1 | 新闻纳入 L1-S 统一出口（只读、无方向措辞） | AGENT 工作台问新闻返回统一信封（capability/as_of/source/items）；禁用词扫描通过 | ⬜ | — |
+| L1S-04 | P1 | T1–T3 制品落盘（ADR-V12） | 每次产图写 `artifacts/visual/<capability>/<as_of>.json`；重复执行字节一致；幂等单测 | ⬜ | — |
+| L1S-05 | P2 | T4 反思消费接线（33/48 读制品） | 读侧 smoke：`thought_tree.py` 能加载最新制品并回显 capability 列表 | ⬜ | — |
+| L1S-06 | P2 | SPEC 状态刷新（头部 / §2 出口数） | 头部状态与 §2 计数和 `capability_manifest.yaml` 实测一致 | ⬜ | — |
+
+| L1S-07 | P0 | B18 vintage 写入路径（修订不覆盖旧观测） | 每次采集追加 `mm_metric_vintages`；As-Of 只读 `observed_at ≤ as_of` | ✅ 已验收（2026-11-15） | `market_macro_impl.upsert_metric` 覆盖主表前先 `INSERT OR IGNORE` 追加观测（缺表自动建表建索引，同周期同秒 `observed_at` 单调 +1s）；`19-数据访问层/tests/test_mm_metric_vintage_write.py` **3 passed**（主表覆盖 / vintage 不丢观测 / As-Of 截断） |
+
+#### B. L1-D 方向层（internal，永不进信封）
+
+| ID | 级别 | 事项 | 验收标准（可复测） | 状态 | 验收证据 |
+|---|---|---|---|---|---|
+| L1D-01 | P0 | `direction_rule` 纯函数 + YAML 参数 + `rule_version`/`params_hash` | 同输入同参数字节一致；四轴打分与 §4.7 一致；单测覆盖 flat / 多 / 空 / 降级 | ✅ 已验收（2026-11-15） | `config/direction_rule.yaml`（`dr-1.1.0`：`axis_weights` 参数化 + 可选 gap 轴 + `midas` 开关 + `strength_mode`）+ `l1agg/direction_rule.py`（`score/decide/params_hash`）＋ `tests/test_direction_rule.py` **20 passed**（long 94 / short −97 / flat 4 / 全缺降级 / 缺窗归一 / t 异号 / HAC 折半 / 周期律仅记录 / 字节一致） |
+| L1D-02 | P0 | `data/trading.db` 五表（signal/order/fill/position/comparison）建表与迁移 | 迁移幂等；signal 只追加不可变；表结构断言 | ✅ 已验收（2026-11-15） | `l1agg/trading/store.py`：`migrate()` 二次执行 `created=[]` 且 `user_version=2`（v2 补 5 个权重列，幂等 ALTER）；`signal`/`fill` UPDATE/DELETE 抛 `sqlite3.IntegrityError`（触发器）；`UNIQUE(as_of,symbol,rule_version)` 拒重复；FK/CHECK 生效；`append_signal` 契约校验；`tests/test_trading_store.py` **9 passed** |
+| L1D-03 | P1 | 规则入参构造器（D-E15 / D-E11 / D-G22 / D-E03 → 规则输入） | 只读能力块、不重算；缺失轴按 `coherence_missing` / `null` 降级；单测 | ✅ 已验收（2026-11-15） | `l1agg/trading/rule_inputs.py`：`build_inputs()` 仅投影 `slope_table/adx14/ema/same_direction_rate`；`gate!=ok` 或缺失 → `None`（由规则打降级旗标）；`p_adj` 优先取块内值，否则 `erfc(|t_nw|/√2)` 换算（不重估）；`build_inputs → decide` 直连得 40/25/20/15 四轴；`test_rule_inputs_exit.py` 14 例全绿 |
+| L1D-04 | P1 | `exit_rule` 四条 + `min_hold_bars=6` + 迟滞 2 根 | 四条触发各 1 例；止损不受 `min_hold_bars` 限制；单测 | ✅ 已验收（2026-11-15） | `l1agg/trading/exit_rule.py`：方向反转 / `|total|<12` 连续 2 根 / `ADX<20 且 EMA mixed` / 硬止损；规则 1–3 受 `min_hold_bars=6` 约束（`MIN_HOLD_GUARD` + `blocked_by_min_hold`），止损 `stop_loss_bypass` 直接平；`low_bars` 在阈值上方自动归零；8 例覆盖 |
+| L1D-05 | P1 | 纸面回放 3 个月 | 产出 `signal` 历史 + 胜率/换手；同一 `as_of` 可重放 | ✅ 已验收（2026-11-15） | `l1agg/trading/paper_replay.py`：逐根 `stats.trend`→`build_inputs`→`decide`→`exit_rule`，**下一根收盘成交**；`metrics` 含 `bars/n_entries/n_closed/win_rate/avg_ret/cum_ret/turnover=2×开仓数/根数`；`replay_key=sha256(signals 规范投影)` 同输入字节一致、改参数即变；`persist_signals()` 落 `trading.db`（二次全 `duplicates`，不重复写）；`tests/test_paper_replay.py` **7 passed** |
+| L1D-06 | P1 | 持仓管理（vol targeting → target position） | 输出内部仓位建议并受风控五项约束；单测 | ✅ 已验收（2026-11-15） | `l1agg/trading/sizing.py`：`vol_scale=clip(0.02/vol,0,3)`、`notional=equity×strength×scale`、`qty=notional/price`；`direction=0` → `no_direction` 不下单；越界由 `risk.check_order` 拒（不截断）；`tests/test_sizing_risk.py` 中 5 例（目标/缩放/空信号/非法入参/确定性）通过 |
+| L1D-07 | P1 | 风控五项常量 + `KILL_SWITCH` | 越界拒单并写 `reject_reason`；kill switch 停止新开仓；单测 | ✅ 已验收（2026-11-15） | `l1agg/trading/risk.py`：五项常量（500/100/3/2.0/1500）+ `RISK_VERSION`；`L1_KILL_SWITCH=1` 只拦新开仓、`is_new=False` 放行；六类拒因命中即拒（顺序固定）；`record_rejected_order()` 写 `order(status='rejected', reject_reason)`；`tests/test_sizing_risk.py` **12 passed** |
+| L1D-08 | P2 | P1.5 动态权重（四源 + 等权否决） | 样本外不胜等权 → `weight_fallback=true`；默认关闭 | ✅ 已验收（2026-11-15，P2） | `l1agg/trading/weights.py`（v1.1.0）：`w* ∝ prior×(|IC|+ε)/(σ+ε)` → simplex → clip [0.05,0.40] → `w_t=0.9w_{t-1}+0.1w*` → 单次换手 L1 ≤0.15；周度 `W-MON` 冻结（`weights_frozen`）、纸面回放锁（`weights_locked_replay`）、`λ_u∈[0,0.5]` 向先验收缩、估计窗口 <500 日标 `estimation_window_lt_500`；`oos_gate` 要求 n≥250 且 `excess_mean>0` 且单边 p<0.05，否则退回等权 + `weight_fallback=true`；`enabled=False`（默认）返回 `STATIC_WEIGHTS` 并标 `dynamic_disabled`；输出 `weight_sources{prior,ic,sigma,reliability,uncertainty,stability}` + `axis_weights{gap}` + `weights_hash`；`tests/test_weights.py` **13 passed** |
+| L1D-10 | P1 | 美联储调研方法逐条落地（I35 协整 / I36 分位回归 / I37 Kalman / I38 DMA / I39 带通） | 5 个方法登记且 audit 全 PASS；D-E15 出 Kalman 置信带且 `meta.smoothing` 不变；gap 轴默认关闭、开启后进 `axes` | ✅ 已验收（2026-11-15） | `l1agg/methods/fed_methods.py`（`GROUP_CAPACITY["I"]=39`，audit 242/242 PASS）；`midas_weights` / `taylor_gap` / `fci_composite`（Ledoit-Wolf+风险平价）/ `uncertainty_index`；D-E15 payload 顶层 `kalman{level,slope,level_sigma,slope_se,band,trail}`，<250 点降级 `kalman_unavailable`；`rule_inputs.build_inputs` 可透传 `equilibrium_gap`/`forward_distribution`；`tests/test_fed_methods.py` **14 passed**、`test_visual.py` +2 |
+| L1D-09 | P2 | `comparison` 表 + 事后收益打分 | 同 `as_of+symbol` 写入并打分；L2 不可覆盖 L1-D | ✅ 已验收（2026-11-15，P2） | `l1agg/trading/comparison.py`：`record_comparison` 同键幂等、方向/强度不一致抛 `ComparisonError`（L2 不可覆盖 L1-D），`l2_verdict` 首写优先；`triple_barrier` 按 ±2×ATR 或 10 根先到者定标签，扣 5bps/边 + 0.5×ATR 滑点；`score_comparison` 回写 `realized_ret/scored_at`；`tests/test_comparison.py` **8 passed** |
+| L1D-11 | P0 | 动态权重接入实盘切换（三档灰度 + 跨运行状态 + 否决门注入判定） | 默认 `off` 时回放字节不变；`shadow` 落权重不改决策；`on` 仅过门注入、未过沿用静态先验；同 ISO 周内权重与注入判定一起冻结；跨运行从 `signal` 恢复；非法开关值 fail-closed | ✅ 已验收（2026-11-15） | `l1agg/trading/weight_switch.py`（`MODES=off/shadow/on`、`resolve_mode` 显式>env>yaml>off、`load_state` 从 `signal` 恢复 4 轴归一权重 + `weight_fallback`、`oos_excess_series` 等权对照、`apply_to_params` 注入）+ `config/weights.yaml`（默认 off）+ `paper_replay.replay(weights_mode/weight_state/weights_locked/db_path)` 逐根传 `axis_weights` 并落 5 个权重字段、payload 增 `weights{mode,n_updates,n_frozen,n_fallback}`；`tests/test_weight_switch.py` **10 passed** + `tests/test_paper_replay.py` 新增 5 例（默认静态 / shadow 不改决策 / on 未过门不注入 / 同周冻结 / 从 DB 续状态），本次相关 5 套件 **63 passed**、54 全量通过 |
+
+#### C. L1 → 22 交接（L1 不执行）
+
+| ID | 级别 | 事项 | 验收标准（可复测） | 状态 | 验收证据 |
+|---|---|---|---|---|---|
+| L1X-01 | P0 | L1 `signal` → 22 `FinalDecisionSignal v1.1` 映射 | 映射函数 + jsonschema 校验；不改 22 既有字段口径 | ✅ 已验收（2026-11-15） | `l1agg/handoff.py`（`build_final_decision` / `validate_final_decision`）+ 49 契约加法式增补 `l1-chart` 来源（ADR-0003，`if/then` 保 23/50 原 12 字段必填不变）；`pytest tests/test_handoff.py` **7 passed**；`validate_contracts.py` 5 契约 + 5 示例全 OK |
+| L1X-02 | P0 | 22 对 `source=l1-chart` 强制 `decision_id`/`expires_at` | 缺 `decision_id` 拒；过期拒；新增单测 | ✅ 已验收（2026-11-15） | `trade_execution_gateway.py`：`_PRECHECK_SOURCES=(23-evolution,l1-chart)` + `_precheck_decision`（reason 带来源）；`tests/test_l1_chart_gate.py` **6 passed**（缺 id 拒 / 过期拒 / 通过前置后进 13 / 23 源回归 / 其他源不拦 / 审计落盘） |
+| L1X-03 | P1 | outbox 幂等（dedupKey）+ 失败重投 | 重复 signal 只执行一次；断点重投不重复 | ✅ 已验收（2026-11-15） | `l1agg/trading/outbox.py`：独立 `data/outbox.db`（不动已验收五表），`dedup_key=sha256(decision_id)`（缺省用 `symbol/as_of/direction/rule_version/params_hash`）；同键二次入队返回 `duplicate` 且不改原行；`replay_pending()` 发送失败记 `failed`+`attempts+1`、成功记 `sent` 且不再重发；`tests/test_outbox.py` **7 passed** |
+| L1X-04 | P2 | 簇敞口（D-E05 聚类）≤ 总敞口 50% | 同簇两仓被拒或降仓；单测 | ✅ 已验收（2026-11-15，P2） | `l1agg/trading/cluster.py`：`clusters()` 用 `|ρ|≥0.70` 并查集聚类（簇号按出现顺序 `c1…`）；`check_cluster_exposure()` 计算「含新单同簇敞口 / 含新单总敞口」，>50% → `reject_reason="cluster_exposure"`；`risk.check_order` 新增 `cluster_exposure_usdt`（排在 gross 与 notional 之间）+ `cluster_exposure_cap_pct=0.50`，`sizing.target_position` 透传；`tests/test_cluster_exposure.py` **7 passed** |
+
+#### D. 文档与索引
+
+| ID | 级别 | 事项 | 验收标准（可复测） | 状态 | 验收证据 |
+|---|---|---|---|---|---|
+| DOC-01 | P1 | `0-系统文档管理/INDEX.md` 补 54 条目 | INDEX 可检索到 54；`link_checker` 通过 | ✅ 已验收（2026-11-15） | INDEX v2.20 新增「54-L1架构能力聚合层」小节 8 行（母 SPEC v1.20 / 本 SPEC v0.18 / T0 SPEC v1.6 / TECHNICAL_DESIGN / METHOD_LIBRARY / capability_manifest / 评审报告 / `l1agg/trading/`）；`link_checker.py` 610 链接 / 2 存量断链（均在 `archive/trae-documents/`，非本次变更） |
+| DOC-02 | P1 | 49 §3.8「L1 交易层 MCP」改名/加注（与 54 的 L1 区分） | 49 与 54 不再同名冲突；评审可区分 | ✅ 已验收（2026-11-15） | `49-交易框架协议/SPEC.md` §3.8 标题改为「L1 闭环工具面 MCP（`l1.trading.mcp`，10 工具）— 历史名…」并加命名澄清注（L1-S/L1-D/L1-X 分层 + `l1-chart` → 22 + ADR-0003 链接）；10 工具契约与调用方未改 |
+
+### 12.3 执行顺序与验收记录
+
+顺序：`L1S-01` → `L1S-02` → `L1D-01` → `L1D-02` → `L1X-01` → `L1X-02` → 其余按级别推进。
+
+| 日期 | ID | 状态 | 验收证据 |
+|---|---|---|---|
+| 2026-11-15 | — | 台账建立 | 本节 |
+| 2026-11-15 | L1S-01 | ✅ 已验收 | `tsc --noEmit` exit 0；`jest src/components/visual` 2 passed；`fundamental-panels-query` 5 passed |
+| 2026-11-15 | L1S-02 | ✅ 已验收 | `pytest test_leader_registry.py` 13 passed；实跑默认池 10 资产全 available、5 张图 |
+| 2026-11-15 | L1D-01 | ✅ 已验收 | `pytest tests/test_direction_rule.py` 13 passed；四轴 40/25/20/15 与 §4.7 一致、`params_hash` 可回放 |
+| 2026-11-15 | L1D-11 | ✅ 已验收 | `pytest tests/test_weight_switch.py tests/test_paper_replay.py tests/test_weights.py tests/test_trading_store.py tests/test_direction_rule.py` **63 passed**；默认 `off` 决策与权重哈希不变、`on` 未过否决门不注入 |
+| 2026-11-15 | L1D-02 | ✅ 已验收 | `pytest tests/test_trading_store.py` 7 passed；迁移幂等（`created=[]`）、signal/fill 只追加触发器 |
+| 2026-11-15 | L1X-01 | ✅ 已验收 | `pytest tests/test_handoff.py` 7 passed；49 契约 `validate_contracts` 5/5 + 示例 5/5 OK；BTC→`BTC-USDT-SWAP`、XAU/CL/US500 显式拒绝 |
+| 2026-11-15 | L1X-02 | ✅ 已验收 | `pytest tests/test_l1_chart_gate.py` 6 passed；`source=l1-chart` 缺 `decision_id` → `MISSING_DECISION_ID`、过期 → `SIGNAL_EXPIRED`；23 源行为回归不变 |
+| 2026-11-15 | L1D-03 | ✅ 已验收 | `pytest tests/test_rule_inputs_exit.py`（入参 6 例）passed；`build_inputs → decide` 四轴 40/25/20/15；空能力块全 `None` 降级 |
+| 2026-11-15 | L1D-04 | ✅ 已验收 | 同文件 8 例：四条规则各 1 例、`min_hold` 拦截规则 1–3、止损绕过 `min_hold`、`low_bars` 归零；54 套件 811 passed / 6 既有失败（D-G19 未接线） |
+| 2026-11-15 | L1D-05 | ✅ 已验收 | `pytest tests/test_paper_replay.py` **7 passed**（3.9s）：`replay_key` 同输入一致 / 改 `flat_threshold` 即变、signal 历史 130 根有序且字段齐、`metrics` 胜率与 `turnover=2×n_entries/bars` 自洽、首笔成交落在首个非零 signal 的**下一根收盘**、`persist_signals` 二次落库全 `duplicates`、样本不足抛 `ValueError` |
+| 2026-11-15 | L1D-06 | ✅ 已验收 | `sizing.py`：vol 0.02→scale 1、0.01→2、0.004→3（封顶）；equity 400 + strength 1 + vol 0.02 → notional 400 / qty 4 / leverage 1.0；同参重复调用返回完全相同的 dict |
+| 2026-11-15 | L1D-07 | ✅ 已验收 | `pytest tests/test_sizing_risk.py` **12 passed**：五类越界各 1 例（daily_loss/positions/leverage/gross/notional）+ kill switch 拦新开仓但放行 `is_new=False` + 拒单真实落到 `order` 表（`status='rejected'`，未知拒因抛 `ValueError`） |
+| 2026-11-15 | L1X-03 | ✅ 已验收 | `pytest tests/test_outbox.py` **7 passed**：同决策二次入队 `duplicate`（仅 1 行）、`dedup_key` 与 `sha256({"decision_id":…})` 一致且随 `as_of`/方向变化、发送异常 → `failed`+`attempts=1` 后重投成功、已 `sent` 不再重发（第二次 `sent=0`）、`send→False` 记 `send_returned_false`、不同信号两行 |
+| 2026-11-15 | DOC-01 | ✅ 已验收 | `0-系统文档管理/INDEX.md` v2.20 新增 54 小节（8 条目的链接均可解析）；`link_checker.py --summary` → 610 链接 / 2 断链，2 条均为 `archive/trae-documents/performance-adaptive-capital-allocator-spec.md` 存量问题 |
+| 2026-11-15 | DOC-02 | ✅ 已验收 | `49-交易框架协议/SPEC.md` §3.8 已改名并加注；文档内链接 `./docs/adr/ADR-0003-l1-chart-source.md` 存在 |
+| 2026-11-15 | 全量回归 | ✅（1 项既有失败） | `pytest 54-L1架构能力聚合层/tests` → **843 tests / 842 passed / 1 failure**；唯一失败为 `test_capabilities.py::test_manifest_loads_and_validates`（期望 `D-G20` 已登记，manifest 实无此 ID，属并行线未接线，非本批引入）；`22-执行引擎中心/tests/test_l1_chart_gate.py` **6 passed** |
+| 2026-11-15 | L1X-04 | ✅ 已验收（P2） | `pytest tests/test_cluster_exposure.py` **7 passed**：ρ0.92 → BTC/ETH 同簇、GOLD 独立；阈值 0.95 时拆簇；同簇合计 400+100=500；含新单 700/1000 → 拒 `cluster_exposure`；300/1100 → 放行；`risk.check_order` 与 `sizing.target_position` 均按簇拒 |
+| 2026-11-15 | L1D-08 | ✅ 已验收（P2） | `pytest tests/test_weights.py` **6 passed**：默认 `enabled=False` 返回静态权重 + `dynamic_disabled`；`oos_gate` 三档（无样本/负超额/显著正超额）；门未过 → 等权 + `weight_fallback`；过门后权重 ∈[0.05,0.40] 且趋势轴最大；`previous_weights=EQUAL` 时换手 ≤0.15；两次调用结果完全一致 |
+| 2026-11-15 | L1D-09 | ✅ 已验收（P2） | `pytest tests/test_comparison.py` **8 passed**：同键幂等、L2 改方向/强度抛 `ComparisonError`、`l2_verdict` 首写优先；上/下障碍各 1 例（gross 0.02 → 扣 0.006 → net 0.014）；10 根时间退出 net −0.006；`score_comparison` 回写 `realized_ret/scored_at` 且 L1 字段不变；`direction=0` 记 0 + `flat_position` |
+| 2026-11-15 | 全量回归（P2 后） | ✅ 0 失败 | `pytest 54-L1架构能力聚合层/tests` → **867 tests / 867 passed**（并行线补齐 `D-G20` 后此前那 1 项既有失败已消失） |

@@ -1,6 +1,7 @@
 # 54 能力注册表（能力层唯一事实源，SPEC-54 §3.3 / §11.4）
 # 规则：
 #   1. 只能引用方法库已登记且 implemented=true 的 method_id（manifest.validate() 强制）；
+#      method_binding=display（纯投影/展示能力）的 methods 只披露血缘，不参与执行覆盖统计；缺省 compute。
 #   2. min_n 是「能力级最小样本」，方法级门禁仍由 l1agg.methods.registry 独立执行；
 #   3. 新增能力 = 加一条 + 在 l1agg/capabilities/stats.py 提供同名 executor；
 #   4. mode=deterministic 绕过记忆相似度门禁，gated 仍需 route_confidence >= 0.65。
@@ -11,6 +12,118 @@ updated: "2026-11-15"
 visibility_default: public
 visibility_internal: []
 capabilities:
+  - id: D-A01
+    intent: metric_series
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.stats.history_series
+    methods: [S25]
+    min_n: 30
+    notes: 单序列区间取点 + 日/周/月降采样（每区间取最后观测，同日重复取最后），输出 points/span/unit；当前历史分位由方法层 S25 真实执行，能力层不重算统计量；日期轴必填且等长，缺失率 >20% 降级 partial（sparse_series），样本 <30 或非法 freq FAIL-OPEN 为 empty
+  - id: D-A02
+    intent: metric_series
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.stats.change_rate
+    methods: [S15, S16]
+    min_n: 2
+    notes: 序列末值与 window 期前值比较，S15 输出绝对变化、S16 输出变化率；window<1 或样本不足以覆盖区间 FAIL-OPEN 为 empty；基期值为 0 时变化率不可用降级 partial（change_pct_unavailable）并保留绝对变化
+  - id: D-A03
+    intent: metric_series
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.stats.cagr
+    methods: [S19]
+    min_n: 2
+    notes: 首末值年化复合增长率；提供 dates 时按首末日历天数折算年数，否则按 n-1 天；跨度不足 1 年降级 partial（short_span）并提示仅供参考；起止值非正、首末日期跨度非正、样本 <2 或日期无效 FAIL-OPEN 为 empty
+  - id: D-A04
+    intent: metric_percentile
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.stats.percentile_rank
+    methods: [S25]
+    min_n: 30
+    notes: 末值在最近 lookback 期历史中的分位（S25：100×count(X≤x_last)/n，无未来函数），输出 percentile/value/lookback/sample_n；lookback 缺省取全样本，指定时须 ≥30；窗口 <60 期降级 short_lookback，lookback 超过可用历史降级 lookback_truncated 并按可用样本计算；样本 <30、非法 lookback、长度不一致或日期无效 FAIL-OPEN 为 empty
+  - id: D-A06
+    intent: metric_series
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.stats.annualized_volatility
+    methods: [F05]
+    min_n: 30
+    notes: 日简单收益标准差 × √365 年化（F05），输出 volatility/mean_ret/window/sample_n；window 缺省取全样本、指定时须 ≥30；有效样本 <60 期降级 short_window；样本 <30、window<30、日期长度不一致或含非有限值 FAIL-OPEN 为 empty
+  - id: D-A07
+    intent: drawdown_query
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.drawdown
+    methods: [D20, D21]
+    min_n: 250
+    notes: 单序列回撤画像（与 D-E10 共用执行器，注入 capability_id=D-A07）：D20 最大回撤与峰谷索引 + D21 回撤持续/收复天数，输出 drawdown/peak_ts 及 mdd/current_drawdown/duration_days/drawdown_path；价格 <2 点 FAIL-OPEN 为 empty，样本 <250 期降级 insufficient_samples
+  - id: D-A08
+    intent: metric_series
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.stats.yoy_change
+    methods: [S16]
+    min_n: 13
+    notes: 与 period 期前比较的同比（S16 变化率，period 默认 12），输出 yoy/base_ts/period/sample_n；样本须 >period 且 ≥13；历史不足 2 个完整周期（len<2×period+1）降级 short_history，基期值为 0 降级 yoy_unavailable；长度不足以覆盖 period、period<1、日期长度不一致或含非有限值 FAIL-OPEN 为 empty
+  - id: D-A09
+    intent: metric_series
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.stats.mom_change
+    methods: [S16]
+    min_n: 2
+    notes: 与上一期比较的环比（S16 变化率，k=1），输出 mom/base_ts/sample_n；至少 2 个有效点；基期值为 0 时 mom=None 并降级 mom_unavailable；样本 <2、日期长度不一致或含非有限值 FAIL-OPEN 为 empty
+  - id: D-A10
+    intent: metric_derived
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.stats.real_rate
+    methods: [S16]
+    min_n: 13
+    notes: 实际利率 = 名义利率（如 DGS10）− CPI 同比通胀；通胀唯一由 S16（k=period，默认 12）真实执行并折算为百分点，能力层只做差值组合，输出 real_rate/nominal/inflation/base_ts/period/sample_n；CPI 基期为 0 时通胀与实际利率均不可计算并降级 inflation_unavailable；样本不足 2 个完整周期降级 short_history；样本不足以覆盖 period、period<1、双序列长度不一致、日期长度不一致或含非有限值 FAIL-OPEN 为 empty
+  - id: D-A11
+    intent: correlation_query
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.stats.rolling_correlation
+    methods: [M04]
+    min_n: 60
+    notes: 双序列滚动 Pearson 相关；按原始位置 paired complete-case 后由 M04 计算窗口相关，输出 corr（最近窗口）/mean_r/window/n_windows/sample_n；有效配对 <60 降级 insufficient_samples 但保留结果；有效配对 <2、window<2 或 window 超出配对样本、日期长度不一致或含非有限值 FAIL-OPEN 为 empty
+  - id: D-A12
+    intent: correlation_query
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.stats.lead_lag_correlation
+    methods: [M11, M12]
+    min_n: 120
+    notes: lag 0–max_lag（默认 10）的领先滞后相关；paired complete-case 后由 M11 输出全 lag 相关/p/BH-FDR q/显著性，M12 输出最优 lag，能力层组装 corr_by_lag[] 与 best_lag/best_corr/best_p_adj；有效配对 <120 降级 insufficient_history 但保留结果；配对 <2、max_lag<1 或超出配对样本、日期长度不一致或含非有限值 FAIL-OPEN 为 empty；结论不自动等于因果或未来可预测
+  - id: D-A13
+    intent: metric_series
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.stats.extreme_frequency
+    methods: [S11]
+    min_n: 30
+    notes: 超阈值天数与占比；未给 threshold 时由 S11 分位（quantile 默认 0.95，取 pN）给出阈值，计数为纯聚合不引入额外估计量；输出 days/ratio/threshold/side/quantile/sample_n；样本 <30 且未提供 threshold 时阈值不可确定 FAIL-OPEN 为 empty，提供 threshold 时 <30 降级 insufficient_samples 但保留计数；有效样本 <2、side 非法、threshold/quantile 非法、日期长度不一致或含非有限值 FAIL-OPEN 为 empty
+  - id: D-A15
+    intent: metric_series
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.stats.etf_flow_rolling
+    methods: [S20]
+    min_n: 30
+    notes: ETF/资金净流入 7/30 日滚动和；S20 真实执行滚动均值，能力层仅做「均值 × 窗口长度」算术还原，不重算任何分布或统计量；输出 sum_{k}d/windows/sample_n；有效样本 <30 降级 insufficient_samples 但保留结果，某窗口超出历史长度降级 short_history 并将该窗口置 None，全部窗口不可算 FAIL-OPEN 为 empty；windows 非法、日期长度不一致或含非有限值 FAIL-OPEN 为 empty
+  - id: D-A16
+    intent: metric_series
+    mode: deterministic
+    data_scope: [datacenter.series]
+    executor: capabilities.stats.stablecoin_growth
+    methods: [S16]
+    min_n: 30
+    notes: 稳定币规模 7/30 日增速；S16 逐窗口真实执行 x_t/x_{t-w}-1，能力层只组装多窗口结果并折算为百分比；输出 growth_{k}d/windows/sample_n；有效样本 <30 降级 insufficient_samples 但保留结果；窗口超出历史降级 short_history，基期为 0 降级 base_zero 并将该窗口置 None；全部窗口不可算 FAIL-OPEN 为 empty
   - id: D-A14
     intent: metric_percentile
     mode: deterministic
@@ -125,6 +238,46 @@ capabilities:
     methods: [B05, B10, R01, R02, R08]
     min_n: 250
     notes: 一维相关状态经 R02 PIT 4 桶输出 h=1/2 前瞻分布；每桶非重叠 n>=250，主期限不足降 2 桶，弱后续期限单独降级；h>1 不输出朴素 t/p
+  - id: D-G14
+    intent: metric_series
+    mode: deterministic
+    data_scope: [market.candles, mm_metrics]
+    executor: capabilities.stats.ewma_risk
+    methods: [P07, T19]
+    min_n: 60
+    notes: 多资产收益面板按原始行 complete-case 后共享同一矩阵；P07 EWMA 协方差（λ 日频 0.94）输出组合协方差与年化波动，T19 逐资产 EWMA 波动序列并列输出；单资产仅走 T19 且不输出协方差；风险结构仅描述样本内统计，不构成交易信号
+  - id: D-J30
+    intent: metric_percentile
+    mode: deterministic
+    data_scope: [market.candles, mm_metrics]
+    executor: capabilities.stats.pit_alignment
+    methods: [SC90, R02]
+    min_n: 250
+    notes: 全局前视规避出口；SC90 校验每条样本「可用时间 ≤ 使用时间」（release_ts/used_ts 支持 ISO 或数值时间戳，缺省视为观测时刻），R02 pit=true 逐时点滚动分位并按 release_ts≤as_of 过滤输出前瞻分布；PIT 违规降级 partial 并披露前视风险，过滤后可见样本不足时不出前瞻分布；对齐样本 <250 或非法 buckets/window FAIL-OPEN 为 empty
+  - id: D-G16
+    intent: metric_series
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.portfolio_risk
+    methods: [D17, D18, P09, P10]
+    min_n: 60
+    notes: 输入各资产日收益与可选权重；P09 参数法组合 VaR + P10 历史法组合 VaR/CVaR，D17/D18 并列输出逐资产历史 VaR/CVaR；损失均为正数口径，权重归一化只由方法层处理
+  - id: D-G19
+    intent: metric_series
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.ic_profile
+    methods: [B13, B14, B15, Q01, Q02, Q03]
+    min_n: 250
+    notes: factor 与已对齐单期 forward 做 complete-case；B13/B14 与 Q01/Q02 输出 IC/RankIC/ICIR，Q03 输入 returns 首项补 0 并右移 forward 以避免多移一期；可选 prices 执行 B15 价格动量重叠/非重叠 IC 衰减，缺失或不足时降级保留核心五方法结果
+  - id: D-G20
+    intent: metric_series
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.quantile_monotonic
+    methods: [B11, B16, Q04]
+    min_n: 250
+    notes: factor 与已对齐 forward 按原始位置 complete-case；B16 输出各分位组均值/中位/胜率与最高减最低 spread，B11 检验组均值严格单调，Q04 输出分位序号与组均值 Spearman rho/p；spread 仅为描述性统计，非策略收益
   - id: D-G22
     intent: significance_query
     mode: deterministic
@@ -158,11 +311,95 @@ capabilities:
     methods: [T22, T23, SC49, SC50, SC51]
     min_n: 60
     notes: T22/SC49 两种 CUSUM、T23 近似 PELT、SC50 精确 PELT、SC51 Pettitt；SC47 Kalman 与 SC48 互谱相干不属于变点出口；原始方法结果与日期映射并列输出，不合成交易方向
+  - id: D-J22
+    intent: metric_series
+    mode: deterministic
+    data_scope: [market.candles, mm_metrics]
+    executor: capabilities.stats.dimension_reduction
+    methods: [M19, M20, SC31, SC32, SC33]
+    min_n: 60
+    notes: 多变量面板按原始行 complete-case 后共享同一数据矩阵；M19 相关阵 PCA 解释方差、M20 载荷、SC31 sklearn PCA、SC32 SVD、SC33 因子分析并列输出；降维结果仅描述数据结构，不构成交易信号
+  - id: D-J24
+    intent: metric_series
+    mode: deterministic
+    data_scope: [market.candles, mm_metrics]
+    executor: capabilities.stats.correlation_network
+    methods: [M05, M21, SC71, SC72]
+    min_n: 60
+    notes: 多变量面板 complete-case 后由 M05 输出相关矩阵，按 |rho|≥threshold 生成无向邻接，SC71 度/介数/接近中心性，SC72 Louvain 社区与模块度，M21 相关距离层次聚类；网络结构仅描述同期相关关系，不构成交易信号
+  - id: D-B08
+    intent: technical_indicator
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.slope_trend
+    methods: [T08, T09]
+    min_n: 60
+    notes: 最近 window 期（默认 90，下限 30）对数价格 OLS 趋势斜率 + R²（T08）与名义 t/p（T09，未做 HAC 修正）；输出 slope/r2/window/t/p/hac_corrected/sample_n；价格样本 <60 降级 short_window 但保留结果；价格样本 <30、window<30、非整数 window、日期长度不一致或含非有限值 FAIL-OPEN 为 empty
+  - id: D-B09
+    intent: technical_indicator
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.ath_drawdown
+    methods: [D20, D21]
+    min_n: 250
+    notes: 距历史高（ATH）回撤；复用 D-E10 `drawdown` 执行器（D20 回撤画像 + D21 持续期），能力层只做 max/索引取点与别名映射（drawdown_from_ath/ath/ath_ts 分别等于 current_drawdown/peak_price/peak_ts），不重算回撤统计量；价格样本 <2 或全无效值 FAIL-OPEN 为 empty；样本 <250 降级 insufficient_samples 但保留结果
+  - id: D-G08
+    intent: metric_derived
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.momentum_12_1
+    methods: [F14]
+    min_n: 60
+    notes: 12-1 动量（跳过最近 skip 期、回溯 lookback 期的累计收益）；F14 在被切片后的窗口上真实执行动量/波动/风险调整动量，能力层只做窗口切片（数据整形）与百分比换算，不重算统计量；lookback 默认 252、skip 默认 21，历史不足时截断 lookback 并降级 short_history，价格样本 <60、lookback<2、skip<0、非整数参数、日期长度不一致或含非有限值 FAIL-OPEN 为 empty
+  - id: D-G09
+    intent: metric_derived
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.vol_target_scale
+    methods: [P02]
+    min_n: 60
+    notes: 波动率目标换算（scale = 目标波动 / 窗口内实现波动）；价格序列先转日简单收益（数据整形），再由 P02 计算实现波动与缩放系数，能力层不重算波动率；target_vol 默认 0.10、window 默认 20、periods 默认 365；收益样本 <60、target_vol≤0 或非数值、window<2、periods<1、日期长度不一致或含非有限值 FAIL-OPEN 为 empty；window 超过收益长度时截断并降级 window_truncated，实现波动为 0 时降级 zero_volatility；系数仅为样本内比值，不构成交易建议
   - id: D-E15
     intent: trend_query
     mode: deterministic
     data_scope: [market.candles]
     executor: capabilities.stats.trend
-    methods: [I02, T08, I32]
+    methods: [I02, T08, I32, I37]
     min_n: 250
-    notes: EMA(12/26/50) 平滑 + 多窗口对数价格斜率(20/60/120/250) + ADX14；T2 曲线与 L1-D 方向输入；对外只给统计事实
+    notes: EMA(12/26/50) 平滑 + 多窗口对数价格斜率(20/60/120/250) + ADX14，可选 I37 Kalman 局部线性趋势；T2 曲线与 L1-D 方向输入；对外只给统计事实
+  - id: D-E16
+    intent: trend_query
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.aggregate_curve
+    methods: [S16]
+    min_n: 60
+    method_binding: display
+    notes: 多成员加权聚合曲线；成员先按自身首日 rebase 再按 chart_weights 加权，缺口不向前填充，逐点给出 coverage_ratio/partial_members；曲线口径只聚合展示，不含交易方向
+  - id: D-E17
+    intent: cross_check
+    mode: gated
+    data_scope: [market.candles]
+    executor: capabilities.stats.class_board
+    methods: [S16, S25, M01, I32]
+    min_n: 60
+    method_binding: display
+    notes: 五类分组看板（跨资产公共日期轴，ret_60 与 D-E12 同口径）；组内按 ret_60 降序，lit_n/warm_n 直接消费 D-E19 计数（LT-AC4 零重算）；样本低于 per-anchor 质量门时标 degraded_reason 并禁止点亮
+  - id: D-E18
+    intent: data_insight
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.flow_graph
+    methods: [M01, M02]
+    min_n: 60
+    method_binding: display
+    notes: 资金流向导图；ETF 净流入按滚动窗口 z-score 转 flow 边（>0 为流入资产），无 flow 数据时降级 corr-only 且绝不伪造边（LT-G7）；边严格 5 键 src/dst/kind/weight/p_adj
+  - id: D-E19
+    intent: trend_query
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.lights
+    methods: [I37, I36]
+    min_n: 500
+    method_binding: display
+    notes: 四轴（趋势/惯性/周期/前瞻）五态点亮投影；轴强度 = |轴值|/轴权重（零重算），cycle 取 I39 外部归一值不自行估计；lit/warm 阈值默认 p70/p40 且未标定时显式打标；样本门按 asset_pool per-anchor（代币化标的 250 硬门）独立控制，展示层不重算统计量

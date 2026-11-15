@@ -45,6 +45,8 @@ INTENT_EVENT = "event_study"
 INTENT_METRIC_SERIES = "metric_series"
 INTENT_TREND = "trend_query"
 INTENT_CHANGE_POINT = "change_point_query"
+INTENT_METRIC_DERIVED = "metric_derived"
+INTENT_TECHNICAL = "technical_indicator"
 
 MIN_DRAWDOWN = 250
 MIN_ALIGNMENT = 30
@@ -57,6 +59,23 @@ MIN_SIGNIFICANCE = 250
 MIN_CROWDING = 60
 MIN_EVENT_STUDY = 250
 MIN_CHANGE_POINT = 60
+MIN_PORTFOLIO_RISK = 60
+MIN_IC_PROFILE = 250
+MIN_DIMENSION_REDUCTION = 60
+MIN_EWMA_RISK = 60
+MIN_SERIES = 30
+MIN_CHANGE = 2
+MIN_CAGR = 2
+MIN_PERCENTILE = 30
+MIN_PERCENTILE_LOOKBACK = 60
+MIN_VOL_WINDOW = 60
+MIN_YOY_SAMPLE = 13
+MIN_MOM_SAMPLE = 2
+MIN_REAL_RATE = 13
+MIN_ROLLING_CORR = 60
+MIN_SLOPE = 60
+MIN_MOMENTUM = 60
+MIN_VOL_TARGET = 60
 MIN_SEASONAL_ADJUSTMENT_SPAN_DAYS = 1095
 EVENT_GATE = 30
 MIN_COUNT = 3
@@ -103,6 +122,32 @@ def _paired_rows(
 def _paired_floats(left: Sequence[Any], right: Sequence[Any]) -> Tuple[List[float], List[float]]:
     _, left_out, right_out = _paired_rows(left, right)
     return left_out, right_out
+
+
+def _panel_rows(
+    series: Mapping[str, Sequence[Any]],
+) -> Tuple[List[str], Dict[str, List[float]], List[List[float]], List[int]]:
+    """多列面板按原始行做 complete-case，保留行号供日期轴同步过滤。"""
+    names = sorted(str(key) for key in series)
+    raw = [list(series[key]) for key in names]
+    n = min((len(column) for column in raw), default=0)
+    indices: List[int] = []
+    rows: List[List[float]] = []
+    for index in range(n):
+        values: List[float] = []
+        for column in raw:
+            try:
+                value = float(column[index])
+            except (TypeError, ValueError):
+                break
+            if not math.isfinite(value):
+                break
+            values.append(value)
+        else:
+            indices.append(index)
+            rows.append(values)
+    panel = {name: [row[position] for row in rows] for position, name in enumerate(names)}
+    return names, panel, rows, indices
 
 
 def _returns(prices: Sequence[float]) -> List[float]:
@@ -226,14 +271,16 @@ def drawdown(
     symbol: str = "",
     dates: Optional[Sequence[Any]] = None,
     now_ts: Optional[int] = None,
+    capability_id: str = "D-E10",
+    intent: str = INTENT_DRAWDOWN,
     trace_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     px = _floats(prices)
     ds = _parse_dates(dates)
     if len(px) < 2:
         return unavailable(
-            capability="D-E10",
-            intent=INTENT_DRAWDOWN,
+            capability=capability_id,
+            intent=intent,
             reason="价格样本不足 2 点",
             trace_id=trace_id,
         )
@@ -241,7 +288,10 @@ def drawdown(
     duration = _call("D21", px)
     if profile["gate"] != "ok" or duration["gate"] != "ok":
         return unavailable(
-            capability="D-E10", intent=INTENT_DRAWDOWN, reason="回撤画像计算失败", trace_id=trace_id
+            capability=capability_id,
+            intent=intent,
+            reason="回撤画像计算失败",
+            trace_id=trace_id,
         )
     mdd = profile["result"]
     dur = duration["result"]
@@ -276,10 +326,12 @@ def drawdown(
     )
     payload = {
         "capabilities": {
-            "D-E10": {
+            capability_id: {
                 "gate": "ok",
                 "methods": ["D20", "D21"],
                 "mdd": mdd["mdd"],
+                "drawdown": current_dd,
+                "peak_ts": peak_date,
                 "peak_index": mdd["peak_index"],
                 "trough_index": mdd["trough_index"],
                 "peak_date": peak_date,
@@ -297,13 +349,13 @@ def drawdown(
         "symbol": symbol or None,
     }
     return build(
-        capability="D-E10",
-        intent=INTENT_DRAWDOWN,
+        capability=capability_id,
+        intent=intent,
         answer=answer,
         data=payload,
         quality_block=q,
         trace_id=trace_id,
-        visual=build_visual(capability="D-E10", data=payload, quality_block=q),
+        visual=build_visual(capability=capability_id, data=payload, quality_block=q),
     )
 
 
@@ -1466,6 +1518,330 @@ def alignment_slice(
     )
 
 
+# ---------------- D-G16 组合 VaR / CVaR ----------------
+
+
+def portfolio_risk(
+    series: Mapping[str, Sequence[Any]],
+    *,
+    weights: Any = None,
+    quantile: float = 0.05,
+    z: float = 1.645,
+    dates: Optional[Sequence[Any]] = None,
+    name: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """组合与逐资产尾部风险并列输出，所有统计量均由方法层计算。"""
+    panel: Dict[str, List[float]] = {}
+    if isinstance(series, Mapping):
+        for symbol, values in series.items():
+            if isinstance(values, Sequence) and not isinstance(values, (str, bytes)):
+                cleaned = _floats(values)
+                if cleaned:
+                    panel[str(symbol)] = cleaned
+    if not panel:
+        return unavailable(
+            capability="D-G16",
+            intent=INTENT_METRIC_SERIES,
+            reason="缺少各资产收益序列",
+            trace_id=trace_id,
+        )
+    n = min(len(values) for values in panel.values())
+    if n < MIN_PORTFOLIO_RISK:
+        return unavailable(
+            capability="D-G16",
+            intent=INTENT_METRIC_SERIES,
+            reason=f"组合对齐样本 {n} < {MIN_PORTFOLIO_RISK}",
+            trace_id=trace_id,
+        )
+    symbols = sorted(panel)
+    payload = {"series": panel, "weights": weights}
+    parametric = _call("P09", payload, z=z)
+    historical = _call("P10", payload, quantile=quantile)
+    if parametric["gate"] != "ok" or historical["gate"] != "ok":
+        return unavailable(
+            capability="D-G16",
+            intent=INTENT_METRIC_SERIES,
+            reason="组合 VaR/CVaR 计算失败",
+            trace_id=trace_id,
+        )
+    historical_result = historical["result"]
+    q_percent = float(historical_result["quantile"]) * 100.0
+    assets: Dict[str, Any] = {}
+    for symbol in symbols:
+        aligned = panel[symbol][:n]
+        var = _call("D17", aligned, q=q_percent)
+        cvar = _call("D18", aligned, q=q_percent)
+        if var["gate"] != "ok" or cvar["gate"] != "ok":
+            return unavailable(
+                capability="D-G16",
+                intent=INTENT_METRIC_SERIES,
+                reason=f"{symbol} 单资产 VaR/CVaR 计算失败",
+                trace_id=trace_id,
+            )
+        assets[symbol] = {"var": var["result"], "cvar": cvar["result"]}
+    parsed_dates = _parse_dates(dates)
+    aligned_dates = parsed_dates[:n] if len(parsed_dates) >= n else []
+    q = quality_for(
+        n,
+        min_n=MIN_PORTFOLIO_RISK,
+        span=_span(aligned_dates),
+        sources=["market.candles"],
+        align_method="min_common_length",
+        timezone="UTC",
+    )
+    parametric_result = parametric["result"]
+    confidence = 100.0 - float(historical_result["quantile"]) * 100.0
+    prefix = f"{name} " if name else "组合 "
+    answer = (
+        f"{prefix}{confidence:g}% 单期尾部风险（损失正数口径）："
+        f"参数法 VaR={parametric_result['var']:.6f}，"
+        f"历史法 VaR={historical_result['var_hist']:.6f}，"
+        f"CVaR={historical_result['cvar']:.6f}；逐资产历史 VaR/CVaR 并列输出。"
+        f"对齐样本 n={n}。{CAVEAT}。"
+    )
+    return build(
+        capability="D-G16",
+        intent=INTENT_METRIC_SERIES,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-G16": {
+                    "gate": "ok",
+                    "methods": ["D17", "D18", "P09", "P10"],
+                    "symbols": symbols,
+                    "portfolio": {
+                        "parametric": parametric_result,
+                        "historical": historical_result,
+                    },
+                    "assets": assets,
+                }
+            },
+            "params": {
+                "min_n": MIN_PORTFOLIO_RISK,
+                "quantile": historical_result["quantile"],
+                "z": parametric_result["z"],
+                "as_of": aligned_dates[-1].isoformat() if aligned_dates else None,
+            },
+            "name": name or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-G19 IC / ICIR / 衰减表 ----------------
+
+
+def ic_profile(
+    factor: Sequence[Any],
+    forward: Sequence[Any],
+    *,
+    prices: Optional[Sequence[Any]] = None,
+    window: int = 20,
+    horizons: Sequence[int] = (1, 3, 5, 10, 20),
+    lookback: int = 20,
+    dates: Optional[Sequence[Any]] = None,
+    name: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """因子 IC/RankIC、分段 ICIR 与两类 IC 衰减表；统计量全部由方法层计算。"""
+    indices, aligned_factor, aligned_forward = _paired_rows(factor, forward)
+    n = len(aligned_factor)
+    if n < MIN_IC_PROFILE:
+        return unavailable(
+            capability="D-G19",
+            intent=INTENT_METRIC_SERIES,
+            reason=f"因子/前瞻收益对齐样本 {n} < {MIN_IC_PROFILE}",
+            trace_id=trace_id,
+        )
+
+    pair = {"factor": aligned_factor, "target": aligned_forward}
+    # Q03 的 returns[t] 是当期收益；右移已对齐 forward，避免 h=1 多预测一期。
+    decay_pair = {
+        "factor": aligned_factor,
+        "returns": [0.0] + aligned_forward[:-1],
+    }
+    ic = _call("B13", pair)
+    rank_ic = _call("B14", pair)
+    research_ic = _call("Q01", pair)
+    icir = _call("Q02", pair, window=window)
+    decay = _call("Q03", decay_pair, horizons=horizons)
+    core_calls = (ic, rank_ic, research_ic, icir, decay)
+    if any(call["gate"] != "ok" for call in core_calls):
+        return unavailable(
+            capability="D-G19",
+            intent=INTENT_METRIC_SERIES,
+            reason="IC/ICIR/衰减表计算失败",
+            trace_id=trace_id,
+        )
+
+    methods = ["B13", "B14", "Q01", "Q02", "Q03"]
+    price_decay_result: Optional[Dict[str, Any]] = None
+    price_decay_gate = "not_provided"
+    if prices is not None:
+        price_decay = _call("B15", _floats(prices), lookback=lookback, horizons=horizons)
+        price_decay_gate = price_decay["gate"]
+        if price_decay["gate"] == "ok":
+            price_decay_result = price_decay["result"]
+            methods = ["B13", "B14", "B15", "Q01", "Q02", "Q03"]
+    degraded_reason = None if price_decay_result is not None else "price_history_unavailable"
+
+    parsed_dates = _parse_dates(dates)
+    aligned_dates = (
+        [parsed_dates[index] for index in indices]
+        if len(parsed_dates) == len(factor) and len(parsed_dates) == len(forward)
+        else []
+    )
+    q = quality_for(
+        n,
+        min_n=MIN_IC_PROFILE,
+        span=_span(aligned_dates),
+        sources=["market.candles"],
+        align_method="paired_complete_case",
+        timezone="UTC",
+    )
+    if degraded_reason is not None:
+        q = _degrade(q, degraded_reason)
+
+    ic_result = ic["result"]
+    rank_ic_result = rank_ic["result"]
+    icir_result = icir["result"]
+    decay_result = decay["result"]
+    prefix = f"{name} " if name else ""
+    answer = (
+        f"{prefix}因子 IC={ic_result['ic']}（p={ic_result['p']}），"
+        f"RankIC={rank_ic_result['rank_ic']}（p={rank_ic_result['p']}），"
+        f"ICIR={icir_result['icir']}（{icir_result['n_periods']} 段，window={window}）；"
+        f"Q03 衰减期限 h={decay_result['horizons']}。"
+    )
+    if price_decay_result is None:
+        answer += "价格序列缺失或不足，B15 价格动量衰减降级未输出；"
+    else:
+        answer += "B15 价格动量重叠/非重叠 IC 衰减已并列输出；"
+    answer += f"对齐样本 n={n}。{CAVEAT}。"
+
+    return build(
+        capability="D-G19",
+        intent=INTENT_METRIC_SERIES,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-G19": {
+                    "gate": "degraded" if degraded_reason else "ok",
+                    "methods": methods,
+                    "ic": ic_result,
+                    "rank_ic": rank_ic_result,
+                    "research_ic": research_ic["result"],
+                    "icir": icir_result,
+                    "ic_decay": decay_result,
+                    "price_ic_decay": price_decay_result,
+                    "price_ic_decay_gate": price_decay_gate,
+                }
+            },
+            "params": {
+                "min_n": MIN_IC_PROFILE,
+                "window": window,
+                "horizons": list(horizons),
+                "lookback": lookback,
+                "q03_returns_alignment": "zero_prefix_shift_1",
+                "as_of": aligned_dates[-1].isoformat() if aligned_dates else None,
+            },
+            "name": name or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-G20 分位组合 / 单调性检验 ----------------
+
+
+def quantile_monotonic(
+    factor: Sequence[Any],
+    forward: Sequence[Any],
+    *,
+    k: int = 5,
+    dates: Optional[Sequence[Any]] = None,
+    name: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """分位组统计、严格单调性与分位序号 Spearman 检验；不合成交易收益。"""
+    indices, aligned_factor, aligned_forward = _paired_rows(factor, forward)
+    n = len(aligned_factor)
+    if n < MIN_CONDITIONAL:
+        return unavailable(
+            capability="D-G20",
+            intent=INTENT_METRIC_SERIES,
+            reason=f"因子/前瞻收益对齐样本 {n} < {MIN_CONDITIONAL}",
+            trace_id=trace_id,
+        )
+
+    pair = {"factor": aligned_factor, "target": aligned_forward}
+    grouped = _call("B16", pair, k=k)
+    monotonic = _call("B11", pair, k=k)
+    quantile_test = _call("Q04", pair, k=k)
+    if any(call["gate"] != "ok" for call in (grouped, monotonic, quantile_test)):
+        return unavailable(
+            capability="D-G20",
+            intent=INTENT_METRIC_SERIES,
+            reason="分位组合/单调性计算失败",
+            trace_id=trace_id,
+        )
+
+    parsed_dates = _parse_dates(dates)
+    aligned_dates = (
+        [parsed_dates[index] for index in indices]
+        if len(parsed_dates) == len(factor) and len(parsed_dates) == len(forward)
+        else []
+    )
+    q = quality_for(
+        n,
+        min_n=MIN_CONDITIONAL,
+        span=_span(aligned_dates),
+        sources=["market.candles"],
+        align_method="paired_complete_case",
+        timezone="UTC",
+    )
+    grouped_result = grouped["result"]
+    monotonic_result = monotonic["result"]
+    quantile_result = quantile_test["result"]
+    bottom, top = grouped_result["table"][0], grouped_result["table"][-1]
+    prefix = f"{name} " if name else ""
+    answer = (
+        f"{prefix}因子 {grouped_result['k']} 分位组合：最低组均值 {bottom['mean'] * 100:+.3f}%，"
+        f"最高组均值 {top['mean'] * 100:+.3f}%，最高−最低 spread={grouped_result['spread']:+.6f}"
+        "（描述性统计，非策略收益）；"
+        f"B11 单调性 {monotonic_result['monotonic']}（ρ_bin={monotonic_result['rho_bin']}），"
+        f"Q04 Spearman ρ={quantile_result['rho']}（p={quantile_result['p']}）。"
+        f"对齐样本 n={n}。{CAVEAT}。"
+    )
+    return build(
+        capability="D-G20",
+        intent=INTENT_METRIC_SERIES,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-G20": {
+                    "gate": "ok",
+                    "methods": ["B11", "B16", "Q04"],
+                    "group_stats": grouped_result,
+                    "monotonic": monotonic_result,
+                    "quantile_test": quantile_result,
+                }
+            },
+            "params": {
+                "min_n": MIN_CONDITIONAL,
+                "k": grouped_result["k"],
+                "as_of": aligned_dates[-1].isoformat() if aligned_dates else None,
+            },
+            "name": name or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
 # ---------------- D-G22 HAC 显著性（Newey-West / Deflated Sharpe） ----------------
 
 
@@ -2153,6 +2529,29 @@ def trend(
     if adx_block is None:
         degraded_reasons.append("adx_unavailable")
 
+    kalman_block: Optional[Dict[str, Any]] = None
+    kalman_out = _call("I37", {"values": px})
+    if kalman_out["gate"] == "ok":
+        raw = kalman_out["result"]
+        kalman_block = {
+            "level": raw["level"],
+            "slope": raw["slope"],
+            "level_sigma": raw["level_sigma"],
+            "slope_se": raw["slope_se"],
+            "band": raw["band"],
+            "trail": [
+                {
+                    "date": ds[point["index"]].isoformat() if point["index"] < len(ds) else None,
+                    "level": point["level"],
+                    "lower": point["lower"],
+                    "upper": point["upper"],
+                }
+                for point in raw["path"]
+            ],
+        }
+    else:
+        degraded_reasons.append("kalman_unavailable")
+
     ema_paths: Dict[int, List[float]] = {}
     for period in EMA_PERIODS:
         if len(px) >= period:
@@ -2200,9 +2599,17 @@ def trend(
     )
     head = f"{symbol or '标的'} " if symbol else ""
     note = "样本不足 250 点，趋势仅为短窗口描述；" if q["status"] != STATUS_GOOD else ""
+    kalman_txt = (
+        ""
+        if kalman_block is None
+        else (
+            f"Kalman 局部线性趋势 level={kalman_block['level']}（±1σ {kalman_block['level_sigma']}）、"
+            f"slope={kalman_block['slope']}（se {kalman_block['slope_se']}）；"
+        )
+    )
     answer = (
         f"{note}{head}EMA 排列 {order}（12={ema.get('12')} / 26={ema.get('26')} / 50={ema.get('50')}）；"
-        f"对数价格趋势斜率 {slope_txt}；{adx_txt}。"
+        f"对数价格趋势斜率 {slope_txt}；{kalman_txt}{adx_txt}。"
         f"平滑口径 EMA(12/26/50)，斜率窗口 {list(windows)}，n={len(px)}。{CAVEAT}。"
     )
 
@@ -2210,11 +2617,14 @@ def trend(
         "capabilities": {
             "D-E15": {
                 "gate": "ok",
-                "methods": ["I02", "T08"] + (["I32"] if adx_block else []),
+                "methods": ["I02", "T08"]
+                + (["I32"] if adx_block else [])
+                + (["I37"] if kalman_block else []),
                 "ema": ema,
                 "ema_order": order,
                 "slope_table": rows,
                 "adx": adx_block,
+                "kalman": kalman_block,
                 "prices": [round(px[i], 6) for i in range(start, len(px))],
                 "smoothed": smoothed,
                 "meta": {
@@ -2423,7 +2833,2720 @@ def change_point(
     )
 
 
+# ---------------- D-J22 PCA / SVD / 因子分析 ----------------
+
+
+def dimension_reduction(
+    series: Mapping[str, Sequence[Any]],
+    *,
+    k: int = 3,
+    dates: Optional[Sequence[Any]] = None,
+    name: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """面板降维：相关阵 PCA、载荷、sklearn PCA、SVD 与因子分析并列输出。"""
+    if not isinstance(series, Mapping) or not series:
+        return unavailable(
+            capability="D-J22",
+            intent=INTENT_METRIC_SERIES,
+            reason="缺少面板序列",
+            trace_id=trace_id,
+        )
+    try:
+        components = int(k)
+    except (TypeError, ValueError):
+        components = 0
+    if components < 1:
+        return unavailable(
+            capability="D-J22",
+            intent=INTENT_METRIC_SERIES,
+            reason="主成分个数 k 必须 ≥ 1",
+            trace_id=trace_id,
+        )
+    names, panel, rows, indices = _panel_rows(series)
+    if len(names) < 2:
+        return unavailable(
+            capability="D-J22",
+            intent=INTENT_METRIC_SERIES,
+            reason="面板至少需要 2 个变量",
+            trace_id=trace_id,
+        )
+    n = len(indices)
+    if n < MIN_DIMENSION_REDUCTION:
+        return unavailable(
+            capability="D-J22",
+            intent=INTENT_METRIC_SERIES,
+            reason=f"面板对齐样本 {n} < {MIN_DIMENSION_REDUCTION}",
+            trace_id=trace_id,
+        )
+
+    series_payload = {"series": panel}
+    matrix_payload = {"X": rows}
+    pca_variance = _call("M19", series_payload, k=components)
+    pca_loadings = _call("M20", series_payload, k=components)
+    sklearn_pca = _call("SC31", matrix_payload, k=components)
+    svd = _call("SC32", matrix_payload, k=components)
+    factor_analysis = _call("SC33", matrix_payload, k=components)
+    calls = (pca_variance, pca_loadings, sklearn_pca, svd, factor_analysis)
+    if any(call["gate"] != "ok" for call in calls):
+        return unavailable(
+            capability="D-J22",
+            intent=INTENT_METRIC_SERIES,
+            reason="PCA/SVD/因子分析计算失败",
+            trace_id=trace_id,
+        )
+
+    parsed_dates = _parse_dates(dates)
+    aligned_dates = (
+        [parsed_dates[index] for index in indices]
+        if parsed_dates and indices[-1] < len(parsed_dates)
+        else []
+    )
+    q = quality_for(
+        n,
+        min_n=MIN_DIMENSION_REDUCTION,
+        span=_span(aligned_dates),
+        sources=["market.candles", "mm_metrics"],
+        align_method="panel_complete_case",
+        timezone="UTC",
+    )
+
+    variance_result = pca_variance["result"]
+    ratio = float(variance_result["ratio"][0])
+    cumulative = float(variance_result["cum_ratio"][-1])
+    prefix = f"{name} " if name else ""
+    answer = (
+        f"{prefix}面板 {len(names)} 个变量 / {n} 个对齐样本："
+        f"M19 相关阵 PCA 前 {variance_result['k']} 个主成分解释方差占比 "
+        f"PC1={ratio:.4f}、累计={cumulative:.4f}；"
+        "M20 载荷与 SC31 PCA、SC32 SVD、SC33 因子分析并列输出。"
+        f"降维结果仅描述数据结构，不构成交易信号。{CAVEAT}。"
+    )
+    return build(
+        capability="D-J22",
+        intent=INTENT_METRIC_SERIES,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-J22": {
+                    "gate": "ok",
+                    "methods": ["M19", "M20", "SC31", "SC32", "SC33"],
+                    "variables": names,
+                    "n_features": len(names),
+                    "pca_variance": variance_result,
+                    "pca_loadings": pca_loadings["result"],
+                    "sklearn_pca": sklearn_pca["result"],
+                    "svd": svd["result"],
+                    "factor_analysis": factor_analysis["result"],
+                }
+            },
+            "params": {
+                "min_n": MIN_DIMENSION_REDUCTION,
+                "k": variance_result["k"],
+                "as_of": aligned_dates[-1].isoformat() if aligned_dates else None,
+            },
+            "name": name or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-J24 相关网络与社区发现 ----------------
+
+
+def correlation_network(
+    series: Mapping[str, Sequence[Any]],
+    *,
+    k: int = 3,
+    threshold: float = 0.5,
+    dates: Optional[Sequence[Any]] = None,
+    name: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """同期相关网络：M05 相关矩阵 → 阈值邻接 → SC71 中心性 + SC72 社区 + M21 层次聚类。"""
+    if not isinstance(series, Mapping) or not series:
+        return unavailable(
+            capability="D-J24",
+            intent=INTENT_METRIC_SERIES,
+            reason="缺少面板序列",
+            trace_id=trace_id,
+        )
+    try:
+        clusters = int(k)
+        cut = float(threshold)
+    except (TypeError, ValueError):
+        return unavailable(
+            capability="D-J24",
+            intent=INTENT_METRIC_SERIES,
+            reason="聚类组数 k 与相关阈值 threshold 必须为数值",
+            trace_id=trace_id,
+        )
+    if clusters < 1:
+        return unavailable(
+            capability="D-J24",
+            intent=INTENT_METRIC_SERIES,
+            reason="聚类组数 k 必须 ≥ 1",
+            trace_id=trace_id,
+        )
+    if not 0.0 <= cut <= 1.0:
+        return unavailable(
+            capability="D-J24",
+            intent=INTENT_METRIC_SERIES,
+            reason="相关阈值 threshold 必须位于 [0, 1]",
+            trace_id=trace_id,
+        )
+    names, panel, _, indices = _panel_rows(series)
+    if len(names) < 2:
+        return unavailable(
+            capability="D-J24",
+            intent=INTENT_METRIC_SERIES,
+            reason="相关网络至少需要 2 个变量",
+            trace_id=trace_id,
+        )
+    n = len(indices)
+    if n < MIN_CORR:
+        return unavailable(
+            capability="D-J24",
+            intent=INTENT_METRIC_SERIES,
+            reason=f"面板对齐样本 {n} < {MIN_CORR}",
+            trace_id=trace_id,
+        )
+
+    payload = {"series": panel}
+    matrix_call = _call("M05", payload)
+    clusters_call = _call("M21", payload, k=clusters)
+    if matrix_call["gate"] != "ok" or clusters_call["gate"] != "ok":
+        return unavailable(
+            capability="D-J24",
+            intent=INTENT_METRIC_SERIES,
+            reason="相关矩阵或层次聚类计算失败",
+            trace_id=trace_id,
+        )
+
+    matrix_result = matrix_call["result"]
+    matrix = matrix_result["matrix"]
+    order = list(matrix_result["names"])
+    adjacency = [
+        [0.0 if left == right or abs(float(matrix[left][right])) < cut else 1.0 for right in order]
+        for left in order
+    ]
+    graph_payload = {"adj": adjacency}
+    centrality_call = _call_soft("SC71", graph_payload)
+    communities_call = _call_soft("SC72", graph_payload)
+    allowed = {"ok", "degraded"}
+    if centrality_call["gate"] not in allowed or communities_call["gate"] not in allowed:
+        return unavailable(
+            capability="D-J24",
+            intent=INTENT_METRIC_SERIES,
+            reason="网络中心性或社区发现计算失败",
+            trace_id=trace_id,
+        )
+
+    edges = []
+    for left_index, left in enumerate(order):
+        for right_index in range(left_index + 1, len(order)):
+            if adjacency[left_index][right_index] > 0.0:
+                right = order[right_index]
+                edges.append({"source": left, "target": right, "rho": matrix[left][right]})
+
+    parsed_dates = _parse_dates(dates)
+    aligned_dates = (
+        [parsed_dates[index] for index in indices]
+        if parsed_dates and indices[-1] < len(parsed_dates)
+        else []
+    )
+    q = quality_for(
+        n,
+        min_n=MIN_CORR,
+        span=_span(aligned_dates),
+        sources=["market.candles", "mm_metrics"],
+        align_method="panel_complete_case",
+        timezone="UTC",
+    )
+    if "degraded" in (centrality_call["gate"], communities_call["gate"]):
+        q = _degrade(q, "网络节点数低于中心性/社区发现方法门禁，网络指标仅作描述")
+        degraded_note = "网络节点数低于方法门禁，中心性/社区指标降级为描述。"
+    else:
+        degraded_note = ""
+
+    centrality_result = centrality_call["result"]
+    communities_result = communities_call["result"]
+    cluster_result = clusters_call["result"]
+    prefix = f"{name} " if name else ""
+    answer = (
+        f"{prefix}同期相关网络：{len(order)} 个变量、|ρ|≥{cut:g} 下 "
+        f"{centrality_result['n_edges']} 条边，"
+        f"Louvain 识别 {communities_result['n_communities']} 个社区"
+        f"（模块度 Q={communities_result['modularity']}），"
+        f"介数中心性最高节点 #{centrality_result['top_node']}；"
+        f"M21 层次聚类 {cluster_result['n_clusters']} 组。"
+        f"{degraded_note}"
+        f"网络结构仅描述同期相关关系，不构成交易信号。{CAVEAT}。"
+    )
+    return build(
+        capability="D-J24",
+        intent=INTENT_METRIC_SERIES,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-J24": {
+                    "gate": "ok",
+                    "methods": ["M05", "M21", "SC71", "SC72"],
+                    "nodes": order,
+                    "edges": edges,
+                    "n_edges": centrality_result["n_edges"],
+                    "threshold": cut,
+                    "correlation": matrix_result,
+                    "centrality": centrality_result,
+                    "communities": communities_result,
+                    "hierarchical": cluster_result,
+                }
+            },
+            "params": {
+                "min_n": MIN_CORR,
+                "k": cluster_result["k"],
+                "threshold": cut,
+                "as_of": aligned_dates[-1].isoformat() if aligned_dates else None,
+            },
+            "name": name or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-G14 EWMA 波动 / 协方差 ----------------
+
+
+def ewma_risk(
+    series: Mapping[str, Sequence[Any]],
+    *,
+    lam: float = 0.94,
+    init_window: int = 20,
+    periods: int = 365,
+    dates: Optional[Sequence[Any]] = None,
+    name: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """EWMA 风险：P07 组合 EWMA 协方差（多资产）+ T19 逐资产 EWMA 波动序列。"""
+    if not isinstance(series, Mapping) or not series:
+        return unavailable(
+            capability="D-G14",
+            intent=INTENT_METRIC_SERIES,
+            reason="缺少收益面板序列",
+            trace_id=trace_id,
+        )
+    try:
+        decay = float(lam)
+        init = int(init_window)
+        horizon = int(periods)
+    except (TypeError, ValueError):
+        return unavailable(
+            capability="D-G14",
+            intent=INTENT_METRIC_SERIES,
+            reason="衰减系数 lam、初始化窗口 init_window 与年化周期 periods 必须为数值",
+            trace_id=trace_id,
+        )
+    if not 0.0 < decay < 1.0:
+        return unavailable(
+            capability="D-G14",
+            intent=INTENT_METRIC_SERIES,
+            reason="衰减系数 lam 必须位于 (0, 1)",
+            trace_id=trace_id,
+        )
+    if horizon <= 0:
+        return unavailable(
+            capability="D-G14",
+            intent=INTENT_METRIC_SERIES,
+            reason="年化周期 periods 必须为正整数",
+            trace_id=trace_id,
+        )
+    if init < 2:
+        return unavailable(
+            capability="D-G14",
+            intent=INTENT_METRIC_SERIES,
+            reason="初始化窗口 init_window 必须 ≥ 2",
+            trace_id=trace_id,
+        )
+
+    names, panel, _, indices = _panel_rows(series)
+    n = len(indices)
+    if n < MIN_EWMA_RISK:
+        return unavailable(
+            capability="D-G14",
+            intent=INTENT_METRIC_SERIES,
+            reason=f"面板对齐样本 {n} < {MIN_EWMA_RISK}",
+            trace_id=trace_id,
+        )
+
+    covariance: Optional[Dict[str, Any]] = None
+    if len(names) >= 2:
+        cov_call = _call("P07", {"series": panel}, lam=decay, init_window=init, periods=horizon)
+        if cov_call["gate"] != "ok":
+            return unavailable(
+                capability="D-G14",
+                intent=INTENT_METRIC_SERIES,
+                reason="EWMA 组合协方差计算失败",
+                trace_id=trace_id,
+            )
+        covariance = cov_call["result"]
+
+    volatility: Dict[str, Any] = {}
+    for label in names:
+        vol_call = _call("T19", {"series": panel[label]}, lam=decay)
+        if vol_call["gate"] != "ok":
+            return unavailable(
+                capability="D-G14",
+                intent=INTENT_METRIC_SERIES,
+                reason=f"{label} 的 EWMA 波动序列计算失败",
+                trace_id=trace_id,
+            )
+        volatility[label] = vol_call["result"]
+
+    parsed_dates = _parse_dates(dates)
+    aligned_dates = (
+        [parsed_dates[index] for index in indices]
+        if parsed_dates and indices[-1] < len(parsed_dates)
+        else []
+    )
+    q = quality_for(
+        n,
+        min_n=MIN_EWMA_RISK,
+        span=_span(aligned_dates),
+        sources=["market.candles"] + (["mm_metrics"] if covariance is not None else []),
+        align_method="panel_complete_case",
+        timezone="UTC",
+    )
+
+    prefix = f"{name} " if name else ""
+    if covariance is not None:
+        methods = ["P07", "T19"]
+        annualized = covariance["vol"]
+        vol_text = "、".join(f"{key}={value:.4f}" for key, value in annualized.items())
+        answer = (
+            f"{prefix}EWMA(λ={decay:g}) 风险：{len(names)} 个资产、对齐样本 {n}，"
+            f"P07 组合 EWMA 协方差 {len(names)}×{len(names)}，"
+            f"年化波动 {vol_text}；T19 逐资产波动序列并列输出。"
+            f"历史统计仅描述样本内风险结构，不构成交易信号。{CAVEAT}。"
+        )
+    else:
+        methods = ["T19"]
+        answer = (
+            f"{prefix}EWMA(λ={decay:g}) 波动：单资产 {names[0]}、对齐样本 {n}，"
+            f"T19 输出逐日波动序列；单资产无组合协方差。"
+            f"历史统计仅描述样本内风险结构，不构成交易信号。{CAVEAT}。"
+        )
+
+    block: Dict[str, Any] = {
+        "gate": "ok",
+        "methods": methods,
+        "lam": covariance["lam"] if covariance is not None else volatility[names[0]]["lam"],
+        "assets": names,
+        "volatility_series": volatility,
+    }
+    if covariance is not None:
+        block["covariance"] = covariance
+    return build(
+        capability="D-G14",
+        intent=INTENT_METRIC_SERIES,
+        answer=answer,
+        data={
+            "capabilities": {"D-G14": block},
+            "params": {
+                "min_n": MIN_EWMA_RISK,
+                "lam": decay,
+                "init_window": init,
+                "periods": horizon,
+                "as_of": aligned_dates[-1].isoformat() if aligned_dates else None,
+            },
+            "name": name or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-A01 历史序列 ----------------
+
+
+def _bucket_key(day: _dt.date, freq: str) -> Tuple[int, ...]:
+    if freq == "weekly":
+        iso = day.isocalendar()
+        return (iso[0], iso[1])
+    if freq == "monthly":
+        return (day.year, day.month)
+    return (day.toordinal(),)
+
+
+def history_series(
+    values: Sequence[Any],
+    *,
+    dates: Sequence[Any],
+    freq: str = "daily",
+    unit: Optional[str] = None,
+    name: str = "",
+    symbol: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """单序列区间取点 + 日/周/月降采样；当前历史分位复用方法层 S25。"""
+    px = _floats(values)
+    if len(px) != len(values) or not all(math.isfinite(value) for value in px):
+        return unavailable(
+            capability="D-A01",
+            intent=INTENT_METRIC_SERIES,
+            reason="序列包含无效值",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if len(ds) != len(values) or not ds:
+        return unavailable(
+            capability="D-A01",
+            intent=INTENT_METRIC_SERIES,
+            reason="历史序列需要与数值等长的有效日期轴",
+            trace_id=trace_id,
+        )
+    if len(px) < MIN_SERIES:
+        return unavailable(
+            capability="D-A01",
+            intent=INTENT_METRIC_SERIES,
+            reason=f"有效样本 {len(px)} < {MIN_SERIES}",
+            trace_id=trace_id,
+        )
+    normalized = {
+        "daily": "daily",
+        "day": "daily",
+        "d": "daily",
+        "weekly": "weekly",
+        "week": "weekly",
+        "w": "weekly",
+        "monthly": "monthly",
+        "month": "monthly",
+        "m": "monthly",
+    }.get(str(freq).strip().lower())
+    if normalized is None:
+        return unavailable(
+            capability="D-A01",
+            intent=INTENT_METRIC_SERIES,
+            reason="freq 仅支持 daily/weekly/monthly",
+            trace_id=trace_id,
+        )
+
+    percentile = _call("S25", px)
+    if percentile["gate"] != "ok":
+        return unavailable(
+            capability="D-A01",
+            intent=INTENT_METRIC_SERIES,
+            reason="历史分位计算失败",
+            trace_id=trace_id,
+        )
+
+    order = sorted(range(len(px)), key=lambda i: (ds[i], i))
+    buckets: Dict[Tuple[int, ...], Tuple[_dt.date, float]] = {}
+    for index in order:  # 升序后写覆盖 = 每个区间取最后一个观测
+        buckets[_bucket_key(ds[index], normalized)] = (ds[index], px[index])
+    points = [
+        {"date": day.isoformat(), "value": round(value, 6)}
+        for _, (day, value) in sorted(buckets.items(), key=lambda item: item[1][0])
+    ]
+
+    unique_days = len(set(ds))
+    span_days = (max(ds) - min(ds)).days + 1
+    missing_rate = round(1.0 - unique_days / span_days, 4) if span_days else None
+    span = _span(sorted(ds))
+    q = quality_for(
+        len(px),
+        min_n=MIN_SERIES,
+        span=span,
+        sources=["datacenter.series"],
+        missing_rate=missing_rate,
+        align_method=f"series_last_per_{normalized}",
+        timezone="UTC",
+    )
+    sparse = missing_rate is not None and missing_rate > 0.2
+    if sparse and q["status"] != STATUS_EMPTY:
+        q = _degrade(q, "sparse_series")
+
+    stats = percentile["result"]
+    head = f"{symbol} " if symbol else ""
+    label = name or "序列"
+    unit_text = f" {unit}" if unit else ""
+    last_value = points[-1]["value"]
+    note = (
+        f"；样本缺失率 {missing_rate * 100:.1f}%，仅作描述"
+        if sparse and missing_rate is not None
+        else ""
+    )
+    answer = (
+        f"{head}{label} 历史序列 {points[0]['date']}~{points[-1]['date']} 共 {len(px)} 个观测，"
+        f"{normalized} 降采样后 {len(points)} 点，当前 {last_value:.6g}{unit_text}，"
+        f"处于历史 {stats['percentile']:.2f}% 分位（n={stats['n']}）{note}。{CAVEAT}。"
+    )
+    return build(
+        capability="D-A01",
+        intent=INTENT_METRIC_SERIES,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-A01": {
+                    "gate": "ok" if q["status"] == STATUS_GOOD else "partial",
+                    "methods": ["S25"],
+                    "points": points,
+                    "span": span,
+                    "unit": unit,
+                    "freq": normalized,
+                    "percentile": stats,
+                    "missing_rate": missing_rate,
+                }
+            },
+            "params": {"min_n": MIN_SERIES, "freq": normalized, "point_count": len(points)},
+            "name": name or None,
+            "symbol": symbol or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-A02 变化率 ----------------
+
+
+def change_rate(
+    values: Sequence[Any],
+    *,
+    window: int = 1,
+    dates: Optional[Sequence[Any]] = None,
+    unit: Optional[str] = None,
+    name: str = "",
+    symbol: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """区间变化量与变化率，复用方法层 S15/S16。"""
+    px = _floats(values)
+    if len(px) != len(values) or not all(math.isfinite(value) for value in px):
+        return unavailable(
+            capability="D-A02",
+            intent=INTENT_METRIC_SERIES,
+            reason="序列包含无效值",
+            trace_id=trace_id,
+        )
+    try:
+        k = int(window)
+    except (TypeError, ValueError):
+        return unavailable(
+            capability="D-A02",
+            intent=INTENT_METRIC_SERIES,
+            reason="window 参数无效",
+            trace_id=trace_id,
+        )
+    if k < 1 or len(px) <= k:
+        return unavailable(
+            capability="D-A02",
+            intent=INTENT_METRIC_SERIES,
+            reason=f"有效样本 {len(px)} 不足以覆盖 window={k} 的区间变化",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if dates and len(ds) != len(px):
+        return unavailable(
+            capability="D-A02",
+            intent=INTENT_METRIC_SERIES,
+            reason="日期轴与数值长度不一致或日期无效",
+            trace_id=trace_id,
+        )
+
+    diff = _call("S15", px, k=k)
+    pct = _call("S16", px, k=k)
+    if diff["gate"] != "ok" or pct["gate"] != "ok":
+        return unavailable(
+            capability="D-A02",
+            intent=INTENT_METRIC_SERIES,
+            reason="区间变化计算失败",
+            trace_id=trace_id,
+        )
+    diff_result = diff["result"]
+    pct_result = pct["result"]
+
+    q = quality_for(
+        len(px),
+        min_n=MIN_CHANGE,
+        span=_span(ds) if ds else None,
+        sources=["datacenter.series"],
+        align_method="window_endpoints",
+        timezone="UTC",
+    )
+    pct_missing = pct_result.get("pct") is None
+    if pct_missing and q["status"] != STATUS_EMPTY:
+        q = _degrade(q, "change_pct_unavailable")
+
+    head = f"{symbol} " if symbol else ""
+    label = name or "序列"
+    unit_text = f" {unit}" if unit else ""
+    diff_text = (
+        f"{diff_result['diff']:+.6g}{unit_text}"
+        if diff_result.get("diff") is not None
+        else "不可用"
+    )
+    if pct_missing:
+        pct_text = f"变化率不可用（基期值为 0，样本 n={len(px)}）"
+    else:
+        pct_text = f"{pct_result['pct'] * 100.0:+.2f}%"
+    answer = f"{head}{label} 最近 {k} 期变化 {diff_text}，变化率 {pct_text}。{CAVEAT}。"
+    return build(
+        capability="D-A02",
+        intent=INTENT_METRIC_SERIES,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-A02": {
+                    "gate": "ok" if q["status"] == STATUS_GOOD else "partial",
+                    "methods": ["S15", "S16"],
+                    "change": diff_result.get("diff"),
+                    "change_pct": pct_result.get("pct"),
+                    "window": k,
+                    "n": diff_result.get("n"),
+                }
+            },
+            "params": {"min_n": MIN_CHANGE, "window": k},
+            "name": name or None,
+            "symbol": symbol or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-A03 CAGR ----------------
+
+
+def cagr(
+    values: Sequence[Any],
+    *,
+    dates: Optional[Sequence[Any]] = None,
+    name: str = "",
+    symbol: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """首末值年化复合增长率，复用方法层 S19。"""
+    px = _floats(values)
+    if len(px) != len(values) or not all(math.isfinite(value) for value in px):
+        return unavailable(
+            capability="D-A03",
+            intent=INTENT_METRIC_SERIES,
+            reason="序列包含无效值",
+            trace_id=trace_id,
+        )
+    if len(px) < MIN_CAGR:
+        return unavailable(
+            capability="D-A03",
+            intent=INTENT_METRIC_SERIES,
+            reason=f"有效样本 {len(px)} < {MIN_CAGR}",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if dates and len(ds) != len(px):
+        return unavailable(
+            capability="D-A03",
+            intent=INTENT_METRIC_SERIES,
+            reason="日期轴与数值长度不一致或日期无效",
+            trace_id=trace_id,
+        )
+    days: Optional[float] = None
+    if ds:
+        days = float((ds[-1] - ds[0]).days)
+        if days <= 0:
+            return unavailable(
+                capability="D-A03",
+                intent=INTENT_METRIC_SERIES,
+                reason="首末日期跨度须为正",
+                trace_id=trace_id,
+            )
+
+    params: Dict[str, Any] = {"days": days} if days is not None else {}
+    result_call = _call("S19", px, **params)
+    if result_call["gate"] != "ok":
+        return unavailable(
+            capability="D-A03",
+            intent=INTENT_METRIC_SERIES,
+            reason="CAGR 计算失败",
+            trace_id=trace_id,
+        )
+    result = result_call["result"]
+    if result.get("cagr") is None or result.get("years") is None:
+        return unavailable(
+            capability="D-A03",
+            intent=INTENT_METRIC_SERIES,
+            reason="CAGR 要求起点与终点均为正数且跨度为正",
+            trace_id=trace_id,
+        )
+
+    q = quality_for(
+        len(px),
+        min_n=MIN_CAGR,
+        span=_span(ds) if ds else None,
+        sources=["datacenter.series"],
+        align_method="first_last",
+        timezone="UTC",
+    )
+    short_span = result["years"] < 1.0
+    if short_span:
+        q = _degrade(q, "short_span")
+
+    head = f"{symbol} " if symbol else ""
+    label = name or "序列"
+    note = "；跨度不足 1 年，年化结果仅供参考" if short_span else ""
+    answer = (
+        f"{head}{label} 首末值 {px[0]:.6g} → {px[-1]:.6g}，"
+        f"跨度 {result['years']:.2f} 年，CAGR {result['cagr'] * 100.0:+.2f}%{note}。{CAVEAT}。"
+    )
+    return build(
+        capability="D-A03",
+        intent=INTENT_METRIC_SERIES,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-A03": {
+                    "gate": "ok" if q["status"] == STATUS_GOOD else "partial",
+                    "methods": ["S19"],
+                    "cagr": result.get("cagr"),
+                    "years": result.get("years"),
+                    "n": result.get("n"),
+                }
+            },
+            "params": {"min_n": MIN_CAGR, "days": days},
+            "name": name or None,
+            "symbol": symbol or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-A04 历史分位 ----------------
+
+
+def percentile_rank(
+    values: Sequence[Any],
+    *,
+    lookback: Optional[int] = None,
+    dates: Optional[Sequence[Any]] = None,
+    unit: Optional[str] = None,
+    name: str = "",
+    symbol: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """末值在最近 lookback 期历史中的分位，复用方法层 S25。"""
+    px = _floats(values)
+    if len(px) != len(values) or not all(math.isfinite(value) for value in px):
+        return unavailable(
+            capability="D-A04",
+            intent=INTENT_PERCENTILE,
+            reason="序列包含无效值",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if dates and len(ds) != len(px):
+        return unavailable(
+            capability="D-A04",
+            intent=INTENT_PERCENTILE,
+            reason="日期轴与数值长度不一致或日期无效",
+            trace_id=trace_id,
+        )
+    if lookback is None:
+        k = len(px)
+    else:
+        try:
+            k = int(lookback)
+        except (TypeError, ValueError):
+            return unavailable(
+                capability="D-A04",
+                intent=INTENT_PERCENTILE,
+                reason="lookback 参数无效",
+                trace_id=trace_id,
+            )
+        if k < MIN_PERCENTILE:
+            return unavailable(
+                capability="D-A04",
+                intent=INTENT_PERCENTILE,
+                reason=f"lookback {k} < {MIN_PERCENTILE}，历史分位无统计意义",
+                trace_id=trace_id,
+            )
+
+    window = px[-k:]
+    if len(window) < MIN_PERCENTILE:
+        return unavailable(
+            capability="D-A04",
+            intent=INTENT_PERCENTILE,
+            reason=f"有效样本 {len(window)} < {MIN_PERCENTILE}",
+            trace_id=trace_id,
+        )
+    window_dates = ds[-len(window) :] if ds else []
+
+    result_call = _call("S25", window)
+    if result_call["gate"] != "ok":
+        return unavailable(
+            capability="D-A04",
+            intent=INTENT_PERCENTILE,
+            reason="历史分位计算失败",
+            trace_id=trace_id,
+        )
+    result = result_call["result"]
+
+    q = quality_for(
+        len(window),
+        min_n=MIN_PERCENTILE,
+        span=_span(window_dates) if window_dates else None,
+        sources=["datacenter.series"],
+        align_method="trailing_sample",
+        timezone="UTC",
+    )
+    truncated = k > len(px)
+    short_lookback = len(window) < MIN_PERCENTILE_LOOKBACK
+    reasons = []
+    if truncated:
+        reasons.append("lookback_truncated")
+    if short_lookback:
+        reasons.append("short_lookback")
+    if reasons:
+        q = _degrade(q, ",".join(reasons))
+
+    head = f"{symbol} " if symbol else ""
+    label = name or "序列"
+    unit_text = f" {unit}" if unit else ""
+    notes = []
+    if truncated:
+        notes.append(f"可用历史仅 {len(window)} 期，不足 lookback={k}")
+    if short_lookback:
+        notes.append("样本较短，分位精度有限")
+    note = f"；{'；'.join(notes)}" if notes else ""
+    answer = (
+        f"{head}{label} 末值 {result['value']:.6g}{unit_text} 处于最近 {len(window)} 期历史"
+        f" {result['percentile']:.2f}% 分位（n={result['n']}）{note}。{CAVEAT}。"
+    )
+    return build(
+        capability="D-A04",
+        intent=INTENT_PERCENTILE,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-A04": {
+                    "gate": "ok" if q["status"] == STATUS_GOOD else "partial",
+                    "methods": ["S25"],
+                    "percentile": result.get("percentile"),
+                    "value": result.get("value"),
+                    "lookback": len(window),
+                    "sample_n": result.get("n"),
+                }
+            },
+            "params": {"min_n": MIN_PERCENTILE, "lookback": k},
+            "name": name or None,
+            "symbol": symbol or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-A06 年化波动率 ----------------
+
+
+def annualized_volatility(
+    values: Sequence[Any],
+    *,
+    window: Optional[int] = None,
+    dates: Optional[Sequence[Any]] = None,
+    unit: Optional[str] = None,
+    name: str = "",
+    symbol: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """日简单收益标准差 × √365，复用方法层 F05。"""
+    px = _floats(values)
+    if len(px) != len(values) or not all(math.isfinite(value) for value in px):
+        return unavailable(
+            capability="D-A06",
+            intent=INTENT_METRIC_SERIES,
+            reason="序列包含无效值",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if dates and len(ds) != len(px):
+        return unavailable(
+            capability="D-A06",
+            intent=INTENT_METRIC_SERIES,
+            reason="日期轴与数值长度不一致或日期无效",
+            trace_id=trace_id,
+        )
+    if window is None:
+        k = len(px)
+    else:
+        try:
+            k = int(window)
+        except (TypeError, ValueError):
+            return unavailable(
+                capability="D-A06",
+                intent=INTENT_METRIC_SERIES,
+                reason="window 参数无效",
+                trace_id=trace_id,
+            )
+        if k < MIN_PERCENTILE:
+            return unavailable(
+                capability="D-A06",
+                intent=INTENT_METRIC_SERIES,
+                reason=f"window {k} < {MIN_PERCENTILE}，年化波动率无统计意义",
+                trace_id=trace_id,
+            )
+
+    sample = px[-k:]
+    if len(sample) < MIN_PERCENTILE:
+        return unavailable(
+            capability="D-A06",
+            intent=INTENT_METRIC_SERIES,
+            reason=f"有效样本 {len(sample)} < {MIN_PERCENTILE}",
+            trace_id=trace_id,
+        )
+    sample_dates = ds[-len(sample) :] if ds else []
+
+    result_call = _call("F05", sample)
+    if result_call["gate"] != "ok":
+        return unavailable(
+            capability="D-A06",
+            intent=INTENT_METRIC_SERIES,
+            reason="年化波动率计算失败",
+            trace_id=trace_id,
+        )
+    result = result_call["result"]
+
+    q = quality_for(
+        len(sample),
+        min_n=MIN_PERCENTILE,
+        span=_span(sample_dates) if sample_dates else None,
+        sources=["datacenter.series"],
+        align_method="trailing_sample",
+        timezone="UTC",
+    )
+    short_window = len(sample) < MIN_VOL_WINDOW
+    if short_window:
+        q = _degrade(q, "short_window")
+
+    head = f"{symbol} " if symbol else ""
+    label = name or "序列"
+    note = "；样本较短，年化波动率不稳定" if short_window else ""
+    answer = (
+        f"{head}{label} 最近 {len(sample)} 期日收益年化波动率 {result['vol'] * 100:.2f}%"
+        f"（√365 年化，n={result['n']}，均值日收益 {result['mean_ret'] * 100:.4f}%）{note}。{CAVEAT}。"
+    )
+    return build(
+        capability="D-A06",
+        intent=INTENT_METRIC_SERIES,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-A06": {
+                    "gate": "partial" if short_window else "ok",
+                    "methods": ["F05"],
+                    "volatility": result.get("vol"),
+                    "mean_ret": result.get("mean_ret"),
+                    "window": len(sample),
+                    "sample_n": result.get("n"),
+                }
+            },
+            "params": {"min_n": MIN_PERCENTILE, "window": k, "ann_factor": 365},
+            "name": name or None,
+            "symbol": symbol or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-A08 同比 ----------------
+
+
+def yoy_change(
+    values: Sequence[Any],
+    *,
+    period: int = 12,
+    dates: Optional[Sequence[Any]] = None,
+    unit: Optional[str] = None,
+    name: str = "",
+    symbol: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """与 period 期前比较的同比，复用方法层 S16。"""
+    px = _floats(values)
+    if len(px) != len(values) or not all(math.isfinite(value) for value in px):
+        return unavailable(
+            capability="D-A08",
+            intent=INTENT_METRIC_SERIES,
+            reason="序列包含无效值",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if dates and len(ds) != len(px):
+        return unavailable(
+            capability="D-A08",
+            intent=INTENT_METRIC_SERIES,
+            reason="日期轴与数值长度不一致或日期无效",
+            trace_id=trace_id,
+        )
+    try:
+        k = int(period)
+    except (TypeError, ValueError):
+        return unavailable(
+            capability="D-A08",
+            intent=INTENT_METRIC_SERIES,
+            reason="period 参数无效",
+            trace_id=trace_id,
+        )
+    if k < 1:
+        return unavailable(
+            capability="D-A08",
+            intent=INTENT_METRIC_SERIES,
+            reason=f"period {k} < 1，同比无统计意义",
+            trace_id=trace_id,
+        )
+    if len(px) <= k:
+        return unavailable(
+            capability="D-A08",
+            intent=INTENT_METRIC_SERIES,
+            reason=f"有效样本 {len(px)} 不足以覆盖 period={k}",
+            trace_id=trace_id,
+        )
+
+    result_call = _call("S16", px, k=k)
+    if result_call["gate"] != "ok":
+        return unavailable(
+            capability="D-A08",
+            intent=INTENT_METRIC_SERIES,
+            reason="同比计算失败",
+            trace_id=trace_id,
+        )
+    result = result_call["result"]
+    span = _span([ds[-1 - k], ds[-1]]) if ds else None
+    base_ts = span[0] if span else None
+
+    q = quality_for(
+        len(px),
+        min_n=MIN_YOY_SAMPLE,
+        span=span,
+        sources=["datacenter.series"],
+        align_method="period_offset",
+        timezone="UTC",
+    )
+    yoy = result.get("pct")
+    reasons = []
+    if yoy is None:
+        reasons.append("yoy_unavailable")
+    elif len(px) < 2 * k + 1:
+        reasons.append("short_history")
+    if reasons:
+        q = _degrade(q, ",".join(reasons))
+
+    head = f"{symbol} " if symbol else ""
+    label = name or "序列"
+    unit_text = f" {unit}" if unit else ""
+    base_text = f"（基期 {base_ts}）" if base_ts else f"（基期前 {k} 期）"
+    if yoy is None:
+        body = (
+            f"{head}{label} 最新读数 {px[-1]:.6g}{unit_text} 基期值为 0，"
+            f"同比不可计算（降级：基期不足）{base_text}"
+        )
+    else:
+        body = (
+            f"{head}{label} 最新读数 {px[-1]:.6g}{unit_text} 较前 {k} 期"
+            f"同比 {yoy * 100:.2f}%{base_text}"
+        )
+    note = "；历史长度不足 2 个完整周期，同比稳定性有限" if "short_history" in reasons else ""
+    answer = f"{body}{note}。{CAVEAT}。"
+    return build(
+        capability="D-A08",
+        intent=INTENT_METRIC_SERIES,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-A08": {
+                    "gate": "partial" if q["status"] == STATUS_PARTIAL else "ok",
+                    "methods": ["S16"],
+                    "yoy": yoy,
+                    "base_ts": base_ts,
+                    "period": k,
+                    "sample_n": result.get("n"),
+                }
+            },
+            "params": {"min_n": MIN_YOY_SAMPLE, "period": k},
+            "name": name or None,
+            "symbol": symbol or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-A09 环比 ----------------
+
+
+def mom_change(
+    values: Sequence[Any],
+    *,
+    dates: Optional[Sequence[Any]] = None,
+    unit: Optional[str] = None,
+    name: str = "",
+    symbol: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """与上一期比较的环比，复用方法层 S16（k=1）。"""
+    px = _floats(values)
+    if len(px) != len(values) or not all(math.isfinite(value) for value in px):
+        return unavailable(
+            capability="D-A09",
+            intent=INTENT_METRIC_SERIES,
+            reason="序列包含无效值",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if dates and len(ds) != len(px):
+        return unavailable(
+            capability="D-A09",
+            intent=INTENT_METRIC_SERIES,
+            reason="日期轴与数值长度不一致或日期无效",
+            trace_id=trace_id,
+        )
+    if len(px) < MIN_MOM_SAMPLE:
+        return unavailable(
+            capability="D-A09",
+            intent=INTENT_METRIC_SERIES,
+            reason=f"有效样本 {len(px)} < {MIN_MOM_SAMPLE}",
+            trace_id=trace_id,
+        )
+
+    result_call = _call("S16", px, k=1)
+    if result_call["gate"] != "ok":
+        return unavailable(
+            capability="D-A09",
+            intent=INTENT_METRIC_SERIES,
+            reason="环比计算失败",
+            trace_id=trace_id,
+        )
+    result = result_call["result"]
+    span = _span([ds[-2], ds[-1]]) if ds else None
+    base_ts = span[0] if span else None
+
+    q = quality_for(
+        len(px),
+        min_n=MIN_MOM_SAMPLE,
+        span=span,
+        sources=["datacenter.series"],
+        align_method="period_offset",
+        timezone="UTC",
+    )
+    mom = result.get("pct")
+    if mom is None:
+        q = _degrade(q, "mom_unavailable")
+
+    head = f"{symbol} " if symbol else ""
+    label = name or "序列"
+    unit_text = f" {unit}" if unit else ""
+    base_text = f"（基期 {base_ts}）" if base_ts else "（基期上一期）"
+    if mom is None:
+        body = (
+            f"{head}{label} 最新读数 {px[-1]:.6g}{unit_text} 基期值为 0，"
+            f"环比不可计算（降级：基期不足）{base_text}"
+        )
+    else:
+        body = f"{head}{label} 最新读数 {px[-1]:.6g}{unit_text} 较上一期环比 {mom * 100:.2f}%{base_text}"
+    answer = f"{body}。{CAVEAT}。"
+    return build(
+        capability="D-A09",
+        intent=INTENT_METRIC_SERIES,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-A09": {
+                    "gate": "partial" if q["status"] == STATUS_PARTIAL else "ok",
+                    "methods": ["S16"],
+                    "mom": mom,
+                    "base_ts": base_ts,
+                    "sample_n": result.get("n"),
+                }
+            },
+            "params": {"min_n": MIN_MOM_SAMPLE, "period": 1},
+            "name": name or None,
+            "symbol": symbol or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-A10 实际利率 ----------------
+
+
+def real_rate(
+    nominal: Sequence[Any],
+    cpi: Sequence[Any],
+    *,
+    period: int = 12,
+    dates: Optional[Sequence[Any]] = None,
+    unit: str = "%",
+    name: str = "实际利率",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """名义利率 − CPI 同比通胀：通胀唯一由方法层 S16 执行，能力层只做差值组合。"""
+    nom = _floats(nominal)
+    idx = _floats(cpi)
+    if (
+        len(nom) != len(nominal)
+        or len(idx) != len(cpi)
+        or not all(math.isfinite(value) for value in nom + idx)
+    ):
+        return unavailable(
+            capability="D-A10",
+            intent=INTENT_METRIC_DERIVED,
+            reason="名义利率或 CPI 包含无效值",
+            trace_id=trace_id,
+        )
+    if len(nom) != len(idx):
+        return unavailable(
+            capability="D-A10",
+            intent=INTENT_METRIC_DERIVED,
+            reason="名义利率与 CPI 长度不一致",
+            trace_id=trace_id,
+        )
+    try:
+        k = int(period)
+    except (TypeError, ValueError):
+        return unavailable(
+            capability="D-A10",
+            intent=INTENT_METRIC_DERIVED,
+            reason="period 参数无效",
+            trace_id=trace_id,
+        )
+    if k < 1:
+        return unavailable(
+            capability="D-A10",
+            intent=INTENT_METRIC_DERIVED,
+            reason=f"period {k} < 1，同比通胀无统计意义",
+            trace_id=trace_id,
+        )
+    if len(nom) <= k:
+        return unavailable(
+            capability="D-A10",
+            intent=INTENT_METRIC_DERIVED,
+            reason=f"有效样本 {len(nom)} 不足以覆盖 period={k}",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if dates and len(ds) != len(nom):
+        return unavailable(
+            capability="D-A10",
+            intent=INTENT_METRIC_DERIVED,
+            reason="日期轴与数值长度不一致或日期无效",
+            trace_id=trace_id,
+        )
+
+    inflation_call = _call("S16", idx, k=k)
+    if inflation_call["gate"] != "ok":
+        return unavailable(
+            capability="D-A10",
+            intent=INTENT_METRIC_DERIVED,
+            reason="CPI 同比计算失败",
+            trace_id=trace_id,
+        )
+    inflation = inflation_call["result"]
+    span = _span([ds[-1 - k], ds[-1]]) if ds else None
+    base_ts = span[0] if span else None
+
+    nominal_last = round(nom[-1], 6)
+    cpi_yoy = inflation.get("pct")
+    inflation_pp = None if cpi_yoy is None else round(cpi_yoy * 100.0, 6)
+    real = None if inflation_pp is None else round(nominal_last - inflation_pp, 6)
+
+    q = quality_for(
+        len(nom),
+        min_n=MIN_REAL_RATE,
+        span=span,
+        sources=["datacenter.series"],
+        align_method="period_offset",
+        timezone="UTC",
+    )
+    reasons = []
+    if real is None:
+        reasons.append("inflation_unavailable")
+    elif len(nom) < 2 * k + 1:
+        reasons.append("short_history")
+    if reasons:
+        q = _degrade(q, ",".join(reasons))
+
+    label = name or "实际利率"
+    base_text = f"（通胀基期 {base_ts}）" if base_ts else f"（通胀基期前 {k} 期）"
+    if real is None:
+        body = (
+            f"{label}名义利率 {nominal_last:.4f}{unit}，CPI 基期值为 0，通胀不可计算，"
+            f"实际利率不可计算（降级：基期不足）{base_text}"
+        )
+    else:
+        body = (
+            f"{label}名义利率 {nominal_last:.4f}{unit}，CPI 同比通胀 {inflation_pp:.4f}{unit}，"
+            f"实际利率 {real:.4f}{unit}（名义 − 通胀）{base_text}"
+        )
+    note = "；历史长度不足 2 个完整周期，通胀稳定性有限" if "short_history" in reasons else ""
+    answer = f"{body}{note}。{CAVEAT}。"
+    return build(
+        capability="D-A10",
+        intent=INTENT_METRIC_DERIVED,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-A10": {
+                    "gate": "partial" if q["status"] == STATUS_PARTIAL else "ok",
+                    "methods": ["S16"],
+                    "real_rate": real,
+                    "nominal": nominal_last,
+                    "inflation": inflation_pp,
+                    "base_ts": base_ts,
+                    "period": k,
+                    "sample_n": inflation.get("n"),
+                }
+            },
+            "params": {"min_n": MIN_REAL_RATE, "period": k, "unit": unit or None},
+            "name": name or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-A11 双序列滚动相关 ----------------
+
+
+def rolling_correlation(
+    x: Sequence[Any],
+    y: Sequence[Any],
+    *,
+    window: int = 30,
+    dates: Optional[Sequence[Any]] = None,
+    name: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """双序列滚动 Pearson 相关：统计量唯一由 M04 执行，能力层只做配对、取点与信封。"""
+    indices, xs, ys = _paired_rows(x, y)
+    if len(xs) < 2:
+        return unavailable(
+            capability="D-A11",
+            intent=INTENT_CORRELATION,
+            reason="双序列有效配对不足 2 点",
+            trace_id=trace_id,
+        )
+    try:
+        k = int(window)
+    except (TypeError, ValueError):
+        return unavailable(
+            capability="D-A11",
+            intent=INTENT_CORRELATION,
+            reason="window 参数无效",
+            trace_id=trace_id,
+        )
+    if k < 2 or k > len(xs):
+        return unavailable(
+            capability="D-A11",
+            intent=INTENT_CORRELATION,
+            reason=f"window {k} 超出可用配对样本 2~{len(xs)}",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if dates:
+        if len(ds) != len(x) or len(x) != len(y):
+            return unavailable(
+                capability="D-A11",
+                intent=INTENT_CORRELATION,
+                reason="日期轴与双序列长度不一致或日期无效",
+                trace_id=trace_id,
+            )
+        ds = [ds[i] for i in indices]
+
+    out = _call_soft("M04", {"x": xs, "y": ys}, window=k)
+    if out["gate"] not in ("ok", "degraded") or out["result"] is None:
+        return unavailable(
+            capability="D-A11",
+            intent=INTENT_CORRELATION,
+            reason="滚动相关计算失败",
+            trace_id=trace_id,
+        )
+    result = out["result"]
+    valid = [value for value in result["r"] if value is not None]
+    corr = valid[-1] if valid else None
+
+    q = quality_for(
+        len(xs),
+        min_n=MIN_ROLLING_CORR,
+        span=_span(ds),
+        sources=["datacenter.series"],
+        align_method="paired_complete_case",
+        timezone="UTC",
+    )
+    note = "样本充足"
+    if q["status"] != STATUS_GOOD:
+        q = _degrade(q, "insufficient_samples")
+        note = f"有效配对 {len(xs)} < 60，滚动相关仅为短窗口描述（样本不足）"
+
+    label = name or "双序列"
+    corr_txt = "不可计算" if corr is None else f"{corr:.4f}"
+    mean_txt = "不可计算" if result["mean_r"] is None else f"{result['mean_r']:.4f}"
+    answer = (
+        f"{label}最近 {k} 期滚动 Pearson 相关 {corr_txt}"
+        f"（窗口均值 {mean_txt}，共 {result['n_windows']} 个窗口，n={result['sample_n']}）。"
+        f"{note}，仅描述同期联动强弱，不说明领先关系或未来延续。{CAVEAT}。"
+    )
+    return build(
+        capability="D-A11",
+        intent=INTENT_CORRELATION,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-A11": {
+                    "gate": "partial" if q["status"] == STATUS_PARTIAL else "ok",
+                    "methods": ["M04"],
+                    "corr": corr,
+                    "mean_r": result["mean_r"],
+                    "window": k,
+                    "n_windows": result["n_windows"],
+                    "sample_n": result["sample_n"],
+                }
+            },
+            "params": {"min_n": MIN_ROLLING_CORR, "window": k},
+            "name": name or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-A12 领先滞后相关 ----------------
+
+
+def lead_lag_correlation(
+    x: Sequence[Any],
+    y: Sequence[Any],
+    *,
+    max_lag: int = 10,
+    dates: Optional[Sequence[Any]] = None,
+    x_name: str = "x",
+    y_name: str = "y",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """lag 0–max_lag 的互相关：统计量唯一由 M11（全 lag + BH-FDR）与 M12（最优 lag）执行。"""
+    indices, xs, ys = _paired_rows(x, y)
+    if len(xs) < 2:
+        return unavailable(
+            capability="D-A12",
+            intent=INTENT_CORRELATION,
+            reason="双序列有效配对不足 2 点",
+            trace_id=trace_id,
+        )
+    try:
+        lag = int(max_lag)
+    except (TypeError, ValueError):
+        return unavailable(
+            capability="D-A12",
+            intent=INTENT_CORRELATION,
+            reason="max_lag 参数无效",
+            trace_id=trace_id,
+        )
+    if lag < 1 or lag >= len(xs):
+        return unavailable(
+            capability="D-A12",
+            intent=INTENT_CORRELATION,
+            reason=f"max_lag {lag} 超出可用配对样本 1~{len(xs) - 1}",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if dates:
+        if len(ds) != len(x) or len(x) != len(y):
+            return unavailable(
+                capability="D-A12",
+                intent=INTENT_CORRELATION,
+                reason="日期轴与双序列长度不一致或日期无效",
+                trace_id=trace_id,
+            )
+        ds = [ds[i] for i in indices]
+
+    pair = {"x": xs, "y": ys}
+    family = _call_soft("M11", pair, max_lag=lag)
+    best = _call_soft("M12", pair, max_lag=lag)
+    if family["result"] is None or best["result"] is None:
+        return unavailable(
+            capability="D-A12",
+            intent=INTENT_CORRELATION,
+            reason="领先滞后相关计算失败",
+            trace_id=trace_id,
+        )
+    ccf = family["result"]
+    optimum = best["result"]
+    corr_by_lag = [
+        {
+            "lag": lags,
+            "r": ccf["r"][position],
+            "p": ccf["p"][position],
+            "q": ccf["q"][position],
+            "significant": ccf["significant"][position],
+        }
+        for position, lags in enumerate(ccf["lags"])
+    ]
+
+    q = quality_for(
+        len(xs),
+        min_n=MIN_CCF,
+        span=_span(ds),
+        sources=["datacenter.series"],
+        align_method="paired_complete_case",
+        timezone="UTC",
+    )
+    note = "样本充足"
+    if q["status"] != STATUS_GOOD:
+        q = _degrade(q, "insufficient_history")
+        note = f"有效配对 {len(xs)} < 120，领先滞后仅为描述性结果（样本不足）"
+
+    best_lag = optimum["lag"]
+    lead_text = (
+        f"正 lag 表示 {x_name} 领先 {y_name}"
+        if best_lag > 0
+        else (f"负 lag 表示 {y_name} 领先 {x_name}" if best_lag < 0 else "同期同步")
+    )
+    answer = (
+        f"{x_name} 与 {y_name} 领先滞后：最优 lag={best_lag}"
+        f"（CCF={optimum['r']:.4f}，BH-FDR q={optimum['q']:.4f}），{lead_text}；"
+        f"搜索 lag 0–{lag}，n={len(xs)}。{note}，"
+        f"历史样本中的联动强弱不自动等于因果或未来可预测。{CAVEAT}。"
+    )
+    return build(
+        capability="D-A12",
+        intent=INTENT_CORRELATION,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-A12": {
+                    "gate": "partial" if q["status"] == STATUS_PARTIAL else "ok",
+                    "methods": ["M11", "M12"],
+                    "best_lag": best_lag,
+                    "best_corr": optimum["r"],
+                    "best_p_adj": optimum["q"],
+                    "corr_by_lag": corr_by_lag,
+                    "max_lag": lag,
+                    "sample_n": len(xs),
+                }
+            },
+            "params": {"min_n": MIN_CCF, "max_lag": lag},
+            "name": f"{x_name}~{y_name}",
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-A13 极端事件频率 ----------------
+
+
+def extreme_frequency(
+    values: Sequence[Any],
+    *,
+    threshold: Optional[float] = None,
+    side: str = "above",
+    quantile: float = 0.95,
+    dates: Optional[Sequence[Any]] = None,
+    name: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """超阈值天数与占比：阈值默认由 S11 分位给出，计数为纯聚合，不引入额外估计量。"""
+    xs = _floats(values)
+    if len(xs) != len(values) or not all(math.isfinite(value) for value in xs):
+        return unavailable(
+            capability="D-A13",
+            intent=INTENT_METRIC_SERIES,
+            reason="序列包含无效值",
+            trace_id=trace_id,
+        )
+    if len(xs) < 2:
+        return unavailable(
+            capability="D-A13",
+            intent=INTENT_METRIC_SERIES,
+            reason="有效样本不足 2 点",
+            trace_id=trace_id,
+        )
+    if side not in ("above", "below", "abs"):
+        return unavailable(
+            capability="D-A13",
+            intent=INTENT_METRIC_SERIES,
+            reason=f"side={side!r} 不支持（above/below/abs）",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if dates and len(ds) != len(values):
+        return unavailable(
+            capability="D-A13",
+            intent=INTENT_METRIC_SERIES,
+            reason="日期轴与数值长度不一致或日期无效",
+            trace_id=trace_id,
+        )
+
+    used: List[str] = []
+    cut = None if threshold is None else float(threshold)
+    if cut is not None and not math.isfinite(cut):
+        return unavailable(
+            capability="D-A13",
+            intent=INTENT_METRIC_SERIES,
+            reason="threshold 非有限值",
+            trace_id=trace_id,
+        )
+    if cut is None:
+        try:
+            q = float(quantile)
+        except (TypeError, ValueError):
+            return unavailable(
+                capability="D-A13",
+                intent=INTENT_METRIC_SERIES,
+                reason="quantile 参数无效",
+                trace_id=trace_id,
+            )
+        if not 0.0 < q < 1.0:
+            return unavailable(
+                capability="D-A13",
+                intent=INTENT_METRIC_SERIES,
+                reason=f"quantile {q} 超出 (0, 1)",
+                trace_id=trace_id,
+            )
+        pct = _call("S11", xs)
+        if pct["gate"] != "ok":
+            return unavailable(
+                capability="D-A13",
+                intent=INTENT_METRIC_SERIES,
+                reason=f"样本 {len(xs)} 不足 30 且未提供 threshold，阈值不可确定",
+                trace_id=trace_id,
+            )
+        used.append("S11")
+        key = f"p{int(round(q * 100))}"
+        cut = pct["result"].get(key)
+        if cut is None:
+            cut = pct["result"]["p95"]
+        cut = float(cut)
+
+    if side == "above":
+        hits = [value for value in xs if value >= cut]
+    elif side == "below":
+        hits = [value for value in xs if value <= cut]
+    else:
+        hits = [value for value in xs if abs(value) >= abs(cut)]
+    days = len(hits)
+    ratio = round(days / len(xs), 6)
+
+    q_block = quality_for(
+        len(xs),
+        min_n=MIN_SERIES,
+        span=_span(ds),
+        sources=["datacenter.series"],
+        align_method="daily_close",
+        timezone="UTC",
+    )
+    note = "样本充足"
+    if q_block["status"] != STATUS_GOOD:
+        q_block = _degrade(q_block, "insufficient_samples")
+        note = f"样本 {len(xs)} < 30，超阈值占比仅为短窗口描述（样本不足）"
+
+    label = name or "序列"
+    side_text = {"above": "≥", "below": "≤", "abs": "|x| ≥"}[side]
+    source = "S11 分位" if used else "调用方给定"
+    answer = (
+        f"{label}极端事件（{side_text} {cut:.6g} 阈值）：{days} 天 / {len(xs)} 天，"
+        f"占比 {ratio * 100:.2f}%；阈值来源 {source}。{note}。{CAVEAT}。"
+    )
+    return build(
+        capability="D-A13",
+        intent=INTENT_METRIC_SERIES,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-A13": {
+                    "gate": "partial" if q_block["status"] == STATUS_PARTIAL else "ok",
+                    "methods": used,
+                    "days": days,
+                    "ratio": ratio,
+                    "threshold": round(cut, 6),
+                    "side": side,
+                    "quantile": None if used == [] else float(quantile),
+                    "sample_n": len(xs),
+                }
+            },
+            "params": {"min_n": MIN_SERIES, "side": side},
+            "name": name or None,
+        },
+        quality_block=q_block,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-B09 距 ATH 回撤 ----------------
+
+
+def ath_drawdown(
+    prices: Sequence[Any],
+    *,
+    symbol: str = "",
+    dates: Optional[Sequence[Any]] = None,
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """距历史高（ATH）回撤：复用 D-E10 的 D20/D21 执行器，补 ATH 别名契约。"""
+    out = drawdown(
+        prices,
+        symbol=symbol,
+        dates=dates,
+        capability_id="D-B09",
+        intent=INTENT_TECHNICAL,
+        trace_id=trace_id,
+    )
+    if not out.get("ok"):
+        return out
+    block = out["data"]["capabilities"]["D-B09"]
+    block["drawdown_from_ath"] = block["current_drawdown"]
+    block["ath"] = block["peak_price"]
+    block["ath_ts"] = block["peak_ts"]
+    return out
+
+
+# ---------------- D-G08 12-1 动量 ----------------
+
+
+def momentum_12_1(
+    prices: Sequence[Any],
+    *,
+    lookback: int = 252,
+    skip: int = 21,
+    dates: Optional[Sequence[Any]] = None,
+    symbol: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """12-1 动量：跳过最近 skip 期后回溯 lookback 期的累计收益（F14 真实执行）。"""
+    px = _floats(prices)
+    if len(px) != len(prices) or not all(math.isfinite(value) for value in px):
+        return unavailable(
+            capability="D-G08",
+            intent=INTENT_METRIC_DERIVED,
+            reason="价格序列包含无效值",
+            trace_id=trace_id,
+        )
+    try:
+        lb = int(lookback)
+        sk = int(skip)
+    except (TypeError, ValueError):
+        return unavailable(
+            capability="D-G08",
+            intent=INTENT_METRIC_DERIVED,
+            reason=f"lookback/skip 不是整数：{lookback!r}/{skip!r}",
+            trace_id=trace_id,
+        )
+    if lb < 2:
+        return unavailable(
+            capability="D-G08",
+            intent=INTENT_METRIC_DERIVED,
+            reason=f"lookback {lb} 小于 2",
+            trace_id=trace_id,
+        )
+    if sk < 0:
+        return unavailable(
+            capability="D-G08",
+            intent=INTENT_METRIC_DERIVED,
+            reason=f"skip {sk} 小于 0",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if dates and len(ds) != len(px):
+        return unavailable(
+            capability="D-G08",
+            intent=INTENT_METRIC_DERIVED,
+            reason="日期轴与价格长度不一致或日期无效",
+            trace_id=trace_id,
+        )
+    if len(px) < MIN_MOMENTUM:
+        return unavailable(
+            capability="D-G08",
+            intent=INTENT_METRIC_DERIVED,
+            reason=f"价格样本 {len(px)} 小于 {MIN_MOMENTUM}",
+            trace_id=trace_id,
+        )
+
+    truncated = False
+    if len(px) < lb + sk + 1:
+        lb = len(px) - sk - 1
+        truncated = True
+        if lb < 2:
+            return unavailable(
+                capability="D-G08",
+                intent=INTENT_METRIC_DERIVED,
+                reason=f"跳过 {sk} 期后无足够历史计算动量",
+                trace_id=trace_id,
+            )
+
+    start = len(px) - (lb + sk + 1)
+    end = len(px) - sk
+    sample = px[start:end]
+    ds_sample = ds[start:end] if ds else []
+
+    call = _call_soft("F14", sample, k=lb)
+    if call["gate"] not in ("ok", "degraded"):
+        return unavailable(
+            capability="D-G08",
+            intent=INTENT_METRIC_DERIVED,
+            reason="F14 风险调整动量不可用",
+            trace_id=trace_id,
+        )
+    result = call["result"] or {}
+    momentum = result.get("momentum")
+    vol = result.get("vol")
+    ratio = result.get("ratio")
+
+    q = quality_for(
+        len(sample),
+        min_n=MIN_MOMENTUM,
+        span=_span(ds_sample) if ds_sample else None,
+        sources=["market.candles"],
+        align_method="utc_daily_close",
+        timezone="UTC",
+    )
+    reasons: List[str] = []
+    if len(sample) < MIN_MOMENTUM:
+        reasons.append("insufficient_samples")
+    if truncated:
+        reasons.append("short_history")
+    if momentum is None:
+        reasons.append("base_zero")
+    if reasons:
+        q = _degrade(q, ",".join(reasons))
+
+    span_text = f"{ds_sample[0]}→{ds_sample[-1]}" if ds_sample else f"最近 {lb + sk + 1} 期"
+    pct = "不可计算" if momentum is None else f"{round(float(momentum) * 100, 6)}%"
+    head = f"{symbol} " if symbol else ""
+    tail = []
+    if truncated:
+        tail.append(f"历史仅 {len(px)} 期，lookback 已截断为 {lb} 期（历史数据不足）")
+    if momentum is None:
+        tail.append("窗口起点价格非正，动量不可计算（样本不足）")
+    note = f"；{'；'.join(tail)}" if tail else ""
+    answer = (
+        f"{head}12-1 动量（跳过最近 {sk} 期、回溯 {lb} 期，窗口 {span_text}）为 {pct}，"
+        f"同期波动 {vol}，风险调整动量 {ratio}{note}。n={len(sample)}。{CAVEAT}。"
+    )
+    return build(
+        capability="D-G08",
+        intent=INTENT_METRIC_DERIVED,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-G08": {
+                    "gate": "partial" if q["status"] == STATUS_PARTIAL else "ok",
+                    "methods": ["F14"],
+                    "momentum_12_1": momentum,
+                    "lookback": lb,
+                    "skip": sk,
+                    "vol": vol,
+                    "risk_adjusted": ratio,
+                    "window_start_ts": ds_sample[0].isoformat() if ds_sample else None,
+                    "window_end_ts": ds_sample[-1].isoformat() if ds_sample else None,
+                    "truncated": truncated,
+                    "sample_n": len(sample),
+                }
+            },
+            "params": {"min_n": MIN_MOMENTUM, "lookback": lb, "skip": sk},
+            "symbol": symbol or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-G09 波动率目标换算 ----------------
+
+
+def vol_target_scale(
+    prices: Sequence[Any],
+    *,
+    target_vol: float = 0.10,
+    window: int = 20,
+    periods: int = 365,
+    dates: Optional[Sequence[Any]] = None,
+    symbol: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """波动率目标换算：scale = 目标波动 / 实现波动，复用方法层 P02。"""
+    px = _floats(prices)
+    if len(px) != len(prices) or not all(math.isfinite(value) for value in px):
+        return unavailable(
+            capability="D-G09",
+            intent=INTENT_METRIC_DERIVED,
+            reason="价格序列包含无效值",
+            trace_id=trace_id,
+        )
+    try:
+        tv = float(target_vol)
+    except (TypeError, ValueError):
+        return unavailable(
+            capability="D-G09",
+            intent=INTENT_METRIC_DERIVED,
+            reason=f"target_vol 不是数值：{target_vol!r}",
+            trace_id=trace_id,
+        )
+    if not math.isfinite(tv) or tv <= 0:
+        return unavailable(
+            capability="D-G09",
+            intent=INTENT_METRIC_DERIVED,
+            reason=f"target_vol {target_vol!r} 必须为正数",
+            trace_id=trace_id,
+        )
+    try:
+        w = int(window)
+        pp = int(periods)
+    except (TypeError, ValueError):
+        return unavailable(
+            capability="D-G09",
+            intent=INTENT_METRIC_DERIVED,
+            reason=f"window/periods 不是整数：{window!r}/{periods!r}",
+            trace_id=trace_id,
+        )
+    if w < 2:
+        return unavailable(
+            capability="D-G09",
+            intent=INTENT_METRIC_DERIVED,
+            reason=f"window {w} 小于 2",
+            trace_id=trace_id,
+        )
+    if pp < 1:
+        return unavailable(
+            capability="D-G09",
+            intent=INTENT_METRIC_DERIVED,
+            reason=f"periods {pp} 小于 1",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if dates and len(ds) != len(px):
+        return unavailable(
+            capability="D-G09",
+            intent=INTENT_METRIC_DERIVED,
+            reason="日期轴与价格长度不一致或日期无效",
+            trace_id=trace_id,
+        )
+    if len(px) < MIN_VOL_TARGET + 1:
+        return unavailable(
+            capability="D-G09",
+            intent=INTENT_METRIC_DERIVED,
+            reason=f"价格样本 {len(px)} 不足以形成 {MIN_VOL_TARGET} 个收益",
+            trace_id=trace_id,
+        )
+
+    rets = _returns(px)
+    if len(rets) < MIN_VOL_TARGET:
+        return unavailable(
+            capability="D-G09",
+            intent=INTENT_METRIC_DERIVED,
+            reason=f"有效收益 {len(rets)} 小于 {MIN_VOL_TARGET}",
+            trace_id=trace_id,
+        )
+    truncated = w > len(rets)
+    if truncated:
+        w = len(rets)
+
+    key = symbol or "asset"
+    # 扁平 {sym: returns} 契约：方法层 _sample_n 按列长度取样本，嵌套 returns 会被计为 1。
+    call = _call("P02", {key: rets}, target_vol=tv, window=w, periods=pp)
+    if call["gate"] != "ok":
+        return unavailable(
+            capability="D-G09",
+            intent=INTENT_METRIC_DERIVED,
+            reason="波动率目标换算不可用",
+            trace_id=trace_id,
+        )
+    result = call["result"] or {}
+    scale = (result.get("scale") or {}).get(key)
+    realized = (result.get("realized") or {}).get(key)
+
+    q = quality_for(
+        len(rets),
+        min_n=MIN_VOL_TARGET,
+        span=_span(ds[1:]) if ds else None,
+        sources=["market.candles"],
+        align_method="utc_daily_close",
+        timezone="UTC",
+    )
+    reasons: List[str] = []
+    if realized is None or float(realized) <= 0:
+        reasons.append("zero_volatility")
+    if truncated:
+        reasons.append("window_truncated")
+    if reasons:
+        q = _degrade(q, ",".join(reasons))
+
+    head = f"{symbol} " if symbol else ""
+    tail = []
+    if truncated:
+        tail.append(f"收益仅 {len(rets)} 期，window 已截断为 {w} 期")
+    if realized is None or float(realized) <= 0:
+        tail.append("样本内实现波动为 0，缩放系数无意义（样本不足）")
+    note = f"；{'；'.join(tail)}" if tail else ""
+    answer = (
+        f"{head}波动率目标换算（目标年化 {round(tv * 100, 6)}%、窗口 {w} 期实现年化 "
+        f"{'不可得' if realized is None else f'{round(float(realized) * 100, 6)}%'}）："
+        f"仓位缩放系数 {scale}（= 目标/实现，>1 表示同风险预算下可放大基础仓位，<1 表示需缩小）{note}。"
+        f"n={len(rets)}。该系数仅描述样本内实现波动与目标波动之比，不构成交易建议；{CAVEAT}。"
+    )
+    return build(
+        capability="D-G09",
+        intent=INTENT_METRIC_DERIVED,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-G09": {
+                    "gate": "partial" if q["status"] == STATUS_PARTIAL else "ok",
+                    "methods": ["P02"],
+                    "scale": scale,
+                    "target_vol": result.get("target_vol"),
+                    "realized_vol": realized,
+                    "window": w,
+                    "periods": pp,
+                    "returns_n": result.get("n"),
+                    "sample_n": len(rets),
+                }
+            },
+            "params": {"min_n": MIN_VOL_TARGET, "target_vol": tv, "window": w, "periods": pp},
+            "symbol": symbol or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-B08 趋势斜率 ----------------
+
+
+def slope_trend(
+    prices: Sequence[Any],
+    *,
+    window: int = 90,
+    dates: Optional[Sequence[Any]] = None,
+    symbol: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """最近 window 期对数价格 OLS 斜率 + R² + 名义 t/p（T08/T09），不做 HAC 修正。"""
+    px = _floats(prices)
+    if len(px) != len(prices) or not all(math.isfinite(value) for value in px):
+        return unavailable(
+            capability="D-B08",
+            intent=INTENT_TECHNICAL,
+            reason="价格序列包含无效值",
+            trace_id=trace_id,
+        )
+    try:
+        k = int(window)
+    except (TypeError, ValueError):
+        k = 0
+    if k < 30:
+        return unavailable(
+            capability="D-B08",
+            intent=INTENT_TECHNICAL,
+            reason=f"window {window!r} 小于 30",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if dates and len(ds) != len(px):
+        return unavailable(
+            capability="D-B08",
+            intent=INTENT_TECHNICAL,
+            reason="日期轴与价格长度不一致或日期无效",
+            trace_id=trace_id,
+        )
+    if len(px) < 30:
+        return unavailable(
+            capability="D-B08",
+            intent=INTENT_TECHNICAL,
+            reason=f"价格样本 {len(px)} 小于 30",
+            trace_id=trace_id,
+        )
+
+    start = max(0, len(px) - k)
+    sample = px[start:]
+    ds_sample = ds[start:] if ds else []
+
+    slope_block = _call("T08", sample)
+    if slope_block["gate"] != "ok":
+        return unavailable(
+            capability="D-B08",
+            intent=INTENT_TECHNICAL,
+            reason="T08 趋势斜率不可用",
+            trace_id=trace_id,
+        )
+    sig_block = _call_soft("T09", sample)
+    sig = sig_block["result"] if sig_block["gate"] in ("ok", "degraded") else {}
+
+    slope = slope_block["result"].get("slope_per_day")
+    r2 = slope_block["result"].get("r2")
+    q = quality_for(
+        len(sample),
+        min_n=MIN_SLOPE,
+        span=_span(ds_sample) if ds_sample else None,
+        sources=["market.candles"],
+        align_method="utc_daily_close",
+        timezone="UTC",
+    )
+    if q["status"] != STATUS_GOOD:
+        q = _degrade(q, "short_window")
+
+    head = f"{symbol} " if symbol else ""
+    note = (
+        "；样本低于 60 天，斜率仅为短窗口描述（样本不足）" if q["status"] == STATUS_PARTIAL else ""
+    )
+    answer = (
+        f"{head}最近 {k} 日对数价格趋势斜率 {slope}/日（R²={r2}），"
+        f"名义 t={sig.get('t')}，p={sig.get('p')}；名义 t 未做 HAC 修正，仅作相对比较"
+        f"{note}。n={len(sample)}。{CAVEAT}。"
+    )
+    return build(
+        capability="D-B08",
+        intent=INTENT_TECHNICAL,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-B08": {
+                    "gate": "partial" if q["status"] == STATUS_PARTIAL else "ok",
+                    "methods": ["T08", "T09"],
+                    "slope": slope,
+                    "r2": r2,
+                    "window": k,
+                    "t": sig.get("t"),
+                    "p": sig.get("p"),
+                    "hac_corrected": False,
+                    "sample_n": len(sample),
+                }
+            },
+            "params": {"min_n": MIN_SLOPE, "window": k},
+            "symbol": symbol or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-A15 净流入滚动和 ----------------
+
+
+def etf_flow_rolling(
+    values: Sequence[Any],
+    *,
+    windows: Sequence[int] = (7, 30),
+    dates: Optional[Sequence[Any]] = None,
+    unit: str = "",
+    name: str = "",
+    symbol: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """7/30 日净流入滚动和：S20 滚动均值经窗口长度还原为和，能力层不做分布估计。"""
+    xs = _floats(values)
+    if len(xs) != len(values) or not all(math.isfinite(value) for value in xs):
+        return unavailable(
+            capability="D-A15",
+            intent=INTENT_METRIC_SERIES,
+            reason="序列包含无效值",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if dates and len(ds) != len(xs):
+        return unavailable(
+            capability="D-A15",
+            intent=INTENT_METRIC_SERIES,
+            reason="日期轴与数值长度不一致或日期无效",
+            trace_id=trace_id,
+        )
+    ws: List[int] = []
+    for raw in windows:
+        try:
+            k = int(raw)
+        except (TypeError, ValueError):
+            return unavailable(
+                capability="D-A15",
+                intent=INTENT_METRIC_SERIES,
+                reason=f"window {raw!r} 不是整数",
+                trace_id=trace_id,
+            )
+        if k < 1:
+            return unavailable(
+                capability="D-A15",
+                intent=INTENT_METRIC_SERIES,
+                reason=f"window {k} < 1",
+                trace_id=trace_id,
+            )
+        if k not in ws:
+            ws.append(k)
+    if not ws:
+        return unavailable(
+            capability="D-A15",
+            intent=INTENT_METRIC_SERIES,
+            reason="windows 不可为空",
+            trace_id=trace_id,
+        )
+
+    sums: Dict[str, Optional[float]] = {}
+    short: List[int] = []
+    for k in ws:
+        if k > len(xs):
+            sums[f"sum_{k}d"] = None
+            short.append(k)
+            continue
+        call = _call_soft("S20", xs, k=k)
+        if call["gate"] not in ("ok", "degraded"):
+            sums[f"sum_{k}d"] = None
+            short.append(k)
+            continue
+        means = call["result"].get("series") or []
+        last = next((m for m in reversed(means) if m is not None), None)
+        sums[f"sum_{k}d"] = None if last is None else round(float(last) * k, 6)
+
+    if all(value is None for value in sums.values()):
+        return unavailable(
+            capability="D-A15",
+            intent=INTENT_METRIC_SERIES,
+            reason=f"有效样本 {len(xs)} 不足以覆盖任何窗口 {ws}",
+            trace_id=trace_id,
+        )
+
+    span = _span(ds) if ds else None
+    q = quality_for(
+        len(xs),
+        min_n=MIN_SERIES,
+        span=span,
+        sources=["datacenter.series"],
+        align_method="daily_close",
+        timezone="UTC",
+    )
+    reasons = []
+    if len(xs) < MIN_SERIES:
+        reasons.append("insufficient_samples")
+    if short:
+        reasons.append("short_history")
+    if reasons:
+        q = _degrade(q, ",".join(reasons))
+
+    label = name or "序列"
+    unit_text = f" {unit}" if unit else ""
+    pieces = [
+        f"{k} 日滚动和 {sums[f'sum_{k}d']:.6g}{unit_text}"
+        for k in ws
+        if sums[f"sum_{k}d"] is not None
+    ]
+    missing = [k for k in ws if sums[f"sum_{k}d"] is None]
+    tail = ""
+    if missing:
+        tail = f"；{'/'.join(str(k) for k in missing)} 日窗口超出历史长度，历史数据不足"
+    note = ""
+    if len(xs) < MIN_SERIES:
+        note = "；样本低于 30 天下限，滚动和仅为短窗口描述（样本不足）"
+    head = f"{symbol} " if symbol else ""
+    window_text = "/".join(str(k) for k in ws)
+    answer = (
+        f"{head}{label}（{window_text} 日）净流入滚动和：{'、'.join(pieces)}"
+        f"{tail}{note}。{CAVEAT}。"
+    )
+    return build(
+        capability="D-A15",
+        intent=INTENT_METRIC_SERIES,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-A15": {
+                    "gate": "partial" if q["status"] == STATUS_PARTIAL else "ok",
+                    "methods": ["S20"],
+                    **sums,
+                    "windows": ws,
+                    "sample_n": len(xs),
+                }
+            },
+            "params": {"min_n": MIN_SERIES, "windows": ws},
+            "name": name or None,
+            "symbol": symbol or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-A16 稳定币规模增速 ----------------
+
+
+def stablecoin_growth(
+    values: Sequence[Any],
+    *,
+    windows: Sequence[int] = (7, 30),
+    dates: Optional[Sequence[Any]] = None,
+    name: str = "",
+    symbol: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """7/30 日稳定币规模增速：S16 逐窗口真实执行，能力层只组装多窗口结果。"""
+    xs = _floats(values)
+    if len(xs) != len(values) or not all(math.isfinite(value) for value in xs):
+        return unavailable(
+            capability="D-A16",
+            intent=INTENT_METRIC_SERIES,
+            reason="序列包含无效值",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if dates and len(ds) != len(xs):
+        return unavailable(
+            capability="D-A16",
+            intent=INTENT_METRIC_SERIES,
+            reason="日期轴与数值长度不一致或日期无效",
+            trace_id=trace_id,
+        )
+    ws: List[int] = []
+    for raw in windows:
+        try:
+            k = int(raw)
+        except (TypeError, ValueError):
+            return unavailable(
+                capability="D-A16",
+                intent=INTENT_METRIC_SERIES,
+                reason=f"window {raw!r} 不是整数",
+                trace_id=trace_id,
+            )
+        if k < 1:
+            return unavailable(
+                capability="D-A16",
+                intent=INTENT_METRIC_SERIES,
+                reason=f"window {k} < 1",
+                trace_id=trace_id,
+            )
+        if k not in ws:
+            ws.append(k)
+    if not ws:
+        return unavailable(
+            capability="D-A16",
+            intent=INTENT_METRIC_SERIES,
+            reason="windows 不可为空",
+            trace_id=trace_id,
+        )
+
+    growths: Dict[str, Optional[float]] = {}
+    short: List[int] = []
+    zero_base: List[int] = []
+    for k in ws:
+        key = f"growth_{k}d"
+        if len(xs) <= k:
+            growths[key] = None
+            short.append(k)
+            continue
+        call = _call_soft("S16", xs, k=k)
+        pct = call["result"].get("pct") if call["gate"] in ("ok", "degraded") else None
+        if pct is None:
+            growths[key] = None
+            zero_base.append(k)
+            continue
+        growths[key] = round(float(pct) * 100, 6)
+
+    if all(value is None for value in growths.values()):
+        return unavailable(
+            capability="D-A16",
+            intent=INTENT_METRIC_SERIES,
+            reason=f"有效样本 {len(xs)} 不足以覆盖任何窗口 {ws} 或基期为 0",
+            trace_id=trace_id,
+        )
+
+    span = _span(ds) if ds else None
+    q = quality_for(
+        len(xs),
+        min_n=MIN_SERIES,
+        span=span,
+        sources=["datacenter.series"],
+        align_method="daily_close",
+        timezone="UTC",
+    )
+    reasons = []
+    if len(xs) < MIN_SERIES:
+        reasons.append("insufficient_samples")
+    if short:
+        reasons.append("short_history")
+    if zero_base:
+        reasons.append("base_zero")
+    if reasons:
+        q = _degrade(q, ",".join(reasons))
+
+    label = name or "序列"
+    pieces = [
+        f"{k} 日增速 {growths[f'growth_{k}d']:.6g}%"
+        for k in ws
+        if growths[f"growth_{k}d"] is not None
+    ]
+    missing = [k for k in ws if growths[f"growth_{k}d"] is None]
+    tail = ""
+    if missing:
+        tail = f"；{'/'.join(str(k) for k in missing)} 日窗口不可算（历史不足或基期为 0）"
+    note = ""
+    if len(xs) < MIN_SERIES:
+        note = "；样本低于 30 天下限，增速仅为短窗口描述（样本不足）"
+    head = f"{symbol} " if symbol else ""
+    window_text = "/".join(str(k) for k in ws)
+    answer = (
+        f"{head}{label}（{window_text} 日）规模增速：{'、'.join(pieces)}{tail}{note}。{CAVEAT}。"
+    )
+    return build(
+        capability="D-A16",
+        intent=INTENT_METRIC_SERIES,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-A16": {
+                    "gate": "partial" if q["status"] == STATUS_PARTIAL else "ok",
+                    "methods": ["S16"],
+                    **growths,
+                    "windows": ws,
+                    "sample_n": len(xs),
+                }
+            },
+            "params": {"min_n": MIN_SERIES, "windows": ws},
+            "name": name or None,
+            "symbol": symbol or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-J30 PIT / release_ts 全局校验 ----------------
+
+
+def pit_alignment(
+    indicator: Sequence[Any],
+    prices: Sequence[Any],
+    *,
+    dates: Optional[Sequence[Any]] = None,
+    release_ts: Optional[Sequence[Any]] = None,
+    used_ts: Optional[Sequence[Any]] = None,
+    as_of: Any = None,
+    buckets: int = 4,
+    horizons: Sequence[int] = (1,),
+    window: int = MIN_CONDITIONAL,
+    name: str = "指标",
+    symbol: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """SC90 校验「可用时间 ≤ 使用时间」+ R02 `pit=true` 前瞻分布，全局前视规避出口。"""
+    if len(indicator) != len(prices):
+        return unavailable(
+            capability="D-J30",
+            intent=INTENT_PERCENTILE,
+            reason="指标与价格长度不一致",
+            trace_id=trace_id,
+        )
+    ind, px = _floats(indicator), _floats(prices)
+    if (
+        len(ind) != len(indicator)
+        or len(px) != len(prices)
+        or not all(math.isfinite(value) for value in ind + px)
+    ):
+        return unavailable(
+            capability="D-J30",
+            intent=INTENT_PERCENTILE,
+            reason="指标或价格包含无效值",
+            trace_id=trace_id,
+        )
+    if len(px) < MIN_CONDITIONAL:
+        return unavailable(
+            capability="D-J30",
+            intent=INTENT_PERCENTILE,
+            reason=f"对齐样本 {len(px)} < {MIN_CONDITIONAL}",
+            trace_id=trace_id,
+        )
+    try:
+        requested_buckets = int(buckets)
+        window = int(window)
+        hs = tuple(sorted({int(h) for h in horizons}))
+    except (TypeError, ValueError):
+        return unavailable(
+            capability="D-J30",
+            intent=INTENT_PERCENTILE,
+            reason="horizons/buckets/window 参数无效",
+            trace_id=trace_id,
+        )
+    if not hs or min(hs) < 1 or requested_buckets < 2 or window < 2:
+        return unavailable(
+            capability="D-J30",
+            intent=INTENT_PERCENTILE,
+            reason="horizons 须为正整数，buckets ≥ 2 且 window ≥ 2",
+            trace_id=trace_id,
+        )
+
+    n = len(px)
+    timestamps = list(dates) if dates else list(range(n))
+    ds = _parse_dates(dates)
+    if len(timestamps) != n or (dates and len(ds) != n):
+        return unavailable(
+            capability="D-J30",
+            intent=INTENT_PERCENTILE,
+            reason="日期轴与指标/价格长度不一致或日期无效",
+            trace_id=trace_id,
+        )
+    if release_ts is not None and len(release_ts) != n:
+        return unavailable(
+            capability="D-J30",
+            intent=INTENT_PERCENTILE,
+            reason="release_ts 与指标/价格长度不一致",
+            trace_id=trace_id,
+        )
+    if used_ts is not None and len(used_ts) != n:
+        return unavailable(
+            capability="D-J30",
+            intent=INTENT_PERCENTILE,
+            reason="used_ts 与指标/价格长度不一致",
+            trace_id=trace_id,
+        )
+
+    available = list(release_ts) if release_ts is not None else list(timestamps)
+    used = list(used_ts) if used_ts is not None else list(timestamps)
+    pit_call = _call("SC90", {"available": available, "used": used})
+    if pit_call["gate"] != "ok":
+        return unavailable(
+            capability="D-J30",
+            intent=INTENT_PERCENTILE,
+            reason="PIT 时间校验无法执行",
+            trace_id=trace_id,
+        )
+    pit_check = pit_call["result"]
+
+    payload: Dict[str, Any] = {
+        "indicator": ind,
+        "price": px,
+        "timestamps": timestamps,
+        "align_method": "release_ts_pit",
+    }
+    if release_ts is not None:
+        payload["release_ts"] = list(release_ts)
+    r02_params: Dict[str, Any] = {
+        "buckets": requested_buckets,
+        "horizons": hs,
+        "label": name or "指标",
+        "pit": True,
+        "window": window,
+    }
+    if as_of is not None:
+        r02_params["as_of"] = as_of
+    r02_call = _call("R02", payload, **r02_params)
+    r02 = r02_call["result"] if r02_call["gate"] == "ok" else None
+
+    q = quality_for(
+        n,
+        min_n=MIN_CONDITIONAL,
+        span=_span(ds) if ds else None,
+        sources=["market.candles"] + (["mm_metrics"] if release_ts is not None else []),
+        align_method="release_ts_pit",
+        timezone="UTC",
+    )
+    notes: List[str] = []
+    if not pit_check["pass"]:
+        q = _degrade(q, "pit_violations")
+        notes.append(
+            f"PIT 校验发现 {pit_check['n_violations']} 条样本可用时间晚于使用时间"
+            f"（最大超前 {pit_check['max_lag']:.0f} 秒），存在前视风险"
+        )
+    if r02 is None:
+        if pit_check["pass"]:
+            return unavailable(
+                capability="D-J30",
+                intent=INTENT_PERCENTILE,
+                reason="R02 PIT 前瞻分布计算失败",
+                trace_id=trace_id,
+            )
+        notes.append("按 release_ts 过滤后可见样本不足 PIT 窗口，未输出前瞻分布")
+
+    if r02 is not None:
+        horizon_block = r02["by_horizon"][0] if r02["by_horizon"] else None
+        if horizon_block and horizon_block.get("effective_n"):
+            stats_text = (
+                f"当前 {name or '指标'} 处于 {r02['current_percentile']:.1f}% 分位，"
+                f"历史同分位区间后 {horizon_block['h']} 日均值 "
+                f"{(horizon_block['mean'] or 0.0) * 100.0:+.2f}%、"
+                f"上涨 {(horizon_block['win_rate'] or 0.0) * 100.0:.1f}%"
+                f"（有效 n={horizon_block['effective_n']}，"
+                f"非重叠 n={horizon_block['nonoverlap_n']}）"
+            )
+        else:
+            stats_text = f"当前 {name or '指标'} 处于 {r02['current_percentile']:.1f}% 分位，历史同分位区间样本不足"
+    else:
+        stats_text = "PIT 过滤后无法输出前瞻分布"
+    check_text = (
+        f"PIT 校验通过（可用时间 ≤ 使用时间，n={pit_check['n']}）"
+        if pit_check["pass"]
+        else (
+            f"PIT 校验失败：{pit_check['n_violations']} 条样本可用时间晚于使用时间，"
+            f"最大超前 {pit_check['max_lag']:.0f} 秒"
+        )
+    )
+    as_of_text = r02["as_of"] if r02 is not None else timestamps[-1]
+    note_text = f"{'；'.join(notes)}。" if notes else ""
+    head = f"{symbol} " if symbol else ""
+    answer = f"{head}截至 {as_of_text}，{check_text}；{stats_text}。{note_text}{CAVEAT}。"
+
+    return build(
+        capability="D-J30",
+        intent=INTENT_PERCENTILE,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-J30": {
+                    "gate": "ok" if (pit_check["pass"] and r02 is not None) else "partial",
+                    "methods": ["SC90", "R02"],
+                    "pit_check": pit_check,
+                    "r02": r02,
+                    "release_ts_applied": release_ts is not None,
+                    "as_of": as_of_text,
+                }
+            },
+            "params": {
+                "min_n": MIN_CONDITIONAL,
+                "buckets": requested_buckets,
+                "horizons": list(hs),
+                "window": window,
+                "as_of": as_of_text,
+            },
+            "name": name or None,
+            "symbol": symbol or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
 # ---------------- 统一调度（能力 ID → executor） ----------------
+
+
+# 展示层四出口（D-E16–E19）真实实现在 aggregate/flow/lights，这里只做延迟导入薄壳：
+# 避免 `capabilities/__init__` → stats → aggregate 在包初始化期形成循环依赖。
+def aggregate_curve(**kwargs: Any) -> Dict[str, Any]:
+    from .aggregate import aggregate_curve as impl
+
+    return impl(**kwargs)
+
+
+def class_board(**kwargs: Any) -> Dict[str, Any]:
+    from .aggregate import class_board as impl
+
+    return impl(**kwargs)
+
+
+def flow_graph(**kwargs: Any) -> Dict[str, Any]:
+    from .flow import flow_graph as impl
+
+    return impl(**kwargs)
+
+
+def lights(**kwargs: Any) -> Dict[str, Any]:
+    from .lights import lights as impl
+
+    return impl(**kwargs)
+
 
 _EXECUTORS = {
     "D-A14": crowding,
@@ -2441,10 +5564,39 @@ _EXECUTORS = {
     "D-E12": alignment_slice,
     "D-E14": conditional_distribution,
     "D-E15": trend,
+    "D-E16": aggregate_curve,
+    "D-E17": class_board,
+    "D-E18": flow_graph,
+    "D-E19": lights,
+    "D-G14": ewma_risk,
+    "D-G16": portfolio_risk,
+    "D-G19": ic_profile,
+    "D-G20": quantile_monotonic,
     "D-G22": hac_significance,
     "D-G23": event_car_significance,
     "D-J02": seasonal_adjustment,
     "D-J04": change_point,
+    "D-J22": dimension_reduction,
+    "D-J24": correlation_network,
+    "D-J30": pit_alignment,
+    "D-A01": history_series,
+    "D-A02": change_rate,
+    "D-A03": cagr,
+    "D-A04": percentile_rank,
+    "D-A06": annualized_volatility,
+    "D-A07": drawdown,
+    "D-A08": yoy_change,
+    "D-A09": mom_change,
+    "D-A10": real_rate,
+    "D-A11": rolling_correlation,
+    "D-A12": lead_lag_correlation,
+    "D-A13": extreme_frequency,
+    "D-A15": etf_flow_rolling,
+    "D-A16": stablecoin_growth,
+    "D-B08": slope_trend,
+    "D-B09": ath_drawdown,
+    "D-G08": momentum_12_1,
+    "D-G09": vol_target_scale,
 }
 
 
@@ -2454,6 +5606,7 @@ _EXECUTOR_INTENTS = {
     "D-E05": INTENT_CORRELATION,
     "D-E06": INTENT_CORRELATION,
     "D-E11": INTENT_CROSS,
+    "D-A07": INTENT_DRAWDOWN,
 }
 
 

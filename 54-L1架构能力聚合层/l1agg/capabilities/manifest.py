@@ -23,6 +23,10 @@ MANIFEST_FILE = os.path.normpath(
 )
 _REQUIRED = ("id", "intent", "mode", "data_scope", "executor", "methods", "min_n")
 _MODES = ("deterministic", "gated")
+# 方法绑定语义（SPEC-54 §5.3 / ADR-V5）：
+#   compute = 能力自己执行 methods（执行覆盖必须齐全）；
+#   display = 纯投影/展示能力，数值来自上游能力，methods 只披露血缘，不计入执行覆盖。
+_METHOD_BINDINGS = ("compute", "display")
 # SPEC-54 §4.8 / ADR-V14：public 才允许被前端与数据查询命中；internal 只供 L1 内部链路。
 _VISIBILITY = ("public", "internal")
 
@@ -43,6 +47,7 @@ class Capability:
     min_span_days: int = 0
     notes: str = ""
     visibility: str = "public"
+    method_binding: str = "compute"
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -56,6 +61,7 @@ class Capability:
             "min_span_days": self.min_span_days,
             "notes": self.notes,
             "visibility": self.visibility,
+            "method_binding": self.method_binding,
         }
 
 
@@ -124,6 +130,7 @@ def _capability(
         min_span_days=int(item.get("min_span_days", 0)),
         notes=str(item.get("notes", "")),
         visibility=str(item.get("visibility", fallback)),
+        method_binding=str(item.get("method_binding", "compute")),
     )
 
 
@@ -142,6 +149,8 @@ def validate(manifest: Manifest) -> None:
         ids.add(cap.id)
         if cap.visibility not in _VISIBILITY:
             raise ManifestError(f"{cap.id}: visibility 必须是 {_VISIBILITY}")
+        if cap.method_binding not in _METHOD_BINDINGS:
+            raise ManifestError(f"{cap.id}: method_binding 必须是 {_METHOD_BINDINGS}")
         if cap.mode not in _MODES:
             raise ManifestError(f"{cap.id}: mode 必须是 {_MODES}")
         if not cap.data_scope:
@@ -197,14 +206,18 @@ def validate_execution(
             raise ManifestError(f"{cap.id}: 执行了未绑定方法: {unbound}")
         covered = actual & declared
         missing = sorted(declared - actual)
-        if missing:
+        # display 能力（纯投影/展示）的 methods 只披露血缘，不计入执行覆盖
+        counts = cap.method_binding == "compute"
+        if counts and missing:
             incomplete.append(f"{cap.id}={missing}")
-        declared_total += len(declared)
-        executed_total += len(covered)
+        if counts:
+            declared_total += len(declared)
+            executed_total += len(covered)
         rows[cap.id] = {
             "declared": sorted(declared),
             "executed": sorted(covered),
             "missing": missing,
+            "method_binding": cap.method_binding,
             "coverage": len(covered) / len(declared) if declared else 1.0,
         }
 

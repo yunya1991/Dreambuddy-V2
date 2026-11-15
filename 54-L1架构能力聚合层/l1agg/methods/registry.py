@@ -20,7 +20,7 @@ GROUP_CAPACITY: Dict[str, int] = {
     "D": 24,
     "T": 28,
     "C": 18,
-    "I": 34,
+    "I": 39,
     "M": 26,
     "B": 18,
     "F": 26,
@@ -215,7 +215,7 @@ def all_specs(
 ) -> List[MethodSpec]:
     """返回已登记 + 占位后的全量目录（按 method_id 排序）。
 
-    scope: core（方法库 238）/ research（调研族 X/O/P/Q/SC 149）/ all。
+    scope: core（方法库 243）/ research（调研族 X/O/P/Q/SC 149）/ all。
     """
     caps = {"core": GROUP_CAPACITY, "research": RESEARCH_CAPACITY, "all": ALL_CAPACITY}.get(scope)
     if caps is None:

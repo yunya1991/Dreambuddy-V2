@@ -33,7 +33,7 @@ def main(argv: list[str] | None = None) -> int:
         "--scope",
         default="core",
         choices=["core", "research", "all"],
-        help="校验范围：core(238)/research(149)/all(387)",
+        help="校验范围：core(243)/research(149)/all(392)",
     )
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args(argv)

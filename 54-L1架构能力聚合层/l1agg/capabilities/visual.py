@@ -50,6 +50,29 @@ SLOPE_COLUMNS: List[Dict[str, str]] = [
     {"key": "hac_corrected", "label": "HAC 校正", "type": "string"},
 ]
 
+# D-E17 类别看板固定 19 列（SPEC §4.4，顺序不可变）
+CLASS_BOARD_COLUMNS: List[Dict[str, str]] = [
+    {"key": "class", "label": "类别", "type": "string"},
+    {"key": "symbol", "label": "标的", "type": "string"},
+    {"key": "label", "label": "名称", "type": "string"},
+    {"key": "role", "label": "角色", "type": "string"},
+    {"key": "last", "label": "最新值", "type": "number"},
+    {"key": "ret_20", "label": "20日收益", "type": "percent"},
+    {"key": "ret_60", "label": "60日收益", "type": "percent"},
+    {"key": "ret_120", "label": "120日收益", "type": "percent"},
+    {"key": "ret_250", "label": "250日收益", "type": "percent"},
+    {"key": "vol_60", "label": "60日波动", "type": "number"},
+    {"key": "mdd", "label": "最大回撤", "type": "percent"},
+    {"key": "adx14", "label": "ADX14", "type": "number"},
+    {"key": "corr_to_leader_90d", "label": "90日龙头相关", "type": "number"},
+    {"key": "lights_ref", "label": "点亮引用", "type": "string"},
+    {"key": "lit_n", "label": "点亮数", "type": "number"},
+    {"key": "warm_n", "label": "预热点数", "type": "number"},
+    {"key": "n", "label": "有效观测", "type": "number"},
+    {"key": "stale_ratio", "label": "陈旧占比", "type": "percent"},
+    {"key": "status", "label": "状态", "type": "string"},
+]
+
 _MODULE_ROOT = os.path.normpath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 )
@@ -238,10 +261,81 @@ def _trend_series(
     )
 
 
+def _aggregate_series(
+    block: Mapping[str, Any], quality_block: Optional[Mapping[str, Any]]
+) -> Optional[Dict[str, Any]]:
+    """D-E16 → T2 曲线：`y`=加权聚合值（rebased 100），逐点带成员值与覆盖度。"""
+    points: List[Dict[str, Any]] = []
+    for row in block.get("points") or ():
+        value = row.get("agg")
+        if value is None:
+            continue
+        points.append(
+            {
+                "x": row.get("date"),
+                "y": value,
+                "agg": value,
+                "smoothed": row.get("ema26"),
+                "members": dict(row.get("members") or {}),
+                "coverage_ratio": row.get("coverage_ratio"),
+                "partial_members": bool(row.get("partial_members")),
+            }
+        )
+    if not points:
+        return None
+    meta = dict(block.get("meta") or {})
+    meta["smoothing"] = dict(meta.get("smoothing") or {"method": "EMA", "window": 26})
+    meta["unit"] = str(meta.get("unit") or "rebased_index")
+    meta["n"] = int(meta.get("n") or len(points))
+    title = f"D-E16 加权聚合曲线（{len(points)} 点 / {len(meta.get('members') or [])} 成员）"[:60]
+    return _series(
+        title=title,
+        source_capability="D-E16",
+        points=points,
+        meta=meta,
+        encodings={"x": "date", "y": "agg", "members": "members"},
+    )
+
+
+def _class_board_table(
+    block: Mapping[str, Any], quality_block: Optional[Mapping[str, Any]]
+) -> Optional[Dict[str, Any]]:
+    """D-E17 → T1 表格：固定 19 列；任一标的不达标时首列追加 `degraded_reason`。"""
+    rows = [dict(row) for row in block.get("rows") or ()]
+    if not rows:
+        return None
+    columns = [dict(col) for col in CLASS_BOARD_COLUMNS]
+    if any(str(row.get("status")) != "available" for row in rows):
+        columns = [{"key": "degraded_reason", "label": "降级原因", "type": "string"}] + columns
+        rows = [
+            {
+                "degraded_reason": row.get("degraded_reason"),
+                **{key: value for key, value in row.items() if key != "degraded_reason"},
+            }
+            for row in rows
+        ]
+    else:
+        rows = [
+            {key: value for key, value in row.items() if key != "degraded_reason"} for row in rows
+        ]
+    classes = {str(row.get("class")) for row in rows}
+    title = f"D-E17 类别看板（{len(rows)} 标的 / {len(classes)} 类）"[:60]
+    return _table(
+        title=title,
+        source_capability="D-E17",
+        columns=columns,
+        rows=rows,
+        n_scope="per_row",
+        groups=["class", "role"],
+    )
+
+
 _PRODUCERS = {
     "D-E10": _drawdown_series,
     "D-E12": _alignment_table,
     "D-E15": _trend_series,
+    "D-E16": _aggregate_series,
+    "D-E17": _class_board_table,
 }
 
 
@@ -326,7 +420,7 @@ def capability_table() -> Dict[str, Any]:
 
 
 def method_audit_table(path: Optional[str] = None) -> Dict[str, Any]:
-    """方法审计矩阵表：386 方法 × 6 检查（复用 `docs/method_audit.json`，零新增采集）。"""
+    """方法审计矩阵表：METHOD_LIBRARY 全量方法 × 6 检查（复用 `docs/method_audit.json`，零新增采集）。"""
     target = path or os.path.join(_MODULE_ROOT, "docs", "method_audit.json")
     with open(target, "r", encoding="utf-8") as fh:
         report = json.load(fh)

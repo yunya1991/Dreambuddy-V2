@@ -8,6 +8,7 @@ from __future__ import annotations
 from . import correlation  # noqa: F401  # 触发 S2 批次登记
 from . import conditional  # noqa: F401  # 触发 S3 批次（条件收益/IC/分组）登记
 from . import descriptive  # noqa: F401  # 触发 S/D 批次（描述统计/分布形态）登记
+from . import fed_methods  # noqa: F401  # 触发 I35–I39（美联储调研方法）登记
 from . import inference  # noqa: F401  # 触发 H/B/M/R 批次（检验/状态/表达）登记
 from . import research  # noqa: F401  # 调研族编号表（X/O/P/Q/SC 元数据）
 from . import research_pq  # noqa: F401  # 触发 P/Q 批次（风险组合/研究协议）登记

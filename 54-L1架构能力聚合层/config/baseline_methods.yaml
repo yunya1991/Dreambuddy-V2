@@ -1,0 +1,85 @@
+# 方法基座固化（SPEC-54-L1交易层 §4.0，硬约束）
+# ============================================================
+# 定位：把 SPEC-54-统计图表化能力.md §4.12「美联储方法借鉴」的 10 条
+#       固化为主研究方法。**10 条 ≠ 10 个方法 ID**：
+#         - 4 条落方法 ID：I35 协整 / I36 分位回归 / I37 Kalman·DFM / I38 DMA·区制
+#         - 6 条落机制约束：midas / taylor_gap / fci / vintage / uncertainty /
+#                          equal_weight_control
+#         - + I39 带通·STL 周期分解（§4.12 未单列，同簇补充）→ 方法 ID 共 5 个
+#
+# 硬约束（LT-G11 / LT-G12 机器判定）：
+#   1. 基座永久占位：禁止被动态排名淘汰、禁止降权为 0、禁止被同类方法替换；
+#   2. `baseline_methods ∩ ranked_methods = ∅`，排名结果不得写入基座槽位；
+#   3. 基座方法缺算 → 图 status=partial / 灯 unavailable，禁止排名方法顶替；
+#   4. `baseline_version` 必须进 params_hash / replay_key。
+# ============================================================
+
+version: "bm-1.0.0"
+updated: "2026-11-15"
+
+# ---------- 方法 ID 层（5 个，全部必须 implemented） ----------
+methods:
+  - id: I35
+    name: 协整（Engle-Granger）
+    fed_row: 3            # §4.12 第 3 条「误差修正 / 协整」
+    axis: gap
+    slot: equilibrium_gap
+    enabled: true
+  - id: I36
+    name: 分位回归（Growth-at-Risk）
+    fed_row: 5            # §4.12 第 5 条
+    axis: foresight
+    slot: strength_band
+    enabled: true
+  - id: I37
+    name: Kalman / DFM 局部线性趋势
+    fed_row: 1            # §4.12 第 1 条
+    axis: trend
+    slot: level_slope
+    enabled: true
+  - id: I38
+    name: DMA / 区制权重（遗忘因子）
+    fed_row: 10           # §4.12 第 10 条
+    axis: regime
+    slot: regime_weight
+    enabled: true
+  - id: I39
+    name: 带通滤波 / STL 式周期分解
+    fed_row: null         # §4.12 未单列，同簇补充
+    axis: cycle
+    slot: cycle_phase
+    enabled: true
+
+# ---------- 机制层（6 条，全部必须 enabled） ----------
+# 机制不是方法 ID，不能被"实现并注册"替代；它们是流水线约束，缺一条基座即不完整。
+mechanisms:
+  - key: midas
+    name: 混合频率（MIDAS）
+    fed_row: 2
+    landing: "trend 轴多窗口 [20,60,120,250] 分频加权，不重采样"
+    enabled: true
+  - key: taylor_gap
+    name: 泰勒规则式反应函数（gap 标准化）
+    fed_row: 4
+    landing: "各指标相对中性水平的 gap 标准化"
+    enabled: true
+  - key: fci
+    name: 金融状况指数（多变量加权合成）
+    fed_row: 6
+    landing: "D-E16 聚合曲线合成：Ledoit-Wolf + 风险平价"
+    enabled: true
+  - key: vintage
+    name: 实时数据与修订（ALFRED / vintage）
+    fed_row: 7
+    landing: "全部图 as_of 只取 observed_at ≤ as_of 的最新版本"
+    enabled: true
+  - key: uncertainty
+    name: 不确定性指数（向先验收缩）
+    fed_row: 8
+    landing: "高不确定期向 prior 收缩 λ_u ∈ [0, 0.5]"
+    enabled: true
+  - key: equal_weight_control
+    name: 预测组合 + 组合之谜（等权对照）
+    fed_row: 9
+    landing: "动态权重晋升唯一否决门：等权基准 + SPA p<0.05"
+    enabled: true
