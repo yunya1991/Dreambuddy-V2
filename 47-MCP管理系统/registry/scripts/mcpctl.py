@@ -780,24 +780,24 @@ def _registry_snippet(
     tools: List[Tuple[str, str]],
 ) -> str:
     lines = [
-        f"  - shell_id: {shell_id}",
-        f"    capability_id: {capability_id}",
-        "    transport: stdio",
-        f'    shell_path: "mcp_shells/{name}/server.py"',
-        '    shell_cmd: "python3 {path}"',
-        '    envelope_version: "0.1"',
-        "    status: available",
-        "    tools:",
+        f"- shell_id: {shell_id}",
+        f"  capability_id: {capability_id}",
+        "  transport: stdio",
+        f'  shell_path: "mcp_shells/{name}/server.py"',
+        '  shell_cmd: "python3 {path}"',
+        '  envelope_version: "0.1"',
+        "  status: available",
+        "  tools:",
     ]
     for tool, read_write in tools:
         is_write = read_write == "write"
         lines += [
-            f"      - name: {tool}",
-            f"        port: {port}",
-            f"        domain: {domain}",
-            f"        read_write: {read_write}",
-            f"        requires_mandate: {'true' if is_write else 'false'}",
-            "        annotations: { "
+            f"    - name: {tool}",
+            f"      port: {port}",
+            f"      domain: {domain}",
+            f"      read_write: {read_write}",
+            f"      requires_mandate: {'true' if is_write else 'false'}",
+            "      annotations: { "
             f"readOnlyHint: {'false' if is_write else 'true'}, "
             f"destructiveHint: {'true' if is_write else 'false'} }}",
         ]
@@ -896,14 +896,14 @@ def cmd_new_shell(args: argparse.Namespace) -> int:
     )
     if args.register:
         text = registry_path.read_text(encoding="utf-8")
-        marker = "# ── 枚举词典"
+        marker = "worker_roles:\n"
         if marker not in text:
             print(f"ERR: registry 缺少插入标记 {marker!r}", file=sys.stderr)
             return 1
         backup = registry_path.with_suffix(registry_path.suffix + f".bak.{int(time.time())}")
         shutil.copy2(registry_path, backup)
         registry_path.write_text(
-            text.replace(marker, snippet + "\n" + marker, 1),
+            text.replace(marker, snippet + marker, 1),
             encoding="utf-8",
         )
         rc = validate_registry(registry_path, quiet=True)

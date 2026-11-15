@@ -178,9 +178,10 @@ def test_new_shell_register_inserts_registry(tmp_path, monkeypatch):
         ]
     )
     assert rc == 0
-    text = reg.read_text(encoding="utf-8")
-    assert "shell_id: l0.demo-svc.mcp" in text
-    assert "demo_read" in text
+    doc = mcpctl.load_registry(reg)
+    registered = [s for s in doc["shells"] if s["shell_id"] == "l0.demo-svc.mcp"]
+    assert len(registered) == 1
+    assert registered[0]["tools"][0]["name"] == "demo_read"
 
 
 def test_profile_writes_mcp_json(tmp_path):
