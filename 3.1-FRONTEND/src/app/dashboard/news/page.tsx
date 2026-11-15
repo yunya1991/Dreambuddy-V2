@@ -2,6 +2,7 @@
 
 import { ModuleDetail } from '@/components/features/fundamental/ModuleDetail';
 import { HotNewsPanel } from '@/components/features/news/HotNewsPanel';
+import { NewsSearchBar } from '@/components/features/news/NewsSearchBar';
 
 export default function NewsPage() {
   return (
@@ -10,6 +11,7 @@ export default function NewsPage() {
         <h1 className="text-lg font-bold text-slate-200">新闻监控</h1>
         <p className="text-xs text-slate-500">24h 热点影响力榜 · 语义蒸馏与情绪打分（非预测）</p>
       </div>
+      <NewsSearchBar />
       <HotNewsPanel />
       <ModuleDetail module="news" title="新闻监控" />
     </div>
