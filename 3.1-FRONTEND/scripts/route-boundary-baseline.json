@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-11-12T06:41:43.308Z",
+  "generated_at": "2026-11-15T02:52:30.586Z",
   "note": "只允许下降。新增 fs/child_process 使用必须先评审，再运行 node scripts/check-route-boundary.mjs --update-baseline 登记。",
   "totals": {
-    "fs": 41,
+    "fs": 43,
     "child_process": 31
   },
   "files": {
@@ -113,6 +113,10 @@
     "src/app/api/trading-ranking/today/route.ts": {
       "fs": 0,
       "child_process": 1
+    },
+    "src/app/api/venue/[...path]/route.ts": {
+      "fs": 2,
+      "child_process": 0
     }
   }
 }

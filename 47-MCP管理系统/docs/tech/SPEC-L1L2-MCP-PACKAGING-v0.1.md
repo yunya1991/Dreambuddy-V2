@@ -1,10 +1,10 @@
 # SPEC:L1/L2 层级 MCP 封装（Packaging）— 契约、边界与实施路线
 
-> **版本**: v0.1 ｜ **更新日期**: 2026-11-13 ｜ **状态**: ✅ 已批准——DEC-01~DEC-06 全部落定，Phase 0 已启动。由 [RESEARCH_20261113_L1_L2_LAYER_ARCH_AND_MCP](../../1-ARCHITECTURE/RESEARCH_20261113_L1_L2_LAYER_ARCH_AND_MCP.md) 收敛
+> **版本**: v0.1 ｜ **更新日期**: 2026-11-13 ｜ **状态**: ✅ 已批准——DEC-01~DEC-06 全部落定，Phase 0 已启动。由 [RESEARCH_20261113_L1_L2_LAYER_ARCH_AND_MCP](../../../1-ARCHITECTURE/RESEARCH_20261113_L1_L2_LAYER_ARCH_AND_MCP.md) 收敛
 > **上游 SSoT**:
-> · [SYSTEM_ARCHITECTURE_OVERVIEW v4.2](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md)
-> · [3+3架构模块映射 v1.0](../../1-ARCHITECTURE/3+3架构模块映射.md)
-> · [49-交易框架协议/SPEC v0.14.2](../../49-交易框架协议/SPEC.md)（双决策链口径）
+> · [SYSTEM_ARCHITECTURE_OVERVIEW v4.2](../../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md)
+> · [3+3架构模块映射 v1.0](../../../1-ARCHITECTURE/3+3架构模块映射.md)
+> · [49-交易框架协议/SPEC v0.14.2](../../../49-交易框架协议/SPEC.md)（双决策链口径）
 > · [SPEC-L0-MCP-PACKAGING v0.3](./SPEC-L0-MCP-PACKAGING-v0.3.md)（L0 封装范式，本 SPEC 延伸）
 > · [SPEC-L0-MCP-GATEWAY v0.1](./SPEC-L0-MCP-GATEWAY-v0.1.md)（网关架构，本 SPEC 新增 L1/L2 层投影）
 > **依赖**: registry schema v1.2-mcp（本 SPEC §4）· 45 评测门禁（训练写工具）· 53 插件白名单（插件化）
@@ -302,10 +302,10 @@ L2-A 应用与前端
 
 ### 7.1 Phase 0 — Registry Schema v1.2-mcp（评审后首个工作）
 
-1. 改 [mcp_capabilities.yaml](../registry/mcp_capabilities.yaml)：补所有存量壳的 `layer/exposure/source_modules`；`enums` 增 layer/exposure/llm_dependency/capability_domain/layer_quota。
-2. 改 [validate_mcp_registry.py](../registry/scripts/validate_mcp_registry.py)：新增 V1-V7 校验规则。
+1. 改 [mcp_capabilities.yaml](../../registry/mcp_capabilities.yaml)：补所有存量壳的 `layer/exposure/source_modules`；`enums` 增 layer/exposure/llm_dependency/capability_domain/layer_quota。
+2. 改 [validate_mcp_registry.py](../../registry/scripts/validate_mcp_registry.py)：新增 V1-V7 校验规则。
 3. 跑 validator：存量壳全部通过 v1.2 校验。
-4. 同步 [mcp_profiles.json](../registry/mcp_profiles.json) / [agent_cards.json](../registry/agent_cards.json)：按新 schema 投影。
+4. 同步 [mcp_profiles.json](../../registry/mcp_profiles.json) / [agent_cards.json](../../registry/agent_cards.json)：按新 schema 投影。
 5. `mcpctl verify` 漂移检查 → 零漂移。
 
 ### 7.2 Phase 1 — P0 注册
