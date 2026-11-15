@@ -1,6 +1,6 @@
 # SPEC-41-L1-新闻意图检索 v1.0
 
-**状态**：P0 已执行 → **未通过（待决策，见 §8.4）**
+**状态**：P0（FAIL）→ P0′ 换 bge-base 通过 → **P1 已上线（云端已验证，见 §8.6/§8.7）**；P2（`news_digest.json`）~P5 待推进
 **日期**：2026-11-15
 **归属域**：41-文件索引系统（L1 语义意图检索）／39-金融语义蒸馏系统（数据产物）／3.1-FRONTEND（注册表 + 执行器）／34-前端应用训练系统（golden 门禁）
 **关联**：[SPEC-41-L1语义意图检索增强-v1.0](./SPEC-41-L1语义意图检索增强-v1.0.md)
@@ -471,6 +471,39 @@ slots 解析（§5.2）
 **部署前置（关键风险）**：云端若仍只有 bge-small（512 维），新向量（768 维）会被维度守卫全部跳过 → 语义通道静默降级为纯正则（FAIL-OPEN，不报错）。因此**云端必须先装 `bge-base-zh-v1.5` 并预热缓存，再同步新向量**，且用 `is_inproc_available()` + 一次余弦冒烟（≥0.6）确认，不可只看服务是否起来。
 
 **待确认的数据问题**：golden 中 `今天新闻` 标为 `unknown` 属误标，建议改为 `event_listing`（改后反例上界仍为 0.646，不影响阈值）；未获授权前未改动。
+
+### 8.7 P1 + 云端部署结果（2026-11-15）
+
+**P1 已上线（commit `2c38d0f8ce`）**
+
+| 项 | 结果 |
+|---|---|
+| `今天新闻` 误标修正 | golden 改为 `event_listing` / `terse`（验证：反例上界仍 0.646，阈值不动） |
+| `event_listing` 正则前移 | 置于 `contradiction_insight` / `data_query` 之前，收掉最后 2 条正则红项 |
+| 正则防误伤 | 加 `^(?!.*(新闻数|新闻条数|消息数|新闻量|统计|走势|趋势))` 负向断言 + 移除"快讯"，避免抢走 `data_query` / `metric_series` 既有用例 |
+| golden | **408/408 全绿** |
+| 语义关断对照 | `L1_SEMANTIC_MATCH=0` → **8 项红**（7 条语义依赖用例 + accuracy gate），证明门禁首次具备判别力 |
+
+**云端部署（代码 `31d5db1b94`）**
+
+| 检查项 | 实测 |
+|---|---|
+| 模型文件 | `~/.cache/huggingface/hub/models--BAAI--bge-base-zh-v1.5`，`pytorch_model.bin` 409,138,989 B，sha256 与本地完全一致；补齐了缺失的 `tokenizer.json`（439,124 B） |
+| 加载 | `HF_HUB_OFFLINE=1` + `HOME=/home/luke` 下 `is_inproc_available()=True`，embed 向量 **768 维**、L2 norm 1.0 |
+| 向量 | 17 个中文意图向量均为 768 维（4 个无例句意图为空），与查询维度一致，维度守卫不触发 |
+| 意图命中 | `有啥新动静吗` / `最近市场都在聊什么` / `这两天有什么值得关注的` / `币圈最近有啥大事` → `event_listing`（0.670–0.842）；负例 `帮我总结一下这篇文章` 0.646 被 0.66 挡住 |
+| 服务重启 | `dreambuddy-worker-launcher`（常驻进程，模块级持有旧代码与旧 512 维 embedder）15:03:05 重启；`dreambuddy-frontend` 15:16:43 重启（`next build` 后） |
+| 生产 API | `POST /api/data/query`：`有啥新动静吗`→`event_listing` 12.8s、`今天新闻`→`event_listing` 2.8s、`BTC现在什么价格`→`price_query` 4.0s、`帮我总结一下这篇文章`→`unknown` 11.5s，全部 HTTP 200 |
+
+**新增硬约束：前端脚本超时必须 ≥30s**
+
+SentenceTransformer 冷启动是**既有的 10–12s 成本，与模型大小关系不大**（同机实测：bge-base 10.15s / bge-small 12.60s），因为前端 API 是**每次请求 spawn 一个新 python 进程**。原 `SCRIPT_TIMEOUT_MS=15000` 余量不足，语义类问法会被 kill 并**静默返回空 `data`**（`success=true` 但无内容，最难排查的失败形态）。已改为 **30000**（`3.1-FRONTEND/src/app/api/data/query/route.ts`，commit `31d5db1b94`），改后上述语义问法全部可用。
+
+**遗留风险（P2+ 需处理）**
+
+1. **内存**：每请求常驻约 900MB RSS（bge-base），无并发限流，10+ 并发语义请求存在 OOM 风险（云端 15Gi / 可用 10Gi）。
+2. **延迟**：语义类问法端到端 11–13s，可用但体验差。根治方案是常驻 embedder 服务（一次加载，后续 ~50ms）或 ONNX 量化模型，需单独立项，不在本期。
+3. **部署顺序**：必须先装模型再同步 768 维向量；反序会让维度守卫跳过全部向量而静默降级。
 
 ---
 
