@@ -19,8 +19,9 @@
 - 实网采集：FOMC 官方日历（`fomccalendars.htm` + `fomchistorical{2015..2020}.htm`）与 BLS 年度日历，`wayback_years=[]`（直连可用，Wayback 仅作 403 兜底）。
 - 入库：`upserted=542`，两次运行 `db_row_count=542`。
 - 目标用例 5 例、DAL 全量 166 例通过；ruff / black / py_compile 全 0。
+- **云端连通性确认（`43.160.201.117`，只读）**：BLS 年度日历 **200**（96677 B，项目 UA；裸 `curl`+`Mozilla/5.0` 才 403）、FRED 免 Key `fredgraph.csv` **200**（16924 行，最新 2026-11-12）、Fed 日历 **200**、ALFRED 发布日 **200**（CPI 952 / PPI 605 个日期，可作 BLS HTML 备选源）、Wayback **429**（限流，仅兜底）；云端 `.env` 的 `FRED_API_KEY` 非空，且 `datacenter-backfill.timer` 每小时运行。
 
-证据：`test.log`
+证据：`test.log`、`cloud_probe.log`
 
 ## 三、回归
 

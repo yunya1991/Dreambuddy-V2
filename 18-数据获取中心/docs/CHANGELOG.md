@@ -14,6 +14,7 @@
   - `data_center/cli/backfill_macro_calendar.py`：回填入口，落盘 `data_center/events/macro_calendar_history.jsonl`（append-only、`event_id` 幂等）
   - `tests/test_macro_history_backfill.py`：5 例（DST 换算、事件契约、类型映射、幂等 + FAIL-OPEN、Wayback 回退）
 - **验证**: 实网 2015–2026 回填 **542** 条（fomc 101 / cpi 143 / nfp 155 / macro_other 143），`failed_years=[]`
+- **云端确认（`43.160.201.117`）**: BLS 年度日历 200（项目 UA；裸 curl 403）、FRED 免 Key `fredgraph.csv` 200、Fed 日历 200、ALFRED 发布日 200（备选源）、Wayback 429（仅兜底）
 
 ### 关联
 

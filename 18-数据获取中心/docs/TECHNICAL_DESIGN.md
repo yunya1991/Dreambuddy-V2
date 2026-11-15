@@ -222,7 +222,8 @@ def dedupe_key(rec: DataRecord) -> str:
            ├─ FOMC：fomccalendars.htm（2021+）+ fomchistorical{year}.htm（2015–2020）
            │        决议日从声明链接 monetary{YYYYMMDD}a.htm 提取，14:00 ET → UTC
            └─ BLS ：bls.gov/schedule/{year}/home.htm（CPI / NFP / PPI）
-                    直连 403 时回退 Wayback 归档快照；单年失败只记 failed_years
+                    需用项目 UA（裸 curl 会被 403）；失败时回退 Wayback 归档快照；
+                    单年失败只记 failed_years；ALFRED 发布日下载可作备选源
    │
    ▼  append_events（event_id 幂等）
 data_center/events/macro_calendar_history.jsonl
@@ -232,6 +233,18 @@ data_center/events/macro_calendar_history.jsonl
 ```
 
 **实测（2026-11-15，本机）**：2015–2026 共 **542** 条 — fomc 101 / cpi 143 / nfp 155 / macro_other 143，`failed_years=[]`、`wayback_years=[]`（BLS 直连可用）。
+
+**云端连通性确认（2026-11-15，`43.160.201.117`，只读探测）**：
+
+| 端点 | 结果 | 说明 |
+|---|---|---|
+| `bls.gov/schedule/{year}/home.htm` | **200**（96677 B） | 项目 UA `dreambuddy-research admin@dreambuddy.local` 正常；裸 `curl` + `Mozilla/5.0` 才 403，属 UA/指纹差异 |
+| `fred.stlouisfed.org/graph/fredgraph.csv` | **200**（16924 行，最新 2026-11-12） | 免 Key 降级路径在云端可用；`.env` 的 `FRED_API_KEY` 亦非空 |
+| `federalreserve.gov/monetarypolicy/fomccalendars.htm` | **200** | 官方日历可用 |
+| `alfred.stlouisfed.org/release/downloaddates` | **200** | 免 Key 发布日下载（CPI rid=10 共 952 个、PPI rid=46 共 605 个），可作 BLS HTML 的备选源 |
+| `web.archive.org` | 429 | 仅兜底；云端当前限流，不得作主路径 |
+
+**边界**：只补官方日历事件（会议/发布日程），不补新闻类事件；`available_at = event_time`（日程本就公开，不构成前视）；日常 `sync_events_to_dal` 的 DELETE 已收窄到窗口内，不会清空回填历史。
 
 **命令**：
 

@@ -1,0 +1,18 @@
+cloud=43.160.201.117 (ubuntu 免密 sudo，仓库属主 luke) | 2026-11-15 | 仅只读探测，未写生产库
+step=1 裸 curl + UA "Mozilla/5.0"（云端）
+observed=bls_2016=403  bls_ics=403  fed=200  fredgraph=000(curl 92 HTTP/2 INTERNAL_ERROR)  wayback_bls=429
+step=2 云端 requests + 项目 UA "dreambuddy-research admin@dreambuddy.local"（即 _http.get_text 实际路径）
+observed=fred.stlouisfed.org 200 269391 bytes   # fredgraph.csv?id=DGS10，16924 行，最新 2026-11-12,5.10
+observed=alfred.stlouisfed.org 200 12177 bytes  # release/downloaddates?rid=10&ff=txt，952 个发布日
+observed=www.bls.gov 200 96677 bytes            # schedule/2016/home.htm
+step=3 curl 强制 IPv4 复测（云端）
+observed=fredgraph_v4=200 bytes=269391 | alfred_rid10=200 bytes=12177 | alfred_rid46(PPI)=200，605 个发布日
+step=4 云端配置
+observed=18-数据获取中心/config/.env 存在非空 FRED_API_KEY（仅计数，未输出值）
+observed=fred.stlouisfed.org DNS → 23.15.108.195 (akamaiedge)，IPv4 可达
+observed=datacenter-backfill.timer 每小时运行（09:15/10:15 CST），云端确有数据回填调度
+conclusion=① BLS 官方年度日历在云端可用（403 只出现在裸 curl/Mozilla UA，项目 UA 返回 200）；
+           ② FRED 免 Key 降级（fredgraph.csv）在云端可用，官方 API key 亦非空；
+           ③ Fed 官方日历云端 200；
+           ④ Wayback 仅作兜底，云端当前被限流(429)，不应作为主路径。
+exit=0
