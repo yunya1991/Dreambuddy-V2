@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "final_decision_signal.v1.1.json",
   "title": "FinalDecisionSignal v1.1",
-  "description": "双决策链最终决策出口契约（source enum：23-evolution / 50-nn）",
+  "description": "双决策链最终决策出口契约（source enum：23-evolution / 50-nn / l1-chart）。l1-chart 为 54-L1 统计方向层出口（ADR-0003），payload 必填 decision_id 供 22 幂等与硬前置校验。",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -20,7 +20,7 @@
   ],
   "properties": {
     "signal_id": { "type": "string", "minLength": 1 },
-    "source": { "type": "string", "enum": ["23-evolution", "50-nn"] },
+    "source": { "type": "string", "enum": ["23-evolution", "50-nn", "l1-chart"] },
     "ts": { "type": "string" },
     "symbol": { "type": "string", "pattern": "^([A-Z0-9]+-USDT-SWAP|MACRO)$" },
     "direction": { "type": "string", "enum": ["long", "short", "neutral"] },
@@ -35,20 +35,6 @@
     "payload": {
       "type": "object",
       "additionalProperties": true,
-      "required": [
-        "action",
-        "position_tier",
-        "position_mult",
-        "d_star",
-        "ri",
-        "l4_v",
-        "regime",
-        "primary_contradiction",
-        "contradiction_shift",
-        "elastic_result",
-        "cross_validation",
-        "path"
-      ],
       "properties": {
         "action": {
           "type": "string",
@@ -79,5 +65,46 @@
         "path": { "type": "object" }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "source": { "enum": ["23-evolution", "50-nn"] } },
+        "required": ["source"]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": [
+              "action",
+              "position_tier",
+              "position_mult",
+              "d_star",
+              "ri",
+              "l4_v",
+              "regime",
+              "primary_contradiction",
+              "contradiction_shift",
+              "elastic_result",
+              "cross_validation",
+              "path"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "source": { "const": "l1-chart" } },
+        "required": ["source"]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": ["decision_id", "action", "position_tier", "position_mult"]
+          }
+        }
+      }
+    }
+  ]
 }

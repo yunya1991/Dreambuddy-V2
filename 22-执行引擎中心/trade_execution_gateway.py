@@ -36,6 +36,8 @@ logger = logging.getLogger("trade_execution_gateway")
 
 # 平仓/减仓动作白名单（13 不可用时仍允许执行，避免持仓裸奔）
 _CLOSE_ACTIONS = {"close", "reduce", "reduce_only", "take_profit", "stop_loss"}
+# 硬前置来源：decision_id 必填 + expires_at 过期即拒（23 自进化 / 54-L1 统计方向同为内部出口）
+_PRECHECK_SOURCES = ("23-evolution", "l1-chart")
 
 
 @dataclass
@@ -78,7 +80,7 @@ class FinalDecisionSignal:
             ),
             confidence=float(d.get("confidence") or 0.0),
             expires_at=str(d.get("expires_at") or ""),
-            action=str(d.get("action") or "open").lower(),
+            action=str(d.get("action") or (d.get("payload") or {}).get("action") or "open").lower(),
             sz=d.get("sz"),
             px=d.get("px"),
             pos_side=d.get("pos_side"),
@@ -746,9 +748,9 @@ class TradeExecutionGateway:
         if self._shadow_only:
             return self._submit_shadow(sig)
 
-        # 23-evolution 独立出口：decision_id 必填 + expires_at 过期即拒（SPEC M1）
-        if sig.source == "23-evolution":
-            _pre = self._precheck_evolution(sig)
+        # 内部决策出口（23-evolution / l1-chart）：decision_id 必填 + expires_at 过期即拒
+        if sig.source in _PRECHECK_SOURCES:
+            _pre = self._precheck_decision(sig)
             if _pre is not None:
                 self._audit(sig, _pre)
                 return _pre
@@ -937,8 +939,8 @@ class TradeExecutionGateway:
 
     # ── internals ─────────────────────────────────────────────────────
     @staticmethod
-    def _precheck_evolution(sig: FinalDecisionSignal) -> Optional[ExecutionResult]:
-        """23-evolution 出口硬前置：decision_id 必填；expires_at 过期即拒。
+    def _precheck_decision(sig: FinalDecisionSignal) -> Optional[ExecutionResult]:
+        """内部出口硬前置（`23-evolution` / `l1-chart`）：decision_id 必填；expires_at 过期即拒。
 
         无法解析 expires_at 时 fail-open（不阻断），由 13 风控继续兜底。
         """
@@ -946,7 +948,7 @@ class TradeExecutionGateway:
             return ExecutionResult(
                 passed=False,
                 executed=False,
-                reason="23-evolution 决策缺少 decision_id，禁止执行",
+                reason=f"{sig.source} 决策缺少 decision_id，禁止执行",
                 reason_code="MISSING_DECISION_ID",
             )
         if sig.expires_at:
@@ -958,7 +960,7 @@ class TradeExecutionGateway:
                     return ExecutionResult(
                         passed=False,
                         executed=False,
-                        reason=f"23-evolution 决策已过期: {sig.expires_at}",
+                        reason=f"{sig.source} 决策已过期: {sig.expires_at}",
                         reason_code="SIGNAL_EXPIRED",
                     )
             except (TypeError, ValueError):

@@ -541,7 +541,11 @@ L2 ──只读 tools/call──▶ agent.debate.mcp ──读──▶ 对抗�
 - `forward_signal` 只允许 `source=23-evolution` 且 `mode=live` 的信号进入执行层 paper MCP。
 - 执行侧 `fail-closed`；信号侧 `fail-open`。
 
-### 3.8 L1 交易层 MCP 工具契约（`l1.trading.mcp`，10 工具）
+### 3.8 L1 闭环工具面 MCP（`l1.trading.mcp`，10 工具）— 历史名「L1 交易层 MCP」
+
+> **命名澄清（2026-11-15，DOC-02）**：本节历史名为「L1 交易层 MCP」，实际承载的是 **23 自进化闭环的信号读取 + 执行层代理**，**不是** 54-L1 架构能力聚合层的交易能力。
+> 54 的 L1 分三层：L1-S 统计事实（`public`，出图/出表）、L1-D 方向规则（`internal`，只写 `signal` 表）、L1-X 执行（**自身不下单**，以 `FinalDecisionSignal v1.1` 把 `source=l1-chart` 交给 **22 执行引擎中心**，见 [ADR-0003](./docs/adr/ADR-0003-l1-chart-source.md)）。
+> 因此「L1 交易层 MCP」不再是 L1 交易能力的入口；本节 10 个工具的契约与调用方不变，仅更名加注。
 
 | # | 工具 | 读写 | 调用方 | Mandate | 作用 |
 |---|---|---|---|---|---|
