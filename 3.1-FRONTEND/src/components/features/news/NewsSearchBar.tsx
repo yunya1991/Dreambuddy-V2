@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
-import { V3Card, V3Badge, IconSearch } from '@/components';
+import { useRef, useState, type FormEvent } from 'react';
+import { V3Card, V3Badge, IconSearch, IconClose } from '@/components';
 
 // ============== 类型（exec_news_search 返回 items 契约） ==============
 interface NewsSearchItem {
@@ -10,6 +10,8 @@ interface NewsSearchItem {
   topic?: string;
   sentiment?: string | null;
   importance?: number | null;
+  origin?: string | null;
+  source_url?: string | null;
 }
 
 interface NewsSearchData {
@@ -106,6 +108,17 @@ function fmtRatio(r?: number | null): string {
   return typeof r === 'number' && Number.isFinite(r) ? `${Math.round(r * 100)}%` : '--';
 }
 
+// 仅放行 http(s) 链接，避免 javascript: 等异常协议被渲染成可点击跳转
+function safeHttpUrl(url?: string | null): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 // ============== 主组件 ==============
 export function NewsSearchBar() {
   const [keyword, setKeyword] = useState('');
@@ -114,6 +127,8 @@ export function NewsSearchBar() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<NewsSearchData | null>(null);
   const [answer, setAnswer] = useState<string | null>(null);
+  // 用于中断进行中的检索请求（“x” 按钮）
+  const abortRef = useRef<AbortController | null>(null);
 
   function buildMessage(kw: string, win: WindowKey): string {
     const w = WINDOWS.find((x) => x.key === win)!;
@@ -131,6 +146,11 @@ export function NewsSearchBar() {
     const message = buildMessage(keyword, window);
     if (!message) return;
 
+    // 新一轮检索前先取消上一轮未完成的请求
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setError(null);
     setResult(null);
@@ -141,8 +161,10 @@ export function NewsSearchBar() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message }),
+        signal: controller.signal,
       });
       const json = (await resp.json()) as QueryResponse;
+      if (controller.signal.aborted) return;
       if (!json.ok || !json.data) {
         setError(json.error || '检索失败，请稍后重试');
         return;
@@ -150,14 +172,32 @@ export function NewsSearchBar() {
       setAnswer(json.data.answer ?? null);
       setResult(json.data.data ?? null);
     } catch (err) {
+      // 主动中断不视为错误
+      if (controller.signal.aborted) return;
       setError(err instanceof Error ? err.message : '网络异常');
     } finally {
-      setLoading(false);
+      // 仅当仍是当前请求时收尾，避免旧请求覆盖新一轮状态
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setLoading(false);
+      }
     }
+  }
+
+  // “x”：中断进行中的检索并清空输入/结果
+  function handleCancel() {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setKeyword('');
+    setResult(null);
+    setAnswer(null);
+    setError(null);
+    setLoading(false);
   }
 
   const items = result?.items ?? [];
   const matched = result?.matched ?? 0;
+  const showCancel = loading || keyword.length > 0 || result !== null || error !== null;
 
   return (
     <V3Card padding="md" className="space-y-3">
@@ -177,8 +217,21 @@ export function NewsSearchBar() {
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="输入关键词，如 以太坊 / 美联储 / CPI…"
-              className="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500/50"
+              className={`w-full bg-slate-900/50 border border-slate-700/50 rounded-lg pl-8 ${
+                showCancel ? 'pr-8' : 'pr-3'
+              } py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500/50`}
             />
+            {showCancel && (
+              <button
+                type="button"
+                onClick={handleCancel}
+                aria-label={loading ? '停止检索' : '清空'}
+                title={loading ? '停止检索' : '清空'}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center rounded-full text-slate-500 hover:text-slate-200 hover:bg-slate-700/50"
+              >
+                <IconClose className="w-3 h-3" />
+              </button>
+            )}
           </div>
           <button
             type="submit"
@@ -238,34 +291,52 @@ export function NewsSearchBar() {
           {/* 结果列表 */}
           {matched > 0 && items.length > 0 && (
             <div className="space-y-1.5">
-              {items.map((item, idx) => (
-                <div
-                  key={`${item.ts ?? idx}-${idx}`}
-                  className="rounded-lg bg-slate-800/30 border border-slate-700/20 p-2.5 space-y-1"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] text-slate-500">
-                      #{idx + 1} · {topicLabel(item.topic)}
-                    </span>
-                    <V3Badge variant={levelVariant(item.importance)} label={fmtImportance(item.importance)} />
+              {items.map((item, idx) => {
+                const href = safeHttpUrl(item.source_url);
+                return (
+                  <div
+                    key={`${item.ts ?? idx}-${idx}`}
+                    className="rounded-lg bg-slate-800/30 border border-slate-700/20 p-2.5 space-y-1"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] text-slate-500">
+                        #{idx + 1} · {topicLabel(item.topic)}
+                      </span>
+                      <V3Badge
+                        variant={levelVariant(item.importance)}
+                        label={fmtImportance(item.importance)}
+                      />
+                    </div>
+                    {href ? (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={`${item.title || ''}${item.origin ? ` · 来源：${item.origin}` : ''}`}
+                        className="block text-xs text-slate-200 line-clamp-2 hover:text-indigo-400 hover:underline"
+                      >
+                        {item.title || '(无标题)'}
+                      </a>
+                    ) : (
+                      <p className="text-xs text-slate-200 line-clamp-2">{item.title || '(无标题)'}</p>
+                    )}
+                    <p className="text-[10px] text-slate-500">
+                      <span
+                        className={
+                          item.sentiment === '利好'
+                            ? 'text-emerald-400'
+                            : item.sentiment === '利空'
+                              ? 'text-rose-400'
+                              : 'text-slate-400'
+                        }
+                      >
+                        {item.sentiment || '未知'}
+                      </span>{' '}
+                      · <span title={absTime(item.ts)}>{relTime(item.ts)}</span>
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-200 line-clamp-2">{item.title || '(无标题)'}</p>
-                  <p className="text-[10px] text-slate-500">
-                    <span
-                      className={
-                        item.sentiment === '利好'
-                          ? 'text-emerald-400'
-                          : item.sentiment === '利空'
-                            ? 'text-rose-400'
-                            : 'text-slate-400'
-                      }
-                    >
-                      {item.sentiment || '未知'}
-                    </span>{' '}
-                    · <span title={absTime(item.ts)}>{relTime(item.ts)}</span>
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

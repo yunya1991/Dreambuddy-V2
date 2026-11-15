@@ -146,6 +146,7 @@ def build_news_digest(rows, now=None, window_days=DEFAULT_WINDOW_DAYS):
                 "sentiment": block,
                 "importance": score,
                 "origin": row.get("origin"),
+                "source_url": row.get("source_url"),
                 "source_count": len(origins),
                 "dup_count": len(members) - 1,
                 "_ts": rep["ts"].timestamp(),

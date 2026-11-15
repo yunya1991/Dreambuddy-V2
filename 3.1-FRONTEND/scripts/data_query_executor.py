@@ -1676,6 +1676,8 @@ def _news_normalize(payload, source):
                 "topic": it.get("topic") or "other",
                 "sentiment": senti.get("label"),
                 "importance": it.get("importance"),
+                "origin": it.get("origin"),
+                "source_url": it.get("source_url"),
             }
         )
     return out
