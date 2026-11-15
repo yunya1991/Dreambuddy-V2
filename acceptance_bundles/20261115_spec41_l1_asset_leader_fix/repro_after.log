@@ -1,0 +1,11 @@
+command=python3 -c '使用 L1_SEMANTIC_MATCH=0 调用 l1_route_signal.detect_intent，复测 4 条原症状与 4 条边界'
+observed message=纳指和BTC谁强 expected=asset_class_trend actual=asset_class_trend pass=True
+observed message=黄金和原油表现对比 expected=asset_class_trend actual=asset_class_trend pass=True
+observed message=加密货币和黄金走势对比 expected=asset_class_trend actual=asset_class_trend pass=True
+observed message=美股、黄金、加密对比 expected=asset_class_trend actual=asset_class_trend pass=True
+observed message=BTC和ETH涨跌幅对比 expected=leader_compare actual=leader_compare pass=True
+observed message=以太坊和比特币谁更强 expected=leader_compare actual=leader_compare pass=True
+observed message=ETH和BTC哪个强 expected=asset_class_trend actual=asset_class_trend pass=True
+observed message=今天天气咋样 expected= actual=unknown pass=True
+observed summary total=8 passed=8
+exit=0

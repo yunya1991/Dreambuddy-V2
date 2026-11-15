@@ -111,6 +111,8 @@ class TestDetectIntent:
             ("ETH 现在支撑位多少", "technical_indicator"),
             ("ETH估值百分位高不高", "fundamental_valuation"),
             ("美股和加密的跨资产趋势对比", "asset_class_trend"),
+            ("BTC和ETH涨跌幅对比", "leader_compare"),
+            ("以太坊和比特币谁更强", "leader_compare"),
             ("这次FOMC事件分析", "event_analysis"),
             ("当前持仓风控和止损位", "risk_control"),
             ("查一下最新CPI", "metric_series"),

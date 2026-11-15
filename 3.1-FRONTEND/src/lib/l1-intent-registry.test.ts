@@ -50,6 +50,14 @@ describe('l1-intent-registry v2 静态门控（零回归）', () => {
     expect(fallbackIntent('今天天气咋样')).toBe('');
   });
 
+  it('跨资产趋势比较让位 asset_class_trend，同赛道比较保持 leader_compare', () => {
+    for (const message of ['纳指和BTC谁强', '黄金和原油表现对比', '加密货币和黄金走势对比', '美股、黄金、加密对比']) {
+      expect(fallbackIntent(message)).toBe('asset_class_trend');
+    }
+    expect(fallbackIntent('BTC和ETH涨跌幅对比')).toBe('leader_compare');
+    expect(fallbackIntent('以太坊和比特币谁更强')).toBe('leader_compare');
+  });
+
   it('数据类实体让位 price_query（市值/余额/持币等非现货价）', () => {
     expect(fallbackIntent('比特币市值多少')).not.toBe('price_query');
     expect(fallbackIntent('交易所BTC余额多少')).not.toBe('price_query');

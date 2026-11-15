@@ -1,0 +1,101 @@
+===== golden_set =====
+command=python3 -m pytest tests/test_l1_intent_golden.py -q
+cwd=34-前端应用训练系统
+........................................................................ [ 19%]
+........................................................................ [ 38%]
+........................................................................ [ 57%]
+........................................................................ [ 76%]
+........................................................................ [ 95%]
+..................                                                       [100%]
+cases=378
+exit=0
+
+===== python_route_regression =====
+command=python3 -m pytest tests/test_l1_route_signal.py -q
+cwd=34-前端应用训练系统
+.........................................                                [100%]
+tests=41
+exit=0
+
+===== intent_regression =====
+command=python3 -m pytest tests/test_intent_doc_retriever.py tests/test_intent_calibrator.py tests/test_intent_matching.py -q
+cwd=41-文件索引系统
+...................................                                      [100%]
+tests=35
+exit=0
+
+===== typescript_registry_regression =====
+command=npm test -- src/lib/l1-intent-registry.test.ts --runInBand
+cwd=3.1-FRONTEND
+PASS src/lib/l1-intent-registry.test.ts
+  l1-intent-registry v2 静态门控（零回归）
+    ✓ requiredPattern 命中才放行通用意图
+    ✓ fallbackPattern 意图直接可执行
+    ✓ 未注册意图恒 false
+    ✓ fallbackIntent 关键词兜底
+    ✓ 跨资产趋势比较让位 asset_class_trend，同赛道比较保持 leader_compare
+    ✓ 数据类实体让位 price_query（市值/余额/持币等非现货价）
+    ✓ S1 单维关键词注册表：巨鲸 / 经济日历（与 l1_route_signal.py 对齐）
+    ✓ 阈值常量跨系统唯一 (SSoT §16.5)
+  canHandleL1WithSignal v3 信号门控
+    ✓ 高置信 L1_DIRECT 放行（即使静态 requiredPattern 不命中）
+    ✓ L2_HANDOFF 信号拦截（即使静态规则放行）
+    ✓ decision=L1_DIRECT 但置信度低于 0.65 仍拦截
+    ✓ 阈值边界：route_confidence 恰好 0.65 放行
+    ✓ decision 与置信度不一致（L2_HANDOFF + 0.9）以 decision 为准拦截
+    ✓ 未注册意图即使带高置信信号也不放行
+  canHandleL1WithSignal FAIL-OPEN 静态兜底
+    ✓ undefined / null 信号退回静态 canHandleL1
+    ✓ 非法信号（缺字段/NaN/错 decision）退回静态校验
+  isRouteConfidenceSignal 类型守卫
+    ✓ 合法信号
+    ✓ null / 原始类型 / 残缺对象均不合法
+Test Suites: 1 passed, 1 total
+Tests:       18 passed, 18 total
+Snapshots:   0 total
+exit=0
+
+===== per_intent_calibration =====
+command=python3 scripts/calibrate_intents.py --skip-roc --json /tmp/spec41_l1_calibration_after.json
+cwd=41-文件索引系统
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+加载 golden set...
+  正例（已知意图）: 332 条
+  反例（unknown）: 30 条
+
+运行正则通道（纯正则模式，L1_SEMANTIC_MATCH=0）...
+  正则命中: 332 条（占正例 100.0%）
+  正则漏过: 0 条（语义通道需兜底的正例）
+
+计算语义相似度...
+================================================================================
+P3: per-intent 校准 + uplift（阈值=0.65）
+================================================================================
+意图                         向量    正例     TPR    反例     FPR  uplift   校准   裁剪
+--------------------------------------------------------------------------------
+asset_class_trend           Y    21  100.0%    80    0.0%   0.010 PASS  YES
+calendar_event              N     0    0.0%     0    0.0%   0.000 FAIL    -
+contradiction_insight       Y    22  100.0%    80    0.0%   0.000 PASS  YES
+data_insight                Y    29  100.0%    80    0.0%   0.000 PASS  YES
+data_query                  Y    15  100.0%    80    0.0%   0.000 PASS  YES
+doc_search                  Y    21  100.0%    80    0.0%   0.000 PASS  YES
+event_analysis              Y    22  100.0%    80    0.0%   0.000 PASS  YES
+event_line_query            Y    13  100.0%    80    0.0%   0.000 PASS  YES
+fundamental_valuation       Y    23  100.0%    80    0.0%   0.010 PASS  YES
+metric_series               Y    60  100.0%    80    0.0%   0.000 PASS  YES
+path_insight                Y    23   95.7%    80    0.0%   0.000 PASS  YES
+price_query                 Y    27  100.0%    80    0.0%   0.000 PASS  YES
+risk_control                Y    23  100.0%    80    0.0%   0.010 PASS  YES
+stat_query                  Y     9  100.0%    80    0.0%   0.000 PASS  YES
+technical_analysis          Y    13  100.0%    80    0.0%   0.000 PASS  YES
+technical_indicator         Y     9  100.0%    80    0.0%   0.000 PASS  YES
+whale_flow                  N     0    0.0%     0    0.0%   0.000 FAIL    -
+--------------------------------------------------------------------------------
+汇总: 17 个意图（15 有向量）, 校准通过 15, 待裁剪 15
+
+注: uplift 衡量「有该意图语义向量 vs 无」的准确率差。当前 golden set 中正则通道覆盖率 100%，语义通道作为兜底，其边际 uplift 在 golden set 上结构性趋近于 0。待裁剪决策需基于正则漏过的真实流量数据重新评估，不宜仅凭 golden set uplift 裁剪。
+
+JSON 报表已写入: /tmp/spec41_l1_calibration_after.json
+exit=0
+
+summary golden=378/378 route_tests=41 intent_tests=35 typescript_tests=18 calibration=15/15 asset_class_trend_tpr=100% asset_class_trend_fpr=0%

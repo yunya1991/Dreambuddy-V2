@@ -1,0 +1,71 @@
+diff --git a/3.1-FRONTEND/scripts/l1_route_signal.py b/3.1-FRONTEND/scripts/l1_route_signal.py
+index d89735d531..48295ebe31 100644
+--- a/3.1-FRONTEND/scripts/l1_route_signal.py
++++ b/3.1-FRONTEND/scripts/l1_route_signal.py
+@@ -270,6 +270,9 @@ _FALLBACK_PATTERNS = [
+     (
+         "leader_compare",
+         re.compile(
++            # 仅让位给后续 asset_class_trend 已覆盖的跨资产组合，避免产生路由空洞
++            r"^(?!(?=.*(美股|港股|A股|纳指|标普|黄金|原油|贵金属|加密))"
++            r"(?=.*(怎么样|如何|表现|强弱|哪个强|谁强|谁更强|对比|走势|趋势|轮动)))"
+             r"(?=.*(对比|对照|相比|比较|差距|谁更强|谁强|强弱))"
+             r"(?=.*(涨跌|涨幅|跌幅|变化幅度|幅度|龙头|BTC|ETH|SOL|比特币|以太坊|索拉纳|黄金|原油|纳指|标普))"
+         ),
+diff --git a/3.1-FRONTEND/src/lib/l1-intent-registry.test.ts b/3.1-FRONTEND/src/lib/l1-intent-registry.test.ts
+index d168cf5ff6..2fdea82e8c 100644
+--- a/3.1-FRONTEND/src/lib/l1-intent-registry.test.ts
++++ b/3.1-FRONTEND/src/lib/l1-intent-registry.test.ts
+@@ -50,6 +50,14 @@ describe('l1-intent-registry v2 静态门控（零回归）', () => {
+     expect(fallbackIntent('今天天气咋样')).toBe('');
+   });
+ 
++  it('跨资产趋势比较让位 asset_class_trend，同赛道比较保持 leader_compare', () => {
++    for (const message of ['纳指和BTC谁强', '黄金和原油表现对比', '加密货币和黄金走势对比', '美股、黄金、加密对比']) {
++      expect(fallbackIntent(message)).toBe('asset_class_trend');
++    }
++    expect(fallbackIntent('BTC和ETH涨跌幅对比')).toBe('leader_compare');
++    expect(fallbackIntent('以太坊和比特币谁更强')).toBe('leader_compare');
++  });
++
+   it('数据类实体让位 price_query（市值/余额/持币等非现货价）', () => {
+     expect(fallbackIntent('比特币市值多少')).not.toBe('price_query');
+     expect(fallbackIntent('交易所BTC余额多少')).not.toBe('price_query');
+diff --git a/3.1-FRONTEND/src/lib/l1-intent-registry.ts b/3.1-FRONTEND/src/lib/l1-intent-registry.ts
+index c0dc905713..119e928330 100644
+--- a/3.1-FRONTEND/src/lib/l1-intent-registry.ts
++++ b/3.1-FRONTEND/src/lib/l1-intent-registry.ts
+@@ -87,8 +87,9 @@ export const L1_INTENT_REGISTRY: L1IntentDef[] = [
+   // 四类追问钩子对应的三项可执行能力（与 l1_route_signal.py 对齐；确定性，不参与 recall 门控）
+   {
+     intent: 'leader_compare',
++    // 仅让位给后续 asset_class_trend 已覆盖的跨资产组合，避免产生路由空洞
+     fallbackPattern:
+-      /(?=.*(对比|对照|相比|比较|差距|谁更强|谁强|强弱))(?=.*(涨跌|涨幅|跌幅|变化幅度|幅度|龙头|BTC|ETH|SOL|比特币|以太坊|索拉纳|黄金|原油|纳指|标普))/,
++      /^(?!(?=.*(美股|港股|A股|纳指|标普|黄金|原油|贵金属|加密))(?=.*(怎么样|如何|表现|强弱|哪个强|谁强|谁更强|对比|走势|趋势|轮动)))(?=.*(对比|对照|相比|比较|差距|谁更强|谁强|强弱))(?=.*(涨跌|涨幅|跌幅|变化幅度|幅度|龙头|BTC|ETH|SOL|比特币|以太坊|索拉纳|黄金|原油|纳指|标普))/,
+   },
+   {
+     intent: 'top_correlation',
+diff --git a/34-前端应用训练系统/tests/test_l1_route_signal.py b/34-前端应用训练系统/tests/test_l1_route_signal.py
+index b5a591efa6..785b5bdd7f 100644
+--- a/34-前端应用训练系统/tests/test_l1_route_signal.py
++++ b/34-前端应用训练系统/tests/test_l1_route_signal.py
+@@ -111,6 +111,8 @@ class TestDetectIntent:
+             ("ETH 现在支撑位多少", "technical_indicator"),
+             ("ETH估值百分位高不高", "fundamental_valuation"),
+             ("美股和加密的跨资产趋势对比", "asset_class_trend"),
++            ("BTC和ETH涨跌幅对比", "leader_compare"),
++            ("以太坊和比特币谁更强", "leader_compare"),
+             ("这次FOMC事件分析", "event_analysis"),
+             ("当前持仓风控和止损位", "risk_control"),
+             ("查一下最新CPI", "metric_series"),
+
+# git diff --stat
+ 3.1-FRONTEND/scripts/l1_route_signal.py           | 3 +++
+ 3.1-FRONTEND/src/lib/l1-intent-registry.test.ts   | 8 ++++++++
+ 3.1-FRONTEND/src/lib/l1-intent-registry.ts        | 3 ++-
+ 34-前端应用训练系统/tests/test_l1_route_signal.py | 2 ++
+ 4 files changed, 15 insertions(+), 1 deletion(-)
+
+# 额外文档状态同步（该 SPEC 在本任务开始前已为 untracked，不属于上述 tracked diff）
+?? 41-文件索引系统/SPEC-41-L1语义意图检索增强-v1.0.md

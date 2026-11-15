@@ -1,0 +1,23 @@
+observed intent=data_query found=True degraded=False doc_chars=210 examples_zh=15 negatives_zh=80
+observed intent=data_insight found=True degraded=False doc_chars=203 examples_zh=29 negatives_zh=80
+observed intent=doc_search found=True degraded=False doc_chars=221 examples_zh=21 negatives_zh=80
+observed intent=whale_flow found=True degraded=False doc_chars=198 examples_zh=4 negatives_zh=80
+observed intent=event_line_query found=True degraded=False doc_chars=212 examples_zh=13 negatives_zh=80
+observed intent=contradiction_insight found=True degraded=False doc_chars=228 examples_zh=22 negatives_zh=80
+observed intent=path_insight found=True degraded=False doc_chars=206 examples_zh=23 negatives_zh=80
+observed intent=technical_indicator found=True degraded=False doc_chars=250 examples_zh=9 negatives_zh=80
+observed intent=technical_analysis found=True degraded=False doc_chars=210 examples_zh=13 negatives_zh=80
+observed intent=fundamental_valuation found=True degraded=False doc_chars=221 examples_zh=23 negatives_zh=80
+observed intent=leader_compare found=True degraded=False doc_chars=202 examples_zh=0 negatives_zh=80
+observed intent=top_correlation found=True degraded=False doc_chars=220 examples_zh=0 negatives_zh=80
+observed intent=persistence_strength found=True degraded=False doc_chars=225 examples_zh=0 negatives_zh=80
+observed intent=stat_query found=True degraded=False doc_chars=227 examples_zh=9 negatives_zh=80
+observed intent=asset_class_trend found=True degraded=False doc_chars=213 examples_zh=21 negatives_zh=80
+observed intent=calendar_event found=True degraded=False doc_chars=206 examples_zh=3 negatives_zh=80
+observed intent=event_analysis found=True degraded=False doc_chars=198 examples_zh=22 negatives_zh=80
+observed intent=risk_control found=True degraded=False doc_chars=210 examples_zh=23 negatives_zh=80
+observed intent=metric_series found=True degraded=False doc_chars=211 examples_zh=60 negatives_zh=80
+observed intent=price_query found=True degraded=False doc_chars=214 examples_zh=27 negatives_zh=80
+observed intent=event_listing found=True degraded=False doc_chars=209 examples_zh=0 negatives_zh=80
+observed invalid_intent found=False degraded=True errors=['invalid_intent_id']
+observed summary registered=21 loaded=21

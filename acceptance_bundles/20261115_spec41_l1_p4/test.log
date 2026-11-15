@@ -1,0 +1,116 @@
+===== intent_regression =====
+command=python3 -m pytest tests/test_intent_doc_retriever.py tests/test_intent_calibrator.py tests/test_intent_matching.py -q
+...................................                                      [100%]
+exit=0
+
+===== route_regression =====
+command=python3 -m pytest tests/test_l1_route_signal.py -q
+.......................................                                  [100%]
+exit=0
+
+===== boundary =====
+command=python3 -m pytest tests/test_intent_doc_retriever.py -q
+...........                                                              [100%]
+exit=0
+
+===== known_golden_baseline =====
+command=python3 -m pytest tests/test_l1_intent_golden.py -q
+........................................................................ [ 19%]
+........................................................................ [ 38%]
+.................................FF..F........F......................... [ 57%]
+........................................................................ [ 76%]
+........................................................................ [ 95%]
+..................                                                       [100%]
+=================================== FAILURES ===================================
+__________ test_intent_golden_case[\u7eb3\u6307\u548cBTC\u8c01\u5f3a] __________
+
+case = {'intent': 'asset_class_trend', 'message': '纳指和BTC谁强', 'variant': 'colloquial'}
+
+    @pytest.mark.parametrize("case", CASES, ids=[c["message"] for c in CASES])
+    def test_intent_golden_case(case):
+        got = _predict(case["message"])
+>       assert (
+            got == case["intent"]
+        ), f"{case['message']} → {got}（标注 {case['intent']}，variant={case.get('variant')}）"
+E       AssertionError: 纳指和BTC谁强 → leader_compare（标注 asset_class_trend，variant=colloquial）
+E       assert 'leader_compare' == 'asset_class_trend'
+E         
+E         - asset_class_trend
+E         + leader_compare
+
+tests/test_l1_intent_golden.py:60: AssertionError
+_ test_intent_golden_case[\u9ec4\u91d1\u548c\u539f\u6cb9\u8868\u73b0\u5bf9\u6bd4] _
+
+case = {'intent': 'asset_class_trend', 'message': '黄金和原油表现对比', 'variant': 'formal'}
+
+    @pytest.mark.parametrize("case", CASES, ids=[c["message"] for c in CASES])
+    def test_intent_golden_case(case):
+        got = _predict(case["message"])
+>       assert (
+            got == case["intent"]
+        ), f"{case['message']} → {got}（标注 {case['intent']}，variant={case.get('variant')}）"
+E       AssertionError: 黄金和原油表现对比 → leader_compare（标注 asset_class_trend，variant=formal）
+E       assert 'leader_compare' == 'asset_class_trend'
+E         
+E         - asset_class_trend
+E         + leader_compare
+
+tests/test_l1_intent_golden.py:60: AssertionError
+_ test_intent_golden_case[\u52a0\u5bc6\u8d27\u5e01\u548c\u9ec4\u91d1\u8d70\u52bf\u5bf9\u6bd4] _
+
+case = {'intent': 'asset_class_trend', 'message': '加密货币和黄金走势对比', 'variant': 'formal'}
+
+    @pytest.mark.parametrize("case", CASES, ids=[c["message"] for c in CASES])
+    def test_intent_golden_case(case):
+        got = _predict(case["message"])
+>       assert (
+            got == case["intent"]
+        ), f"{case['message']} → {got}（标注 {case['intent']}，variant={case.get('variant')}）"
+E       AssertionError: 加密货币和黄金走势对比 → leader_compare（标注 asset_class_trend，variant=formal）
+E       assert 'leader_compare' == 'asset_class_trend'
+E         
+E         - asset_class_trend
+E         + leader_compare
+
+tests/test_l1_intent_golden.py:60: AssertionError
+_ test_intent_golden_case[\u7f8e\u80a1\u3001\u9ec4\u91d1\u3001\u52a0\u5bc6\u5bf9\u6bd4] _
+
+case = {'intent': 'asset_class_trend', 'message': '美股、黄金、加密对比', 'variant': 'formal'}
+
+    @pytest.mark.parametrize("case", CASES, ids=[c["message"] for c in CASES])
+    def test_intent_golden_case(case):
+        got = _predict(case["message"])
+>       assert (
+            got == case["intent"]
+        ), f"{case['message']} → {got}（标注 {case['intent']}，variant={case.get('variant')}）"
+E       AssertionError: 美股、黄金、加密对比 → leader_compare（标注 asset_class_trend，variant=formal）
+E       assert 'leader_compare' == 'asset_class_trend'
+E         
+E         - asset_class_trend
+E         + leader_compare
+
+tests/test_l1_intent_golden.py:60: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_l1_intent_golden.py::test_intent_golden_case[\u7eb3\u6307\u548cBTC\u8c01\u5f3a] - AssertionError: 纳指和BTC谁强 → leader_compare（标注 asset_class_trend，variant=colloquial）
+assert 'leader_compare' == 'asset_class_trend'
+  
+  - asset_class_trend
+  + leader_compare
+FAILED tests/test_l1_intent_golden.py::test_intent_golden_case[\u9ec4\u91d1\u548c\u539f\u6cb9\u8868\u73b0\u5bf9\u6bd4] - AssertionError: 黄金和原油表现对比 → leader_compare（标注 asset_class_trend，variant=formal）
+assert 'leader_compare' == 'asset_class_trend'
+  
+  - asset_class_trend
+  + leader_compare
+FAILED tests/test_l1_intent_golden.py::test_intent_golden_case[\u52a0\u5bc6\u8d27\u5e01\u548c\u9ec4\u91d1\u8d70\u52bf\u5bf9\u6bd4] - AssertionError: 加密货币和黄金走势对比 → leader_compare（标注 asset_class_trend，variant=formal）
+assert 'leader_compare' == 'asset_class_trend'
+  
+  - asset_class_trend
+  + leader_compare
+FAILED tests/test_l1_intent_golden.py::test_intent_golden_case[\u7f8e\u80a1\u3001\u9ec4\u91d1\u3001\u52a0\u5bc6\u5bf9\u6bd4] - AssertionError: 美股、黄金、加密对比 → leader_compare（标注 asset_class_trend，variant=formal）
+assert 'leader_compare' == 'asset_class_trend'
+  
+  - asset_class_trend
+  + leader_compare
+exit=1
+
+summary intent_exit=0 route_exit=0 boundary_exit=0 golden_baseline_exit=1
