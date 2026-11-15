@@ -18,6 +18,9 @@ recall(context="当前任务描述或问题关键词", top_k=5, min_quality="C")
 **长期分工口径（2026-11-14 用户确认，硬约束，认知库 VM-1794645392149-4d591ef0）**：
 云端 `43.160.201.117` 是**唯一生产数据写入口**——回填、覆盖体检、后续 MERS 周期任务一律在云端执行（DB 属主 `luke`，写入须 `sudo -u luke`，写前 `sqlite3 .backup` 到 `19-数据访问层/data/backups/`）；本地只写代码与测试，需真实样本时从云端 `dreambuddy-snapshot.timer` 快照拉只读副本（`com.dreambuddy.dbsync` LaunchAgent），**禁止在本地改生产表**；回填脚本必须幂等（`INSERT OR REPLACE`），保证云端可重复执行并可挂定时任务。
 
+**代码同步路径（2026-11-15 用户确认，硬约束，认知库 VM-1794711111945-20af9235）**：
+代码同步必须走三段式 `本地开发端 → GitHub → 云端服务器`，**禁止本地 rsync/scp 直传代码到云端**。GitHub 是唯一可信中转（可审计、可回滚、CI 可检查）；直传会绕过版本控制，导致三端 commit 不一致且冲突无法定位。rsync 仅用于数据镜像（如 `dreambuddy_core.db` 只读副本），严禁用于代码目录。标准流程：`git add 精确文件 → git commit → git push origin <branch> → 云端 sudo -n -u luke -H git -C /home/luke/dreambuddy pull --ff-only origin <branch>`。云端 git 属主 `luke`，pull 前若有运行期产物分叉用 `git stash push -u → pull → stash pop`。
+
 ***
 
 本项目已接入**认知记忆系统**（cognitive memory system），具备"越用越聪明"能力。
