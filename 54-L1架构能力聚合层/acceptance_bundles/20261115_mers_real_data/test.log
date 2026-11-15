@@ -1,0 +1,34 @@
+### 54-L1 全量回归（B11 空桶修复后）
+$ python3 -m pytest tests/ -q
+........................................................................ [ 84%]
+........................................................................ [ 90%]
+........................................................................ [ 96%]
+........................................                                 [100%]
+
+### 目标/边界用例
+$ python3 -m pytest tests/test_methods_s3.py tests/test_mers.py -v
+============================== 35 passed in 4.18s ==============================
+
+### ruff（仅本轮改动文件；并行 LTL-16 文件不在本轮范围）
+All checks passed!
+
+### black
+All done! ✨ 🍰 ✨
+3 files would be left unchanged.
+
+### method_audit --scope all
+  [PASS] X09  因子暴露回归  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] X10  特质收益  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] X11  因子收益（WLS）  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] X12  横截面自相关  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+
+$ python3 -m pytest tests/ -v | tail -1
+============================ 1192 passed in 19.15s =============================
+
+$ python3 scripts/method_audit.py --scope all (summary)
+catalog=243 implemented=392 passed=392 failed=0 coverage=66.16% executed=1044 not_applicable=774 missing=534
+  [PASS] B01  等宽分箱  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] B02  等频分箱（分位）  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] B03  固定阈值分档  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip
+  [PASS] B04  状态离散化  meta:ok,gate:ok,determinism:skip,synthetic:skip,null:skip,reference:skip
+  [PASS] B05  条件分组统计  meta:ok,gate:ok,determinism:ok,synthetic:ok,null:skip,reference:skip

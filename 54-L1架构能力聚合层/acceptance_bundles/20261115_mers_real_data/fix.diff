@@ -1,0 +1,62 @@
+commit 2b5b8b8a5922eb25131b3f56e5af81be92e8e27c
+Author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+Date:   Sun Nov 15 21:46:34 2026 +0800
+
+    fix(54-L1): B11 空分箱不再触发 float(None)，真实数据并列值可正常评估
+    
+    云端全量 MERS 验收发现 95/5220 单元 method_gate=failed，错误统一为
+    float() argument must be ... not 'NoneType'：分位边界在大量并列值下塌缩，
+    b16_group_stats 返回 mean=None 的空桶，b11_monotonic 直接 float() 崩溃。
+    修复为过滤 n>0 且 mean 非空的桶，非空桶不足 2 个时显式报错；
+    补 2 条回归测试（并列值塌缩 / 单桶拒绝）。
+
+diff --git a/54-L1架构能力聚合层/l1agg/methods/conditional.py b/54-L1架构能力聚合层/l1agg/methods/conditional.py
+index c50934f67d..3affd6c16d 100644
+--- a/54-L1架构能力聚合层/l1agg/methods/conditional.py
++++ b/54-L1架构能力聚合层/l1agg/methods/conditional.py
+@@ -649,7 +649,14 @@ def b11_monotonic(data, k: int = 5, prebinned: bool = False, **_: Any) -> Dict[s
+         if len(table) < 2:
+             raise ValueError("prebinned requires at least two nonempty states")
+     else:
+-        table = b16_group_stats(data, k=k)["table"]
++        # 真实数据下分位边界可能塌缩（大量并列值 → 空桶），空桶 mean=None 不参与单调性判断。
++        table = [
++            row
++            for row in b16_group_stats(data, k=k)["table"]
++            if row["n"] > 0 and row["mean"] is not None
++        ]
++        if len(table) < 2:
++            raise ValueError(f"factor 在 k={k} 下非空分箱不足 2 个")
+     means = [float(x["mean"]) for x in table]
+     diffs = [b - a for a, b in zip(means, means[1:], strict=False)]
+     if all(d > 0 for d in diffs):
+diff --git a/54-L1架构能力聚合层/tests/test_methods_s3.py b/54-L1架构能力聚合层/tests/test_methods_s3.py
+index edb5c63ae1..6715cfd956 100644
+--- a/54-L1架构能力聚合层/tests/test_methods_s3.py
++++ b/54-L1架构能力聚合层/tests/test_methods_s3.py
+@@ -195,6 +195,25 @@ def test_b11_monotonic_increasing():
+     assert out["n"] == COND_N
+ 
+ 
++def test_b11_skips_empty_buckets_with_tied_factor():
++    """真实数据并列值导致分位边界塌缩时，空桶（mean=None）不得触发 float(None)。"""
++    half = COND_N // 2
++    pair = {
++        "factor": [0.0] * half + [1.0] * (COND_N - half),
++        "target": [0.01] * half + [0.02] * (COND_N - half),
++    }
++    out = run("B11", pair, k=5)["result"]
++    assert out["monotonic"] == "increasing"
++    assert out["bin_means"] == [0.01, 0.02]
++    assert out["n"] == COND_N
++
++
++def test_b11_rejects_single_bucket():
++    pair = {"factor": [0.0] * COND_N, "target": [0.01] * COND_N}
++    with pytest.raises(ValueError):
++        run("B11", pair, k=5)
++
++
+ def test_b12_gradient_matches_b16():
+     b12 = run("B12", _cond_pair(), k=5)["result"]
+     b16 = run("B16", _cond_pair(), k=5)["result"]

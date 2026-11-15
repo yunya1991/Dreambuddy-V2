@@ -1,0 +1,1215 @@
+{
+  "run_id": "cloud-real-20261115",
+  "generated_at": "2026-11-15T14:00:10.090611+00:00",
+  "db": "/home/luke/dreambuddy/19-数据访问层/data/dreambuddy_core.db",
+  "grid_hash": "cb544b9c4626c609ede781731cd4ae72bd77fa3b84140eaddb14d6e5aca7bc00",
+  "data_version": "accept-20261115-r2",
+  "totals": {
+    "jobs": 29,
+    "units": 5220,
+    "gate_pass": 1057,
+    "skipped": 0,
+    "gate_pass_rate": 0.2025
+  },
+  "status": {
+    "candidate": 5220
+  },
+  "significant_units_top3": 46,
+  "idempotency": {
+    "rows_after_first_pass": 10440,
+    "rows_after_second_pass": 10440,
+    "added": 0
+  },
+  "skipped": [],
+  "jobs": [
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "BTC/USDT",
+      "n": 3377,
+      "units": 180,
+      "gate_pass": 77,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "quintile5",
+          "method": "B13",
+          "horizon": 20,
+          "p_adj": 9.397883902282448e-15,
+          "rank_ic": -0.139278,
+          "gate_pass": true
+        },
+        {
+          "transform": "quintile5",
+          "method": "B11",
+          "horizon": 20,
+          "p_adj": 9.397883902282448e-15,
+          "rank_ic": -0.139278,
+          "gate_pass": true
+        },
+        {
+          "transform": "quintile5",
+          "method": "M02",
+          "horizon": 20,
+          "p_adj": 9.397883902282448e-15,
+          "rank_ic": -0.139278,
+          "gate_pass": true
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "ETH/USDT",
+      "n": 3377,
+      "units": 180,
+      "gate_pass": 70,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "B11",
+          "horizon": 20,
+          "p_adj": 4.298070487440442e-21,
+          "rank_ic": -0.166712,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "F19",
+          "horizon": 20,
+          "p_adj": 4.298070487440442e-21,
+          "rank_ic": -0.166712,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "R01",
+          "horizon": 20,
+          "p_adj": 4.298070487440442e-21,
+          "rank_ic": -0.166712,
+          "gate_pass": true
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "BNB/USDT",
+      "n": 3296,
+      "units": 180,
+      "gate_pass": 56,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "R01",
+          "horizon": 20,
+          "p_adj": 7.677380688451231e-28,
+          "rank_ic": -0.193826,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "B13",
+          "horizon": 20,
+          "p_adj": 7.677380688451231e-28,
+          "rank_ic": -0.193826,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "R03",
+          "horizon": 20,
+          "p_adj": 7.677380688451231e-28,
+          "rank_ic": -0.193826,
+          "gate_pass": false
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "LTC/USDT",
+      "n": 3259,
+      "units": 180,
+      "gate_pass": 70,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "B13",
+          "horizon": 20,
+          "p_adj": 4.37921498123695e-43,
+          "rank_ic": -0.241877,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "M11",
+          "horizon": 20,
+          "p_adj": 4.37921498123695e-43,
+          "rank_ic": -0.241877,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "B11",
+          "horizon": 20,
+          "p_adj": 4.37921498123695e-43,
+          "rank_ic": -0.241877,
+          "gate_pass": true
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "ADA/USDT",
+      "n": 3134,
+      "units": 180,
+      "gate_pass": 28,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "not_applicable": 54,
+        "ok": 126
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "F19",
+          "horizon": 20,
+          "p_adj": 6.455827169432408e-17,
+          "rank_ic": -0.154869,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "M02",
+          "horizon": 20,
+          "p_adj": 6.455827169432408e-17,
+          "rank_ic": -0.154869,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "M11",
+          "horizon": 20,
+          "p_adj": 6.455827169432408e-17,
+          "rank_ic": -0.154869,
+          "gate_pass": true
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "XRP/USDT",
+      "n": 3117,
+      "units": 180,
+      "gate_pass": 70,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "not_applicable": 54,
+        "ok": 126
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "R03",
+          "horizon": 20,
+          "p_adj": 2.756091076210312e-26,
+          "rank_ic": -0.193626,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "R04",
+          "horizon": 20,
+          "p_adj": 2.756091076210312e-26,
+          "rank_ic": -0.193626,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "B14",
+          "horizon": 20,
+          "p_adj": 2.756091076210312e-26,
+          "rank_ic": -0.193626,
+          "gate_pass": true
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "XLM/USDT",
+      "n": 3090,
+      "units": 180,
+      "gate_pass": 77,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "not_applicable": 54,
+        "ok": 126
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "R04",
+          "horizon": 20,
+          "p_adj": 2.205044932862653e-37,
+          "rank_ic": -0.231523,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "M01",
+          "horizon": 20,
+          "p_adj": 2.205044932862653e-37,
+          "rank_ic": -0.231523,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "R03",
+          "horizon": 20,
+          "p_adj": 2.205044932862653e-37,
+          "rank_ic": -0.231523,
+          "gate_pass": false
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "TRX/USDT",
+      "n": 3079,
+      "units": 180,
+      "gate_pass": 49,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "not_applicable": 54,
+        "ok": 126
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "F19",
+          "horizon": 20,
+          "p_adj": 5.608145450529852e-07,
+          "rank_ic": -0.099863,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "B13",
+          "horizon": 20,
+          "p_adj": 5.608145450529852e-07,
+          "rank_ic": -0.099863,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "B14",
+          "horizon": 20,
+          "p_adj": 5.608145450529852e-07,
+          "rank_ic": -0.099863,
+          "gate_pass": true
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "ETC/USDT",
+      "n": 3078,
+      "units": 180,
+      "gate_pass": 56,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "B14",
+          "horizon": 20,
+          "p_adj": 2.403958020828725e-31,
+          "rank_ic": -0.212634,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "F19",
+          "horizon": 20,
+          "p_adj": 2.403958020828725e-31,
+          "rank_ic": -0.212634,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "M02",
+          "horizon": 20,
+          "p_adj": 2.403958020828725e-31,
+          "rank_ic": -0.212634,
+          "gate_pass": true
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "LINK/USDT",
+      "n": 2860,
+      "units": 180,
+      "gate_pass": 56,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "B14",
+          "horizon": 20,
+          "p_adj": 3.6677226027824157e-40,
+          "rank_ic": -0.24907,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "R04",
+          "horizon": 20,
+          "p_adj": 3.6677226027824157e-40,
+          "rank_ic": -0.24907,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "R03",
+          "horizon": 20,
+          "p_adj": 3.6677226027824157e-40,
+          "rank_ic": -0.24907,
+          "gate_pass": false
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "ATOM/USDT",
+      "n": 2757,
+      "units": 180,
+      "gate_pass": 28,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "quintile5",
+          "method": "M02",
+          "horizon": 20,
+          "p_adj": 1.2194089506202252e-08,
+          "rank_ic": -0.117174,
+          "gate_pass": true
+        },
+        {
+          "transform": "quintile5",
+          "method": "M11",
+          "horizon": 20,
+          "p_adj": 1.2194089506202252e-08,
+          "rank_ic": -0.117174,
+          "gate_pass": true
+        },
+        {
+          "transform": "quintile5",
+          "method": "B13",
+          "horizon": 20,
+          "p_adj": 1.2194089506202252e-08,
+          "rank_ic": -0.117174,
+          "gate_pass": true
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "DOGE/USDT",
+      "n": 2690,
+      "units": 180,
+      "gate_pass": 35,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "M02",
+          "horizon": 20,
+          "p_adj": 2.0346748485397446e-44,
+          "rank_ic": -0.269554,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "B13",
+          "horizon": 20,
+          "p_adj": 2.0346748485397446e-44,
+          "rank_ic": -0.269554,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "R04",
+          "horizon": 20,
+          "p_adj": 2.0346748485397446e-44,
+          "rank_ic": -0.269554,
+          "gate_pass": false
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "BCH/USDT",
+      "n": 2544,
+      "units": 180,
+      "gate_pass": 42,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "M02",
+          "horizon": 20,
+          "p_adj": 2.2816270428259526e-19,
+          "rank_ic": -0.18384,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "B14",
+          "horizon": 20,
+          "p_adj": 2.2816270428259526e-19,
+          "rank_ic": -0.18384,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "R04",
+          "horizon": 20,
+          "p_adj": 2.2816270428259526e-19,
+          "rank_ic": -0.18384,
+          "gate_pass": false
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "SOL/USDT",
+      "n": 2287,
+      "units": 180,
+      "gate_pass": 42,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "not_applicable": 54,
+        "ok": 126
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "R03",
+          "horizon": 20,
+          "p_adj": 1.1626213366438816e-19,
+          "rank_ic": -0.19526,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "M02",
+          "horizon": 20,
+          "p_adj": 1.1626213366438816e-19,
+          "rank_ic": -0.19526,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "B13",
+          "horizon": 20,
+          "p_adj": 1.1626213366438816e-19,
+          "rank_ic": -0.19526,
+          "gate_pass": true
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "DOT/USDT",
+      "n": 2280,
+      "units": 180,
+      "gate_pass": 7,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "B13",
+          "horizon": 20,
+          "p_adj": 0.001680121860561801,
+          "rank_ic": -0.082097,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "F19",
+          "horizon": 20,
+          "p_adj": 0.001680121860561801,
+          "rank_ic": -0.082097,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "M01",
+          "horizon": 20,
+          "p_adj": 0.001680121860561801,
+          "rank_ic": -0.082097,
+          "gate_pass": true
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "UNI/USDT",
+      "n": 2250,
+      "units": 180,
+      "gate_pass": 70,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "M11",
+          "horizon": 20,
+          "p_adj": 3.5135845221438846e-31,
+          "rank_ic": -0.247338,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "B14",
+          "horizon": 20,
+          "p_adj": 3.5135845221438846e-31,
+          "rank_ic": -0.247338,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "B11",
+          "horizon": 20,
+          "p_adj": 3.5135845221438846e-31,
+          "rank_ic": -0.247338,
+          "gate_pass": true
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "AVAX/USDT",
+      "n": 2245,
+      "units": 180,
+      "gate_pass": 56,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "B13",
+          "horizon": 20,
+          "p_adj": 2.1331038426041053e-17,
+          "rank_ic": -0.185383,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "R04",
+          "horizon": 20,
+          "p_adj": 2.1331038426041053e-17,
+          "rank_ic": -0.185383,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "M02",
+          "horizon": 20,
+          "p_adj": 2.1331038426041053e-17,
+          "rank_ic": -0.185383,
+          "gate_pass": true
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "NEAR/USDT",
+      "n": 2223,
+      "units": 180,
+      "gate_pass": 42,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "B13",
+          "horizon": 20,
+          "p_adj": 5.080208991414309e-28,
+          "rank_ic": -0.23606,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "F19",
+          "horizon": 20,
+          "p_adj": 5.080208991414309e-28,
+          "rank_ic": -0.23606,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "B14",
+          "horizon": 20,
+          "p_adj": 5.080208991414309e-28,
+          "rank_ic": -0.23606,
+          "gate_pass": true
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "FIL/USDT",
+      "n": 2222,
+      "units": 180,
+      "gate_pass": 21,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "quintile5",
+          "method": "M02",
+          "horizon": 20,
+          "p_adj": 6.2826912583014374e-15,
+          "rank_ic": -0.17258,
+          "gate_pass": true
+        },
+        {
+          "transform": "quintile5",
+          "method": "B14",
+          "horizon": 20,
+          "p_adj": 6.2826912583014374e-15,
+          "rank_ic": -0.17258,
+          "gate_pass": true
+        },
+        {
+          "transform": "quintile5",
+          "method": "F19",
+          "horizon": 20,
+          "p_adj": 6.2826912583014374e-15,
+          "rank_ic": -0.17258,
+          "gate_pass": false
+        }
+      ]
+    },
+    {
+      "dataset": "market",
+      "metric": "close_1d",
+      "target": "APT/USDT",
+      "n": 1488,
+      "units": 180,
+      "gate_pass": 0,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "not_applicable": 54,
+        "ok": 126
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "R03",
+          "horizon": 20,
+          "p_adj": 0.07064028375338659,
+          "rank_ic": -0.075234,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "R04",
+          "horizon": 20,
+          "p_adj": 0.07064028375338659,
+          "rank_ic": -0.075234,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "M02",
+          "horizon": 20,
+          "p_adj": 0.07064028375338659,
+          "rank_ic": -0.075234,
+          "gate_pass": false
+        }
+      ]
+    },
+    {
+      "dataset": "macro",
+      "metric": "DGS10",
+      "target": "BTC/USDT",
+      "n": 3377,
+      "units": 180,
+      "gate_pass": 0,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "not_applicable": 54,
+        "ok": 126
+      },
+      "top_p_adj": [
+        {
+          "transform": "quintile5",
+          "method": "R03",
+          "horizon": 5,
+          "p_adj": 0.0005324827743534447,
+          "rank_ic": -0.067934,
+          "gate_pass": false
+        },
+        {
+          "transform": "quintile5",
+          "method": "R04",
+          "horizon": 5,
+          "p_adj": 0.0005324827743534447,
+          "rank_ic": -0.067934,
+          "gate_pass": false
+        },
+        {
+          "transform": "quintile5",
+          "method": "M01",
+          "horizon": 5,
+          "p_adj": 0.0005324827743534447,
+          "rank_ic": -0.067934,
+          "gate_pass": false
+        }
+      ]
+    },
+    {
+      "dataset": "macro",
+      "metric": "NASDAQCOM",
+      "target": "BTC/USDT",
+      "n": 3377,
+      "units": 180,
+      "gate_pass": 28,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "R01",
+          "horizon": 20,
+          "p_adj": 0.002607014650959525,
+          "rank_ic": -0.065535,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "M11",
+          "horizon": 20,
+          "p_adj": 0.002607014650959525,
+          "rank_ic": -0.065535,
+          "gate_pass": true
+        },
+        {
+          "transform": "raw",
+          "method": "B14",
+          "horizon": 20,
+          "p_adj": 0.002607014650959525,
+          "rank_ic": -0.065535,
+          "gate_pass": true
+        }
+      ]
+    },
+    {
+      "dataset": "macro",
+      "metric": "SP500",
+      "target": "BTC/USDT",
+      "n": 3377,
+      "units": 180,
+      "gate_pass": 42,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "not_applicable": 54,
+        "ok": 126
+      },
+      "top_p_adj": [
+        {
+          "transform": "quintile5",
+          "method": "F19",
+          "horizon": 20,
+          "p_adj": 2.2726734361874515e-07,
+          "rank_ic": -0.098024,
+          "gate_pass": false
+        },
+        {
+          "transform": "quintile5",
+          "method": "R03",
+          "horizon": 20,
+          "p_adj": 2.2726734361874515e-07,
+          "rank_ic": -0.098024,
+          "gate_pass": false
+        },
+        {
+          "transform": "quintile5",
+          "method": "B11",
+          "horizon": 20,
+          "p_adj": 2.2726734361874515e-07,
+          "rank_ic": -0.098024,
+          "gate_pass": true
+        }
+      ]
+    },
+    {
+      "dataset": "macro",
+      "metric": "VIXCLS",
+      "target": "BTC/USDT",
+      "n": 3377,
+      "units": 180,
+      "gate_pass": 0,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "not_applicable": 54,
+        "ok": 126
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "R04",
+          "horizon": 20,
+          "p_adj": 0.015461243382606576,
+          "rank_ic": 0.0575,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "R01",
+          "horizon": 20,
+          "p_adj": 0.015461243382606576,
+          "rank_ic": 0.0575,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "M11",
+          "horizon": 20,
+          "p_adj": 0.015461243382606576,
+          "rank_ic": 0.0575,
+          "gate_pass": false
+        }
+      ]
+    },
+    {
+      "dataset": "macro",
+      "metric": "T10Y2Y",
+      "target": "BTC/USDT",
+      "n": 3375,
+      "units": 180,
+      "gate_pass": 28,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "zscore60",
+          "method": "M01",
+          "horizon": 20,
+          "p_adj": 4.947086819235479e-17,
+          "rank_ic": 0.151096,
+          "gate_pass": true
+        },
+        {
+          "transform": "zscore60",
+          "method": "B14",
+          "horizon": 20,
+          "p_adj": 4.947086819235479e-17,
+          "rank_ic": 0.151096,
+          "gate_pass": true
+        },
+        {
+          "transform": "zscore60",
+          "method": "R01",
+          "horizon": 20,
+          "p_adj": 4.947086819235479e-17,
+          "rank_ic": 0.151096,
+          "gate_pass": true
+        }
+      ]
+    },
+    {
+      "dataset": "macro",
+      "metric": "DCOILWTICO",
+      "target": "BTC/USDT",
+      "n": 3371,
+      "units": 180,
+      "gate_pass": 7,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "B13",
+          "horizon": 20,
+          "p_adj": 1.1341966032385163e-13,
+          "rank_ic": -0.134146,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "F19",
+          "horizon": 20,
+          "p_adj": 1.1341966032385163e-13,
+          "rank_ic": -0.134146,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "R01",
+          "horizon": 20,
+          "p_adj": 1.1341966032385163e-13,
+          "rank_ic": -0.134146,
+          "gate_pass": false
+        }
+      ]
+    },
+    {
+      "dataset": "macro",
+      "metric": "DTWEXBGS",
+      "target": "BTC/USDT",
+      "n": 3375,
+      "units": 180,
+      "gate_pass": 0,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "not_applicable": 54,
+        "ok": 126
+      },
+      "top_p_adj": [
+        {
+          "transform": "diff",
+          "method": "F19",
+          "horizon": 1,
+          "p_adj": 0.5931237946156332,
+          "rank_ic": 0.022682,
+          "gate_pass": false
+        },
+        {
+          "transform": "diff",
+          "method": "R04",
+          "horizon": 1,
+          "p_adj": 0.5931237946156332,
+          "rank_ic": 0.022682,
+          "gate_pass": false
+        },
+        {
+          "transform": "diff",
+          "method": "M01",
+          "horizon": 1,
+          "p_adj": 0.5931237946156332,
+          "rank_ic": 0.022682,
+          "gate_pass": false
+        }
+      ]
+    },
+    {
+      "dataset": "macro",
+      "metric": "crypto_fear_greed",
+      "target": "BTC/USDT",
+      "n": 3209,
+      "units": 180,
+      "gate_pass": 0,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "ok": 126,
+        "not_applicable": 54
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "B11",
+          "horizon": 20,
+          "p_adj": 0.6878604718144649,
+          "rank_ic": 0.034171,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "M02",
+          "horizon": 20,
+          "p_adj": 0.6878604718144649,
+          "rank_ic": 0.034171,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "R01",
+          "horizon": 20,
+          "p_adj": 0.6878604718144649,
+          "rank_ic": 0.034171,
+          "gate_pass": false
+        }
+      ]
+    },
+    {
+      "dataset": "macro",
+      "metric": "funding_rate",
+      "target": "BTC/USDT",
+      "n": 1096,
+      "units": 180,
+      "gate_pass": 0,
+      "status": {
+        "candidate": 180
+      },
+      "method_gate": {
+        "not_applicable": 54,
+        "ok": 126
+      },
+      "top_p_adj": [
+        {
+          "transform": "raw",
+          "method": "R04",
+          "horizon": 20,
+          "p_adj": 0.1964951284548081,
+          "rank_ic": 0.073897,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "B11",
+          "horizon": 20,
+          "p_adj": 0.1964951284548081,
+          "rank_ic": 0.073897,
+          "gate_pass": false
+        },
+        {
+          "transform": "raw",
+          "method": "R03",
+          "horizon": 20,
+          "p_adj": 0.1964951284548081,
+          "rank_ic": 0.073897,
+          "gate_pass": false
+        }
+      ]
+    }
+  ]
+}

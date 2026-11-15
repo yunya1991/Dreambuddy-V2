@@ -1,0 +1,45 @@
+# MERS S3 全量真实数据验收 —— 复现日志（云端 43.160.201.117）
+# 执行身份：luke；DAL 只读 dreambuddy_core.db；registry 为 54 自有产物 data/mers/registry.db
+# 运行方式：systemd-run --collect --unit=mers-accept3（session 断开不中断）
+
+## 0. 修复前基线（B11 空桶缺陷，data_version=2026-11-15）
+{"totals": {"jobs": 29, "units": 5220, "gate_pass": 1028, "skipped": 0, "gate_pass_rate": 0.1969}, "status": {"candidate": 5220}, "idempotency": {"rows_after_first_pass": 5220, "rows_after_second_pass": 5220, "added": 0}}
+method_gate = [('ok', 3559), ('not_applicable', 1566), ('failed', 95)]
+error 统一为：float() argument must be a string or a real number, not 'NoneType'
+
+## 1. 修复后第 1 轮（data_version=accept-20261115-r1，commit 2b5b8b8a59）
+$ sudo -n systemd-run --collect --unit=mers-accept3 --uid=luke --gid=luke \
+    --working-directory=/home/luke/dreambuddy/54-L1架构能力聚合层 \
+    --setenv=PYTHONPATH=/home/luke/dreambuddy/54-L1架构能力聚合层 \
+    /bin/bash -c "for v in r1 r2 r3; do /home/luke/venv-trading/bin/python3 scripts/mers_eval.py \
+      --db /home/luke/dreambuddy/19-数据访问层/data/dreambuddy_core.db \
+      --registry data/mers/registry.db --out /tmp/mers_\$v.json \
+      --run-id cloud-real-20261115 --data-version accept-20261115-\$v; done"
+Running as unit: mers-accept3.service
+
+Nov 15 21:53:39 VM-0-5-ubuntu bash[3142166]:
+{"totals": {"jobs": 29, "units": 5220, "gate_pass": 1057, "skipped": 0, "gate_pass_rate": 0.2025}, "status": {"candidate": 5220}, "idempotency": {"rows_after_first_pass": 5220, "rows_after_second_pass": 5220, "added": 0}}
+
+## 2. 第 2 轮（data_version=accept-20261115-r2）
+Nov 15 22:00:10 VM-0-5-ubuntu bash[3147394]:
+{"totals": {"jobs": 29, "units": 5220, "gate_pass": 1057, "skipped": 0, "gate_pass_rate": 0.2025}, "status": {"candidate": 5220}, "idempotency": {"rows_after_first_pass": 10440, "rows_after_second_pass": 10440, "added": 0}}
+
+## 3. 第 3 轮（data_version=accept-20261115-r3）
+unit 结束：inactive；/tmp/mers_r3.json 28,235 bytes @ 22:07
+{"totals": {"jobs": 29, "units": 5220, "gate_pass": 1057, "skipped": 0, "gate_pass_rate": 0.2025}, "status": {"candidate": 5220}, "idempotency": {"rows_after_first_pass": 15660, "rows_after_second_pass": 15660, "added": 0}}
+
+## 4. 注册表多轮核对（只读 URI 查询）
+by_version [('accept-20261115-r1', 5220, 1057), ('accept-20261115-r2', 5220, 1057), ('accept-20261115-r3', 5220, 1057)]
+state      [('candidate', 4163), ('stable', 1057)]
+streaks    [(0, 3, 4163), (3, 0, 1057)]
+method_gate_r1 [('not_applicable', 1566), ('ok', 3654)]          # failed=0
+evals=15660  distinct_unit=5220  distinct_target=20
+grid_hash=cb544b9c4626c609ede781731cd4ae72bd77fa3b84140eaddb14d6e5aca7bc00
+p_adj 区间（r3）：min=2.0346748485397446e-44  max=0.9996088526431198
+
+## 5. 结论对齐
+- 三轮 gate_pass 完全一致（1,057 / 5,220 = 20.25%），同快照跨轮确定性成立。
+- 状态机在真实数据上推进：连续 3 轮 gate_pass 的 1,057 个单元 pass_streak=3 → status=stable；
+  其余 4,163 个单元 fail_streak=3，维持 candidate（decayed/retired 只能从 stable 进入，符合契约）。
+- 幂等：每轮内部第二轮复跑 added=0；跨轮新增行来自 data_version 变化生成的新 eval_id（不是重复计算）。
+- B11 修复后 method_gate failed 由 95 → 0，not_applicable 恒为 1,566（R03/R04/F19 × 6 transforms × 3 horizons，缺日历/事件上下文不进评估）。
