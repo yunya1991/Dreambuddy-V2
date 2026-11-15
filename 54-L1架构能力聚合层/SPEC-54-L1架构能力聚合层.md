@@ -987,6 +987,7 @@ MERS 与 Discovery 只改变「**选哪个方法**」，不改变「**输出什�
 | v1.47-3 | §3.5.3/§11.4 | **D-G25 尾部相关接线（#33）**：复用 `correlation_query`，executor `capabilities.stats.tail_dependence`，**复用 P13（R 组容量 18 已满，不新增方法 ID）**；下行尾按横截面均值收益 ≤q 切尾，上行尾取反面板复用同一方法，输出 `pairs{rho_down,rho_up,rho_full}/amplification/strongest_pair/n_tail/n`；对齐样本 <60 empty，尾部共现 <30 降级 `tail_events_lt_30` |
 | v1.47-4 | §3.5.3/§11.4 | **D-J05 周期/频谱接线（#34）**：新增 `cycle_query` 意图，executor `capabilities.stats.cycle_spectrum`，T25/T26/C14 并列；输出 `period/cycles/span_days/reference_days/period_to_reference/power_ratio/month_consistency`；`min_span_days=2920`（2×1,460），跨度不足或 `cycles<2` 降级 `cycles_lt_2`，缺日期轴降级 `dates_missing` |
 | v1.47-5 | §17/测试 | manifest 扩至 **50 条**可执行出口；新增 C11 三例（日期轴派生、显式 holidays + 长缺口守卫、无缺口空效应）、D-E04 节前两例、D-G25 两例、D-J05 三例，并纳入 executor 唯一性、ID 集合、JSON Schema 与真实执行覆盖矩阵；改写在 C11 实现后失效的三处占位测试；全量 pytest 通过、`audit()` 243/243 PASS、ruff/black 通过 |
+| v1.47-6 | 云端实测 | 云端 43.160.201.117 只读 `dreambuddy_core.db`（`close_1d` 20 资产 / 54,653 行）：**D-J05** BTC/ETH 3,377 天 → 主周期 1,125.7 天、`cycles=3.0`、`period_to_reference=0.77`、`power_ratio` 0.322/0.360，BNB 3,296 天 → 1,098.7 天，SOL 2,287 天 <2,920 → `partial + cycles_lt_2`；**D-G25** 6 资产对齐 3,116 天 / 尾部共现 624 天，最强对 BTC\|ETH（`rho_down=0.070` vs `rho_full=0.004`），切尾样本存在机械负相关故只作同期描述；**D-E04 节前** BTC 无工作日缺口 → `empty`（明示不适用），`us_NASDAQCOM_value` 202 点被 250 点门禁拦截 → `empty`。结论：#32 代码与出口已闭环，**节前效应量的正向实测仍缺 ≥250 个交易日的美股日线**（云端 FRED 仅存 latest + `obs_count`，未落逐日观测），已在 TD §6.4.4 标注为 18 侧数据前置 |
 
 ### v1.46（2026-11-15）
 

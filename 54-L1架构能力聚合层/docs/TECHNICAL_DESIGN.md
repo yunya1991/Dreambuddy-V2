@@ -503,6 +503,7 @@ L1 意图（TS/Python 双端注册表）
 | #32 能力出口 | `capabilities/stats.py::event_study`（`pre_holiday` / `holidays` / `lookback`）、本文 §0.3、§2.4 D-E04、§6.4.4 #32 | 事件路径不变；`pre_holiday=True` 或传 `holidays` 走 C11 分支，输出 `pre_mean/base_mean/diff/t/p/n_pre/n_holidays/excluded_gaps/calendar/pre_dates`；节前样本 <30 降级 `holiday_events_lt_30`；日期轴无工作日缺口（7×24/周度）FAIL-OPEN 为 empty 并说明不适用 |
 | D-G25 尾部相关 | `capabilities/stats.py::tail_dependence`、`capability_manifest.yaml` | 复用既有 **P13**（不新增方法 ID，规避 R 组容量上限）：横截面均值 ≤q 分位切尾后的样本内 Pearson；上行尾用收益符号取反后复用同一方法（`upper_tail_by_sign_flip=true`）；输出 `rho_down/rho_up/rho_full/amplification/n_tail`；min_n=60，尾部共现 <30 天降级 `tail_events_lt_30`；仅描述同期共跌共涨，不含因果 |
 | D-J05 周期/频谱 | `capabilities/stats.py::cycle_spectrum`、`capability_manifest.yaml` | T25 去趋势主周期 + T26 周期强度，日期轴可用时 C14 月度一致性并列（缺日期不改道，降级 `dates_missing`）；显式返回 `cycles=span_days/period` 与 `period_to_reference=period/1,460`；min_n=60、min_span_days=2920，跨度不足降级 `cycles_lt_2`；只描述频谱事实 |
+| 云端实测（v2.50） | 云端 43.160.201.117 只读 `dreambuddy_core.db`（`close_1d` 20 资产 / 54,653 行） | **D-J05**：BTC 3,377 天 → 主周期 1,125.7 天、`cycles=3.0`、`period_to_reference=0.77`、`power_ratio=0.322`（ETH 同周期 1,125.7 / 3.0 / 0.36；BNB 1,098.7）；SOL 2,287 天 `span_days<2920` → `partial + cycles_lt_2`。**D-G25**：BTC/ETH/BNB/LTC/ADA/XRP 对齐 3,116 天、尾部共现 624 天，最强对 BTC\|ETH（`rho_down=0.070` vs `rho_full=0.004`，`amplification=0.07`）；跨资产切尾样本出现机械负相关（如 ADA\|ETH `rho_down=-0.286`），故只作同期共跌/共涨描述。**D-E04 节前**：BTC 7×24 日期轴无工作日缺口 → `empty` 且 answer 明示「节前效应不适用」；`us_NASDAQCOM_value` 仅 202 点，被事件研究 250 点门禁拦为 `empty`｜#32 正向效应量仍需 ≥250 个交易日的真实美股日线（云端 FRED 仅存 latest + `obs_count`，未落逐日观测） |
 | 验证 | `tests/test_methods_seasonal.py`（C11 派生/显式/缺口护栏/无缺口 4 例）、`tests/test_capabilities.py`（D-E04 节前 2 例、D-G25 2 例、D-J05 3 例 + 执行覆盖矩阵补 3 个场景）、`tests/test_visual.py`（D-E04 methods 基线）、`tests/test_methods_{s2,research}.py`（占位分支改测） | 54-L1 全量 `pytest tests -q --ignore=tests/test_calibrate_light.py` 全绿；`audit()` **243/243 PASS**（`implemented=true` 392，核心目录 0 占位）；`ruff check` 0 错（仅并行 LTL-16 文件历史告警），`python3 -m black --line-length 100` 无改动 |
 
 **v2.49（D-E14 二维状态 Tier B/D 兜底）**
@@ -1009,9 +1010,9 @@ L1 意图（TS/Python 双端注册表）
 | # | 能力 ID | 能力名 | 优先级 | 状态 | 阻塞原因（2026-11-15 实测） | 预计解除时间 |
 |---|---------|--------|--------|------|----------|-------------|
 | 31 | **D-E14（2 维）** | 二维状态组合（4×4 / 3×3 / 2×2） | P2 | ✅ 2026-11-15（Tier B+D 兜底） | 已按 Tier B/D 落地：4×4=A / 3×3=B / 2×2=D，每格非重叠 ≥250（PIT 预热 250 日后计）。云端真实数据实测（20日动量×20日波动率）：BTC/USDT 3,357 根日线 → A 档最小格 110、B 档 223、D 档 682，落 **Tier D**；UNI/USDT 2,230 → 43/105/412；APT/USDT 1,468 → 38/81/265，均落 **Tier D**。即当前 20 资产 2×2 全达标、3×3 暂 0 达标（联合分桶聚集，非均匀），4×4 需样本继续增长后自动升档。OKX pre-2017 日线否决（BTC-USDT/ETH-USDT 现货 listTime=2021-01-29，比库内 2017-08-17 更浅），跨 venue 拼接仍列为可选外部扩样（需先过口径评审） | 已完成（Tier D 全覆盖；Tier B/A 随样本纵深自动升档） |
-| 32 | **C11** | 节日/事件日历 | P2 | ✅ 2026-11-15 | 已解除：`methods/seasonal.py::c11_pre_holiday` 实现「工作日缺失=节假日」派生（`derive_holidays`，>10 工作日连续缺口按数据缺口排除并计入 `excluded_gaps`），支持显式 `holidays`；能力出口为 `capabilities/stats.py::event_study` 的 `pre_holiday`/`holidays` 分支（D-E04），节前样本 <30 降级 `holiday_events_lt_30`，无工作日缺口（7×24/周度）FAIL-OPEN 为 empty；方法自检 243/243 PASS | 已完成 |
-| 33 | **D-G25** | 尾部相关 | P2 | ✅ 2026-11-15 | 已解除：复用既有 **P13**（横截面均值 ≤q 分位切尾后的样本内 Pearson，METHOD_LIBRARY 已登记，无需新增方法 ID），`capabilities/stats.py::tail_dependence` 输出 `rho_down/rho_up/rho_full/n_tail/amplification`；上行尾用符号取反复用同一方法；min_n=60，尾部共现 <30 天降级 `tail_events_lt_30` | 已完成 |
-| 34 | **D-J05** | 比特币四年周期 | P2 | ✅ 2026-11-15 | 已解除：`capabilities/stats.py::cycle_spectrum` 接线 T25 主周期 + T26 周期强度 + C14 月度一致性，输出 `cycles=span_days/period` 与 `period_to_reference=period/1,460`；min_n=60、min_span_days=2920，跨度不足降级 `cycles_lt_2`、缺日期轴降级 `dates_missing` | 已完成 |
+| 32 | **C11** | 节日/事件日历 | P2 | ✅ 2026-11-15 | 已解除：`methods/seasonal.py::c11_pre_holiday` 实现「工作日缺失=节假日」派生（`derive_holidays`，>10 工作日连续缺口按数据缺口排除并计入 `excluded_gaps`），支持显式 `holidays`；能力出口为 `capabilities/stats.py::event_study` 的 `pre_holiday`/`holidays` 分支（D-E04），节前样本 <30 降级 `holiday_events_lt_30`，无工作日缺口（7×24/周度）FAIL-OPEN 为 empty；方法自检 243/243 PASS。云端实测：BTC（7×24）日期轴无工作日缺口 → `empty` 并明示「节前效应不适用」；`us_NASDAQCOM_value` 仅 202 点被 250 点事件研究门禁拦截 → 同样 empty。**节前效应量的正向实测仍缺 ≥250 个交易日的美股日线**：云端 FRED 记录只存 latest + `obs_count`（如 DGS10 `obs_count=16,399`），未落逐日观测行 | 已完成（代码/接线）；效应量实测待 18 侧补齐 FRED 逐日观测或接入外部美股日线 |
+| 33 | **D-G25** | 尾部相关 | P2 | ✅ 2026-11-15 | 已解除：复用既有 **P13**（横截面均值 ≤q 分位切尾后的样本内 Pearson，METHOD_LIBRARY 已登记，无需新增方法 ID），`capabilities/stats.py::tail_dependence` 输出 `rho_down/rho_up/rho_full/n_tail/amplification`；上行尾用符号取反复用同一方法；min_n=60，尾部共现 <30 天降级 `tail_events_lt_30`。云端实测（BTC/ETH/BNB/LTC/ADA/XRP）：对齐 3,116 天、尾部共现 624 天，最强对 BTC|ETH（`rho_down=0.070` vs `rho_full=0.004`）；跨资产切尾样本有机械负相关（ADA|ETH `rho_down=-0.286`），故仅作同期描述 | 已完成 |
+| 34 | **D-J05** | 比特币四年周期 | P2 | ✅ 2026-11-15 | 已解除：`capabilities/stats.py::cycle_spectrum` 接线 T25 主周期 + T26 周期强度 + C14 月度一致性，输出 `cycles=span_days/period` 与 `period_to_reference=period/1,460`；min_n=60、min_span_days=2920，跨度不足降级 `cycles_lt_2`、缺日期轴降级 `dates_missing`。云端实测：BTC/ETH 3,377 天主周期 1,125.7 天、`cycles=3.0`、`period_to_reference=0.77`、`power_ratio` 0.322/0.360；BNB 3,296 天 → 1,098.7 天；SOL 2,287 天 <2,920 → `partial + cycles_lt_2` | 已完成 |
 
 #### 6.4.5 S 级路线里程碑
 
@@ -1035,11 +1036,11 @@ L1 意图（TS/Python 双端注册表）
 - **可立即交付**：0 项待办 + 5 项已完成（#1-#5）
 - **短期交付**：0 项待办 + 25 项已完成（#6-#30）
 - **中期交付**：0 项（#29-#30 已完成）
-- **数据阻塞**：4 项（#31-#34）
+- **数据阻塞**：0 项（#31-#34 已于 2026-11-15 全部解除；#32 正向效应量实测待 18 侧 FRED 逐日观测）
 - **S 级路线**：3 项（#35-#37）
 - **基础设施**：1 项待办 + 2 项已完成（#38-#40）
-- **总计**：40 项（✅ 32 项，待办/阻塞 8 项）
+- **总计**：40 项（✅ 36 项，待办/阻塞 4 项）
 
-**下一步**：短期交付已清零，剩余 8 项为数据阻塞（#31-#34）、S 级路线（#35-#37）与验收基础设施（#38）；按编号下一项为 #35（S2/S3 全量真实数据验收，需云端窗口）。本轮仅完成 #39/#40 本地闭环，未执行云端验收。
+**下一步**：数据阻塞已清零，剩余 4 项为 S 级路线（#35/#37 待办、#36 Tier A 样本纵深）与验收基础设施（#38）。按编号下一项为 #35（S2/S3 全量真实数据验收，需云端窗口）。
 
 **文档治理**：见 §0.4；实测数字只在 METHOD_LIBRARY §15 独立维护，其他文档只能引用或保留标注「引自 §15」的决策摘要，执行时按最新快照重算。
