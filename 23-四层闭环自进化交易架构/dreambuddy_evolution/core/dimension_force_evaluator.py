@@ -263,7 +263,8 @@ class DimensionForceEvaluator:
             if walcl is not None and now - walcl[1] < _STALE_SEC:
                 cutoff = now - 30 * 24 * 3600
                 hist_w = [
-                    v for v, t in self._query_history("WALCL", "value", 60 * 24 * 3600)
+                    v
+                    for v, t in self._query_history("WALCL", "value", 60 * 24 * 3600)
                     if t <= cutoff
                 ]
                 if hist_w and walcl[0] > 0:
@@ -557,7 +558,9 @@ class DimensionForceEvaluator:
 
             mc = self._query_latest("bitcoin", "market_cap_usd")
             if mc is not None and now - mc[1] < _STALE_SEC:
-                hist = [v for v, _ in self._query_history("bitcoin", "market_cap_usd", self.WINDOW_D4)]
+                hist = [
+                    v for v, _ in self._query_history("bitcoin", "market_cap_usd", self.WINDOW_D4)
+                ]
                 if len(hist) >= 10:
                     z = self._zscore(mc[0], hist)
                     mc_raw = max(-1.0, min(1.0, z / 2.0))  # z 高 → 贵 → 空头
@@ -580,7 +583,7 @@ class DimensionForceEvaluator:
 
             if not parts:
                 return self._neutral("valuation-insufficient-data")
-            raw = sum(p * w for p, w in zip(parts, weights)) / sum(weights)
+            raw = sum(p * w for p, w in zip(parts, weights, strict=True)) / sum(weights)
             direction = "short" if raw > 0.15 else ("long" if raw < -0.15 else "neutral")
             return {
                 "direction": direction,
@@ -739,9 +742,9 @@ class DimensionForceEvaluator:
         """
         now = int(time.time())
         specs = [
-            ("DGS10", "value", +1.0),       # 收益率上行 → 空头
-            ("DTWEXBGS", "value", +1.0),    # 美元走强 → 空头
-            ("SP500", "value", -1.0),       # 股指走强 → 多头
+            ("DGS10", "value", +1.0),  # 收益率上行 → 空头
+            ("DTWEXBGS", "value", +1.0),  # 美元走强 → 空头
+            ("SP500", "value", -1.0),  # 股指走强 → 多头
         ]
         parts: list[float] = []
         comp: dict[str, Any] = {}
@@ -815,7 +818,7 @@ class DimensionForceEvaluator:
                 info["fred_components"] = f_comp
 
             if parts:
-                raw = sum(p * w for p, w in zip(parts, weights)) / sum(weights)
+                raw = sum(p * w for p, w in zip(parts, weights, strict=True)) / sum(weights)
                 direction = "short" if raw < -0.1 else ("long" if raw > 0.1 else "neutral")
                 return {
                     "direction": direction,
