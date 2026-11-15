@@ -40,11 +40,13 @@ export function middleware(request: NextRequest) {
     );
   }
 
-  const loginUrl = request.nextUrl.clone();
-  loginUrl.pathname = "/admin/login";
-  loginUrl.search = "";
-  loginUrl.searchParams.set("next", pathname);
-  return NextResponse.redirect(loginUrl);
+  // 用相对 Location：经 nginx 反代（www.neodrm.com/admin → :3456）时，Node 运行时
+  // 无法从 Host 头可靠还原外部 origin，绝对地址会泄露内部 localhost:3456
+  const target = `/admin/login?next=${encodeURIComponent(pathname)}`;
+  return new NextResponse(null, {
+    status: 307,
+    headers: { Location: target, "Cache-Control": "no-store" },
+  });
 }
 
 export const config = {
