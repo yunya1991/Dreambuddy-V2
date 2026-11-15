@@ -308,7 +308,7 @@ DAL_DB_PATH=./data/dreambuddy_core.db python -m alembic -c dreambuddy_dal/migrat
 | G-4 回滚演练现场执行 | 切读前 | gate_check G-4 手动传入 |
 | G-5 冷备份异地副本验证 | 切读前 | gate_check G-5 backup_db_path |
 | DualWrite 14 天观察期 | 切读后 | MIGRATION_PLAN §3.3 |
-| 采集端写 `mm_metric_vintages`（`observed_at`=采集时刻），否则 As-Of 只能回放迁移快照 | 待排期 | SPEC-54 ADR-V20；34 层 L0 规范 §6 |
+| ~~采集端写 `mm_metric_vintages`（`observed_at`=采集时刻）~~ ✅ 已接：`upsert_metric` 追加观测 | 2026-11-15 完成 | SPEC-54 ADR-V20；34 层 L0 规范 §6 |
 
 ---
 

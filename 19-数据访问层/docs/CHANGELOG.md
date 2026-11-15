@@ -19,8 +19,8 @@
 - **Added** As-Of 回放验证（DGS10/value/days=30）：`as_of` 取 T-30d/T-15d/T-7d 时最后一点分别为 2026-10-08/10-23/11-06，`meta.vintage=true`；不传 `as_of` 时为 2026-11-15，证明期间不回看未来
 
 ### 已知缺口（不阻塞，须排期）
-- **写路径未接**：全仓无任何采集端写 `mm_metric_vintages`（仅迁移脚本写、`l0_foundation` 读、测试造数），表不随采集增长，As-Of 仅能回放迁移快照
-- **回填语义限制**：`observed_at = period_ts` 无法还原历史真实发布时刻；旧值已被 `mm_metrics` 的 `INSERT OR REPLACE` 覆盖
+- ~~**写路径未接**~~ ✅ **已接（2026-11-15）**：`SqliteMarketMacroRepository.upsert_metric` 在覆盖 `mm_metrics` 前先向 `mm_metric_vintages` 追加本次观测（`INSERT OR IGNORE`，`observed_at` 同周期同秒内单调 +1s），表结构缺失时自动建表建索引；`tests/test_mm_metric_vintage_write.py` 3 例锁死「主表覆盖、vintage 不丢观测、As-Of 只读 ≤ cutoff」
+- **回填语义限制**：`observed_at = period_ts` 无法还原历史真实发布时刻；旧值已被 `mm_metrics` 的 `INSERT OR REPLACE` 覆盖（新增写入路径从此只保护增量观测）
 
 ### 运维提示
 - `sqlite3` 以非属主身份打开 `dreambuddy_core.db` 会报 `attempt to write a readonly database`；只读核查请用 `sudo -u luke` 或 `file:<path>?immutable=1`

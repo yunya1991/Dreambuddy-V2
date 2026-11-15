@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import sqlite3
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,6 +31,10 @@ import requests
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DAL_ROOT = REPO_ROOT / "19-数据访问层"
+if str(DAL_ROOT) not in sys.path:
+    sys.path.insert(0, str(DAL_ROOT))
+from dreambuddy_dal.implementations.sqlite_unified.vintage import append_vintages  # noqa: E402
+
 DEFAULT_DST = DAL_ROOT / "data" / "dreambuddy_core.db"
 
 _BASE = "https://api.llama.fi"
@@ -162,6 +167,7 @@ def backfill(dst_db: str, chains: list[str], dry_run: bool = False) -> dict:
                 """,
                 batch,
             )
+            append_vintages(conn, batch)
             inserted += len(batch)
         conn.commit()
         cur = conn.execute("SELECT COUNT(*) FROM mm_metrics WHERE source='defillama'")

@@ -39,6 +39,8 @@ DAL_ROOT = REPO_ROOT / "19-数据访问层"
 if str(DAL_ROOT) not in sys.path:
     sys.path.insert(0, str(DAL_ROOT))
 
+from dreambuddy_dal.implementations.sqlite_unified.vintage import append_vintages  # noqa: E402
+
 DEFAULT_SRC = REPO_ROOT / "18-数据获取中心" / "data_center.db"
 DEFAULT_DST = DAL_ROOT / "data" / "dreambuddy_core.db"
 
@@ -182,6 +184,7 @@ def backfill(src_db: str, dst_db: str, dry_run: bool = False) -> dict:
                 """,
                 batch,
             )
+            append_vintages(conn, batch)
             inserted += len(batch)
         conn.commit()
         cur = conn.execute(

@@ -21,6 +21,8 @@ from typing import List, Tuple
 from dreambuddy_dal.connection import get_sqlite_connection
 from dreambuddy_dal.protocols.market_macro_repo import MarketMacroRepository
 
+from .vintage import ensure_vintage_table
+
 
 # ===================================================================== helpers
 def _to_unix_sec(dt: object) -> int:
@@ -428,6 +430,35 @@ class SqliteMarketMacroRepository(MarketMacroRepository):
                 VALUES (?, ?, ?, ?, ?)
                 """,
                 (source, sub_category, metric_name, float(metric_value), unix),
+            )
+            # SPEC-54 §4.12 第 7 条 / ADR-V20：修订不覆盖旧观测。
+            # 主表仍按 (source, category, metric, period) 覆盖，但每次采集先把本次观测
+            # 追加到 vintage 表（PK 含 observed_at），As-Of 回放只读 observed_at ≤ as_of。
+            ensure_vintage_table(conn)
+            observed_at = int(datetime.now(_tz_utc.utc).timestamp())
+            # 同一周期同一秒内多次修订时，observed_at 单调递增（+1s），
+            # 避免 PK 冲突把旧观测吞掉；As-Of 仍按秒比较，语义不变。
+            last = conn.execute(
+                "SELECT MAX(observed_at) FROM mm_metric_vintages "
+                "WHERE source = ? AND sub_category = ? AND metric_name = ? AND period_ts = ?",
+                (source, sub_category, metric_name, unix),
+            ).fetchone()[0]
+            if last is not None and observed_at <= int(last):
+                observed_at = int(last) + 1
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO mm_metric_vintages
+                    (source, sub_category, metric_name, period_ts, observed_at, metric_value)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    source,
+                    sub_category,
+                    metric_name,
+                    unix,
+                    observed_at,
+                    float(metric_value),
+                ),
             )
         return True
 
