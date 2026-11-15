@@ -12,7 +12,7 @@ _MODULE_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 if _MODULE_ROOT not in sys.path:
     sys.path.insert(0, _MODULE_ROOT)
 
-from l1agg.methods import MethodUnavailable, get, run  # noqa: E402
+from l1agg.methods import get, run  # noqa: E402
 
 
 def _daily(n=400, start=datetime.date(2024, 1, 1), weekend=0.002, weekday=0.001):
@@ -29,17 +29,59 @@ def test_c_batch_registered():
     for mid in ids:
         spec = get(mid)
         assert spec.group == "C", mid
-    assert get("C11").implemented is False
-    for mid in ids:
-        if mid == "C11":
+        assert spec.implemented is True, mid
+
+
+def _business_days_case(holiday_idx=(40, 90, 140, 190), n_days=300):
+    """工作日序列 + 指定节假日缺失；节前收益 0.01，其余 0.001。"""
+    days = []
+    cursor = datetime.date(2024, 1, 1)
+    while len(days) < n_days:
+        if cursor.weekday() < 5:
+            days.append(cursor)
+        cursor += datetime.timedelta(days=1)
+    holidays = set(holiday_idx)
+    dates, rets = [], []
+    for i, day in enumerate(days):
+        if i in holidays:
             continue
-        assert get(mid).implemented is True, mid
+        dates.append(day.isoformat())
+        rets.append(0.01 if (i + 1) in holidays else 0.001)
+    return {"returns": rets, "dates": dates}
 
 
-def test_c11_is_placeholder():
-    assert get("C11").implemented is False
-    with pytest.raises(MethodUnavailable):
-        run("C11", _daily(100))
+def test_c11_derives_holidays_from_date_axis():
+    out = run("C11", _business_days_case())["result"]
+    assert out["calendar"] == "derived"
+    assert out["n_holidays"] == 4
+    assert out["n_pre"] == 4
+    assert out["pre_mean"] == pytest.approx(0.01)
+    assert out["base_mean"] == pytest.approx(0.001)
+    assert out["diff"] == pytest.approx(0.009)
+
+
+def test_c11_explicit_holidays_and_long_gap_guard():
+    case = _business_days_case()
+    dates = case["dates"]
+    last = datetime.date.fromisoformat(dates[-1])
+    holiday = last + datetime.timedelta(days=1)
+    while holiday.weekday() >= 5:
+        holiday += datetime.timedelta(days=1)
+    out = run("C11", case, holidays=[holiday.isoformat()])["result"]
+    assert out["calendar"] == "explicit"
+    assert out["n_holidays"] == 1
+    # 连续缺失 >10 个工作日视为数据缺口，不当节假日
+    brutal = _business_days_case(holiday_idx=tuple(range(50, 70)))
+    guarded = run("C11", brutal)["result"]
+    assert guarded["n_holidays"] == 0
+    assert guarded["excluded_gaps"] == 20
+
+
+def test_c11_no_gap_calendar_is_empty_effect():
+    out = run("C11", _daily(400))["result"]
+    assert out["n_holidays"] == 0
+    assert out["pre_mean"] is None
+    assert out["diff"] is None
 
 
 def test_c01_month_effect_values():

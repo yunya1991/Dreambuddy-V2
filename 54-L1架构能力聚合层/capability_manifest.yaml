@@ -162,10 +162,10 @@ capabilities:
     mode: deterministic
     data_scope: [market.candles, mm_events]
     executor: capabilities.stats.event_study
-    methods: [F19, F21, F23]
+    methods: [C11, F19, F21, F23]
     min_n: 250
     min_span_days: 1095
-    notes: 事件日期对齐到价格轴（取首个不早于事件日的交易日）；F19 事件窗收益 + F23 事件后分布 + F21 CAR；事件数 <30 降级 partial（events_lt_30）
+    notes: 事件日期对齐到价格轴（取首个不早于事件日的交易日）；F19 事件窗收益 + F23 事件后分布 + F21 CAR；事件数 <30 降级 partial（events_lt_30）。`pre_holiday=true` 或传 `holidays` 时走 C11 节前效应分支（节假日由日期轴缺失工作日派生，也可显式给日历），节前样本 <30 降级 partial（holiday_events_lt_30），无工作日缺口（7×24/周度）FAIL-OPEN 为 empty
   - id: D-E05
     intent: correlation_query
     mode: deterministic
@@ -294,6 +294,14 @@ capabilities:
     methods: [Q10, Q11]
     min_n: 250
     notes: 事件日按价格轴对齐后转为同日收盘收益下标；Q10 估计窗均值调整 CAR + Q11 Patell/BMP；有效事件 <30 或标准化检验不可用时降级 partial，保留 Q10 结果
+  - id: D-G25
+    intent: correlation_query
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.tail_dependence
+    methods: [P13]
+    min_n: 60
+    notes: 输入 ≥2 资产收益面板；P13 按横截面均值收益 ≤ q 分位切尾后算两两样本内 Pearson（下行尾），上行尾用符号取反复用同一方法（upper_tail_by_sign_flip）；输出 rho_down/rho_up/rho_full/n_tail/amplification；对齐样本 <60 为 empty，尾部共现 <30 天降级 partial（tail_events_lt_30），仅描述同期共跌共涨
   - id: D-J02
     intent: seasonality_query
     mode: deterministic
@@ -311,6 +319,15 @@ capabilities:
     methods: [T22, T23, SC49, SC50, SC51]
     min_n: 60
     notes: T22/SC49 两种 CUSUM、T23 近似 PELT、SC50 精确 PELT、SC51 Pettitt；SC47 Kalman 与 SC48 互谱相干不属于变点出口；原始方法结果与日期映射并列输出，不合成交易方向
+  - id: D-J05
+    intent: cycle_query
+    mode: deterministic
+    data_scope: [market.candles, mm_metrics]
+    executor: capabilities.stats.cycle_spectrum
+    methods: [T25, T26, C14]
+    min_n: 60
+    min_span_days: 2920
+    notes: 去线性趋势 DFT：T25 主周期 + T26 周期强度，日期轴可用时 C14 月度一致性并列输出；与 1,460 日参照周期比（reference_days）及历史覆盖周期数 cycles=span_days/period 显式返回；历史跨度 <2,920 天（<2 个 1,460 日周期）降级 partial（cycles_lt_2），缺日期轴降级 partial（dates_missing）；只描述频谱事实，不构成可预测性结论
   - id: D-J22
     intent: metric_series
     mode: deterministic

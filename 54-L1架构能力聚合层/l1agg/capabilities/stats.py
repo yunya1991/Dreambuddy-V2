@@ -45,6 +45,7 @@ INTENT_EVENT = "event_study"
 INTENT_METRIC_SERIES = "metric_series"
 INTENT_TREND = "trend_query"
 INTENT_CHANGE_POINT = "change_point_query"
+INTENT_CYCLE = "cycle_query"
 INTENT_METRIC_DERIVED = "metric_derived"
 INTENT_TECHNICAL = "technical_indicator"
 
@@ -58,6 +59,11 @@ MIN_CONDITIONAL = 250
 MIN_SIGNIFICANCE = 250
 MIN_CROWDING = 60
 MIN_EVENT_STUDY = 250
+MIN_TAIL_DEPENDENCE = 60
+MIN_TAIL_EVENTS = 30
+MIN_CYCLE = 60
+MIN_CYCLE_SPAN_DAYS = 2920
+CYCLE_REFERENCE_DAYS = 1460
 MIN_CHANGE_POINT = 60
 MIN_PORTFOLIO_RISK = 60
 MIN_IC_PROFILE = 250
@@ -2203,6 +2209,120 @@ def _event_index_map(price_dates: Sequence[_dt.date], events: Sequence[Any]) -> 
     return sorted(set(out))
 
 
+def _pre_holiday_effect(
+    px: Sequence[float],
+    price_dates: Sequence[_dt.date],
+    holidays: Optional[Sequence[Any]],
+    *,
+    lookback: int,
+    symbol: str,
+    trace_id: Optional[str],
+) -> Dict[str, Any]:
+    """C11 节假日前效应（节假日可由日期轴缺失工作日派生，或显式传入）。"""
+    if not price_dates or len(price_dates) < len(px):
+        return unavailable(
+            capability="D-E04",
+            intent=INTENT_EVENT,
+            reason="节前效应需要与价格等长的交易日日期轴（用交易日完整的日线派生日历）",
+            trace_id=trace_id,
+        )
+    returns = _returns(px)
+    ret_dates = price_dates[1:][-len(returns) :] if returns else []
+    params: Dict[str, Any] = {"lookback": max(1, int(lookback))}
+    if holidays:
+        params["holidays"] = [str(h)[:10] for h in holidays]
+    out = _call(
+        "C11",
+        {"returns": returns, "dates": [d.isoformat() for d in ret_dates]},
+        **params,
+    )
+    if out["gate"] != "ok" or out["result"] is None:
+        return unavailable(
+            capability="D-E04",
+            intent=INTENT_EVENT,
+            reason="节前效应计算失败（收益样本或日期轴不足）",
+            trace_id=trace_id,
+        )
+    r = out["result"]
+    n_holidays = int(r.get("n_holidays") or 0)
+    if n_holidays == 0:
+        return unavailable(
+            capability="D-E04",
+            intent=INTENT_EVENT,
+            reason="日期轴内无工作日缺口（7×24 或周度序列），节前效应不适用",
+            trace_id=trace_id,
+        )
+    q = quality_for(
+        len(px),
+        min_n=MIN_EVENT_STUDY,
+        span=_span(price_dates),
+        sources=["market.candles"],
+        align_method="business_day_gap_calendar",
+        timezone="UTC",
+    )
+    n_pre = int(r["n_pre"])
+    if n_pre < EVENT_GATE:
+        q = _degrade(q, "holiday_events_lt_30")
+
+    def _pct(value: Optional[float]) -> str:
+        return "NA" if value is None else f"{value * 100:.2f}%"
+
+    head = f"{symbol or '标的'} " if symbol else ""
+    diff = r["diff"]
+    diff_txt = "NA" if diff is None else f"{diff * 100:+.2f} 个百分点"
+    t_txt = "NA" if r["t"] is None else f"{r['t']:.2f}"
+    p_txt = "NA" if r["p"] is None else f"{r['p']:.3f}"
+    source_txt = "显式日历" if r["calendar"] == "explicit" else "日期轴工作日缺口派生"
+    gap_txt = (
+        f"，另有 {r['excluded_gaps']} 个工作日连续缺口按数据缺口排除" if r["excluded_gaps"] else ""
+    )
+    answer = (
+        f"{head}节前效应：识别节假日 {n_holidays} 个（{source_txt}{gap_txt}），"
+        f"节前 {r['lookback']} 个交易日收益均值 {_pct(r['pre_mean'])}，"
+        f"非节前 {_pct(r['base_mean'])}，差 {diff_txt}（t={t_txt}，p={p_txt}）；"
+        f"节前样本 {n_pre} 天"
+        f"{'，<30 天仅作短样本描述，等级降级。' if n_pre < EVENT_GATE else '。'}"
+        f"{CAVEAT}。"
+    )
+    return build(
+        capability="D-E04",
+        intent=INTENT_EVENT,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-E04": {
+                    "gate": "ok",
+                    "methods": ["C11"],
+                    "pre_holiday": {
+                        "pre_mean": r["pre_mean"],
+                        "base_mean": r["base_mean"],
+                        "diff": r["diff"],
+                        "t": r["t"],
+                        "p": r["p"],
+                        "n_pre": n_pre,
+                        "n_base": r["n_base"],
+                        "n_holidays": n_holidays,
+                        "lookback": r["lookback"],
+                        "calendar": r["calendar"],
+                        "excluded_gaps": r["excluded_gaps"],
+                        "pre_dates": r["pre_dates"],
+                    },
+                }
+            },
+            "params": {
+                "min_n": MIN_EVENT_STUDY,
+                "event_gate": EVENT_GATE,
+                "lookback": r["lookback"],
+                "calendar_source": r["calendar"],
+                "as_of": price_dates[-1].isoformat() if price_dates else None,
+            },
+            "symbol": symbol or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
 def event_study(
     prices: Sequence[Any],
     *,
@@ -2211,22 +2331,22 @@ def event_study(
     k: int = 5,
     event_type: str = "",
     symbol: str = "",
+    holidays: Optional[Sequence[Any]] = None,
+    pre_holiday: bool = False,
+    lookback: int = 1,
     trace_id: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """事件研究窗：事件日对齐到价格轴后，用 F19 事件窗收益 + F23 事件后分布 + F21 CAR。"""
+    """事件研究窗：事件日对齐到价格轴后，用 F19 事件窗收益 + F23 事件后分布 + F21 CAR。
+
+    `pre_holiday=True` 或提供 `holidays` 时走 C11 节前效应分支（节假日可由日期轴
+    缺失工作日派生，无需外部日历表）。
+    """
     px = _floats(prices)
     if len(px) < MIN_EVENT_STUDY:
         return unavailable(
             capability="D-E04",
             intent=INTENT_EVENT,
             reason=f"价格样本 {len(px)} < {MIN_EVENT_STUDY}（事件研究样本门禁）",
-            trace_id=trace_id,
-        )
-    if not events:
-        return unavailable(
-            capability="D-E04",
-            intent=INTENT_EVENT,
-            reason="缺少事件日期（mm_events 为空或未提供 events）",
             trace_id=trace_id,
         )
     ds = _parse_dates(dates)
@@ -2236,6 +2356,22 @@ def event_study(
             capability="D-E04",
             intent=INTENT_EVENT,
             reason="价格与日期轴长度不一致，无法把事件对齐到价格轴",
+            trace_id=trace_id,
+        )
+    if pre_holiday or holidays:
+        return _pre_holiday_effect(
+            px,
+            price_dates,
+            holidays,
+            lookback=lookback,
+            symbol=symbol,
+            trace_id=trace_id,
+        )
+    if not events:
+        return unavailable(
+            capability="D-E04",
+            intent=INTENT_EVENT,
+            reason="缺少事件日期（mm_events 为空或未提供 events）",
             trace_id=trace_id,
         )
     indices = _event_index_map(price_dates, events)
@@ -5660,6 +5796,271 @@ def pit_alignment(
     )
 
 
+# ---------------- D-G25 尾部相关（两两） ----------------
+
+
+def tail_dependence(
+    series: Mapping[str, Sequence[Any]],
+    *,
+    q: float = 0.2,
+    symbol: str = "",
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """P13 下行/上行尾部两两相关（横截面均值分位切尾后的样本内 Pearson）。
+
+    P13 只定义下行尾（横截面均值收益 ≤ q 分位）；上行尾用收益符号取反后复用同一
+    方法（相关系数对符号对称、掩码翻转为上行），不在此另写相关口径。
+    """
+    if not isinstance(series, Mapping) or len(series) < 2:
+        return unavailable(
+            capability="D-G25",
+            intent=INTENT_CORRELATION,
+            reason="尾部相关需要 ≥2 个资产的收益序列面板",
+            trace_id=trace_id,
+        )
+    try:
+        qq = float(q)
+    except (TypeError, ValueError):
+        return unavailable(
+            capability="D-G25",
+            intent=INTENT_CORRELATION,
+            reason="q 非数值",
+            trace_id=trace_id,
+        )
+    if not 0.0 < qq <= 0.5:
+        return unavailable(
+            capability="D-G25",
+            intent=INTENT_CORRELATION,
+            reason="q 需在 (0, 0.5] 区间",
+            trace_id=trace_id,
+        )
+    names, panel, _, indices = _panel_rows(series)
+    n = len(indices)
+    if n < MIN_TAIL_DEPENDENCE:
+        return unavailable(
+            capability="D-G25",
+            intent=INTENT_CORRELATION,
+            reason=f"对齐样本 {n} < {MIN_TAIL_DEPENDENCE}（尾部相关样本门禁）",
+            trace_id=trace_id,
+        )
+    down = _call("P13", panel, q=qq)
+    flipped = {name: [-v for v in values] for name, values in panel.items()}
+    up = _call("P13", flipped, q=qq)
+    if down["gate"] != "ok" or up["gate"] != "ok":
+        return unavailable(
+            capability="D-G25",
+            intent=INTENT_CORRELATION,
+            reason="尾部相关计算失败（切尾后共现样本不足）",
+            trace_id=trace_id,
+        )
+    d, u = down["result"], up["result"]
+    pairs = {
+        key: {
+            "rho_down": d["rho_down"].get(key),
+            "rho_up": u["rho_down"].get(key),
+            "rho_full": d["rho_full"].get(key),
+        }
+        for key in d["rho_down"]
+    }
+    amplifications = {
+        key: (
+            None
+            if item["rho_down"] is None or item["rho_full"] is None
+            else round(item["rho_down"] - item["rho_full"], 4)
+        )
+        for key, item in pairs.items()
+    }
+    qb = quality_for(
+        n,
+        min_n=MIN_TAIL_DEPENDENCE,
+        sources=["market.candles"],
+        align_method="row_complete_case",
+        timezone="UTC",
+    )
+    n_tail = int(d["n_down"])
+    if n_tail < MIN_TAIL_EVENTS:
+        qb = _degrade(qb, "tail_events_lt_30")
+    strongest = max(
+        (key for key in amplifications if amplifications[key] is not None),
+        key=lambda key: amplifications[key],
+        default=None,
+    )
+    head = f"{symbol} " if symbol else ""
+    if strongest is None:
+        detail = "下行/上行尾相关不可计算（切尾样本不足）"
+    else:
+        item = pairs[strongest]
+        detail = (
+            f"尾部共现最强放大的资产对 {strongest}：下行尾 ρ={item['rho_down']}，"
+            f"全样本 ρ={item['rho_full']}（差 {amplifications[strongest]:+.3f}），"
+            f"上行尾 ρ={item['rho_up']}"
+        )
+    tail_sample = f"下行尾样本 {n_tail} 天（q={qq}）"
+    answer = (
+        f"{head}共 {len(names)} 个资产、{len(pairs)} 个两两组合，{tail_sample}；{detail}。"
+        f"{'尾部共现样本 <30 天，仅作短样本描述，等级降级。' if n_tail < MIN_TAIL_EVENTS else ''}"
+        f"尾部相关只描述同期共跌/共涨程度，不含因果。{CAVEAT}。"
+    )
+    return build(
+        capability="D-G25",
+        intent=INTENT_CORRELATION,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-G25": {
+                    "gate": "ok",
+                    "methods": ["P13"],
+                    "q": qq,
+                    "n_tail": n_tail,
+                    "n": n,
+                    "pairs": pairs,
+                    "amplification": amplifications,
+                    "strongest_pair": strongest,
+                }
+            },
+            "params": {
+                "min_n": MIN_TAIL_DEPENDENCE,
+                "tail_event_gate": MIN_TAIL_EVENTS,
+                "q": qq,
+                "upper_tail_by_sign_flip": True,
+                "assets": names,
+            },
+            "symbol": symbol or None,
+        },
+        quality_block=qb,
+        trace_id=trace_id,
+    )
+
+
+# ---------------- D-J05 周期/频谱 ----------------
+
+
+def cycle_spectrum(
+    series: Sequence[Any],
+    *,
+    dates: Optional[Sequence[Any]] = None,
+    symbol: str = "",
+    reference_days: int = CYCLE_REFERENCE_DAYS,
+    trace_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """T25 谱分析主周期 + T26 周期强度 + C14 月度一致性；按历史覆盖周期数门禁。"""
+    values = _floats(series)
+    n = len(values)
+    if n < MIN_CYCLE:
+        return unavailable(
+            capability="D-J05",
+            intent=INTENT_CYCLE,
+            reason=f"价格样本 {n} < {MIN_CYCLE}（频谱样本门禁）",
+            trace_id=trace_id,
+        )
+    ds = _parse_dates(dates)
+    if ds and len(ds) != n:
+        return unavailable(
+            capability="D-J05",
+            intent=INTENT_CYCLE,
+            reason="日期轴与价格长度不一致",
+            trace_id=trace_id,
+        )
+    t25 = _call("T25", values)
+    t26 = _call("T26", values)
+    if t25["gate"] != "ok" or t26["gate"] != "ok":
+        return unavailable(
+            capability="D-J05",
+            intent=INTENT_CYCLE,
+            reason="频谱主周期计算失败（样本不足）",
+            trace_id=trace_id,
+        )
+    spec = t25["result"]
+    strength = t26["result"]
+    returns = _returns(values)
+    c14_call = {"gate": "skipped", "result": None}
+    if ds and returns:
+        c14_call = _call(
+            "C14",
+            {"returns": returns, "dates": [d.isoformat() for d in ds[1:][-len(returns) :]]},
+        )
+    c14 = c14_call["result"] if c14_call["gate"] == "ok" else None
+    period = spec["period"]
+    span_days = (ds[-1] - ds[0]).days if ds else None
+    cycles = round(span_days / period, 2) if (span_days and period) else None
+    q = quality_for(
+        n,
+        min_n=MIN_CYCLE,
+        span=_span(ds) if ds else None,
+        sources=["market.candles"],
+        align_method="utc_daily_close",
+        timezone="UTC",
+    )
+    notes: List[str] = []
+    if not ds:
+        q = _degrade(q, "dates_missing")
+        notes.append("缺日期轴，无法判断历史覆盖了几个周期，周期样本不足，降级为频谱描述")
+    elif span_days is not None and span_days < MIN_CYCLE_SPAN_DAYS:
+        q = _degrade(q, "cycles_lt_2")
+        notes.append(
+            f"历史跨度 {span_days} 天 < {MIN_CYCLE_SPAN_DAYS} 天（≥2 个 1,460 日周期），"
+            "样本跨度不足，周期结论降级为描述"
+        )
+    elif cycles is not None and cycles < 2:
+        q = _degrade(q, "cycles_lt_2")
+        notes.append(f"历史仅覆盖 {cycles} 个主周期（<2），周期样本不足，降级为描述")
+    ref = max(1, int(reference_days))
+    ratio = round(period / ref, 3) if period else None
+    head = f"{symbol} " if symbol else ""
+    period_txt = "未识别出显著主周期" if not period else f"主周期 {period:.0f} 天"
+    strength_txt = "NA" if strength["power_ratio"] is None else f"{strength['power_ratio']:.2f}"
+    cycle_txt = f"，历史覆盖约 {cycles} 个周期" if cycles is not None else ""
+    ref_txt = (
+        f"，与 {ref} 天参照周期比 {ratio}"
+        if ratio is not None and ref == CYCLE_REFERENCE_DAYS
+        else ""
+    )
+    month_txt = ""
+    if c14 and c14["table"]:
+        best = max(c14["table"], key=lambda row: row["consistency"])
+        month_txt = (
+            f"；月度一致性最高为 {best['month']} 月（{best['consistency'] * 100:.0f}%，"
+            f"{best['years']} 年）"
+        )
+    note_text = f"{'；'.join(notes)}。" if notes else ""
+    answer = (
+        f"{head}去趋势频谱：{period_txt}，周期强度 {strength_txt}{cycle_txt}{ref_txt}{month_txt}。"
+        f"{note_text}{CAVEAT}。"
+    )
+    return build(
+        capability="D-J05",
+        intent=INTENT_CYCLE,
+        answer=answer,
+        data={
+            "capabilities": {
+                "D-J05": {
+                    "gate": "ok",
+                    "methods": ["T25", "T26"] + (["C14"] if c14 else []),
+                    "period": period,
+                    "freq_index": spec["freq_index"],
+                    "amplitude": spec["amplitude"],
+                    "power_ratio": strength["power_ratio"],
+                    "span_days": span_days,
+                    "cycles": cycles,
+                    "reference_days": ref,
+                    "period_to_reference": ratio,
+                    "month_consistency": c14,
+                }
+            },
+            "params": {
+                "min_n": MIN_CYCLE,
+                "min_span_days": MIN_CYCLE_SPAN_DAYS,
+                "reference_days": ref,
+                "detrend": "linear",
+                "as_of": ds[-1].isoformat() if ds else None,
+            },
+            "symbol": symbol or None,
+        },
+        quality_block=q,
+        trace_id=trace_id,
+    )
+
+
 # ---------------- 统一调度（能力 ID → executor） ----------------
 
 
@@ -5715,8 +6116,10 @@ _EXECUTORS = {
     "D-G20": quantile_monotonic,
     "D-G22": hac_significance,
     "D-G23": event_car_significance,
+    "D-G25": tail_dependence,
     "D-J02": seasonal_adjustment,
     "D-J04": change_point,
+    "D-J05": cycle_spectrum,
     "D-J22": dimension_reduction,
     "D-J24": correlation_network,
     "D-J30": pit_alignment,

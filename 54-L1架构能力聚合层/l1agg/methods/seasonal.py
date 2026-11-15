@@ -1,26 +1,30 @@
 # -*- coding: utf-8 -*-
 """季节性与日历效应（C 组，C01–C18）。
 
-覆盖 METHOD_LIBRARY §5：
-  C01–C10、C12–C18 已实现；C11（节假日前效应）缺交易日历，登记为不可用。
+覆盖 METHOD_LIBRARY §5：C01–C18 全部已实现。
 
 口径：
   - 输入 `data` 为日频收益序列（`returns`/`series`/`values` 或裸序列），
     `dates` 可走函数参数或 `data["dates"]`，支持 `date`/`datetime`/ISO 字符串/unix 秒；
   - 所有分组统计输出 `n`，跨组比较同时给 `p`（t 分布，`stats_core.t_two_sided_p`）；
+  - C11 节假日日历由日期轴派生（工作日缺失=节假日，可由 DGS10/NASDAQCOM 等
+    交易日完整的日线还原），也可显式传 `holidays`；连续缺口 >10 个工作日视为
+    数据缺口而非节假日并计入 `excluded_gaps`；
   - 纯 stdlib，同输入同输出；`dates` 缺失或长度不符直接 ValueError（由上层收敛为退化门禁）。
 """
 
 from __future__ import annotations
 
+import bisect
 import datetime as _dt
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from . import _helpers as H
-from .registry import MethodChecks, register, register_unavailable
+from .registry import MethodChecks, register
 from .stats_core import t_two_sided_p
 
 _WEEKDAY_LABELS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+MAX_HOLIDAY_GAP_WEEKDAYS = 10
 
 
 def _raw(data: Any) -> Any:
@@ -86,7 +90,10 @@ def _diff_t(a: Sequence[float], b: Sequence[float]) -> Dict[str, Any]:
     v1, v2 = H.var(a) / n1, H.var(b) / n2
     se = (v1 + v2) ** 0.5
     diff = H.mean(a) - H.mean(b)
-    t = diff / se if se > H.EPS else None
+    if se <= H.EPS:
+        # 两组均为常数：均值差可报，t/p 无定义（避免 df 分母为 0）
+        return {"diff": H.r6(diff), "t": None, "p": None}
+    t = diff / se
     df = (v1 + v2) ** 2 / ((v1**2) / (n1 - 1) + (v2**2) / (n2 - 1))
     return {"diff": H.r6(diff), "t": H.r4(t), "p": t_two_sided_p(t, df) if t is not None else None}
 
@@ -596,13 +603,133 @@ def c18_cycle_alignment(
     }
 
 
-register_unavailable(
+def _case_holidays(
+    business_days: int = 300, holiday_idx: Tuple[int, ...] = (40, 90, 140, 190)
+) -> Dict[str, Any]:
+    """构造仅工作日交易的序列：指定工作日为节假日（从序列中缺失），节前收益 0.01。"""
+    days: List[_dt.date] = []
+    cursor = _dt.date(2024, 1, 1)
+    while len(days) < business_days:
+        if cursor.weekday() < 5:
+            days.append(cursor)
+        cursor += _dt.timedelta(days=1)
+    holidays = set(holiday_idx)
+    dates: List[str] = []
+    rets: List[float] = []
+    for i, day in enumerate(days):
+        if i in holidays:
+            continue
+        dates.append(day.isoformat())
+        rets.append(0.01 if (i + 1) in holidays else 0.001)
+    return {"data": {"returns": rets, "dates": dates}, "params": {}}
+
+
+def derive_holidays(ds: Sequence[_dt.date]) -> Tuple[List[_dt.date], int]:
+    """从日期轴派生节假日：工作日缺失=节假日；返回 (节假日, 超长缺口工作日数)。
+
+    周末不计缺口；连续缺失 >`MAX_HOLIDAY_GAP_WEEKDAYS` 个工作日视为数据缺口，
+    不当作节假日（避免长停更/停牌被误判）。
+    """
+    unique = sorted(set(ds))
+    if len(unique) < 2:
+        return [], 0
+    present = set(unique)
+    holidays: List[_dt.date] = []
+    excluded = 0
+    gap: List[_dt.date] = []
+
+    def flush() -> None:
+        nonlocal gap, excluded
+        if not gap:
+            return
+        if len(gap) <= MAX_HOLIDAY_GAP_WEEKDAYS:
+            holidays.extend(gap)
+        else:
+            excluded += len(gap)
+        gap = []
+
+    cursor = unique[0] + _dt.timedelta(days=1)
+    while cursor <= unique[-1]:
+        if cursor in present:
+            flush()
+        elif cursor.weekday() < 5:
+            gap.append(cursor)
+        cursor += _dt.timedelta(days=1)
+    flush()
+    return holidays, excluded
+
+
+@register(
     "C11",
     name="节假日前效应",
     group="C",
     layer="D2",
     input_kind="events",
-    min_n=0,
-    output_schema=("mean_diff", "n"),
-    notes="缺交易日历/节假日表（mm_events 仅 16 行），按纪律不实现，不伪造",
+    min_n=60,
+    output_schema=(
+        "pre_mean",
+        "base_mean",
+        "diff",
+        "t",
+        "p",
+        "n_pre",
+        "n_holidays",
+        "excluded_gaps",
+        "calendar",
+        "n",
+    ),
+    notes=(
+        "节假日（工作日缺失=节假日，可由 DGS10/NASDAQCOM 日线派生）前 lookback 个交易日收益"
+        " vs 非节前基线，Welch t；显式 holidays 优先，>10 工作日缺口视为数据缺口并披露"
+    ),
+    checks=MethodChecks(
+        synthetic=lambda: dict(
+            _case_holidays(),
+            expect={
+                "result.n_holidays": 4,
+                "result.n_pre": 4,
+                "result.pre_mean": 0.01,
+                "result.calendar": "derived",
+            },
+        )
+    ),
 )
+def c11_pre_holiday(
+    data: Any,
+    dates: Optional[Sequence[Any]] = None,
+    holidays: Optional[Sequence[Any]] = None,
+    lookback: int = 1,
+    **_: Any,
+) -> Dict[str, Any]:
+    ys, ds = _rets_dates(data, dates)
+    obs = [d.date() for d in ds]
+    if holidays:
+        holiday_dates = sorted({_parse_one(h).date() for h in holidays})
+        excluded = 0
+        source = "explicit"
+    else:
+        holiday_dates, excluded = derive_holidays(obs)
+        source = "derived"
+    lb = max(1, int(lookback))
+    positions: List[int] = []
+    for holiday in holiday_dates:
+        idx = bisect.bisect_left(obs, holiday) - 1
+        if 0 <= idx < len(ys):
+            positions.append(idx)
+    pre_idx = {k for idx in positions for k in range(idx, max(-1, idx - lb), -1) if k >= 0}
+    pre = [ys[i] for i in sorted(pre_idx)]
+    base = [ys[i] for i in range(len(ys)) if i not in pre_idx]
+    cmp = _diff_t(pre, base)
+    return {
+        "pre_mean": H.r6(H.mean(pre)) if pre else None,
+        "base_mean": H.r6(H.mean(base)) if base else None,
+        **cmp,
+        "n_pre": len(pre),
+        "n_base": len(base),
+        "n_holidays": len(positions),
+        "excluded_gaps": excluded,
+        "calendar": source,
+        "lookback": lb,
+        "pre_dates": [obs[i].isoformat() for i in sorted(pre_idx)][:50],
+        "n": len(ys),
+    }

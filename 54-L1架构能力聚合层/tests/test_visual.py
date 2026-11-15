@@ -58,7 +58,7 @@ BASELINE_OUTLETS = {
     "D-E04": {
         "intent": "event_study",
         "mode": "deterministic",
-        "methods": ["F19", "F21", "F23"],
+        "methods": ["C11", "F19", "F21", "F23"],
         "min_n": 250,
     },
     "D-E05": {

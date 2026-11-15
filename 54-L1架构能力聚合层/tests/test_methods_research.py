@@ -10,13 +10,11 @@ import math
 import os
 import sys
 
-import pytest
-
 _MODULE_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 if _MODULE_ROOT not in sys.path:
     sys.path.insert(0, _MODULE_ROOT)
 
-from l1agg.methods import MethodUnavailable, get, run  # noqa: E402
+from l1agg.methods import all_specs, get, run  # noqa: E402
 
 # ---------------------------------------------------------------- 数据构造
 
@@ -165,12 +163,10 @@ def test_research_batch_registered():
     assert missing == [], f"未登记：{missing}"
 
 
-def test_only_c11_stays_placeholder():
-    for mid in ("T05", "T06", "T10", "T18", "T23", "T25", "T26", "D14", "D15"):
+def test_no_core_method_stays_placeholder():
+    for mid in ("T05", "T06", "T10", "T18", "T23", "T25", "T26", "D14", "D15", "C11"):
         assert get(mid).implemented is True, mid
-    assert get("C11").implemented is False
-    with pytest.raises(MethodUnavailable):
-        run("C11", [])
+    assert [s.method_id for s in all_specs(scope="core") if not s.implemented] == []
 
 
 def test_gate_blocks_short_series():

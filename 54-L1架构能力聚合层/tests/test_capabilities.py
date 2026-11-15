@@ -333,6 +333,8 @@ def test_manifest_loads_and_validates():
             "event_car_significance",
             "seasonal_adjustment",
             "change_point",
+            "tail_dependence",
+            "cycle_spectrum",
             "count_series",
             "trend",
             "dimension_reduction",
@@ -2496,6 +2498,126 @@ def test_event_study_empty_without_events_or_history():
     assert short["quality"]["status"] == STATUS_EMPTY
 
 
+def _holiday_case(holiday_idx=(30, 70, 110, 150, 190, 230), n_business=300):
+    """仅工作日交易的序列：指定工作日为节假日，节前收益 1%，其余 0。"""
+    days, cursor = [], datetime.date(2024, 1, 1)
+    while len(days) < n_business:
+        if cursor.weekday() < 5:
+            days.append(cursor)
+        cursor += datetime.timedelta(days=1)
+    holidays = set(holiday_idx)
+    dates, prices, px = [], [], 100.0
+    for i, day in enumerate(days):
+        if i in holidays:
+            continue
+        px *= 1.01 if (i + 1) in holidays else 1.0
+        dates.append(day.isoformat())
+        prices.append(px)
+    return prices, dates
+
+
+def test_event_study_pre_holiday_derives_calendar_from_date_axis():
+    prices, dates = _holiday_case()
+    out = run_capability("D-E04", prices=prices, dates=dates, pre_holiday=True, symbol="SPX")
+    assert out["ok"] is True
+    block = out["data"]["capabilities"]["D-E04"]
+    assert block["methods"] == ["C11"]
+    pre = block["pre_holiday"]
+    assert pre["calendar"] == "derived"
+    assert pre["n_holidays"] == 6
+    assert pre["pre_mean"] == pytest.approx(0.01, abs=1e-4)
+    assert pre["base_mean"] == pytest.approx(0.0, abs=1e-6)
+    assert out["data"]["params"]["calendar_source"] == "derived"
+    # 6 个节假日 <30 → 短样本降级，但仍给出描述
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "holiday_events_lt_30"
+    assert "样本" in out["answer"] and "历史统计" in out["answer"]
+
+
+def test_event_study_pre_holiday_empty_without_weekday_gap():
+    prices = _event_prices(300)
+    out = run_capability("D-E04", prices=prices, dates=_dates(300), pre_holiday=True)
+    assert out["ok"] is False
+    assert out["quality"]["status"] == STATUS_EMPTY
+    assert "工作日缺口" in out["answer"]
+
+
+# ---------------- D-G25 尾部相关 ----------------
+
+
+def _tail_panel(n=400, seed=11):
+    rng = random.Random(seed)
+    btc, eth = [], []
+    for _ in range(n):
+        shock = rng.gauss(0.0, 0.01)
+        btc.append(shock + rng.gauss(0.0, 0.004))
+        eth.append(shock + rng.gauss(0.0, 0.02))
+    return {"BTC": btc, "ETH": eth}
+
+
+def test_tail_dependence_reports_down_and_up_tail():
+    out = run_capability("D-G25", series=_tail_panel(), q=0.2)
+    assert out["ok"] is True
+    assert out["intent"] == "correlation_query"
+    block = out["data"]["capabilities"]["D-G25"]
+    assert block["methods"] == ["P13"]
+    pair = block["pairs"]["BTC|ETH"]
+    assert pair["rho_down"] is not None
+    assert pair["rho_up"] is not None
+    # 全样本正相关（共同冲击），尾部切尾后由 P13 原样给出，不在能力层修正
+    assert pair["rho_full"] > 0.3
+    assert block["n_tail"] >= 30
+    assert block["amplification"]["BTC|ETH"] is not None
+    assert out["data"]["params"]["upper_tail_by_sign_flip"] is True
+    assert "共跌" in out["answer"] or "尾部" in out["answer"]
+
+
+def test_tail_dependence_empty_with_single_asset():
+    out = run_capability("D-G25", series={"BTC": _ar1(200)})
+    assert out["ok"] is False
+    assert out["quality"]["status"] == STATUS_EMPTY
+    assert "≥2" in out["answer"]
+
+
+# ---------------- D-J05 周期/频谱 ----------------
+
+
+def _cycle_prices(n=3200, period=1000):
+    return [
+        100.0 * (1.0 + 0.0002 * i + 0.10 * math.sin(2 * math.pi * i / period)) for i in range(n)
+    ]
+
+
+def test_cycle_spectrum_reports_period_and_coverage():
+    prices = _cycle_prices()
+    out = run_capability("D-J05", series=prices, dates=_dates(len(prices)), symbol="BTC")
+    assert out["ok"] is True
+    assert out["intent"] == "cycle_query"
+    block = out["data"]["capabilities"]["D-J05"]
+    assert 800 <= block["period"] <= 1200
+    assert block["cycles"] >= 2
+    assert block["reference_days"] == 1460
+    assert block["period_to_reference"] is not None
+    assert out["quality"]["status"] == STATUS_GOOD
+    assert "历史统计" in out["answer"]
+
+
+def test_cycle_spectrum_degrades_when_history_below_two_cycles():
+    prices = _cycle_prices(n=1600, period=400)
+    out = run_capability("D-J05", series=prices, dates=_dates(len(prices)))
+    assert out["ok"] is True
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "cycles_lt_2"
+    assert out["data"]["capabilities"]["D-J05"]["span_days"] < 2920
+
+
+def test_cycle_spectrum_degrades_without_dates():
+    prices = _cycle_prices(n=1600, period=400)
+    out = run_capability("D-J05", series=prices)
+    assert out["ok"] is True
+    assert out["quality"]["degraded_reason"] == "dates_missing"
+
+
 # ---------------- D-G23 事件窗 CAR + Patell/BMP ----------------
 
 
@@ -3641,6 +3763,15 @@ def test_manifest_matches_methods_actually_executed_across_capability_branches(m
                 "dates": _dates(300),
             },
         ),
+        (
+            "D-E04",
+            dict(
+                zip(("prices", "dates"), _holiday_case(), strict=True),
+                pre_holiday=True,
+            ),
+        ),
+        ("D-G25", {"series": _tail_panel()}),
+        ("D-J05", {"series": _cycle_prices(), "dates": _dates(len(_cycle_prices()))}),
         ("D-E09", {"values": [0.01, -0.02, 0.03, -0.01] * 10}),
         (
             "D-E09",

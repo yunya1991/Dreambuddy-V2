@@ -12,6 +12,7 @@ if _MODULE_ROOT not in sys.path:
     sys.path.insert(0, _MODULE_ROOT)
 
 from l1agg.methods import (  # noqa: E402
+    REGISTRY,
     MethodUnavailable,
     RegistryError,
     all_specs,
@@ -44,8 +45,13 @@ def test_catalog_covers_method_library():
 
 
 def test_placeholder_method_cannot_run():
-    with pytest.raises(MethodUnavailable):
-        run("C11", [])
+    # C11 已实现，核心目录不再有占位方法：临时摘除 M01 验证占位分支仍拒绝执行
+    saved = REGISTRY.pop("M01")
+    try:
+        with pytest.raises(MethodUnavailable):
+            run("M01", [])
+    finally:
+        REGISTRY["M01"] = saved
 
 
 def test_duplicate_registration_rejected():
