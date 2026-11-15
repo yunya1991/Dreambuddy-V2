@@ -86,7 +86,9 @@ class IntentVectorStore:
             if intent_id in excluded:
                 continue
             vec = vecs.get(lang)
-            if not vec:
+            # 维度守卫：换向量模型后旧 512 维向量与新 768 维查询不可比，
+            # 直接跳过（否则 zip 截断会静默算出无意义余弦）
+            if not vec or len(vec) != len(query_vector):
                 continue
             sim = _cosine(query_vector, vec)
             results.append((intent_id, sim))

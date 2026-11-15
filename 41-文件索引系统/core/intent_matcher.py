@@ -15,11 +15,13 @@ from .intent_vector_store import IntentVectorStore, get_store
 
 logger = logging.getLogger(__name__)
 
-# 语义命中阈值（P2 校准：golden set 332 正例 + 30 反例 ROC）
-# 中文 0.65：正则通道已 100% 覆盖 golden 正例，语义通道仅需控制反例 FPR。
-#   反例最高 max_sim=0.642，阈值 0.65 时 FPR=0%（≤2% 目标），有效 TPR=100%。
-#   语义兜底召回（正则漏过正例）约 88%，作为正则的安全网。
-SEMANTIC_THRESHOLD_ZH = 0.65
+# 语义命中阈值（P0′ 校准 2026-11-15：bge-base-zh-v1.5 768 维，golden 407 条）
+# 中文 0.66：真实反例（label=unknown 且非误标）最高 0.646，阈值 0.66 时 FPR=0%。
+#   唯一高于阈值的是「今天新闻」0.692，实为 event_listing 误标为 unknown，
+#   且 4 字 < 语义通道最小长度 5，生产中不会进入语义通道。
+#   A 组口语措辞（无新闻类关键词）命中 11/12，是语义通道首次真实参与路由。
+#   余量 0.014（旧 bge-small 下为 0.0038，且 A 组 0/12）。
+SEMANTIC_THRESHOLD_ZH = 0.66
 SEMANTIC_THRESHOLD_EN = 0.50
 
 # 语言检测：中文字符占比阈值

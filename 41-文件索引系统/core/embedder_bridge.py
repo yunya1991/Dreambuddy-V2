@@ -9,6 +9,7 @@
 """
 
 import logging
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -23,7 +24,11 @@ _WORKSPACE_ROOT = _INDEX_ROOT.parent  # dreambuddy-v2/
 _RAG_INFRA = str(_WORKSPACE_ROOT / "2-KNOWLEDGE" / "9-RAG-INFRA")
 
 # 模型配置
-ZH_MODEL = "BAAI/bge-small-zh-v1.5"
+# 主模型 bge-base-zh-v1.5（768 维）：实测口语措辞意图区分度显著优于 bge-small
+# （A 组 12 条 top1 命中 0/12 → 12/12，见 SPEC-41-L1-新闻意图检索 §8.5）。
+# 可用 L1_ZH_MODEL 覆盖为本地路径/HF id；加载失败时回退 bge-small-zh-v1.5（512 维）。
+ZH_MODEL = os.environ.get("L1_ZH_MODEL", "BAAI/bge-base-zh-v1.5")
+ZH_MODEL_FALLBACK = os.environ.get("L1_ZH_MODEL_FALLBACK", "BAAI/bge-small-zh-v1.5")
 EN_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 # subprocess 桥接脚本（云端 41 venv 无 st 时使用）
@@ -54,9 +59,14 @@ def _try_inproc_embedder(model_name: str):
 
 
 def _get_zh_embedder():
-    global _zh_embedder
+    global _zh_embedder, _inproc_available
     if _zh_embedder is None:
         _zh_embedder = _try_inproc_embedder(ZH_MODEL)
+        if _zh_embedder is None and ZH_MODEL_FALLBACK and ZH_MODEL_FALLBACK != ZH_MODEL:
+            # 主模型不可用时回退（重置探测标记，否则 _try_inproc_embedder 直接短路）
+            logger.warning("主向量模型 %s 加载失败，回退 %s", ZH_MODEL, ZH_MODEL_FALLBACK)
+            _inproc_available = None
+            _zh_embedder = _try_inproc_embedder(ZH_MODEL_FALLBACK)
     return _zh_embedder
 
 

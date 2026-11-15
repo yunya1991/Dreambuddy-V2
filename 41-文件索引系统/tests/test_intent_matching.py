@@ -18,7 +18,17 @@ if str(_INDEX_ROOT) not in sys.path:
 from core.embedder_bridge import embed_batch, is_inproc_available  # noqa: E402
 from core.intent_embedder import build_all  # noqa: E402
 from core.intent_matcher import IntentMatcher, detect_lang  # noqa: E402
-from core.intent_vector_store import IntentVectorStore, _cosine  # noqa: E402
+from core.intent_vector_store import UNITS_DIR, IntentVectorStore, _cosine  # noqa: E402
+
+
+def zh_vector_dim() -> int:
+    """取已提交意图向量的中文维度（作为 embedder 维度的唯一事实源）。"""
+    for p in sorted(Path(UNITS_DIR).glob("*/vector.json")):
+        vec = json.loads(p.read_text(encoding="utf-8")).get("zh")
+        if vec:
+            return len(vec)
+    pytest.skip("无已提交的中文意图向量")
+
 
 _GOLDEN = _INDEX_ROOT.parent / "34-前端应用训练系统" / "l1_intent_golden.jsonl"
 
@@ -33,7 +43,9 @@ class TestEmbedderBridge:
     def test_embed_zh(self):
         vecs = embed_batch(["测试中文"], lang="zh")
         assert len(vecs) == 1
-        assert len(vecs[0]) == 512
+        # 维度必须与已提交的意图向量一致（bge-base 768 / bge-small 512），
+        # 不一致会被 store 的维度守卫全部跳过 → 语义通道静默失效。
+        assert len(vecs[0]) == zh_vector_dim()
 
     def test_embed_empty(self):
         assert embed_batch([], lang="zh") == []

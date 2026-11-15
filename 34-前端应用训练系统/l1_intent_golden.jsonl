@@ -302,7 +302,7 @@
 {"message": "怎么注册公司", "intent": "unknown", "variant": "oos"}
 {"message": "手机怎么设置", "intent": "unknown", "variant": "oos"}
 {"message": "帮我查一下火车票", "intent": "unknown", "variant": "oos"}
-{"message": "今天新闻", "intent": "unknown", "variant": "oos"}
+{"message": "今天新闻", "intent": "event_listing", "variant": "terse"}
 {"message": "什么是通货膨胀", "intent": "unknown", "variant": "oos"}
 {"message": "在吗在吗", "intent": "unknown", "variant": "oos"}
 {"message": "测试一下", "intent": "unknown", "variant": "oos"}
@@ -375,3 +375,33 @@
 {"message": "BTC 和 ETH 谁领先谁滞后", "intent": "stat_query", "variant": "formal"}
 {"message": "BTC 因子有效性 IC 是多少", "intent": "stat_query", "variant": "mixed"}
 {"message": "黄金价格日历效应明显吗", "intent": "stat_query", "variant": "formal"}
+{"message": "帮我盯一下这两天有没有什么值得注意的事", "intent": "event_listing", "variant": "news_v1"}
+{"message": "有啥新动静吗", "intent": "event_listing", "variant": "news_v1"}
+{"message": "币圈今天闹什么了", "intent": "event_listing", "variant": "news_v1"}
+{"message": "这两天有什么大事", "intent": "event_listing", "variant": "news_v1"}
+{"message": "有没有关于美联储的新东西", "intent": "event_listing", "variant": "news_v1"}
+{"message": "今天消息面怎么样", "intent": "event_listing", "variant": "news_v1"}
+{"message": "有什么值得关注的", "intent": "event_listing", "variant": "news_v1"}
+{"message": "市场最近都在聊什么", "intent": "event_listing", "variant": "news_v1"}
+{"message": "这两天发生了什么值得关注的事", "intent": "event_listing", "variant": "news_v1"}
+{"message": "给我看看最近的热点", "intent": "event_listing", "variant": "news_v1"}
+{"message": "这两天币圈有啥风吹草动", "intent": "event_listing", "variant": "news_v1"}
+{"message": "有什么我该知道的事", "intent": "event_listing", "variant": "news_v1"}
+{"message": "最近有什么新闻", "intent": "event_listing", "variant": "news_v1"}
+{"message": "最新的监管新闻", "intent": "event_listing", "variant": "news_v1"}
+{"message": "以太坊相关的新闻", "intent": "event_listing", "variant": "news_v1"}
+{"message": "今天有哪些利好新闻", "intent": "event_listing", "variant": "news_v1"}
+{"message": "帮我找几条高影响的新闻", "intent": "event_listing", "variant": "news_v1"}
+{"message": "24小时新闻情绪怎么样", "intent": "event_listing", "variant": "news_v1"}
+{"message": "通胀主题的新闻", "intent": "event_listing", "variant": "news_v1"}
+{"message": "列出最近三条地缘政治消息", "intent": "event_listing", "variant": "news_v1"}
+{"message": "美联储加息这件事后续怎么演变", "intent": "event_line_query", "variant": "news_v1"}
+{"message": "地缘局势最近有什么新进展", "intent": "event_line_query", "variant": "news_v1"}
+{"message": "加密监管的动态和趋势", "intent": "event_line_query", "variant": "news_v1"}
+{"message": "这个事件后面会怎么发酵", "intent": "event_analysis", "variant": "news_v1"}
+{"message": "监管政策的演变过程", "intent": "event_line_query", "variant": "news_v1"}
+{"message": "巨鲸动向最近的变化", "intent": "whale_flow", "variant": "news_v1"}
+{"message": "比特币是什么", "intent": "unknown", "variant": "news_v1"}
+{"message": "帮我写一首诗", "intent": "unknown", "variant": "news_v1"}
+{"message": "以太坊的RSI是多少", "intent": "technical_indicator", "variant": "news_v1"}
+{"message": "美股和加密最近哪个强", "intent": "asset_class_trend", "variant": "news_v1"}

@@ -1,6 +1,6 @@
 # 全项目文档索引 — INDEX
 
-> **版本**: v2.18 | **更新日期**: 2026-11-14
+> **版本**: v2.19 | **更新日期**: 2026-11-15
 > **定位（视角 B）**: **文档导航中枢，不是架构内容本身**。由 0-系统文档管理 维护，告诉你「到哪里找什么文档」。
 > **架构唯一事实源（SSoT）**: 所有架构争议以 [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v4.2** 为准（L0/L1/L2 三层 + L2 内部新 SACG + 认知 C1-C4 + 置信度门控）。被取代的旧架构文档已加「已归档」横幅，禁止作为实现依据。
 > **维护**: 每次新增/删除文档时同步更新；由 `4-工具与自动化/doc_coverage.py` 自动校验（已建成）
@@ -69,6 +69,7 @@
 | ★ **SPEC-A 唯一壳收口与流式传输治理** | [3.1-FRONTEND/docs/SPEC-20261111-A-唯一壳收口与流式传输治理.md](../3.1-FRONTEND/docs/SPEC-20261111-A-唯一壳收口与流式传输治理.md) **v0.1.0** | Agent/Board 归位 + 任务流/monitor 流单例 + REST 传输统一 + 构建门禁，G1-G6/T-A1~T-A7 | 📝 待评审 |
 | ★ **SPEC-B 交互内核与会话可用性** | [3.1-FRONTEND/docs/SPEC-20261111-B-交互内核与会话可用性.md](../3.1-FRONTEND/docs/SPEC-20261111-B-交互内核与会话可用性.md) **v0.1.0** | AgentPart/PartRenderer/ToolCard/PlanCardView + 会话持久化/虚拟化/输入器/⌘K，G-B1~G-B8 | 📝 待评审 |
 | ★ **SPEC-C 契约与传输治理** | [3.1-FRONTEND/docs/SPEC-20261111-C-契约与传输治理.md](../3.1-FRONTEND/docs/SPEC-20261111-C-契约与传输治理.md) **v0.1.0** | 信封/错误码/SSE v1/PlanCard 漂移/Query/鉴权/认知-DSH 代理/边界门禁，G-C1~G-C8 | 📝 待评审 |
+| ★ **SPEC 新闻模块独立与头条外链** | [3.1-FRONTEND/docs/SPEC-20261115-新闻模块独立与头条外链.md](../3.1-FRONTEND/docs/SPEC-20261115-新闻模块独立与头条外链.md) **v0.1.0** | 新闻 tab 提升为与基本面同级的 `/dashboard/news` 一级入口 + Top3 头条 `source_url` 外链（含 http(s) 守卫），G1~G6；零后端/零契约变更 | 📝 待评审 |
 | ★ **SKILL 编排主 SPEC** | [1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md](../1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md) | HC-1~HC-9 硬约束 + 三路径编排 + M2五组件 + 8.1 F1-F20 | ✅ 落地中 |
 | ★ **SKILL 模仿进化 SPEC** | [1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md](../1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md) **v0.3** | 路径B模仿+路径C联网兜底+ImitationCounter+token埋点 | ✅ 172/172 GREEN |
 | ★ **广义认知系统协作** | [35-广义认知系统协作模块/README.md](../35-广义认知系统协作模块/README.md) · [INDEX.md](../35-广义认知系统协作模块/INDEX.md) | 跨系统协作设计 SSoT：SPEC 收敛 + 协作接口契约 + PoE 统一框架（纯文档统筹层，不含代码） | ✅ v1.6（契约治理已落地） |
@@ -236,6 +237,7 @@
 | 33-REA逆向解析工程 | [33-REA逆向解析工程/README.md](../33-REA逆向解析工程/README.md) | ✅ 文档齐全（PoE设计哲学v1.1+假设验证v1.1+同行评审v1.0+SPEC v0.3+TASKS v1.0） | Evidence-First工程逆向解析 + PoE工程证明协议 |
 | 34-前端应用训练系统 | [34-前端应用训练系统/README.md](../34-前端应用训练系统/README.md) | ✅ README+SPEC（P0-P4全部完成） | 前端应用独立学习训练模块：主动训练(多源采集+统计训练)+被动训练(Trae在线辅导) |
 | 35-广义认知系统协作模块 | [35-广义认知系统协作模块/README.md](../35-广义认知系统协作模块/README.md) · [INDEX.md](../35-广义认知系统协作模块/INDEX.md) | ✅ 文档齐全（认知进化SPEC v0.2+统一PoE框架v2.0+协作契约v1.6） | 跨系统协作设计SSoT：SPEC收敛+协作接口契约+PoE统一框架（纯文档统筹层） |
+| 41-文件索引系统 · 新闻意图检索 | [41-文件索引系统/SPEC-41-L1-新闻意图检索-v1.0.md](../41-文件索引系统/SPEC-41-L1-新闻意图检索-v1.0.md) **v1.0** | 🔴 P0 未通过（待决策，§8.4） | L1 `event_listing` 升级方案 A：标签契约（39 的 11 topic/13 event_type 为 canonical，`od_event_type` 单向降级）、罗列 vs 演变划界规则、窗口三级（默认 168h / 上限 720h）、`exec_news_search` + 39 侧 `news_digest.json`、30 条 golden 探针 |
 | 1-ARCHITECTURE/dreamos | [1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md](../1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md) | ⚠️ 部分完整 | DreamOS CLI |
 | **0-系统文档管理/4-工具与自动化** | [4-工具与自动化/README.md](./4-工具与自动化/README.md) | ✅ 已建成 4 脚本 | doc_lint/doc_coverage/index_generator/link_checker |
 | **0-系统文档管理/3-文档治理/audits** | [audits/2026-08_月度审计报告.md](./3-文档治理/audits/2026-08_月度审计报告.md) | ✅ 首份报告 | 月度审计报告归档 |
