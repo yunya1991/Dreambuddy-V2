@@ -38,10 +38,12 @@ interface QueryResponse {
 // ============== 窗口配置（对齐 data_query_executor._NEWS_WINDOW_*） ==============
 type WindowKey = '24h' | '7d' | '30d';
 
-const WINDOWS: { key: WindowKey; label: string; prefix: string }[] = [
-  { key: '24h', label: '24h', prefix: '最近24小时' },
-  { key: '7d', label: '7天', prefix: '' },
-  { key: '30d', label: '30天', prefix: '最近30天' },
+// windowWord 仅含时间词；"最近" 始终前置，因为它是 L1 event_listing 正则的
+// 第二组触发词（有哪些/最近/今天…），缺失会导致 intent=unknown 被推给 L2。
+const WINDOWS: { key: WindowKey; label: string; windowWord: string }[] = [
+  { key: '24h', label: '24h', windowWord: '24小时' },
+  { key: '7d', label: '7天', windowWord: '' },
+  { key: '30d', label: '30天', windowWord: '30天' },
 ];
 
 // ============== 与 HotNewsPanel 同源的轻量格式化（避免循环依赖） ==============
@@ -116,8 +118,11 @@ export function NewsSearchBar() {
   function buildMessage(kw: string, win: WindowKey): string {
     const w = WINDOWS.find((x) => x.key === win)!;
     const trimmed = kw.trim();
-    if (!trimmed) return `${w.prefix}新闻`.trim();
-    return `${trimmed} ${w.prefix}新闻`.trim();
+    // "最近" 是 event_listing 意图触发词，必须始终包含；
+    // windowWord 叠加在 "最近" 后决定时间窗口（24小时/30天，空=默认7天）。
+    const windowPart = w.windowWord ? `最近${w.windowWord}` : '最近';
+    if (!trimmed) return `${windowPart}新闻`;
+    return `${trimmed} ${windowPart}新闻`;
   }
 
   async function handleSubmit(e?: FormEvent) {
