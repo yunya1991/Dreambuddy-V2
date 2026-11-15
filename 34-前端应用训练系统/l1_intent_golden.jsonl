@@ -375,6 +375,24 @@
 {"message": "BTC 和 ETH 谁领先谁滞后", "intent": "stat_query", "variant": "formal"}
 {"message": "BTC 因子有效性 IC 是多少", "intent": "stat_query", "variant": "mixed"}
 {"message": "黄金价格日历效应明显吗", "intent": "stat_query", "variant": "formal"}
+{"message": "CPI 月频历史序列", "intent": "stat_query", "variant": "formal"}
+{"message": "CPI 区间变化率", "intent": "stat_query", "variant": "formal"}
+{"message": "MVRV CAGR", "intent": "stat_query", "variant": "mixed"}
+{"message": "MVRV 历史分位", "intent": "stat_query", "variant": "formal"}
+{"message": "BTC 年化波动率", "intent": "stat_query", "variant": "formal"}
+{"message": "BTC 单序列回撤画像", "intent": "stat_query", "variant": "formal"}
+{"message": "CPI 同比", "intent": "stat_query", "variant": "colloquial"}
+{"message": "CPI 环比", "intent": "stat_query", "variant": "colloquial"}
+{"message": "实际利率是多少", "intent": "stat_query", "variant": "colloquial"}
+{"message": "BTC 和 ETH 滚动相关", "intent": "stat_query", "variant": "formal"}
+{"message": "BTC 和 ETH 领先滞后", "intent": "stat_query", "variant": "formal"}
+{"message": "VIX 极端事件频率", "intent": "stat_query", "variant": "formal"}
+{"message": "ETF 净流入滚动和", "intent": "stat_query", "variant": "formal"}
+{"message": "稳定币规模增速", "intent": "stat_query", "variant": "colloquial"}
+{"message": "BTC 趋势斜率", "intent": "stat_query", "variant": "formal"}
+{"message": "BTC 距历史新高", "intent": "stat_query", "variant": "colloquial"}
+{"message": "BTC 12-1 动量", "intent": "stat_query", "variant": "mixed"}
+{"message": "BTC 波动率目标", "intent": "stat_query", "variant": "formal"}
 {"message": "帮我盯一下这两天有没有什么值得注意的事", "intent": "event_listing", "variant": "news_v1"}
 {"message": "有啥新动静吗", "intent": "event_listing", "variant": "news_v1"}
 {"message": "币圈今天闹什么了", "intent": "event_listing", "variant": "news_v1"}

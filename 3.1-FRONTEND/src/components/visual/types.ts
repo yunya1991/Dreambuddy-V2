@@ -52,6 +52,57 @@ export interface RecommendItem {
   reason: string;
 }
 
+// ── D-E19 点亮投影（SPEC-54 §5.3）：五态 + 四轴，前端只读不重算
+export type LightState = 'lit' | 'warm' | 'dim' | 'conflict' | 'unavailable';
+export type LightBucket = 'high' | 'mid' | 'low' | 'none';
+export type LightAxisKey = 'trend' | 'inertia' | 'cycle' | 'foresight';
+
+export interface LightAxis {
+  state: LightState;
+  strength: number | null;
+  bucket: LightBucket;
+  evidence?: Record<string, unknown>;
+  flags?: string[];
+}
+
+export interface LightRow {
+  symbol: string;
+  class: string;
+  as_of?: string | null;
+  axes: Partial<Record<LightAxisKey, LightAxis>>;
+  strength: number | null;
+  summary: {
+    lit_n: number;
+    warm_n: number;
+    conflict_n: number;
+    unavailable_n: number;
+  };
+  light_weights_hash?: string;
+  n?: number;
+  min_rows?: number;
+  status?: string;
+  flags?: string[];
+}
+
+export interface LightsMeta {
+  light_weights?: Record<string, number>;
+  light_weights_hash?: string;
+  light_weights_mode?: string;
+  thresholds?: { lit_pct?: number; warm_pct?: number };
+  thresholds_uncalibrated?: boolean;
+  min_rows?: number;
+  flags?: string[];
+  [key: string]: unknown;
+}
+
+export interface LightsPayload {
+  ok: boolean;
+  rows: LightRow[];
+  meta?: LightsMeta;
+  answer?: string | null;
+  quality?: Record<string, unknown> | null;
+}
+
 export interface VisualOverview {
   ok: boolean;
   as_of?: string | null;
@@ -59,6 +110,7 @@ export interface VisualOverview {
   assets?: string[];
   unavailable?: { asset: string; reason: string }[];
   visuals?: VisualSpec[];
+  lights?: LightsPayload | null;
   recommended?: RecommendItem[];
   degraded?: boolean;
   generated_at?: string;

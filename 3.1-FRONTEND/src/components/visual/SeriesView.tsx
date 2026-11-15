@@ -21,10 +21,26 @@ interface SeriesMeta {
   [key: string]: unknown;
 }
 
+type CoveragePoint = VisualPoint & {
+  coverage_ratio?: number | null;
+  partial_members?: string[] | null;
+};
+
+function coverageClass(ratio: number | null): string {
+  if (ratio === null) return 'bg-slate-700/40';
+  if (ratio >= 0.8) return 'bg-emerald-400/80';
+  if (ratio >= 0.5) return 'bg-amber-400/80';
+  return 'bg-rose-500/70';
+}
+
 export function SeriesView({ points, meta }: { points: VisualPoint[]; meta: SeriesMeta }) {
   const hasSmoothed = points.some(point => point.smoothed !== null && point.smoothed !== undefined);
   const smoothing = meta?.smoothing;
   const unit = meta?.unit;
+  const coveragePoints = (points as CoveragePoint[]).filter(
+    point => typeof point.coverage_ratio === 'number',
+  );
+  const hasCoverage = coveragePoints.length > 0;
 
   return (
     <div className="rounded-lg border border-slate-800/60 bg-slate-900/30 p-2">
@@ -67,6 +83,31 @@ export function SeriesView({ points, meta }: { points: VisualPoint[]; meta: Seri
           )}
         </LineChart>
       </ResponsiveContainer>
+      {hasCoverage && (
+        <div className="px-1 pt-1">
+          <div className="flex h-1.5 w-full gap-px overflow-hidden rounded">
+            {coveragePoints.map((point, index) => {
+              const ratio =
+                typeof point.coverage_ratio === 'number' ? (point.coverage_ratio as number) : null;
+              const members = Array.isArray(point.partial_members)
+                ? (point.partial_members as string[])
+                : [];
+              return (
+                <div
+                  key={`${point.x}-${index}`}
+                  className={`flex-1 ${coverageClass(ratio)}`}
+                  title={`${point.x} 覆盖 ${
+                    ratio === null ? '—' : `${Math.round(ratio * 100)}%`
+                  }${members.length > 0 ? ` · 缺失 ${members.join(',')}` : ''}`}
+                />
+              );
+            })}
+          </div>
+          <p className="pt-1 text-[10px] text-slate-500">
+            覆盖度带：绿≥80% · 黄≥50% · 红&lt;50%（逐点成员覆盖率；缺口不向前填充）
+          </p>
+        </div>
+      )}
       <p className="px-1 pt-1 text-[10px] text-slate-500">
         样本 n={meta?.n ?? '—'}
         {smoothing?.method ? ` · 平滑=${smoothing.method}${smoothing.window ?? ''}` : ' · 未平滑'}

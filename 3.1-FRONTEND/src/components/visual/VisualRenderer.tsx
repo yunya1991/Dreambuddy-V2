@@ -34,7 +34,9 @@ function renderBody(visual: VisualSpec) {
       p_adj: number | null;
     }[];
     if (nodes.length === 0) return <V3Empty title="网络为空" description="后端未返回可用节点" />;
-    return <GraphView nodes={nodes} edges={edges} />;
+    return (
+      <GraphView nodes={nodes} edges={edges} meta={(dataset?.meta ?? {}) as Record<string, any>} />
+    );
   }
 
   if (visual.kind === 'series') {

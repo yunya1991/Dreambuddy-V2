@@ -25,6 +25,7 @@ _SCRIPTS_DIR = os.path.join(
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
+import data_query_executor as dqe  # noqa: E402
 import l1_route_signal as lrs  # noqa: E402
 
 
@@ -407,3 +408,202 @@ class TestMain:
         parsed = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
         assert parsed["intent"] == "unknown"
         assert parsed["handled"] is False
+
+
+class _StatCandles:
+    def __init__(self, n=90):
+        self.close = tuple(100.0 + i for i in range(n))
+        self.ts = tuple(1704067200 + i * 86400 for i in range(n))
+        self.sample_n = n
+        self.close_anchor = "snapshot_last"
+
+
+def _patch_stat_capabilities(monkeypatch):
+    import importlib
+
+    import l1agg.capabilities as capabilities
+
+    manifest = importlib.import_module("l1agg.capabilities.manifest")
+
+    calls = []
+
+    def fake_run(capability_id, **kwargs):
+        calls.append((capability_id, kwargs))
+        return {
+            "ok": True,
+            "answer": f"{capability_id} ok",
+            "data": {},
+            "quality": {},
+            "capability": capability_id,
+        }
+
+    monkeypatch.setattr(capabilities, "run_capability", fake_run)
+    monkeypatch.setattr(manifest, "assert_public", lambda _capability_id: None)
+    return calls
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "CPI 月频历史序列",
+        "CPI 区间变化率",
+        "MVRV CAGR",
+        "MVRV 历史分位",
+        "BTC 年化波动率",
+        "BTC 单序列回撤画像",
+        "CPI 同比",
+        "CPI 环比",
+        "实际利率是多少",
+        "BTC 和 ETH 滚动相关",
+        "BTC 和 ETH 领先滞后",
+        "VIX 极端事件频率",
+        "ETF 净流入滚动和",
+        "稳定币规模增速",
+        "BTC 趋势斜率",
+        "BTC 距历史新高",
+        "BTC 12-1 动量",
+        "BTC 波动率目标",
+    ],
+)
+def test_new_stat_capability_cues_route_to_stat_query(message):
+    assert lrs.detect_intent(message) == "stat_query"
+
+
+@pytest.mark.parametrize(
+    "message,capability_id",
+    [
+        ("BTC 年化波动率", "D-A06"),
+        ("BTC 单序列回撤画像", "D-A07"),
+        ("BTC 趋势斜率", "D-B08"),
+        ("BTC 距历史新高", "D-B09"),
+        ("BTC 12-1 动量", "D-G08"),
+        ("BTC 波动率目标", "D-G09"),
+    ],
+)
+def test_price_stat_dispatch_uses_candles_and_dates(monkeypatch, message, capability_id):
+    import l1agg.candles as candles
+
+    calls = _patch_stat_capabilities(monkeypatch)
+    load_days = []
+    monkeypatch.setattr(
+        candles,
+        "load",
+        lambda _symbol, **kwargs: load_days.append(kwargs["days"]) or _StatCandles(),
+    )
+
+    out = dqe.exec_stat_query(message)
+
+    assert out["capability"] == capability_id
+    assert len(calls) == 1
+    called_id, kwargs = calls[0]
+    assert called_id == capability_id
+    assert len(kwargs["dates"]) == 90
+    if capability_id == "D-A06":
+        assert len(kwargs["values"]) == 90
+        assert "prices" not in kwargs
+    else:
+        assert len(kwargs["prices"]) == 90
+    assert load_days == [1825 if capability_id == "D-B09" else 730]
+
+
+@pytest.mark.parametrize(
+    "message,capability_id,sub_category,metric_name,agg",
+    [
+        ("CPI 月频历史序列", "D-A01", "CPIAUCSL", "value", "daily"),
+        ("CPI 区间变化率", "D-A02", "CPIAUCSL", "value", "daily"),
+        ("MVRV CAGR", "D-A03", "btc_metrics", "mvrv", "daily"),
+        ("MVRV 历史分位", "D-A04", "btc_metrics", "mvrv", "daily"),
+        ("CPI 同比", "D-A08", "CPIAUCSL", "value", "monthly"),
+        ("CPI 环比", "D-A09", "CPIAUCSL", "value", "monthly"),
+        ("VIX 极端事件频率", "D-A13", "VIXCLS", "value", "daily"),
+        ("ETF 净流入滚动和", "D-A15", "etf_flow", "total_flow", "daily"),
+        (
+            "稳定币规模增速",
+            "D-A16",
+            "stablecoins_top_10",
+            "total_circulating_usd_bln",
+            "daily",
+        ),
+    ],
+)
+def test_metric_stat_dispatch_preserves_series_contract(
+    monkeypatch, message, capability_id, sub_category, metric_name, agg
+):
+    calls = _patch_stat_capabilities(monkeypatch)
+    loads = []
+
+    def fake_load(sub, metric, **kwargs):
+        loads.append((sub, metric, kwargs))
+        values = [100.0 + i for i in range(40)]
+        dates = dqe._stat_dates([1704067200 + i * 86400 for i in range(40)])
+        return values, dates
+
+    monkeypatch.setattr(dqe, "_load_stat_series", fake_load)
+    out = dqe.exec_stat_query(message)
+
+    assert out["capability"] == capability_id
+    assert len(calls) == 1
+    called_id, kwargs = calls[0]
+    assert called_id == capability_id
+    assert len(kwargs["values"]) == len(kwargs["dates"]) == 40
+    assert loads[0][0:2] == (sub_category, metric_name)
+    assert loads[0][2]["agg"] == agg
+    if agg == "monthly":
+        assert loads[0][2]["days"] == 1825
+    if capability_id == "D-A01":
+        assert kwargs["freq"] == "monthly"
+
+
+def test_real_rate_aligns_dgs10_and_cpi_by_month(monkeypatch):
+    calls = _patch_stat_capabilities(monkeypatch)
+    series = {
+        "DGS10": ([4.1, 4.2, 4.3], ["2024-01-31", "2024-02-29", "2024-03-31"]),
+        "CPIAUCSL": ([100.0, 101.0, 102.0], ["2024-01-10", "2024-02-10", "2024-03-10"]),
+    }
+    monkeypatch.setattr(
+        dqe,
+        "_load_stat_series",
+        lambda sub, _metric, **_kwargs: series[sub],
+    )
+
+    out = dqe.exec_stat_query("实际利率是多少")
+
+    assert out["capability"] == "D-A10"
+    _, kwargs = calls[0]
+    assert kwargs["nominal"] == [4.1, 4.2, 4.3]
+    assert kwargs["cpi"] == [100.0, 101.0, 102.0]
+    assert kwargs["dates"] == ["2024-01-01", "2024-02-01", "2024-03-01"]
+    assert kwargs["period"] == 12
+
+
+@pytest.mark.parametrize(
+    "message,capability_id",
+    [("BTC 和 ETH 滚动相关", "D-A11"), ("BTC 和 ETH 领先滞后", "D-A12")],
+)
+def test_pair_stat_dispatch_uses_aligned_returns(monkeypatch, message, capability_id):
+    import l1agg.candles as candles
+
+    calls = _patch_stat_capabilities(monkeypatch)
+    monkeypatch.setattr(candles, "load", lambda _symbol, **_kwargs: _StatCandles())
+
+    out = dqe.exec_stat_query(message)
+
+    assert out["capability"] == capability_id
+    _, kwargs = calls[0]
+    assert len(kwargs["x"]) == len(kwargs["y"]) == len(kwargs["dates"]) == 89
+    if capability_id == "D-A11":
+        assert kwargs["name"] == "BTC/ETH"
+    else:
+        assert (kwargs["x_name"], kwargs["y_name"]) == ("BTC", "ETH")
+
+
+def test_stat_dispatch_missing_data_and_peer_fail_open(monkeypatch):
+    calls = _patch_stat_capabilities(monkeypatch)
+    monkeypatch.setattr(dqe, "_load_stat_series", lambda *_args, **_kwargs: None)
+
+    missing = dqe.exec_stat_query("CPI 同比")
+    no_peer = dqe.exec_stat_query("BTC 滚动相关")
+
+    assert missing["degraded"] is True and missing["capability"] == "D-A08"
+    assert no_peer["degraded"] is True and no_peer["capability"] == "D-A11"
+    assert calls == []

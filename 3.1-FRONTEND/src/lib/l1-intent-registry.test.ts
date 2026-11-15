@@ -16,9 +16,11 @@ import {
   ROUTE_DECISION_L1_DIRECT,
   ROUTE_DECISION_L2_HANDOFF,
   type RouteConfidenceSignal,
-} from './l1-intent-registry';
+} from "./l1-intent-registry";
 
-function makeSignal(partial: Partial<RouteConfidenceSignal> = {}): RouteConfidenceSignal {
+function makeSignal(
+  partial: Partial<RouteConfidenceSignal> = {},
+): RouteConfidenceSignal {
   return {
     route_confidence: 0.9,
     decision: ROUTE_DECISION_L1_DIRECT,
@@ -31,132 +33,173 @@ function makeSignal(partial: Partial<RouteConfidenceSignal> = {}): RouteConfiden
   };
 }
 
-describe('l1-intent-registry v2 静态门控（零回归）', () => {
-  it('requiredPattern 命中才放行通用意图', () => {
-    expect(canHandleL1('data_query', '查一下 CPI 最新数据')).toBe(true);
-    expect(canHandleL1('data_query', '帮我写首诗')).toBe(false);
+describe("l1-intent-registry v2 静态门控（零回归）", () => {
+  it("requiredPattern 命中才放行通用意图", () => {
+    expect(canHandleL1("data_query", "查一下 CPI 最新数据")).toBe(true);
+    expect(canHandleL1("data_query", "帮我写首诗")).toBe(false);
   });
 
-  it('fallbackPattern 意图直接可执行', () => {
-    expect(canHandleL1('risk_control', '当前持仓风控状态')).toBe(true);
+  it("fallbackPattern 意图直接可执行", () => {
+    expect(canHandleL1("risk_control", "当前持仓风控状态")).toBe(true);
   });
 
-  it('未注册意图恒 false', () => {
-    expect(canHandleL1('not_an_intent', '查 CPI')).toBe(false);
+  it("未注册意图恒 false", () => {
+    expect(canHandleL1("not_an_intent", "查 CPI")).toBe(false);
   });
 
-  it('fallbackIntent 关键词兜底', () => {
-    expect(fallbackIntent('BTC 现在什么价')).toBe('price_query');
-    expect(fallbackIntent('今天天气咋样')).toBe('');
+  it("fallbackIntent 关键词兜底", () => {
+    expect(fallbackIntent("BTC 现在什么价")).toBe("price_query");
+    expect(fallbackIntent("今天天气咋样")).toBe("");
   });
 
-  it('跨资产趋势比较让位 asset_class_trend，同赛道比较保持 leader_compare', () => {
-    for (const message of ['纳指和BTC谁强', '黄金和原油表现对比', '加密货币和黄金走势对比', '美股、黄金、加密对比']) {
-      expect(fallbackIntent(message)).toBe('asset_class_trend');
+  it("跨资产趋势比较让位 asset_class_trend，同赛道比较保持 leader_compare", () => {
+    for (const message of [
+      "纳指和BTC谁强",
+      "黄金和原油表现对比",
+      "加密货币和黄金走势对比",
+      "美股、黄金、加密对比",
+    ]) {
+      expect(fallbackIntent(message)).toBe("asset_class_trend");
     }
-    expect(fallbackIntent('BTC和ETH涨跌幅对比')).toBe('leader_compare');
-    expect(fallbackIntent('以太坊和比特币谁更强')).toBe('leader_compare');
+    expect(fallbackIntent("BTC和ETH涨跌幅对比")).toBe("leader_compare");
+    expect(fallbackIntent("以太坊和比特币谁更强")).toBe("leader_compare");
   });
 
-  it('数据类实体让位 price_query（市值/余额/持币等非现货价）', () => {
-    expect(fallbackIntent('比特币市值多少')).not.toBe('price_query');
-    expect(fallbackIntent('交易所BTC余额多少')).not.toBe('price_query');
-    expect(fallbackIntent('黄金价格多少')).toBe('price_query');
+  it("数据类实体让位 price_query（市值/余额/持币等非现货价）", () => {
+    expect(fallbackIntent("比特币市值多少")).not.toBe("price_query");
+    expect(fallbackIntent("交易所BTC余额多少")).not.toBe("price_query");
+    expect(fallbackIntent("黄金价格多少")).toBe("price_query");
   });
 
-  it('S1 单维关键词注册表：巨鲸 / 经济日历（与 l1_route_signal.py 对齐）', () => {
-    expect(fallbackIntent('查询巨鲸动向')).toBe('whale_flow');
-    expect(fallbackIntent('下一次议息会议是什么时候')).toBe('calendar_event');
-    expect(fallbackIntent('下次非农什么时候公布')).toBe('calendar_event');
+  it("S1 单维关键词注册表：巨鲸 / 经济日历（与 l1_route_signal.py 对齐）", () => {
+    expect(fallbackIntent("查询巨鲸动向")).toBe("whale_flow");
+    expect(fallbackIntent("下一次议息会议是什么时候")).toBe("calendar_event");
+    expect(fallbackIntent("下次非农什么时候公布")).toBe("calendar_event");
     // 解读类问句不能被数据意图吞掉
-    expect(fallbackIntent('巨鲸持续买入说明什么')).not.toBe('whale_flow');
-    expect(fallbackIntent('议息会议结果怎么看')).not.toBe('calendar_event');
+    expect(fallbackIntent("巨鲸持续买入说明什么")).not.toBe("whale_flow");
+    expect(fallbackIntent("议息会议结果怎么看")).not.toBe("calendar_event");
   });
 
-  it('阈值常量跨系统唯一 (SSoT §16.5)', () => {
+  it("阈值常量跨系统唯一 (SSoT §16.5)", () => {
     expect(ROUTE_CONFIDENCE_THRESHOLD_HIGH).toBe(0.65);
   });
 
-  it('统计关系新 cue：拥挤度→D-A14、显著性→D-G22 均走 stat_query（与 l1_route_signal.py 对齐）', () => {
-    expect(fallbackIntent('BTC 拥挤度现在高吗')).toBe('stat_query');
-    expect(fallbackIntent('BTC 日收益是否显著')).toBe('stat_query');
+  it("统计关系 cue：D-A/D-B/D-E/D-G 组均走 stat_query（与 l1_route_signal.py 对齐）", () => {
+    const messages = [
+      "BTC 拥挤度现在高吗",
+      "BTC 日收益是否显著",
+      "CPI 月频历史序列",
+      "CPI 区间变化率",
+      "MVRV CAGR",
+      "MVRV 历史分位",
+      "BTC 年化波动率",
+      "BTC 单序列回撤画像",
+      "CPI 同比",
+      "CPI 环比",
+      "实际利率是多少",
+      "BTC 和 ETH 滚动相关",
+      "VIX 极端事件频率",
+      "ETF 净流入滚动和",
+      "稳定币规模增速",
+      "BTC 趋势斜率",
+      "BTC 距历史新高",
+      "BTC 12-1 动量",
+      "BTC 波动率目标",
+    ];
+    for (const message of messages) {
+      expect(fallbackIntent(message)).toBe("stat_query");
+    }
   });
 });
 
-describe('canHandleL1WithSignal v3 信号门控', () => {
-  it('高置信 L1_DIRECT 放行（即使静态 requiredPattern 不命中）', () => {
+describe("canHandleL1WithSignal v3 信号门控", () => {
+  it("高置信 L1_DIRECT 放行（即使静态 requiredPattern 不命中）", () => {
     // 「帮我看看天」不命中 data_query 的 requiredPattern，但高置信信号以信号为准
-    expect(canHandleL1WithSignal('data_query', '帮我看看天', makeSignal())).toBe(true);
+    expect(
+      canHandleL1WithSignal("data_query", "帮我看看天", makeSignal()),
+    ).toBe(true);
   });
 
-  it('L2_HANDOFF 信号拦截（即使静态规则放行）', () => {
+  it("L2_HANDOFF 信号拦截（即使静态规则放行）", () => {
     const signal = makeSignal({
       route_confidence: 0.4,
       decision: ROUTE_DECISION_L2_HANDOFF,
       degraded: true,
     });
-    expect(canHandleL1WithSignal('risk_control', '当前持仓风控状态', signal)).toBe(false);
+    expect(
+      canHandleL1WithSignal("risk_control", "当前持仓风控状态", signal),
+    ).toBe(false);
   });
 
-  it('decision=L1_DIRECT 但置信度低于 0.65 仍拦截', () => {
+  it("decision=L1_DIRECT 但置信度低于 0.65 仍拦截", () => {
     const signal = makeSignal({ route_confidence: 0.64 });
-    expect(canHandleL1WithSignal('technical_analysis', '技术面', signal)).toBe(false);
+    expect(canHandleL1WithSignal("technical_analysis", "技术面", signal)).toBe(
+      false,
+    );
   });
 
-  it('阈值边界：route_confidence 恰好 0.65 放行', () => {
+  it("阈值边界：route_confidence 恰好 0.65 放行", () => {
     const signal = makeSignal({ route_confidence: 0.65 });
-    expect(canHandleL1WithSignal('path_insight', '最小阻力路径', signal)).toBe(true);
+    expect(canHandleL1WithSignal("path_insight", "最小阻力路径", signal)).toBe(
+      true,
+    );
   });
 
-  it('decision 与置信度不一致（L2_HANDOFF + 0.9）以 decision 为准拦截', () => {
+  it("decision 与置信度不一致（L2_HANDOFF + 0.9）以 decision 为准拦截", () => {
     const signal = makeSignal({
       route_confidence: 0.9,
       decision: ROUTE_DECISION_L2_HANDOFF,
     });
-    expect(canHandleL1WithSignal('price_query', 'BTC 什么价', signal)).toBe(false);
+    expect(canHandleL1WithSignal("price_query", "BTC 什么价", signal)).toBe(
+      false,
+    );
   });
 
-  it('未注册意图即使带高置信信号也不放行', () => {
-    expect(canHandleL1WithSignal('not_an_intent', '查 CPI', makeSignal())).toBe(false);
+  it("未注册意图即使带高置信信号也不放行", () => {
+    expect(canHandleL1WithSignal("not_an_intent", "查 CPI", makeSignal())).toBe(
+      false,
+    );
   });
 });
 
-describe('canHandleL1WithSignal FAIL-OPEN 静态兜底', () => {
-  it('undefined / null 信号退回静态 canHandleL1', () => {
-    expect(canHandleL1WithSignal('data_query', '查 CPI', undefined)).toBe(true);
-    expect(canHandleL1WithSignal('data_query', '帮我写首诗', null)).toBe(false);
+describe("canHandleL1WithSignal FAIL-OPEN 静态兜底", () => {
+  it("undefined / null 信号退回静态 canHandleL1", () => {
+    expect(canHandleL1WithSignal("data_query", "查 CPI", undefined)).toBe(true);
+    expect(canHandleL1WithSignal("data_query", "帮我写首诗", null)).toBe(false);
   });
 
-  it('非法信号（缺字段/NaN/错 decision）退回静态校验', () => {
+  it("非法信号（缺字段/NaN/错 decision）退回静态校验", () => {
     expect(
-      canHandleL1WithSignal('data_query', '查 CPI', { foo: 1 } as unknown as RouteConfidenceSignal),
+      canHandleL1WithSignal("data_query", "查 CPI", {
+        foo: 1,
+      } as unknown as RouteConfidenceSignal),
     ).toBe(true);
     expect(
       canHandleL1WithSignal(
-        'data_query',
-        '查 CPI',
+        "data_query",
+        "查 CPI",
         makeSignal({ route_confidence: Number.NaN }),
       ),
     ).toBe(true);
     expect(
       canHandleL1WithSignal(
-        'data_query',
-        '查 CPI',
-        makeSignal({ decision: 'MAYBE' as RouteConfidenceSignal['decision'] }),
+        "data_query",
+        "查 CPI",
+        makeSignal({ decision: "MAYBE" as RouteConfidenceSignal["decision"] }),
       ),
     ).toBe(true);
   });
 });
 
-describe('isRouteConfidenceSignal 类型守卫', () => {
-  it('合法信号', () => {
+describe("isRouteConfidenceSignal 类型守卫", () => {
+  it("合法信号", () => {
     expect(isRouteConfidenceSignal(makeSignal())).toBe(true);
   });
 
-  it('null / 原始类型 / 残缺对象均不合法', () => {
+  it("null / 原始类型 / 残缺对象均不合法", () => {
     expect(isRouteConfidenceSignal(null)).toBe(false);
     expect(isRouteConfidenceSignal(undefined)).toBe(false);
-    expect(isRouteConfidenceSignal('x')).toBe(false);
+    expect(isRouteConfidenceSignal("x")).toBe(false);
     expect(isRouteConfidenceSignal({})).toBe(false);
     expect(isRouteConfidenceSignal({ route_confidence: 0.9 })).toBe(false);
   });

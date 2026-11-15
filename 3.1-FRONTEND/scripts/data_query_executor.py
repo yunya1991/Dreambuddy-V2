@@ -984,6 +984,38 @@ _STAT_CROWDING_CUE = re.compile(r"拥挤|拥挤度|crowding|杠杆过热|多空�
 _STAT_SIGNIFICANCE_CUE = re.compile(
     r"显著性|是否显著|显著吗|HAC|Newey|Newey-West|Deflated|DSR", re.IGNORECASE
 )
+# D-A/D-B/D-G 专用口径先于宽词：避免 ATH→普通回撤、历史分位→前瞻分位、
+# 滚动相关→通用相关、波动率目标→普通年化波动率。
+_STAT_VOL_TARGET_CUE = re.compile(r"波动率目标|目标波动|vol[ _-]?target", re.IGNORECASE)
+_STAT_ATH_CUE = re.compile(r"\bATH\b|历史新高|距.{0,6}高点|离.{0,6}高点", re.IGNORECASE)
+_STAT_SLOPE_CUE = re.compile(r"趋势斜率|斜率|slope", re.IGNORECASE)
+_STAT_MOMENTUM_CUE = re.compile(
+    r"12\s*[-_]\s*1|momentum(?!\s*factor)|动量(?!因子|延续)", re.IGNORECASE
+)
+_STAT_REAL_RATE_CUE = re.compile(r"实际利率|real[ _-]?rate", re.IGNORECASE)
+_STAT_ROLLING_CORR_CUE = re.compile(r"滚动相关|rolling[ _-]?corr", re.IGNORECASE)
+_STAT_LEAD_LAG_CUE = re.compile(r"领先滞后|lead[ _-]?lag|谁领先|谁滞后", re.IGNORECASE)
+_STAT_EXTREME_CUE = re.compile(r"极端事件|极端频率|超阈值|阈值频率|极端.{0,6}频率")
+_STAT_ETF_FLOW_CUE = re.compile(
+    r"ETF.{0,12}(?:滚动和|滚动净流入)|净流入滚动和|(?:7|30)\s*日(?:ETF)?净流入",
+    re.IGNORECASE,
+)
+_STAT_STABLECOIN_CUE = re.compile(
+    r"稳定币.{0,10}(?:规模增速|规模增长|增速)|stablecoin.{0,20}growth", re.IGNORECASE
+)
+_STAT_YOY_CUE = re.compile(r"同比|year[ -]?over[ -]?year|\byoy\b", re.IGNORECASE)
+_STAT_MOM_CUE = re.compile(r"环比|month[ -]?over[ -]?month|\bmom\b", re.IGNORECASE)
+_STAT_CAGR_CUE = re.compile(r"CAGR|年化复合|复合增长率", re.IGNORECASE)
+_STAT_HIST_PERCENTILE_CUE = re.compile(r"历史分位|历史百分位|分位排名|当前分位")
+_STAT_CHANGE_RATE_CUE = re.compile(r"变化率|区间变化|变化幅度")
+_STAT_HISTORY_SERIES_CUE = re.compile(r"历史序列|序列降采样|日频序列|周频序列|月频序列")
+_STAT_ANNUAL_VOL_CUE = re.compile(r"年化波动|波动率|volatility", re.IGNORECASE)
+_STAT_SERIES_DRAWDOWN_CUE = re.compile(r"单序列回撤|回撤画像")
+
+_STAT_METRIC_CAPS = frozenset(
+    {"D-A01", "D-A02", "D-A03", "D-A04", "D-A08", "D-A09", "D-A13", "D-A15", "D-A16"}
+)
+_STAT_PRICE_DATE_CAPS = frozenset({"D-A07", "D-B08", "D-B09", "D-G08", "D-G09"})
 
 # 拥挤度合成（F26 固定权重 0.4/0.3/0.3）所需三指标：sub_category / metric_name / 展示名
 _CROWDING_SERIES = (
@@ -1015,6 +1047,29 @@ def _stat_dates(ts_values):
     from datetime import datetime, timezone
 
     return [datetime.fromtimestamp(int(t), timezone.utc).date().isoformat() for t in ts_values]
+
+
+def _load_stat_series(sub_category, metric_name, *, days, agg="daily", sign=1.0, scale=1.0):
+    """统计能力取数：值与日期成对过滤，沿用指标目录的符号/量纲换算。"""
+    ctx = get_l0().fetch_context(
+        "datacenter.series",
+        {
+            "sub_category": sub_category,
+            "metric_name": metric_name,
+            "days": days,
+            "agg": agg,
+        },
+    )
+    if ctx.get("degraded"):
+        return None
+    points = (ctx.get("data") or {}).get("points") or []
+    values, dates = [], []
+    for point in points:
+        if point.get("value") is None or point.get("ts") is None:
+            continue
+        values.append(float(point["value"]) * sign / scale)
+        dates.append(_stat_dates([point["ts"]])[0])
+    return (values, dates) if values else None
 
 
 def _stat_returns(values):
@@ -1068,9 +1123,46 @@ def exec_stat_query(message):
         }
 
     message = message or ""
-    symbol = _resolve_symbol(message) or "BTC"
+    resolved_symbol = _resolve_symbol(message)
+    symbol = resolved_symbol or "BTC"
 
-    if _STAT_DRAWDOWN_CUE.search(message):
+    if _STAT_VOL_TARGET_CUE.search(message):
+        capability_id = "D-G09"
+    elif _STAT_ATH_CUE.search(message):
+        capability_id = "D-B09"
+    elif _STAT_SLOPE_CUE.search(message):
+        capability_id = "D-B08"
+    elif _STAT_MOMENTUM_CUE.search(message):
+        capability_id = "D-G08"
+    elif _STAT_REAL_RATE_CUE.search(message):
+        capability_id = "D-A10"
+    elif _STAT_ROLLING_CORR_CUE.search(message):
+        capability_id = "D-A11"
+    elif _STAT_LEAD_LAG_CUE.search(message):
+        capability_id = "D-A12"
+    elif _STAT_EXTREME_CUE.search(message):
+        capability_id = "D-A13"
+    elif _STAT_ETF_FLOW_CUE.search(message):
+        capability_id = "D-A15"
+    elif _STAT_STABLECOIN_CUE.search(message):
+        capability_id = "D-A16"
+    elif _STAT_YOY_CUE.search(message):
+        capability_id = "D-A08"
+    elif _STAT_MOM_CUE.search(message):
+        capability_id = "D-A09"
+    elif _STAT_CAGR_CUE.search(message):
+        capability_id = "D-A03"
+    elif _STAT_HIST_PERCENTILE_CUE.search(message):
+        capability_id = "D-A04"
+    elif _STAT_CHANGE_RATE_CUE.search(message):
+        capability_id = "D-A02"
+    elif _STAT_HISTORY_SERIES_CUE.search(message):
+        capability_id = "D-A01"
+    elif _STAT_ANNUAL_VOL_CUE.search(message):
+        capability_id = "D-A06"
+    elif _STAT_SERIES_DRAWDOWN_CUE.search(message):
+        capability_id = "D-A07"
+    elif _STAT_DRAWDOWN_CUE.search(message):
         capability_id = "D-E10"
     elif _STAT_CROWDING_CUE.search(message):
         capability_id = "D-A14"
@@ -1096,6 +1188,108 @@ def exec_stat_query(message):
     # S0 执行外露硬闸（SPEC-54 §4.8 / ADR-V14）：internal 能力直接抛 PermissionError，
     # 不降级、不返回数据——外露属于安全事故。
     assert_public(capability_id)
+
+    if capability_id == "D-A10":
+        # DGS10 与 CPI 的月内发布日期不同，按 UTC 月份对齐；period=12 才是月度同比。
+        days = resolve_days(message, 1825)
+        try:
+            nominal = _load_stat_series("DGS10", "value", days=days, agg="monthly")
+            cpi = _load_stat_series("CPIAUCSL", "value", days=days, agg="monthly")
+            if nominal is None or cpi is None:
+                return {
+                    "success": True,
+                    "degraded": True,
+                    "answer": "实际利率需要 DGS10 与 CPIAUCSL 两条月度序列，当前数据不可用，不做推算。",
+                    "data": None,
+                    "capability": "D-A10",
+                }
+            nominal_by_month = {date[:7]: value for value, date in zip(*nominal, strict=False)}
+            cpi_by_month = {date[:7]: value for value, date in zip(*cpi, strict=False)}
+            months = sorted(set(nominal_by_month) & set(cpi_by_month))
+            if not months:
+                return {
+                    "success": True,
+                    "degraded": True,
+                    "answer": "DGS10 与 CPIAUCSL 没有共同月份，暂无法计算实际利率，不做推算。",
+                    "data": None,
+                    "capability": "D-A10",
+                }
+            envelope = run_capability(
+                "D-A10",
+                nominal=[nominal_by_month[month] for month in months],
+                cpi=[cpi_by_month[month] for month in months],
+                dates=[f"{month}-01" for month in months],
+                period=12,
+            )
+        except Exception as e:  # noqa: BLE001  FAIL-OPEN
+            return {
+                "success": True,
+                "degraded": True,
+                "answer": f"实际利率计算异常: {e}",
+                "data": None,
+                "capability": "D-A10",
+            }
+        return _stat_result(envelope)
+
+    if capability_id in _STAT_METRIC_CAPS:
+        spec = resolve_metric(message)
+        if not spec:
+            return {
+                "success": True,
+                "degraded": True,
+                "answer": f"{capability_id} 需要明确的指标序列（如 CPI、MVRV、资金费率、ETF 净流入、稳定币规模），不做推算。",
+                "data": None,
+                "capability": capability_id,
+            }
+        agg = "monthly" if capability_id in ("D-A08", "D-A09") else "daily"
+        default_days = 1825 if agg == "monthly" else spec["days"]
+        days = resolve_days(message, default_days)
+        try:
+            loaded = _load_stat_series(
+                spec["sub_category"],
+                spec["metric_name"],
+                days=days,
+                agg=agg,
+                sign=spec.get("sign", 1.0) or 1.0,
+                scale=spec.get("scale", 1.0) or 1.0,
+            )
+            if loaded is None:
+                return {
+                    "success": True,
+                    "degraded": True,
+                    "answer": f"{spec['label']}序列不可用，暂无法计算 {capability_id}，不做推算。",
+                    "data": None,
+                    "capability": capability_id,
+                }
+            values, dates = loaded
+            kwargs = {
+                "values": values,
+                "dates": dates,
+                "name": spec["label"],
+                "symbol": resolved_symbol or "",
+            }
+            if capability_id in ("D-A01", "D-A02", "D-A04", "D-A08", "D-A09", "D-A15"):
+                kwargs["unit"] = spec.get("unit") or ""
+            if capability_id == "D-A01":
+                if re.search(r"月频|月度", message):
+                    kwargs["freq"] = "monthly"
+                elif re.search(r"周频|每周", message):
+                    kwargs["freq"] = "weekly"
+            elif capability_id == "D-A13":
+                if re.search(r"下跌|低于|下方|跌破", message):
+                    kwargs["side"] = "below"
+                elif re.search(r"绝对|涨跌", message):
+                    kwargs["side"] = "abs"
+            envelope = run_capability(capability_id, **kwargs)
+        except Exception as e:  # noqa: BLE001  FAIL-OPEN
+            return {
+                "success": True,
+                "degraded": True,
+                "answer": f"{capability_id} 指标统计异常: {e}",
+                "data": None,
+                "capability": capability_id,
+            }
+        return _stat_result(envelope)
 
     if capability_id == "D-E08":
         # 无因子数据源：如实降级，不拿价格序列伪造因子
@@ -1168,13 +1362,18 @@ def exec_stat_query(message):
             }
         return _stat_result(envelope)
 
-    if capability_id in ("D-E05", "D-E11"):
+    if capability_id in ("D-E05", "D-E11", "D-A11", "D-A12"):
         peers = [s for s in _symbols_in_message(message) if s != symbol]
         if not peers:
+            label = {
+                "D-E11": "跨资产同向",
+                "D-A11": "滚动相关",
+                "D-A12": "领先滞后相关",
+            }.get(capability_id, "相关性")
             return {
                 "success": True,
                 "degraded": True,
-                "answer": f"{'跨资产同向' if capability_id == 'D-E11' else '相关性'}统计需要第二个标的"
+                "answer": f"{label}统计需要第二个标的"
                 f"（当前识别为 {symbol}），请指明对比对象（如 BTC 与 ETH），不做推算。",
                 "data": None,
                 "capability": capability_id,
@@ -1265,14 +1464,22 @@ def exec_stat_query(message):
 
             x_returns, x_dates = _stat_returns_with_dates([x_map[t] for t in common], common)
             y_returns, _ = _stat_returns_with_dates([y_map[t] for t in common], common)
-            if capability_id == "D-E11":
+            if capability_id in ("D-E11", "D-A12"):
                 envelope = run_capability(
-                    "D-E11",
+                    capability_id,
                     x=x_returns,
                     y=y_returns,
                     dates=x_dates,
                     x_name=symbol,
                     y_name=peer,
+                )
+            elif capability_id == "D-A11":
+                envelope = run_capability(
+                    "D-A11",
+                    x=x_returns,
+                    y=y_returns,
+                    dates=x_dates,
+                    name=f"{symbol}/{peer}",
                 )
             else:
                 envelope = run_capability(
@@ -1297,7 +1504,8 @@ def exec_stat_query(message):
         return result
 
     try:
-        candles = load_candles(symbol, bar="1d", days=730)
+        days = 1825 if capability_id == "D-B09" else 730
+        candles = load_candles(symbol, bar="1d", days=days)
     except CandleError as e:
         return {
             "success": True,
@@ -1323,7 +1531,15 @@ def exec_stat_query(message):
             }
         return _stat_result(envelope)
 
-    kwargs = {"prices": list(candles.close), "symbol": symbol}
+    if capability_id == "D-A06":
+        kwargs = {
+            "values": list(candles.close),
+            "dates": _stat_dates(candles.ts),
+            "name": f"{symbol} 价格",
+            "symbol": symbol,
+        }
+    else:
+        kwargs = {"prices": list(candles.close), "symbol": symbol}
     if capability_id == "D-E03":
         kwargs["dates"] = _stat_dates(candles.ts)
         kwargs["is_returns"] = False
@@ -1332,8 +1548,8 @@ def exec_stat_query(message):
         kwargs["dates"] = _stat_dates(candles.ts)
     elif capability_id == "D-E07":
         kwargs["is_returns"] = False
-    elif capability_id == "D-E10":
-        # 回撤曲线需要 UTC 日期轴；缺日期时 drawdown_path 的 x 轴为空
+    elif capability_id == "D-E10" or capability_id in _STAT_PRICE_DATE_CAPS:
+        # 回撤/趋势/动量/波动率目标共用 UTC 日期轴，供质量块与图形输出。
         kwargs["dates"] = _stat_dates(candles.ts)
     try:
         envelope = run_capability(capability_id, **kwargs)
@@ -1873,7 +2089,7 @@ def exec_event_listing(message):
     # 层间钩子 (SPEC v1.3 §9.7): 基于罗列内容动态生成 L2 引导
     hint = None
     if etype:
-        hint = f"想了解{type_desc}事件的整体演变与量变趋势吗？" f"可问：{type_desc}事件怎么演变"
+        hint = f"想了解{type_desc}事件的整体演变与量变趋势吗？可问：{type_desc}事件怎么演变"
     else:
         hint = "想深入了解某类事件线的演变吗？可问：加密监管事件怎么演变"
     return {
@@ -1997,7 +2213,7 @@ def exec_doc_search(message: str):
                 "data": {"query": q, "hits": []},
             }
         lines = [
-            f"{i+1}. {h['source']['path']}（相关度 {h['score']:.2f}）"
+            f"{i + 1}. {h['source']['path']}（相关度 {h['score']:.2f}）"
             for i, h in enumerate(hits[:8])
         ]
         return {
