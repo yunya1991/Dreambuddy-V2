@@ -40,7 +40,8 @@ HOST = os.environ.get("L1_EMBED_HOST", "127.0.0.1")
 PORT = int(os.environ.get("L1_EMBED_PORT", "8099"))
 ZH_MODEL = os.environ.get("L1_ZH_MODEL", "BAAI/bge-base-zh-v1.5")
 EN_MODEL = os.environ.get("L1_EN_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-MAX_TEXTS = 64
+MAX_TEXTS = 4096  # 单请求总量上限（服务内部按 ENCODE_CHUNK 分片，避免大 batch 拖爆内存）
+ENCODE_CHUNK = 64  # torch CPU 单次编码条数
 MAX_TEXT_LEN = 2000
 
 _embedders: Dict[str, object] = {}
@@ -148,8 +149,11 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(400, {"ok": False, "error": "too_large"})
                 return
             emb = _get_embedder(lang)
-            with _encode_lock:
-                vecs = emb.embed_batch([str(t) for t in texts])
+            clean = [str(t) for t in texts]
+            vecs = []
+            with _encode_lock:  # 锁内分片：调用方可一次送大批量，内存仍受 ENCODE_CHUNK 约束
+                for i in range(0, len(clean), ENCODE_CHUNK):
+                    vecs.extend(emb.embed_batch(clean[i : i + ENCODE_CHUNK]))
             self._send(200, {"vectors": [v.tolist() for v in vecs]})
         except Exception as e:  # noqa: BLE001
             logger.error("/embed 失败: %s", e)
