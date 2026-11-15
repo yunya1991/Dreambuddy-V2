@@ -1100,6 +1100,9 @@ def percentile_forward(
 # ---------------- D-E14 相关状态条件分布 ----------------
 
 
+TIER_LABELS = {4: "A", 3: "B", 2: "D"}  # 二维档位：4×4 / 3×3 / 2×2
+
+
 def conditional_distribution(
     factor: Sequence[Any],
     prices: Sequence[Any],
@@ -1112,10 +1115,21 @@ def conditional_distribution(
     window: int = MIN_CONDITIONAL,
     min_bucket_n: int = MIN_CONDITIONAL,
     name: str = "相关状态",
+    factor2: Optional[Sequence[Any]] = None,
+    name2: str = "第二维状态",
+    buckets_per_axis: Optional[int] = None,
     symbol: str = "",
     trace_id: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """一维相关状态经 R02 PIT 分桶，输出 h=1/2 前瞻分布与共享桶内统计。"""
+    """相关状态经 R02 PIT 分桶，输出 h=1/2 前瞻分布与共享桶内统计。
+
+    一维：默认 4 桶，主期限每桶非重叠不足 250 时降 2 桶。
+    二维（传 `factor2`）：按「每格非重叠 ≥`min_bucket_n`」做档位阶梯
+    4×4=A（≥4,000 日）→ 3×3=B（≥2,250 日）→ 2×2=D（≥1,000 日）；
+    三档均不达标则不出二维结论，回退一维并披露 `degraded_reason=insufficient_2d`。
+    实际档位/格数/每格 n 一律显式返回（`tier`/`cells`/`min_cell_nonoverlap_n`），不静默降级。
+    """
+    two_axis = factor2 is not None
     if len(factor) != len(prices):
         return unavailable(
             capability="D-E14",
@@ -1123,12 +1137,22 @@ def conditional_distribution(
             reason="相关状态与价格长度不一致",
             trace_id=trace_id,
         )
+    if two_axis and len(factor2) != len(prices):
+        return unavailable(
+            capability="D-E14",
+            intent=INTENT_CONDITIONAL_DISTRIBUTION,
+            reason="第二维相关状态与价格长度不一致",
+            trace_id=trace_id,
+        )
     fx, px = _floats(factor), _floats(prices)
-    if (
+    fx2 = _floats(factor2) if two_axis else []
+    invalid = (
         len(fx) != len(factor)
         or len(px) != len(prices)
         or not all(math.isfinite(value) for value in fx + px)
-    ):
+        or (two_axis and (len(fx2) != len(factor2) or not all(math.isfinite(v) for v in fx2)))
+    )
+    if invalid:
         return unavailable(
             capability="D-E14",
             intent=INTENT_CONDITIONAL_DISTRIBUTION,
@@ -1147,6 +1171,7 @@ def conditional_distribution(
         requested_buckets = int(buckets)
         window = int(window)
         min_bucket_n = int(min_bucket_n)
+        requested_axis = requested_buckets if buckets_per_axis is None else int(buckets_per_axis)
     except (TypeError, ValueError):
         return unavailable(
             capability="D-E14",
@@ -1159,6 +1184,13 @@ def conditional_distribution(
             capability="D-E14",
             intent=INTENT_CONDITIONAL_DISTRIBUTION,
             reason="horizons 须为正整数，buckets/window/min_bucket_n 超出有效范围",
+            trace_id=trace_id,
+        )
+    if two_axis and requested_axis < 2:
+        return unavailable(
+            capability="D-E14",
+            intent=INTENT_CONDITIONAL_DISTRIBUTION,
+            reason="二维 buckets_per_axis 须 ≥ 2",
             trace_id=trace_id,
         )
     n = len(px)
@@ -1188,7 +1220,7 @@ def conditional_distribution(
     if release_ts is not None:
         payload["release_ts"] = list(release_ts)
 
-    def evaluate(k: int) -> Dict[str, Any]:
+    def evaluate(k: int, axis2: bool = False) -> Dict[str, Any]:
         params: Dict[str, Any] = {
             "buckets": k,
             "horizons": hs,
@@ -1197,41 +1229,97 @@ def conditional_distribution(
             "window": window,
             "include_states": True,
         }
+        target = dict(payload)
+        if axis2:
+            target["indicator2"] = fx2
+            params["label2"] = name2 or "第二维状态"
         if as_of is not None:
             params["as_of"] = as_of
-        return _call("R02", payload, **params)
+        return _call("R02", target, **params)
 
-    def primary_passed(result: Dict[str, Any]) -> bool:
-        rows = result["by_horizon"][0]["by_bucket"]
+    def gate_rows(result: Dict[str, Any], key: str) -> List[Dict[str, Any]]:
+        return result["by_horizon"][0][key]
+
+    def primary_passed(result: Dict[str, Any], key: str) -> bool:
+        rows = gate_rows(result, key)
         return bool(rows) and all(row["nonoverlap_n"] >= min_bucket_n for row in rows)
 
-    chosen = evaluate(requested_buckets)
-    if chosen["result"] is None:
-        return unavailable(
-            capability="D-E14",
-            intent=INTENT_CONDITIONAL_DISTRIBUTION,
-            reason=str(chosen.get("reason") or chosen["gate"]),
-            trace_id=trace_id,
-        )
+    dim = 2 if two_axis else 1
+    tier: Optional[str] = None
+    requested_tier: Optional[str] = None
+    degraded_tier: Optional[str] = None
+    attempts: List[Dict[str, Any]] = []
+    actual_axis = 0
+    bucket_downgraded_from: Optional[int] = None
     degraded_reason: Optional[str] = None
-    if not primary_passed(chosen["result"]):
-        if requested_buckets <= 2:
+    chosen: Optional[Dict[str, Any]] = None
+    if two_axis:
+        ladder = [k for k in (4, 3, 2) if k <= requested_axis]
+        requested_tier = TIER_LABELS.get(ladder[0]) if ladder else None
+        for k in ladder:
+            env = evaluate(k, axis2=True)
+            if env["result"] is None:
+                attempts.append(
+                    {
+                        "buckets_per_axis": k,
+                        "tier": TIER_LABELS.get(k),
+                        "gate": env.get("gate"),
+                        "reason": env.get("reason"),
+                    }
+                )
+                continue
+            cells_min = min(
+                (row["nonoverlap_n"] for row in gate_rows(env["result"], "by_cell")), default=0
+            )
+            ok = primary_passed(env["result"], "by_cell")
+            attempts.append(
+                {
+                    "buckets_per_axis": k,
+                    "cells": k * k,
+                    "tier": TIER_LABELS.get(k),
+                    "min_cell_nonoverlap_n": cells_min,
+                    "passed": ok,
+                }
+            )
+            if ok:
+                chosen, tier, actual_axis = env, TIER_LABELS.get(k), k
+                break
+        if chosen is None:
+            dim = 1
+            degraded_reason = "insufficient_2d"
+        elif tier != requested_tier:
+            degraded_tier = tier
+            degraded_reason = "bucket_nonoverlap_lt_250"
+
+    if dim == 1:
+        chosen = evaluate(requested_buckets)
+        if chosen["result"] is None:
             return unavailable(
                 capability="D-E14",
                 intent=INTENT_CONDITIONAL_DISTRIBUTION,
-                reason=f"主期限每桶非重叠样本不足 {min_bucket_n}",
+                reason=str(chosen.get("reason") or chosen["gate"]),
                 trace_id=trace_id,
             )
-        fallback = evaluate(2)
-        if fallback["result"] is None or not primary_passed(fallback["result"]):
-            return unavailable(
-                capability="D-E14",
-                intent=INTENT_CONDITIONAL_DISTRIBUTION,
-                reason=f"降为 2 桶后主期限每桶非重叠样本仍不足 {min_bucket_n}",
-                trace_id=trace_id,
-            )
-        chosen = fallback
-        degraded_reason = "bucket_nonoverlap_lt_250"
+        if not primary_passed(chosen["result"], "by_bucket"):
+            if requested_buckets <= 2:
+                return unavailable(
+                    capability="D-E14",
+                    intent=INTENT_CONDITIONAL_DISTRIBUTION,
+                    reason=f"主期限每桶非重叠样本不足 {min_bucket_n}",
+                    trace_id=trace_id,
+                )
+            fallback = evaluate(2)
+            if fallback["result"] is None or not primary_passed(fallback["result"], "by_bucket"):
+                return unavailable(
+                    capability="D-E14",
+                    intent=INTENT_CONDITIONAL_DISTRIBUTION,
+                    reason=f"降为 2 桶后主期限每桶非重叠样本仍不足 {min_bucket_n}",
+                    trace_id=trace_id,
+                )
+            chosen = fallback
+            bucket_downgraded_from = requested_buckets
+            if degraded_reason is None:
+                degraded_reason = "bucket_nonoverlap_lt_250"
 
     result = chosen["result"]
     states = result.get("states")
@@ -1243,6 +1331,11 @@ def conditional_distribution(
             reason="R02 未返回等长 PIT 桶标签",
             trace_id=trace_id,
         )
+    key = "by_cell" if dim == 2 else "by_bucket"
+    actual_buckets = len(gate_rows(result, key))
+    if dim == 2:
+        actual_axis = int(result.get("buckets_per_axis") or actual_axis)
+    current_state = str(result["cell"]) if dim == 2 else str(result["bucket"])
 
     from ..align import forward_returns
 
@@ -1250,7 +1343,7 @@ def conditional_distribution(
     weak_horizons: List[int] = []
     for distribution in result["by_horizon"]:
         h = int(distribution["h"])
-        if any(row["nonoverlap_n"] < min_bucket_n for row in distribution["by_bucket"]):
+        if any(row["nonoverlap_n"] < min_bucket_n for row in distribution[key]):
             weak_horizons.append(h)
         forward = forward_returns(px[:visible_n], h)
         labels: List[int] = []
@@ -1262,24 +1355,28 @@ def conditional_distribution(
             target.append(float(value))
         pair = {"state": labels, "target": target}
         percentiles = _call("B10", pair)
-        monotonic = _call(
-            "R08",
-            pair,
-            k=len(distribution["by_bucket"]),
-            label=name or "相关状态",
-            prebinned=True,
-        )
+        monotonic = None
+        if dim == 1:
+            monotonic = _call(
+                "R08",
+                pair,
+                k=len(distribution[key]),
+                label=name or "相关状态",
+                prebinned=True,
+            )
         conditional = expression = None
-        required = [percentiles, monotonic]
+        required = [percentiles]
+        if monotonic is not None:
+            required.append(monotonic)
         if h == 1:
             conditional = _call("B05", pair)
-            expression = _call("R01", pair, h=h, state=str(result["bucket"]))
+            expression = _call("R01", pair, h=h, state=current_state)
             required.extend([conditional, expression])
         if any(block["gate"] != "ok" or block["result"] is None for block in required):
             return unavailable(
                 capability="D-E14",
                 intent=INTENT_CONDITIONAL_DISTRIBUTION,
-                reason=f"h={h} 条件分位或单调性计算失败",
+                reason=f"h={h} 条件分位或单调性计算失败" if dim == 1 else f"h={h} 条件分位计算失败",
                 trace_id=trace_id,
             )
         rows.append(
@@ -1290,11 +1387,11 @@ def conditional_distribution(
                 "conditional": conditional["result"] if conditional else None,
                 "percentiles": percentiles["result"],
                 "expression": expression["result"] if expression else None,
-                "monotonic": monotonic["result"],
+                "monotonic": monotonic["result"] if monotonic else None,
             }
         )
 
-    if weak_horizons:
+    if weak_horizons and degraded_reason is None:
         degraded_reason = "bucket_nonoverlap_lt_250"
     q = quality_for(
         visible_n,
@@ -1310,7 +1407,7 @@ def conditional_distribution(
     main_row = next((row for row in rows if row["h"] == 1), rows[0])
     main = main_row["distribution"]
     if not main.get("effective_n") or any(
-        main.get(key) is None for key in ("mean", "median", "p10", "p90", "win_rate")
+        main.get(field) is None for field in ("mean", "median", "p10", "p90", "win_rate")
     ):
         return unavailable(
             capability="D-E14",
@@ -1319,24 +1416,53 @@ def conditional_distribution(
             trace_id=trace_id,
         )
     notes: List[str] = []
-    actual_buckets = len(result["by_horizon"][0]["by_bucket"])
-    if actual_buckets != requested_buckets:
-        notes.append(f"降级：{requested_buckets} 桶非重叠样本不足，降为 {actual_buckets} 桶")
+    if dim == 2:
+        min_cell = min(row["nonoverlap_n"] for row in gate_rows(result, key))
+        if degraded_tier:
+            notes.append(
+                f"降级：{requested_tier} 档每格非重叠样本不足，"
+                f"降为 {actual_axis}×{actual_axis}（Tier {tier}）"
+            )
+    else:
+        min_cell = None
+        if bucket_downgraded_from:
+            notes.append(
+                f"降级：{bucket_downgraded_from} 桶非重叠样本不足，降为 {actual_buckets} 桶"
+            )
+        if degraded_reason == "insufficient_2d":
+            notes.append(
+                f"降级：二维 2×2 每格非重叠样本不足 {min_bucket_n}，"
+                f"不出二维结论，回退一维 {actual_buckets} 桶"
+            )
     if weak_horizons:
         weak_text = "、".join(f"h={h}" for h in weak_horizons)
         notes.append(f"降级：{weak_text} 每桶非重叠样本不足，仅作描述")
     note = f"{'；'.join(notes)}。" if notes else ""
     head = f"{symbol} " if symbol else ""
-    answer = (
-        f"{head}截至 {result['as_of']}，{name or '相关状态'}处于 "
-        f"{result['current_percentile']:.1f}% 分位；历史同状态后 {main['h']} 日均值 "
-        f"{main['mean'] * 100:+.2f}%、中位 {main['median'] * 100:+.2f}%、80% 历史区间 "
-        f"[{main['p10'] * 100:+.2f}%, {main['p90'] * 100:+.2f}%]、"
-        f"上涨 {main['win_rate'] * 100:.1f}%（{actual_buckets} 桶，"
-        f"有效 n={main['effective_n']}，非重叠 n={main['nonoverlap_n']}）。"
-        f"{main_row['monotonic']['phrase']}{note}{CAVEAT}。"
-    )
-    public_result = {key: value for key, value in result.items() if key != "states"}
+    if dim == 2:
+        main_text = (
+            f"{head}截至 {result['as_of']}，{name or '相关状态'}处于 "
+            f"{result['current_percentile']:.1f}% 分位、{name2 or '第二维状态'}处于 "
+            f"{result['current_percentile_2']:.1f}% 分位"
+            f"（{actual_axis}×{actual_axis} 网格共 {actual_buckets} 格，Tier {tier}）；"
+            f"历史同格后 {main['h']} 日均值 {main['mean'] * 100:+.2f}%、"
+            f"中位 {main['median'] * 100:+.2f}%、80% 历史区间 "
+            f"[{main['p10'] * 100:+.2f}%, {main['p90'] * 100:+.2f}%]、"
+            f"上涨 {main['win_rate'] * 100:.1f}%（有效 n={main['effective_n']}，"
+            f"非重叠 n={main['nonoverlap_n']}，每格非重叠下限 {min_cell}）。"
+        )
+    else:
+        main_text = (
+            f"{head}截至 {result['as_of']}，{name or '相关状态'}处于 "
+            f"{result['current_percentile']:.1f}% 分位；历史同状态后 {main['h']} 日均值 "
+            f"{main['mean'] * 100:+.2f}%、中位 {main['median'] * 100:+.2f}%、80% 历史区间 "
+            f"[{main['p10'] * 100:+.2f}%, {main['p90'] * 100:+.2f}%]、"
+            f"上涨 {main['win_rate'] * 100:.1f}%（{actual_buckets} 桶，"
+            f"有效 n={main['effective_n']}，非重叠 n={main['nonoverlap_n']}）。"
+        )
+    monotonic_text = main_row["monotonic"]["phrase"] if main_row["monotonic"] else ""
+    answer = f"{main_text}{monotonic_text}{note}{CAVEAT}。"
+    public_result = {name_key: value for name_key, value in result.items() if name_key != "states"}
     return build(
         capability="D-E14",
         intent=INTENT_CONDITIONAL_DISTRIBUTION,
@@ -1345,13 +1471,27 @@ def conditional_distribution(
             "capabilities": {
                 "D-E14": {
                     "gate": "insufficient_samples" if degraded_reason else "ok",
-                    "methods": ["B05", "B10", "R01", "R02", "R08"],
+                    "methods": (
+                        ["B05", "B10", "R01", "R02", "R08"]
+                        if dim == 1
+                        else ["B05", "B10", "R01", "R02"]
+                    ),
+                    "dim": dim,
                     "state_name": name or "相关状态",
+                    "state_name_2": (name2 or "第二维状态") if dim == 2 else None,
                     "pit": True,
                     "as_of": result["as_of"],
                     "requested_buckets": requested_buckets,
-                    "buckets": actual_buckets,
+                    "buckets": actual_axis if dim == 2 else actual_buckets,
+                    "requested_buckets_per_axis": requested_axis if two_axis else None,
+                    "buckets_per_axis": actual_axis if dim == 2 else None,
+                    "cells": actual_buckets if dim == 2 else None,
+                    "tier": tier,
+                    "requested_tier": requested_tier,
+                    "degraded_tier": degraded_tier,
+                    "tier_attempts": attempts,
                     "min_bucket_nonoverlap_n": min_bucket_n,
+                    "min_cell_nonoverlap_n": min_cell,
                     "degraded_reason": degraded_reason,
                     "weak_horizons": weak_horizons,
                     "conditional_distribution": public_result,
@@ -1360,6 +1500,7 @@ def conditional_distribution(
             },
             "params": {
                 "min_n": MIN_CONDITIONAL,
+                "dim": dim,
                 "horizons": list(hs),
                 "window": window,
                 "min_bucket_nonoverlap_n": min_bucket_n,

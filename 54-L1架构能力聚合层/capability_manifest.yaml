@@ -237,7 +237,7 @@ capabilities:
     executor: capabilities.stats.conditional_distribution
     methods: [B05, B10, R01, R02, R08]
     min_n: 250
-    notes: 一维相关状态经 R02 PIT 4 桶输出 h=1/2 前瞻分布；每桶非重叠 n>=250，主期限不足降 2 桶，弱后续期限单独降级；h>1 不输出朴素 t/p
+    notes: 一维相关状态经 R02 PIT 4 桶输出 h=1/2 前瞻分布；二维（factor2）按每格非重叠 n>=250 做档位阶梯 4×4=A→3×3=B→2×2=D，三档均不达标回退一维并披露 insufficient_2d；每格 n 与档位（tier/cells/min_cell_nonoverlap_n）显式返回，不静默降级；弱后续期限单独降级；h>1 不输出朴素 t/p
   - id: D-G14
     intent: metric_series
     mode: deterministic

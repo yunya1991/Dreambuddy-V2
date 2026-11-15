@@ -3259,6 +3259,92 @@ def test_conditional_distribution_short_or_misaligned_input_fails_open():
     assert mismatched["ok"] is False and mismatched["quality"]["status"] == STATUS_EMPTY
 
 
+def _two_axis_state(n=4800, seed=29):
+    """二维相关状态（两轴 iid 高斯）+ 同步价格轴：PIT 滚动分位后各格近均匀。"""
+    rng = random.Random(seed)
+    factor = [rng.gauss(0.0, 1.0) for _ in range(n)]
+    factor2 = [rng.gauss(0.0, 1.0) for _ in range(n)]
+    return factor, factor2, _prices(n, seed=17, drift=0.0002, vol=0.01)
+
+
+def test_conditional_distribution_two_axis_tier_a_four_by_four():
+    factor, factor2, prices = _two_axis_state(4800)
+    out = run_capability(
+        "D-E14",
+        factor=factor,
+        factor2=factor2,
+        prices=prices,
+        dates=_dates(len(prices)),
+        name="平均相关度",
+        name2="波动率分位",
+        horizons=(1,),
+        symbol="BTC",
+    )
+    assert out["ok"] is True, out["answer"]
+    block = out["data"]["capabilities"]["D-E14"]
+    assert block["dim"] == 2
+    assert block["tier"] == "A" and block["requested_tier"] == "A"
+    assert block["degraded_tier"] is None
+    assert block["buckets_per_axis"] == 4 and block["cells"] == 16
+    assert block["min_cell_nonoverlap_n"] >= 250
+    cells = block["by_horizon"][0]["distribution"]["by_cell"]
+    assert len(cells) == 16
+    assert all(cell["nonoverlap_n"] >= 250 for cell in cells)
+    assert {(cell["axis1"], cell["axis2"]) for cell in cells} == {
+        (row, column) for row in range(4) for column in range(4)
+    }
+    # 2D 一维序数无单调语义，不应输出 R08 单调性结论
+    assert block["by_horizon"][0]["monotonic"] is None
+    assert "Tier A" in out["answer"] and "历史统计" in out["answer"]
+    assert not any(word in out["answer"] for word in ("将会", "预计", "必然"))
+
+
+def test_conditional_distribution_two_axis_degrades_to_tier_b():
+    factor, factor2, prices = _two_axis_state(2800)
+    out = run_capability("D-E14", factor=factor, factor2=factor2, prices=prices, horizons=(1,))
+    assert out["ok"] is True, out["answer"]
+    block = out["data"]["capabilities"]["D-E14"]
+    assert block["dim"] == 2
+    assert block["tier"] == "B" and block["degraded_tier"] == "B"
+    assert block["buckets_per_axis"] == 3 and block["cells"] == 9
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "bucket_nonoverlap_lt_250"
+    assert [attempt["buckets_per_axis"] for attempt in block["tier_attempts"]] == [4, 3]
+    assert block["tier_attempts"][0]["passed"] is False
+    assert "降级" in out["answer"] and "Tier B" in out["answer"]
+
+
+def test_conditional_distribution_two_axis_degrades_to_tier_d():
+    factor, factor2, prices = _two_axis_state(1400)
+    out = run_capability("D-E14", factor=factor, factor2=factor2, prices=prices, horizons=(1,))
+    assert out["ok"] is True, out["answer"]
+    block = out["data"]["capabilities"]["D-E14"]
+    assert block["tier"] == "D" and block["degraded_tier"] == "D"
+    assert block["buckets_per_axis"] == 2 and block["cells"] == 4
+    assert block["min_cell_nonoverlap_n"] >= 250
+    assert out["quality"]["status"] == STATUS_PARTIAL
+
+
+def test_conditional_distribution_two_axis_falls_back_to_one_dimension():
+    factor, factor2, prices = _two_axis_state(800)
+    out = run_capability("D-E14", factor=factor, factor2=factor2, prices=prices, horizons=(1,))
+    assert out["ok"] is True, out["answer"]
+    block = out["data"]["capabilities"]["D-E14"]
+    assert block["dim"] == 1 and block["tier"] is None
+    assert block["cells"] is None
+    assert block["buckets"] == 2  # 单维 4→2 桶兜底
+    assert block["degraded_reason"] == "insufficient_2d"
+    assert out["quality"]["status"] == STATUS_PARTIAL
+    assert out["quality"]["degraded_reason"] == "insufficient_2d"
+    assert "不出二维结论" in out["answer"]
+
+
+def test_conditional_distribution_two_axis_misaligned_fails_open():
+    factor, factor2, prices = _two_axis_state(1400)
+    out = run_capability("D-E14", factor=factor, factor2=factor2[:-1], prices=prices)
+    assert out["ok"] is False and out["quality"]["status"] == STATUS_EMPTY
+
+
 # ---------------- D-E08 条件 IC ----------------
 
 

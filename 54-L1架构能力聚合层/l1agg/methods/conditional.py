@@ -888,6 +888,58 @@ def _r02_nonoverlap_n(indices: Sequence[int], horizon: int) -> int:
     return count
 
 
+def _r02_rolling_state(
+    values: Sequence[float],
+    buckets: int,
+    window: int,
+    release_keys: Sequence[float],
+    time_keys: Sequence[float],
+    has_release: bool,
+):
+    """PIT 逐时点滚动分位分桶闭包：`(last_index, visible_until) -> (percentile, bucket)`。
+
+    `has_release=false` 时可见窗口等价于「截至 last_index 的最近 window 个观测」，
+    用切片直接取，避免 O(n²) 的逐点过滤（与过滤口径结果完全一致）。
+    """
+
+    def state_at(last_index: int, visible_until: float):
+        if has_release:
+            visible = [j for j in range(last_index + 1) if release_keys[j] <= visible_until]
+            if len(visible) < window:
+                return None
+            sample = [values[j] for j in visible[-window:]]
+        else:
+            if last_index + 1 < window:
+                return None
+            sample = list(values[last_index + 1 - window : last_index + 1])
+        current = sample[-1]
+        ordered = sorted(sample)
+        inner = [_quantile_sorted(ordered, i / buckets) for i in range(1, buckets)]
+        percentile = 100.0 * sum(1 for v in sample if v <= current) / len(sample)
+        bucket = min(bisect.bisect_right(inner, current), buckets - 1)
+        return percentile, bucket
+
+    return state_at
+
+
+def _r02_describe(selected: Sequence[tuple], horizon: int, pit: bool) -> Dict[str, Any]:
+    """单桶/单格前瞻收益描述统计；h>1 的 PIT 样本不输出朴素 t/p。"""
+    stats = _group_stats([float(v) for _, v in selected])
+    ordered = sorted(float(v) for _, v in selected)
+    stats["p10"] = round(_quantile_sorted(ordered, 0.1), 6) if ordered else None
+    stats["p90"] = round(_quantile_sorted(ordered, 0.9), 6) if ordered else None
+    if pit and horizon > 1:
+        stats["t"] = None
+        stats["p"] = None
+    stats.update(
+        {
+            "effective_n": len(selected),
+            "nonoverlap_n": _r02_nonoverlap_n([i for i, _ in selected], horizon),
+        }
+    )
+    return stats
+
+
 @register(
     "R02",
     name="分位→前瞻收益（表达）",
@@ -906,7 +958,10 @@ def _r02_nonoverlap_n(indices: Sequence[int], horizon: int) -> int:
         "window",
         "align_method",
     ),
-    notes="pit=true 逐时点滚动分位；pit=false 仅供含未来函数的样本内回顾",
+    notes=(
+        "pit=true 逐时点滚动分位；pit=false 仅供含未来函数的样本内回顾；"
+        "可选 indicator2 做两维分位笛卡尔积（cells=buckets²），每格独立统计并输出 by_cell"
+    ),
     checks=MethodChecks(
         synthetic=lambda: {
             "data": {
@@ -923,6 +978,7 @@ def r02_percentile_forward(
     buckets: int = 10,
     horizons: Sequence[int] = (1, 3, 5, 10, 20),
     label: str = "该指标",
+    label2: Optional[str] = None,
     pit: bool = False,
     window: int = COND_MIN_N,
     as_of: Any = None,
@@ -930,11 +986,20 @@ def r02_percentile_forward(
     **_: Any,
 ) -> Dict[str, Any]:
     indicator, price = _two(data)
+    second_raw = next((data[key] for key in ("indicator2", "factor2", "x2") if key in data), None)
+    two_axis = second_raw is not None
     n = len(indicator)
     if buckets < 2:
         raise ValueError("buckets must be >= 2")
     if window < 2:
         raise ValueError("window must be >= 2")
+    second: List[float] = []
+    if two_axis:
+        second = _floats(second_raw)
+        if len(second) != n:
+            raise ValueError("indicator2 length must equal indicator/price length")
+        if not pit:
+            raise ValueError("two-axis percentile requires pit=True")
 
     raw_times = next(
         (data[key] for key in ("timestamps", "dates", "ts") if key in data),
@@ -955,73 +1020,77 @@ def r02_percentile_forward(
     price = price[:end]
     raw_times = raw_times[:end]
     time_keys = time_keys[:end]
+    if two_axis:
+        second = second[:end]
 
     release_keys = time_keys
-    if pit and "release_ts" in data:
+    has_release = bool(pit and "release_ts" in data)
+    if has_release:
         if len(data["release_ts"]) != n:
             raise ValueError("release_ts length must equal indicator/price length")
         release_keys = [_r02_time_key(v) for v in data["release_ts"][:end]]
 
-    def rolling_state(last_index: int, visible_until: float):
-        visible = [j for j in range(last_index + 1) if release_keys[j] <= visible_until]
-        if len(visible) < window:
-            return None
-        values = [indicator[j] for j in visible[-window:]]
-        current = values[-1]
-        ordered = sorted(values)
-        inner = [_quantile_sorted(ordered, i / buckets) for i in range(1, buckets)]
-        percentile = 100.0 * sum(1 for v in values if v <= current) / len(values)
-        bucket = min(bisect.bisect_right(inner, current), buckets - 1)
-        return percentile, bucket
+    state_at = _r02_rolling_state(indicator, buckets, window, release_keys, time_keys, has_release)
+    state_at2 = (
+        _r02_rolling_state(second, buckets, window, release_keys, time_keys, has_release)
+        if two_axis
+        else None
+    )
 
     if pit:
-        current_state = rolling_state(end - 1, as_of_key)
+        current_state = state_at(end - 1, as_of_key)
         if current_state is None:
             raise ValueError(
                 f"pit requires at least {window} visible observations as of {as_of_value}"
             )
-        states = [rolling_state(i, time_keys[i]) for i in range(end)]
+        states = [state_at(i, time_keys[i]) for i in range(end)]
         pct, bucket = current_state
+        cell = None
+        pct2 = bucket2 = None
+        if two_axis:
+            current_state2 = state_at2(end - 1, as_of_key)
+            if current_state2 is None:
+                raise ValueError(
+                    f"pit requires at least {window} visible observations as of {as_of_value}"
+                )
+            states2 = [state_at2(i, time_keys[i]) for i in range(end)]
+            pct2, bucket2 = current_state2
+            cell = int(bucket) * buckets + int(bucket2)
+            labels = [
+                None if (left is None or right is None) else int(left[1]) * buckets + int(right[1])
+                for left, right in zip(states, states2, strict=False)
+            ]
+        else:
+            labels = [None if state is None else int(state[1]) for state in states]
     else:
         last = indicator[-1]
         pct = 100.0 * sum(1 for v in indicator if v <= last) / end
         edges = [_quantile_sorted(sorted(indicator), i / buckets) for i in range(buckets + 1)]
         inner = edges[1:-1]
         bucket = min(bisect.bisect_right(inner, last), buckets - 1)
-        states = [(0.0, min(bisect.bisect_right(inner, value), buckets - 1)) for value in indicator]
+        labels = [min(bisect.bisect_right(inner, value), buckets - 1) for value in indicator]
+        cell = None
+        pct2 = bucket2 = None
 
     align_method = str(data.get("align_method") or "prealigned")
     disclosed_window = int(window) if pit else end
-
-    def describe(selected, horizon: int) -> Dict[str, Any]:
-        stats = _group_stats([float(v) for _, v in selected])
-        ordered = sorted(float(v) for _, v in selected)
-        stats["p10"] = round(_quantile_sorted(ordered, 0.1), 6) if ordered else None
-        stats["p90"] = round(_quantile_sorted(ordered, 0.9), 6) if ordered else None
-        if pit and horizon > 1:
-            stats["t"] = None
-            stats["p"] = None
-        stats.update(
-            {
-                "effective_n": len(selected),
-                "nonoverlap_n": _r02_nonoverlap_n([i for i, _ in selected], horizon),
-            }
-        )
-        return stats
+    grid = buckets * buckets if two_axis else buckets
 
     by_horizon: List[Dict[str, Any]] = []
     for h in horizons:
         horizon = int(h)
         fwd = forward_returns(price, horizon)
-        by_bucket: List[Dict[str, Any]] = []
-        for condition_bucket in range(buckets):
+        entries: List[Dict[str, Any]] = []
+        for condition in range(grid):
             selected = [
-                (i, fwd[i])
-                for i in range(end)
-                if fwd[i] is not None and states[i] is not None and states[i][1] == condition_bucket
+                (i, fwd[i]) for i in range(end) if fwd[i] is not None and labels[i] == condition
             ]
-            by_bucket.append(dict(bucket=condition_bucket, **describe(selected, horizon)))
-        stats = dict(by_bucket[bucket])
+            row = dict(bucket=condition, **_r02_describe(selected, horizon, pit))
+            if two_axis:
+                row.update(cell=condition, axis1=condition // buckets, axis2=condition % buckets)
+            entries.append(row)
+        current_label = cell if two_axis else bucket
+        stats = dict(entries[current_label])
         stats.pop("bucket")
         stats.update(
             {
@@ -1029,9 +1098,9 @@ def r02_percentile_forward(
                 "as_of": as_of_value,
                 "window": disclosed_window,
                 "align_method": align_method,
-                "by_bucket": by_bucket,
             }
         )
+        stats["by_cell" if two_axis else "by_bucket"] = entries
         by_horizon.append(dict(h=horizon, **stats))
 
     main = by_horizon[0] if by_horizon else None
@@ -1043,7 +1112,14 @@ def r02_percentile_forward(
         )
     else:
         distribution = "历史同分位区间样本不足。"
-    if pit:
+    if two_axis:
+        head = (
+            f"截至 {as_of_value}，{label}处于 {pct:.1f}% 分位、"
+            f"{label2 or '第二维状态'}处于 {pct2:.1f}% 分位"
+            f"（{buckets}×{buckets} 网格第 {int(bucket) + 1} 行第 {int(bucket2) + 1} 列）；"
+        )
+        phrase = f"{head}按当时可见数据识别的同格{distribution}历史统计，不代表未来。"
+    elif pit:
         phrase = (
             f"截至 {as_of_value}，当前 {label} 处于 {pct:.1f}% 分位；"
             f"按当时可见数据识别的{distribution}历史统计，不代表未来。"
@@ -1065,6 +1141,18 @@ def r02_percentile_forward(
         "window": disclosed_window,
         "align_method": align_method,
     }
+    if two_axis:
+        out.update(
+            {
+                "dim": 2,
+                "buckets_per_axis": buckets,
+                "cells": grid,
+                "current_percentile_2": round(pct2, 4),
+                "bucket_1": bucket,
+                "bucket_2": bucket2,
+                "cell": cell,
+            }
+        )
     if include_states:
-        out["states"] = [None if state is None else int(state[1]) for state in states]
+        out["states"] = labels
     return out
