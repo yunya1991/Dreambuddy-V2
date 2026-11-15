@@ -79,13 +79,13 @@ job 级门禁通过数（每 job 上限 180）：BTC 77、XLM 77、ETH/LTC/UNI/X
 
 1. **`stable` 不跨数据版本维持**：`transition_state` 规定 stable 遇 `data_version` 变化回退 candidate（并从 0 重新计数），因此 stable 表达的是「最近连续 3 个版本通过」。这是冻结契约，不是缺陷，但意味着**必须每日运行**才能维持稳定态，否则状态会周期性回退。
 2. **网格可评估率仅 70%**：R03/R04/F19 各 522 单元（合计 1,566，30%）恒为 `not_applicable`（缺交易日历/事件上下文）；要让这部分进入评估需先接日历/事件源，属后续工作。
-3. **注册表按版本追加**：每日 5,220 行（≈190 万行/年）。本验收未实现保留/归档策略，**周期调度上线前必须先定 retention**（否则 SQLite 体积与查询成本会线性膨胀）。
-4. **未安装周期调度**：本次只完成 #35 的「全量真实数据验收」；云端 `dreambuddy-*.timer` 式周期任务尚未创建，需另行确认窗口与数据版本口径。
+3. **注册表按版本追加**：每日 5,220 行（≈190 万行/年）。v2.54 已落地保留策略：`RelationshipRegistry.prune_before()` + `--prune-days 90`，只清 `relationship_eval` 历史行（90 天 ≈47 万行封顶），`relationship_state` 永久保留。
+4. **周期调度已上线（v2.54）**：`dreambuddy-mers.{service,timer}` 已安装并 `enable --now`，`OnCalendar=*-*-* 08:20:00`（CST，实际含 ≤300s 随机抖动）、`Persistent=true`、`--prune-days 90`；首次手动触发 exit=0，`totals{29 job,5220 单元,gate_pass 1057}`、`added=0`、`retention{pruned_rows:0}` 与验收口径一致。按契约 `stable` 遇 `data_version` 变化回退 candidate，本轮（`data_version=2026-11-15`）结束后 state 全部为 candidate（`pass_streak=1`），需连续 3 个交易日通过才会重新进入 stable。
 5. **S5 仍关闭**：MERS 结论只在本验收注册表内，未开放 `relationship_recommend`；walk-forward/Discovery 仍属 #37。
 
 ## 验收结论
 
-**PASS**。全量真实数据（29 job / 5,220 单元）门禁、BH-FDR、状态机与幂等四项均产生非空且可复现的证据：三轮 `gate_pass` 完全一致（1,057，20.25%），状态机在真实数据上推进到 `stable=1,057`，每轮复跑 `added=0`；验收过程中发现的 B11 空桶崩溃已定位根因、修复并回归（failed 95→0）。周期调度与注册表保留策略按上文红旗单列，未在本次范围内。
+**PASS**。全量真实数据（29 job / 5,220 单元）门禁、BH-FDR、状态机与幂等四项均产生非空且可复现的证据：三轮 `gate_pass` 完全一致（1,057，20.25%），状态机在真实数据上推进到 `stable=1,057`，每轮复跑 `added=0`；验收过程中发现的 B11 空桶崩溃已定位根因、修复并回归（failed 95→0）。周期调度与 90 天保留策略随后于 v2.54 上线（首次手动触发 exit=0、结果与验收口径一致）。
 
 AI 验收：2026-11-15
 用户确认：待确认
