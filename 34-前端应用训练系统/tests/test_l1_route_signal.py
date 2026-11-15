@@ -72,7 +72,8 @@ class TestModuleImport:
         assert callable(lrs.detect_intent)
         assert callable(lrs.extract_json)
         # 十意图执行器 + S1/S2 增量意图（确定性指标、注册表能力、统计关系等）
-        assert len(lrs.EXECUTORS) == 18
+        # + event_listing（SPEC-41-L1-新闻意图检索 §7，注册 exec_news_search）
+        assert len(lrs.EXECUTORS) == 19
         for name in (
             "data_query",
             "data_insight",

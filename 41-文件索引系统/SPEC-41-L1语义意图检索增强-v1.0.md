@@ -137,7 +137,7 @@ Keywords: {keyword1}, {keyword2}, ...
 │   ├── intent_matcher.py       # 双通道匹配器（正则 + 语义）+ 语言自动识别
 │   ├── intent_calibrator.py    # 校准与 uplift 度量
 │   ├── intent_doc_retriever.py # 执行器文档/正例反例按需加载（P4）
-│   └── embedder_bridge.py      # embedder subprocess/socket 桥接客户端（对齐 vector_bridge）
+│   └── embedder_bridge.py      # embedder 客户端：常驻服务(127.0.0.1:8099) → in-process → subprocess 三级降级（见 SPEC-41-L1-新闻意图检索 §8.8）
 ├── intent_units/               # 意图可评估单元（每个意图一个目录）
 │   ├── data_query/
 │   ├── price_query/
@@ -145,9 +145,13 @@ Keywords: {keyword1}, {keyword2}, ...
 ├── scripts/
 │   ├── build_intent_vectors.py # 预计算意图向量（zh/en）
 │   ├── calibrate_intents.py    # 跑 calibration + uplift
+│   ├── embed_server.py         # 常驻向量服务（模型只加载一次，POST /embed + GET /health）
 │   └── intent_search_cli.py    # 调试用 CLI：输入 message 输出匹配意图 + 得分
+├── deploy/
+│   └── dreambuddy-embedder.service  # 常驻服务 systemd unit（User=luke、HF_HUB_OFFLINE=1、MemoryMax=2G）
 └── tests/
-    └── test_intent_matching.py # 双通道匹配测试
+    ├── test_intent_matching.py # 双通道匹配测试
+    └── test_embed_server.py    # 常驻服务与三级降级链路测试
 ```
 
 ### 3.2 数据流
@@ -469,7 +473,7 @@ python scripts/intent_search_cli.py "BTC现在啥价"
 | `semantic_hit_rate` | 统计日志 | 正则未命中后语义补回的比例（语义命中数 / 正则未命中数） |
 | `semantic_false_positive_rate` | calibration 结果 | 语义命中但 canHandleL1 校验失败率 |
 | `semantic_regex_disagreement_rate` | 统计日志 | 双通道结果不一致率（仅调试用，生产以正则为准） |
-| `embedder_bridge_alive` | 子进程心跳 | embedder 桥接子进程存活状态 |
+| `embedder_bridge_alive` | 常驻服务 `GET /health`（`ready` / `zh_dim` / `rss_mb` / `pid`） | 常驻向量服务存活与就绪状态；未部署常驻服务时退化为进程内 embedder 探测（`is_inproc_available()`） |
 | `lang_zh_ratio` / `lang_en_ratio` | 统计日志 | 中英文 query 占比 |
 
 ---

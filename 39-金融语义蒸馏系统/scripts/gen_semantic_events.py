@@ -802,6 +802,18 @@ def main():
             f"[OK] 热点榜：Top {len(payload['top'])} 条 / {stats['total']} 事件 / "
             f"去重节省 {stats['dedup_saved']} / 高影响 {stats['high_impact']} → {HOT_NEWS_PATH}"
         )
+        # 新闻检索库（SPEC-41-L1-新闻意图检索 §6.2）：按日更链路在榜单之后追加一次。
+        # FAIL-OPEN：摘要库失败不得阻断事件产出与榜单。
+        try:
+            from gen_news_digest import write_news_digest
+
+            digest = write_news_digest()
+            print(
+                f"[OK] 新闻摘要库：{digest['stats']['items']} 条 / "
+                f"{digest['window_days']} 天 / 高影响 {digest['stats']['high_impact']}"
+            )
+        except Exception as e:  # noqa: BLE001
+            print(f"[WARN] 新闻摘要库生成失败（不阻断主链路）：{e}")
         return
 
     if args.backfill:

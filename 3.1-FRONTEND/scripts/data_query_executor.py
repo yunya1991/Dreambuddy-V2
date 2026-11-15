@@ -1536,8 +1536,283 @@ def _match_event_type(message):
     return None
 
 
+# ── L1 新闻检索（SPEC-41-L1-新闻意图检索 §7）：news_digest.json / hot_news.json ──
+# 数据源分工（§5.4 窗口三级）：
+#   24h  → hot_news.json（榜单，带 5 维 importance 与 clusters）
+#   168h / 720h → news_digest.json（全量 + 30 天，39 域日更产出）
+_NEWS_SYS_DIR = os.path.normpath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "39-金融语义蒸馏系统")
+)
+_NEWS_DIGEST_PATH = os.environ.get("NEWS_DIGEST_PATH") or os.path.join(
+    _NEWS_SYS_DIR, "news_digest.json"
+)
+_HOT_NEWS_PATH = os.environ.get("HOT_NEWS_PATH") or os.path.join(_NEWS_SYS_DIR, "hot_news.json")
+
+# 窗口触发词（§5.4）：历史词优先判定，避免「上周…最近」被 24h 抢走
+_NEWS_WINDOW_HISTORY = (
+    "上周",
+    "上月",
+    "更早",
+    "之前",
+    "历史",
+    "这个月",
+    "本月",
+    "30天",
+    "30 天",
+    "近一个月",
+    "近30日",
+)
+_NEWS_WINDOW_NOW = ("最新", "今天", "今日", "刚刚", "24小时", "24 小时", "现在", "当天")
+
+_NEWS_TOPIC_RULES = None
+
+
+def _news_topic_rules():
+    """读取 39 的 canonical topic 词表（与打标同源 → 映射零误差）；失败返回空。
+
+    词表 = 打标关键词 + 主题中文标签（如「地缘政治」本身不是打标词，但是主题名）。
+    """
+    global _NEWS_TOPIC_RULES
+    if _NEWS_TOPIC_RULES is None:
+        try:
+            from gen_semantic_events import TOPIC_LABELS, TOPIC_RULES
+
+            _NEWS_TOPIC_RULES = tuple(
+                (t, tuple(str(k) for k in kws) + ((TOPIC_LABELS.get(t) or ""),))
+                for t, _label, kws in TOPIC_RULES
+            )
+        except Exception:  # noqa: BLE001
+            _NEWS_TOPIC_RULES = ()
+    return _NEWS_TOPIC_RULES
+
+
+_CN_NUM = {
+    "一": 1,
+    "两": 2,
+    "二": 2,
+    "三": 3,
+    "四": 4,
+    "五": 5,
+    "六": 6,
+    "七": 7,
+    "八": 8,
+    "九": 9,
+    "十": 10,
+}
+
+
+def _news_window(message):
+    """窗口三级 → (window_h, source)。"""
+    msg = message or ""
+    if any(w in msg for w in _NEWS_WINDOW_HISTORY):
+        return 720, "news_digest"
+    if any(w in msg for w in _NEWS_WINDOW_NOW):
+        return 24, "hot_news"
+    return 168, "news_digest"
+
+
+def _news_topic(message):
+    msg = (message or "").lower()
+    for topic, kws in _news_topic_rules():
+        if any(kw and kw.lower() in msg for kw in kws):
+            return topic
+    return None
+
+
+def _news_sentiment(message):
+    msg = message or ""
+    if any(w in msg for w in ("利好", "看多", "正面", "大涨")):
+        return "利好"
+    if any(w in msg for w in ("利空", "看空", "负面", "大跌")):
+        return "利空"
+    if "中性" in msg:
+        return "中性"
+    return None
+
+
+def _news_importance_min(message):
+    msg = message or ""
+    return 70 if any(w in msg for w in ("重要", "关键", "高影响", "重大", "要紧")) else 0
+
+
+def _news_keywords(message):
+    """实体别名展开（与 39 query_entity 同源）+ 原词。无实体返回空（不做标题过滤）。"""
+    sym = _resolve_symbol(message)
+    if not sym:
+        return []
+    kws = [sym] + [a for a in ENTITY_ALIASES.get(sym, []) if a and len(a) >= 2]
+    return kws
+
+
+def _news_limit(message):
+    m = re.search(r"([0-9]+|[一二两三四五六七八九十])\s*(?:条|个|则|篇)", message or "")
+    if not m:
+        return 5
+    token = m.group(1)
+    n = int(token) if token.isdigit() else _CN_NUM.get(token, 5)
+    return max(1, min(n, 10))
+
+
+def _news_load(source):
+    path = _HOT_NEWS_PATH if source == "hot_news" else _NEWS_DIGEST_PATH
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f), None
+    except Exception as e:  # noqa: BLE001
+        return None, str(e)
+
+
+def _news_normalize(payload, source):
+    raw = payload.get("top") if source == "hot_news" else payload.get("items")
+    out = []
+    for it in raw or []:
+        if not isinstance(it, dict):
+            continue
+        senti = it.get("sentiment") if isinstance(it.get("sentiment"), dict) else {}
+        out.append(
+            {
+                "ts": it.get("published_at") if source == "hot_news" else it.get("ts"),
+                "title": str(it.get("title") or it.get("title_short") or ""),
+                "topic": it.get("topic") or "other",
+                "sentiment": senti.get("label"),
+                "importance": it.get("importance"),
+            }
+        )
+    return out
+
+
+def _news_unclassified_ratio(payload):
+    dist = payload.get("topic_dist") or (payload.get("stats") or {}).get("topic_dist") or {}
+    total = sum(v for v in dist.values() if isinstance(v, int)) or 0
+    if not total:
+        return 0.0
+    return round(dist.get("other", 0) / total, 4)
+
+
+def _news_coverage_note(payload, source):
+    if source == "hot_news":
+        return "榜单口径：近 24h top50，无历史纵深"
+    cov = payload.get("coverage") or {}
+    zeros = [d for d, n in sorted(cov.items()) if not n]
+    if not zeros:
+        return ""
+    head = "、".join(zeros[:3])
+    extra = f" 等 {len(zeros)} 天" if len(zeros) > 3 else ""
+    return f"{head}{extra}无数据（采集异常）"
+
+
+def _news_window_label(window_h):
+    if window_h == 24:
+        return "24 小时"
+    return f"{window_h // 24} 天"
+
+
+def exec_news_search(message):
+    """L1 新闻检索（SPEC-41-L1 §7）：按标题关键词 + 39 标签检索新闻条目。
+
+    硬约束：0 命中禁止编造（输出覆盖数与未分类占比）、topic=other 不过滤、
+    产物缺失 FAIL-OPEN、全程零 token。
+    """
+    window_h, source = _news_window(message)
+    topic = _news_topic(message)
+    sentiment = _news_sentiment(message)
+    importance_min = _news_importance_min(message)
+    keywords = _news_keywords(message)
+    limit = _news_limit(message)
+    span = _news_window_label(window_h)
+
+    payload, err = _news_load(source)
+    if payload is None:
+        return {
+            "success": True,
+            "intent": "event_listing",
+            "handled": True,
+            "degraded": True,
+            "answer": "新闻检索库暂不可用（产物尚未生成），可稍后重试",
+            "data": {
+                "window_h": window_h,
+                "source": source,
+                "matched": 0,
+                "scanned": 0,
+                "coverage_note": f"产物缺失：{err}",
+                "unclassified_ratio": None,
+                "items": [],
+            },
+        }
+
+    items = _news_normalize(payload, source)
+    scanned = len(items)
+    ratio = _news_unclassified_ratio(payload)
+    note = _news_coverage_note(payload, source)
+
+    # 标签过滤：topic 仅当 != other 时生效（§7.3 硬约束 2）
+    topic_filter = topic if topic and topic != "other" else "none"
+    hits = []
+    for it in items:
+        title_low = (it["title"] or "").lower()
+        if keywords and not any(k.lower() in title_low for k in keywords):
+            continue
+        if topic_filter != "none" and it["topic"] != topic_filter:
+            continue
+        if sentiment and it["sentiment"] != sentiment:
+            continue
+        if importance_min and (it["importance"] or 0) < importance_min:
+            continue
+        hits.append(it)
+
+    # 排序：importance DESC, ts DESC（先按 ts 倒序，再稳定按 importance 倒序）
+    hits.sort(key=lambda x: x["ts"] or "", reverse=True)
+    hits.sort(key=lambda x: x["importance"] or 0, reverse=True)
+    top = hits[:limit]
+
+    if not hits:
+        who = "/".join(keywords) if keywords else "该条件"
+        answer = (
+            f"近 {span}未检索到与『{who}』相关的新闻"
+            f"（当期共 {scanned} 条，其中未分类 {int(ratio * 100)}%）"
+        )
+        if note:
+            answer += f"；注意：{note}"
+    else:
+        lines = []
+        for i, it in enumerate(top, 1):
+            ts = (it["ts"] or "")[:16].replace("T", " ")
+            senti = it["sentiment"] or "未知"
+            imp = it["importance"]
+            imp_txt = f"{imp:.1f}" if isinstance(imp, (int, float)) else "-"
+            lines.append(f"{i}. [{ts}] {it['title']}（{it['topic']}/{senti}/影响 {imp_txt}）")
+        answer = (
+            f"近 {span}检索到 {len(hits)} 条相关新闻"
+            f"（当期共 {scanned} 条，未分类 {int(ratio * 100)}%，展示前 {len(top)} 条）：\n"
+            + "\n".join(lines)
+        )
+        if note:
+            answer += f"\n注意：{note}"
+
+    return {
+        "success": True,
+        "intent": "event_listing",
+        "handled": True,
+        "degraded": False,
+        "answer": answer,
+        "data": {
+            "window_h": window_h,
+            "source": source,
+            "matched": len(hits),
+            "scanned": scanned,
+            "coverage_note": note,
+            "unclassified_ratio": ratio,
+            "topic_filter": topic_filter,
+            "sentiment_filter": sentiment,
+            "importance_min": importance_min,
+            "keywords": keywords,
+            "items": top,
+        },
+    }
+
+
 def exec_event_listing(message):
-    """L1 事件罗列: 按事件类型过滤快讯记录，时间倒序罗列（标题/时间/关联代币/情绪）。"""
+    """【legacy】旧版事件罗列（newsflash od_event_type 口径）：保留可调用，不参与主链路。"""
     etype = _match_event_type(message)
     # PostgreSQL 查询（dc_pg 统一接口，FAIL-OPEN：异常返回空）
     rows = dc_pg.fetch_records("newsflash_%", limit=400, order_desc=True)
@@ -1586,7 +1861,7 @@ def exec_event_listing(message):
         if len(items) >= 10:
             break
     if not items:
-        return {"success": True, "answer": "近期未找到相关事件快讯", "data": []}
+        return {"success": True, "legacy": True, "answer": "近期未找到相关事件快讯", "data": []}
     type_desc = _EVENT_TYPE_DESC_L1.get(etype, "全部") if etype else "全部"
     lines = []
     for i, it in enumerate(items, 1):
@@ -1601,6 +1876,7 @@ def exec_event_listing(message):
         hint = "想深入了解某类事件线的演变吗？可问：加密监管事件怎么演变"
     return {
         "success": True,
+        "legacy": True,
         "answer": answer,
         "next_layer_hint": hint,
         "data": {"event_type": etype, "items": items},

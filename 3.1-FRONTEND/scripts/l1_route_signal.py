@@ -112,6 +112,7 @@ from data_query_executor import (  # noqa: E402
     exec_fundamental_valuation,
     exec_leader_compare,
     exec_metric_series,
+    exec_news_search,
     exec_path_insight,
     exec_persistence_strength,
     exec_price_query,
@@ -146,6 +147,8 @@ EXECUTORS = {
     "leader_compare": exec_leader_compare,
     "top_correlation": exec_top_correlation,
     "persistence_strength": exec_persistence_strength,
+    # SPEC-41-L1-新闻意图检索 §7：新闻检索走 news_digest/hot_news，不再推 L2
+    "event_listing": exec_news_search,
 }
 
 # 确定性关键词注册表意图（S1）：关键词命中即确定要走哪个单维数据，
