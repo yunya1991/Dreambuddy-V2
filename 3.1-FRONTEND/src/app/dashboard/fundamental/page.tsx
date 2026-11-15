@@ -10,13 +10,11 @@ import { ValuationPanel } from '@/components/features/fundamental/ValuationPanel
 import { OverviewPanel } from '@/components/features/fundamental/OverviewPanel';
 import { IntermarketPanel } from '@/components/features/fundamental/IntermarketPanel';
 import { BreadthPanel } from '@/components/features/fundamental/BreadthPanel';
-import { HotNewsPanel } from '@/components/features/fundamental/HotNewsPanel';
 
 const tabModules: Record<string, string> = {
   flow: 'flow',
   valuation: 'valuation',
   narrative: 'narrative',
-  news: 'news',
   breadth: 'breadth',
   calendar: 'calendar',
   intermarket: 'intermarket',
@@ -30,7 +28,6 @@ const tabs = [
   { id: 'flow', label: '资金流向' },
   { id: 'valuation', label: '估值模型' },
   { id: 'narrative', label: '叙事分析' },
-  { id: 'news', label: '新闻监控' },
   { id: 'breadth', label: '市场广度' },
   { id: 'calendar', label: '经济日历' },
   { id: 'intermarket', label: '跨市场' },
@@ -61,16 +58,6 @@ export default function FundamentalPage() {
         {activeTab === 'flow' && <FlowPanel />}
         {activeTab === 'intermarket' && <IntermarketPanel />}
         {activeTab === 'breadth' && <BreadthPanel />}
-        {activeTab === 'news' && (
-          <div className="space-y-4">
-            <HotNewsPanel />
-            <ModuleDetail
-              key={activeTab}
-              module={tabModules[activeTab]}
-              title={tabs.find(t => t.id === activeTab)?.label || activeTab}
-            />
-          </div>
-        )}
         {activeTab === 'valuation' && (
           <div className="space-y-4">
             <ValuationPanel />
@@ -81,7 +68,7 @@ export default function FundamentalPage() {
             />
           </div>
         )}
-        {activeTab !== 'overview' && activeTab !== 'onchain' && activeTab !== 'macro' && activeTab !== 'sentiment' && activeTab !== 'flow' && activeTab !== 'valuation' && activeTab !== 'intermarket' && activeTab !== 'breadth' && activeTab !== 'news' && tabModules[activeTab] && (
+        {activeTab !== 'overview' && activeTab !== 'onchain' && activeTab !== 'macro' && activeTab !== 'sentiment' && activeTab !== 'flow' && activeTab !== 'valuation' && activeTab !== 'intermarket' && activeTab !== 'breadth' && tabModules[activeTab] && (
           <ModuleDetail
             key={activeTab}
             module={tabModules[activeTab]}

@@ -4,7 +4,7 @@ import { Fragment, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { V3Card, V3Badge } from '@/components';
 import { queryKey, queryStaleTime } from '@/lib/query-keys';
-import { fetchModuleSnapshot } from './ModuleDetail';
+import { fetchModuleSnapshot } from '../fundamental/ModuleDetail';
 
 // ============== 类型（39 hot_news.json 契约，SPEC-20261113 §5.1） ==============
 interface HotNewsSentiment {
@@ -73,6 +73,11 @@ const PART_LABELS: Record<string, string> = {
 };
 
 // ============== 守卫与格式化 ==============
+/** 仅允许 http(s) 外链：source_url 来自外部数据源，属系统边界需最小校验 */
+function isHttpUrl(u?: string | null): u is string {
+  return typeof u === 'string' && /^https?:\/\//i.test(u.trim());
+}
+
 function asItems(v: unknown): HotNewsItem[] {
   if (!Array.isArray(v)) return [];
   return v.filter((x): x is HotNewsItem => !!x && typeof x === 'object' && typeof (x as HotNewsItem).title === 'string');
@@ -138,7 +143,7 @@ function absTime(iso?: string): string {
 // ============== 子组件 ==============
 function TitleCell({ item }: { item: HotNewsItem }) {
   const text = item.title_short || item.title;
-  if (item.source_url) {
+  if (isHttpUrl(item.source_url)) {
     return (
       <a
         href={item.source_url}
@@ -252,19 +257,44 @@ export function HotNewsPanel() {
 
       {/* 关键事件卡 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-4 pb-2">
-        {top3.map((item) => (
-          <div key={`${item.event_id ?? item.rank}-card`} className="rounded-lg bg-slate-800/40 p-3 space-y-1">
-            <div className="flex items-center justify-between gap-2">
-              <V3Badge variant={levelVariant(item.importance)} label={fmtImportance(item.importance)} />
-              <span className="text-[10px] text-slate-500">{topicLabel(item.topic)}</span>
+        {top3.map((item) => {
+          const key = `${item.event_id ?? item.rank}-card`;
+          const href = isHttpUrl(item.source_url) ? item.source_url : null;
+          const body = (
+            <>
+              <div className="flex items-center justify-between gap-2">
+                <V3Badge variant={levelVariant(item.importance)} label={fmtImportance(item.importance)} />
+                <span className="text-[10px] text-slate-500">{topicLabel(item.topic)}</span>
+              </div>
+              <p className="text-xs text-slate-200 line-clamp-2">{item.title_short || item.title}</p>
+              <p className="text-[10px] text-slate-500">
+                {item.sentiment?.label ?? '未知'} {fmtScore(item.sentiment?.score)} ·{' '}
+                {item.source_count ?? 1} 源 · {relTime(item.published_at)}
+              </p>
+            </>
+          );
+          const cardCls = 'rounded-lg bg-slate-800/40 p-3 space-y-1';
+          if (href) {
+            return (
+              <a
+                key={key}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="在新窗口打开来源"
+                className={`${cardCls} block hover:bg-slate-800/60 transition-colors`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {body}
+              </a>
+            );
+          }
+          return (
+            <div key={key} className={cardCls}>
+              {body}
             </div>
-            <p className="text-xs text-slate-200 line-clamp-2">{item.title_short || item.title}</p>
-            <p className="text-[10px] text-slate-500">
-              {item.sentiment?.label ?? '未知'} {fmtScore(item.sentiment?.score)} ·{' '}
-              {item.source_count ?? 1} 源 · {relTime(item.published_at)}
-            </p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Top10 表格（桌面） */}

@@ -111,6 +111,7 @@ v3.1 Frontend = SACG 四层可视化 + 双交易模式 UI + 三屏交易系统 +
 | 交易榜单 | `/dashboard/ranking` | 1 | 4个组件 (DecisionCard/RankingCard/RankingMonitor/PrefillOrderBanner) | ✅ |
 | 经典系统 | `/dashboard/classic` | 2 (含 [subtab]) | 8个组件 (Indicator/GovernanceFlow/Phase/Generation/Management/Signals等) | ✅ |
 | 基本面 | `/dashboard/fundamental` | 1 | 17个组件 (Flow/Macro/Onchain/Valuation/Sentiment/Intermarket/Breadth/WhaleTracker/UTXOAge/MVRVZone/SentimentHeatmap等) | ✅ |
+| 新闻 | `/dashboard/news` | 1 | HotNewsPanel (热点雷达 Top10 + Top3 头条外链) | ✅ |
 | 三屏系统 | `/dashboard/three-screens` | 6 (总览+screen1/2/3+pipeline+[screen]) | Screen1/2/3Panel + PipelineView + 3个charts | ✅ |
 | SACG 监控 | `/dashboard/monitor` | 5 (总览+compute/graph/arrange/sense) | 5个组件 (ReflectorPanel/CrossValidationPanel/SenseConfidenceGauge/SACGOverview/DAGGraphView) | ✅ |
 | 记忆管理 | `/dashboard/memory` | 5 (总览+user/dze/skills/docs) | 6个组件 (RecordExperienceForm/MemoryTimeline/DZEChainView/SkillIndexView/DocIndexView/MemoryTabNav) | ✅ |
@@ -147,13 +148,14 @@ v3.1 Frontend = SACG 四层可视化 + 双交易模式 UI + 三屏交易系统 +
 | 3 | 交易榜单 | `/dashboard/ranking` | 🏆 | 决策排行+预填单 |
 | 4 | 经典系统 | `/dashboard/classic` | 📊 | C0-C8 全链 |
 | 5 | 基本面 | `/dashboard/fundamental` | 📈 | 17个分析组件 |
-| 6 | 三屏系统 | `/dashboard/three-screens` | 🖥 | Elder 三屏 |
-| 7 | SACG 监控 | `/dashboard/monitor` | 🔍 | 四层可视化 |
-| 8 | 记忆管理 | `/dashboard/memory` | 🧠 | 用户/DZE/技能/文档 |
-| 9 | 设置 | `/dashboard/settings` | ⚙ | API/交易/策略/渠道 |
-| 10 | 治理 | `/dashboard/governance` | 🏛 | 治理流程 |
-| 11 | 人工审批 | `/board/approval` | 🛡️ | Badge 显示待审批数 |
-| 12 | 报告 | `/dashboard/reports` | 📋 | 产物中台 |
+| 6 | 新闻 | `/dashboard/news` | 📰 | 24h 热点影响力榜 + 头条外链 |
+| 7 | 三屏系统 | `/dashboard/three-screens` | 🖥 | Elder 三屏 |
+| 8 | SACG 监控 | `/dashboard/monitor` | 🔍 | 四层可视化 |
+| 9 | 记忆管理 | `/dashboard/memory` | 🧠 | 用户/DZE/技能/文档 |
+| 10 | 设置 | `/dashboard/settings` | ⚙ | API/交易/策略/渠道 |
+| 11 | 治理 | `/dashboard/governance` | 🏛 | 治理流程 |
+| 12 | 人工审批 | `/board/approval` | 🛡️ | Badge 显示待审批数 |
+| 13 | 报告 | `/dashboard/reports` | 📋 | 产物中台 |
 
 侧边栏特性:
 - 可折叠（折叠时宽 56px / 展开时 192px）
@@ -189,6 +191,7 @@ src/app/
 │   │   ├── page.tsx                   → 经典系统入口
 │   │   └── [subtab]/page.tsx          → 经典子标签 (动态路由)
 │   ├── fundamental/page.tsx           → 基本面分析
+│   ├── news/page.tsx                  → 新闻监控（一级入口，原基本面 tab 拆出）
 │   │
 │   ├── three-screens/
 │   │   ├── page.tsx                   → 三屏总览
@@ -547,6 +550,9 @@ src/components/
     │   ├── WhaleTracker.tsx      → 巨鲸追踪
     │   ├── UTXOAgeDistribution.tsx → UTXO 年龄分布
     │   └── MVRVZoneChart.tsx     → MVRV 区域图
+    │
+    ├── news/                     → 新闻域 (1个组件)
+    │   └── HotNewsPanel.tsx      → 热点雷达 Top10 + Top3 头条外链
     │
     ├── classic/                  → 经典交易域 (8个组件)
     │   ├── IndicatorPanel.tsx    → 指标面板

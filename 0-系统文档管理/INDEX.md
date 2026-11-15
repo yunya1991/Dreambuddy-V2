@@ -69,7 +69,7 @@
 | ★ **SPEC-A 唯一壳收口与流式传输治理** | [3.1-FRONTEND/docs/SPEC-20261111-A-唯一壳收口与流式传输治理.md](../3.1-FRONTEND/docs/SPEC-20261111-A-唯一壳收口与流式传输治理.md) **v0.1.0** | Agent/Board 归位 + 任务流/monitor 流单例 + REST 传输统一 + 构建门禁，G1-G6/T-A1~T-A7 | 📝 待评审 |
 | ★ **SPEC-B 交互内核与会话可用性** | [3.1-FRONTEND/docs/SPEC-20261111-B-交互内核与会话可用性.md](../3.1-FRONTEND/docs/SPEC-20261111-B-交互内核与会话可用性.md) **v0.1.0** | AgentPart/PartRenderer/ToolCard/PlanCardView + 会话持久化/虚拟化/输入器/⌘K，G-B1~G-B8 | 📝 待评审 |
 | ★ **SPEC-C 契约与传输治理** | [3.1-FRONTEND/docs/SPEC-20261111-C-契约与传输治理.md](../3.1-FRONTEND/docs/SPEC-20261111-C-契约与传输治理.md) **v0.1.0** | 信封/错误码/SSE v1/PlanCard 漂移/Query/鉴权/认知-DSH 代理/边界门禁，G-C1~G-C8 | 📝 待评审 |
-| ★ **SPEC 新闻模块独立与头条外链** | [3.1-FRONTEND/docs/SPEC-20261115-新闻模块独立与头条外链.md](../3.1-FRONTEND/docs/SPEC-20261115-新闻模块独立与头条外链.md) **v0.1.0** | 新闻 tab 提升为与基本面同级的 `/dashboard/news` 一级入口 + Top3 头条 `source_url` 外链（含 http(s) 守卫），G1~G6；零后端/零契约变更 | 📝 待评审 |
+| ★ **SPEC 新闻模块独立与头条外链** | [3.1-FRONTEND/docs/SPEC-20261115-新闻模块独立与头条外链.md](../3.1-FRONTEND/docs/SPEC-20261115-新闻模块独立与头条外链.md) **v0.2.0** | 新闻 tab 提升为与基本面同级的 `/dashboard/news` 一级入口 + Top3 头条 `source_url` 外链（含 http(s) 守卫），G1~G6；零后端/零契约变更 | ✅ 已实施 |
 | ★ **SKILL 编排主 SPEC** | [1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md](../1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md) | HC-1~HC-9 硬约束 + 三路径编排 + M2五组件 + 8.1 F1-F20 | ✅ 落地中 |
 | ★ **SKILL 模仿进化 SPEC** | [1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md](../1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md) **v0.3** | 路径B模仿+路径C联网兜底+ImitationCounter+token埋点 | ✅ 172/172 GREEN |
 | ★ **广义认知系统协作** | [35-广义认知系统协作模块/README.md](../35-广义认知系统协作模块/README.md) · [INDEX.md](../35-广义认知系统协作模块/INDEX.md) | 跨系统协作设计 SSoT：SPEC 收敛 + 协作接口契约 + PoE 统一框架（纯文档统筹层，不含代码） | ✅ v1.6（契约治理已落地） |

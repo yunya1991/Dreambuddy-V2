@@ -2,7 +2,7 @@
 // 命令面板条目构建（SPEC-20261111-B §3.10 / T-B10）
 // ============================================
 // 纯函数：导航项（NAV_ITEMS 单一事实源）+ 最近会话 + 固定动作 → 命令列表。
-// 不引入 cmdk 等依赖；大小写不敏感子串匹配，最多 20 条。
+// 不引入 cmdk 等依赖；大小写不敏感子串匹配，最多 24 条（覆盖 17 个导航项 + 动作 + 会话）。
 
 import { NAV_ITEMS, type NavItem } from '@/lib/navigation';
 
@@ -23,7 +23,7 @@ export const COMMAND_GROUP_LABELS: Record<CommandGroup, string> = {
   session: '最近会话',
 };
 
-export const COMMAND_LIMIT = 20;
+export const COMMAND_LIMIT = 24;
 
 const FIXED_ACTIONS: CommandItem[] = [
   { id: 'action:new-session', label: '新建会话', hint: 'Agent 工作台', group: 'action', action: 'new-session' },

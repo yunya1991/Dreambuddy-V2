@@ -25,6 +25,7 @@ export const SECTION_LABELS: Partial<Record<NavSection, string>> = {
 export const NAV_ITEMS: NavItem[] = [
   { id: 'agent', label: 'Agent 工作台', href: '/dashboard/agent', icon: '🤖', section: 'platform' },
   { id: 'fundamental', label: '基本面', href: '/dashboard/fundamental', icon: '📈', section: 'platform' },
+  { id: 'news', label: '新闻', href: '/dashboard/news', icon: '📰', section: 'platform' },
   { id: 'visual', label: '数据与图表', href: '/dashboard/visual', icon: '📉', section: 'platform' },
   { id: 'ranking', label: '今日热门资产', href: '/dashboard/ranking', icon: '🔥', section: 'platform' },
   { id: 'three-screens', label: '三屏系统', href: '/dashboard/three-screens', icon: '🖥', section: 'platform' },
