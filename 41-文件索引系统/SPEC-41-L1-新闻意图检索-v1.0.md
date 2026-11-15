@@ -1,6 +1,6 @@
 # SPEC-41-L1-新闻意图检索 v1.0
 
-**状态**：P0（FAIL）→ P0′ 换 bge-base 通过 → **P1 已上线（云端已验证，见 §8.6/§8.7）**；P2（`news_digest.json`）~P5 待推进
+**状态**：P0（FAIL）→ P0′ 换 bge-base 通过 → **P1 已上线；性能风险已根治（§8.8 常驻向量服务）**；P2（`news_digest.json`）~P5 待推进
 **日期**：2026-11-15
 **归属域**：41-文件索引系统（L1 语义意图检索）／39-金融语义蒸馏系统（数据产物）／3.1-FRONTEND（注册表 + 执行器）／34-前端应用训练系统（golden 门禁）
 **关联**：[SPEC-41-L1语义意图检索增强-v1.0](./SPEC-41-L1语义意图检索增强-v1.0.md)
@@ -499,11 +499,47 @@ slots 解析（§5.2）
 
 SentenceTransformer 冷启动是**既有的 10–12s 成本，与模型大小关系不大**（同机实测：bge-base 10.15s / bge-small 12.60s），因为前端 API 是**每次请求 spawn 一个新 python 进程**。原 `SCRIPT_TIMEOUT_MS=15000` 余量不足，语义类问法会被 kill 并**静默返回空 `data`**（`success=true` 但无内容，最难排查的失败形态）。已改为 **30000**（`3.1-FRONTEND/src/app/api/data/query/route.ts`，commit `31d5db1b94`），改后上述语义问法全部可用。
 
-**遗留风险（P2+ 需处理）**
+**遗留风险**
 
-1. **内存**：每请求常驻约 900MB RSS（bge-base），无并发限流，10+ 并发语义请求存在 OOM 风险（云端 15Gi / 可用 10Gi）。
-2. **延迟**：语义类问法端到端 11–13s，可用但体验差。根治方案是常驻 embedder 服务（一次加载，后续 ~50ms）或 ONNX 量化模型，需单独立项，不在本期。
+1. ~~**内存**：每请求常驻约 900MB RSS，并发放大~~ → **已解决（§8.8 常驻向量服务，压测 +312MB）**
+2. ~~**延迟**：语义类问法端到端 11–13s~~ → **已解决（§8.8，端到端 2.1–2.8s）**
 3. **部署顺序**：必须先装模型再同步 768 维向量；反序会让维度守卫跳过全部向量而静默降级。
+4. **新单点**：常驻服务是新的关键依赖。云端两个调用方已置 `L1_EMBED_LOCAL_FALLBACK=0`，
+   服务挂掉时语义通道降级为纯正则（不报错、不 OOM），需纳入健康检查巡检。
+
+### 8.8 常驻向量服务（根治冷启动与并发内存放大，2026-11-15）
+
+**问题**：前端 `/api/data/query` 每次请求 spawn 新 python 进程，SentenceTransformer 冷启动
+10–12s、RSS ~900MB；并发 N 个语义请求 = N×900MB。
+
+**方案**：`41-文件索引系统/scripts/embed_server.py`（stdlib HTTP，仅监听 127.0.0.1:8099）
+
+| 设计点 | 实现 |
+|---|---|
+| 模型只加载一次 | 进程内按语言缓存 embedder，启动后台线程预热 |
+| 接口 | `POST /embed {"texts":[..],"lang":"zh"}` → `{"vectors":[[..]]}`；`GET /health` → ready/dim/rss/pid |
+| 客户端优先级 | 常驻服务 → in-process → subprocess（`embedder_bridge.embed_batch`） |
+| 内存兜底 | systemd `MemoryMax=2G`，超限由 systemd 重启而非拖垮整机 |
+| 故障策略 | 服务不可用 + `L1_EMBED_LOCAL_FALLBACK=0` → 返回空向量，调用方 FAIL-OPEN 到纯正则 |
+| 部署 | `41-文件索引系统/deploy/dreambuddy-embedder.service`（User=luke、HF_HUB_OFFLINE=1） |
+
+**本地实测**
+
+| 项 | 结果 |
+|---|---|
+| golden 全量 | 408 条 **6.3s** 跑完（此前每个用例各自加载模型，分钟级） |
+| 单测 | `test_embed_server.py` 4 项 + `test_intent_matching.py` 18 项全绿 |
+
+**云端实测（`b3fb473939`）**
+
+| 项 | 结果 |
+|---|---|
+| 服务 | `dreambuddy-embedder` active/enabled，`/health` ready=true、zh_dim=768、RSS 883.9MB |
+| 单请求延迟 | `有啥新动静吗` **12.76s → 2.75s**；`帮我总结一下这篇文章` **11.49s → 2.76s**；`今天新闻` 2.11s；`BTC现在什么价格` 4.15s |
+| 10 并发压测 | 10/10 HTTP 200（14.7–21.0s，4 核串行编码），系统内存 5413MB → **5725MB（+312MB）**，embedder MemoryCurrent 661MB |
+| 配置下发 | `dreambuddy-frontend` / `dreambuddy-worker-launcher` drop-in `L1_EMBED_LOCAL_FALLBACK=0` 已生效 |
+
+**注**：`SCRIPT_TIMEOUT_MS=30000` 保留——常驻服务是优化，不是契约；服务重启窗口内仍需兜底余量。
 
 ---
 

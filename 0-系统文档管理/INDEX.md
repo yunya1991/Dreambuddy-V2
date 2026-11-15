@@ -237,7 +237,7 @@
 | 33-REA逆向解析工程 | [33-REA逆向解析工程/README.md](../33-REA逆向解析工程/README.md) | ✅ 文档齐全（PoE设计哲学v1.1+假设验证v1.1+同行评审v1.0+SPEC v0.3+TASKS v1.0） | Evidence-First工程逆向解析 + PoE工程证明协议 |
 | 34-前端应用训练系统 | [34-前端应用训练系统/README.md](../34-前端应用训练系统/README.md) | ✅ README+SPEC（P0-P4全部完成） | 前端应用独立学习训练模块：主动训练(多源采集+统计训练)+被动训练(Trae在线辅导) |
 | 35-广义认知系统协作模块 | [35-广义认知系统协作模块/README.md](../35-广义认知系统协作模块/README.md) · [INDEX.md](../35-广义认知系统协作模块/INDEX.md) | ✅ 文档齐全（认知进化SPEC v0.2+统一PoE框架v2.0+协作契约v1.6） | 跨系统协作设计SSoT：SPEC收敛+协作接口契约+PoE统一框架（纯文档统筹层） |
-| 41-文件索引系统 · 新闻意图检索 | [41-文件索引系统/SPEC-41-L1-新闻意图检索-v1.0.md](../41-文件索引系统/SPEC-41-L1-新闻意图检索-v1.0.md) **v1.0** | 🟢 P0′+P1 已上线（云端已验证，§8.6/§8.7）；P2 待做 | L1 `event_listing` 升级方案 A：标签契约（39 的 11 topic/13 event_type 为 canonical，`od_event_type` 单向降级）、罗列 vs 演变划界规则、窗口三级（默认 168h / 上限 720h）、`exec_news_search` + 39 侧 `news_digest.json`、30 条 golden 探针 |
+| 41-文件索引系统 · 新闻意图检索 | [41-文件索引系统/SPEC-41-L1-新闻意图检索-v1.0.md](../41-文件索引系统/SPEC-41-L1-新闻意图检索-v1.0.md) **v1.0** | 🟢 P0′+P1 已上线，性能风险已根治（§8.6–§8.8）；P2 待做 | L1 `event_listing` 升级方案 A：标签契约（39 的 11 topic/13 event_type 为 canonical，`od_event_type` 单向降级）、罗列 vs 演变划界规则、窗口三级（默认 168h / 上限 720h）、`exec_news_search` + 39 侧 `news_digest.json`、30 条 golden 探针 |
 | 1-ARCHITECTURE/dreamos | [1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md](../1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md) | ⚠️ 部分完整 | DreamOS CLI |
 | **0-系统文档管理/4-工具与自动化** | [4-工具与自动化/README.md](./4-工具与自动化/README.md) | ✅ 已建成 4 脚本 | doc_lint/doc_coverage/index_generator/link_checker |
 | **0-系统文档管理/3-文档治理/audits** | [audits/2026-08_月度审计报告.md](./3-文档治理/audits/2026-08_月度审计报告.md) | ✅ 首份报告 | 月度审计报告归档 |
