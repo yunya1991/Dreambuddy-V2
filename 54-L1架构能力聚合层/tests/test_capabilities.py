@@ -244,6 +244,33 @@ def _j_missing_rows(n_rows=80, n_cols=4, seed=16):
 # ---------------- manifest ----------------
 
 
+def test_manifest_loads_chart_specs():
+    specs = {spec.id: spec for spec in manifest().chart_specs}
+    assert set(specs) == {"T1", "T2", "T3", "T4"}
+    assert specs["T1"].kind == "table"
+    assert specs["T2"].kind == "series"
+    assert specs["T3"].kind == "tree"
+    assert specs["T4"].sources == ("T1", "T2", "T3")
+    assert specs["T3"].sources == (
+        "D-E05",
+        "D-E06",
+        "D-E11",
+        "D-G22",
+        "D-A14",
+        "D-E10",
+        "D-E12",
+    )
+
+
+def test_manifest_rejects_unknown_chart_spec_source():
+    import dataclasses
+
+    base = manifest()
+    broken = dataclasses.replace(base.chart_specs[0], sources=("D-Z99",))
+    with pytest.raises(ManifestError, match="T1.*D-Z99"):
+        validate(dataclasses.replace(base, chart_specs=(broken,) + base.chart_specs[1:]))
+
+
 def test_manifest_loads_and_validates():
     m = manifest()
     assert m.version >= 1

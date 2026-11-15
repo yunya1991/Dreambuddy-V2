@@ -1,6 +1,6 @@
 # 54 总技术文档 — 数据 → 统计 → 关系能力地图
 
-- **版本**: v2.63 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 总技术文档（v2.63 完成 **G-IF1 冻结**：新增 §7.10 冻结记录（已冻结 / 转下游 / 图表层禁止假设三类结论），表 A 补齐 7 个漏登 `data` 键与 `quality.is_stale`/`snapshot_at`、修正能力级 `gate` 枚举 4 → 6 值；实测发现并修复契约缺口 A-7——D-E19 输出 `data.lights` 但 schema 关闭 `data` 扩展键且未登记该键（`jsonschema.validate` 实测 `Additional properties are not allowed ('lights' was unexpected)`），已在 schema 增 `data.lights` + `$defs.lights_row`/`lights_axis` 行契约并补回归测试 `test_envelope_validates_against_json_schema`；同批冻结能力块内部字段清单（表 A-1）与 `mm_events.symbols` 聚合口径；v2.62 关闭 L-STAT 统计层：B-58 提交同步完成——本地 commit `ca6c55a3c6`（35 文件，manifest 50 → **93 条**）已推送 `origin/refactor/13-16-merge`，并经云端 `sudo -n -u luke -H git pull --ff-only` 落地到同一 commit，云端 `capability_manifest.yaml` 实测 **93 条 / 93 唯一**，与本地逐字一致；提交前 `pytest tests -q` 全绿 **1314** 条、ruff/black 通过；§7.2 统计层四项完成判定全部满足，可进入 G-IF1 冻结；v2.61 新增 §7.9 真数据覆盖表：本地只读快照 28 个注册资产中 24 个可用（≥250 期），AMD/GEV/SPCX/SKHYNIX 为 0 样本；93 条能力 min_n 档位与资产数闭合，lights 的 250 门槛刚好满足；5 张衍生品明细表为空、`mm_events` 仅有 `symbols` 文本列等口径缺口已登记；v2.60 关闭 K-09/K-10：`envelope.GATE_METHOD` 单一事实源声明方法级 gate 集合（能力级 6 值 + `skipped`/`calculation_failed`/`empty`/`rejected`），执行覆盖测试对 93 场景逐块递归校验；`data` 关闭 `additionalProperties` 并枚举实际使用的 12 个键；K-12 仅开槽 `quality.snapshot_at`，能力层不伪造快照时点；v2.59 关闭 K-01/K-08：`envelope.build()` 统一为能力块补 `gate`（缺省 `ok`，不覆盖既有值），一处收敛全部 93 出口；schema 能力级 `gate` 枚举补 `partial`/`degraded` 并注明方法级另有 `skipped`/`calculation_failed`/`empty`；执行覆盖测试内对 93 个场景逐个 `jsonschema.validate`（此前只校验 12 个手选出口，故 G/J 组缺 `gate` 未被发现）；新增回归测试 `test_every_capability_block_declares_gate`；v2.58 新增 §7「统计层 → 图表输出 → 信号层」串行推进顺序与接口冻结：三张接口表（统计→图表 / 图表→信号 / 信号→回测评估）+ 12 项信号层前置阻塞清单 + G-IF1/G-IF2/G-IF3 三个冻结点；实测发现 G/J 组 39 个出口的能力块缺 `gate`（违反契约，因 schema 校验测试只覆盖 12 个手选出口而未暴露）；v2.57 接入 J 组 24 个科研统计出口（D-J01/03/06/07/08/09/10/11/12/13/14/15/16/17/18/19/20/21/23/25/26/27/28/29，`capabilities/research_stats.py`，全部 `method_binding: compute`），manifest 69 → **93 条**、可执行出口 69 → **93 个**；同批补齐 `datacenter.panel`（21 项）与 `datacenter.spatial_frame`（D-J25）两个 scope 声明，并新增 `tests/test_research_stats.py`（43 passed）替换不被 pytest 收集的 `_smoke_j.py`；v2.56 接入 G 组 15 个机构统计出口（D-G01/02/03/04/05/06/07/10/11/12/13/15/18/21/24，`capabilities/institutional.py`，全部 `method_binding: compute`），manifest 54 → **69 条**、可执行出口 54 → **69 个**；v2.55 新增 D-K01/D-K02 评估层只读出口（manifest 52 → **54 条**）：D-K01 读 `relationship_registry.db` 取 Top3、D-K02 读 `reports/discovery/**` 最近一期候选，均只读不重算；同批落地 `config/discovery_space.yaml` 预注册搜索空间 + `l1agg/discovery.py` 冻结项校验；v2.54 上线 #35 后半句：`dreambuddy-mers.timer` 每日 08:20 CST 跑全量 MERS 网格（29 job / 5,220 单元），`Persistent=true` 补跑漏窗，`--prune-days 90` 只清 `relationship_eval` 历史行、`relationship_state` 永久保留；新增 `RelationshipRegistry.prune_before()` 与回归测试，unit 文件入库 `deploy/systemd/`；v2.53 关闭 §6.4.5 #35 全量真实验收——29 job / 5,220 单元（20 资产 `close_1d` + 9 个宏观/情绪/资金费率指标对齐 BTC 日轴），BH-FDR 后 `gate_pass=1,057`（20.25%），`method_gate` = ok 3,654 / not_applicable 1,566 / **failed 0**，三轮 `gate_pass` 完全一致且每轮内部复跑 `added=0`，连续三轮通过使 `stable=1,057`、其余 4,163 维持 candidate；验收中发现并修复 B11 空分桶 `float(None)` 崩溃（failed 95→0，commit `2b5b8b8a59`），可执行出口保持 **52 个**；v2.52 新增 D-A05 z-score 出口（`capabilities/stats.py::zscore`，复用 S26，`datacenter.percentile` scope 声明落地），可执行出口 51 → **52 个**；v2.51 新增 D-E20 新闻统一出口（L1S-03，`capabilities/news.py`，只读 `social_volume` 观测成统一信封 + 禁用词自检），可执行出口 50 → **51 个**；v2.50 关闭 §6.4.4 数据阻塞表 #32–#34：C11 节前效应落地（节假日由日期轴「工作日缺失」派生，接入 D-E04）、D-G25 尾部相关接线（复用 P13，下行/上行双尾 + 尾部共现样本门禁）、D-J05 周期/频谱接线（T25/T26/C14 + 历史覆盖周期数门禁），可执行出口 48 → **50 个**；v2.49 将 D-E14 二维状态按 Tier B/D 兜底落地：4×4=A（≥4,000 日）/ 3×3=B（≥2,250 日）/ 2×2=D（≥1,000 日），每格非重叠 ≥250，三档均不达标回退一维并披露 `insufficient_2d`，可执行出口保持 **48 个**；v2.48 登记 L1 交易层新增的 D-E15–D-E19 五个能力出口（趋势曲线 / 聚合曲线 / 分组看板 / 资金流向导图 / 四轴五态点亮投影），可执行出口 44 → **48 个**；v2.47 完成前端 D-A 组 14 个及 D-B08/D-B09/D-G08/D-G09 共 18 个 cue 分派，可执行出口保持 **44 个**；v2.46 接入 D-G09 波动率目标换算出口（P02），可执行出口 **44 个**；v2.45 接入 D-G08 12-1 动量出口（F14 窗口切片），可执行出口 **43 个**；v2.44 接入 D-B09 距 ATH 回撤出口（复用 D20/D21），可执行出口 **42 个**；v2.43 接入 D-B08 趋势斜率出口（T08/T09），可执行出口 **41 个**；v2.42 接入 D-A16 稳定币规模增速出口（S16 多窗口），可执行出口 **40 个**；v2.41 接入 D-A15 ETF 净流入滚动和出口（S20 滚动均值 × 窗口），可执行出口 **39 个**；v2.40 接入 D-A13 极端事件频率出口（S11 阈值 + 计数），可执行出口 **38 个**；v2.39 接入 D-A12 领先滞后相关出口（M11/M12），可执行出口 **37 个**；v2.38 接入 D-A11 双序列滚动相关出口（M04），可执行出口 **36 个**；v2.37 接入 D-A10 实际利率出口（S16 派生），可执行出口 **35 个**；v2.36 接入 D-A09 环比出口（S16），可执行出口 **34 个**；v2.35 接入 D-A08 同比出口（S16），可执行出口 **33 个**；v2.34 接入 D-A07 回撤出口（复用 D-E10 的 D20/D21 执行器），可执行出口 **32 个**；v2.33 接入 D-A06 年化波动率出口（F05），可执行出口 **31 个**；v2.32 接入 D-A04 历史分位出口（S25），可执行出口 **30 个**；v2.31 接入 D-A03 CAGR 出口（S19），可执行出口 **29 个**；v2.30 接入 D-A02 变化率出口（S15/S16），可执行出口 **28 个**；v2.29 接入 D-A01 历史序列出口（S25），可执行出口 **27 个**；v2.28 接入 D-J30 PIT/release_ts 全局出口（SC90/R02），可执行出口 **26 个**；v2.27 接入 D-G14 EWMA 波动/协方差出口（P07/T19），可执行出口 **25 个**；v2.26 接入 D-J24 相关网络与社区发现出口（M05/M21/SC71/SC72），可执行出口 **24 个**；v2.25 接入 D-J22 PCA/SVD/因子分析出口（M19/M20/SC31/SC32/SC33），可执行出口 **23 个**；v2.24 接入 D-G20 分位组合与单调性检验出口（B11/B16/Q04），可执行出口 **22 个**；v2.23 接入 D-G19 IC/ICIR/衰减表出口（B13/B14/B15/Q01/Q02/Q03），可执行出口 **21 个**；v2.22 接入 D-G16 组合 VaR/CVaR 出口（D17/D18/P09/P10），可执行出口 **20 个**；v2.21 接入 D-J02 季节强度与调整出口（C13/T10/SC91），可执行出口 **19 个**；v2.20 接入 D-J04 变点检测出口（T22/T23/SC49/SC50/SC51），可执行出口 **18 个**；v2.19 将 B06 二维交叉表纳入 D-E07，输出状态相邻期联合计数底表并与 B07 行归一化转移概率对齐，可执行出口保持 **17 个**；v2.18 接入 D-G23 事件窗均值调整 CAR + Patell/BMP（Q10/Q11），可执行出口 **17 个**；v2.17 接入 D-E14 一维相关状态→h=1/2 前瞻条件分布（R02 PIT 状态轴共享 B05/B10/R01/R08），可执行出口 **16 个**；v2.16 接入 D-E04 事件研究窗（F19/F21/F23）与 D-E09 计数与共现（R09/B17/R10）能力出口，可执行出口 **14 个**，事件数 <30 降级 partial 但保留 CAR/胜率；同步补齐前端 D-A14/D-G22 cue 分派与 D-E14 的 T-1 扩样本（云端 20 资产 / 54,653 行 `close_1d`，1 维 4 桶 @h=1 全部达标）；v2.15 冻结 D-A14/F26 的 `level` 阈值为 A 分位法（分值历史分布 p20/p60/p80 → 极低/低/偏高/高），接入 D-A14 能力出口；v2.14 接入 D-G22 显著性出口（Q06 HAC t + Q07 Deflated Sharpe），解除 h>1 重叠前瞻收益的推断阻塞；v2.13 打通宏观事件历史回填通道，为 D-E04/D-E09 解除「事件表仅 16 行」的数据阻塞；v2.12 接入 D-E12/R18 时空对齐切片；MERS S3 内部固定网格、BH-FDR、状态机与幂等注册表已交付，S5 对外推荐仍未开放；54-L1 测试 **909 通过 / 0 失败**（v2.27 全量回归；v2.16 同时修复既有日期边界测试的时间炸弹），audit **386/386 PASS**、验证覆盖率 **66.15%**；v2.11 接入 D-E11/C18 与 D-E01；v2.10 D-E05 双序列与多资产矩阵 TopK 全接线、D-E06 全 lag BH-FDR、manifest 真实执行覆盖与 audit 验证覆盖报告；v2.9 D-E02 能力出口接线与 T0.5/A8 首版交付；v2.8 方法层全部落地：`REGISTRY` 387 条全登记、`implemented=true` **386**，仅 C11 因缺交易日历不可用；v2.7 注册表放开调研族前缀并完成占位登记；v2.6 调研对齐与路线收口）
+- **版本**: v2.64 ｜ **日期**: 2026-11-16 ｜ **状态**: 🟢 总技术文档（v2.64 关闭 L-CHART 四项阻塞：K-02 冻结 B-2A 轴事实映射，K-03 消除阈值双轨，K-06 冻结 `decide→handoff` 的 band/flags 契约，K-11 登记 T1–T4 `chart_specs`；v2.63 完成 **G-IF1 冻结**：新增 §7.10 冻结记录（已冻结 / 转下游 / 图表层禁止假设三类结论），表 A 补齐 7 个漏登 `data` 键与 `quality.is_stale`/`snapshot_at`、修正能力级 `gate` 枚举 4 → 6 值；实测发现并修复契约缺口 A-7——D-E19 输出 `data.lights` 但 schema 关闭 `data` 扩展键且未登记该键（`jsonschema.validate` 实测 `Additional properties are not allowed ('lights' was unexpected)`），已在 schema 增 `data.lights` + `$defs.lights_row`/`lights_axis` 行契约并补回归测试 `test_envelope_validates_against_json_schema`；同批冻结能力块内部字段清单（表 A-1）与 `mm_events.symbols` 聚合口径；v2.62 关闭 L-STAT 统计层：B-58 提交同步完成——本地 commit `ca6c55a3c6`（35 文件，manifest 50 → **93 条**）已推送 `origin/refactor/13-16-merge`，并经云端 `sudo -n -u luke -H git pull --ff-only` 落地到同一 commit，云端 `capability_manifest.yaml` 实测 **93 条 / 93 唯一**，与本地逐字一致；提交前 `pytest tests -q` 全绿 **1314** 条、ruff/black 通过；§7.2 统计层四项完成判定全部满足，可进入 G-IF1 冻结；v2.61 新增 §7.9 真数据覆盖表：本地只读快照 28 个注册资产中 24 个可用（≥250 期），AMD/GEV/SPCX/SKHYNIX 为 0 样本；93 条能力 min_n 档位与资产数闭合，lights 的 250 门槛刚好满足；5 张衍生品明细表为空、`mm_events` 仅有 `symbols` 文本列等口径缺口已登记；v2.60 关闭 K-09/K-10：`envelope.GATE_METHOD` 单一事实源声明方法级 gate 集合（能力级 6 值 + `skipped`/`calculation_failed`/`empty`/`rejected`），执行覆盖测试对 93 场景逐块递归校验；`data` 关闭 `additionalProperties` 并枚举实际使用的 12 个键；K-12 仅开槽 `quality.snapshot_at`，能力层不伪造快照时点；v2.59 关闭 K-01/K-08：`envelope.build()` 统一为能力块补 `gate`（缺省 `ok`，不覆盖既有值），一处收敛全部 93 出口；schema 能力级 `gate` 枚举补 `partial`/`degraded` 并注明方法级另有 `skipped`/`calculation_failed`/`empty`；执行覆盖测试内对 93 个场景逐个 `jsonschema.validate`（此前只校验 12 个手选出口，故 G/J 组缺 `gate` 未被发现）；新增回归测试 `test_every_capability_block_declares_gate`；v2.58 新增 §7「统计层 → 图表输出 → 信号层」串行推进顺序与接口冻结：三张接口表（统计→图表 / 图表→信号 / 信号→回测评估）+ 12 项信号层前置阻塞清单 + G-IF1/G-IF2/G-IF3 三个冻结点；实测发现 G/J 组 39 个出口的能力块缺 `gate`（违反契约，因 schema 校验测试只覆盖 12 个手选出口而未暴露）；v2.57 接入 J 组 24 个科研统计出口（D-J01/03/06/07/08/09/10/11/12/13/14/15/16/17/18/19/20/21/23/25/26/27/28/29，`capabilities/research_stats.py`，全部 `method_binding: compute`），manifest 69 → **93 条**、可执行出口 69 → **93 个**；同批补齐 `datacenter.panel`（21 项）与 `datacenter.spatial_frame`（D-J25）两个 scope 声明，并新增 `tests/test_research_stats.py`（43 passed）替换不被 pytest 收集的 `_smoke_j.py`；v2.56 接入 G 组 15 个机构统计出口（D-G01/02/03/04/05/06/07/10/11/12/13/15/18/21/24，`capabilities/institutional.py`，全部 `method_binding: compute`），manifest 54 → **69 条**、可执行出口 54 → **69 个**；v2.55 新增 D-K01/D-K02 评估层只读出口（manifest 52 → **54 条**）：D-K01 读 `relationship_registry.db` 取 Top3、D-K02 读 `reports/discovery/**` 最近一期候选，均只读不重算；同批落地 `config/discovery_space.yaml` 预注册搜索空间 + `l1agg/discovery.py` 冻结项校验；v2.54 上线 #35 后半句：`dreambuddy-mers.timer` 每日 08:20 CST 跑全量 MERS 网格（29 job / 5,220 单元），`Persistent=true` 补跑漏窗，`--prune-days 90` 只清 `relationship_eval` 历史行、`relationship_state` 永久保留；新增 `RelationshipRegistry.prune_before()` 与回归测试，unit 文件入库 `deploy/systemd/`；v2.53 关闭 §6.4.5 #35 全量真实验收——29 job / 5,220 单元（20 资产 `close_1d` + 9 个宏观/情绪/资金费率指标对齐 BTC 日轴），BH-FDR 后 `gate_pass=1,057`（20.25%），`method_gate` = ok 3,654 / not_applicable 1,566 / **failed 0**，三轮 `gate_pass` 完全一致且每轮内部复跑 `added=0`，连续三轮通过使 `stable=1,057`、其余 4,163 维持 candidate；验收中发现并修复 B11 空分桶 `float(None)` 崩溃（failed 95→0，commit `2b5b8b8a59`），可执行出口保持 **52 个**；v2.52 新增 D-A05 z-score 出口（`capabilities/stats.py::zscore`，复用 S26，`datacenter.percentile` scope 声明落地），可执行出口 51 → **52 个**；v2.51 新增 D-E20 新闻统一出口（L1S-03，`capabilities/news.py`，只读 `social_volume` 观测成统一信封 + 禁用词自检），可执行出口 50 → **51 个**；v2.50 关闭 §6.4.4 数据阻塞表 #32–#34：C11 节前效应落地（节假日由日期轴「工作日缺失」派生，接入 D-E04）、D-G25 尾部相关接线（复用 P13，下行/上行双尾 + 尾部共现样本门禁）、D-J05 周期/频谱接线（T25/T26/C14 + 历史覆盖周期数门禁），可执行出口 48 → **50 个**；v2.49 将 D-E14 二维状态按 Tier B/D 兜底落地：4×4=A（≥4,000 日）/ 3×3=B（≥2,250 日）/ 2×2=D（≥1,000 日），每格非重叠 ≥250，三档均不达标回退一维并披露 `insufficient_2d`，可执行出口保持 **48 个**；v2.48 登记 L1 交易层新增的 D-E15–D-E19 五个能力出口（趋势曲线 / 聚合曲线 / 分组看板 / 资金流向导图 / 四轴五态点亮投影），可执行出口 44 → **48 个**；v2.47 完成前端 D-A 组 14 个及 D-B08/D-B09/D-G08/D-G09 共 18 个 cue 分派，可执行出口保持 **44 个**；v2.46 接入 D-G09 波动率目标换算出口（P02），可执行出口 **44 个**；v2.45 接入 D-G08 12-1 动量出口（F14 窗口切片），可执行出口 **43 个**；v2.44 接入 D-B09 距 ATH 回撤出口（复用 D20/D21），可执行出口 **42 个**；v2.43 接入 D-B08 趋势斜率出口（T08/T09），可执行出口 **41 个**；v2.42 接入 D-A16 稳定币规模增速出口（S16 多窗口），可执行出口 **40 个**；v2.41 接入 D-A15 ETF 净流入滚动和出口（S20 滚动均值 × 窗口），可执行出口 **39 个**；v2.40 接入 D-A13 极端事件频率出口（S11 阈值 + 计数），可执行出口 **38 个**；v2.39 接入 D-A12 领先滞后相关出口（M11/M12），可执行出口 **37 个**；v2.38 接入 D-A11 双序列滚动相关出口（M04），可执行出口 **36 个**；v2.37 接入 D-A10 实际利率出口（S16 派生），可执行出口 **35 个**；v2.36 接入 D-A09 环比出口（S16），可执行出口 **34 个**；v2.35 接入 D-A08 同比出口（S16），可执行出口 **33 个**；v2.34 接入 D-A07 回撤出口（复用 D-E10 的 D20/D21 执行器），可执行出口 **32 个**；v2.33 接入 D-A06 年化波动率出口（F05），可执行出口 **31 个**；v2.32 接入 D-A04 历史分位出口（S25），可执行出口 **30 个**；v2.31 接入 D-A03 CAGR 出口（S19），可执行出口 **29 个**；v2.30 接入 D-A02 变化率出口（S15/S16），可执行出口 **28 个**；v2.29 接入 D-A01 历史序列出口（S25），可执行出口 **27 个**；v2.28 接入 D-J30 PIT/release_ts 全局出口（SC90/R02），可执行出口 **26 个**；v2.27 接入 D-G14 EWMA 波动/协方差出口（P07/T19），可执行出口 **25 个**；v2.26 接入 D-J24 相关网络与社区发现出口（M05/M21/SC71/SC72），可执行出口 **24 个**；v2.25 接入 D-J22 PCA/SVD/因子分析出口（M19/M20/SC31/SC32/SC33），可执行出口 **23 个**；v2.24 接入 D-G20 分位组合与单调性检验出口（B11/B16/Q04），可执行出口 **22 个**；v2.23 接入 D-G19 IC/ICIR/衰减表出口（B13/B14/B15/Q01/Q02/Q03），可执行出口 **21 个**；v2.22 接入 D-G16 组合 VaR/CVaR 出口（D17/D18/P09/P10），可执行出口 **20 个**；v2.21 接入 D-J02 季节强度与调整出口（C13/T10/SC91），可执行出口 **19 个**；v2.20 接入 D-J04 变点检测出口（T22/T23/SC49/SC50/SC51），可执行出口 **18 个**；v2.19 将 B06 二维交叉表纳入 D-E07，输出状态相邻期联合计数底表并与 B07 行归一化转移概率对齐，可执行出口保持 **17 个**；v2.18 接入 D-G23 事件窗均值调整 CAR + Patell/BMP（Q10/Q11），可执行出口 **17 个**；v2.17 接入 D-E14 一维相关状态→h=1/2 前瞻条件分布（R02 PIT 状态轴共享 B05/B10/R01/R08），可执行出口 **16 个**；v2.16 接入 D-E04 事件研究窗（F19/F21/F23）与 D-E09 计数与共现（R09/B17/R10）能力出口，可执行出口 **14 个**，事件数 <30 降级 partial 但保留 CAR/胜率；同步补齐前端 D-A14/D-G22 cue 分派与 D-E14 的 T-1 扩样本（云端 20 资产 / 54,653 行 `close_1d`，1 维 4 桶 @h=1 全部达标）；v2.15 冻结 D-A14/F26 的 `level` 阈值为 A 分位法（分值历史分布 p20/p60/p80 → 极低/低/偏高/高），接入 D-A14 能力出口；v2.14 接入 D-G22 显著性出口（Q06 HAC t + Q07 Deflated Sharpe），解除 h>1 重叠前瞻收益的推断阻塞；v2.13 打通宏观事件历史回填通道，为 D-E04/D-E09 解除「事件表仅 16 行」的数据阻塞；v2.12 接入 D-E12/R18 时空对齐切片；MERS S3 内部固定网格、BH-FDR、状态机与幂等注册表已交付，S5 对外推荐仍未开放；54-L1 测试 **909 通过 / 0 失败**（v2.27 全量回归；v2.16 同时修复既有日期边界测试的时间炸弹），audit **386/386 PASS**、验证覆盖率 **66.15%**；v2.11 接入 D-E11/C18 与 D-E01；v2.10 D-E05 双序列与多资产矩阵 TopK 全接线、D-E06 全 lag BH-FDR、manifest 真实执行覆盖与 audit 验证覆盖报告；v2.9 D-E02 能力出口接线与 T0.5/A8 首版交付；v2.8 方法层全部落地：`REGISTRY` 387 条全登记、`implemented=true` **386**，仅 C11 因缺交易日历不可用；v2.7 注册表放开调研族前缀并完成占位登记；v2.6 调研对齐与路线收口）
 - **上游**: `SPEC-54-L1架构能力聚合层.md`（ADR/契约/路线）、`docs/METHOD_LIBRARY.md`（方法 SSoT）
 - **下游**: `3.1-FRONTEND/scripts/l1_route_signal.py`（L1 路由）、`34-前端应用训练系统/core/l0_foundation.py`（L0 scope）、`/api/fundamental/**`
 - **定位**: 本文是 54 的**总技术文档**——上半部（§0）回答「有哪些问题域、每个问题域用什么方法、现在缺什么」；下半部（§1–§6）是能力登记册（ID/依赖/字段/优先级/状态）。
@@ -14,7 +14,7 @@
 | 文档 | 角色 | 唯一负责的内容 | 当前版本 |
 |---|---|---|---|
 | [SPEC-54-L1架构能力聚合层.md](../SPEC-54-L1架构能力聚合层.md) | 架构与契约 | ADR、scope 出入参、门禁、路线（S1–S5）、MERS/Discovery | v1.47 |
-| **本文 TECHNICAL_DESIGN.md** | **总技术文档 + 能力登记** | 六类问题地图、四层分工（§0.5）、能力 ID `D-*`、状态列、整体进度（§6.2）、**串行推进顺序与接口冻结（§7）**、**真数据覆盖表（§7.9）**、**L-STAT 收口证据（§7.9-D6）**、**G-IF1 冻结记录（§7.10）** | **v2.63** |
+| **本文 TECHNICAL_DESIGN.md** | **总技术文档 + 能力登记** | 六类问题地图、四层分工（§0.5）、能力 ID `D-*`、状态列、整体进度（§6.2）、**串行推进顺序与接口冻结（§7）**、**真数据覆盖表（§7.9）**、**L-STAT 收口证据（§7.9-D6）**、**G-IF1 冻结记录（§7.10）** | **v2.64** |
 | [METHOD_LIBRARY.md](./METHOD_LIBRARY.md) | 方法 SSoT | 方法 ID（S/D/T/C/I/M/B/F/H/R/X/O/P/Q/SC）、口径冻结（§16）、数据前提（§15） | v1.19 |
 | [RESEARCH-TREND-PERSISTENCE-MODELS.md](./RESEARCH-TREND-PERSISTENCE-MODELS.md) | 调研 | 延续性三层拆解、Tier A/B/C、T 阶段 | v1.2 |
 | [RESEARCH-INSTITUTIONAL-L1-METHODS.md](./RESEARCH-INSTITUTIONAL-L1-METHODS.md) | 调研补强 | 机构方法（X/O/P/Q） | — |
@@ -1238,7 +1238,7 @@ L1 意图（TS/Python 双端注册表）
 | `visual.caveat` | string ≥1 | 必填免责语 | — |
 | `visual.truncated` | boolean | 截断标记；rows/points 超 500 时截断并置 true | — |
 | 产图门禁（V-G1/V-G2/V-G7） | — | `quality.status=="empty"` 或来源块 `gate!="ok"` 或 `L1_VISUAL_ENABLED=0` → **不产 `visual`**（键省略，不产空图） | 违规 → 空图/假图 |
-| `visual.source_capability` 约束 | 强制 `==` 信封 `capability`（ADR-V2） | 生产侧禁止输出 `T*`；T1–T4 无 manifest 实体（K-11） | 违规 → `build` 抛 ValueError |
+| `visual.source_capability` 约束 | 强制 `==` 信封 `capability`（ADR-V2） | 生产侧禁止输出 `T*`；T1–T4 已登记为 `chart_specs`（v2.64） | 违规 → `build` 抛 ValueError |
 | `visual` 五 kind 现状 | table/series/tree/graph 有生产者；**matrix 保留但无生产者** | 图表层不得为“用上 matrix”而自造数据 | — |
 
 **表 A-1 能力块内部字段清单（图表层允许读取的全部块内字段，v2.63 冻结）**
@@ -1263,7 +1263,7 @@ L1 意图（TS/Python 双端注册表）
 | A-2 | ~~schema 校验测试只覆盖 12 个手选出口~~ **已修复（v2.59）** | 执行覆盖测试现对 93 个场景逐个 `jsonschema.validate` | 全绿不再假阳性 |
 | A-3 | ~~方法级 `gate` 未入契约~~ **已修复（v2.60）** | `envelope.GATE_METHOD` 显式声明方法级集合（能力级 6 值 + `skipped`/`calculation_failed`/`empty`/`rejected`）；执行覆盖测试对 93 场景逐块递归校验 | 方法级 gate 不再是隐式约定 |
 | A-4 | ~~`data` 未闭合 `additionalProperties`~~ **已修复（v2.60）** | `data` 关闭扩展键，枚举实际使用的 12 个键（capabilities/params/symbol/pair/name/as_of/window_days/source/items/notes/assets/visual） | 图表层可做严格字段校验 |
-| A-5 | `visual.source_capability` 允许 `T1–T4` 但 manifest 无 T* 实体 | T1–T4 是图表规格标签，不是能力 ID | 制品血缘无法反查能力；生产侧已禁止输出 T*，实体登记归 L-CHART（K-11） |
+| A-5 | ~~`visual.source_capability` 允许 `T1–T4` 但 manifest 无 T* 实体~~ **已修复（v2.64，K-11）** | `capability_manifest.yaml` 新增 `chart_specs`，登记 T1–T4 的 id/kind/description/sources | `Manifest.chart_specs` 可加载四类规格；`validate()` 拒绝未知 sources；制品血缘可反查能力或上游图表规格 |
 | A-6 | `quality.snapshot_at` 契约已开槽（v2.60），暂无生产者 | schema 已有可选字段，能力层不填（无快照事实源） | 快照戳须由 19-DAL 快照层注入，禁止能力层推断（K-12，见 §7.10 第 3 类） |
 | A-7 | ~~D-E19 的 `data.lights` 未入契约~~ **已修复（v2.63）** | 实测 `lights()` 的 `data keys = ['capabilities','lights','params']`，`jsonschema.validate` 报 `Additional properties are not allowed ('lights' was unexpected)`；AST 扫描确认其余出口 `build(data=)` 键全部 ⊆ 12 键 | schema 增 `data.lights` + `$defs.lights_row`/`lights_axis`；补回归测试 `test_envelope_validates_against_json_schema` |
 
@@ -1312,18 +1312,34 @@ L1 意图（TS/Python 双端注册表）
 | `use_same_direction` / `use_significance` / `hac_alpha` | true / true / 0.05 | 显著性门 |
 | `seasonality_mode` | `record_only` | 只记录不打分 |
 
+**B-2A K-02 轴事实映射（v2.64 冻结）**
+
+| 消费侧字段 | 唯一事实源 | 投影 / 权重规则 |
+|---|---|---|
+| `lights.axes.trend` | `direction_rule.score.axes.trend`；上游 D-E15 `slope_table` | `clamp01(abs(axis_value) / axis_weights.trend)`；展示合成只用 `light_weights.trend` |
+| `lights.axes.inertia` | `direction_rule.score.axes.inertia`；上游 D-E15 `ema/ema_order`（I02） | `clamp01(abs(axis_value) / axis_weights.inertia)`；展示合成只用 `light_weights.inertia` |
+| `lights.axes.foresight` | `direction_rule.score.axes.coherence`；上游 D-E11 `cycle_alignment` | 仅做 `coherence → foresight` 改名投影，`clamp01(abs(axis_value) / axis_weights.coherence)` |
+| `lights.axes.cycle` | I39 `cycle[-1].value / amplitude / period_days` | `strength=clamp01(abs(cycle[-1].value)/amplitude)`；振幅或尾值缺失则不产强度并打标；`period_days∉[30,90]` 只打标、不伪造相位；`light_weights.cycle` 只参与展示合成，**不是归一化除数** |
+| `direction_rule.axes.adx` | D-E15 `adx{adx,plus_di,minus_di}`（I32），经 `rule_inputs.build_inputs` 投影为 `adx14/plus_di/minus_di` | 按 `adx_bands` 与 `axis_weights.adx=25` 打分；**不进入 lights 四轴，不读 light_weights** |
+| `direction_rule.axes.gap` | 调用方显式传入的 I35 `equilibrium_gap` | 默认 `gap=0` 关闭且不进入 `axes`；不进入 lights 四轴 |
+
+信号层不得把 `lights[]` 直接当作 `direction_rule` 入参：方向决策仍由 `rule_inputs.build_inputs(D-E15/D-E11/...) → direction_rule.decide` 产生；`lights[]` 是展示与审计制品。两组轴名可以不同，但上表映射与来源不得再漂移。
+
 **B-3 `handoff` 契约（`49-交易框架协议/contracts/final_decision_signal.v1.1.json`）**
 
 入参 `signal` 必填：`as_of`、`symbol`、`rule_version`、`params_hash`、`direction∈{-1,0,1}`、`strength∈[0,1]`；可选 `band`、`flags`。
+
+**K-06 契约冻结**：`band/flags` 的唯一生产者是 `direction_rule.decide()`；`band=strength_band(decide.strength)`，`flags` 来自规则评分与降级路径。handoff 必须原值透传到 `payload.l1_band/l1_flags`。`lights.flags` 仅表达展示/审计降级，禁止作为信号 flags 来源；lights 不新增方向 `band`。
+
 出参：`signal_id`=`l1-chart|dec-l1-…`、`ts`、`symbol`（仅 `*-USDT-SWAP`）、`direction`（short/neutral/long）、`confidence`=`strength`、`horizon`、`risk_exposure_hint`、`expires_at`（默认 TTL 15 min）、`mode∈{live,paper,shadow}`、`payload{decision_id, action, position_tier, position_mult, notional_usdt, adapter="54-l1", as_of, l1_direction, l1_strength, l1_band, l1_flags, rule_version, params_hash}`；仓位档 `probe<0.55 ≤ standard<0.75 ≤ trend`。
 
 **表 B 缺口（P0 级为主）**
 
 | # | 缺口 | 证据 | 影响 |
 |---|---|---|---|
-| B-1 | **轴名错位**：lights 四轴 `trend/inertia/cycle/foresight` vs 规则五轴 `trend/adx/inertia/coherence/gap` | `lights._INNER_AXIS` 只映射 foresight→coherence；`cycle` 靠 I39 外部传入；`adx` 在 lights 无对应轴 | 信号层不能直接消费 `lights[]`，必须补 `adx` 事实与 cycle 权重 |
-| B-2 | 阈值双轨：`lights.DEFAULT_THRESHOLDS` = 0.70/0.40，`config` = 0.764706/0.572400 | 前者是兜底默认，后者是行级池化标定值 | 同一批次两条口径混用 → 灯态不可复现 |
-| B-3 | `band` / `flags` 未被 lights 产出 | `handoff` 读 `signal.band`、`signal.flags` | 信号表需补字段，否则 handoff 丢上下文 |
+| B-1 | ~~**轴名错位**：lights 四轴 `trend/inertia/cycle/foresight` vs 规则五轴 `trend/adx/inertia/coherence/gap`~~ **已关闭（v2.64，K-02）** | `lights._INNER_AXIS` 只映射 foresight→coherence；`cycle` 靠 I39 外部传入；`adx` 在 lights 无对应轴 | 冻结 B-2A 映射：ADX=D-E15/I32→方向规则；cycle=I39 尾值/自身振幅→展示轴；信号层不直接消费 lights 作为方向入参 |
+| B-2 | ~~阈值双轨：`lights.DEFAULT_THRESHOLDS` = 0.70/0.40，`config` = 0.764706/0.572400~~ **已关闭（v2.64，K-03）** | `DEFAULT_THRESHOLDS` 仅作配置缺失/非法时兜底；`cfg=None` 也先加载 `chart_weights.yaml` | `resolve_thresholds` 统一读取标定值 0.764706/0.572400；回归测试覆盖无 cfg 路径 |
+| B-3 | ~~`band` / `flags` 未被 lights 产出~~ **已关闭（v2.64，K-06）** | 实测 `direction_rule.decide` 已产出 `band/flags`，handoff 原值写入 `l1_band/l1_flags`；缺的是端到端契约证据 | 新增 `test_k06_decide_band_and_flags_reach_handoff_payload`；lights 不复制方向分档 |
 | B-4 | `params_hash` 不含资产池版本 | `config/weights.yaml` 无 `pool_version`（LTL-15 未落） | 池变更后回放不可靠 |
 | B-5 | 动态权重开关未开 | `weights.yaml mode: "off"`（LTL-09） | 轴向权重固定 40/25/20/15，无灰度验证 |
 | B-6 | `as_of` 无时区/TTL 约定 | lights 透传、handoff 自造 `ts` | 跨时区回放可能错位 |
@@ -1350,23 +1366,23 @@ L1 意图（TS/Python 双端注册表）
 | 优先级 | 编号 | 阻塞项 | 解除条件 | 归属层 |
 |---|---|---|---|---|
 | **P0** | K-01 | ~~G/J 组 39 出口能力块缺 `gate`~~ **✅ 已关闭（v2.59）** | `envelope.build()` 统一补 `gate`（缺省 `ok`）；回归测试 `test_every_capability_block_declares_gate` | L-STAT（G-IF1） |
-| **P0** | K-02 | lights 四轴与规则五轴错位（缺 `adx`、`cycle` 未权重化） | 冻结映射表：`adx` 由哪个能力产出、`cycle` 权重从 I39 取值规则 | L-CHART（G-IF2） |
-| **P0** | K-03 | 阈值双轨 0.70/0.40 vs 0.7647/0.5724 | 定稿唯一口径 → 回写 config → 复算 45 期快照 | L-CHART（G-IF2） |
+| **P0** | K-02 | ~~lights 四轴与规则五轴错位（缺 `adx`、`cycle` 未权重化）~~ **✅ 已关闭（v2.64）** | B-2A 已冻结：`adx`=D-E15/I32→方向规则；`cycle.strength=clamp01(abs(I39 尾值)/amplitude)`，展示权重与归一化分母分离 | L-CHART（G-IF2） |
+| **P0** | K-03 | ~~阈值双轨 0.70/0.40 vs 0.7647/0.5724~~ **✅ 已关闭（v2.64）** | `resolve_thresholds(cfg=None)` 先读 `chart_weights.yaml` 标定值，DEFAULT 仅最终兜底；新增无 cfg 回归测试 | L-CHART（G-IF2） |
 | **P0** | K-04 | `weights.yaml mode: off` | 明确灰度档位与注入条件后才可开工 | L-SIGNAL（G-IF3） |
 | P1 | K-05 | `pool_version` 未入 `params_hash` | 资产池版本纳入派生 | L-SIGNAL |
-| P1 | K-06 | `band`/`flags` 未产出 | lights 或信号侧补齐并写契约 | L-CHART/G-IF2 |
+| P1 | K-06 | ~~`band`/`flags` 未产出~~ **✅ 已关闭（v2.64）** | 冻结信号侧唯一生产者 `direction_rule.decide`；`decide→handoff` 端到端测试验证 `l1_band/l1_flags` 原值透传并通过 49 契约 | L-CHART/G-IF2 |
 | P1 | K-07 | 非加密标的无 handoff 路径 | 明确 shadow-only 或新增标的映射白名单 | L-SIGNAL |
 | P1 | K-08 | ~~schema 校验覆盖不足（仅 12 出口）~~ **✅ 已关闭（v2.59）** | 执行覆盖测试内对 93 个场景逐个 `jsonschema.validate`；同批发现并修复 `gate` 枚举缺 `partial`/`degraded` | L-STAT |
 | P2 | K-09 | ~~方法级 `gate` 未入契约~~ **✅ 已关闭（v2.60）** | `envelope.GATE_METHOD` 单一事实源 + 递归校验 | L-STAT |
 | P2 | K-10 | ~~`data` 未闭合 `additionalProperties`~~ **✅ 已关闭（v2.60）** | 枚举 12 个真实键后关闭扩展 | L-STAT |
-| P2 | K-11 | `visual.source_capability` 的 T* 无实体 | T1–T4 登记为图表规格 ID | L-CHART |
+| P2 | K-11 | ~~`visual.source_capability` 的 T* 无实体~~ **✅ 已关闭（v2.64）** | T1–T4 已登记为 `chart_specs`；`Manifest` 加载实体并校验 sources 引用 | L-CHART |
 | P2 | K-12 | `quality.sources` 无快照戳 | **🟡 契约已开槽（v2.60）**：`quality.snapshot_at` 已入 schema；待 19-DAL 快照层提供值，能力层不伪造 | L-STAT |
 
 ### §7.8 推进顺序（自本版起）
 
 1. **L-STAT 收口 ✅（v2.62 完成）**：K-01 / K-08 / K-09 / K-10 已关闭（v2.59–v2.60），K-12 契约已开槽待 19-DAL；真数据覆盖表 ✅（§7.9），B-58 提交同步 ✅（`ca6c55a3c6`，云端 manifest 93 = 本地 93）→ 统计层四项判定全满足，**G-IF1 冻结已按第 2 步完成**。
 2. **G-IF1 冻结 ✅（v2.63 完成）**：表 A 字段核对无遗漏；修复 A-7（D-E19 `data.lights` 未入契约）；冻结结论见 §7.10（已冻结 / 转下游 / 图表层禁止假设），**L-CHART 允许开工**。
-3. **L-CHART**：范围先砍到 **T2 曲线 + D-E19 lights 制品**，T1 作为副产物、T3 后置；本层内关闭 K-02 / K-03 / K-06 / K-11。
+3. **L-CHART（四项阻塞已关闭，v2.64）**：范围先砍到 **T2 曲线 + D-E19 lights 制品**，T1 作为副产物、T3 后置；K-02 / K-03 / K-06 / K-11 均已关闭，下一步执行 G-IF2 总冻结。
 4. **G-IF2 冻结**：`lights[]` 行 schema 与阈值口径定稿。
 5. **L-SIGNAL**：只补 K-04 / K-05 / K-07 + 复跑纸面回放，不重写 `direction_rule`。
 6. **G-IF3 冻结**：回放基线与 `signal` 表契约确认后再开灰度。
@@ -1458,10 +1474,10 @@ L1 意图（TS/Python 双端注册表）
 
 | 项 | 归属 |
 |---|---|
-| T1–T4 实体登记（A-5） | L-CHART（K-11） |
-| 轴名错位 `adx`/`cycle`（B-1） | L-CHART（K-02，G-IF2） |
-| 阈值双轨 0.70/0.40 vs 0.7647/0.5724（B-2） | L-CHART（K-03，G-IF2） |
-| `band`/`flags` 未产出（B-3） | L-CHART（K-06，G-IF2） |
+| T1–T4 实体登记（A-5） | ✅ 已关闭（v2.64，K-11） |
+| 轴名错位 `adx`/`cycle`（B-1） | ✅ 已关闭（v2.64，K-02，B-2A） |
+| 阈值双轨 0.70/0.40 vs 0.7647/0.5724（B-2） | ✅ 已关闭（v2.64，K-03） |
+| `band`/`flags` 未产出（B-3） | ✅ 已关闭（v2.64，K-06，信号侧契约） |
 | `snapshot_at` 生产者 | 待 19-DAL 快照层（K-12） |
 | `weights mode` / `pool_version` / 非加密 handoff（B-4/B-5/B-7） | L-SIGNAL（K-04/K-05/K-07） |
 

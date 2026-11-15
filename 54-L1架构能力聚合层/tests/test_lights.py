@@ -74,6 +74,14 @@ def test_state_and_bucket_whitelists():
     assert DEFAULT_THRESHOLDS == {"lit_pct": 0.70, "warm_pct": 0.40}
 
 
+def test_k03_resolve_thresholds_loads_from_config_when_cfg_none():
+    """K-03：cfg=None 时必须从 chart_weights.yaml 加载阈值，而非硬编码 DEFAULT。"""
+    result = resolve_thresholds(None)
+    assert result["thresholds"]["lit_pct"] == pytest.approx(0.764706, abs=1e-6)
+    assert result["thresholds"]["warm_pct"] == pytest.approx(0.572400, abs=1e-6)
+    assert "thresholds_invalid" not in result["flags"]
+
+
 def test_normalize_axis_is_zero_recompute():
     assert normalize_axis(40.0, 40.0) == 1.0
     assert normalize_axis(-20.0, 40.0) == pytest.approx(0.5)

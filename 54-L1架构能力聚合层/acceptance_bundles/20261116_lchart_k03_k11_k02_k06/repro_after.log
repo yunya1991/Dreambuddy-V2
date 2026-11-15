@@ -1,0 +1,9 @@
+observed=K03 thresholds={'lit_pct': 0.764706, 'warm_pct': 0.5724} flags=[]
+observed=K11 chart_specs=['T1', 'T2', 'T3', 'T4'] T4.sources=('T1', 'T2', 'T3')
+observed=K02 strengths={'trend': 1.0, 'inertia': 1.0, 'foresight': 0.6, 'cycle': 0.5}
+observed=K06 band=strong flags=[] handoff_band=strong
+observed=BOUNDARY unknown_chart_source=rejected
+observed=BOUNDARY invalid_thresholds=default_fallback
+observed=BOUNDARY lights_direction_band=absent
+
+exit=0

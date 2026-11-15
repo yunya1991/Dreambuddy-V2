@@ -66,10 +66,19 @@ class Capability:
 
 
 @dataclass(frozen=True)
+class ChartSpec:
+    id: str
+    kind: str
+    description: str
+    sources: Tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class Manifest:
     version: int
     updated: str
     capabilities: Tuple[Capability, ...] = field(default_factory=tuple)
+    chart_specs: Tuple[ChartSpec, ...] = field(default_factory=tuple)
     visibility_default: str = "public"
     visibility_internal: Tuple[str, ...] = ()
 
@@ -97,10 +106,20 @@ def load(path: Optional[str] = None) -> Manifest:
     default = str(raw.get("visibility_default", "public"))
     internal = tuple(str(i) for i in raw.get("visibility_internal") or ())
     caps = tuple(_capability(item, default, internal) for item in raw.get("capabilities") or ())
+    chart_specs = tuple(
+        ChartSpec(
+            id=str(item["id"]),
+            kind=str(item["kind"]),
+            description=str(item["description"]),
+            sources=tuple(str(source) for source in item["sources"]),
+        )
+        for item in raw.get("chart_specs") or ()
+    )
     manifest = Manifest(
         version=int(raw.get("version", 0)),
         updated=str(raw.get("updated", "")),
         capabilities=caps,
+        chart_specs=chart_specs,
         visibility_default=default,
         visibility_internal=internal,
     )
@@ -175,6 +194,11 @@ def validate(manifest: Manifest) -> None:
     unknown_internal = sorted(set(manifest.visibility_internal) - ids)
     if unknown_internal:
         raise ManifestError(f"visibility_internal 引用了未登记能力: {unknown_internal}")
+    known_sources = ids | {spec.id for spec in manifest.chart_specs}
+    for spec in manifest.chart_specs:
+        unknown_sources = sorted(set(spec.sources) - known_sources)
+        if unknown_sources:
+            raise ManifestError(f"{spec.id}: chart_specs sources 引用未登记: {unknown_sources}")
 
 
 def validate_execution(

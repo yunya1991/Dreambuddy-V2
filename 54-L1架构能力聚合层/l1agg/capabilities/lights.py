@@ -247,8 +247,19 @@ def resolve_light_weights(
 def resolve_thresholds(
     cfg: Optional[ChartWeights], thresholds: Optional[Mapping[str, Any]] = None
 ) -> Dict[str, Any]:
-    """解析阈值（FAIL-OPEN）：越界或非数值 → 回落 0.70/0.40 并标 `thresholds_invalid`。"""
-    merged: Dict[str, Any] = dict(cfg.thresholds if cfg is not None else DEFAULT_THRESHOLDS)
+    """解析阈值（FAIL-OPEN）：越界或非数值 → 回落 DEFAULT_THRESHOLDS 并标 `thresholds_invalid`。
+
+    K-03 修复：cfg=None 时仍尝试从 chart_weights.yaml 加载阈值，消除双轨。
+    DEFAULT_THRESHOLDS 仅作 chart_weights.yaml 缺失/非法时的最终兜底。
+    """
+    if cfg is not None:
+        base = dict(cfg.thresholds)
+    else:
+        try:
+            base = dict(load_chart_weights().thresholds)
+        except (ChartWeightsError, Exception):
+            base = dict(DEFAULT_THRESHOLDS)
+    merged: Dict[str, Any] = base
     merged.update(dict(thresholds or {}))
     out: Dict[str, Any] = {"thresholds": dict(DEFAULT_THRESHOLDS), "flags": []}
     try:

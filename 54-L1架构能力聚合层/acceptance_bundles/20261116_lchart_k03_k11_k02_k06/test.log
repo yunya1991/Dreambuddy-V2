@@ -1,0 +1,21 @@
+........................................................................ [ 27%]
+........................................................................ [ 54%]
+........................................................................ [ 81%]
+................................................                         [100%]
+=============================== warnings summary ===============================
+54-L1架构能力聚合层/tests/test_capabilities.py::test_dimension_reduction_reuses_methods_after_panel_complete_case
+54-L1架构能力聚合层/tests/test_capabilities.py::test_dimension_reduction_reuses_methods_after_panel_complete_case
+  /opt/anaconda3/lib/python3.12/site-packages/sklearn/decomposition/_factor_analysis.py:296: ConvergenceWarning: FactorAnalysis did not converge. You might want to increase the number of iterations.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+264 passed, 2 warnings in 8.65s
+
+pytest_exit=0
+All done! ✨ 🍰 ✨
+5 files would be left unchanged.
+
+black_exit=0
+All checks passed!
+
+ruff_exit=0

@@ -11,6 +11,27 @@ updated: "2026-11-15"
 # internal 能力在 manifest.validate + assert_public 双重拦截，永不被前端/数据查询命中。
 visibility_default: public
 visibility_internal: []
+
+# K-11：T1–T4 图表规格标签登记（SPEC-54-统计图表化能力 §1）
+# 不是能力（D-* 格式），而是图表规格标签；制品血缘通过 sources 反查能力。
+chart_specs:
+  - id: T1
+    kind: table
+    description: 分类梳理（有哪些数据、怎么分组、样本够不够）
+    sources: [D-E12]
+  - id: T2
+    kind: series
+    description: 时序演化（平滑噪声后往哪走、斜率是否一致、趋势强弱）
+    sources: [D-E15]
+  - id: T3
+    kind: tree
+    description: 全景思维导图（前瞻/实时共振/跨资产表现的全景）
+    sources: [D-E05, D-E06, D-E11, D-G22, D-A14, D-E10, D-E12]
+  - id: T4
+    kind: tree
+    description: 反思消费者（从图里发现更多维关系、找更优统计学算法）
+    sources: [T1, T2, T3]
+
 capabilities:
   - id: D-A01
     intent: metric_series

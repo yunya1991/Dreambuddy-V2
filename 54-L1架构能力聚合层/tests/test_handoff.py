@@ -12,9 +12,20 @@ _MODULE_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 if _MODULE_ROOT not in sys.path:
     sys.path.insert(0, _MODULE_ROOT)
 
+from l1agg import direction_rule as DR  # noqa: E402
 from l1agg import handoff as H  # noqa: E402
 
 _NOW = dt.datetime(2026, 11, 15, 7, 0, tzinfo=dt.timezone.utc)
+_RULE_INPUTS = {
+    "slope_table": [
+        {"window": window, "slope": slope, "se": 0.001, "t": 3.0, "r2": 0.7}
+        for window, slope in zip((20, 60, 120, 250), (0.010, 0.008, 0.006, 0.004), strict=True)
+    ],
+    "adx": {"adx14": 30.0, "plus_di": 28.0, "minus_di": 12.0},
+    "ema": {"ema12": 110.0, "ema26": 105.0, "ema50": 100.0, "order": "bull"},
+    "same_direction_rate": {"r": 0.8, "n": 30},
+    "p_adj": 0.01,
+}
 
 
 def _signal(**overrides):
@@ -45,6 +56,16 @@ def test_crypto_signal_maps_and_passes_contract():
     assert decision["payload"]["position_tier"] == "trend"
     assert decision["payload"]["position_mult"] == 0.94
     assert decision["payload"]["notional_usdt"] == 200.0
+    H.validate_final_decision(decision)
+
+
+def test_k06_decide_band_and_flags_reach_handoff_payload():
+    signal = DR.decide(_RULE_INPUTS, as_of="2026-11-14", symbol="BTC")
+    decision = H.build_final_decision(signal, now=_NOW)
+
+    assert signal["band"] == "strong"
+    assert decision["payload"]["l1_band"] == signal["band"]
+    assert decision["payload"]["l1_flags"] == signal["flags"]
     H.validate_final_decision(decision)
 
 
