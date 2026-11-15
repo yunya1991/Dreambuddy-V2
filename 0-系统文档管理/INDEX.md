@@ -215,8 +215,16 @@
 | 延续性统计分析 SPEC（T0） | [54-L1架构能力聚合层/SPEC-54-延续性统计分析模块.md](../54-L1架构能力聚合层/SPEC-54-延续性统计分析模块.md) | v1.6（T0 已实现，T2/D-E14 一维首版） |
 | 技术设计 | [54-L1架构能力聚合层/docs/TECHNICAL_DESIGN.md](../54-L1架构能力聚合层/docs/TECHNICAL_DESIGN.md) | 门禁/信封/能力层分工 |
 | 方法库 SSoT | [54-L1架构能力聚合层/docs/METHOD_LIBRARY.md](../54-L1架构能力聚合层/docs/METHOD_LIBRARY.md) | 方法编号 I35–I39 冲突已修正 |
-| 能力清单（可见性） | [54-L1架构能力聚合层/capability_manifest.yaml](../54-L1架构能力聚合层/capability_manifest.yaml) | 22 出口（含并行线 D-G16/G19/G20/G23、D-J02/J04），`visibility: public\|internal`（ADR-V14） |
+| 能力清单（可见性） | [54-L1架构能力聚合层/capability_manifest.yaml](../54-L1架构能力聚合层/capability_manifest.yaml) | 48 出口（含 D-E15–D-E19 交易层出口与并行线 D-G16/G19/G20/G23、D-J02/J04），`visibility: public\|internal`（ADR-V14） |
 | 评审报告 | [54-L1架构能力聚合层/SPEC评审报告-统计图表化能力-v0.1.md](../54-L1架构能力聚合层/SPEC评审报告-统计图表化能力-v0.1.md) | 2026-11-15（有条件通过 4.38/5） |
+| **L1 交易层 SPEC（双维度）** | [54-L1架构能力聚合层/SPEC-54-L1交易层.md](../54-L1架构能力聚合层/SPEC-54-L1交易层.md) | v0.10（交易链路闭环 + 前端图表；五类龙头资产池 v2 核心 8 + 扩展 20 标的 / chart_weights·light_weights / D-E15–E19 / **§4.0 方法基座硬约束** / LT-G1–G13；P0-0 方法基座 + P0-1 资产池 v2 + P0-2 图表权重 + P0-3 D-E16 聚合曲线/D-E17 类别看板 + P0-4 D-E19 点亮投影 + P0-5 D-E18 资金流导图 + P1-2 批量回放/按类复盘表已落地） |
+| L1 交易层资产池配置 | [54-L1架构能力聚合层/config/asset_pool.yaml](../54-L1架构能力聚合层/config/asset_pool.yaml) | v2（核心 8 锚定 + `extended_anchors` 20 + 五类 `view_class` + `pools.default(12)/extended` + per-anchor `history.min_rows`） |
+| L1 交易层图表权重 | [54-L1架构能力聚合层/config/chart_weights.yaml](../54-L1架构能力聚合层/config/chart_weights.yaml) | `cw-1.0.0`（成员权重 12 / 五类 views / light_weights 4 轴 / 阈值；默认 `on`，与交易 axis_weights 三权分立） |
+| L1 交易层聚合图表 | [54-L1架构能力聚合层/l1agg/capabilities/aggregate.py](../54-L1架构能力聚合层/l1agg/capabilities/aggregate.py) | `D-E16` 聚合曲线（rebase→加权→EMA26，逐点 coverage）+ `D-E17` 类别看板（固定 19 列） |
+| L1 交易层点亮投影 | [54-L1架构能力聚合层/l1agg/capabilities/lights.py](../54-L1架构能力聚合层/l1agg/capabilities/lights.py) | `D-E19` 轴级点亮（五档 `lit/warm/dim/conflict/unavailable`，轴值零重算，`data.lights` 随信封） |
+| L1 交易层资金流导图 | [54-L1架构能力聚合层/l1agg/capabilities/flow.py](../54-L1架构能力聚合层/l1agg/capabilities/flow.py) | `D-E18` 资金流向导图（`flow` 边 5 键 + `meta.flows[]`；无流数据降级 `corr`-only，不伪造边） |
+| L1 批量回放与复盘表 | [54-L1架构能力聚合层/l1agg/trading/batch.py](../54-L1架构能力聚合层/l1agg/trading/batch.py) | `batch_replay` 多标的回放汇总（不合并组合信号）+ `review_table` 按类复盘 6 列（内部视图） |
+| L1 交易层评审报告 | [54-L1架构能力聚合层/SPEC评审报告-L1交易层-v0.1.md](../54-L1架构能力聚合层/SPEC评审报告-L1交易层-v0.1.md) | 2026-11-15（有条件通过 3.30/5；P0 阻断 B-LT1…B-LT5） |
 | L1 交易层代码 | [54-L1架构能力聚合层/l1agg/trading/](../54-L1架构能力聚合层/l1agg/trading/) | `direction_rule` / `exit_rule` / `paper_replay` / `sizing` / `risk` / `cluster` / `weights` / `comparison` / `outbox`（只产信号，执行交 22） |
 
 ---

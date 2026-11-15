@@ -260,6 +260,8 @@ python scripts/backfill_events_history.py \
 
 **边界**：只补官方日历事件（会议/发布日程），不补新闻类事件；`available_at = event_time`（日程本就公开，不构成前视）；日常 `sync_events_to_dal` 的 DELETE 已收窄到窗口内，不会清空回填历史。
 
+**云端执行记录（2026-11-15，`43.160.201.117`，`sudo -u luke`，写前 `.backup`）**：采集 `appended=542`（`by_type` cpi 143 / fomc 101 / nfp 155 / macro_other 143，`failed_years=[]`、`wayback_years=[]`）；入库 `upserted=542`、`db_row_count=550`（回填前 17 行）；`integrity_check=ok`、重复 event_id 0、2015–2026 窗口 543 行；四类事件均已越过 ≥30 事件门禁。备份：`19-数据访问层/data/backups/dreambuddy_core-20261115-113742.db`。
+
 ---
 
 ## 5. 接口设计
