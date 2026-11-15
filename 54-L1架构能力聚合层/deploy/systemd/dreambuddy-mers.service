@@ -1,0 +1,18 @@
+[Unit]
+Description=DreamBuddy MERS S3 daily grid evaluation (54-L1)
+Documentation=file:///home/luke/dreambuddy/54-L1架构能力聚合层/docs/TECHNICAL_DESIGN.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=luke
+Group=luke
+WorkingDirectory=/home/luke/dreambuddy/54-L1架构能力聚合层
+Environment=PYTHONPATH=/home/luke/dreambuddy/54-L1架构能力聚合层
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/luke/venv-trading/bin/python3 scripts/mers_eval.py --db /home/luke/dreambuddy/19-数据访问层/data/dreambuddy_core.db --registry data/mers/registry.db --out data/mers/last_summary.json --run-id daily-schedule --prune-days 90
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=3600
+Nice=10

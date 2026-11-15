@@ -210,6 +210,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--out", default="")
     parser.add_argument("--run-id", default="mers-real-data")
     parser.add_argument("--data-version", default=dt.date.today().isoformat())
+    parser.add_argument(
+        "--prune-days",
+        type=int,
+        default=0,
+        help="保留最近 N 天评估行（0=不清理）；relationship_state 始终保留",
+    )
     args = parser.parse_args(argv)
 
     if not os.path.exists(args.db):
@@ -259,6 +265,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     }
     if second != first:
         summary["second_pass_mismatch"] = True
+
+    retention: Dict[str, Any] = {"keep_days": args.prune_days, "pruned_rows": 0}
+    if args.prune_days > 0:
+        cutoff = (
+            dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=int(args.prune_days))
+        ).isoformat()
+        retention["cutoff"] = cutoff
+        retention["pruned_rows"] = registry.prune_before(cutoff)
+        retention["rows_after_prune"] = registry.count_evals()
+    summary["retention"] = retention
 
     text = json.dumps(summary, ensure_ascii=False, indent=2)
     if args.out:

@@ -278,6 +278,16 @@ class RelationshipRegistry:
         with self._connect() as conn:
             return int(conn.execute("SELECT COUNT(*) FROM relationship_eval").fetchone()[0])
 
+    def prune_before(self, cutoff_iso: str) -> int:
+        """删除 `eval_at < cutoff_iso` 的历史评估行（按 UTC ISO 字符串比较）。
+
+        `relationship_state` 是每个 unit 的当前状态，不随历史行清理而回退；
+        周期任务用固定保留天数调用本方法，避免 registry 无限膨胀。
+        """
+        with self._connect() as conn:
+            cursor = conn.execute("DELETE FROM relationship_eval WHERE eval_at < ?", (cutoff_iso,))
+            return int(cursor.rowcount or 0)
+
 
 def _safe_run(method_id: str, data: Any, **params: Any) -> Dict[str, Any]:
     try:

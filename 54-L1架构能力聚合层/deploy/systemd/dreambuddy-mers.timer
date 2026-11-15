@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily DreamBuddy MERS S3 evaluation (08:20 CST)
+
+[Timer]
+OnCalendar=*-*-* 08:20:00
+Persistent=true
+RandomizedDelaySec=300
+Unit=dreambuddy-mers.service
+
+[Install]
+WantedBy=timers.target

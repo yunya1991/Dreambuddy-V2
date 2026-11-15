@@ -106,6 +106,34 @@ def test_positive_relationship_fdr_idempotency_and_state_progression(tmp_path):
     assert registry.count_evals() == 183
 
 
+def test_prune_drops_history_but_keeps_current_state(tmp_path):
+    registry = RelationshipRegistry(tmp_path / "relationship_registry.db")
+    signal, prices = _strong_relationship()
+    first = evaluate_grid(
+        registry=registry,
+        dataset="market",
+        metric="TEST",
+        signal=signal,
+        prices=prices,
+        target="BTC",
+        data_version="v1",
+        run_id="run-v1",
+        eval_at="2026-11-02T00:00:00+00:00",
+    )
+    positive = _row(first)
+    newer = registry.record(_new_version(positive, "v2"))
+    assert registry.count_evals() == 181
+
+    assert registry.prune_before("2026-11-03T00:00:00+00:00") == 180
+    assert registry.count_evals() == 1
+    assert registry.get_eval(positive["eval_id"]) is None
+    state = registry.get_state(positive["unit_id"])
+    assert state["status"] == newer["status"]
+    assert state["pass_streak"] == 2
+    # 幂等：同一 cutoff 再清理不会再删
+    assert registry.prune_before("2026-11-03T00:00:00+00:00") == 0
+
+
 def test_state_machine_failure_transitions():
     state = {"status": "stable", "data_version": "v1", "pass_streak": 3, "fail_streak": 0}
     first_failure = transition_state(state, gate_pass=False, data_version="v1")
