@@ -10,7 +10,6 @@ import { ValuationPanel } from '@/components/features/fundamental/ValuationPanel
 import { OverviewPanel } from '@/components/features/fundamental/OverviewPanel';
 import { IntermarketPanel } from '@/components/features/fundamental/IntermarketPanel';
 import { BreadthPanel } from '@/components/features/fundamental/BreadthPanel';
-import { VisualWorkbench } from '@/components/visual';
 
 const tabModules: Record<string, string> = {
   flow: 'flow',
@@ -23,7 +22,6 @@ const tabModules: Record<string, string> = {
 
 const tabs = [
   { id: 'overview', label: '总览' },
-  { id: 'charts', label: '数据与图表' },
   { id: 'onchain', label: '链上数据' },
   { id: 'macro', label: '宏观指标' },
   { id: 'sentiment', label: '市场情绪' },
@@ -54,7 +52,6 @@ export default function FundamentalPage() {
       </div>
       <div>
         {activeTab === 'overview' && <OverviewPanel />}
-        {activeTab === 'charts' && <VisualWorkbench compact />}
         {activeTab === 'onchain' && <OnchainPanel />}
         {activeTab === 'macro' && <MacroPanel />}
         {activeTab === 'sentiment' && <SentimentPanel />}
