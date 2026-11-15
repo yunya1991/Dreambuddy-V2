@@ -169,7 +169,7 @@
 | Hurst 可信 | ≥2,000 点 | 1,094 点 | ⚠️ 只给 low，不给 regime |
 | 条件分布（h=1，4 桶） | 每桶非重叠 ≥250 | 273/桶 | ✅ 仅 h=1 |
 | 条件分布（h≥5） | 每桶非重叠 ≥250 | h=5→54/桶、h=20→13/桶 | ❌ |
-| 二维状态（4×4 / 3×3 / 2×2 桶） | 每格非重叠 ≥250 → 4,000 / 2,250 / 1,000 日 | 20 资产最短 1,487 日、15 个 ≥2,250 日、全部 ≥1,000 日 | 🟡 Tier D 全覆盖 / Tier B 15 资产 / Tier A 0 资产 |
+| 二维状态（4×4 / 3×3 / 2×2 桶） | 每格非重叠 ≥250（PIT 预热 250 日后计）；均匀标杆 4,250 / 2,500 / 1,250 日 | 20 资产 1,488–3,377 日，联合分桶非均匀（BTC 3×3 最小格仅 223） | 🟡 Tier D 20/20 实测（BTC/UNI/APT 2×2 最小格 682/412/265）；Tier B 当前 0/20；Tier A 0/20 |
 
 > **关键结论**：当前瓶颈不是方法、不是对齐，而是**历史纵深 1,094 日**。除星期效应、h=1 条件分布、单资产延续性画像外，其余周期性/多维结论都只能等 T-1 扩样本（≥3,000 日，理想 ≥5 年）。任何在这些需求上「先跑个数」的输出，都会被 n 不足污染。
 
@@ -319,7 +319,7 @@ L1 意图（TS/Python 双端注册表）
 | D-E11 | 跨资产同向率/相关突变 | M23–M25, C18 | 多资产对齐 ≥60 点 | cross_check | P2 | ✅ M23/M24/M25/C18 均已接线；dates 与双收益序列按原始行号同步过滤，无 dates 时不执行 C18 |
 | D-E12 | 时空对齐切片 | R18 | 多资产同日数据 | cross_check | P2 | ✅ `capabilities/stats.py::alignment_slice` 已接线；样本不足与空窗口显式降级 |
 | **D-E13** | **趋势延续性画像（场景包）** | T13 + T14 + T20/T21 + F18 + B07/B08 + T08/T09 + B13–B15 | 日频价格 ≥250 点（当前纵深见 METHOD_LIBRARY §15） | conditional_return（子集） | **P0** | ✅ 已交付（2026-11-14，27 用例） |
-| **D-E14** | **相关状态条件分布（场景包）** | 一/二维相关状态 + B05/B10/R01/R02/R08 | 对齐样本 + **每桶/每格非重叠 ≥250** | conditional_distribution | P2 | ✅ 一维首版（2026-11-15）+ 二维 Tier 阶梯（2026-11-15，`capabilities/stats.py::conditional_distribution`、`methods/conditional.py::r02_percentile_forward`）：一维 R02 PIT 4 桶输出 h=1/2，主期限不足降 2 桶；二维传 `factor2` 走 4×4=A / 3×3=B / 2×2=D 阶梯（每格非重叠 ≥250，对应 ≥4,000/2,250/1,000 日），三档均不达标回退一维并披露 `insufficient_2d`；`tier/cells/buckets_per_axis/min_cell_nonoverlap_n/tier_attempts` 显式返回，弱后续期限单独降级，h>1 不输出朴素 t/p |
+| **D-E14** | **相关状态条件分布（场景包）** | 一/二维相关状态 + B05/B10/R01/R02/R08 | 对齐样本 + **每桶/每格非重叠 ≥250** | conditional_distribution | P2 | ✅ 一维首版（2026-11-15）+ 二维 Tier 阶梯（2026-11-15，`capabilities/stats.py::conditional_distribution`、`methods/conditional.py::r02_percentile_forward`）：一维 R02 PIT 4 桶输出 h=1/2，主期限不足降 2 桶；二维传 `factor2` 走 4×4=A / 3×3=B / 2×2=D 阶梯（每格非重叠 ≥250，按 PIT 预热 250 日后的可用样本计；均匀假设的标杆为 ≥4,250/2,500/1,250 日，实测联合分桶聚集更严，当前 20 资产均落 Tier D）；三档均不达标回退一维并披露 `insufficient_2d`；`tier/cells/buckets_per_axis/min_cell_nonoverlap_n/tier_attempts` 显式返回，弱后续期限单独降级，h>1 不输出朴素 t/p |
 | D-E15 | 趋势曲线/多窗口斜率 | I02, T08, I32, I37 | 价格 ≥250 点 | trend_query | P2 | ✅ 已接线（`capabilities/stats.py::trend`）：EMA(12/26/50) 平滑 + 多窗口对数价格斜率(20/60/120/250) + ADX14，可选 I37 Kalman 局部线性趋势；对外只给统计事实 |
 | D-E16 | 多成员加权聚合曲线 | S16 | 多资产同日 ≥60 点 | trend_query | P2 | ✅ 已接线（`capabilities/stats.py::aggregate_curve`）：成员先按自身首日 rebase 再按 `chart_weights` 加权，缺口不向前填充，逐点输出 `coverage_ratio/partial_members`；纯聚合展示，不含交易方向 |
 | D-E17 | 五类分组看板 | S16, S25, M01, I32 | 跨资产公共日期轴 ≥60 点 | cross_check | P2 | ✅ 已接线（`capabilities/stats.py::class_board`）：`ret_60` 与 D-E12 同口径，组内按 `ret_60` 降序，`lit_n/warm_n` 直接消费 D-E19 计数（零重算）；样本低于 per-anchor 质量门时标 `degraded_reason` 并禁止点亮 |
@@ -502,7 +502,7 @@ L1 意图（TS/Python 双端注册表）
 | R02 二维分位 | `methods/conditional.py::r02_percentile_forward`（`indicator2`/`factor2`/`x2` + `label2`）、`_r02_rolling_state`、`_r02_describe` | 两轴各自 PIT 滚动分位后做笛卡尔积，`cell = axis1 * buckets + axis2`；`by_horizon[].by_cell` 逐格给 `n/effective_n/nonoverlap_n/mean/median/p10/p90/win_rate/t/p`，空格显式 n=0；二维强制 `pit=True`，并输出 `current_percentile_2/bucket_1/bucket_2/cell` |
 | D-E14 档位阶梯 | `capabilities/stats.py::conditional_distribution`（`factor2/name2/buckets_per_axis`）、`capability_manifest.yaml` | 4×4=A（≥4,000 日）→ 3×3=B（≥2,250 日）→ 2×2=D（≥1,000 日），每格非重叠 ≥250；降档即 `quality.status=partial` 并写 `degraded_reason=bucket_nonoverlap_lt_250`；三档均不达标时 `dim=1` + `degraded_reason=insufficient_2d` 回退一维（一维 4→2 桶） |
 | 披露字段 | 同上 | 返回 `dim/tier/requested_tier/degraded_tier/requested_buckets_per_axis/buckets_per_axis/cells/min_cell_nonoverlap_n/tier_attempts`；答案句显式写「Tier X + 每格非重叠下限」，禁止静默降级；二维不输出 R08 单调性（一维序数无单调语义） |
-| 数据实测与结论 | 本文 §0.3、§2.4、§6.4 #31/#36 | 云端 20 资产：≥1,000 日 20/20（Tier D 全覆盖）、≥2,250 日 15/20（Tier B）、≥4,000 日 0/20（Tier A，BTC/ETH 3,376 天为最长，到点自动升档）；OKX 现货 listTime=2021-01-29，否决 pre-2017 扩样 |
+| 数据实测与结论 | 本文 §0.3、§2.4、§6.4 #31/#36 | 云端真实数据（20日动量×20日波动率）：BTC 3,357 根 → A/B/D 最小格 110/223/682；UNI 2,230 → 43/105/412；APT 1,468 → 38/81/265，三者均落 Tier D。联合分桶聚集使 3×3 当前 0 资产达标；4×4 契约保留，样本增长后自动升档。OKX 现货 listTime=2021-01-29，否决 pre-2017 扩样 |
 | 验证 | `tests/test_capabilities.py::test_conditional_distribution_two_axis_*`（5 例） | 覆盖 Tier A 16 格 / Tier B 9 格 / Tier D 4 格 / 低于 2×2 回退一维 / factor2 长度不一致 FAIL-OPEN；54-L1 全量 pytest 通过，`ruff check` / `python3 -m black --line-length 100` 通过 |
 
 **v2.48（L1 交易层 D-E15–D-E19 能力登记）**
@@ -994,11 +994,11 @@ L1 意图（TS/Python 双端注册表）
 
 #### 6.4.4 数据阻塞（需更多样本或新数据源）
 
-> 2026-11-15 云端实测（43.160.201.117 `dreambuddy_core.db`，`mm_metrics.metric_name='close_1d'` 共 20 资产 / 54,653 行）：最长纵深 3,377 天（BTC/ETH，2017-08-17 起），最短 2,091 天。以下四行的阻塞判定已按实测回调，不再沿用估算。
+> 2026-11-15 云端实测（43.160.201.117 `dreambuddy_core.db`，`mm_metrics.metric_name='close_1d'` 共 20 资产 / 54,653 行）：最长纵深 3,377 天（BTC/ETH，2017-08-17 起），最短 1,488 天（APT/USDT）。以下四行的阻塞判定已按实测回调，不再沿用估算。
 
 | # | 能力 ID | 能力名 | 优先级 | 状态 | 阻塞原因（2026-11-15 实测） | 预计解除时间 |
 |---|---------|--------|--------|------|----------|-------------|
-| 31 | **D-E14（2 维）** | 二维状态组合（4×4 / 3×3 / 2×2） | P2 | ✅ 2026-11-15（Tier B+D 兜底） | 已按 Tier B/D 落地：4×4=A 仍需 4,000 日/资产（实测最长 3,376 天，0 资产达标，样本到点自动升档）；3×3=B 需 2,250 日，15/20 资产达标；2×2=D 需 1,000 日，20/20 资产达标；低于 2×2 不出二维结论，回退一维并披露 `insufficient_2d`。OKX pre-2017 日线否决（BTC-USDT/ETH-USDT 现货 listTime=2021-01-29，比库内 2017-08-17 更浅），跨 venue 拼接仍列为可选外部扩样（需先过口径评审） | 已完成（Tier B/D）；Tier A 随样本自然增长在 2028-07 前后 |
+| 31 | **D-E14（2 维）** | 二维状态组合（4×4 / 3×3 / 2×2） | P2 | ✅ 2026-11-15（Tier B+D 兜底） | 已按 Tier B/D 落地：4×4=A / 3×3=B / 2×2=D，每格非重叠 ≥250（PIT 预热 250 日后计）。云端真实数据实测（20日动量×20日波动率）：BTC/USDT 3,357 根日线 → A 档最小格 110、B 档 223、D 档 682，落 **Tier D**；UNI/USDT 2,230 → 43/105/412；APT/USDT 1,468 → 38/81/265，均落 **Tier D**。即当前 20 资产 2×2 全达标、3×3 暂 0 达标（联合分桶聚集，非均匀），4×4 需样本继续增长后自动升档。OKX pre-2017 日线否决（BTC-USDT/ETH-USDT 现货 listTime=2021-01-29，比库内 2017-08-17 更浅），跨 venue 拼接仍列为可选外部扩样（需先过口径评审） | 已完成（Tier D 全覆盖；Tier B/A 随样本纵深自动升档） |
 | 32 | **C11** | 节日/事件日历 | P2 | ⬜ | **数据源已具备但未派生**：云端 `DGS10` 16,399 行 / `NASDAQCOM` 14,259 行可还原美股完整交易日，工作日缺失即节假日，无需外部付费源；缺的是派生与 `seasonal.py` 接线 | 可即时解除（工作量在代码侧） |
 | 33 | **D-G25** | 尾部相关 | P2 | ⬜ | **非纯数据阻塞**：D-G25 在 METHOD_LIBRARY 未绑定任何方法 ID（无 tail dependence 实现），需先落方法与能力出口，再评估两资产尾部共现的重叠样本 | 方法 + 能力落地后重新评估 |
 | 34 | **D-J05** | 比特币四年周期 | P2 | ⬜ | **数据阻塞已解除**：实测 9 个资产 ≥2 周期（BTC/ETH 3,377 天 = 2.31 周期，BNB 2.26、LTC 2.23、ADA 2.15、XRP 2.13 等）；剩余为 D-J05 能力未接线 | 仅剩能力接线 |

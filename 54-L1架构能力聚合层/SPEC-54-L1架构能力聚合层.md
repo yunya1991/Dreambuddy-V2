@@ -978,10 +978,10 @@ MERS 与 Discovery 只改变「**选哪个方法**」，不改变「**输出什�
 
 | 编号 | 位置 | 内容 |
 |---|---|---|
-| v1.46-1 | §十 Q6/§3.5.3 | **二维状态降级口径决策**：D-E14 传 `factor2` 时按每格非重叠 ≥250 做档位阶梯 4×4=A（≥4,000 日/资产）→ 3×3=B（≥2,250）→ 2×2=D（≥1,000）；三档均不达标不出二维结论，`dim=1` + `degraded_reason=insufficient_2d` 回退一维（一维仍按 4→2 桶降级）；4×4 契约不变，样本到量自动升档，不新增能力 ID/意图 |
+| v1.46-1 | §十 Q6/§3.5.3 | **二维状态降级口径决策**：D-E14 传 `factor2` 时按每格非重叠 ≥250（按 PIT 预热 250 日后的可用样本计）做档位阶梯 4×4=A → 3×3=B → 2×2=D；三档均不达标不出二维结论，`dim=1` + `degraded_reason=insufficient_2d` 回退一维（一维仍按 4→2 桶降级）；4×4 契约不变，样本到量自动升档，不新增能力 ID/意图 |
 | v1.46-2 | §3.5.3/§11.4 | R02 扩展二维：`data` 支持 `indicator2/factor2/x2` + `label2`，两轴各自 PIT 滚动分位后笛卡尔积（`cell = axis1 * buckets + axis2`），`by_horizon[].by_cell` 逐格输出 `effective_n/nonoverlap_n/mean/median/p10/p90/win_rate/t/p`；二维强制 `pit=True`；`_r02_rolling_state` 在无 `release_ts` 时走切片快路径（结果等价，避免 O(n²) 过滤） |
 | v1.46-3 | §17/测试 | 能力层新增 `factor2/name2/buckets_per_axis`，返回 `dim/tier/requested_tier/degraded_tier/requested_buckets_per_axis/buckets_per_axis/cells/min_cell_nonoverlap_n/tier_attempts`，答案句显式披露 Tier 与每格非重叠下限；新增 5 例（Tier A/B/D、低于 2×2 回退一维、`factor2` 长度不一致 FAIL-OPEN），全量 pytest + `ruff check` + `python3 -m black --line-length 100` 通过 |
-| v1.46-4 | 数据实测 | 云端 20 资产 `close_1d`：≥1,000 日 20/20（Tier D）、≥2,250 日 15/20（Tier B，未达标的 APT/AVAX/FIL/NEAR/UNI 走 Tier D）、≥4,000 日 0/20（Tier A，最长 BTC/ETH 3,376 天）；OKX 现货 `listTime=2021-01-29`，否决 pre-2017 扩样，跨 venue 拼接仍需口径评审 |
+| v1.46-4 | 数据实测 | 云端真实数据（20日动量×20日波动率）：BTC 3,357 根 → A/B/D 档最小格 110/223/682；UNI 2,230 → 43/105/412；APT 1,468 → 38/81/265，三者均落 Tier D（2×2）。联合分桶聚集使 3×3 当前 0 资产达标，4×4 契约保留、样本增长后自动升档；OKX 现货 `listTime=2021-01-29`，否决 pre-2017 扩样，跨 venue 拼接仍需口径评审 |
 
 ### v1.43（2026-11-15）
 
