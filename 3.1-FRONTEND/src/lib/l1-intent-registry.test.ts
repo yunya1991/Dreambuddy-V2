@@ -76,6 +76,11 @@ describe('l1-intent-registry v2 静态门控（零回归）', () => {
   it('阈值常量跨系统唯一 (SSoT §16.5)', () => {
     expect(ROUTE_CONFIDENCE_THRESHOLD_HIGH).toBe(0.65);
   });
+
+  it('统计关系新 cue：拥挤度→D-A14、显著性→D-G22 均走 stat_query（与 l1_route_signal.py 对齐）', () => {
+    expect(fallbackIntent('BTC 拥挤度现在高吗')).toBe('stat_query');
+    expect(fallbackIntent('BTC 日收益是否显著')).toBe('stat_query');
+  });
 });
 
 describe('canHandleL1WithSignal v3 信号门控', () => {

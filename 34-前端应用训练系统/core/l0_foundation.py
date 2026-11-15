@@ -141,15 +141,21 @@ def _iso_utc(ts: int) -> str:
     )
 
 
-def _day_window(days: int) -> tuple:
+def _day_window(days: int, end_ts: Optional[int] = None) -> tuple:
     """UTC 日历日窗口 (start_ts, end_ts)：end 为「明天 00:00」，含当日已落库点。
 
     按日对齐而非 now-N*86400，避免查询时刻（时/分）把窗口边界切进某一天，
     导致 days=5 只取到 4 个日频点这类随时钟漂移的结果。
+
+    `end_ts` 显式给出时（回放 as_of），窗口锚定在 As-Of 当天而非 now。
     """
+    if end_ts is not None:
+        anchor = datetime.fromtimestamp(int(end_ts), tz=timezone.utc)
+        day_end = int(anchor.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()) + 86400
+        return day_end - days * 86400, day_end
     now = datetime.now(tz=timezone.utc)
-    end_ts = int(now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()) + 86400
-    return end_ts - days * 86400, end_ts
+    day_end = int(now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()) + 86400
+    return day_end - days * 86400, day_end
 
 
 def _iso_cst(ts: int) -> str:
@@ -421,6 +427,47 @@ class L0Foundation:
             out.append((src, float(value), int(ts)))
         return out
 
+    def _query_series_rows_vintage(
+        self,
+        db_path: str,
+        sub_category: str,
+        metric_name: str,
+        start_ts: int,
+        end_ts: int,
+        as_of: int,
+        source: Optional[str] = None,
+    ) -> List[Tuple[str, float, int]]:
+        """按 As-Of 回放：只取 `observed_at <= as_of`，同周期取最晚一次观测（vintage）。
+
+        表不存在时抛 sqlite3.OperationalError，由调用方降级为 `vintage_unavailable`，
+        **绝不回落到 mm_metrics**——那会读到修订后的值（前视）。
+        """
+        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=5)
+        try:
+            sql = (
+                "SELECT source, metric_value, period_ts FROM mm_metric_vintages "
+                "WHERE sub_category = ? AND metric_name = ? "
+                "AND period_ts >= ? AND period_ts < ? AND observed_at <= ? "
+                "AND metric_value IS NOT NULL"
+            )
+            args: List[Any] = [sub_category, metric_name, start_ts, end_ts, int(as_of)]
+            if source:
+                sql += " AND source = ?"
+                args.append(source)
+            # 同 (period_ts) 多版本时保留 observed_at 最大者（该 As-Of 时点已知的最新版本）
+            sql += " ORDER BY period_ts ASC, observed_at DESC, source ASC"
+            rows = conn.execute(sql, args).fetchall()
+        finally:
+            conn.close()
+        seen: set = set()
+        out: List[Tuple[str, float, int]] = []
+        for src, value, ts in rows:
+            if ts in seen:
+                continue
+            seen.add(ts)
+            out.append((str(src), float(value), int(ts)))
+        return out
+
     def _fetch_datacenter_series(self, params: Dict) -> Dict[str, Any]:
         """mm_metrics 区间序列 + 降采样。返回 {points, sample_n} 与 meta.quality。"""
         src_tag = "dal_mm_metrics"
@@ -443,14 +490,35 @@ class L0Foundation:
         if source and not _SERIES_IDENT_RE.match(str(source)):
             return _degraded(src_tag, "invalid_params", f"illegal source: {source}")
 
+        as_of: Optional[int] = None
+        as_of_raw = params.get("as_of")
+        if as_of_raw not in (None, ""):
+            try:
+                if isinstance(as_of_raw, (int, float)):
+                    as_of = int(as_of_raw)
+                else:
+                    as_of = int(
+                        datetime.fromisoformat(str(as_of_raw).replace("Z", "+00:00")).timestamp()
+                    )
+            except (TypeError, ValueError):
+                return _degraded(src_tag, "invalid_params", "as_of must be epoch or ISO8601")
+
         db_path = self._resolve_series_db()
         if not os.path.isfile(db_path):
             return _degraded(src_tag, "source_missing", db_path)
-        start_ts, end_ts = _day_window(days)
+        start_ts, end_ts = _day_window(days, as_of)
         try:
-            rows = self._query_series_rows(
-                db_path, sub, metric, start_ts, end_ts, str(source) if source else None
-            )
+            if as_of is None:
+                rows = self._query_series_rows(
+                    db_path, sub, metric, start_ts, end_ts, str(source) if source else None
+                )
+            else:
+                rows = self._query_series_rows_vintage(
+                    db_path, sub, metric, start_ts, end_ts, as_of, str(source) if source else None
+                )
+        except sqlite3.OperationalError as e:
+            # 回放请求但 vintage 表缺失：必须暴露缺失，禁止回落到修订后的 mm_metrics
+            return _degraded(src_tag, "vintage_unavailable", f"{type(e).__name__}: {e}")
         except Exception as e:
             return _degraded(src_tag, "read_error", f"{type(e).__name__}: {e}")
 
@@ -470,6 +538,9 @@ class L0Foundation:
         }
         if sample_n == 0:
             meta["reason"] = "no_history"
+        if as_of is not None:
+            meta["as_of"] = _iso_utc(as_of)
+            meta["vintage"] = True
         return _envelope(
             {
                 "sub_category": sub,

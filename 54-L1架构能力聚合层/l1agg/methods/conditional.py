@@ -635,8 +635,21 @@ def b12_gradient(data, k: int = 5, **_: Any) -> Dict[str, Any]:
         },
     ),
 )
-def b11_monotonic(data, k: int = 5, **_: Any) -> Dict[str, Any]:
-    table = b16_group_stats(data, k=k)["table"]
+def b11_monotonic(data, k: int = 5, prebinned: bool = False, **_: Any) -> Dict[str, Any]:
+    if prebinned:
+        table = [
+            row
+            for row in b05_conditional(data)["table"]
+            if row["n"] > 0 and row["mean"] is not None
+        ]
+        try:
+            table = sorted(table, key=lambda row: int(row["state"]))
+        except (TypeError, ValueError) as exc:
+            raise ValueError("prebinned states must be integer ordinals") from exc
+        if len(table) < 2:
+            raise ValueError("prebinned requires at least two nonempty states")
+    else:
+        table = b16_group_stats(data, k=k)["table"]
     means = [float(x["mean"]) for x in table]
     diffs = [b - a for a, b in zip(means, means[1:], strict=False)]
     if all(d > 0 for d in diffs):
@@ -654,7 +667,7 @@ def b11_monotonic(data, k: int = 5, **_: Any) -> Dict[str, Any]:
         "monotonic": mono,
         "bin_means": [round(m, 6) for m in means],
         "rho_bin": None if rho is None else round(rho, 6),
-        "k": k,
+        "k": len(table) if prebinned else k,
         "n": sum(x["n"] for x in table),
     }
 
@@ -913,6 +926,7 @@ def r02_percentile_forward(
     pit: bool = False,
     window: int = COND_MIN_N,
     as_of: Any = None,
+    include_states: bool = False,
     **_: Any,
 ) -> Dict[str, Any]:
     indicator, price = _two(data)
@@ -1039,7 +1053,7 @@ def r02_percentile_forward(
             f"样本内回顾（全样本分位，含未来函数，不用于条件外推）：当前 {label} "
             f"处于 {pct:.1f}% 分位；{distribution}历史统计，不代表未来。"
         )
-    return {
+    out = {
         "current_percentile": round(pct, 4),
         "bucket": bucket,
         "by_horizon": by_horizon,
@@ -1051,3 +1065,6 @@ def r02_percentile_forward(
         "window": disclosed_window,
         "align_method": align_method,
     }
+    if include_states:
+        out["states"] = [None if state is None else int(state[1]) for state in states]
+    return out

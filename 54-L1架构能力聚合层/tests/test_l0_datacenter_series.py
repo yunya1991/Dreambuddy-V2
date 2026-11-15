@@ -24,7 +24,13 @@ from l1agg.series_catalog import (  # noqa: E402
 )
 
 _DAY = 86400
-NOW = int(datetime.datetime(2026, 11, 14, 12, 0, tzinfo=datetime.UTC).timestamp())
+NOW = int(
+    datetime.datetime.now(datetime.UTC)
+    .replace(hour=12, minute=0, second=0, microsecond=0)
+    .timestamp()
+)
+# 未来事件窗口（NOW + 20 天）所在月份的断言基准，随 NOW 滚动，避免日期硬编码过期
+FUTURE_MONTH = datetime.datetime.fromtimestamp(NOW + 20 * _DAY, datetime.UTC).strftime("%Y-%m")
 
 
 def _make_db(path: str, rows) -> None:
@@ -378,7 +384,7 @@ def test_events_scope_returns_future_sorted(events_db):
     assert ctx["degraded"] is False
     events = ctx["data"]
     assert [e["title"] for e in events] == ["FOMC 12月", "FOMC 1月"]
-    assert events[0]["event_time_cst"].startswith("2026-12")
+    assert events[0]["event_time_cst"].startswith(FUTURE_MONTH)
     assert ctx["source"] == "dal_mm_events"
 
 
@@ -400,7 +406,7 @@ def test_exec_calendar_event_end_to_end(events_db):
     result = exec_calendar_event("下一次议息会议是什么时候")
     assert result["success"] is True
     assert result["data"]["kind"] == "fomc"
-    assert "2026-12" in result["answer"]
+    assert FUTURE_MONTH in result["answer"]
     assert result["data"]["events"][0]["event_type"] == "fomc"
 
 
@@ -777,3 +783,92 @@ def test_candles_invalid_source_policy(candle_mixed_db):
     )
     assert ctx["degraded"] is True
     assert ctx["meta"]["reason"] == "invalid_params"
+
+
+# ---------------- B18：vintage 追加存储 + As-Of 回放 ----------------
+
+
+def _make_vintage_table(path: str, rows) -> None:
+    conn = sqlite3.connect(path)
+    conn.execute("""
+        CREATE TABLE mm_metric_vintages (
+            source TEXT NOT NULL, sub_category TEXT NOT NULL, metric_name TEXT NOT NULL,
+            period_ts INTEGER NOT NULL, observed_at INTEGER NOT NULL, metric_value REAL,
+            PRIMARY KEY (source, sub_category, metric_name, period_ts, observed_at)
+        ) WITHOUT ROWID
+        """)
+    conn.executemany("INSERT INTO mm_metric_vintages VALUES (?, ?, ?, ?, ?, ?)", rows)
+    conn.commit()
+    conn.close()
+
+
+@pytest.fixture
+def vintage_db(tmp_path, monkeypatch):
+    db = tmp_path / "vintage.db"
+    period = NOW - 5 * _DAY
+    # mm_metrics 只保留修订后的值（模拟 INSERT OR REPLACE 覆盖）
+    _make_db(
+        str(db),
+        [
+            ("fred", "CPI", "cpi_yoy", 110.0, period),
+            ("fred", "CPI", "cpi_yoy", 100.0, period - 3 * _DAY),
+        ],
+    )
+    # vintage 表留痕：同一 period 两个版本
+    _make_vintage_table(
+        str(db),
+        [
+            ("fred", "CPI", "cpi_yoy", period, period, 100.0),
+            ("fred", "CPI", "cpi_yoy", period, NOW - _DAY, 110.0),
+            ("fred", "CPI", "cpi_yoy", period - 3 * _DAY, period - 3 * _DAY, 100.0),
+        ],
+    )
+    monkeypatch.setenv("DREAMBUDDY_CORE_DB", str(db))
+    return str(db)
+
+
+def test_vintage_replay_hides_later_revision(vintage_db):
+    # as_of 落在首次观测与修订之间 → 只能看到 100.0
+    ctx = _l0().fetch_context(
+        "datacenter.series",
+        {
+            "sub_category": "CPI",
+            "metric_name": "cpi_yoy",
+            "days": 20,
+            "as_of": NOW - 2 * _DAY,
+        },
+    )
+    assert ctx["degraded"] is False
+    assert ctx["meta"]["vintage"] is True
+    assert ctx["data"]["points"][-1]["value"] == 100.0
+
+
+def test_vintage_replay_after_revision_sees_revised(vintage_db):
+    ctx = _l0().fetch_context(
+        "datacenter.series",
+        {"sub_category": "CPI", "metric_name": "cpi_yoy", "days": 20, "as_of": NOW},
+    )
+    assert ctx["data"]["points"][-1]["value"] == 110.0
+
+
+def test_series_without_as_of_keeps_latest_behavior(vintage_db):
+    ctx = _l0().fetch_context(
+        "datacenter.series", {"sub_category": "CPI", "metric_name": "cpi_yoy", "days": 20}
+    )
+    assert "vintage" not in ctx["meta"]
+    assert ctx["data"]["points"][-1]["value"] == 110.0
+
+
+def test_as_of_without_vintage_table_degrades_not_fallback(series_db):
+    ctx = _l0().fetch_context(
+        "datacenter.series",
+        {
+            "sub_category": "BTC",
+            "metric_name": "close_usd",
+            "days": 10,
+            "as_of": NOW - _DAY,
+        },
+    )
+    # 绝不回落到 mm_metrics（那会读到修订后的值）
+    assert ctx["degraded"] is True
+    assert ctx["meta"]["reason"] == "vintage_unavailable"

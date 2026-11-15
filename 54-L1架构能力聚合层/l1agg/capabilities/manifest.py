@@ -23,6 +23,8 @@ MANIFEST_FILE = os.path.normpath(
 )
 _REQUIRED = ("id", "intent", "mode", "data_scope", "executor", "methods", "min_n")
 _MODES = ("deterministic", "gated")
+# SPEC-54 §4.8 / ADR-V14：public 才允许被前端与数据查询命中；internal 只供 L1 内部链路。
+_VISIBILITY = ("public", "internal")
 
 
 class ManifestError(ValueError):
@@ -40,6 +42,7 @@ class Capability:
     min_n: int
     min_span_days: int = 0
     notes: str = ""
+    visibility: str = "public"
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -52,6 +55,7 @@ class Capability:
             "min_n": self.min_n,
             "min_span_days": self.min_span_days,
             "notes": self.notes,
+            "visibility": self.visibility,
         }
 
 
@@ -60,6 +64,8 @@ class Manifest:
     version: int
     updated: str
     capabilities: Tuple[Capability, ...] = field(default_factory=tuple)
+    visibility_default: str = "public"
+    visibility_internal: Tuple[str, ...] = ()
 
     def get(self, capability_id: str) -> Capability:
         for cap in self.capabilities:
@@ -82,23 +88,33 @@ def load(path: Optional[str] = None) -> Manifest:
     target = path or MANIFEST_FILE
     with open(target, "r", encoding="utf-8") as fh:
         raw = yaml.safe_load(fh) or {}
-    caps = tuple(_capability(item) for item in raw.get("capabilities") or ())
+    default = str(raw.get("visibility_default", "public"))
+    internal = tuple(str(i) for i in raw.get("visibility_internal") or ())
+    caps = tuple(_capability(item, default, internal) for item in raw.get("capabilities") or ())
     manifest = Manifest(
-        version=int(raw.get("version", 0)), updated=str(raw.get("updated", "")), capabilities=caps
+        version=int(raw.get("version", 0)),
+        updated=str(raw.get("updated", "")),
+        capabilities=caps,
+        visibility_default=default,
+        visibility_internal=internal,
     )
     validate(manifest)
     return manifest
 
 
-def _capability(item: Any) -> Capability:
+def _capability(
+    item: Any, default_visibility: str = "public", internal: Tuple[str, ...] = ()
+) -> Capability:
     if not isinstance(item, dict):
         raise ManifestError(f"capability 必须是 mapping: {item!r}")
     missing = [key for key in _REQUIRED if key not in item]
     if missing:
         raise ManifestError(f"capability {item.get('id')!r} 缺少字段: {missing}")
     methods = tuple(str(m) for m in item["methods"])
+    cap_id = str(item["id"])
+    fallback = "internal" if cap_id in internal else default_visibility
     return Capability(
-        id=str(item["id"]),
+        id=cap_id,
         intent=str(item["intent"]),
         mode=str(item["mode"]),
         data_scope=tuple(str(s) for s in item["data_scope"]),
@@ -107,6 +123,7 @@ def _capability(item: Any) -> Capability:
         min_n=int(item["min_n"]),
         min_span_days=int(item.get("min_span_days", 0)),
         notes=str(item.get("notes", "")),
+        visibility=str(item.get("visibility", fallback)),
     )
 
 
@@ -114,6 +131,8 @@ def validate(manifest: Manifest) -> None:
     """结构 + 方法引用校验；任一违规抛 ManifestError。"""
     if manifest.version < 1:
         raise ManifestError("version 必须 >= 1")
+    if manifest.visibility_default not in _VISIBILITY:
+        raise ManifestError(f"visibility_default 必须是 {_VISIBILITY}")
     ids, intents = set(), {}
     for cap in manifest.capabilities:
         if not cap.id.startswith("D-"):
@@ -121,6 +140,8 @@ def validate(manifest: Manifest) -> None:
         if cap.id in ids:
             raise ManifestError(f"重复能力 ID: {cap.id}")
         ids.add(cap.id)
+        if cap.visibility not in _VISIBILITY:
+            raise ManifestError(f"{cap.id}: visibility 必须是 {_VISIBILITY}")
         if cap.mode not in _MODES:
             raise ManifestError(f"{cap.id}: mode 必须是 {_MODES}")
         if not cap.data_scope:
@@ -142,6 +163,9 @@ def validate(manifest: Manifest) -> None:
         modes = {manifest.get(cid).mode for cid in cap_ids}
         if len(modes) > 1:
             raise ManifestError(f"意图 {intent} 下 mode 不一致: {sorted(modes)}")
+    unknown_internal = sorted(set(manifest.visibility_internal) - ids)
+    if unknown_internal:
+        raise ManifestError(f"visibility_internal 引用了未登记能力: {unknown_internal}")
 
 
 def validate_execution(
@@ -209,3 +233,15 @@ def manifest() -> Manifest:
 
 def get_capability(capability_id: str) -> Capability:
     return manifest().get(capability_id)
+
+
+def assert_public(capability_id: str) -> Capability:
+    """执行外露硬闸（SPEC-54 §4.8 / ADR-V14）。
+
+    `internal` 能力（L1-D 方向 / L1-X 执行）永不允许被前端或数据查询命中。
+    这里故意抛异常而不是返回降级结果——外露是安全事故，不是可降级路径。
+    """
+    cap = get_capability(capability_id)
+    if cap.visibility != "public":
+        raise PermissionError(f"能力 {capability_id} 为 {cap.visibility}，禁止对外暴露")
+    return cap

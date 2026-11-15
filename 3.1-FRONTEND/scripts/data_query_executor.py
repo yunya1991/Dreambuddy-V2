@@ -978,6 +978,36 @@ _STAT_IC_CUE = re.compile(
     r"(?:^|[^A-Za-z])IC(?:[^A-Za-z]|$)|信息系数|因子有效|单调性", re.IGNORECASE
 )
 _STAT_CORR_CUE = re.compile(r"相关|同向|领先|滞后")
+_STAT_CROSS_CUE = re.compile(r"同向率|同向比例|跨资产同向|相关稳定|相关突变|突变点|周期对齐")
+_STAT_ALIGN_CUE = re.compile(r"对齐切片|时空对齐|对齐窗口|陈旧|stale|ffill", re.IGNORECASE)
+_STAT_CROWDING_CUE = re.compile(r"拥挤|拥挤度|crowding|杠杆过热|多空比过热", re.IGNORECASE)
+_STAT_SIGNIFICANCE_CUE = re.compile(
+    r"显著性|是否显著|显著吗|HAC|Newey|Newey-West|Deflated|DSR", re.IGNORECASE
+)
+
+# 拥挤度合成（F26 固定权重 0.4/0.3/0.3）所需三指标：sub_category / metric_name / 展示名
+_CROWDING_SERIES = (
+    ("okx_derivatives", "funding_rate_pct", "资金费率"),
+    ("open_interest", "open_interest_value", "未平仓"),
+    ("long_short_ratio", "long_short_ratio", "多空比"),
+)
+
+
+def _load_crowding_panel(days: int = 180):
+    """拥挤度三指标日频序列；返回 (panel, 缺失项中文名)。全部可用才允许合成。"""
+    panel, missing = {}, []
+    for sub, metric, label in _CROWDING_SERIES:
+        ctx = get_l0().fetch_context(
+            "datacenter.series",
+            {"sub_category": sub, "metric_name": metric, "days": days, "agg": "daily"},
+        )
+        points = (ctx.get("data") or {}).get("points") or []
+        values = [float(p["value"]) for p in points if p.get("value") is not None]
+        if values:
+            panel[label] = values
+        else:
+            missing.append(label)
+    return panel, missing
 
 
 def _stat_dates(ts_values):
@@ -989,6 +1019,18 @@ def _stat_dates(ts_values):
 
 def _stat_returns(values):
     return [values[i] / values[i - 1] - 1.0 for i in range(1, len(values)) if values[i - 1]]
+
+
+def _stat_returns_with_dates(values, dates):
+    """收益与日期同步过滤：`dates[i]` 对应 `values[i-1] → values[i]` 的收益。"""
+    out_v, out_d = [], []
+    for i in range(1, len(values)):
+        prev = values[i - 1]
+        if not prev:
+            continue
+        out_v.append(values[i] / prev - 1.0)
+        out_d.append(dates[i])
+    return out_v, out_d
 
 
 def _stat_result(envelope):
@@ -1016,6 +1058,7 @@ def exec_stat_query(message):
         from l1agg.candles import CandleError
         from l1agg.candles import load as load_candles
         from l1agg.capabilities import run_capability
+        from l1agg.capabilities.manifest import assert_public
     except Exception as e:  # noqa: BLE001  FAIL-OPEN：54 模块不可用时降级
         return {
             "success": True,
@@ -1029,6 +1072,8 @@ def exec_stat_query(message):
 
     if _STAT_DRAWDOWN_CUE.search(message):
         capability_id = "D-E10"
+    elif _STAT_CROWDING_CUE.search(message):
+        capability_id = "D-A14"
     elif _STAT_SEASONAL_CUE.search(message):
         capability_id = "D-E03"
     elif _STAT_PERCENTILE_CUE.search(message):
@@ -1037,10 +1082,20 @@ def exec_stat_query(message):
         capability_id = "D-E07"
     elif _STAT_IC_CUE.search(message):
         capability_id = "D-E08"
+    elif _STAT_ALIGN_CUE.search(message):
+        capability_id = "D-E12"
+    elif _STAT_CROSS_CUE.search(message):
+        capability_id = "D-E11"
     elif _STAT_CORR_CUE.search(message):
         capability_id = "D-E05"
+    elif _STAT_SIGNIFICANCE_CUE.search(message):
+        capability_id = "D-G22"
     else:
         capability_id = "D-E10"
+
+    # S0 执行外露硬闸（SPEC-54 §4.8 / ADR-V14）：internal 能力直接抛 PermissionError，
+    # 不降级、不返回数据——外露属于安全事故。
+    assert_public(capability_id)
 
     if capability_id == "D-E08":
         # 无因子数据源：如实降级，不拿价格序列伪造因子
@@ -1053,16 +1108,76 @@ def exec_stat_query(message):
             "capability": "D-E08",
         }
 
-    if capability_id == "D-E05":
+    if capability_id == "D-A14":
+        # 拥挤度合成按冻结口径 F26 固定权重 0.4/0.3/0.3，三指标缺一不合成（不拿单指标冒充）
+        panel, missing = _load_crowding_panel()
+        if missing:
+            return {
+                "success": True,
+                "degraded": True,
+                "answer": f"拥挤度合成需要资金费率/未平仓/多空比三条对齐序列（F26 固定权重 0.4/0.3/0.3），"
+                f"当前缺少：{'、'.join(missing)}，暂不输出拥挤度档位，不做推算。",
+                "data": None,
+                "capability": "D-A14",
+            }
+        try:
+            envelope = run_capability("D-A14", series=panel, symbol=symbol)
+        except Exception as e:  # noqa: BLE001  FAIL-OPEN
+            return {
+                "success": True,
+                "degraded": True,
+                "answer": f"拥挤度合成计算异常: {e}",
+                "data": None,
+                "capability": "D-A14",
+            }
+        return _stat_result(envelope)
+
+    if capability_id == "D-E12":
+        # 时空对齐切片：每资产独立日期轴（R18 内部做 UTC 日收盘 + 跨源去重 + ffill）
+        participants = [symbol] + [s for s in _symbols_in_message(message) if s != symbol]
+        series = {}
+        last_error = None
+        for sym in participants:
+            candles = None
+            for policy in ("snapshot", "auto"):
+                try:
+                    candles = load_candles(sym, bar="1d", days=730, source_policy=policy)
+                except CandleError as e:
+                    last_error = e
+                    candles = None
+                if candles is not None and candles.sample_n:
+                    break
+            if candles is None or not candles.sample_n:
+                return {
+                    "success": True,
+                    "degraded": True,
+                    "answer": f"{sym} K线数据不可用，暂无法做时空对齐切片（{last_error}）",
+                    "data": None,
+                    "capability": "D-E12",
+                }
+            series[sym] = list(zip(_stat_dates(candles.ts), list(candles.close), strict=False))
+        try:
+            envelope = run_capability("D-E12", series=series)
+        except Exception as e:  # noqa: BLE001  FAIL-OPEN
+            return {
+                "success": True,
+                "degraded": True,
+                "answer": f"时空对齐切片计算异常: {e}",
+                "data": None,
+                "capability": "D-E12",
+            }
+        return _stat_result(envelope)
+
+    if capability_id in ("D-E05", "D-E11"):
         peers = [s for s in _symbols_in_message(message) if s != symbol]
         if not peers:
             return {
                 "success": True,
                 "degraded": True,
-                "answer": f"相关性统计需要第二个标的（当前识别为 {symbol}），"
-                "请指明对比对象（如 BTC 与 ETH），不做推算。",
+                "answer": f"{'跨资产同向' if capability_id == 'D-E11' else '相关性'}统计需要第二个标的"
+                f"（当前识别为 {symbol}），请指明对比对象（如 BTC 与 ETH），不做推算。",
                 "data": None,
-                "capability": "D-E05",
+                "capability": capability_id,
             }
         peer = peers[0]
         # 跨资产日收益必须同一「收盘锚点」：优先两侧都走日频快照（close_anchor=snapshot_last），
@@ -1087,7 +1202,7 @@ def exec_stat_query(message):
                 "degraded": True,
                 "answer": f"{symbol}/{peer} K线数据不可用，暂无法计算相关性（{last_error}）",
                 "data": None,
-                "capability": "D-E05",
+                "capability": capability_id,
             }
         # 按共同交易日（UTC 日期轴，日线 ts 已归一到 UTC 日首）对齐后取日收益
         x_map = dict(zip(_stat_dates(x_candles.ts), x_candles.close, strict=False))
@@ -1099,23 +1214,82 @@ def exec_stat_query(message):
                 "degraded": True,
                 "answer": f"{symbol} 与 {peer} 无对齐的日线数据，暂无法计算相关性，不做推算。",
                 "data": None,
-                "capability": "D-E05",
+                "capability": capability_id,
             }
         try:
-            envelope = run_capability(
-                "D-E05",
-                x=_stat_returns([x_map[t] for t in common]),
-                y=_stat_returns([y_map[t] for t in common]),
-                x_name=symbol,
-                y_name=peer,
-            )
+            if capability_id == "D-E05" and len(peers) >= 2:
+                # ≥3 资产：共同交易日面板 → 日收益 → M05/M06/M07 相关矩阵
+                panel = {symbol: x_map, peer: y_map}
+                for extra in peers[1:]:
+                    extra_candles = None
+                    for policy in ("snapshot", "auto"):
+                        try:
+                            extra_candles = load_candles(
+                                extra, bar="1d", days=730, source_policy=policy
+                            )
+                        except CandleError:
+                            extra_candles = None
+                        if extra_candles is not None and extra_candles.sample_n:
+                            break
+                    if extra_candles is None or not extra_candles.sample_n:
+                        return {
+                            "success": True,
+                            "degraded": True,
+                            "answer": f"{extra} K线数据不可用，多资产相关矩阵无法完整计算，不做推算。",
+                            "data": None,
+                            "capability": "D-E05",
+                        }
+                    panel[extra] = dict(
+                        zip(_stat_dates(extra_candles.ts), extra_candles.close, strict=False)
+                    )
+                common = sorted(set.intersection(*(set(m) for m in panel.values())))
+                if len(common) < 3:
+                    return {
+                        "success": True,
+                        "degraded": True,
+                        "answer": f"{len(panel)} 个资产共同交易日仅 {len(common)} 天，"
+                        "不足 3 天，不做推算。",
+                        "data": None,
+                        "capability": "D-E05",
+                    }
+                envelope = run_capability(
+                    "D-E05",
+                    series={
+                        name: _stat_returns([m[t] for t in common]) for name, m in panel.items()
+                    },
+                    dates=common[1:],
+                    x_name=symbol,
+                    y_name=peer,
+                )
+                return _stat_result(envelope)
+
+            x_returns, x_dates = _stat_returns_with_dates([x_map[t] for t in common], common)
+            y_returns, _ = _stat_returns_with_dates([y_map[t] for t in common], common)
+            if capability_id == "D-E11":
+                envelope = run_capability(
+                    "D-E11",
+                    x=x_returns,
+                    y=y_returns,
+                    dates=x_dates,
+                    x_name=symbol,
+                    y_name=peer,
+                )
+            else:
+                envelope = run_capability(
+                    "D-E05",
+                    x=x_returns,
+                    y=y_returns,
+                    dates=x_dates,
+                    x_name=symbol,
+                    y_name=peer,
+                )
         except Exception as e:  # noqa: BLE001  FAIL-OPEN
             return {
                 "success": True,
                 "degraded": True,
                 "answer": f"相关性计算异常: {e}",
                 "data": None,
-                "capability": "D-E05",
+                "capability": capability_id,
             }
         result = _stat_result(envelope)
         if x_candles.close_anchor != y_candles.close_anchor:
@@ -1133,6 +1307,22 @@ def exec_stat_query(message):
             "capability": capability_id,
         }
 
+    if capability_id == "D-G22":
+        # 显著性推断：日收益序列 → Q06 HAC t + Q07 Deflated Sharpe（n<250 由能力层 FAIL-OPEN）
+        try:
+            envelope = run_capability(
+                "D-G22", series=_stat_returns(list(candles.close)), name=symbol
+            )
+        except Exception as e:  # noqa: BLE001  FAIL-OPEN
+            return {
+                "success": True,
+                "degraded": True,
+                "answer": f"显著性推断计算异常: {e}",
+                "data": None,
+                "capability": "D-G22",
+            }
+        return _stat_result(envelope)
+
     kwargs = {"prices": list(candles.close), "symbol": symbol}
     if capability_id == "D-E03":
         kwargs["dates"] = _stat_dates(candles.ts)
@@ -1142,6 +1332,9 @@ def exec_stat_query(message):
         kwargs["dates"] = _stat_dates(candles.ts)
     elif capability_id == "D-E07":
         kwargs["is_returns"] = False
+    elif capability_id == "D-E10":
+        # 回撤曲线需要 UTC 日期轴；缺日期时 drawdown_path 的 x 轴为空
+        kwargs["dates"] = _stat_dates(candles.ts)
     try:
         envelope = run_capability(capability_id, **kwargs)
     except Exception as e:  # noqa: BLE001  FAIL-OPEN

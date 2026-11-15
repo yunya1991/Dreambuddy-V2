@@ -24,6 +24,7 @@ import { EnhancementHints } from './EnhancementHints';
 import { InsightCard } from './InsightCard';
 import { RecommendationCard } from './RecommendationCard';
 import { SynthesisChart } from './SynthesisChart';
+import { VisualRenderer, type VisualSpec } from '@/components/visual';
 import { DimensionHooks, type DimensionHook } from './DimensionHooks';
 import { DecisionHooks, type DecisionHook } from './DecisionHooks';
 import { StrategyHooks, type StrategyHook } from './StrategyHooks';
@@ -346,6 +347,14 @@ export function ChatPanel() {
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {lastChartSpecs.map((chart, ci) => {
+                          // SPEC-54 图规格（kind/spec_version）走统一渲染器；旧 ChartSpec（type）保持原样
+                          if (chart?.kind && chart?.spec_version) {
+                            return (
+                              <div key={ci} className="sm:col-span-2 lg:col-span-3">
+                                <VisualRenderer visual={chart as VisualSpec} />
+                              </div>
+                            );
+                          }
                           const fullSpan = ['radar', 'bullet', 'heatmap', 'candlestick'].includes(chart.type);
                           return (
                             <div key={ci} className={fullSpan ? 'sm:col-span-2 lg:col-span-3' : ''}>

@@ -16,6 +16,7 @@ if _MODULE_ROOT not in sys.path:
 import l1agg.methods.descriptive  # noqa: F401,E402  # 触发 D 登记
 import l1agg.methods.timeseries  # noqa: F401,E402  # 触发 T/F 登记
 from l1agg.methods import get, run  # noqa: E402
+from l1agg.methods.timeseries import f26_crowding_score  # noqa: E402
 
 _T_IDS = ("T05", "T06", "T10", "T18", "T23", "T25", "T26")
 _F_IDS = ("F15", "F16", "F19", "F22", "F23", "F24", "F25", "F26")
@@ -254,6 +255,62 @@ def test_f26_crowding_score_at_max():
     assert out["score"] == pytest.approx(1.0)
     assert out["weights"] == [0.4, 0.3, 0.3]
     assert out["components"] == {"funding": 1.0, "oi": 1.0, "basis": 1.0}
+
+
+# ---------------- F26 level：A 分位法四档 ----------------
+# 冻结口径：<p20 极低 / p20–p60 低 / p60–p80 偏高 / ≥p80 高。
+# 阈值取「分值历史分布」的分位（A 分位法），禁止退化为固定等宽四档/五档。
+
+
+def _f26_last_value(value: float, n: int = 200) -> dict:
+    """单调序列中把末值替换成指定值，用于把当前 score 精确落在某一档。"""
+    vals = [float(i) for i in range(n)]
+    vals[-1] = value
+    return run("F26", {"crowding": vals})["result"]
+
+
+def test_f26_level_covers_four_quantile_bands():
+    labels = {
+        "极低": run("F26", {"crowding": [float(200 - i) for i in range(200)]})["result"]["level"],
+        "低": _f26_last_value(79.0)["level"],
+        "偏高": _f26_last_value(139.0)["level"],
+        "高": run("F26", {"crowding": [float(i) for i in range(200)]})["result"]["level"],
+    }
+    assert labels == {"极低": "极低", "低": "低", "偏高": "偏高", "高": "高"}
+
+
+def test_f26_level_uses_score_distribution_quantiles_not_fixed_bands():
+    out = run("F26", {"crowding": [float(i) for i in range(200)]})["result"]
+    thresholds = out["thresholds"]
+    assert set(thresholds) == {"p20", "p60", "p80"}
+    assert thresholds["p20"] <= thresholds["p60"] <= thresholds["p80"]
+    # 单调序列的 score 历史等距铺满 (0,1]，分位阈值必然落在 0.2/0.6/0.8 附近，
+    # 但这里只断言分位口径成立（不写死数值），防止被替换成固定四档常量。
+    assert 0.0 < thresholds["p20"] < thresholds["p60"] < thresholds["p80"] < 1.0
+    assert out["level_status"] == "ok"
+
+
+def test_f26_level_discloses_as_of_window_and_sample_n():
+    dates = [f"2025-06-{i:03d}" for i in range(200)]
+    out = run("F26", {"crowding": [float(i) for i in range(200)]}, dates=dates)
+    assert out["sample_n"] == 200
+    result = out["result"]
+    assert result["window"] == 200
+    assert result["as_of"] == dates[-1]
+    assert result["pit"] is False
+    assert 0.0 <= result["percentile"] <= 100.0
+
+
+def test_f26_level_degrades_instead_of_fabricating_thresholds():
+    short = f26_crowding_score({"crowding": [float(i) for i in range(40)]})
+    assert short["level"] is None
+    assert short["thresholds"] is None
+    assert short["level_status"] == "insufficient_sample"
+
+    flat = run("F26", {"crowding": [5.0] * 80})["result"]
+    assert flat["level"] is None
+    assert flat["thresholds"] is None
+    assert flat["level_status"] == "degenerate_distribution"
 
 
 # ---------------- D 组 ----------------

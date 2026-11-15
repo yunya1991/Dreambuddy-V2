@@ -1,6 +1,6 @@
 # 54 方法库 — 数学 / 统计学 / 金融学经典确定性方法
 
-- **版本**: v1.14 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 方法清单全部落地（核心 238 + 调研族 149 = 目录 387；已实现 **386**，仅 C11 因缺交易日历登记不可用）；v1.14 接入 D-E12/R18 时空对齐切片，可执行出口 **10 个**，方法口径不变；v1.13 接入 D-E01 与 D-E11/C18，MERS S3 内部计算内核已交付且不改变方法口径；v1.12 D-E02 能力出口接线与 T0.5/A8 首版交付；v1.11 补齐 X/O/P/Q/SC 149 条与核心 66 条真实实现，audit **386/386 PASS**、测试 **666 例全绿**；v1.10 放开注册表校验支持调研族前缀并完成占位登记；v1.9 调研对齐：新增 R02 `pit=false/pit=true` 双口径与 T0.5 合法输入边界，路线修正为 S0–S7，明确能力出口仅覆盖登记范围子集及 h>1 的 Newey-West/HAC 前置；v1.8 新增 §16「日线收盘锚点」冻结口径（1d `ts`=UTC 日首、`bar_close`/`snapshot_last`、跨资产同锚点）；v1.3 增 §0.1 四层边界与 §16 口径冻结；v1.4 修正 §14/§15 过期数据事实，新增三套路线编号映射；v1.5 S3 批 22 方法落地（`l1agg/methods/conditional.py`，audit 45/45 PASS）并补 §16 冻结口径；v1.6 S6 批 62 方法落地（`descriptive.py`/`timeseries.py`/`inference.py`，audit 154/154 PASS，测试 349 例全绿）并补 §16 冻结口径；v1.7 C 组 17 方法落地（`seasonal.py`，audit 171/171 PASS，测试 393 例全绿）并新增 S7 能力层接线（`l1agg/capabilities/` + `capability_manifest.yaml`）
+- **版本**: v1.18 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 方法清单全部落地（核心 238 + 调研族 149 = 目录 387；已实现 **386**，仅 C11 因缺交易日历登记不可用）；v1.18 接入 D-E14 一维相关状态条件分布，可执行出口 **16 个**，R02/B11/R08 仅新增可选编排参数，默认口径不变；v1.17 接入 D-E04 事件研究窗（F19/F21/F23）与 D-E09 计数与共现（R09/B17/R10）能力出口，可执行出口 **14 个**，方法口径不变；v1.16 冻结 F26 `level` 阈值为 A 分位法（分值历史分布 p20/p60/p80 → 极低/低/偏高/高），接入 D-A14 能力出口；v1.15 接入 D-G22 显著性出口（Q06 HAC t + Q07 Deflated Sharpe），方法口径不变；v1.14 接入 D-E12/R18 时空对齐切片，v1.13 接入 D-E01 与 D-E11/C18，MERS S3 内部计算内核已交付且不改变方法口径；v1.12 D-E02 能力出口接线与 T0.5/A8 首版交付；v1.11 补齐 X/O/P/Q/SC 149 条与核心 66 条真实实现，audit **386/386 PASS**、测试 **666 例全绿**；v1.10 放开注册表校验支持调研族前缀并完成占位登记；v1.9 调研对齐：新增 R02 `pit=false/pit=true` 双口径与 T0.5 合法输入边界，路线修正为 S0–S7，明确能力出口仅覆盖登记范围子集及 h>1 的 Newey-West/HAC 前置；v1.8 新增 §16「日线收盘锚点」冻结口径（1d `ts`=UTC 日首、`bar_close`/`snapshot_last`、跨资产同锚点）；v1.3 增 §0.1 四层边界与 §16 口径冻结；v1.4 修正 §14/§15 过期数据事实，新增三套路线编号映射；v1.5 S3 批 22 方法落地（`l1agg/methods/conditional.py`，audit 45/45 PASS）并补 §16 冻结口径；v1.6 S6 批 62 方法落地（`descriptive.py`/`timeseries.py`/`inference.py`，audit 154/154 PASS，测试 349 例全绿）并补 §16 冻结口径；v1.7 C 组 17 方法落地（`seasonal.py`，audit 171/171 PASS，测试 393 例全绿）并新增 S7 能力层接线（`l1agg/capabilities/` + `capability_manifest.yaml`）
 - **扩展**: 机构方法补强见 [RESEARCH-INSTITUTIONAL-L1-METHODS.md](./RESEARCH-INSTITUTIONAL-L1-METHODS.md)（横截面 X 12、算子 O 15、风险 P 14、研究协议 Q 16）；科研统计补强见 [RESEARCH-SCIENTIFIC-METHODS.md](./RESEARCH-SCIENTIFIC-METHODS.md)（SC01–SC92）。**149 条已全部实现并登记**（`l1agg/methods/research_*.py`），目录合计 387 条 = 核心 238 + 调研族 149，已实现 386 条。
 - **定位**: L1 的「算法选择表」。意图识别只负责选方法，方法只负责**确定性计算**，最终统一用「关系表达原语」把数据状态与价格表现对齐。
 - **不做**: 不做推理、不做因果推断、不做机器学习预测、不做 LLM 生成。所有方法满足「同输入同输出」。
@@ -316,7 +316,7 @@
 | F23 | 事件后分布 | 事件后 k 日收益分布 | dist | pandas |
 | F24 | 资金费率年化 | rate·3·365 | apr | numpy |
 | F25 | 基差 | (futures−spot)/spot | basis | numpy |
-| F26 | 拥挤度合成 | 三分位加权（固定权重） | score | numpy |
+| F26 | 拥挤度合成 | 分位加权（固定权重 0.4/0.3/0.3）+ A 分位法四档 | score, level, percentile, thresholds | numpy |
 
 ---
 
@@ -387,11 +387,13 @@
 | calendar_query | C05–C09, H01 | R03 | 日收益 ≥2 年 |
 | correlation_query | M01–M07, M11–M12 | R05, R06 | 双序列对齐 ≥60 点 |
 | conditional_return | B02/B03/B05, F01, H01 | R01, R08 | 因子 + 价格 ≥250 点 |
+| conditional_distribution | R02（PIT 状态轴）+ B05/B10 | R01, R08（prebinned） | 一维相关状态 + 同步价格；每桶非重叠 n≥250 |
 | event_study | F19–F23, H01 | R04 | 事件表 + 价格 |
 | state_transition | B04, B07–B09 | R07 | 状态序列 ≥100 点 |
 | drawdown_query | D20–D21, F09–F10 | R11 | 价格序列 ≥250 点 |
 | technical_indicator | I01–I34（先 I01/I07/I12/I17） | R08, R13 | candles ≥120 根 |
 | cross_check | M23–M25, C18 + 既有 6 scope | R14, R16 | 多资产对齐 |
+| significance_query | Q06–Q07 | —（输出 `t_nw/se/lag` 与 `dsr/sr0/n_trials`） | 收益序列 ≥250 点 |
 | relationship_recommend | 只读 MERS 注册表（§14），不实时计算 | —（输出 method_id + 门禁字段） | 注册表存在 |
 | discovery_query | 只读最新 Discovery 报告（§15），不实时搜索 | —（输出 candidate 列表） | 报告存在 |
 
@@ -428,10 +430,10 @@
 | **S1** 价格轴 + 对齐层 | 无新方法；新增 `market.candles`（1D/1W/1M）+ `l1agg/align.py` | 价格 ≥1,090 日（已具备） | 任一 D2/D3 输出必带 `sample_n/span/align_method/timezone`；对齐后缺失率 <5% |
 | **S2** 相关性 | M01–M07、M11–M12、M24–M25；R05/R06 | S1 + 指标历史 **≥60 对齐点** | `n≥60` 才出同期相关；`n≥120` 才出 CCF；p 值 + 多重比较修正；随机序列 \|ρ\|<0.1 且不显著 |
 | **S3** 条件收益 / IC / 分组（✅ 方法层已交付 2026-11-14；能力出口部分完成） | S11/S25/S26、F01–F06、B01–B03/B05/B11–B16、H01、R01/R02 共 22 方法（`l1agg/methods/conditional.py`） | S2 + 指标历史 **≥250 对齐点**（分布/收益类 ≥30） | `n≥250` 才出条件统计/IC/分组；前瞻收益统一走 `align.forward_returns`（方法内禁止位移）；B15 复用 §16 冻结 `ic_decay`；分箱单调性与分组价差必须同时输出；R02 双口径已实现（`pit=true` 见 §16.1），D-E02 能力出口已接线（v1.12） |
-| **S4** 条件外推表达 | R01/R02/R08/R11 模板化；T0.5=S3→S4，首版 h=1、4 个 PIT 分位桶 | S3；T0.5/T2 另需 R02 `pit=true` | 必须含区间、样本量与 `pit/as_of/effective_n/nonoverlap_n`；禁止点预测措辞；h>1 重叠前瞻收益及趋势显著性推断前必须实现 Newey-West/HAC，否则只描述、不作显著性结论 |
+| **S4** 条件外推表达 | R01/R02/R08/R11 模板化；T0.5=S3→S4，首版 h=1、4 个 PIT 分位桶 | S3；T0.5/T2 另需 R02 `pit=true` | 必须含区间、样本量与 `pit/as_of/effective_n/nonoverlap_n`；禁止点预测措辞；h>1 重叠前瞻收益及趋势显著性推断须经 D-G22 出口（Q06 HAC t / Q07 DSR），不得用朴素 t 值 |
 | **S5** 回测排名 | B13–B16 的产物（复用并修正 23 `FactorICSelector`） | S3 + 样本外切分 | 排名必须含样本外 IC 与 walk-forward；仅 in-sample 排名不得对外 |
 | **S6** 方法扩展（✅ 方法层已交付 2026-11-14，62 方法） | S01–S10/S12–S24/S27/S28（26）、D01–D13/D16–D24（22）、T01–T04/T07–T09/T11–T17/T19–T22/T24/T27/T28（21）、F07–F14/F17/F18/F20/F21（12）、H02–H08/H13–H18（13）、B04/B06–B10/B17/B18（8）、M17/M23（2）、R08–R11/R16/R17（6）→ `l1agg/methods/descriptive.py` / `timeseries.py` / `inference.py`；I 组（需 OHLC）、T05/T06/T10/T18/T23/T25/T26、D14/D15 已于 v1.11 补齐实现 | S2/S3 | 复用同一注册表与统一门禁；D2/D3 输出必带 `sample_n`；T13/T14/T20/T21/T24/F18 只调用 `persistence.metrics`，禁止重写口径 |
-| **S7** 能力层接线（✅ 10 个可执行出口已交付 2026-11-15；登记范围部分完成） | C 组 17 方法（`l1agg/methods/seasonal.py`，C11 缺交易日历登记不可用）；能力层 `l1agg/capabilities/{manifest,envelope,stats}.py` + `capability_manifest.yaml` + `contracts/capability_result.schema.json`：D-E01/E02/E03/E05/E06/E07/E08/E10/E11/E12 端到端；D-E05 双序列与矩阵 TopK、D-E11/C18、D-E12/R18 均已接线 | S2/S3 + 价格 ≥250 点 | 能力只能绑 `implemented=true` 方法（`manifest.validate`）；样本不足 → `status=partial/empty` + `degraded_reason`，禁止伪造数值；`quality` 只在信封顶层；10 个出口不得表述为登记范围全部完成 |
+| **S7** 能力层接线（✅ 14 个可执行出口已交付 2026-11-15；登记范围部分完成） | C 组 17 方法（`l1agg/methods/seasonal.py`，C11 缺交易日历登记不可用）；能力层 `l1agg/capabilities/{manifest,envelope,stats}.py` + `capability_manifest.yaml` + `contracts/capability_result.schema.json`：D-A14、D-E01/E02/E03/E04/E05/E06/E07/E08/E09/E10/E11/E12 与 D-G22 端到端；D-E05 双序列与矩阵 TopK、D-E11/C18、D-E12/R18、D-E04 事件研究窗、D-E09 计数与共现、D-G22/Q06–Q07 均已接线 | S2/S3 + 价格 ≥250 点 | 能力只能绑 `implemented=true` 方法（`manifest.validate`）；样本不足 → `status=partial/empty` + `degraded_reason`，禁止伪造数值；`quality` 只在信封顶层；14 个出口不得表述为登记范围全部完成 |
 
 **与旧版（P1a/P1b/P2a/P2b）差异**：旧版按「依赖库是否就绪」分组，忽略了**指标历史纵深**这一真实瓶颈——实测仅 26 条序列可与 BTC 日频价格对齐 ≥60 天，加密域指标只有 14–44 天。新版按**样本量门禁**分组，样本不足一律降级为 D1 并标 `insufficient_samples`。
 
@@ -451,19 +453,19 @@
 
 ## §15 数据前提与禁区
 
-**前提（2026-11-14 实测，云端快照只读核对）**
+**前提（2026-11-15 实测，云端只读核对；价格与事件为当日回填写入后核对）**
 
 | 数据 | 现状 | 支撑方法 |
 |---|---|---|
-| 日频价格 | ✅ `BTC/ETH/SOL/XAU close_usd` 各 **1,094 点**，2023-11-15 ~ 2026-11-12（约 3 年，缺口 0） | S/T/C/F/M 的价格腿全部可用 |
+| 日频价格 | ✅ `mm_metrics.close_1d` 云端 **20 个主流资产 / 54,653 行**（2026-11-15 T-1 回填，缺口 0）：BTC/ETH 3,377 天（2017-08-17→2026-11-14）、BNB 3,296、LTC 3,259、ADA 3,134、XRP 3,117、XLM 3,090、TRX 3,079、ETC 3,078、LINK 2,860、ATOM 2,757、DOGE 2,690、BCH 2,544、SOL 2,287、DOT 2,280、UNI 2,250、AVAX 2,245、NEAR 2,223、FIL 2,222、APT 1,488 | S/T/C/F/M 的价格腿全部可用；D-E14 门禁：1 维 4 桶 @h=1 **20/20**、@h=2 19/20、@h=3 9/20、@h=5 0/20；2 维 4×4 需 ≥4,000 天/资产，仍不足 |
 | 日内价格 | ⚠️ `BTC/USDT last/high/low` 小时级 922 点（2026-09-28 起）；高低点为 ccxt ticker 24h 滚动口径 | `market.candles` 支持 1H（原生）+ 1D/1W/1M（OHLC 合并，覆盖不足不冒充） |
 | 宏观时序（FRED） | ✅ 19 条序列与近 3 年价格窗口重叠 ≥250 天（`DGS10` 16,206 天、`NASDAQCOM` 14,066 天…） | 宏观腿的相关/季节/条件收益可用 |
 | 跨资产龙头（分类 SSoT = 40 `asset_classes.py`） | ✅ **28 个已绑定**（`leader_registry.BINDINGS`，2026-11-14 核实）：BTC/ETH/SOL/XAU 各 1,094 点，另有 CL 9,545(WTI 代理)、US500 2,521、US100 14,066、DXY 5,235、TLT 16,206(DGS10 代理)、T10Y2Y 12,607、HY_OAS 784、VIX 9,320、CPI 1,009、INDPRO 1,346 等；❌ 1 个诚实登记未采集：JP225（`not_collected`） | ✅ 跨类相关/条件收益主干可用（≥60 对齐点仅 26 条）；❌ 深度仍偏浅 |
 | 加密域指标（衍生品/ETF/交易所/链上/稳定币） | ❌ 仅 14–44 天：`derivatives_spot`/`etf_institutional`/`exchanges_whales`/`holdings_onchain_funds`/`stablecoin_rwa` = 28 天；`options` 44、`funding_rate` 40、`btc_onchain` 37、`etf_flow` 14、`okx_derivatives` 8 | ❌ 这些「类内」指标需先回填（龙头价格腿已够） |
 | 专用表（`mm_funding_rate`/`mm_open_interest`/`mm_liquidation`/`mm_long_short_ratio`/`mm_taker_volume`/`mm_fear_greed`） | ❌ 本地快照 **0 行** | 同上 |
 | 全库序列纵深 | 27,290 个 `sub::metric` 中 **25,795 个仅 1 天**；≥250 天 28 条；与 BTC 日频重叠 ≥60 天仅 **26 条** | 决定当前相关性因子池上限 |
-| 事件表 | ❌ `mm_events` 仅 16 行 | R04/F19–F23 受限 |
-| 真实 K 线 | 未落库，18 `price_source.py` 已有 OKX `history-candles` 分页 + Binance `klines` 兜底 | I 组 + 日频统计 |
+| 事件表 | ✅ `mm_events` **550 行**（2026-11-15 云端回填，2015–2026 共 543 有效：fomc 103 / cpi 145 / nfp 157 / macro_other 145，event_id 重复 0） | R04/F19–F23 与 D-E04/D-E09 可用（事件数 <30 时降级 partial） |
+| 真实 K 线 | ✅ 已落库：`mm_metrics` 日频 OHLCV 20 资产 / 54,653 行（`_1d` 五字段，2026-11-15 回填）；小时级仍为 18 `price_source.py` 的 OKX `history-candles` 分页 + Binance `klines` 兜底 | I 组 + 日频统计 |
 
 > **前置修正（v1.2）**：真实瓶颈是**指标历史纵深**，不是价格。价格腿已满足 3 年要求；相关性要等**跨资产历史回填**（龙头已 14 条达标，缺口为道指/美股个股/ETF/工业金属/天然气/布油）。样本不足时一律降级为 D1 并标 `insufficient_samples`，禁止输出相关性。
 >
@@ -502,7 +504,7 @@
 | F01–F06 收益/风险 | F01 复用 `align.simple_returns`；F02 `ln(P_t/P_{t−1})`；F04 `(1+μ)^365−1`；F05 `σ√365`；F06 `(ann−rf)/ann_vol`，σ=0 → `null` | series | 年化因子 365，`rf=0` | `conditional.py::f01_simple_return` … `f06_sharpe` |
 | B01/B02/B03 分箱 | B01 等宽 `min(int((v−lo)/w), k−1)`；B02 边=线性插值分位（左闭右开、末桶闭合）；B03 阈值由参数给出（`level=count(th<v)`），不写死在数据里 | series | `B01 k=10`、`B02 k=5`、`B03 th=(25,50,75)` | `conditional.py::b01_width_bins` / `b02_quantile_bins` / `b03_threshold_levels` |
 | B05/R01 条件分组 | state×target 分组统计；R01 句式固定「历史 N 次「state」后 h 日：均值/中位/上涨占比（n, t）」；同 n 取表内首个最大组 | state+target | `min_n=250, h=1` | `conditional.py::b05_conditional` / `r01_conditional_phrase` |
-| B16/B11/B12 分组统计 | factor 按线性插值分位分 k 组；组内 均值/中位/胜率/n；`spread`=最高组−最低组；B11 仅组均值**严格**单调才 `increasing/decreasing`，`rho_bin`=Spearman(桶序, 组均值) | factor+target | `k=5, min_n=250` | `conditional.py::b16_group_stats` / `b11_monotonic` / `b12_gradient` |
+| B16/B11/B12 分组统计 | factor 按线性插值分位分 k 组；组内 均值/中位/胜率/n；`spread`=最高组−最低组；B11 仅组均值**严格**单调才 `increasing/decreasing`，`rho_bin`=Spearman(桶序, 组均值)。B11 可选 `prebinned=true` 时直接复用 state 整数桶，供 D-E14 共享 R02 PIT 状态轴，默认 false | factor+target 或 state+target | `k=5, min_n=250` | `conditional.py::b16_group_stats` / `b11_monotonic` / `b12_gradient` |
 | B13/B14 IC / Rank IC（方法层） | target 必须由 §16 `forward_returns` 产出后传入，**方法内不做位移**；B13=Pearson、B14=Spearman，p 走 t 分布 | factor+target | `min_n=250` | `conditional.py::b13_ic` / `b14_rank_ic` |
 | B15（方法层） | 直接调用 §16 `metrics.ic_decay`，仅补 `nonoverlap_gate` 标记，**不复制口径** | prices | `lookback=20, h∈{1,5,20}` | `conditional.py::b15_ic_decay` |
 | H01 单样本 t | `t=μ/(s/√n)`，p 走 t 分布（df=n−1）；`p<0.05` 仅表述为显著，不表述因果 | series | `min_n=30` | `conditional.py::h01_one_sample_t` |
@@ -518,7 +520,7 @@
 | H 组检验（v1.6） | H02 合并方差 t；H03 Welch-Satterthwaite；H04/H05 正态近似 + 并列秩修正；H06 列联表 χ²；H07 单因素 ANOVA；H08 Kruskal-Wallis + 并列修正；H13 Bonferroni；H14 BH-FDR；H15/H16 固定 `seed=42` | pairs/series | `min_n=10` | `inference.py::h02_two_sample_t` … `h18_power` |
 | B 组状态（v1.6） | B06 联合计数；B07 行随机矩阵；B08 幂迭代（tol 1e-12）；B09 `1/(1−p_ii)`；B10 条件分位 `p10/25/50/75/90` | labels / state+target | `B10 min_n=250` | `inference.py::b06_crosstab` … `b18_frequency` |
 | M17/M23（v1.6） | M17 `β=cov(x,y)/var(x)`、`α=ȳ−βx̄`、`r2=ρ²`；M23 零收益对不计入 | pairs | `M17 min_n=30` | `inference.py::m17_beta` / `m23_co_movement` |
-| R08–R17（v1.6） | R08 复用 B11 只补句式；R09/R10/R11/R16/R17 输出固定 `phrase`（含样本量），禁止点预测措辞 | 见各方法 | 同上游方法 | `inference.py::r08_monotonic_phrase` … `r17_level_compare` |
+| R08–R17（v1.6；R08 v1.18 补可选 prebinned） | R08 复用 B11 只补句式，可选 `prebinned` 透传给 B11，默认 false；R09/R10/R11/R16/R17 输出固定 `phrase`（含样本量），禁止点预测措辞 | 见各方法 | 同上游方法 | `inference.py::r08_monotonic_phrase` … `r17_level_compare` |
 | C 组日历效应（v1.7） | 一律按**自然月/星期/月内日/季度**分组（非交易日节奏）；月收益按 `∏(1+r)−1` 聚合；C13 用「月度组间方差/总方差」（ANOVA 式，**非 STL 季节项**），总方差=0 → `null`；C14 一致性=`max(涨年数,跌年数)/年数`；C15 只统计相邻月转移；C16 锚定**最新日期**的 (月,日)；C17 同月同进度（day-of-month）；C18 两资产按自然月同向率 | returns + dates | `C05 min_n=30`、`C06 min_n=24`、其余 `min_n=60`；`dates` 缺失直接 `ValueError` | `seasonal.py::c01_month_effect` … `c18_cycle_alignment` |
 | C11 节假日前效应 | **不可用**：缺交易日历/节假日表（`mm_events` 仅 16 行），按纪律登记占位、调用抛 `MethodUnavailable` | events | — | `seasonal.py`（`register_unavailable`） |
 | 能力层信封（v1.7） | `ok/capability/intent/answer/data/quality/trace_id` 固定；`quality` **只在顶层**；`status!=good` 必须带 `degraded_reason` 且 `answer` 含「样本/不足/降级」；`answer` 禁止空串；能力只能绑 `implemented=true` 方法且 `capability.min_n ≥ method.min_n` | — | `contracts/capability_result.schema.json` 为 SSoT | `l1agg/capabilities/envelope.py` / `manifest.py` / `stats.py` |
@@ -530,8 +532,10 @@
 | 口径 | 状态 | 分位与桶边界 | 允许用途 |
 |---|---|---|---|
 | `pit=false` | ✅ 已实现（仅样本内回顾） | 末点与所有历史样本共用全样本分位和桶边界，含未来函数 | 仅限明确标注的样本内回顾；不得进入 T0.5/T2/MERS，不得作为显著性或推荐证据 |
-| `pit=true` | ✅ 已实现（`conditional.py::r02_percentile_forward`） | 每个历史时点 t 只在固定回看 `window` 内使用截至 t 可见的数据计算分位、桶边界和状态；宏观数据还须 `release_ts≤t`。当前状态同理截至 `as_of`，再聚合与当前同桶的历史 h 期前瞻收益 | T0.5/T2/MERS 的唯一合法口径；已经 D-E02 能力出口交付（v1.12，含 4→2 桶降级披露） |
+| `pit=true` | ✅ 已实现（`conditional.py::r02_percentile_forward`） | 每个历史时点 t 只在固定回看 `window` 内使用截至 t 可见的数据计算分位、桶边界和状态；宏观数据还须 `release_ts≤t`。当前状态同理截至 `as_of`，再聚合与当前同桶的历史 h 期前瞻收益 | T0.5/T2/MERS 的唯一合法口径；已经 D-E02 与 D-E14 一维能力出口交付（含 4→2 桶降级披露） |
 
-**目标输出契约**：每个 h 返回 `pit/as_of/window/align_method/effective_n/nonoverlap_n`；`effective_n` 是具有有效前瞻收益的样本数，`nonoverlap_n` 是按 h 去重重叠后的样本数。T0.5 首版固定 `h=1, buckets=4`，每桶按 `nonoverlap_n≥250` 验收，不足按场景包降为 2 桶并披露，不得用重叠样本凑数；h≥5 与多维 T2 等 T-1 扩样本。
+**目标输出契约**：每个 h 返回 `pit/as_of/window/align_method/effective_n/nonoverlap_n`；`effective_n` 是具有有效前瞻收益的样本数，`nonoverlap_n` 是按 h 去重重叠后的样本数。T0.5 首版固定 `h=1, buckets=4`；D-E14 一维首版默认 `h=(1,2), buckets=4`。两者均按每桶 `nonoverlap_n≥250` 验收，主期限不足降为 2 桶并披露，不得用重叠样本凑数；D-E14 仅后续期限不足时保留主期限分辨率并单独降级。二维 T2 仍等扩样本。
 
-**推断边界**：h>1 的重叠前瞻收益及趋势斜率显著性推断前，Newey-West/HAC 是硬前置；未实现前只能给描述统计，不能给显著性结论。批量扫描按「关系对 × lag × window × h」完整搜索族做 BH-FDR/Bonferroni 并披露 `p_adj`。整体进度与实施顺序由 [TECHNICAL_DESIGN §6](./TECHNICAL_DESIGN.md) 汇总，本节只定义方法口径。
+**D-E14 共享状态轴**：R02 的可选 `include_states=true` 只向编排层暴露逐时点 PIT 桶标签；B11/R08 的可选 `prebinned=true` 直接消费这些整数桶标签，不再调用 B16 全样本分位分箱。默认 `include_states=false, prebinned=false`，既有调用方行为不变；D-E14 公开结果剔除内部 `states`。
+
+**推断边界**：h>1 的重叠前瞻收益及趋势斜率显著性推断须经 D-G22 出口（Q06 HAC t / Q07 Deflated Sharpe，`min_n=250`），不得以朴素 t 值作结论。批量扫描按「关系对 × lag × window × h」完整搜索族做 BH-FDR/Bonferroni 并披露 `p_adj`。整体进度与实施顺序由 [TECHNICAL_DESIGN §6](./TECHNICAL_DESIGN.md) 汇总，本节只定义方法口径。

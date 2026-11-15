@@ -6,7 +6,19 @@
 #   4. mode=deterministic 绕过记忆相似度门禁，gated 仍需 route_confidence >= 0.65。
 version: 1
 updated: "2026-11-15"
+# 可见性（SPEC-54 §4.8 / ADR-V14）：缺省 public；执行类/方向类能力必须登记为 internal，
+# internal 能力在 manifest.validate + assert_public 双重拦截，永不被前端/数据查询命中。
+visibility_default: public
+visibility_internal: []
 capabilities:
+  - id: D-A14
+    intent: metric_percentile
+    mode: deterministic
+    data_scope: [mm_metrics]
+    executor: capabilities.stats.crowding
+    methods: [F26]
+    min_n: 60
+    notes: 资金费率/多空比/未平仓分位加权，固定权重 0.4/0.3/0.3；level 按 A 分位法取分值历史分布 p20/p60/p80（极低/低/偏高/高），样本不足或分布退化时降级不出阈值
   - id: D-E01
     intent: conditional_return
     mode: deterministic
@@ -32,6 +44,15 @@ capabilities:
     min_n: 60
     min_span_days: 730
     notes: 月份效应需 ≥5 年才可下结论；<60 个月只作描述
+  - id: D-E04
+    intent: event_study
+    mode: deterministic
+    data_scope: [market.candles, mm_events]
+    executor: capabilities.stats.event_study
+    methods: [F19, F21, F23]
+    min_n: 250
+    min_span_days: 1095
+    notes: 事件日期对齐到价格轴（取首个不早于事件日的交易日）；F19 事件窗收益 + F23 事件后分布 + F21 CAR；事件数 <30 降级 partial（events_lt_30）
   - id: D-E05
     intent: correlation_query
     mode: deterministic
@@ -53,8 +74,9 @@ capabilities:
     mode: deterministic
     data_scope: [market.candles]
     executor: capabilities.stats.state_transition
-    methods: [B02, B07, B08, B09]
+    methods: [B02, B06, B07, B08, B09]
     min_n: 100
+    notes: B06 输出 state_t × state_{t+1} 联合计数底表，B07 行归一化为转移概率
   - id: D-E08
     intent: conditional_return
     mode: deterministic
@@ -63,6 +85,14 @@ capabilities:
     methods: [B11, B13, B14]
     min_n: 250
     notes: factor 与已对齐前瞻收益的总配对样本 n>=250；B15 为 prices 输入的 IC 衰减，归 D-E13/D-G19，不属于本入口
+  - id: D-E09
+    intent: metric_series
+    mode: deterministic
+    data_scope: [mm_events, market.candles]
+    executor: capabilities.stats.count_series
+    methods: [R09, B17, R10]
+    min_n: 3
+    notes: values 走 R09 涨跌次数；pairs 走 B17 共现 + R10 文案；对齐点 <3 FAIL-OPEN 为 empty
   - id: D-E10
     intent: drawdown_query
     mode: deterministic
@@ -87,3 +117,52 @@ capabilities:
     methods: [R18]
     min_n: 30
     notes: 多资产 UTC 日收盘对齐；同日取最后观测、跨源去重、ffill 且受 stale 上限约束
+  - id: D-E14
+    intent: conditional_distribution
+    mode: deterministic
+    data_scope: [market.candles, mm_metrics]
+    executor: capabilities.stats.conditional_distribution
+    methods: [B05, B10, R01, R02, R08]
+    min_n: 250
+    notes: 一维相关状态经 R02 PIT 4 桶输出 h=1/2 前瞻分布；每桶非重叠 n>=250，主期限不足降 2 桶，弱后续期限单独降级；h>1 不输出朴素 t/p
+  - id: D-G22
+    intent: significance_query
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.hac_significance
+    methods: [Q06, Q07]
+    min_n: 250
+    notes: h>1 重叠前瞻收益的显著性推断前置；Q06 Bartlett 核 HAC t，Q07 Deflated Sharpe（n_trials 默认 1）；DSR 退化时降级 partial 仍保留 HAC t
+  - id: D-G23
+    intent: event_study
+    mode: deterministic
+    data_scope: [market.candles, mm_events]
+    executor: capabilities.stats.event_car_significance
+    methods: [Q10, Q11]
+    min_n: 250
+    notes: 事件日按价格轴对齐后转为同日收盘收益下标；Q10 估计窗均值调整 CAR + Q11 Patell/BMP；有效事件 <30 或标准化检验不可用时降级 partial，保留 Q10 结果
+  - id: D-J02
+    intent: seasonality_query
+    mode: deterministic
+    data_scope: [market.candles, mm_metrics]
+    executor: capabilities.stats.seasonal_adjustment
+    methods: [C13, T10, SC91]
+    min_n: 60
+    min_span_days: 1095
+    notes: C13 月度 ANOVA 式强度需完整日期轴；T10 robust STL 默认 period=7，SC91 X-13 风格 STL 近似默认 period=12；原始分解组件与季节强度并列输出，历史不足 3 年降级为描述性结论
+  - id: D-J04
+    intent: change_point_query
+    mode: deterministic
+    data_scope: [market.candles, mm_metrics]
+    executor: capabilities.stats.change_point
+    methods: [T22, T23, SC49, SC50, SC51]
+    min_n: 60
+    notes: T22/SC49 两种 CUSUM、T23 近似 PELT、SC50 精确 PELT、SC51 Pettitt；SC47 Kalman 与 SC48 互谱相干不属于变点出口；原始方法结果与日期映射并列输出，不合成交易方向
+  - id: D-E15
+    intent: trend_query
+    mode: deterministic
+    data_scope: [market.candles]
+    executor: capabilities.stats.trend
+    methods: [I02, T08, I32]
+    min_n: 250
+    notes: EMA(12/26/50) 平滑 + 多窗口对数价格斜率(20/60/120/250) + ADX14；T2 曲线与 L1-D 方向输入；对外只给统计事实

@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import math
+from bisect import bisect_right
 from typing import Any, Dict, List, Mapping, Optional, Sequence
 
 from ..persistence._stats import pearson
@@ -1543,11 +1544,29 @@ def f25_basis(data: Mapping[str, Any]) -> Dict[str, Any]:
     layer="D2",
     input_kind="panel",
     min_n=60,
-    output_schema=("score", "components", "weights", "n"),
+    output_schema=(
+        "score",
+        "components",
+        "weights",
+        "n",
+        "level",
+        "level_status",
+        "percentile",
+        "thresholds",
+        "window",
+        "as_of",
+        "pit",
+    ),
     notes="各指标末值在自身历史中的分位（#x≤last/n），固定权重 0.4/0.3/0.3"
-    "（最多取前三个指标，权重归一）；输入 {name: 序列} 或 {series:{name: 序列}}",
+    "（最多取前三个指标，权重归一）；输入 {name: 序列} 或 {series:{name: 序列}}。"
+    "level 按 A 分位法（分值历史分布的 p20/p60/p80 → 极低/低/偏高/高），"
+    "样本不足或分值分布退化时不输出阈值并标 level_status，pit=false 回顾口径。",
 )
-def f26_crowding_score(data: Any) -> Dict[str, Any]:
+def f26_crowding_score(
+    data: Any,
+    dates: Optional[Sequence[Any]] = None,
+    **_: Any,
+) -> Dict[str, Any]:
     panel = _panel_map(data)
     if not panel:
         raise ValueError("crowding score needs indicator series")
@@ -1555,19 +1574,72 @@ def f26_crowding_score(data: Any) -> Dict[str, Any]:
     base_w = [0.4, 0.3, 0.3][: len(names)]
     wsum = sum(base_w)
     weights = [w / wsum for w in base_w]
+    n = min(len(v) for v in panel.values())
+    if n < 2:
+        raise ValueError("crowding score needs at least 2 aligned points")
+    # 统一取各指标尾部 n 点，保证分值历史与 components 同口径。
+    tails = {name: panel[name][-n:] for name in names}
+    ordered = {name: sorted(tails[name]) for name in names}
     components: Dict[str, float] = {}
     score = 0.0
     for name, w in zip(names, weights, strict=False):
-        vals = panel[name]
-        if not vals:
-            raise ValueError(f"empty indicator series: {name}")
-        last = vals[-1]
-        pct = sum(1 for v in vals if v <= last) / len(vals)
+        pct = bisect_right(ordered[name], tails[name][-1]) / n
         components[name] = H.r4(pct)
         score += w * pct
+    # A 分位法的参照分布：逐时点用同一全样本分位口径得到的分值历史。
+    history: List[float] = []
+    for t in range(n):
+        total = 0.0
+        for name, w in zip(names, weights, strict=False):
+            total += w * bisect_right(ordered[name], tails[name][t]) / n
+        history.append(total)
+    level, level_status, percentile, thresholds = _f26_level(history, score)
     return {
         "score": H.r4(score),
         "components": components,
         "weights": [H.r4(w) for w in weights],
-        "n": min(len(v) for v in panel.values()),
+        "n": n,
+        "level": level,
+        "level_status": level_status,
+        "percentile": percentile,
+        "thresholds": thresholds,
+        "window": n,
+        "as_of": _f26_as_of(dates),
+        "pit": False,
     }
+
+
+_F26_MIN_N = 60
+_F26_LEVEL_QUANTILES: tuple = ((0.20, "p20"), (0.60, "p60"), (0.80, "p80"))
+
+
+def _f26_as_of(dates: Optional[Sequence[Any]]) -> Optional[str]:
+    if not dates:
+        return None
+    value = dates[-1]
+    return value.isoformat() if hasattr(value, "isoformat") else str(value)
+
+
+def _f26_level(history: Sequence[float], score: float) -> tuple:
+    """A 分位法四档：<p20 极低 / p20–p60 低 / p60–p80 偏高 / ≥p80 高。
+
+    分位阈值一律取「分值历史分布」的经验分位；样本不足（< 方法 min_n）或
+    分值分布退化（极差≈0）时返回 None 并标注原因，禁止补固定阈值。
+    """
+    sample_n = len(history)
+    if sample_n < _F26_MIN_N:
+        return None, "insufficient_sample", None, None
+    ordered = sorted(history)
+    if ordered[-1] - ordered[0] <= _EPS:
+        return None, "degenerate_distribution", None, None
+    thresholds = {name: H.r4(H.quantile(ordered, q)) for q, name in _F26_LEVEL_QUANTILES}
+    percentile = H.r4(100.0 * sum(1 for v in history if v <= score) / sample_n)
+    if score < thresholds["p20"]:
+        level = "极低"
+    elif score < thresholds["p60"]:
+        level = "低"
+    elif score < thresholds["p80"]:
+        level = "偏高"
+    else:
+        level = "高"
+    return level, "ok", percentile, thresholds

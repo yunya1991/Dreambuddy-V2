@@ -884,8 +884,10 @@ def m23_co_movement(data: Mapping[str, Any]) -> Dict[str, Any]:
     output_schema=("monotonic", "bins", "rho_bin", "phrase", "n"),
     notes="复用 B11（conditional.b11_monotonic），只补固定句式",
 )
-def r08_monotonic_phrase(data: Any, k: int = 5, label: str = "该指标") -> Dict[str, Any]:
-    out = b11_monotonic(data, k=k)
+def r08_monotonic_phrase(
+    data: Any, k: int = 5, label: str = "该指标", prebinned: bool = False
+) -> Dict[str, Any]:
+    out = b11_monotonic(data, k=k, prebinned=prebinned)
     mono = out["monotonic"]
     if mono == "increasing":
         phrase = f"{label}越高，后续表现越好（{out['k']} 组严格递增）。"

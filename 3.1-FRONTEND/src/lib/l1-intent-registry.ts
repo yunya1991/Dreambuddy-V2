@@ -101,13 +101,13 @@ export const L1_INTENT_REGISTRY: L1IntentDef[] = [
     fallbackPattern: /延续性|趋势延续|记忆性|Hurst|均值回复|动量延续|持续性强度/,
   },
   {
-    // 名称：统计关系｜确定性计算、无 LLM（54 D-E03/E05/E07/E08/E10）
+    // 名称：统计关系｜确定性计算、无 LLM（54 D-A14/D-E03/E05/E07/E08/E10/D-G22）
     // executor: exec_stat_query（3.1-FRONTEND/scripts/data_query_executor.py）
-    // 示例：BTC 现在回撤多少／ETH 有明显的月份效应吗／BTC 和 ETH 谁领先谁滞后
+    // 示例：BTC 现在回撤多少／ETH 有明显的月份效应吗／BTC 和 ETH 谁领先谁滞后／BTC 拥挤度多高／BTC 日收益是否显著
     // 置于 top_correlation 之后，保留「相关性最高/最相关」由该执行器处理
     intent: 'stat_query',
     fallbackPattern:
-      /(?=.*(回撤|drawdown|季节性|月份效应|日历效应|几月|星期几|周几|月内|月初|月末|状态转移|转移矩阵|状态切换|停留|状态持续性|信息系数|因子有效|单调性|(?:^|[^A-Za-z])IC(?:[^A-Za-z]|$)|相关性|同向|领先|滞后))(?=.*(BTC|ETH|SOL|比特币|以太坊|索拉纳|黄金|XAU|标的|价格|价位|行情|走势|现在|当前|历史))/i,
+      /(?=.*(回撤|drawdown|季节性|月份效应|日历效应|几月|星期几|周几|月内|月初|月末|状态转移|转移矩阵|状态切换|停留|状态持续性|信息系数|因子有效|单调性|(?:^|[^A-Za-z])IC(?:[^A-Za-z]|$)|相关性|同向|领先|滞后|拥挤度|拥挤|crowding|杠杆过热|多空比过热|显著性|是否显著|显著吗|HAC|Newey|Newey-West|Deflated|DSR))(?=.*(BTC|ETH|SOL|比特币|以太坊|索拉纳|黄金|XAU|标的|价格|价位|行情|走势|现在|当前|历史))/i,
   },
   {
     intent: 'asset_class_trend',
