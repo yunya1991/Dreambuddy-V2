@@ -9,7 +9,8 @@ const quickLinks = [
   { label: '策略构建', href: '/dashboard/classic', desc: 'C0→C8 八阶段 + 治理审批流', color: 'border-emerald-500/20 hover:border-emerald-500/40' },
   { label: '基本面', href: '/dashboard/fundamental', desc: '多维基本面评估与链上数据', color: 'border-purple-500/20 hover:border-purple-500/40' },
   { label: '数据与图表', href: '/dashboard/visual', desc: '统计图表能力 · 动态推荐', color: 'border-indigo-500/20 hover:border-indigo-500/40' },
-  { label: '三屏系统', href: '/dashboard/three-screens', desc: '战略→战术→执行 方向约束传播', color: 'border-amber-500/20 hover:border-amber-500/40' },
+  // 三屏系统：2026-11-15 暂不在前端展示（页面与路由保留），恢复时取消注释
+  // { label: '三屏系统', href: '/dashboard/three-screens', desc: '战略→战术→执行 方向约束传播', color: 'border-amber-500/20 hover:border-amber-500/40' },
   { label: 'Agent工作监控', href: '/dashboard/monitor', desc: '四层运行状态 / DAG / BAC 压缩', color: 'border-cyan-500/20 hover:border-cyan-500/40' },
   { label: '记忆管理', href: '/dashboard/memory', desc: 'D-Z-E 工程链 / BAC 压缩统计', color: 'border-pink-500/20 hover:border-pink-500/40' },
   { label: '策略管理', href: '/dashboard/governance', desc: 'Draft→Gate→Approval→Apply→Audit', color: 'border-orange-500/20 hover:border-orange-500/40' },

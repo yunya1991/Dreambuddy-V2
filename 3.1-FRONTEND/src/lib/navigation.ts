@@ -12,6 +12,8 @@ export interface NavItem {
   icon: string;
   section: NavSection;
   badgeKey?: 'approval_pending';
+  /** true 时仅隐藏前端入口，页面路由与代码保留；恢复时改回 false 即可 */
+  hidden?: boolean;
 }
 
 /** 多条目模块的分组标题；单条目模块（通用设置）不显示标题 */
@@ -22,13 +24,14 @@ export const SECTION_LABELS: Partial<Record<NavSection, string>> = {
 };
 
 // 模块顺序：平台（工作台置顶）→ 产品（AI 交易）→ 运营 → 通用设置（单独置底）
-export const NAV_ITEMS: NavItem[] = [
+const ALL_NAV_ITEMS: NavItem[] = [
   { id: 'agent', label: 'Agent 工作台', href: '/dashboard/agent', icon: '🤖', section: 'platform' },
   { id: 'fundamental', label: '基本面', href: '/dashboard/fundamental', icon: '📈', section: 'platform' },
   { id: 'news', label: '新闻', href: '/dashboard/news', icon: '📰', section: 'platform' },
   { id: 'visual', label: '数据与图表', href: '/dashboard/visual', icon: '📉', section: 'platform' },
   { id: 'ranking', label: '今日热门资产', href: '/dashboard/ranking', icon: '🔥', section: 'platform' },
-  { id: 'three-screens', label: '三屏系统', href: '/dashboard/three-screens', icon: '🖥', section: 'platform' },
+  // 三屏系统：2026-11-15 暂不在前端展示（代码/路由保留），恢复时把 hidden 改为 false
+  { id: 'three-screens', label: '三屏系统', href: '/dashboard/three-screens', icon: '🖥', section: 'platform', hidden: true },
   { id: 'plugins', label: '插件', href: '/dashboard/plugins', icon: '🧩', section: 'platform' },
 
   { id: 'trade', label: 'AI 交易', href: '/dashboard/trade', icon: '⚡', section: 'product' },
@@ -44,3 +47,6 @@ export const NAV_ITEMS: NavItem[] = [
 
   { id: 'settings', label: '通用设置', href: '/dashboard/settings', icon: '⚙', section: 'settings' },
 ];
+
+/** 前端实际展示的导航条目（过滤 hidden） */
+export const NAV_ITEMS: NavItem[] = ALL_NAV_ITEMS.filter((item) => !item.hidden);
