@@ -195,6 +195,25 @@ def test_b11_monotonic_increasing():
     assert out["n"] == COND_N
 
 
+def test_b11_skips_empty_buckets_with_tied_factor():
+    """真实数据并列值导致分位边界塌缩时，空桶（mean=None）不得触发 float(None)。"""
+    half = COND_N // 2
+    pair = {
+        "factor": [0.0] * half + [1.0] * (COND_N - half),
+        "target": [0.01] * half + [0.02] * (COND_N - half),
+    }
+    out = run("B11", pair, k=5)["result"]
+    assert out["monotonic"] == "increasing"
+    assert out["bin_means"] == [0.01, 0.02]
+    assert out["n"] == COND_N
+
+
+def test_b11_rejects_single_bucket():
+    pair = {"factor": [0.0] * COND_N, "target": [0.01] * COND_N}
+    with pytest.raises(ValueError):
+        run("B11", pair, k=5)
+
+
 def test_b12_gradient_matches_b16():
     b12 = run("B12", _cond_pair(), k=5)["result"]
     b16 = run("B16", _cond_pair(), k=5)["result"]

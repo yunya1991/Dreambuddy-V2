@@ -649,7 +649,14 @@ def b11_monotonic(data, k: int = 5, prebinned: bool = False, **_: Any) -> Dict[s
         if len(table) < 2:
             raise ValueError("prebinned requires at least two nonempty states")
     else:
-        table = b16_group_stats(data, k=k)["table"]
+        # 真实数据下分位边界可能塌缩（大量并列值 → 空桶），空桶 mean=None 不参与单调性判断。
+        table = [
+            row
+            for row in b16_group_stats(data, k=k)["table"]
+            if row["n"] > 0 and row["mean"] is not None
+        ]
+        if len(table) < 2:
+            raise ValueError(f"factor 在 k={k} 下非空分箱不足 2 个")
     means = [float(x["mean"]) for x in table]
     diffs = [b - a for a, b in zip(means, means[1:], strict=False)]
     if all(d > 0 for d in diffs):
