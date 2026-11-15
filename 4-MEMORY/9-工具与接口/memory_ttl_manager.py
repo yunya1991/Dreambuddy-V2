@@ -611,15 +611,28 @@ def _cutoff(now: datetime, days: int) -> str:
     return (now - timedelta(days=days)).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
 
 
+def _pending_exclusion(con) -> str:
+    """限批推进前提：已进入宽限队列的行不再重复选中（否则每天只处理同一批）。
+
+    宽限期内主表行仍在，必须显式排除 pending，否则 `--limit` 永远停在最旧 N 条。
+    """
+    if not _has_table(con, "memory_ttl_pending"):
+        return ""
+    return " AND id NOT IN (SELECT id FROM memory_ttl_pending)"
+
+
 def _iter_expired(con, scope: tuple[str, ...], now: datetime) -> list[dict[str, Any]]:
     """按 quality_level 分级取候选：C=7 天、B=14 天，且从未被使用过。"""
     marks = ",".join("?" * len(scope))
+    exclude = _pending_exclusion(con)
     out: list[dict[str, Any]] = []
     for level, days in TTL_DAYS.items():
         rows = con.execute(
             "SELECT id, quality_level, source, created_at, substr(content,1,400) AS snippet, tags "
             "FROM memories WHERE quality_level=? AND source IN (" + marks + ") "
-            "AND COALESCE(access_count,0)=0 AND last_used_at IS NULL AND created_at < ?",
+            "AND COALESCE(access_count,0)=0 AND last_used_at IS NULL AND created_at < ?"
+            + exclude
+            + " ORDER BY created_at ASC",
             [level, *scope, _cutoff(now, days)],
         ).fetchall()
         out.extend(dict(r) for r in rows)
@@ -632,6 +645,7 @@ def _iter_a_overflow(con, scope: tuple[str, ...], now: datetime) -> list[dict[st
     生效范围同样受白名单约束，避免 TTL 未验证前误删真实教训。
     """
     marks = ",".join("?" * len(scope))
+    exclude = _pending_exclusion(con)
     total = con.execute(
         "SELECT count(*) FROM memories WHERE quality_level IN ('A','S') AND source IN ("
         + marks
@@ -643,7 +657,7 @@ def _iter_a_overflow(con, scope: tuple[str, ...], now: datetime) -> list[dict[st
         return []
     rows = con.execute(
         "SELECT id, quality_level, source, created_at, substr(content,1,400) AS snippet, tags "
-        "FROM memories WHERE quality_level='A' AND source IN (" + marks + ") "
+        "FROM memories WHERE quality_level='A' AND source IN (" + marks + ")" + exclude + " "
         "ORDER BY COALESCE(last_used_at,0) ASC, created_at ASC LIMIT ?",
         [*scope, excess],
     ).fetchall()

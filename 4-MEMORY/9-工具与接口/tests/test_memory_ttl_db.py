@@ -123,6 +123,25 @@ def test_stage1_keeps_rows_and_removes_index(tmp_path):
     assert _count(db, "SELECT count(*) FROM vec_memories") == 5, "c_old/b_old 已移出索引"
 
 
+def test_stage1_limit_advances_across_runs(tmp_path):
+    """限批必须推进：已入 pending 的行不再重复选中（否则每天只处理同一批）。"""
+    rows = [(f"c{i}", "C", "rag-bridge", 8 + i % 3, 0, f"轨迹 {i}") for i in range(4)]
+    db = _mkdb(tmp_path, rows)
+    first = ttl.run_db_ttl_cycle(
+        db_path=db, dry_run=False, scope=SCOPE, now=NOW, stage="1", limit=2
+    )
+    second = ttl.run_db_ttl_cycle(
+        db_path=db, dry_run=False, scope=SCOPE, now=NOW, stage="1", limit=2
+    )
+    assert first["stage1"]["promoted"] == 2
+    assert second["stage1"]["promoted"] == 2, "第二批必须选中未进入 pending 的另 2 条"
+    assert second["pending_total"] == 4
+    con = ttl._open_db(db)
+    ids = {r[0] for r in con.execute("SELECT id FROM memory_ttl_pending").fetchall()}
+    con.close()
+    assert len(ids) == 4, "两批不得重复"
+
+
 def _tree() -> MemoryTree:
     nodes = {
         "18-数据获取中心": {
