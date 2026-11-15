@@ -2,7 +2,7 @@
 
 > **版本**: v1.3（P0-P2b 已实施：fail-loud 索引 + 记忆树 + 分级 TTL 两阶段 + 指纹去重 + 近义合并双门 + M1 指针索引 + 缺口适配层 + D0-D4 级联编排器与 telemetry；P3 分级 grace 已改）
 > **日期**: 2026-11-16
-> **状态**: P0 / P0.5 / P0b / P1 / P2 / P2b 已实施（P2 剩 `rea_routing_table.yaml`）；P3 第 1、3 条已实施（第 2 条挂调度待云端/用户授权）；P4 待实施（生产写待云端）
+> **状态**: P0 / P0.5 / P0b / P1 / P2 / P2b 已实施（P2 剩 `rea_routing_table.yaml`）；P3 第 1、2、3 条已实施（第 2 条云端 systemd timer 已挂，2026-11-16，连续 7 天验收中）；P4 待实施（生产写待云端）
 > **归属**: 35-广义认知系统协作模块（协作设计 SSoT，不含实现）
 > **硬约束源**: [CLAUDE.md §记忆准入标准](../CLAUDE.md) · 认知库 `VM-1794758596238-7af17f8c`
 > **实现落点**: `4-MEMORY/9-工具与接口/` · `2-KNOWLEDGE/9-RAG-INFRA/`
@@ -352,7 +352,9 @@ REA 逆向解析已封装 MCP，是**默认求解器**；记忆只负责**指路
 
 > **实施状态（2026-11-16）**：第 1 条已落地——`fsrs_forgetting_scheduler.py` 新增 `GRACE_BY_QUALITY = {S: None, A: 90, B: 14, C: 7, D: 0}` 与 `grace_days_for()`，`grace_period_days` 默认改 `None`（=按质量分档），显式传数字仍可统一覆盖（兼容旧调用）；`None` 表示永不降权，避免 `int < None` 崩溃。单测 5 项（`tests/test_p3_grace.py`）。
 > 第 3 条已在 P1 落地（`memory_ttl_manager --db-cycle` 两阶段 + `memory_ttl_pending` 宽限 + `memory_traces` 树梢痕迹）。
-> **第 2 条待办**：挂载 launchd/systemd timer 属**系统级变更**，且本地库为只读副本（CLAUDE.md 禁止本地写生产表），须在云端以 `sudo -u luke` 挂 systemd timer 并在执行前 `sqlite3 .backup`；本地不自动安装调度，需用户显式授权。
+> **第 2 条已实施（2026-11-16，云端）**：`dreambuddy-memory-ttl.timer`（`OnCalendar=*-*-* 04:30:00` CST，`Persistent=true`，随机延迟 ≤300s）驱动 `dreambuddy-memory-ttl.service`（`User=luke`，`WorkingDirectory=4-MEMORY/9-工具与接口`，`ExecStart=... memory_ttl_manager.py --db-cycle --apply --with-tree --limit 20000`，日志 `/home/luke/logs/memory-ttl.log`）。落盘前置：`sqlite3 .backup` → `19-数据访问层/data/backups/cognitive_memory-20261116-pre-ttl.db`（1.9G，行数 315,749 与在线库一致）。
+> 生产首跑实测：候选 **285,685**（`rag-bridge` C 级 302,777 为主，均从未被使用），每批 `promoted/vec_removed = 20,000`；已验证批次推进（`pending_total` 20,000 → 40,000），`stage2` 待 7 天宽限后触发。验收口径：连跑 7 天无失败（G4）。
+> **云端前置修复**：生产库缺 `access_count`/`last_used_at`（P0-2 迁移未落），已按 `VectorMemoryInterface._migrate_usage_columns` 同口径补列 + `idx_last_used_at` 后 TTL 方可运行。
 
 ### P4 再巩固（后续）
 
@@ -396,9 +398,9 @@ REA 逆向解析已封装 MCP，是**默认求解器**；记忆只负责**指路
 |---|---|---|---|
 | G0 F-0 修复 | `count(memories) − count(vec_memories_rowids) = 0` **且混维 = 0** 且连续 3 天不反弹 | ✅ | 🟡 **非轨迹口径已达成 0 缺口**：非轨迹 5,071 条全部入索引、全部 512 维。残留：轨迹类 2,227 条无 vec + 961 条 256 维旧向量——属污染数据，**按 TTL 清退，不重嵌**（重嵌会浪费算力还原垃圾）。「连续 3 天不反弹」尚在第 1 天 |
 | G1 关闸生效 | 连续 24h `source=rag-bridge` 新增 = 0 | ✅ | ✅ 近 24h 新增 **0**；总量冻结在 **305,930**（关闸前 72h 曾新增 5,915） |
-| G2 索引归一 + TTL 生效 | 混维 = 0；C 级 7 天未升级**移出索引率** 100%、宽限 7 天后物理删除；B 级 14 天同理；A+S ≤ 500；`[RAG检索]` 可检索命中 = 0 | ✅ | 🟡 索引归一已完成（非轨迹混维 0）；TTL 引擎已实现并通过 7 项单测（dry-run 候选 285,560）；**生产执行待云端**，「移出索引率」暂不可测 |
+| G2 索引归一 + TTL 生效 | 混维 = 0；C 级 7 天未升级**移出索引率** 100%、宽限 7 天后物理删除；B 级 14 天同理；A+S ≤ 500；`[RAG检索]` 可检索命中 = 0 | ✅ | 🟡 索引归一已完成（非轨迹混维 0）；TTL 引擎实现并通过 9 项单测；**云端已执行 2 批（各 20,000，`pending` 40,000）**，宽限 7 天后 stage2 触发，移出索引率待收口 |
 | G3 去重完成 | 重复内容组 = 0；同句最大重复 ≤ 2 | ✅ | 🟡 指纹去重引擎已实现并通过 6 项单测（dry-run：非轨迹 176 组 / 2,396 条冗余 / 最大 500）；**生产执行待云端**，组数归零前不判 ✅ |
-| G4 遗忘接线 | 每日周期连续 7 天成功；log 类 grace=0 生效 | ✅ | ⏳ **P3**（`memory_ttl_manager` 未挂调度） |
+| G4 遗忘接线 | 每日周期连续 7 天成功；log 类 grace=0 生效 | ✅ | 🟡 **已挂云端 timer（2026-11-16），首跑成功（20,000/批），7 天验收中** |
 | G5 准入门单测 | 四禁入各 1 例拒绝 + 四残差各 1 例通过 + 三测试各 1 例 | ✅ | ⏳ **P1**（`record()` 前置准入门未实现） |
 | G6 硬约束可检索 | recall 能命中 `VM-1794758596238-7af17f8c` | ✅ | ✅ 实测 top1 score **0.702** 命中 `VM-1794758596238-7af17f8c`（engine=sqlite_vec, dim=512） |
 | G7 三形态落地 | recall 默认返回指针/摘要 ≤120 字 + 路径锚点；M1 条目 ≤150；M3 类问题写入 = 0 | ✅ | 🟡 P0b 已交付树构建器（节点 + 双锚点）；**P2 已交付 M1 指针索引（150 容量门 + ≤120 字摘要）**；`recall` 返回形态改造仍属 P1 |
@@ -443,7 +445,7 @@ G1-G3 为**存量止血**，必须先于 G4-G5（否则遗忘只是在给漏水�
 | `4-MEMORY/9-工具与接口/vector_memory_interface.py` | **fail-loud**：engine / embed_model 不一致即拒写报错，**禁止**静默降级 / 降维（`:512-517, 298-306`）；`_search_numpy` 加 source 过滤 | **P0** |
 | 新增一致性巡检脚本 | `meta.embed_dim` vs vector 长度直方图一致性 + count 差；**混维 > 0 或差值 ≠ 0 即告警** | **P0** |
 | `4-MEMORY/9-工具与接口/memory_ttl_manager.py` | 新增 DB 级 `--db-cycle`：分级判据 + 白名单 + 两阶段 + 痕迹归位 + 限批 | **P1 ✅ 2026-11-16** |
-| `4-MEMORY/9-工具与接口/memory_ttl_manager.py` | 接入调度 + `expire_rag_bridge_logs` 生效 | P3（系统级挂载待云端/用户授权） |
+| `4-MEMORY/9-工具与接口/memory_ttl_manager.py` | 接入调度 + `expire_rag_bridge_logs` 生效 | **P3 ✅ 2026-11-16**（云端 `dreambuddy-memory-ttl.timer` 每日 04:30 CST，`--apply --with-tree --limit 20000`，日志 `/home/luke/logs/memory-ttl.log`；限批已排除 `memory_ttl_pending` 保证推进） |
 | `4-MEMORY/9-工具与接口/fsrs_forgetting_scheduler.py` | grace 按 **`quality_level`** 分档（C=7d / B=14d / A=90d / S=永不），与 §3.7 一致 | **P3 ✅ 2026-11-16**（默认 `None` 走分档，显式数字可覆盖；`None` 分支防 `int<None`） |
 | `vector_memory_interface.py`（schema 迁移） | `memories` 增 `access_count` / `last_used_at` + 索引；**幂等迁移脚本**（修 R1 前提） | **P0** |
 | `cognitive_loop_entry.py` | `recall` 命中后回写 `access_count` / `last_used_at`（修 R1 升级路径不可达） | **P0** |
