@@ -983,7 +983,7 @@ class CognitiveLoopEntry:
     def schedule_forgetting(
         self,
         dry_run: bool = True,
-        grace_period_days: int = 90,
+        grace_period_days: int | None = None,
     ) -> Dict[str, Any]:
         """P1-2: FSRS 幂律遗忘调度。
 
@@ -991,7 +991,8 @@ class CognitiveLoopEntry:
         对低质量低活跃记忆执行降权 + 审核队列。
 
         B2 安全网:
-        - grace_period_days 内不降权（默认 90 天）
+        - grace 按 quality_level 分档（C=7d / B=14d / A=90d / S 永不），与 §3.7 一致
+        - 传入数字则统一覆盖分档（兼容旧口径）
         - 仅降权不归档（不删除记忆）
         - 生成审核队列，不自动归档
 

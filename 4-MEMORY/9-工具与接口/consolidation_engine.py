@@ -1620,6 +1620,505 @@ def _cli_archive(engine: ConsolidationEngine, args) -> int:
     return 0
 
 
+# ── DB 级指纹去重（SPEC P2 / G3）────────────────────────────────
+#
+# 与上面的 JSON 会话记忆治理并存：这里治理 cognitive_memory.db 的 memories 表。
+# 必须以 P2（去重）先于 P3（遗忘）完成：重复内容会放大 ACT-R 激活，导致「越重复越难忘」。
+
+DB_TRAJECTORY_SOURCES = ("rag-bridge", "l0.scheduler", "l1_router")
+_QUALITY_RANK = {"S": 4, "A": 3, "B": 2, "C": 1, "D": 0}
+
+
+def _qrank(quality: str | None) -> int:
+    return _QUALITY_RANK.get((quality or "C").upper(), 0)
+
+
+def _rep_sort_key(row) -> tuple:
+    """代表选择顺序：S 优先 → 质量高 → verify 多 → 使用多 → 创建早。"""
+    return (
+        0 if (row["quality_level"] or "").upper() == "S" else 1,
+        -_qrank(row["quality_level"]),
+        -(row["verify_count"] or 0),
+        -(row["access_count"] or 0),
+        row["created_at"] or "",
+    )
+
+
+def _parse_tags_value(raw) -> set[str]:
+    """把 tags 字段（JSON 数组 / 字典 / 逗号串 / 已解析列表）规整为去重集合。"""
+    import json as _json
+
+    try:
+        parsed = _json.loads(raw) if isinstance(raw, str) else (raw or [])
+    except (TypeError, ValueError):
+        parsed = str(raw or "").split(",")
+    if isinstance(parsed, dict):
+        parsed = list(parsed.keys())
+    if isinstance(parsed, (list, tuple, set)):
+        return {str(t).strip() for t in parsed if str(t).strip()}
+    return set()
+
+
+def dedupe_memories(
+    db_path: str,
+    dry_run: bool = True,
+    include_trajectory: bool = False,
+    limit: int = 0,
+    keep_max: int = 1,
+) -> dict:
+    """按 `md5(content)` 指纹归并重复记忆，每组只留代表条目。
+
+    代表选择：S 优先 → 质量高 → verify_count 多 → access_count 多 → 创建早。
+    合并进代表：tags 并集 / verify_count 与 access_count 求和 / 质量取最高 /
+    last_used_at 取最新；其余行经 VectorMemoryInterface.delete 级联删除
+    （**禁止**单路径删行，否则 vec 表留孤儿）。
+
+    默认排除轨迹类 source（rag-bridge / l0.scheduler / l1_router）：日志重复
+    交给分级 TTL 清退更合适，指纹去重只处理真实记忆。
+    """
+    import hashlib
+    import sqlite3
+    from datetime import datetime, timezone
+    from pathlib import Path as _Path
+
+    if not _Path(db_path).exists():
+        return {"ok": False, "error": f"db_not_found: {db_path}"}
+
+    con = sqlite3.connect(str(db_path))
+    con.row_factory = sqlite3.Row
+    con.execute("PRAGMA busy_timeout=30000")
+    where = ["content IS NOT NULL", "length(content) > 1"]
+    params: list = []
+    if not include_trajectory:
+        marks = ",".join("?" * len(DB_TRAJECTORY_SOURCES))
+        where.append(f"(source IS NULL OR source NOT IN ({marks}))")
+        params.extend(DB_TRAJECTORY_SOURCES)
+    rows = con.execute(
+        "SELECT id, content, quality_level, verify_count, access_count, last_used_at, "
+        "created_at, tags, source FROM memories WHERE " + " AND ".join(where),
+        params,
+    ).fetchall()
+
+    groups: dict[str, list] = {}
+    for row in rows:
+        groups.setdefault(hashlib.md5((row["content"] or "").encode()).hexdigest(), []).append(row)
+
+    dup_groups = [g for g in groups.values() if len(g) > keep_max]
+    dup_groups.sort(key=lambda g: -len(g))
+    report: dict = {
+        "ok": True,
+        "dry_run": dry_run,
+        "db": str(db_path),
+        "include_trajectory": include_trajectory,
+        "rows_scanned": len(rows),
+        "groups_duplicate": len(dup_groups),
+        "duplicates": sum(len(g) - keep_max for g in dup_groups),
+        "max_group_size": len(dup_groups[0]) if dup_groups else 0,
+        "groups_processed": 0,
+        "merged": 0,
+        "deleted": 0,
+        "skipped_s_protected": 0,
+        "errors": 0,
+    }
+    if not dup_groups:
+        con.close()
+        return report
+
+    targets = dup_groups[:limit] if limit and limit > 0 else dup_groups
+    report["groups_batch"] = len(targets)
+
+    import json as _json
+
+    plan: list[tuple] = []  # (rep, dups, update_fields)
+    for group in targets:
+        ordered = sorted(group, key=_rep_sort_key)
+        rep, dups = ordered[0], ordered[keep_max:]
+        if any((d["quality_level"] or "").upper() == "S" for d in dups):
+            report["skipped_s_protected"] += 1
+            continue  # S 级永不淘汰
+        tags: set[str] = set()
+        for r in group:
+            tags |= _parse_tags_value(r["tags"])
+        best_quality = max((r["quality_level"] or "C" for r in group), key=_qrank)
+        update = {
+            "tags": _json.dumps(sorted(tags), ensure_ascii=False),
+            "verify_count": sum(int(r["verify_count"] or 0) for r in group),
+            "access_count": sum(int(r["access_count"] or 0) for r in group),
+            "quality_level": best_quality,
+            "last_used_at": max((r["last_used_at"] or 0) for r in group) or None,
+            "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        }
+        plan.append((rep, dups, update))
+
+    if dry_run:
+        con.close()
+        report["samples"] = [
+            {
+                "keep": rep["id"],
+                "drop": [d["id"] for d in dups[:5]],
+                "group_size": len(dups) + 1,
+                "quality": update["quality_level"],
+            }
+            for rep, dups, update in plan[:5]
+        ]
+        return report
+
+    # Phase A：先合并代表条目并提交（释放写锁，避免 VM 独立连接被锁）
+    for rep, _dups, update in plan:
+        try:
+            con.execute(
+                "UPDATE memories SET tags=?, verify_count=?, access_count=?, quality_level=?, "
+                "last_used_at=?, updated_at=? WHERE id=?",
+                [
+                    update["tags"],
+                    update["verify_count"],
+                    update["access_count"],
+                    update["quality_level"],
+                    update["last_used_at"],
+                    update["updated_at"],
+                    rep["id"],
+                ],
+            )
+            report["merged"] += 1
+        except sqlite3.Error as exc:
+            report["errors"] += 1
+            report["last_error"] = str(exc)
+    con.commit()
+
+    # Phase B：统一经 VectorMemoryInterface.delete 级联删除重复行
+    from vector_memory_interface import VectorMemoryInterface
+
+    vm = None
+    try:
+        vm = VectorMemoryInterface(storage_path=str(db_path), allow_degraded=True)
+        for _rep, dups, _update in plan:
+            for dup in dups:
+                try:
+                    vm.delete(dup["id"])
+                    report["deleted"] += 1
+                except Exception as exc:  # noqa: BLE001 - 单条失败不中断整批
+                    report["errors"] += 1
+                    report["last_error"] = str(exc)
+    except Exception as exc:  # noqa: BLE001
+        report["errors"] += 1
+        report["last_error"] = f"vm_init: {exc}"
+    finally:
+        if vm is not None:
+            vm.close()
+        con.close()
+    report["groups_processed"] = len(plan)
+    return report
+
+
+def _cli_dedupe(args) -> int:
+    report = dedupe_memories(
+        db_path=args.db,
+        dry_run=not args.apply,
+        include_trajectory=args.include_trajectory,
+        limit=args.limit,
+        keep_max=args.keep_max,
+    )
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0 if report.get("ok") else 2
+
+
+# ── DB 级近义合并（SPEC P2 第 2 条 / G3）────────────────────────
+#
+# 向量层扩展：同一段话被反复改写（语序调整、列表重排、标点差异）时指纹去重看不见，
+# 但它们共享同一副「标识符骨架」。因此合并必须过双门：
+#   ① 余弦相似度 ≥ threshold
+#   ② 标识符骨架（英文标识符 / 版本号 / 数字 / 成败标记）Jaccard ≥ id_jaccard
+# ② 是硬门：实测无门时 0.95 以上有 107,349 对，其中大量是「Phase2 Task1」vs
+# 「Phase6 Task1」这类只差标识符的不同事实，合并即失真（近似误召回）。
+
+SYNONYM_MIN_THRESHOLD = 0.90
+SYNONYM_DEFAULT_THRESHOLD = 0.95
+SYNONYM_DEFAULT_ID_JACCARD = 0.90
+SYNONYM_MAX_CLUSTER = 8
+SYNONYM_MIN_CONTENT_LEN = 8
+SYNONYM_PAIR_CAP = 20000
+SYNONYM_FLOOR_QUALITY = "B"
+_ID_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9_.\-/]*|\d+(?:\.\d+)*|[✓✗✅❌√×]")
+
+
+def _content_tokens(text: str) -> set[str]:
+    return {t.lower() for t in _ID_TOKEN_RE.findall(text or "")}
+
+
+def _jaccard(a: set[str], b: set[str]) -> float:
+    if not a and not b:
+        return 1.0
+    return len(a & b) / len(a | b)
+
+
+def _fold_group_update(group, quality_floor: str | None = None) -> dict:
+    """把一组记忆折叠成代表条目的更新字段（tags 并集 / 计数求和 / 质量取最高）。"""
+    import json as _json
+    from datetime import datetime, timezone
+
+    tags: set[str] = set()
+    for r in group:
+        tags |= _parse_tags_value(r["tags"])
+    best = max((r["quality_level"] or "C" for r in group), key=_qrank)
+    if quality_floor and _qrank(best) < _qrank(quality_floor):
+        best = quality_floor
+    return {
+        "tags": _json.dumps(sorted(tags), ensure_ascii=False),
+        "verify_count": sum(int(r["verify_count"] or 0) for r in group),
+        "access_count": sum(int(r["access_count"] or 0) for r in group),
+        "quality_level": best,
+        "last_used_at": max((r["last_used_at"] or 0) for r in group) or None,
+        "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    }
+
+
+def merge_synonyms(
+    db_path: str,
+    dry_run: bool = True,
+    threshold: float = SYNONYM_DEFAULT_THRESHOLD,
+    id_jaccard: float = SYNONYM_DEFAULT_ID_JACCARD,
+    max_cluster: int = SYNONYM_MAX_CLUSTER,
+    include_trajectory: bool = False,
+    limit: int = 0,
+) -> dict:
+    """同域近义合并：向量相似 + 标识符骨架一致的记忆并成一条（质量不低于 B）。
+
+    前置：`dedupe_memories` 已跑过（同内容副本先消失，近义识别只处理不同字面）。
+    合并后代表条目质量**不低于 B**；组内含 S 级则整组跳过（S 永不淘汰）。
+    代表之外的条目统一经 `VectorMemoryInterface.delete` 级联删除。
+    """
+    import sqlite3
+    from pathlib import Path as _Path
+
+    if threshold < SYNONYM_MIN_THRESHOLD:
+        return {
+            "ok": False,
+            "error": f"threshold_too_low: {threshold} < {SYNONYM_MIN_THRESHOLD}",
+        }
+    if not _Path(db_path).exists():
+        return {"ok": False, "error": f"db_not_found: {db_path}"}
+
+    try:
+        import numpy as np
+    except ImportError as exc:  # pragma: no cover - 环境缺 numpy 属降级，不是「无结果」
+        return {"ok": False, "degraded_reason": "numpy_unavailable", "error": str(exc)}
+
+    con = sqlite3.connect(str(db_path))
+    con.row_factory = sqlite3.Row
+    con.execute("PRAGMA busy_timeout=30000")
+    where = ["content IS NOT NULL", "length(content) > 1", "vector IS NOT NULL"]
+    params: list = []
+    if not include_trajectory:
+        marks = ",".join("?" * len(DB_TRAJECTORY_SOURCES))
+        where.append(f"(source IS NULL OR source NOT IN ({marks}))")
+        params.extend(DB_TRAJECTORY_SOURCES)
+    rows = con.execute(
+        "SELECT id, content, quality_level, verify_count, access_count, last_used_at, "
+        "created_at, tags, vector FROM memories WHERE " + " AND ".join(where),
+        params,
+    ).fetchall()
+
+    dim_bytes = 0
+    try:
+        meta = con.execute("SELECT value FROM meta WHERE key='embed_dim'").fetchone()
+        if meta and meta[0]:
+            dim_bytes = int(meta[0]) * 4
+    except (sqlite3.Error, TypeError, ValueError):
+        dim_bytes = 0
+
+    usable = [r for r in rows if dim_bytes and len(r["vector"]) == dim_bytes]
+    report: dict = {
+        "ok": True,
+        "dry_run": dry_run,
+        "db": str(db_path),
+        "include_trajectory": include_trajectory,
+        "threshold": threshold,
+        "id_jaccard": id_jaccard,
+        "max_cluster": max_cluster,
+        "rows_scanned": len(rows),
+        "rows_vector_usable": len(usable),
+        "skipped_dim_mismatch": len(rows) - len(usable),
+        "exact_duplicates_excluded": 0,
+        "pairs_candidate": 0,
+        "pairs_guarded": 0,
+        "groups_duplicate": 0,
+        "duplicates": 0,
+        "max_group_size": 0,
+        "groups_processed": 0,
+        "merged": 0,
+        "deleted": 0,
+        "skipped_s_protected": 0,
+        "errors": 0,
+    }
+    if not dim_bytes:
+        con.close()
+        report.update({"ok": False, "degraded_reason": "embed_dim_unknown"})
+        return report
+
+    # 同内容副本先由指纹去重负责，这里只留每组的代表参与近义识别
+    import hashlib
+
+    by_hash: dict[str, list] = {}
+    for r in usable:
+        if len((r["content"] or "").strip()) < SYNONYM_MIN_CONTENT_LEN:
+            continue
+        by_hash.setdefault(hashlib.md5((r["content"] or "").encode()).hexdigest(), []).append(r)
+    reps = [min(g, key=_rep_sort_key) for g in by_hash.values()]
+    report["exact_duplicates_excluded"] = len(usable) - len(reps)
+    report["candidates"] = len(reps)
+
+    if len(reps) < 2:
+        con.close()
+        return report
+
+    mat = np.frombuffer(b"".join(r["vector"] for r in reps), dtype=np.float32)
+    mat = mat.reshape(len(reps), dim_bytes // 4).copy()
+    mat /= np.maximum(np.linalg.norm(mat, axis=1, keepdims=True), 1e-9)
+    tokens = [_content_tokens(r["content"]) for r in reps]
+
+    pairs: list[tuple[float, int, int]] = []
+    truncated = False
+    for start in range(0, len(reps), 256):
+        block = mat[start : start + 256] @ mat.T
+        for offset in range(block.shape[0]):
+            i = start + offset
+            for j in np.where(block[offset] >= threshold)[0]:
+                j = int(j)
+                if j <= i:
+                    continue
+                report["pairs_candidate"] += 1
+                if _jaccard(tokens[i], tokens[j]) < id_jaccard:
+                    continue
+                pairs.append((float(block[offset][j]), i, j))
+                if len(pairs) >= SYNONYM_PAIR_CAP:
+                    truncated = True
+                    break
+            if truncated:
+                break
+        if truncated:
+            break
+    report["pairs_guarded"] = len(pairs)
+    if truncated:
+        report["pairs_truncated"] = True
+
+    # 贪心聚类（相似度高者优先），簇大小封顶，避免传递闭包把长链并成一坨
+    pairs.sort(reverse=True)
+    clusters: list[list[int]] = []
+    where_of: dict[int, int] = {}
+    for _sim, i, j in pairs:
+        ci, cj = where_of.get(i), where_of.get(j)
+        if ci is None and cj is None:
+            where_of[i] = where_of[j] = len(clusters)
+            clusters.append([i, j])
+        elif ci is not None and cj is None:
+            if len(clusters[ci]) < max_cluster:
+                clusters[ci].append(j)
+                where_of[j] = ci
+        elif ci is None and cj is not None:
+            if len(clusters[cj]) < max_cluster:
+                clusters[cj].append(i)
+                where_of[i] = cj
+        elif ci != cj and len(clusters[ci]) + len(clusters[cj]) <= max_cluster:
+            clusters[ci].extend(clusters[cj])
+            for k in clusters[cj]:
+                where_of[k] = ci
+            clusters[cj] = []
+
+    groups = [[reps[k] for k in c] for c in clusters if len(c) > 1]
+    groups.sort(key=lambda g: -len(g))
+    report["groups_duplicate"] = len(groups)
+    report["duplicates"] = sum(len(g) - 1 for g in groups)
+    report["max_group_size"] = len(groups[0]) if groups else 0
+    if not groups:
+        con.close()
+        return report
+
+    targets = groups[:limit] if limit and limit > 0 else groups
+    report["groups_batch"] = len(targets)
+
+    plan: list[tuple] = []
+    for group in targets:
+        ordered = sorted(group, key=_rep_sort_key)
+        rep, dups = ordered[0], ordered[1:]
+        if any((d["quality_level"] or "").upper() == "S" for d in dups):
+            report["skipped_s_protected"] += 1
+            continue
+        plan.append((rep, dups, _fold_group_update(group, SYNONYM_FLOOR_QUALITY)))
+
+    if dry_run:
+        con.close()
+        report["samples"] = [
+            {
+                "keep": rep["id"],
+                "drop": [d["id"] for d in dups[:5]],
+                "group_size": len(dups) + 1,
+                "quality": update["quality_level"],
+            }
+            for rep, dups, update in plan[:5]
+        ]
+        return report
+
+    # Phase A：合并代表并提交（释放写锁，供 VM 独立连接删除）
+    for rep, _dups, update in plan:
+        try:
+            con.execute(
+                "UPDATE memories SET tags=?, verify_count=?, access_count=?, quality_level=?, "
+                "last_used_at=?, updated_at=? WHERE id=?",
+                [
+                    update["tags"],
+                    update["verify_count"],
+                    update["access_count"],
+                    update["quality_level"],
+                    update["last_used_at"],
+                    update["updated_at"],
+                    rep["id"],
+                ],
+            )
+            report["merged"] += 1
+        except sqlite3.Error as exc:
+            report["errors"] += 1
+            report["last_error"] = str(exc)
+    con.commit()
+
+    # Phase B：统一经 VectorMemoryInterface.delete 级联删除
+    from vector_memory_interface import VectorMemoryInterface
+
+    vm = None
+    try:
+        vm = VectorMemoryInterface(storage_path=str(db_path), allow_degraded=True)
+        for _rep, dups, _update in plan:
+            for dup in dups:
+                try:
+                    vm.delete(dup["id"])
+                    report["deleted"] += 1
+                except Exception as exc:  # noqa: BLE001 - 单条失败不中断整批
+                    report["errors"] += 1
+                    report["last_error"] = str(exc)
+    except Exception as exc:  # noqa: BLE001
+        report["errors"] += 1
+        report["last_error"] = f"vm_init: {exc}"
+    finally:
+        if vm is not None:
+            vm.close()
+        con.close()
+    report["groups_processed"] = len(plan)
+    return report
+
+
+def _cli_synonyms(args) -> int:
+    report = merge_synonyms(
+        db_path=args.db,
+        dry_run=not args.apply,
+        threshold=args.threshold,
+        id_jaccard=args.id_jaccard,
+        max_cluster=args.max_cluster,
+        include_trajectory=args.include_trajectory,
+        limit=args.limit,
+    )
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0 if report.get("ok") else 2
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -1643,6 +2142,50 @@ if __name__ == "__main__":
         "--force", action="store_true", help="确认执行（非 dry-run 必须带此参数）"
     )
 
+    p_dedupe = sub.add_parser("dedupe", help="按 md5(content) 指纹去重（默认 dry-run）")
+    p_dedupe.add_argument(
+        "--db",
+        default=str(Path(__file__).resolve().parents[1] / "data" / "cognitive_memory.db"),
+        help="cognitive_memory.db 路径",
+    )
+    p_dedupe.add_argument("--apply", action="store_true", help="实际执行（缺省仅 dry-run）")
+    p_dedupe.add_argument(
+        "--include-trajectory",
+        action="store_true",
+        help="同时处理 rag-bridge/l0.scheduler/l1_router（通常交给 TTL）",
+    )
+    p_dedupe.add_argument("--limit", type=int, default=0, help="单轮最多处理组数（0=不限）")
+    p_dedupe.add_argument("--keep-max", type=int, default=1, help="每组保留条数（默认 1）")
+
+    p_syn = sub.add_parser(
+        "synonyms", help="向量相似 + 标识符骨架一致的同域近义合并（默认 dry-run）"
+    )
+    p_syn.add_argument(
+        "--db",
+        default=str(Path(__file__).resolve().parents[1] / "data" / "cognitive_memory.db"),
+        help="cognitive_memory.db 路径",
+    )
+    p_syn.add_argument("--apply", action="store_true", help="实际执行（缺省仅 dry-run）")
+    p_syn.add_argument(
+        "--threshold",
+        type=float,
+        default=SYNONYM_DEFAULT_THRESHOLD,
+        help=f"余弦相似度阈值（下限 {SYNONYM_MIN_THRESHOLD}）",
+    )
+    p_syn.add_argument(
+        "--id-jaccard",
+        type=float,
+        default=SYNONYM_DEFAULT_ID_JACCARD,
+        help="标识符骨架 Jaccard 下限（硬门，防止只差标识符的不同事实被合并）",
+    )
+    p_syn.add_argument("--max-cluster", type=int, default=SYNONYM_MAX_CLUSTER, help="单簇最大条数")
+    p_syn.add_argument(
+        "--include-trajectory",
+        action="store_true",
+        help="同时处理 rag-bridge/l0.scheduler/l1_router（通常交给 TTL）",
+    )
+    p_syn.add_argument("--limit", type=int, default=0, help="单轮最多处理组数（0=不限）")
+
     args = parser.parse_args()
 
     if not args.command:
@@ -1650,6 +2193,11 @@ if __name__ == "__main__":
         raise SystemExit(1)
 
     engine = ConsolidationEngine()
+
+    if args.command == "dedupe":
+        raise SystemExit(_cli_dedupe(args))
+    if args.command == "synonyms":
+        raise SystemExit(_cli_synonyms(args))
 
     handlers = {
         "scan": _cli_scan,

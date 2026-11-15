@@ -29,7 +29,7 @@
 | [INDEX.md](./INDEX.md) | 模块内文档索引 + 与各子系统协作关系图 | v1.0 |
 | [COLLABORATION-CONTRACT.md](./COLLABORATION-CONTRACT.md) | 跨系统协作接口契约：record_hook/verify_hook/Evidence Ledger/PoE 信任链路 + MCP 写治理 | v1.6 |
 | [QUICKSTART-AI-HOST-INTEGRATION.md](./QUICKSTART-AI-HOST-INTEGRATION.md) | 换 AI 宿主 3 分钟接入：安装器/print-config/自检/踩坑固化 | v1.0 |
-| [SPEC-ResidualMemory-Admission.md](./SPEC-ResidualMemory-Admission.md) | 残差记忆准入与遗忘治理：不可再推导准入 + 三禁入/四残差/两测试 + 存量 P0-P4 治理 | v0.1 待评审 |
+| [SPEC-ResidualMemory-Admission.md](./SPEC-ResidualMemory-Admission.md) | 残差记忆准入与遗忘治理：不可再推导准入 + 四禁入/四残差/三测试 + 记忆树 + D0-D4 级联编排器 + 分级 TTL 两阶段淘汰 + 指纹去重与近义合并 + M1 指针索引 + 缺口适配层 + 分级 grace | v1.3 P0-P2b 已实施 |
 
 ## 与各子系统的关系
 

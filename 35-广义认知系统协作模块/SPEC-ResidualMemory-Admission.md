@@ -1,8 +1,8 @@
 # SPEC — 残差记忆准入与遗忘治理（Residual Memory Admission）
 
-> **版本**: v0.7（A1-A5 修复：痕迹归位树梢 / 指标采集点 / degraded 契约 / 去重造轮子）
+> **版本**: v1.3（P0-P2b 已实施：fail-loud 索引 + 记忆树 + 分级 TTL 两阶段 + 指纹去重 + 近义合并双门 + M1 指针索引 + 缺口适配层 + D0-D4 级联编排器与 telemetry；P3 分级 grace 已改）
 > **日期**: 2026-11-16
-> **状态**: 设计完成，未实施
+> **状态**: P0 / P0.5 / P0b / P1 / P2 / P2b 已实施（P2 剩 `rea_routing_table.yaml`）；P3 第 1、3 条已实施（第 2 条挂调度待云端/用户授权）；P4 待实施（生产写待云端）
 > **归属**: 35-广义认知系统协作模块（协作设计 SSoT，不含实现）
 > **硬约束源**: [CLAUDE.md §记忆准入标准](../CLAUDE.md) · 认知库 `VM-1794758596238-7af17f8c`
 > **实现落点**: `4-MEMORY/9-工具与接口/` · `2-KNOWLEDGE/9-RAG-INFRA/`
@@ -290,6 +290,16 @@ REA 逆向解析已封装 MCP，是**默认求解器**；记忆只负责**指路
 4. **生效范围开关**：TTL 白名单初始仅 `{rag-bridge, l0.scheduler, l1_router}`，其余记忆不动。
 5. 验证：G2、G4 口径；G0 巡检在每次删除后跑一次。
 
+### P0b 记忆树构建器（已交付，2026-11-16）
+
+1. `4-MEMORY/9-工具与接口/memory_tree.py`：三级树（项目 / 目录 / 章节），节点只存 `keywords + doc_anchors + module_paths`，**禁止**存正文（指针型记忆）。
+2. **自动生成**：编号顶层目录（实测 58 个，不采用「项目 ≤10」静态假设）→ 子目录 → `*.md` 章节；关键词取自目录名与文档**标题**（只解析 heading，不读正文）。
+3. **求解级联接口**：`query`（D1 确定性子串匹配，无误召回）/ `walk`（D2 祖先 + 兄弟 + 子节点）/ `upsert`（D3-D4 回写，缺父链自动补齐，`note ≤120` 字）。
+4. **容量门**：人工 pins ≤150 硬校验（`pin_budget`）；实测 893 节点 = 58 项目 + 344 目录 + 491 章节，全部带锚点，树文件 670 KB。
+5. **降级口径**：无命中返回 `degraded_reason=tree_no_hit` + `next=D3 直接 REA 逆向解析`，与契约 C2b 同款（禁止伪装成「没有」）。
+6. 单测 7 项（`tests/test_memory_tree.py`）：分词 / 三级构建 / 命中与未命中 / 遍历 / 回写 / 容量门 / 标题提取。
+7. **待接**：D0→D4 级联编排器、`cascade_telemetry`、痕迹池归位（P1 / P3）。
+
 ### P1 索引归一 + 分级 TTL 淘汰（2026-11-16 用户裁定，原「清空重建」作废）
 
 1. 备份 + 导出 `external_id` / `id` 清单（同前，保证可重建）。
@@ -298,17 +308,50 @@ REA 逆向解析已封装 MCP，是**默认求解器**；记忆只负责**指路
 4. 预期：30 万条 RAG 日志在一个 TTL 周期内自然清空；库体积随 VACUUM 回落至 **≤800 MB**。
 5. 验证：G1/G2/G3 见 §7；**不要求一次性条数归零**。
 
+> **实施状态（2026-11-16）**：分级 TTL 引擎已落地到 `memory_ttl_manager.py --db-cycle`——C=7d / B=14d / A+S≤500（S 不淘汰）/ 白名单初始仅 `{rag-bridge,l0.scheduler,l1_router}` / 两阶段（先删 vec 行 → `memory_ttl_pending` 宽限 7 天 → 阶段二写 `memory_traces` 树梢痕迹后经 `VectorMemoryInterface.delete` 物理删除）/ 痕迹每叶 ≤20、全局 ≤5000 / 默认 dry-run + `--limit` 限批。
+> 生产库只读 dry-run 实测候选 **285,560** 条（C 级 7 天 + 从未使用 + 白名单内）。
+> **本地禁止写生产表**（CLAUDE.md：云端 `43.160.201.117` 是唯一写入口），阶段一/二须在云端 `sudo -u luke` 执行，前置 `sqlite3 .backup`，建议 `--limit 20000 --stage 1` 分批跑。
+> 单测 7 项（`tests/test_memory_ttl_db.py`）：分级判据 / 白名单 / dry-run 不写 / 阶段一保行删索引 / 阶段二痕迹归位 / 每叶容量门 / A 超限删最旧。
+
 ### P2 去重与巩固
 
 1. `md5(content)` 指纹去重：预期合并 3,203 组（约 1.5 万条）。
 2. 同域近义合并为一条 B 级（`consolidation_engine` 向量层扩展）。
 3. **必须在 P3 之前完成**（ACT-R 顺序依赖）。
 
+> **实施状态（2026-11-16）**：DB 级指纹去重已落地到 `consolidation_engine.py dedupe`——`md5(content)` 分组，每组保留代表（S 优先 → 质量高 → verify_count 多 → access_count 多 → 创建早），合并 tags 并集 / verify_count 与 access_count 求和 / 质量取最高 / last_used_at 取最新，其余经 `VectorMemoryInterface.delete` 级联删除；S 级整组保护，`--keep-max` 可放宽到 2；默认 dry-run + `--limit` 限批。
+> 生产库只读 dry-run 实测：非轨迹 5,068 条中 **176 组重复 / 2,396 条冗余**（最大 500 次、1 组含 S 被跳过）。轨迹类 3,026 组 / 303,855 条冗余**不在本阶段处理**（`--include-trajectory` 可开，但交给 P1 TTL 清退更省算力）。
+> 单测 6 项（`tests/test_memory_dedup_db.py`）：dry-run 不写 / 代表合并 / S 保护 / 轨迹 scope / 限批 / keep_max。
+>
+> **近义合并（P2 第 2 条，2026-11-16）**已落地到 `consolidation_engine.py synonyms`：向量层双门——① 余弦相似度 ≥ 0.95（`--threshold`，**下限 0.90**，低于即拒绝执行）；② 标识符骨架（英文标识符 / 版本号 / 数字 / 成败标记 ✓✗✅❌）Jaccard ≥ 0.90（`--id-jaccard`）。合并后代表条目质量**不低于 B 级**，组内含 S 级整组跳过，簇大小封顶 8（防传递闭包把长链并成一坨），其余经 `VectorMemoryInterface.delete` 级联删除。
+> **② 是硬门，不可省**：实测生产库 0.95 以上有 **107,349 对**，其中大量是「Phase2 Task1」vs「Phase6 Task1」这类**只差标识符的不同事实**，单靠余弦合并即失真（典型的近似误召回）。加骨架门后仅 **17 对**过门 → **10 组 / 14 条冗余**，与指纹去重（2,396 条）量级互补：指纹管字面全同，近义只收「同实体、仅语序/标点/列表顺序不同」。
+> 单测 6 项（`tests/test_memory_synonyms_db.py`）：dry-run 只读 / 标识符硬门拒绝 / B 级地板与统计合并 / S 保护 / 阈值下限 fail-loud / 轨迹 scope。
+> **本地禁止写生产表**：`--apply` 在云端执行，前置备份，建议先 `dedupe --apply` 再 `synonyms --apply`。
+>
+> **P2 配套组件（2026-11-16）**：
+> ① `memory_pointer_index.py` — M1 指针表落在 `cognitive_memory.db` 的 `memory_pointers`（**不新建库**），签名归一化后唯一、150 条容量门超限 fail-loud 并提示"抽象合并旧指针"；`query` 只做确定性关键词匹配、返回锚点与 ≤120 字摘要（**不读正文**），0 命中返回 `pointer_no_hit` / `pointer_index_empty` + `next=D1/D3`，与契约 C2b 同款。
+> ② `tools/capability_gap_adapter.py` — 复用 `48-涌现架构/registry/capability_gaps.py`，同 `(问题类别, 失败模式, 缺失工具)` 键**聚合为 1 条**并累加 `occurrences`，≥2 次标 `escalate=True` 交上游升级；**禁止**新建平行存储（读写都落 registry 的 `capability_gaps.jsonl`）。
+> 单测：指针索引 7 项 + 缺口适配 5 项。
+> **仍待**：`tools/rea_routing_table.yaml`（M1-T 路由表，属需人工策展的数据，未建）。
+
+### P2b 求解级联编排器 + telemetry（已交付，2026-11-16）
+
+1. `cascade_orchestrator.py`：固定顺序 `D0 → D1 → D2 → D2.5 → D3 → D4`，**命中即停**，handler 由调用方注入（只编排、不内联检索）。
+2. **失败语义**：单阶段抛异常 = 未命中但记 `error`（fail-open 继续下一级）；全级联未命中返回 `degraded_reason=cascade_exhausted` + `next=capability_gap_workorder`，并回调 `gap_reporter`（接 §3.5 缺口工单），**禁止**静默返回"没有结果"。
+3. **D3/D4 回写硬约束**：命中即调 `on_writeback(stage, query, payload)` 回写记忆树；回写失败记 `writeback_error` 但不丢答案。
+4. `cascade_telemetry`：每次求解逐阶段落 `data/cascade_telemetry.jsonl`（stage / hit / latency_ms / degraded_reason / final / level），`summarize()` 输出各阶段命中率、平均耗时、按级命中分布与 degraded 数（G6/G9 口径）。telemetry 写失败 FAIL-OPEN。
+5. 适配器：`tree_query_adapter`（D1）、`tree_walk_adapter`（D2，先定位再取祖先/兄弟/子节点）。
+6. 单测 9 项（`tests/test_cascade_orchestrator.py`）。
+
 ### P3 遗忘接线
 
 1. `schedule_forgetting()` 接入每日周期任务，**与 §3.7 分级 TTL 对齐**（C=7 天 / B=14 天 / A=存量上限 / S=不淘汰）；`grace_period_days` 按 `quality_level` 而非 `memory_type` 区分。
 2. `memory_ttl_manager --cycle` 挂 launchd（本地）/ systemd timer（云端），日跑，连跑 7 天无失败为验收。
 3. 淘汰为**两阶段**：先移出检索索引（阶段一，可逆），宽限 7 天后再**降为树梢痕迹并物理删除**（阶段二，见 §3.7 第 3-7 条）；**禁止**单阶段直接删行，**禁止**痕迹无归属堆放。
+
+> **实施状态（2026-11-16）**：第 1 条已落地——`fsrs_forgetting_scheduler.py` 新增 `GRACE_BY_QUALITY = {S: None, A: 90, B: 14, C: 7, D: 0}` 与 `grace_days_for()`，`grace_period_days` 默认改 `None`（=按质量分档），显式传数字仍可统一覆盖（兼容旧调用）；`None` 表示永不降权，避免 `int < None` 崩溃。单测 5 项（`tests/test_p3_grace.py`）。
+> 第 3 条已在 P1 落地（`memory_ttl_manager --db-cycle` 两阶段 + `memory_ttl_pending` 宽限 + `memory_traces` 树梢痕迹）。
+> **第 2 条待办**：挂载 launchd/systemd timer 属**系统级变更**，且本地库为只读副本（CLAUDE.md 禁止本地写生产表），须在云端以 `sudo -u luke` 挂 systemd timer 并在执行前 `sqlite3 .backup`；本地不自动安装调度，需用户显式授权。
 
 ### P4 再巩固（后续）
 
@@ -335,7 +378,7 @@ REA 逆向解析已封装 MCP，是**默认求解器**；记忆只负责**指路
 | **升级率** | 一个 TTL 周期内 C→B / B→A 条数 | 未统计 | > 0 且稳定 |
 | A+S 存量 | 条数 | 104 | **≤ 500** |
 | 库体积 | db 字节（**痕迹池独立表，不计入**） | 3.0 GB | **≤ 800 MB** |
-| **级联命中分布** | D0/D1/D2/D3/D4 占比（采集：**新增 `cascade_telemetry`**，每次求解记录停在哪级） | 未建立 | **D0-D2 ≥ 60%**；D4 ≤ 10% |
+| **级联命中分布** | D0/D1/D2/D3/D4 占比（采集：`cascade_orchestrator.summarize()` → `data/cascade_telemetry.jsonl`） | 已建立（待生产数据） | **D0-D2 ≥ 60%**；D4 ≤ 10% |
 | 树节点数 | 项目×目录×章节 | 0 | **≤ 150，天然有界** |
 | 树回写率 | D3/D4 成功后回写树的比例 | — | **100%（不变式）** |
 | recall p95 延迟 | — | 未采集 | ≤ P0 前基线 |
@@ -346,20 +389,22 @@ REA 逆向解析已封装 MCP，是**默认求解器**；记忆只负责**指路
 
 ## 7. 验收门禁
 
-| 门 | 判据 | 不可跳过 |
-|---|---|---|
-| G0 F-0 修复 | `count(memories) − count(vec_memories_rowids) = 0` **且混维 = 0** 且连续 3 天不反弹 | ✅ |
-| G1 关闸生效 | 连续 24h `source=rag-bridge` 新增 = 0 | ✅ |
-| G2 索引归一 + TTL 生效 | 混维 = 0；C 级 7 天未升级**移出索引率** 100%、宽限 7 天后物理删除；B 级 14 天同理；A+S ≤ 500；`[RAG检索]` 可检索命中 = 0 | ✅ |
-| G3 去重完成 | 重复内容组 = 0；同句最大重复 ≤ 2 | ✅ |
-| G4 遗忘接线 | 每日周期连续 7 天成功；log 类 grace=0 生效 | ✅ |
-| G5 准入门单测 | 四禁入各 1 例拒绝 + 四残差各 1 例通过 + 三测试各 1 例 | ✅ |
-| G6 硬约束可检索 | recall 能命中 `VM-1794758596238-7af17f8c` | ✅ **当前 FAIL（F-0）** |
-| G7 三形态落地 | recall 默认返回指针/摘要 ≤120 字 + 路径锚点；M1 条目 ≤150；M3 类问题写入 = 0 | ✅ |
-| G8 减记忆增能力 | 现拆失败 100% 落缺口工单且同类聚合；M1-T 路由表可命中；工具缺口关闭数 ≥3/季度 | ✅ |
-| G9 求解级联落地 | D0-D2 命中不触发向量检索；D3/D4 后树回写率 100%；D0-D2 占比 ≥60% | ✅ |
-| G10 契约一致性 | 召回 0 命中或索引异常时**必须**返回 `degraded(reason)` + `ok=false`（契约 C2b）；准入门作为 C5 评测门的 **pre-filter**，**禁止**新增第二道平行门 | ✅ |
-| G11 痕迹归位 | 痕迹**全部**挂在已存在叶节点或项目 `_orphan` 下；每叶 ≤20、全局 ≤5000；无全局大池；`rag-bridge` 零痕迹 | ✅ |
+> **状态口径**：✅ = 已实测通过（附证据）｜🟡 = 部分达成（附残留与归属阶段）｜⏳ = 依赖后续阶段，判据暂不可测。
+
+| 门 | 判据 | 不可跳过 | 状态（实测证据，2026-11-16） |
+|---|---|---|---|
+| G0 F-0 修复 | `count(memories) − count(vec_memories_rowids) = 0` **且混维 = 0** 且连续 3 天不反弹 | ✅ | 🟡 **非轨迹口径已达成 0 缺口**：非轨迹 5,071 条全部入索引、全部 512 维。残留：轨迹类 2,227 条无 vec + 961 条 256 维旧向量——属污染数据，**按 TTL 清退，不重嵌**（重嵌会浪费算力还原垃圾）。「连续 3 天不反弹」尚在第 1 天 |
+| G1 关闸生效 | 连续 24h `source=rag-bridge` 新增 = 0 | ✅ | ✅ 近 24h 新增 **0**；总量冻结在 **305,930**（关闸前 72h 曾新增 5,915） |
+| G2 索引归一 + TTL 生效 | 混维 = 0；C 级 7 天未升级**移出索引率** 100%、宽限 7 天后物理删除；B 级 14 天同理；A+S ≤ 500；`[RAG检索]` 可检索命中 = 0 | ✅ | 🟡 索引归一已完成（非轨迹混维 0）；TTL 引擎已实现并通过 7 项单测（dry-run 候选 285,560）；**生产执行待云端**，「移出索引率」暂不可测 |
+| G3 去重完成 | 重复内容组 = 0；同句最大重复 ≤ 2 | ✅ | 🟡 指纹去重引擎已实现并通过 6 项单测（dry-run：非轨迹 176 组 / 2,396 条冗余 / 最大 500）；**生产执行待云端**，组数归零前不判 ✅ |
+| G4 遗忘接线 | 每日周期连续 7 天成功；log 类 grace=0 生效 | ✅ | ⏳ **P3**（`memory_ttl_manager` 未挂调度） |
+| G5 准入门单测 | 四禁入各 1 例拒绝 + 四残差各 1 例通过 + 三测试各 1 例 | ✅ | ⏳ **P1**（`record()` 前置准入门未实现） |
+| G6 硬约束可检索 | recall 能命中 `VM-1794758596238-7af17f8c` | ✅ | ✅ 实测 top1 score **0.702** 命中 `VM-1794758596238-7af17f8c`（engine=sqlite_vec, dim=512） |
+| G7 三形态落地 | recall 默认返回指针/摘要 ≤120 字 + 路径锚点；M1 条目 ≤150；M3 类问题写入 = 0 | ✅ | 🟡 P0b 已交付树构建器（节点 + 双锚点）；**P2 已交付 M1 指针索引（150 容量门 + ≤120 字摘要）**；`recall` 返回形态改造仍属 P1 |
+| G8 减记忆增能力 | 现拆失败 100% 落缺口工单且同类聚合；M1-T 路由表可命中；工具缺口关闭数 ≥3/季度 | ✅ | 🟡 **P2**（`tools/capability_gap_adapter.py` 同键聚合 + 复现计数 + escalate 已建并有 5 项单测；`tools/rea_routing_table.yaml` 未建） |
+| G9 求解级联落地 | D0-D2 命中不触发向量检索；D3/D4 后树回写率 100%；D0-D2 占比 ≥60% | ✅ | 🟡 **P2b** 已交付 `cascade_orchestrator.py`（固定顺序 + 命中即停 + D3/D4 强制回写 + telemetry 汇总），单测 9 项；真实命中分布待生产跑满一周 |
+| G10 契约一致性 | 召回 0 命中或索引异常时**必须**返回 `degraded(reason)` + `ok=false`（契约 C2b）；准入门作为 C5 评测门的 **pre-filter**，**禁止**新增第二道平行门 | ✅ | ✅ 实测：`HYPE long 离场 止损 止盈` → `count=0, degraded=true, degraded_reason="no_hit"`（改前必中 RAG 日志） |
+| G11 痕迹归位 | 痕迹**全部**挂在已存在叶节点或项目 `_orphan` 下；每叶 ≤20、全局 ≤5000；无全局大池；`rag-bridge` 零痕迹 | ✅ | 🟡 `memory_traces` 表 + 归位逻辑（树 query 下钻到最深处，无命中挂 `_orphan`）+ 双容量门已实现并单测；生产痕迹数 0（阶段二待云端执行） |
 
 G1-G3 为**存量止血**，必须先于 G4-G5（否则遗忘只是在给漏水的池子加净水器）。
 
@@ -396,22 +441,28 @@ G1-G3 为**存量止血**，必须先于 G4-G5（否则遗忘只是在给漏水�
 | `4-MEMORY/9-工具与接口/cognitive_loop_entry.py` | `record()` 前置准入门（shadow→enforce） | P0/P1 |
 | `4-MEMORY/9-工具与接口/vector_memory_interface.py` | **fail-loud**：engine / embed_model 不一致即拒写报错，**禁止**静默降级 / 降维（`:512-517, 298-306`）；`_search_numpy` 加 source 过滤 | **P0** |
 | 新增一致性巡检脚本 | `meta.embed_dim` vs vector 长度直方图一致性 + count 差；**混维 > 0 或差值 ≠ 0 即告警** | **P0** |
-| `4-MEMORY/9-工具与接口/memory_ttl_manager.py` | 接入调度 + `expire_rag_bridge_logs` 生效 | P3 |
-| `4-MEMORY/9-工具与接口/fsrs_forgetting_scheduler.py` | grace 按 **`quality_level`** 分档（C=7d / B=14d / A=存量上限 / S=不淘汰），与 §3.7 一致 | P3 |
+| `4-MEMORY/9-工具与接口/memory_ttl_manager.py` | 新增 DB 级 `--db-cycle`：分级判据 + 白名单 + 两阶段 + 痕迹归位 + 限批 | **P1 ✅ 2026-11-16** |
+| `4-MEMORY/9-工具与接口/memory_ttl_manager.py` | 接入调度 + `expire_rag_bridge_logs` 生效 | P3（系统级挂载待云端/用户授权） |
+| `4-MEMORY/9-工具与接口/fsrs_forgetting_scheduler.py` | grace 按 **`quality_level`** 分档（C=7d / B=14d / A=90d / S=永不），与 §3.7 一致 | **P3 ✅ 2026-11-16**（默认 `None` 走分档，显式数字可覆盖；`None` 分支防 `int<None`） |
 | `vector_memory_interface.py`（schema 迁移） | `memories` 增 `access_count` / `last_used_at` + 索引；**幂等迁移脚本**（修 R1 前提） | **P0** |
 | `cognitive_loop_entry.py` | `recall` 命中后回写 `access_count` / `last_used_at`（修 R1 升级路径不可达） | **P0** |
 | `vector_memory_interface.py` | `delete` 统一级联 vec 表，**禁止** engine 分支跳过（修 R2 vec 孤儿） | **P0** |
-| `memory_ttl_manager.py` | 两阶段淘汰实现：阶段一移出索引 → 宽限 7 天 → 阶段二**降为树梢痕迹** + 物理删除主表行（不留全局清单池） | P3 |
-| `4-MEMORY/9-工具与接口/consolidation_engine.py` | 扩到向量层去重/合并 | P2 |
+| `memory_ttl_manager.py` | 两阶段淘汰实现：阶段一移出索引 → 宽限 7 天 → 阶段二**降为树梢痕迹** + 物理删除主表行（不留全局清单池） | **P1 ✅ 2026-11-16** |
+| `4-MEMORY/9-工具与接口/consolidation_engine.py` | 扩到向量层去重/合并 | **P2 ✅ 2026-11-16**（`dedupe`：`md5(content)` 指纹去重 + 代表合并 + S 保护；`synonyms`：余弦 0.95 + 标识符骨架 Jaccard 0.90 双门近义合并，B 级地板，簇上限 8） |
+| 新增 `4-MEMORY/9-工具与接口/tests/test_memory_dedup_db.py` | 指纹去重 6 项单测 | **P2 ✅ 2026-11-16** |
+| 新增 `4-MEMORY/9-工具与接口/tests/test_memory_synonyms_db.py` | 近义合并 6 项单测（含标识符硬门拒绝） | **P2 ✅ 2026-11-16** |
 | `4-MEMORY/9-工具与接口/cognitive_loop_entry.py` | `recall` 返回形态改造：指针/摘要 + 锚点，按需展开 | P0 |
-| 新增 `memory_pointer_index.py` | M1 指针表（问题签名→项目/组件/文档锚点）+ 150 条容量门 | P2 |
-| 新增 `memory_traces` 表 | 树梢痕迹池：`node_path` / `source` / `tags` / `keywords` / `snippet_200` / `expired_at`；每叶 ≤20、全局 ≤5000 | P3 |
-| 新增 `cascade_telemetry` | 每次求解记录停在哪一级（D0-D4），供级联命中分布统计 | P1 |
+| 新增 `memory_pointer_index.py` | M1 指针表（问题签名→项目/组件/文档锚点）+ 150 条容量门 | **P2 ✅ 2026-11-16**（`memory_pointers` 表 + 签名幂等 + 确定性关键词查询 + 超限 fail-loud） |
+| 新增 `memory_traces` 表 | 树梢痕迹池：`node_path` / `source` / `tags` / `keywords` / `snippet_200` / `expired_at`；每叶 ≤20、全局 ≤5000 | **P1 ✅ 2026-11-16** |
+| 新增 `memory_ttl_pending` 表 | 阶段一 → 阶段二待淘汰队列：`stage1_at` / `expires_at`，支撑宽限期与失败重试 | **P1 ✅ 2026-11-16** |
+| 新增 `cascade_telemetry` | 每次求解记录停在哪一级（D0-D4），供级联命中分布统计 | **P2b ✅ 2026-11-16**（`cascade_orchestrator.py`：固定顺序 + 命中即停 + D3/D4 回写 + `summarize()`；单测 9 项） |
 | `cognitive_loop_entry.py`（信封） | 召回 0 命中或索引异常时返回 `degraded(reason)` + `ok=false`，遵守契约 C2b | P0 |
-| 薄适配层 `tools/capability_gap_adapter.py` | **复用** `48-涌现架构/registry/capability_gaps.py`（open→claimed→resolved 已可用），只补「按问题类别聚合 + 复现计数」，**禁止**新建平行存储 | P2 |
+| 薄适配层 `tools/capability_gap_adapter.py` | **复用** `48-涌现架构/registry/capability_gaps.py`（open→claimed→resolved 已可用），只补「按问题类别聚合 + 复现计数」，**禁止**新建平行存储 | **P2 ✅ 2026-11-16**（同键聚合为 1 条 + `occurrences` 累加 + ≥2 次 `escalate`） |
+| 新增 `4-MEMORY/9-工具与接口/tests/test_memory_pointer_index.py` / `tests/test_capability_gap_adapter.py` | 指针索引 7 项 + 缺口适配 5 项单测 | **P2 ✅ 2026-11-16** |
 | 修改 `rebuild_vector_index.py` | 增 `--source/--ids/--where` 排除参数；`BEGIN IMMEDIATE` 包住 DROP→CREATE→INSERT（现 `:147-155` 非事务，崩溃即 recall 全盲） | **P0** |
 | 新增 `tools/rea_routing_table.yaml` | M1-T 问题类别 → 工具链路由表，计入 150 上限 | P2 |
-| 新增 `memory_tree.py` | 三级树（项目/目录/章节）+ D0-D4 级联解析器 + 回写钩子 | **P0** |
+| 新增 `memory_tree.py` | 三级树（项目/目录/章节）+ D1 查询 / D2 遍历 / D3-D4 回写；节点只存关键词与锚点 | **P0b ✅ 2026-11-16**：893 节点（58/344/491），树文件 670 KB |
+| 新增 `tests/test_memory_tree.py` | 记忆树 7 项单测（分词 / 构建 / 命中 / 遍历 / 回写 / 容量门 / 标题提取） | **P0b ✅** |
 | 调度：`com.dreambuddy.cognitive-daemon.plist` / 云端 systemd timer | 新增每日维护周期 | P3 |
 | 测试：`test_p5_mcp_governance.py` 或新 `test_p6_admission_gate.py` | G5 用例族 | P0 |
 

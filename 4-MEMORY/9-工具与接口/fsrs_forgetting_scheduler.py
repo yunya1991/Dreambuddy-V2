@@ -59,7 +59,9 @@ QUALITY_STABILITY = {
     "D": 5.0,  # D 级：5天
 }
 
-DEFAULT_GRACE_PERIOD_DAYS = 90  # B2 安全网：90 天 grace period
+DEFAULT_GRACE_PERIOD_DAYS = 90  # 兼容旧口径：显式传数字时统一覆盖
+# 分级 grace（SPEC §3.7 对齐）：C=7d / B=14d / A=90d / S 永不降权
+GRACE_BY_QUALITY: dict[str, int | None] = {"S": None, "A": 90, "B": 14, "C": 7, "D": 0}
 DEMOTION_FACTOR = 0.8  # 降权因子
 REVIEW_THRESHOLD = 0.4  # R < 此值加入审核队列
 DEMOTE_THRESHOLD = 0.7  # R < 此值降权
@@ -104,16 +106,26 @@ class FSRSForgettingScheduler:
 
     def __init__(
         self,
-        grace_period_days: int = DEFAULT_GRACE_PERIOD_DAYS,
+        grace_period_days: int | None = None,
         demotion_factor: float = DEMOTION_FACTOR,
         review_threshold: float = REVIEW_THRESHOLD,
         demote_threshold: float = DEMOTE_THRESHOLD,
     ):
+        # None = 按 quality_level 分档（与 §3.7 分级 TTL 对齐）；显式数字 = 统一覆盖
         self.grace_period_days = grace_period_days
         self.demotion_factor = demotion_factor
         self.review_threshold = review_threshold
         self.demote_threshold = demote_threshold
         self._lock = threading.Lock()
+
+    def grace_days_for(self, quality_level: str) -> int | None:
+        """按质量等级返回 grace 天数（None 表示永不降权）。
+
+        与 `memory_ttl_manager` 的分级 TTL 对齐：C=7 / B=14 / A=90 / S=永不。
+        """
+        if self.grace_period_days is not None:
+            return self.grace_period_days
+        return GRACE_BY_QUALITY.get((quality_level or "C").upper(), GRACE_BY_QUALITY["C"])
 
     # ============================================================
     # 核心：FSRS 幂律遗忘曲线
@@ -187,8 +199,9 @@ class FSRSForgettingScheduler:
                 # 解析时间
                 days_since = self._days_since(updated, now)
 
-                # B2 安全网 1: grace period 内跳过
-                if days_since < self.grace_period_days:
+                # B2 安全网 1: grace period 内跳过（按 quality_level 分档；None = 永不降权）
+                grace_days = self.grace_days_for(ql)
+                if grace_days is None or days_since < grace_days:
                     report.skipped_grace += 1
                     continue
 
