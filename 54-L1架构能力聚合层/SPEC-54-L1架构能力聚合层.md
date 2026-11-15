@@ -1,6 +1,6 @@
 # SPEC-54 L1 架构能力聚合层
 
-- **版本**: v1.9 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 完整版（v1.0 + S1–S5 五级能力路线 + S1.0 硬前置 + S4 条件外推收口 + MERS 分阶段 + §3.5 四层分工，见 §13–§17；v1.9 D-E12/R18 时空对齐切片交付，可执行出口 **10 个**，并纠正 R02 与矩阵 TopK/C18 的过期状态；D-A14 的 `level` 阈值未冻结，S5 对外推荐仍未开放；v1.8 D-E05 矩阵 TopK、D-E11/C18、D-E01 与 MERS S3 内部内核交付；v1.7 D-E02 三层接线与 T0.5 首版交付；v1.6 调研对齐 R02 PIT 双口径与能力状态边界；v1.5 回写日线收盘锚点修复；v1.4 回写 E 组能力层落地与 `stat_query` 意图合并，整体进度由 TECHNICAL_DESIGN §6 汇总）
+- **版本**: v1.10 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 完整版（v1.0 + S1–S5 五级能力路线 + S1.0 硬前置 + S4 条件外推收口 + MERS 分阶段 + §3.5 四层分工，见 §13–§17；v1.10 打通宏观事件历史回填通道（2015–2026 实测 542 条），D-E04/D-E09 由「事件表仅 16 行」改为「待云端入库后接线」；v1.9 D-E12/R18 时空对齐切片交付，可执行出口 **10 个**，并纠正 R02 与矩阵 TopK/C18 的过期状态；D-A14 的 `level` 阈值未冻结，S5 对外推荐仍未开放；v1.8 D-E05 矩阵 TopK、D-E11/C18、D-E01 与 MERS S3 内部内核交付；v1.7 D-E02 三层接线与 T0.5 首版交付；v1.6 调研对齐 R02 PIT 双口径与能力状态边界；v1.5 回写日线收盘锚点修复；v1.4 回写 E 组能力层落地与 `stat_query` 意图合并，整体进度由 TECHNICAL_DESIGN §6 汇总）
 - **归属**: 54-L1架构能力聚合层（L1 确定性数据能力的唯一聚合出口）
 - **上游约束**: 19-DAL Schema/Repo 契约、18-数据获取中心 `DataRecord`、9-基本面分析评分口径、34-前端应用训练系统（意图/SFT 与 route_confidence）
 - **下游影响**: 3.1-FRONTEND `/api/data/query`、`/api/fundamental/**`、`/api/agent/chat`、L1 意图注册表（TS/Python 双端）
@@ -549,7 +549,7 @@ capabilities:
 1. **能力层已实现**：`l1agg/capabilities/{manifest,envelope,stats}.py` + `capability_manifest.yaml` + `contracts/capability_result.schema.json`。已接线 D-E01（条件收益）、D-E02（分位→前瞻收益，A8/T0.5）、D-E03（季节性）、D-E05/D-E06/D-E11/D-E12（相关/领先滞后/同向率/时空对齐，含矩阵 TopK、C18 与 R18）、D-E07（状态转移）、D-E08（条件 IC，需因子源）、D-E10（回撤）。方法层注册表 **386 方法** audit 全 PASS（全量 387 登记，仅 C11 缺交易日历不可用；C 组 17 方法落地 `l1agg/methods/seasonal.py`）。
 2. **意图合并（与 §11.4 表的有意偏差）**：前端先合为单一确定性意图 **`stat_query`**，内部按关键词分派到上述能力 ID，另加 `cross_check` 相关子能力。理由：5 个独立意图 × 双端注册表 × 金标集维护成本高，而能力 ID 已能精确定位；后续若要拆分为 §11.4 的 5 个独立意图，只需拆分执行器入口，能力层与 manifest 无需改动。
 3. **双端同步点**：`3.1-FRONTEND/scripts/l1_route_signal.py`（EXECUTORS + DETERMINISTIC_INTENTS + fallback pattern）、`data_query_executor.py::exec_stat_query`、`3.1-FRONTEND/src/lib/l1-intent-registry.ts`、`34-前端应用训练系统/l1_intent_golden.jsonl`。
-4. **未接线**：D-E04/D-E09（事件表仅 16 行）、D-E14（需场景出口与每桶非重叠 ≥250）。D-E01 已接线，但实际统计仍受因子与价格 ≥250 个有效配对样本门禁约束。
+4. **未接线**：D-E04/D-E09 的数据阻塞已解除——`18-数据获取中心` 新增宏观事件历史回填通道（2015–2026 实测 542 条：fomc 101/cpi 143/nfp 155/macro_other 143），待云端执行入库后接线；D-E14 仍受场景出口与每桶非重叠 ≥250 约束。D-E01 已接线，但实际统计仍受因子与价格 ≥250 个有效配对样本门禁约束。
 5. **登记范围复核（v1.9）**：10 个可执行出口不等于 E 组登记范围全部完成。D-E05 双序列与 M05–M07 矩阵 TopK 均已接线；D-E11 已绑定 C18，提供 dates 时执行自然月同向率；D-E01 已按 B02/B05/F01/H01 契约接线，h=1 前瞻收益先在原价格轴计算再过滤有效因子对；D-E12 已按 R18 契约接线，样本不足与空窗口均显式降级为 empty。
 
 **日线对齐修复（v1.5，2026-11-14）**：`market.candles` 1d 的 `ts` 统一归一到 **UTC 日首**（真实观测时刻保留 `close_ts`），并新增 `meta.close_anchor ∈ {bar_close, snapshot_last}` 与 `source_policy ∈ {auto, snapshot, bars}`。**跨资产横截面统计（D-E05/D-E06/D-E11）必须两侧同锚点**：执行器优先 `source_policy=snapshot`，某标的无快照才退回 `auto` 并在回答标注。修复前 BTC（真实日线 00:00）与 ETH（快照 16:00）锚点混用，同期 ρ=0.33 且最优 lag=+1；修复后 ρ=0.83、最优 lag=0（n=727）。
@@ -855,7 +855,7 @@ CREATE INDEX idx_rel_pick ON relationship_eval(target, horizon, status, rank_ic 
 | 加密域指标 | `derivatives_spot`/`etf_institutional`/`exchanges_whales`/`holdings_onchain_funds`/`stablecoin_rwa` 均 28 天；`options` 44、`funding_rate` 40、`btc_onchain` 37、`etf_flow` 14、`okx_derivatives` 8 | ❌ 不满足相关性门禁 |
 | 专用表 | `mm_funding_rate`/`mm_open_interest`/`mm_liquidation`/`mm_long_short_ratio`/`mm_taker_volume`/`mm_fear_greed` 本地 0 行 | ❌ |
 | 全库纵深 | 27,290 个 `sub::metric` 中 25,795 个仅 1 天；≥250 天 28 条；与 BTC 日频重叠 ≥60 天仅 26 条 | 决定 S2 因子池上限 |
-| 事件表 | `mm_events` 16 行 | R04/F19–F23 不可做 |
+| 事件表 | `mm_events` 16 行（历史回填通道已就绪：2015–2026 共 542 条，待云端入库） | 回填入库前 R04/F19–F23 仍不可做 |
 
 **修正后的推进顺序（与 METHOD_LIBRARY §14 对齐）**：
 
@@ -941,7 +941,13 @@ MERS 与 Discovery 只改变「**选哪个方法**」，不改变「**输出什�
 
 ---
 
-## §十二、修订记录（v0.1 → v1.9）
+## §十二、修订记录（v0.1 → v1.10）
+
+### v1.10（2026-11-15）
+
+| 编号 | 位置 | 内容 |
+|---|---|---|
+| v1.10-1 | §四/§14 | 宏观事件历史回填通道就绪（FOMC/BLS，2015–2026 实测 542 条），D-E04/D-E09 的数据阻塞改为「待云端入库后接线」；日常 sync 的 DELETE 收窄到窗口内以保留历史行 |
 
 ### v1.9（2026-11-15）
 

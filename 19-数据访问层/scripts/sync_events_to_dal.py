@@ -123,13 +123,16 @@ def sync(
     if dry_run:
         return {"ok": True, "dry_run": True, "candidate_rows": len(rows), "dst_db": str(dst_db)}
 
+    lo = int(now) - _WINDOW_BACK_DAYS * 86400
+    hi = int(now) + _WINDOW_AHEAD_DAYS * 86400
     dst_db.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(dst_db)
     try:
         conn.execute(_DDL)
         conn.execute(_INDEX)
-        # 全量重建日历（表规模 <100 行）：避免历史脏行/已删日程残留
-        conn.execute("DELETE FROM mm_events")
+        # 只重建窗口内日历行：窗口外的历史行由 backfill_events_history.py 维护，
+        # 全表 DELETE 会把 2015 起的回填历史一并清空。
+        conn.execute("DELETE FROM mm_events WHERE event_time BETWEEN ? AND ?", (lo, hi))
         conn.executemany(
             """
             INSERT OR REPLACE INTO mm_events

@@ -1,0 +1,14 @@
+spec=SPEC-54-L1 v1.10 §三(事件表); 18-TECHNICAL_DESIGN v1.1 §4.3; 19 scripts/backfill_events_history.py
+step=1 macro_history_backfill.backfill(start_year=2015) → 2015–2026 官方日历
+observed=backfill {"appended": 542, "skipped": 0, "candidate_rows": 542, "by_source": {"fed_calendar": 101, "macro_calendar": 441}, "by_type": {"cpi": 143, "fomc": 101, "macro_other": 143, "nfp": 155}, "failed_years": [], "wayback_years": [], "output": "/tmp/macro_evidence.jsonl"}
+observed=fomc_source={"current_page": "fomccalendars.htm 2021-2026", "historical_pages": "fomchistorical2015..2020", "extract": "monetary{YYYYMMDD}a.htm → 14:00 ET → UTC"}
+step=2 backfill_events_history.backfill(history=/tmp/macro_evidence.jsonl, dst=/tmp/events_evidence.db)
+observed=upsert_run1 {"ok": true, "upserted": 542, "db_row_count": 542}
+observed=upsert_run2 {"ok": true, "upserted": 542, "db_row_count": 542}  # INSERT OR REPLACE，行数不增
+observed=span=2015-01-28T19:00:00Z..2026-12-16T19:00:00Z
+step=3 数据门禁对照（54-L1 D-E04/D-E09 要求每类事件样本 ≥30）
+observed=gate_counts={"fomc": 101, "cpi": 143, "nfp": 155} → 均 ≥30，事件样本阻塞解除
+step=4 窗口隔离（防止日常 sync 清空历史）
+observed=test_window_sync_preserves_out_of_window_history PASSED  # 2016 历史行 + 2026 窗口行共存
+observed=test_history_backfill_writes_old_rows_and_is_idempotent PASSED  # event_time=1453296600 (2016-01-20T13:30:00Z)
+exit=0

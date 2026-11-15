@@ -1,0 +1,898 @@
+diff --git a/18-数据获取中心/data_center/cli/backfill_macro_calendar.py b/18-数据获取中心/data_center/cli/backfill_macro_calendar.py
+new file mode 100644
+index 0000000000..de9d14f197
+--- /dev/null
++++ b/18-数据获取中心/data_center/cli/backfill_macro_calendar.py
+@@ -0,0 +1,32 @@
++"""宏观事件历史回填入口（FOMC + BLS，2015 起）。
++
++落盘到独立历史事件流（append-only、event_id 幂等），不污染当天事件流：
++
++    data_center/events/macro_calendar_history.jsonl
++
++用法（在 18-数据获取中心 目录下）：
++  python3 -m data_center.cli.backfill_macro_calendar --start-year 2015 --end-year 2026
++"""
++
++from __future__ import annotations
++
++import argparse
++import json
++
++from data_center.collectors.tradefin.macro_history_backfill import HISTORY_PATH, backfill
++
++
++def main(argv: list[str] | None = None) -> int:
++    parser = argparse.ArgumentParser(description="宏观事件历史回填")
++    parser.add_argument("--start-year", type=int, default=2015)
++    parser.add_argument("--end-year", type=int, default=None)
++    parser.add_argument("--output", default=str(HISTORY_PATH))
++    args = parser.parse_args(argv)
++
++    result = backfill(args.start_year, args.end_year, args.output)
++    print(f"[backfill_macro_calendar] {json.dumps(result, ensure_ascii=False)}")
++    return 0 if result.get("ok") else 1
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/18-数据获取中心/data_center/collectors/tradefin/macro_history_backfill.py b/18-数据获取中心/data_center/collectors/tradefin/macro_history_backfill.py
+new file mode 100644
+index 0000000000..45367d0711
+--- /dev/null
++++ b/18-数据获取中心/data_center/collectors/tradefin/macro_history_backfill.py
+@@ -0,0 +1,221 @@
++"""宏观事件历史回填 — FOMC 决议日 + BLS CPI/非农/PPI 发布日（2015 起）。
++
++背景：`events.jsonl` 只保留滚动窗口、`sync_events_to_dal` 只同步 [-60d,+90d]，
++`mm_events` 长期只有十几行，F19–F23 事件研究（D-E04/D-E09）因此无法满足 ≥30
++事件门禁。本模块一次性回填历史事件日期，写入独立的历史事件流：
++
++    data_center/events/macro_calendar_history.jsonl
++
++数据源（2026-11-15 实测）：
++  - FOMC：federalreserve.gov 官方日历。2021+ 用 `fomccalendars.htm`，
++    2015–2020 用 `fomchistorical{year}.htm`；决议日从声明链接
++    `monetary{YYYYMMDD}a.htm` 提取，比解析月份文本稳。
++  - BLS：`bls.gov/schedule/{year}/home.htm`。直连可能 403（实测本机被拒），
++    因此失败时回退 Wayback 归档快照，仍失败记入 `failed_years`（FAIL-OPEN）。
++
++纪律：`available_at` = `event_time`（日程计划时间本就公开，不构成前视）；
++类型只用 §3.1 枚举；幂等键沿用 `EventStore` 的 `sha1(source|symbols|event_time|type)`。
++"""
++
++from __future__ import annotations
++
++import logging
++import re
++from datetime import datetime, timezone
++from pathlib import Path
++from zoneinfo import ZoneInfo
++
++from data_center.collectors.tradefin.fed_calendar_collector import (
++    CALENDAR_URL as FOMC_CURRENT_URL,
++)
++from data_center.collectors.tradefin.fed_calendar_collector import (
++    SYMBOLS as FED_SYMBOLS,
++)
++from data_center.collectors.tradefin.macro_calendar_collector import (
++    SYMBOLS as MACRO_SYMBOLS,
++)
++from data_center.collectors.tradefin.macro_calendar_collector import (
++    classify_release,
++    extract_rows,
++)
++from data_center.events.store import append_events
++
++logger = logging.getLogger(__name__)
++
++FOMC_HISTORICAL_URL = "https://www.federalreserve.gov/monetarypolicy/fomchistorical{year}.htm"
++BLS_SCHEDULE_URL = "https://www.bls.gov/schedule/{year}/home.htm"
++WAYBACK_URL = "https://web.archive.org/web/{stamp}/https://www.bls.gov/schedule/{year}/home.htm"
++
++HISTORY_PATH = Path(__file__).resolve().parents[2] / "events" / "macro_calendar_history.jsonl"
++
++ET = ZoneInfo("America/New_York")
++STATEMENT_HOUR_ET = 14  # FOMC 声明发布 14:00 ET
++
++_STATEMENT_RE = re.compile(r"monetary(\d{8})a\.htm")
++_ROW_RE = re.compile(
++    r"^(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+"
++    r"([A-Z][a-z]+ \d{1,2}, \d{4})\s+"
++    r"(\d{1,2}:\d{2}\s*[AP]M)\s+"
++    r"(.+)$"
++)
++
++
++def parse_fomc_statement_dates(page_html: str) -> list[datetime]:
++    """从官方日历页提取决议时刻（会议最后一天 14:00 ET → UTC），去重升序。"""
++    found: dict[int, datetime] = {}
++    for stamp in _STATEMENT_RE.findall(page_html or ""):
++        try:
++            day = datetime.strptime(stamp, "%Y%m%d")
++        except ValueError:
++            continue
++        local = datetime(day.year, day.month, day.day, STATEMENT_HOUR_ET, tzinfo=ET)
++        found[int(stamp)] = local.astimezone(timezone.utc)
++    return [found[k] for k in sorted(found)]
++
++
++def build_fomc_events(dates: list[datetime]) -> list[dict]:
++    return [
++        {
++            "type": "fomc",
++            "subtype": "statement",
++            "symbols": list(FED_SYMBOLS),
++            "sector": "macro",
++            "event_time": d.isoformat().replace("+00:00", "Z"),
++            "available_at": d.isoformat().replace("+00:00", "Z"),
++            "source": "fed_calendar",
++            "source_url": FOMC_CURRENT_URL,
++            "title": f"FOMC statement {d.strftime('%Y-%m-%d')}",
++            "confidence": 1.0,
++            "quality": "A",
++        }
++        for d in dates
++    ]
++
++
++def parse_bls_release_rows(rows: list[str]) -> list[dict]:
++    """BLS 年度日历行 → 事件（不做时间窗过滤，供历史回填使用）。"""
++    events: list[dict] = []
++    for row in rows:
++        m = _ROW_RE.match(row)
++        if not m:
++            continue
++        date_str, time_str, release = m.group(1), m.group(2), m.group(3).strip()
++        kind = classify_release(release)
++        if not kind:
++            continue
++        type_, subtype = kind
++        try:
++            d = datetime.strptime(date_str, "%B %d, %Y").date()
++            t = datetime.strptime(re.sub(r"\s+", " ", time_str), "%I:%M %p").time()
++            ts = datetime(d.year, d.month, d.day, t.hour, t.minute, tzinfo=ET).astimezone(
++                timezone.utc
++            )
++        except ValueError:
++            continue
++        iso = ts.isoformat().replace("+00:00", "Z")
++        events.append(
++            {
++                "type": type_,
++                "subtype": subtype,
++                "symbols": list(MACRO_SYMBOLS),
++                "sector": "macro",
++                "event_time": iso,
++                "available_at": iso,
++                "source": "macro_calendar",
++                "source_url": BLS_SCHEDULE_URL.format(year=d.year),
++                "title": release,
++                "confidence": 1.0,
++                "quality": "A",
++            }
++        )
++    return events
++
++
++def _default_fetch(url: str) -> str:
++    from data_center.collectors.tradefin._http import get_text
++
++    return get_text(url)
++
++
++def _wayback_url(year: int) -> str:
++    return WAYBACK_URL.format(stamp=f"{year}0701", year=year)
++
++
++def _dedupe(events: list[dict]) -> list[dict]:
++    seen: set[tuple] = set()
++    out: list[dict] = []
++    for e in events:
++        key = (e["source"], e["type"], e["event_time"], tuple(sorted(e["symbols"])))
++        if key in seen:
++            continue
++        seen.add(key)
++        out.append(e)
++    return out
++
++
++def backfill(
++    start_year: int = 2015,
++    end_year: int | None = None,
++    output: str | Path = HISTORY_PATH,
++    fetch=None,
++) -> dict:
++    """回填历史宏观事件；单源失败不影响其他源，返回汇总。"""
++    fetch = fetch or _default_fetch
++    end_year = end_year or datetime.now(timezone.utc).year
++    events: list[dict] = []
++    failed: list[str] = []
++    wayback_years: list[int] = []
++
++    fomc_dates: list[datetime] = []
++    for year in range(start_year, min(end_year, 2020) + 1):
++        try:
++            html = fetch(FOMC_HISTORICAL_URL.format(year=year))
++        except Exception as e:  # noqa: BLE001 — 单年失败不阻断
++            logger.warning("[macro_history] FOMC %d 失败：%s", year, e)
++            failed.append(f"fomc:{year}")
++            continue
++        fomc_dates.extend(d for d in parse_fomc_statement_dates(html) if d.year == year)
++    if end_year >= 2021:
++        try:
++            html = fetch(FOMC_CURRENT_URL)
++            fomc_dates.extend(
++                d for d in parse_fomc_statement_dates(html) if start_year <= d.year <= end_year
++            )
++        except Exception as e:  # noqa: BLE001
++            logger.warning("[macro_history] FOMC 当前日历失败：%s", e)
++            failed.append("fomc:current")
++    events.extend(build_fomc_events(sorted(set(fomc_dates))))
++
++    for year in range(start_year, end_year + 1):
++        html = None
++        try:
++            html = fetch(BLS_SCHEDULE_URL.format(year=year))
++        except Exception as direct_err:  # noqa: BLE001
++            try:
++                html = fetch(_wayback_url(year))
++                wayback_years.append(year)
++            except Exception as wb_err:  # noqa: BLE001
++                logger.warning("[macro_history] BLS %d 双源失败：%s / %s", year, direct_err, wb_err)
++                failed.append(f"bls:{year}")
++                continue
++        events.extend(parse_bls_release_rows(extract_rows(html)))
++
++    events = _dedupe(events)
++    by_source: dict[str, int] = {}
++    by_type: dict[str, int] = {}
++    for e in events:
++        by_source[e["source"]] = by_source.get(e["source"], 0) + 1
++        by_type[e["type"]] = by_type.get(e["type"], 0) + 1
++
++    appended, skipped = append_events(events, path=output)
++    return {
++        "ok": True,
++        "appended": appended,
++        "skipped": skipped,
++        "candidate_rows": len(events),
++        "by_source": dict(sorted(by_source.items())),
++        "by_type": dict(sorted(by_type.items())),
++        "failed_years": failed,
++        "wayback_years": wayback_years,
++        "output": str(output),
++    }
+diff --git a/18-数据获取中心/docs/CHANGELOG.md b/18-数据获取中心/docs/CHANGELOG.md
+index 4433556297..03505682f6 100644
+--- a/18-数据获取中心/docs/CHANGELOG.md
++++ b/18-数据获取中心/docs/CHANGELOG.md
+@@ -1,10 +1,27 @@
+ # 18-数据获取中心 — 变更日志
+ 
+-> **版本**: v1.1 | **更新日期**: 2026-10-01
++> **版本**: v1.2 | **更新日期**: 2026-11-15
+ > **定位**: 记录每次变更的原因、内容、验证方式，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.5
+ 
+ ---
+ 
++## [v1.2] - 2026-11-15
++
++### 新增
++
++- **变更内容**: 宏观事件历史回填通道（FOMC / CPI / NFP / PPI，2015 起）
++  - `data_center/collectors/tradefin/macro_history_backfill.py`：FOMC 从官方日历页（2021+ 现页、2015–2020 历史年页）的声明链接 `monetary{YYYYMMDD}a.htm` 提取决议日并按 14:00 ET → UTC 归一；BLS 从年度发布日历页解析 CPI/NFP/PPI，直连被 403 时回退 Wayback 归档快照，单年失败仅记 `failed_years`
++  - `data_center/cli/backfill_macro_calendar.py`：回填入口，落盘 `data_center/events/macro_calendar_history.jsonl`（append-only、`event_id` 幂等）
++  - `tests/test_macro_history_backfill.py`：5 例（DST 换算、事件契约、类型映射、幂等 + FAIL-OPEN、Wayback 回退）
++- **验证**: 实网 2015–2026 回填 **542** 条（fomc 101 / cpi 143 / nfp 155 / macro_other 143），`failed_years=[]`
++
++### 关联
++
++- **变更内容**: `19-数据访问层/scripts/backfill_events_history.py` 入库 + `sync_events_to_dal.py` 的 DELETE 收窄到窗口内，避免日常同步清空历史行；19 全量 **166 passed**
++- **动机**: 解除 54-L1 事件研究（D-E04/D-E09）「`mm_events` 仅 16 行」的数据阻塞
++
++---
++
+ ## [v1.1] - 2026-10-01
+ 
+ ### 修改
+diff --git a/18-数据获取中心/docs/TECHNICAL_DESIGN.md b/18-数据获取中心/docs/TECHNICAL_DESIGN.md
+index 670c8699cf..7066967ec1 100644
+--- a/18-数据获取中心/docs/TECHNICAL_DESIGN.md
++++ b/18-数据获取中心/docs/TECHNICAL_DESIGN.md
+@@ -1,7 +1,7 @@
+ # 数据获取中心 — 技术设计文档
+ 
+ > **定位：** 子系统技术架构设计，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.2
+-> **版本：** v1.0 | **更新日期：** 2026-08-24
++> **版本：** v1.1 | **更新日期：** 2026-11-15
+ > **系统类型：** 全局数据采集与信息收口层（万能爬虫 + 信息搜集工具）
+ > **关联文档：** [README.md](../README.md)、[API_SPEC.md](./API_SPEC.md)、[0-系统文档管理/2-文档地图/SYSTEM_MAP.md](../../0-系统文档管理/2-文档地图/SYSTEM_MAP.md)
+ >
+@@ -211,6 +211,42 @@ def dedupe_key(rec: DataRecord) -> str:
+ - **输入**：CLI 参数 / Python 库调用参数 + `config/` 下的数据源配置与 API Key。
+ - **输出**：`list[DataRecord]`（内存） + 落库记录（持久化） + CLI 终端表格/JSON。
+ 
++### 4.3 宏观事件历史回填（FOMC / CPI / NFP / PPI，2015 起）
++
++**问题**：`events.jsonl` 只保留滚动窗口，`sync_events_to_dal` 只同步 [-60d,+90d]，`mm_events` 长期只有十几行，导致 L1 事件研究（F19–F23 / B17，能力 D-E04/D-E09）无法满足 ≥30 事件门禁。
++
++**通道**（两段式，均在云端生产写入口执行）：
++
++```
++[回填采集] data_center/collectors/tradefin/macro_history_backfill.py
++           ├─ FOMC：fomccalendars.htm（2021+）+ fomchistorical{year}.htm（2015–2020）
++           │        决议日从声明链接 monetary{YYYYMMDD}a.htm 提取，14:00 ET → UTC
++           └─ BLS ：bls.gov/schedule/{year}/home.htm（CPI / NFP / PPI）
++                    直连 403 时回退 Wayback 归档快照；单年失败只记 failed_years
++   │
++   ▼  append_events（event_id 幂等）
++data_center/events/macro_calendar_history.jsonl
++   │
++   ▼  19-数据访问层/scripts/backfill_events_history.py（纯 INSERT OR REPLACE，无窗口过滤）
++19-DAL mm_events（历史行与日常窗口行共存）
++```
++
++**实测（2026-11-15，本机）**：2015–2026 共 **542** 条 — fomc 101 / cpi 143 / nfp 155 / macro_other 143，`failed_years=[]`、`wayback_years=[]`（BLS 直连可用）。
++
++**命令**：
++
++```bash
++# 1) 采集（18-数据获取中心）
++python3 -m data_center.cli.backfill_macro_calendar --start-year 2015
++
++# 2) 入库（19-数据访问层；写前先 sqlite3 .backup）
++python scripts/backfill_events_history.py \
++    --history ../18-数据获取中心/data_center/events/macro_calendar_history.jsonl \
++    --dst data/dreambuddy_core.db
++```
++
++**边界**：只补官方日历事件（会议/发布日程），不补新闻类事件；`available_at = event_time`（日程本就公开，不构成前视）；日常 `sync_events_to_dal` 的 DELETE 已收窄到窗口内，不会清空回填历史。
++
+ ---
+ 
+ ## 5. 接口设计
+@@ -248,6 +284,7 @@ data-center fetch news    --topic crypto --sources rsshub,gdelt
+ data-center crawl         --config sites.yaml        # 爬虫轨
+ data-center list          collectors                  # 已注册采集器
+ data-center schedule     --cron "0 * * * *" --task "fetch macro --series CPI"
++python3 -m data_center.cli.backfill_macro_calendar --start-year 2015   # 历史宏观事件回填（§4.3）
+ ```
+ 
+ 详细 CLI 参数与返回格式见 [API_SPEC.md](./API_SPEC.md)（待补）。
+diff --git a/18-数据获取中心/tests/test_macro_history_backfill.py b/18-数据获取中心/tests/test_macro_history_backfill.py
+new file mode 100644
+index 0000000000..47f375a383
+--- /dev/null
++++ b/18-数据获取中心/tests/test_macro_history_backfill.py
+@@ -0,0 +1,119 @@
++"""宏观事件历史回填测试：官方页面解析 + 无窗口回填 + 幂等 + FAIL-OPEN。
++
++背景：`mm_events` 仅 16 行、`events.jsonl` 只保留滚动窗口，导致 F19–F23 事件研究
++无法满足 ≥30 事件门禁。本模块从美联储官方日历（含历史年页面）与 BLS 年度发布
++日历（直连被 403 时回退 Wayback 归档）回填 2015 年起的事件日期。
++"""
++
++from __future__ import annotations
++
++import json
++from datetime import timezone
++
++from data_center.collectors.tradefin import macro_history_backfill as mh
++
++_FOMC_HIST_SNIPPET = """
++<div class="panel panel-default">
++  <div class="panel-heading"><h4><a id="2015">2015 FOMC Meetings</a></h4></div>
++  <div class="panel-body">
++    <div class="row fomc-meeting">
++      <div class="fomc-meeting__month"><strong>January</strong></div>
++      <div class="fomc-meeting__date">27-28</div>
++      <a href="/monetarypolicy/monetary20150128a.htm">Statement</a>
++    </div>
++    <div class="row fomc-meeting">
++      <div class="fomc-meeting__month"><strong>July</strong></div>
++      <div class="fomc-meeting__date">28-29</div>
++      <a href="/monetarypolicy/monetary20150729a.htm">Statement</a>
++    </div>
++  </div>
++</div>
++"""
++
++_BLS_ROWS = [
++    "Friday, January 08, 2016 08:30 AM Employment Situation for December 2015",
++    "Wednesday, January 20, 2016 08:30 AM Consumer Price Index for December 2015",
++    "Friday, July 15, 2016 08:30 AM Consumer Price Index for June 2016",
++    "Friday, January 15, 2016 08:30 AM Producer Price Index for December 2015",
++    "Tuesday, January 12, 2016 10:00 AM Job Openings and Labor Turnover Survey for November 2015",
++]
++
++
++def test_parse_fomc_statement_dates_applies_new_york_dst():
++    dates = mh.parse_fomc_statement_dates(_FOMC_HIST_SNIPPET)
++    assert [d.strftime("%Y-%m-%d %H:%M") for d in dates] == [
++        "2015-01-28 19:00",  # EST
++        "2015-07-29 18:00",  # EDT
++    ]
++    assert all(d.tzinfo == timezone.utc for d in dates)
++
++
++def test_build_fomc_events_satisfies_event_contract():
++    dates = mh.parse_fomc_statement_dates(_FOMC_HIST_SNIPPET)
++    events = mh.build_fomc_events(dates)
++    assert len(events) == 2
++    first = events[0]
++    assert first["type"] == "fomc"
++    assert first["source"] == "fed_calendar"
++    assert first["event_time"] == first["available_at"] == "2015-01-28T19:00:00Z"
++    assert first["symbols"] and first["quality"] == "A"
++    assert first["title"] == "FOMC statement 2015-01-28"
++
++
++def test_parse_bls_release_rows_maps_types_without_window_filter():
++    events = mh.parse_bls_release_rows(_BLS_ROWS)
++    by_type = {}
++    for e in events:
++        by_type.setdefault(e["type"], []).append(e)
++    assert sorted(by_type) == ["cpi", "macro_other", "nfp"]
++    assert len(by_type["cpi"]) == 2
++    assert by_type["cpi"][0]["event_time"] == "2016-01-20T13:30:00Z"  # EST
++    assert by_type["cpi"][1]["event_time"] == "2016-07-15T12:30:00Z"  # EDT
++    assert by_type["nfp"][0]["event_time"] == "2016-01-08T13:30:00Z"
++    assert all(e["source"] == "macro_calendar" for e in events)
++
++
++def test_backfill_appends_idempotently_and_reports_failed_years(tmp_path):
++    out = tmp_path / "macro_calendar_history.jsonl"
++    calls: list[str] = []
++
++    def fetch(url: str) -> str:
++        calls.append(url)
++        if "fomc" in url:
++            return _FOMC_HIST_SNIPPET
++        year = int(url.split("/schedule/")[1].split("/")[0])
++        if year <= 2016:
++            return "<table><tr><td>" + "</td></tr><tr><td>".join(_BLS_ROWS) + "</td></tr></table>"
++        raise RuntimeError("upstream 403")
++
++    first = mh.backfill(start_year=2015, end_year=2017, output=out, fetch=fetch)
++    assert first["ok"] is True
++    assert first["appended"] >= 3
++    assert first["failed_years"] == ["bls:2017"]
++    assert first["by_type"]["fomc"] >= 1 and first["by_type"]["cpi"] == 2
++
++    rows = [json.loads(x) for x in out.read_text(encoding="utf-8").splitlines() if x.strip()]
++    assert {r["event_id"] for r in rows} == {r["event_id"] for r in rows}
++    assert all(r["available_at"] and r["source"] for r in rows)
++
++    second = mh.backfill(start_year=2015, end_year=2017, output=out, fetch=fetch)
++    assert second["appended"] == 0
++    assert second["skipped"] == first["appended"]
++    assert len(out.read_text(encoding="utf-8").splitlines()) == len(rows)
++
++
++def test_backfill_falls_back_to_wayback_when_bls_blocks(tmp_path):
++    out = tmp_path / "macro_calendar_history.jsonl"
++
++    def fetch(url: str) -> str:
++        if url.startswith("https://www.bls.gov/"):
++            raise RuntimeError("Access Denied (403)")
++        if "web.archive.org" in url:
++            return "<table><tr><td>" + "</td></tr><tr><td>".join(_BLS_ROWS) + "</td></tr></table>"
++        return _FOMC_HIST_SNIPPET
++
++    result = mh.backfill(start_year=2015, end_year=2016, output=out, fetch=fetch)
++    assert result["ok"] is True
++    assert result["wayback_years"] == [2015, 2016]
++    assert result["failed_years"] == []
++    assert result["by_type"]["nfp"] == 1
+diff --git a/19-数据访问层/scripts/backfill_events_history.py b/19-数据访问层/scripts/backfill_events_history.py
+new file mode 100644
+index 0000000000..34002cbece
+--- /dev/null
++++ b/19-数据访问层/scripts/backfill_events_history.py
+@@ -0,0 +1,142 @@
++"""历史宏观事件回填入库 —— history JSONL → 19-DAL mm_events（无时间窗裁剪）。
++
++与 `sync_events_to_dal.py` 的分工：
++  - 本脚本只做历史回填，不做窗口过滤、不 DELETE，纯 `INSERT OR REPLACE`（幂等）；
++  - `sync_events_to_dal.py` 负责日常 [-60d,+90d] 窗口刷新，已改为只删窗口内行，
++    避免把回填的历史行清空。
++
++用法（云端唯一生产写入口执行，写前先 `sqlite3 .backup`）：
++    cd 19-数据访问层
++    python scripts/backfill_events_history.py \
++        --history ../18-数据获取中心/data_center/events/macro_calendar_history.jsonl \
++        --dst data/dreambuddy_core.db
++"""
++
++from __future__ import annotations
++
++import argparse
++import json
++import sqlite3
++import sys
++from datetime import datetime, timezone
++from pathlib import Path
++
++_SCRIPTS_DIR = Path(__file__).resolve().parent
++if str(_SCRIPTS_DIR) not in sys.path:
++    sys.path.insert(0, str(_SCRIPTS_DIR))
++
++from sync_events_to_dal import _DDL, _INDEX  # noqa: E402
++
++REPO_ROOT = _SCRIPTS_DIR.parents[1]
++DEFAULT_HISTORY = (
++    REPO_ROOT / "18-数据获取中心" / "data_center" / "events" / "macro_calendar_history.jsonl"
++)
++DST_DB = REPO_ROOT / "19-数据访问层" / "data" / "dreambuddy_core.db"
++
++
++def _to_unix(ts_text: str) -> int | None:
++    if not ts_text:
++        return None
++    try:
++        dt = datetime.fromisoformat(str(ts_text).replace("Z", "+00:00"))
++    except ValueError:
++        return None
++    if dt.tzinfo is None:
++        dt = dt.replace(tzinfo=timezone.utc)
++    return int(dt.timestamp())
++
++
++def _load_rows(history_path: Path) -> list[tuple]:
++    if not history_path.is_file():
++        return []
++    rows: dict[str, tuple] = {}
++    with history_path.open("r", encoding="utf-8", errors="ignore") as f:
++        for line in f:
++            line = line.strip()
++            if not line:
++                continue
++            try:
++                ev = json.loads(line)
++            except json.JSONDecodeError:
++                continue
++            event_id = str(ev.get("event_id") or "")
++            ts = _to_unix(ev.get("event_time") or "")
++            if not event_id or ts is None:
++                continue
++            symbols = ev.get("symbols")
++            rows[event_id] = (
++                event_id,
++                ts,
++                ev.get("type") or "",
++                ev.get("subtype") or "",
++                ev.get("source") or "",
++                ev.get("title") or "",
++                json.dumps(symbols, ensure_ascii=False) if symbols else "",
++                (
++                    float(ev["confidence"])
++                    if isinstance(ev.get("confidence"), (int, float))
++                    else None
++                ),
++                ev.get("quality") or "",
++            )
++    return list(rows.values())
++
++
++def backfill(
++    history_path: str | Path = DEFAULT_HISTORY,
++    dst_db: str | Path = DST_DB,
++    dry_run: bool = False,
++) -> dict:
++    history_path = Path(history_path)
++    dst_db = Path(dst_db)
++    if not history_path.is_file():
++        return {"ok": False, "reason": f"history_not_found: {history_path}"}
++
++    rows = _load_rows(history_path)
++    if dry_run:
++        return {
++            "ok": True,
++            "dry_run": True,
++            "candidate_rows": len(rows),
++            "dst_db": str(dst_db),
++        }
++
++    dst_db.parent.mkdir(parents=True, exist_ok=True)
++    conn = sqlite3.connect(dst_db)
++    try:
++        conn.execute(_DDL)
++        conn.execute(_INDEX)
++        conn.executemany(
++            """
++            INSERT OR REPLACE INTO mm_events
++                (event_id, event_time, event_type, subtype, source, title, symbols, confidence, quality)
++            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
++            """,
++            rows,
++        )
++        conn.commit()
++        total = conn.execute("SELECT COUNT(*) FROM mm_events").fetchone()[0]
++    finally:
++        conn.close()
++    return {
++        "ok": True,
++        "upserted": len(rows),
++        "db_row_count": total,
++        "history_path": str(history_path),
++        "dst_db": str(dst_db),
++    }
++
++
++def main() -> int:
++    parser = argparse.ArgumentParser(description="历史宏观事件 → 19-DAL mm_events")
++    parser.add_argument("--history", default=str(DEFAULT_HISTORY))
++    parser.add_argument("--dst", default=str(DST_DB))
++    parser.add_argument("--dry-run", action="store_true")
++    args = parser.parse_args()
++    result = backfill(args.history, args.dst, args.dry_run)
++    print(f"[backfill_events_history] {json.dumps(result, ensure_ascii=False)}")
++    return 0 if result.get("ok") else 1
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/19-数据访问层/scripts/sync_events_to_dal.py b/19-数据访问层/scripts/sync_events_to_dal.py
+index a8b5d49ac9..54a463b4ca 100644
+--- a/19-数据访问层/scripts/sync_events_to_dal.py
++++ b/19-数据访问层/scripts/sync_events_to_dal.py
+@@ -123,13 +123,16 @@ def sync(
+     if dry_run:
+         return {"ok": True, "dry_run": True, "candidate_rows": len(rows), "dst_db": str(dst_db)}
+ 
++    lo = int(now) - _WINDOW_BACK_DAYS * 86400
++    hi = int(now) + _WINDOW_AHEAD_DAYS * 86400
+     dst_db.parent.mkdir(parents=True, exist_ok=True)
+     conn = sqlite3.connect(dst_db)
+     try:
+         conn.execute(_DDL)
+         conn.execute(_INDEX)
+-        # 全量重建日历（表规模 <100 行）：避免历史脏行/已删日程残留
+-        conn.execute("DELETE FROM mm_events")
++        # 只重建窗口内日历行：窗口外的历史行由 backfill_events_history.py 维护，
++        # 全表 DELETE 会把 2015 起的回填历史一并清空。
++        conn.execute("DELETE FROM mm_events WHERE event_time BETWEEN ? AND ?", (lo, hi))
+         conn.executemany(
+             """
+             INSERT OR REPLACE INTO mm_events
+diff --git a/19-数据访问层/tests/test_events_history_backfill.py b/19-数据访问层/tests/test_events_history_backfill.py
+new file mode 100644
+index 0000000000..45ae2b3af1
+--- /dev/null
++++ b/19-数据访问层/tests/test_events_history_backfill.py
+@@ -0,0 +1,94 @@
++# -*- coding: utf-8 -*-
++"""事件历史回填入库测试：长期行不被窗口同步清空 + 幂等写入。"""
++
++from __future__ import annotations
++
++import importlib.util
++import json
++import sqlite3
++from pathlib import Path
++
++_SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
++
++
++def _load(name: str):
++    spec = importlib.util.spec_from_file_location(name, _SCRIPTS / f"{name}.py")
++    mod = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(mod)
++    return mod
++
++
++history = _load("backfill_events_history")
++sync = _load("sync_events_to_dal")
++
++_OLD_EVENT = {
++    "event_id": "hash20160120",
++    "type": "cpi",
++    "subtype": "cpi",
++    "symbols": ["US500"],
++    "event_time": "2016-01-20T13:30:00Z",
++    "available_at": "2016-01-20T13:30:00Z",
++    "source": "macro_calendar",
++    "title": "Consumer Price Index for December 2015",
++    "confidence": 1.0,
++    "quality": "A",
++}
++
++
++def _write_jsonl(path: Path, rows: list[dict]) -> None:
++    path.write_text(
++        "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n", encoding="utf-8"
++    )
++
++
++def test_history_backfill_writes_old_rows_and_is_idempotent(tmp_path):
++    src = tmp_path / "history.jsonl"
++    _write_jsonl(src, [_OLD_EVENT])
++    db = tmp_path / "core.db"
++
++    first = history.backfill(history_path=src, dst_db=db)
++    assert first["ok"] is True and first["upserted"] == 1
++    second = history.backfill(history_path=src, dst_db=db)
++    assert second["db_row_count"] == first["db_row_count"] == 1
++
++    conn = sqlite3.connect(db)
++    try:
++        ts = conn.execute("SELECT event_time FROM mm_events").fetchone()[0]
++    finally:
++        conn.close()
++    assert ts == 1453296600  # 2016-01-20T13:30:00Z
++
++
++def test_window_sync_preserves_out_of_window_history(tmp_path):
++    src = tmp_path / "history.jsonl"
++    _write_jsonl(src, [_OLD_EVENT])
++    db = tmp_path / "core.db"
++    history.backfill(history_path=src, dst_db=db)
++
++    events_file = tmp_path / "events.jsonl"
++    _write_jsonl(
++        events_file,
++        [
++            {
++                "event_id": "recent20261120",
++                "type": "fomc",
++                "subtype": "statement",
++                "symbols": ["US500"],
++                "event_time": "2026-11-20T19:00:00Z",
++                "available_at": "2026-11-20T19:00:00Z",
++                "source": "fed_calendar",
++                "title": "FOMC statement 2026-11-20",
++                "confidence": 1.0,
++                "quality": "A",
++            }
++        ],
++    )
++    result = sync.sync(events_path=events_file, dst_db=db)
++    assert result["ok"] is True
++
++    conn = sqlite3.connect(db)
++    try:
++        ids = {r[0] for r in conn.execute("SELECT event_id FROM mm_events")}
++    finally:
++        conn.close()
++    assert ids == {"hash20160120", "recent20261120"}
+diff --git a/54-L1架构能力聚合层/SPEC-54-L1架构能力聚合层.md b/54-L1架构能力聚合层/SPEC-54-L1架构能力聚合层.md
+index 1311950a4a..762ad23d86 100644
+--- a/54-L1架构能力聚合层/SPEC-54-L1架构能力聚合层.md
++++ b/54-L1架构能力聚合层/SPEC-54-L1架构能力聚合层.md
+@@ -1,6 +1,6 @@
+ # SPEC-54 L1 架构能力聚合层
+ 
+-- **版本**: v1.9 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 完整版（v1.0 + S1–S5 五级能力路线 + S1.0 硬前置 + S4 条件外推收口 + MERS 分阶段 + §3.5 四层分工，见 §13–§17；v1.9 D-E12/R18 时空对齐切片交付，可执行出口 **10 个**，并纠正 R02 与矩阵 TopK/C18 的过期状态；D-A14 的 `level` 阈值未冻结，S5 对外推荐仍未开放；v1.8 D-E05 矩阵 TopK、D-E11/C18、D-E01 与 MERS S3 内部内核交付；v1.7 D-E02 三层接线与 T0.5 首版交付；v1.6 调研对齐 R02 PIT 双口径与能力状态边界；v1.5 回写日线收盘锚点修复；v1.4 回写 E 组能力层落地与 `stat_query` 意图合并，整体进度由 TECHNICAL_DESIGN §6 汇总）
++- **版本**: v1.10 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 完整版（v1.0 + S1–S5 五级能力路线 + S1.0 硬前置 + S4 条件外推收口 + MERS 分阶段 + §3.5 四层分工，见 §13–§17；v1.10 打通宏观事件历史回填通道（2015–2026 实测 542 条），D-E04/D-E09 由「事件表仅 16 行」改为「待云端入库后接线」；v1.9 D-E12/R18 时空对齐切片交付，可执行出口 **10 个**，并纠正 R02 与矩阵 TopK/C18 的过期状态；D-A14 的 `level` 阈值未冻结，S5 对外推荐仍未开放；v1.8 D-E05 矩阵 TopK、D-E11/C18、D-E01 与 MERS S3 内部内核交付；v1.7 D-E02 三层接线与 T0.5 首版交付；v1.6 调研对齐 R02 PIT 双口径与能力状态边界；v1.5 回写日线收盘锚点修复；v1.4 回写 E 组能力层落地与 `stat_query` 意图合并，整体进度由 TECHNICAL_DESIGN §6 汇总）
+ - **归属**: 54-L1架构能力聚合层（L1 确定性数据能力的唯一聚合出口）
+ - **上游约束**: 19-DAL Schema/Repo 契约、18-数据获取中心 `DataRecord`、9-基本面分析评分口径、34-前端应用训练系统（意图/SFT 与 route_confidence）
+ - **下游影响**: 3.1-FRONTEND `/api/data/query`、`/api/fundamental/**`、`/api/agent/chat`、L1 意图注册表（TS/Python 双端）
+@@ -549,7 +549,7 @@ capabilities:
+ 1. **能力层已实现**：`l1agg/capabilities/{manifest,envelope,stats}.py` + `capability_manifest.yaml` + `contracts/capability_result.schema.json`。已接线 D-E01（条件收益）、D-E02（分位→前瞻收益，A8/T0.5）、D-E03（季节性）、D-E05/D-E06/D-E11/D-E12（相关/领先滞后/同向率/时空对齐，含矩阵 TopK、C18 与 R18）、D-E07（状态转移）、D-E08（条件 IC，需因子源）、D-E10（回撤）。方法层注册表 **386 方法** audit 全 PASS（全量 387 登记，仅 C11 缺交易日历不可用；C 组 17 方法落地 `l1agg/methods/seasonal.py`）。
+ 2. **意图合并（与 §11.4 表的有意偏差）**：前端先合为单一确定性意图 **`stat_query`**，内部按关键词分派到上述能力 ID，另加 `cross_check` 相关子能力。理由：5 个独立意图 × 双端注册表 × 金标集维护成本高，而能力 ID 已能精确定位；后续若要拆分为 §11.4 的 5 个独立意图，只需拆分执行器入口，能力层与 manifest 无需改动。
+ 3. **双端同步点**：`3.1-FRONTEND/scripts/l1_route_signal.py`（EXECUTORS + DETERMINISTIC_INTENTS + fallback pattern）、`data_query_executor.py::exec_stat_query`、`3.1-FRONTEND/src/lib/l1-intent-registry.ts`、`34-前端应用训练系统/l1_intent_golden.jsonl`。
+-4. **未接线**：D-E04/D-E09（事件表仅 16 行）、D-E14（需场景出口与每桶非重叠 ≥250）。D-E01 已接线，但实际统计仍受因子与价格 ≥250 个有效配对样本门禁约束。
++4. **未接线**：D-E04/D-E09 的数据阻塞已解除——`18-数据获取中心` 新增宏观事件历史回填通道（2015–2026 实测 542 条：fomc 101/cpi 143/nfp 155/macro_other 143），待云端执行入库后接线；D-E14 仍受场景出口与每桶非重叠 ≥250 约束。D-E01 已接线，但实际统计仍受因子与价格 ≥250 个有效配对样本门禁约束。
+ 5. **登记范围复核（v1.9）**：10 个可执行出口不等于 E 组登记范围全部完成。D-E05 双序列与 M05–M07 矩阵 TopK 均已接线；D-E11 已绑定 C18，提供 dates 时执行自然月同向率；D-E01 已按 B02/B05/F01/H01 契约接线，h=1 前瞻收益先在原价格轴计算再过滤有效因子对；D-E12 已按 R18 契约接线，样本不足与空窗口均显式降级为 empty。
+ 
+ **日线对齐修复（v1.5，2026-11-14）**：`market.candles` 1d 的 `ts` 统一归一到 **UTC 日首**（真实观测时刻保留 `close_ts`），并新增 `meta.close_anchor ∈ {bar_close, snapshot_last}` 与 `source_policy ∈ {auto, snapshot, bars}`。**跨资产横截面统计（D-E05/D-E06/D-E11）必须两侧同锚点**：执行器优先 `source_policy=snapshot`，某标的无快照才退回 `auto` 并在回答标注。修复前 BTC（真实日线 00:00）与 ETH（快照 16:00）锚点混用，同期 ρ=0.33 且最优 lag=+1；修复后 ρ=0.83、最优 lag=0（n=727）。
+@@ -855,7 +855,7 @@ CREATE INDEX idx_rel_pick ON relationship_eval(target, horizon, status, rank_ic
+ | 加密域指标 | `derivatives_spot`/`etf_institutional`/`exchanges_whales`/`holdings_onchain_funds`/`stablecoin_rwa` 均 28 天；`options` 44、`funding_rate` 40、`btc_onchain` 37、`etf_flow` 14、`okx_derivatives` 8 | ❌ 不满足相关性门禁 |
+ | 专用表 | `mm_funding_rate`/`mm_open_interest`/`mm_liquidation`/`mm_long_short_ratio`/`mm_taker_volume`/`mm_fear_greed` 本地 0 行 | ❌ |
+ | 全库纵深 | 27,290 个 `sub::metric` 中 25,795 个仅 1 天；≥250 天 28 条；与 BTC 日频重叠 ≥60 天仅 26 条 | 决定 S2 因子池上限 |
+-| 事件表 | `mm_events` 16 行 | R04/F19–F23 不可做 |
++| 事件表 | `mm_events` 16 行（历史回填通道已就绪：2015–2026 共 542 条，待云端入库） | 回填入库前 R04/F19–F23 仍不可做 |
+ 
+ **修正后的推进顺序（与 METHOD_LIBRARY §14 对齐）**：
+ 
+@@ -941,7 +941,13 @@ MERS 与 Discovery 只改变「**选哪个方法**」，不改变「**输出什
+ 
+ ---
+ 
+-## §十二、修订记录（v0.1 → v1.9）
++## §十二、修订记录（v0.1 → v1.10）
++
++### v1.10（2026-11-15）
++
++| 编号 | 位置 | 内容 |
++|---|---|---|
++| v1.10-1 | §四/§14 | 宏观事件历史回填通道就绪（FOMC/BLS，2015–2026 实测 542 条），D-E04/D-E09 的数据阻塞改为「待云端入库后接线」；日常 sync 的 DELETE 收窄到窗口内以保留历史行 |
+ 
+ ### v1.9（2026-11-15）
+ 
+diff --git a/54-L1架构能力聚合层/docs/TECHNICAL_DESIGN.md b/54-L1架构能力聚合层/docs/TECHNICAL_DESIGN.md
+index 8b08f3b2c4..c66f08ae3e 100644
+--- a/54-L1架构能力聚合层/docs/TECHNICAL_DESIGN.md
++++ b/54-L1架构能力聚合层/docs/TECHNICAL_DESIGN.md
+@@ -1,6 +1,6 @@
+ # 54 总技术文档 — 数据 → 统计 → 关系能力地图
+ 
+-- **版本**: v2.12 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 总技术文档（v2.12 接入 D-E12/R18 时空对齐切片，可执行出口 **10 个**；D-A14 的 F26 方法已实现，但 `level` 阈值未冻结，暂不宣称完整交付；MERS S3 内部固定网格、BH-FDR、状态机与幂等注册表已交付，S5 对外推荐仍未开放；测试 **698 例全绿**，audit **386/386 PASS**、验证覆盖率 **66.15%**；v2.11 接入 D-E11/C18 与 D-E01；v2.10 D-E05 双序列与多资产矩阵 TopK 全接线、D-E06 全 lag BH-FDR、manifest 真实执行覆盖与 audit 验证覆盖报告；v2.9 D-E02 能力出口接线与 T0.5/A8 首版交付；v2.8 方法层全部落地：`REGISTRY` 387 条全登记、`implemented=true` **386**，仅 C11 因缺交易日历不可用；v2.7 注册表放开调研族前缀并完成占位登记；v2.6 调研对齐与路线收口）
++- **版本**: v2.13 ｜ **日期**: 2026-11-15 ｜ **状态**: 🟢 总技术文档（v2.13 打通宏观事件历史回填通道，为 D-E04/D-E09 解除「事件表仅 16 行」的数据阻塞；v2.12 接入 D-E12/R18 时空对齐切片，可执行出口 **10 个**；D-A14 的 F26 方法已实现，但 `level` 阈值未冻结，暂不宣称完整交付；MERS S3 内部固定网格、BH-FDR、状态机与幂等注册表已交付，S5 对外推荐仍未开放；54-L1 测试 **698 例全绿**，audit **386/386 PASS**、验证覆盖率 **66.15%**；v2.11 接入 D-E11/C18 与 D-E01；v2.10 D-E05 双序列与多资产矩阵 TopK 全接线、D-E06 全 lag BH-FDR、manifest 真实执行覆盖与 audit 验证覆盖报告；v2.9 D-E02 能力出口接线与 T0.5/A8 首版交付；v2.8 方法层全部落地：`REGISTRY` 387 条全登记、`implemented=true` **386**，仅 C11 因缺交易日历不可用；v2.7 注册表放开调研族前缀并完成占位登记；v2.6 调研对齐与路线收口）
+ - **上游**: `SPEC-54-L1架构能力聚合层.md`（ADR/契约/路线）、`docs/METHOD_LIBRARY.md`（方法 SSoT）
+ - **下游**: `3.1-FRONTEND/scripts/l1_route_signal.py`（L1 路由）、`34-前端应用训练系统/core/l0_foundation.py`（L0 scope）、`/api/fundamental/**`
+ - **定位**: 本文是 54 的**总技术文档**——上半部（§0）回答「有哪些问题域、每个问题域用什么方法、现在缺什么」；下半部（§1–§6）是能力登记册（ID/依赖/字段/优先级/状态）。
+@@ -13,8 +13,8 @@
+ 
+ | 文档 | 角色 | 唯一负责的内容 | 当前版本 |
+ |---|---|---|---|
+-| [SPEC-54-L1架构能力聚合层.md](../SPEC-54-L1架构能力聚合层.md) | 架构与契约 | ADR、scope 出入参、门禁、路线（S1–S5）、MERS/Discovery | v1.9 |
+-| **本文 TECHNICAL_DESIGN.md** | **总技术文档 + 能力登记** | 六类问题地图、四层分工（§0.5）、能力 ID `D-*`、状态列、整体进度（§6.2） | **v2.12** |
++| [SPEC-54-L1架构能力聚合层.md](../SPEC-54-L1架构能力聚合层.md) | 架构与契约 | ADR、scope 出入参、门禁、路线（S1–S5）、MERS/Discovery | v1.10 |
++| **本文 TECHNICAL_DESIGN.md** | **总技术文档 + 能力登记** | 六类问题地图、四层分工（§0.5）、能力 ID `D-*`、状态列、整体进度（§6.2） | **v2.13** |
+ | [METHOD_LIBRARY.md](./METHOD_LIBRARY.md) | 方法 SSoT | 方法 ID（S/D/T/C/I/M/B/F/H/R/X/O/P/Q/SC）、口径冻结（§16）、数据前提（§15） | v1.14 |
+ | [RESEARCH-TREND-PERSISTENCE-MODELS.md](./RESEARCH-TREND-PERSISTENCE-MODELS.md) | 调研 | 延续性三层拆解、Tier A/B/C、T 阶段 | v1.2 |
+ | [RESEARCH-INSTITUTIONAL-L1-METHODS.md](./RESEARCH-INSTITUTIONAL-L1-METHODS.md) | 调研补强 | 机构方法（X/O/P/Q） | — |
+@@ -101,7 +101,7 @@
+ | 月份效应（「五穷六绝七翻身」） | C01–C04、C14、C15 | D-E03 ✅ | ✅ 能力层（`capabilities/stats.py::seasonality`）；<60 月标 `seasonality_depth_lt_5y` | **≥5 年（60 个月）** |
+ | 月内日效应（「八横九涨十回调」类月内节奏） | C07、C08 | D-E03 ✅ | ✅ 方法层 `seasonal.py`（C07/C08） | ≥3 年 |
+ | 星期效应 | C05 | D-E03 ✅ | ✅ 能力层已接线（`seasonal.py::c05_weekday_effect`） | ≥2 年 |
+-| 节日/事件前后 | C11 + F19–F23 | D-E04 ⬜ | ❌ C11 缺交易日历（登记不可用）；✅ F19/F22/F23 方法层已实现（`timeseries.py`），⬜ 能力未接线 | 事件表 + ≥3 年 |
++| 节日/事件前后 | C11 + F19–F23 | D-E04 🟡 | ❌ C11 缺交易日历（登记不可用）；✅ F19/F22/F23 方法层已实现（`timeseries.py`），🟡 事件历史回填通道已就绪，待云端入库 | 事件表 + ≥3 年 |
+ | 季节强度 / STL | C13、T10、SC91 | D-J02 🟡 | ✅ C13 已实现（ANOVA 式组间方差比）；✅ T10/STL 与 SC91 方法层已实现（`timeseries.py`/`research_sc_b.py`），⬜ 能力未接线 | ≥3 年且 ≥2 周期 |
+ | 主周期 / 频谱 | T25–T26、SC39、SC41 | D-J05 ⬜ | ✅ T25–T26 方法层已实现（`timeseries.py`，FFT/DFT）；⬜ 能力未接线 | ≥2 个完整周期 |
+ | 周期失效（变点） | T22–T23、SC49–SC51 | D-J04 🟡 | ✅ T22 CUSUM、T23 PELT 近似与 SC49–SC51 方法层已实现（`timeseries.py`/`research_sc_b.py`），⬜ 能力出口未接线 | ≥3 年 |
+@@ -307,12 +307,12 @@ L1 意图（TS/Python 双端注册表）
+ | D-E01 | 条件收益统计 | B02/B05 + F01 + H01 | 因子+价格 ≥250 点 | conditional_return | P2 | ✅ `capabilities/stats.py::conditional_return` 已接线；h=1，先在原价格轴计算前瞻收益，再过滤有效因子对 |
+ | D-E02 | 分位→前瞻收益 | I30 + R02 | 序列 ≥250 点；T0.5 另需每桶非重叠 n≥250 | metric_percentile | P1 | ✅ 已接线（manifest `I30/R02` + `capabilities/stats.py::percentile_forward` + 前端 `exec_stat_query` 分位 cue 分支，v2.9）；R02 `pit=false/pit=true` 双口径，A8/T0.5 经此出口交付（h=1，含 4→2 桶降级披露） |
+ | D-E03 | 季节性/日历效应 | C01–C04, C05, C07, C09, C12–C15 | 日收益 ≥60 天（**仅够星期/月内日**；月份效应需 ≥5 年，见 §0.3） | seasonality_query | P1 | ✅ 11 个声明方法均真实执行并输出（`capabilities/stats.py::seasonality`） |
+-| D-E04 | 事件研究窗 | F19–F23, H01 | 事件表 + 价格 | event_study | P2 | ⬜ |
++| D-E04 | 事件研究窗 | F19–F23, H01 | 事件表（历史回填已就绪）+ 价格 | event_study | P2 | 🟡 方法层 F19–F23 已实现；事件数据阻塞已由 `18-数据获取中心/data_center/collectors/tradefin/macro_history_backfill.py` 打通（实测 2015–2026 共 542 条：fomc 101/cpi 143/nfp 155/macro_other 143），待云端回填入库后接线 |
+ | D-E05 | 相关矩阵 TopK | M01–M07 | 多资产对齐 ≥60 点 | correlation_query | P2 | ✅ 双序列 M01–M04/M23 与矩阵 M05–M07 均已接线；逐对 paired complete-case，TopK 披露 BH-FDR |
+ | D-E06 | 领先滞后 | T03–T04, M11–M12 | 双序列 ≥120 点 | correlation_query | P2 | ✅ M11/M12 主推断覆盖完整 lag 搜索空间并做 BH-FDR；T03/T04 仅保留 legacy 描述 |
+ | D-E07 | 状态转移 | B02, B07–B09 | 状态序列 ≥100 点 | state_transition | P2 | ✅ 使用 B02 等频分位分箱，B04 不属于当前 executor |
+ | D-E08 | 分箱单调性/IC | B11/B13/B14 | 已对齐因子+前瞻收益，总配对样本 ≥250 点 | conditional_return | P2 | ✅ `conditional_ic` 逐行配对；min_n=250 是总样本门禁而非每桶门禁；B15 的 prices/IC decay 入口归 D-E13/D-G19 |
+-| D-E09 | 计数与共现 | B17 + R09/R10 | 事件序列 | metric_series | P1 | 🟡 B17/R09/R10 方法层已实现（`inference.py`），事件表仍薄（`mm_events` 16 行） |
++| D-E09 | 计数与共现 | B17 + R09/R10 | 事件序列（历史回填已就绪） | metric_series | P1 | 🟡 B17/R09/R10 方法层已实现（`inference.py`）；历史事件回填通道已就绪（`macro_history_backfill.py` + `19-数据访问层/scripts/backfill_events_history.py`），待云端入库后接线 |
+ | D-E10 | 回撤画像 | D20–D21 | 价格 ≥250 点 | drawdown_query | P1 | ✅ 能力层已接线；F09/F10 为同口径库内别名，不重复执行 |
+ | D-E11 | 跨资产同向率/相关突变 | M23–M25, C18 | 多资产对齐 ≥60 点 | cross_check | P2 | ✅ M23/M24/M25/C18 均已接线；dates 与双收益序列按原始行号同步过滤，无 dates 时不执行 C18 |
+ | D-E12 | 时空对齐切片 | R18 | 多资产同日数据 | cross_check | P2 | ✅ `capabilities/stats.py::alignment_slice` 已接线；样本不足与空窗口显式降级 |
+@@ -374,7 +374,7 @@ L1 意图（TS/Python 双端注册表）
+ | D-G20 | 分位单调性检验 | D2 | P2 | 🟡 B11/B16 已实现（`conditional.py`）；B11 已随 D-E08 接线，B16 分组统计尚未接入完整分位组合出口 |
+ | D-G21 | Fama-MacBeth 横截面回归 | D3 | P3 | ⬜ |
+ | D-G22 | Deflated Sharpe / Newey-West t | D2 | P3 | ⬜ |
+-| D-G23 | 事件窗 CAR + Patell/BMP | D2 | P2 | 🟡 F20/F21（AR/CAR）与 F19/F22/F23 已实现；✅ Patell/BMP 方法已实现（`research_pq.py::Q10/Q11`），⬜ 事件表与能力未接线 |
++| D-G23 | 事件窗 CAR + Patell/BMP | D2 | P2 | 🟡 F20/F21（AR/CAR）与 F19/F22/F23 已实现；✅ Patell/BMP 方法已实现（`research_pq.py::Q10/Q11`），🟡 事件历史回填通道已就绪、能力未接线 |
+ | D-G24 | 因子拥挤度 | D2 | P3 | ⬜ |
+ | D-G25 | 尾部相关 | D2 | P2 | ⬜ |
+ 
+@@ -486,9 +486,18 @@ L1 意图（TS/Python 双端注册表）
+ - 场景包 SPEC = 某类问题的**固定编排**（当前已交付延续性画像 `D-E13`；T0.5/T2 为后续编排，不新增能力 ID）。
+ - 新增能力流程：本文登记 → SPEC 补契约（如涉及新 scope）→ 实现 + 测试 → 更新状态列并附代码位置。
+ 
+-### 6.1 本版更改（v2.12 D-E12/R18；v2.11 C18/D-E01/MERS；v2.10 配对/推断/执行覆盖；v2.9 D-E02 接线与 T0.5 交付；v2.8 方法层全部落地）
++### 6.1 本版更改（v2.13 事件历史回填通道；v2.12 D-E12/R18；v2.11 C18/D-E01/MERS；v2.10 配对/推断/执行覆盖；v2.9 D-E02 接线与 T0.5 交付；v2.8 方法层全部落地）
+ 
+-**v2.12（本版，改动代码 + 文档）**
++**v2.13（本版，改动数据通道 + 文档）**
++
++| 变更 | 代码 / 本文位置 | 结论 |
++|---|---|---|
++| 宏观事件历史回填 | `18-数据获取中心/data_center/collectors/tradefin/macro_history_backfill.py`、`data_center/cli/backfill_macro_calendar.py` | FOMC 用官方日历（2021+ 现页、2015–2020 历史年页，决议日从声明链接提取）；BLS 用年度发布日历，直连被 403 时回退 Wayback；实测 2015–2026 共 **542** 条（fomc 101 / cpi 143 / nfp 155 / macro_other 143），两源零失败 |
++| 历史入库与窗口隔离 | `19-数据访问层/scripts/backfill_events_history.py`、`sync_events_to_dal.py` | 历史回填纯 `INSERT OR REPLACE`、不过滤时间窗；日常 sync 的 DELETE 改为**窗口内**，避免把 2015 起的历史行清空 |
++| 状态纠偏 | §0.3、§2.4、§4.2、§6.2、§6.3 | D-E04/D-E09/D-G23 由「事件表仅 16 行」改为「回填通道就绪、待云端入库后接线」，不提前宣称能力已交付 |
++| 验证 | 18/19 新增用例、18 全量、19 全量 | 事件回填 5 例 + DAL 2 例通过；19 全量 **166 passed**；18 全量 666 passed / 4 例与本次改动无关的既有失败（FRED key、新闻语料规模） |
++
++**v2.12（D-E12/R18 时空对齐切片）**
+ 
+ | 变更 | 代码 / 本文位置 | 结论 |
+ |---|---|---|
+@@ -580,7 +589,7 @@ L1 意图（TS/Python 双端注册表）
+ |---|---|---|---|
+ | SPEC S1 ↔ 方法 S1 | 🟡 核心底座完成 | `market.candles`、UTC 对齐、前瞻收益、价格回显、日线同锚点 | 前端 11 模块全量历史查询覆盖仍按 SPEC 独立验收，不能由底座完成自动判全绿 |
+ | SPEC S2 ↔ 方法 S2 | 🟡 方法完成、能力部分接线 | M01–M07/M11–M12/M24–M25 方法；D-E05 双序列与矩阵 TopK、D-E06 BH-FDR、D-E11/C18 可执行 | 固定权重合成指标及完整四类榜单契约 |
+-| SPEC S3 ↔ 方法 S3/S6/S7；T0=S3 子集 | 🟡 方法、能力与 MERS S3 内核部分交付 | S3 批 22 方法、S6 扩展、10 个 manifest 出口（含 D-E01/D-E02/D-E12）；T0/D-E13 已交付；R02 `pit=true` 与 MERS 180 单元内部内核已实现 | S3 全量真实数据验收；R03/R04/F19 所需日历/事件上下文及云端周期调度 |
++| SPEC S3 ↔ 方法 S3/S6/S7；T0=S3 子集 | 🟡 方法、能力与 MERS S3 内核部分交付 | S3 批 22 方法、S6 扩展、10 个 manifest 出口（含 D-E01/D-E02/D-E12）；T0/D-E13 已交付；R02 `pit=true` 与 MERS 180 单元内部内核已实现；事件历史回填通道（2015–2026，542 条）已就绪 | S3 全量真实数据验收；事件回填需云端执行入库后接线 D-E04/D-E09；云端周期调度 |
+ | **T0.5=S3→S4** | ✅ 首版已交付（v2.9） | R02 `pit=true` + A8 编排 + D-E02 出口与前端分派；h=1、4 桶 PIT 滚动分位，样本不足自动降 2 桶并披露 `effective_n/nonoverlap_n` | 真实数据纵深不足时按契约降级；h>1 显著性仍受 Newey-West/HAC 前置约束 |
+ | SPEC S4 ↔ T2 | ⬜ | 条件分布非点预测的契约已明确 | T-1 扩样本、T1a/T1b、F1–F12 状态特征、1–2 维场景出口；h>1 显著性另受 HAC 阻塞 |
+ | SPEC S5 ↔ T3及后续 | ⬜ | MERS S3 内部内核、BH-FDR、holdout 同号、状态机、幂等注册表与随机负例已交付 | walk-forward 完整验收、Discovery、只读推荐/发现出口；不得提前开放 `relationship_recommend` |
+@@ -589,7 +598,7 @@ L1 意图（TS/Python 双端注册表）
+ 
+ 1. **R02 `pit=true` 与 T0.5 已交付（v2.9）**：`conditional.py::r02_percentile_forward` 双口径 + A8 编排 + D-E02 出口（manifest/executor/前端分派）均已接线；样本不足按场景包降 2 桶并披露 `effective_n/nonoverlap_n`，不输出点预测。
+ 2. **MERS S3 内核已交付，下一关键路径是 S3 全量真实数据验收**：180 单元、BH-FDR、holdout 同号、状态机、幂等与随机负例已验证；生产周期评估只能在云端执行，R03/R04/F19 仍需真实日历/事件上下文，单出口交付不等于显著性结论。
+-3. **继续补齐 S2/S3 登记范围**：D-E05 矩阵 TopK、D-E11/C18、D-E01、D-E12/R18 已完成；后续处理 D-E04/D-E09/D-E14 等缺口，四类榜单分别披露搜索空间与 `p_adj`，不得混排。D-A14 的 F26 固定权重分已就绪，但须先由用户冻结 `level` 阈值再完整接线。
++3. **继续补齐 S2/S3 登记范围**：D-E05 矩阵 TopK、D-E11/C18、D-E01、D-E12/R18 已完成；D-E04/D-E09 的数据阻塞已由事件历史回填通道解除，下一步是云端执行回填并接线（命令见 18 `docs/TECHNICAL_DESIGN.md` §4.3；云端为唯一生产写入口，写前 `sqlite3 .backup`）；D-E14 仍受场景出口与每桶非重叠 ≥250 约束。四类榜单分别披露搜索空间与 `p_adj`，不得混排。D-A14 的 F26 固定权重分已就绪，但须先由用户冻结 `level` 阈值再完整接线。
+ 4. **扩样本后再做 T2**：T-1 由云端唯一生产写入口执行；随后完成 T1a/T1b 与 F1–F12 PIT 特征，再交付 1–2 维 D-E14。任何 h>1 显著性结论必须先有 Newey-West/HAC。
+ 5. **最后开放 S5**：MERS/Discovery 通过 holdout、walk-forward、BH-FDR 和随机负例后，才开放稳定推荐与发现查询。
+ 

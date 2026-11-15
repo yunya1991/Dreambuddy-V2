@@ -1,0 +1,45 @@
+=== targeted: macro history backfill (18) ===
+tests/test_macro_history_backfill.py::test_parse_fomc_statement_dates_applies_new_york_dst PASSED
+tests/test_macro_history_backfill.py::test_build_fomc_events_satisfies_event_contract PASSED
+tests/test_macro_history_backfill.py::test_parse_bls_release_rows_maps_types_without_window_filter PASSED
+tests/test_macro_history_backfill.py::test_backfill_appends_idempotently_and_reports_failed_years PASSED
+tests/test_macro_history_backfill.py::test_backfill_falls_back_to_wayback_when_bls_blocks PASSED
+target18_exit=0
+
+=== DAL full regression (19) ===
+........................................................................ [ 86%]
+......................                                                   [100%]
+166 passed in 3.21s
+regression19_exit=0
+
+=== 18 full regression ===
+FAILED tests/macro/test_fred_collector.py::test_no_api_key_returns_empty - assert True is False
+  (环境存在可用 FRED key，该用例断言"无 key 返回空"；与本轮改动无 import 关系)
+FAILED tests/news/test_news_factor_mapping.py::test_real_corpus_coverage_above_60pct[v1] - assert 51866 > 100000
+FAILED tests/news/test_news_factor_mapping.py::test_real_corpus_coverage_above_60pct[v2] - assert 51866 > 100000
+  (本地历史新闻语料 51866 行 < 10 万行门槛；语料规模问题，非代码缺陷)
+4 failed, 666 passed, 8 warnings in 29.40s
+note=上述 4 例均为既有环境/语料规模问题，不 import 本轮新增模块（macro_history_backfill / backfill_macro_calendar）
+
+=== live backfill (network, 2026-11-15) ===
+[backfill_macro_calendar] {"ok": true, "appended": 542, "skipped": 0, "candidate_rows": 542,
+ "by_source": {"fed_calendar": 101, "macro_calendar": 441},
+ "by_type": {"cpi": 143, "fomc": 101, "macro_other": 143, "nfp": 155},
+ "failed_years": [], "wayback_years": []}
+live_exit=0
+
+=== DAL upsert (idempotent) ===
+[backfill_events_history] {"ok": true, "upserted": 542, "db_row_count": 542}
+[backfill_events_history] {"ok": true, "upserted": 542, "db_row_count": 542}
+upsert_exit=0
+
+=== ruff ===
+All checks passed!   (18: 3 files, 19: 3 files)
+lint_exit=0
+
+=== black --check ===
+18: 3 files unchanged; 19: 3 files unchanged
+black_exit=0
+
+=== py_compile ===
+compile18_exit=0  compile19_exit=0

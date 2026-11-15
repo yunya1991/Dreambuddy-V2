@@ -1,7 +1,24 @@
 # 18-数据获取中心 — 变更日志
 
-> **版本**: v1.1 | **更新日期**: 2026-10-01
+> **版本**: v1.2 | **更新日期**: 2026-11-15
 > **定位**: 记录每次变更的原因、内容、验证方式，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.5
+
+---
+
+## [v1.2] - 2026-11-15
+
+### 新增
+
+- **变更内容**: 宏观事件历史回填通道（FOMC / CPI / NFP / PPI，2015 起）
+  - `data_center/collectors/tradefin/macro_history_backfill.py`：FOMC 从官方日历页（2021+ 现页、2015–2020 历史年页）的声明链接 `monetary{YYYYMMDD}a.htm` 提取决议日并按 14:00 ET → UTC 归一；BLS 从年度发布日历页解析 CPI/NFP/PPI，直连被 403 时回退 Wayback 归档快照，单年失败仅记 `failed_years`
+  - `data_center/cli/backfill_macro_calendar.py`：回填入口，落盘 `data_center/events/macro_calendar_history.jsonl`（append-only、`event_id` 幂等）
+  - `tests/test_macro_history_backfill.py`：5 例（DST 换算、事件契约、类型映射、幂等 + FAIL-OPEN、Wayback 回退）
+- **验证**: 实网 2015–2026 回填 **542** 条（fomc 101 / cpi 143 / nfp 155 / macro_other 143），`failed_years=[]`
+
+### 关联
+
+- **变更内容**: `19-数据访问层/scripts/backfill_events_history.py` 入库 + `sync_events_to_dal.py` 的 DELETE 收窄到窗口内，避免日常同步清空历史行；19 全量 **166 passed**
+- **动机**: 解除 54-L1 事件研究（D-E04/D-E09）「`mm_events` 仅 16 行」的数据阻塞
 
 ---
 

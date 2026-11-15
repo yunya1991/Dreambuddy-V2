@@ -1,7 +1,7 @@
 # 数据获取中心 — 技术设计文档
 
 > **定位：** 子系统技术架构设计，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.2
-> **版本：** v1.0 | **更新日期：** 2026-08-24
+> **版本：** v1.1 | **更新日期：** 2026-11-15
 > **系统类型：** 全局数据采集与信息收口层（万能爬虫 + 信息搜集工具）
 > **关联文档：** [README.md](../README.md)、[API_SPEC.md](./API_SPEC.md)、[0-系统文档管理/2-文档地图/SYSTEM_MAP.md](../../0-系统文档管理/2-文档地图/SYSTEM_MAP.md)
 >
@@ -211,6 +211,42 @@ def dedupe_key(rec: DataRecord) -> str:
 - **输入**：CLI 参数 / Python 库调用参数 + `config/` 下的数据源配置与 API Key。
 - **输出**：`list[DataRecord]`（内存） + 落库记录（持久化） + CLI 终端表格/JSON。
 
+### 4.3 宏观事件历史回填（FOMC / CPI / NFP / PPI，2015 起）
+
+**问题**：`events.jsonl` 只保留滚动窗口，`sync_events_to_dal` 只同步 [-60d,+90d]，`mm_events` 长期只有十几行，导致 L1 事件研究（F19–F23 / B17，能力 D-E04/D-E09）无法满足 ≥30 事件门禁。
+
+**通道**（两段式，均在云端生产写入口执行）：
+
+```
+[回填采集] data_center/collectors/tradefin/macro_history_backfill.py
+           ├─ FOMC：fomccalendars.htm（2021+）+ fomchistorical{year}.htm（2015–2020）
+           │        决议日从声明链接 monetary{YYYYMMDD}a.htm 提取，14:00 ET → UTC
+           └─ BLS ：bls.gov/schedule/{year}/home.htm（CPI / NFP / PPI）
+                    直连 403 时回退 Wayback 归档快照；单年失败只记 failed_years
+   │
+   ▼  append_events（event_id 幂等）
+data_center/events/macro_calendar_history.jsonl
+   │
+   ▼  19-数据访问层/scripts/backfill_events_history.py（纯 INSERT OR REPLACE，无窗口过滤）
+19-DAL mm_events（历史行与日常窗口行共存）
+```
+
+**实测（2026-11-15，本机）**：2015–2026 共 **542** 条 — fomc 101 / cpi 143 / nfp 155 / macro_other 143，`failed_years=[]`、`wayback_years=[]`（BLS 直连可用）。
+
+**命令**：
+
+```bash
+# 1) 采集（18-数据获取中心）
+python3 -m data_center.cli.backfill_macro_calendar --start-year 2015
+
+# 2) 入库（19-数据访问层；写前先 sqlite3 .backup）
+python scripts/backfill_events_history.py \
+    --history ../18-数据获取中心/data_center/events/macro_calendar_history.jsonl \
+    --dst data/dreambuddy_core.db
+```
+
+**边界**：只补官方日历事件（会议/发布日程），不补新闻类事件；`available_at = event_time`（日程本就公开，不构成前视）；日常 `sync_events_to_dal` 的 DELETE 已收窄到窗口内，不会清空回填历史。
+
 ---
 
 ## 5. 接口设计
@@ -248,6 +284,7 @@ data-center fetch news    --topic crypto --sources rsshub,gdelt
 data-center crawl         --config sites.yaml        # 爬虫轨
 data-center list          collectors                  # 已注册采集器
 data-center schedule     --cron "0 * * * *" --task "fetch macro --series CPI"
+python3 -m data_center.cli.backfill_macro_calendar --start-year 2015   # 历史宏观事件回填（§4.3）
 ```
 
 详细 CLI 参数与返回格式见 [API_SPEC.md](./API_SPEC.md)（待补）。
