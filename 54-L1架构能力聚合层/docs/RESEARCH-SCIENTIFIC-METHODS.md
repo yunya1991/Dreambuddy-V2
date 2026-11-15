@@ -267,16 +267,16 @@
 
 | 项 | 数量 |
 |---|---|
-| 原方法库（核心目录） | 238 |
+| 原方法库（核心目录） | 243 |
 | 机构扩展（X/O/P/Q） | +57 |
 | 科研扩展（SC01–SC92） | +92 |
-| **合计（目录）** | **387** |
-| 注册表实际登记（`REGISTRY`） | 387 = 核心 238 + 调研 149 |
-| 其中 `implemented=true` | 387（v1.19 起 C11 已由日期轴派生日历实现，[METHOD_LIBRARY](./METHOD_LIBRARY.md) 现口径为核心 243 + 调研 149 = 392 条全实现） |
+| **合计（目录）** | **392** |
+| 注册表实际登记（`REGISTRY`） | 392 = 核心 243 + 调研 149 |
+| 其中 `implemented=true` | 392（v1.19 起 C11 已由日期轴派生日历实现，[METHOD_LIBRARY](./METHOD_LIBRARY.md) 现口径为核心 243 + 调研 149 = 392 条全实现） |
 | 关系原语 | 18（不变，科研结果复用 R01/R03/R09/R17） |
 | 能力登记 | A16 + B10 + C6 + E14 + G25 + J30 + K2 = **103 项** |
 
-> 计数口径以 [METHOD_LIBRARY.md](./METHOD_LIBRARY.md) §1 与 [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) §2 为准；X/O/P/Q 与 SC 共 149 条已在 `l1agg/methods/research_*.py` 全部实现并登记，audit 386/386 PASS。能力层已接线 11 个可执行出口（含 D-E01/D-E02、D-E11/C18、D-E12/R18 与 D-G22/Q06–Q07），方法可用不等于能力已交付。
+> 计数口径以 [METHOD_LIBRARY.md](./METHOD_LIBRARY.md) §1 与 [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) §2 为准；X/O/P/Q 与 SC 共 149 条已在 `l1agg/methods/research_*.py` 全部实现并登记，`method_audit.py --scope all` **392/392 PASS**（核心 `harness.audit()` 243/243 PASS）。能力层已接线 **50 个可执行出口**（含 D-E01/D-E02、D-E04 节前分支、D-E11/C18、D-E12/R18、D-G22/Q06–Q07、D-G25/P13、D-J05/T25–T26/C14），方法可用不等于能力已交付。
 
 ---
 

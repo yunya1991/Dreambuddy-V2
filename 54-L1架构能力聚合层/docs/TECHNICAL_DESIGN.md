@@ -338,7 +338,7 @@ L1 意图（TS/Python 双端注册表）
 
 > **当前计数（v2.50，勿再引用 154 为总量）**：注册表 `REGISTRY` 实际登记 **392 条 = 核心 243 + 调研族 149**；其中 `implemented=true` **392 条**（v2.50 落地 C11 后核心目录已无占位方法）；`implemented=false` **0 条**。核心 243 含 v2.25 前已落地的 I35–I39 美联储方法。方法库目录同为 **392 条**（X12/O15/P14/Q16/SC92），已无“只有编号占位”的方法。`all_specs(scope=...)` 支持 `core`(243)/`research`(149)/`all`(392)，默认 `core` 以保持 `catalog_total == 243`。
 >
-> 全量 `method_audit.py --scope all` 于 2026-11-15 的快照仍为 I35–I39 接入前口径（`catalog_total=238`），已写入 [docs/method_audit.json](./method_audit.json) 待重跑：**implemented 386 / passed 386 / failed 0**，`research_catalog_total=149`、`registered_total=387`；六类检查共 2316 项，真实执行 1028、不适用 762、缺失 526，适用检查覆盖率 **66.15%**。`pytest tests -q` → **772 passed**。PASS 不等于完整验证覆盖；上段 154 仅为 v2.3 时点记录，现已被完全包含。
+> 全量 `method_audit.py --scope all` 已于 2026-11-15 13:21 UTC 重跑并写入 [docs/method_audit.json](./method_audit.json)：**implemented 392 / passed 392 / failed 0**，`catalog_total=243`、`research_catalog_total=149`、`registered_total=392`。`l1agg.eval.harness.audit()` 同步为 **243/243 PASS**；六类检查共 **1,458** 项，真实执行 715、不适用 476、缺失 267，**适用检查覆盖率 72.81%**（meta 243/243、gate 243/243、determinism 117/243、synthetic 104/243、null 3/5 适用、reference 5/5 适用）。PASS 不等于完整验证覆盖；上段 154 仅为 v2.3 时点记录，现已被完全包含。
 
 **能力层接线（v2.50 补 D-G25/D-J05 并扩展 D-E04 节前分支；v2.48 补 D-E15～D-E19；v2.46 补 D-G09；v2.45 补 D-G08；v2.44 补 D-B09；v2.43 补 D-B08；v2.42 补 D-A16；v2.41 补 D-A15；v2.40 补 D-A13；v2.39 补 D-A12；v2.38 补 D-A11；v2.37 补 D-A10；v2.36 补 D-A09；v2.35 补 D-A08；v2.34 补 D-A07；v2.33 补 D-A06；v2.32 补 D-A04；v2.31 补 D-A03；v2.30 补 D-A02；v2.29 补 D-A01；v2.28 补 D-J30；v2.27 补 D-G14；v2.26 补 D-J24；v2.25 补 D-J22；v2.24 补 D-G20；v2.23 补 D-G19；v2.22 补 D-G16；v2.21 补 D-J02；v2.20 补 D-J04；v2.19 补 D-E07/B06；v2.18 补 D-G23；v2.17 补 D-E14；v2.16 补 D-E04/D-E09；v2.15 接入 D-A14；v2.14 扩到 G 组）**：`l1agg/capabilities/` 当前共有 **50 个可执行出口**（A 组 D-A01/D-A02/D-A03/D-A04/D-A06/D-A07/D-A08/D-A09/D-A10/D-A11/D-A12/D-A13/D-A14/D-A15/D-A16 + B 组 D-B08/D-B09 + E 组 18 个 + G 组 D-G08/D-G09/D-G14/D-G16/D-G19/D-G20/D-G22/D-G23/D-G25 + J 组 D-J02/D-J04/D-J05/D-J22/D-J24/D-J30），端到端产出 `CapabilityResult`，并对跨条件分支累计的真实方法调用做 manifest 覆盖校验：
 
@@ -875,7 +875,7 @@ L1 意图（TS/Python 双端注册表）
 | D-E05/D-E06 关系推断 | `capabilities/stats.py::correlation` | D-E05 双序列与矩阵 TopK 全接线；D-E06 由 M11/M12 输出完整 lag BH-FDR，T03/T04 保留 legacy 描述 |
 | D-E08/B15 契约 | `capability_manifest.yaml`、`conditional_ic` | D-E08 只接 B11/B13/B14 的已对齐 factor/forward；B15 prices/IC decay 归 D-E13/D-G19 |
 | manifest 真实执行覆盖 | `manifest.py::validate_execution` + 跨分支集成测试 | 修正 D-E02/I30、D-E03 五个季节性方法、D-E07/B02、D-E10 重复别名等账面绑定漂移 |
-| audit 验证覆盖报告 | `eval/harness.py`、`scripts/method_audit.py`、`docs/method_audit.json` | 区分 executed/missing/not_applicable；386/386 PASS 与 66.15% 覆盖率同时披露 |
+| audit 验证覆盖报告 | `eval/harness.py`、`scripts/method_audit.py`、`docs/method_audit.json` | 区分 executed/missing/not_applicable；392/392 PASS（2026-11-15 重跑）与 72.81% 覆盖率同时披露 |
 | 验证 | `pytest tests -q`、全量 audit | v2.10 时点 **686 passed**；**implemented 386 / passed 386 / failed 0**；执行 1028、不适用 762、缺失 526 |
 
 **v2.9（D-E02 接线与 T0.5 交付，改动代码 + 文档）**
