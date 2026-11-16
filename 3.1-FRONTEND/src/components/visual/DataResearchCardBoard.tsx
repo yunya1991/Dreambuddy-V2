@@ -3,18 +3,26 @@
 // 数据研究看板（TASKS-20261116 T8-1 / T8-2 / T8-3 / T8-4 / T8-6）
 // 组织轴 = 算法推荐：左列推荐项（D-K01 只读出口），右列该推荐的出口卡。
 // 只展示结论与证据，不展示候选枚举 / 淘汰漏斗；不含任何买卖方向。
-// 配置（tab / 卡）落 localStorage；「－ / ×」二次确认 + 撤销，只删配置不删能力。
+// 配置（tab / 卡）以服务端为唯一事实源（SPEC-54 R3b），localStorage 仅作离线缓存；
+// 「－ / ×」二次确认 + 撤销，只删配置不删能力。
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { V3Badge } from '@/components/V3Badge';
 import { V3Empty } from '@/components/V3Empty';
-import { runCapability, type RunResponse } from '@/lib/visual/api';
+import {
+  fetchCardsConfig,
+  runCapability,
+  saveCardsConfig,
+  type RunResponse,
+} from '@/lib/visual/api';
 import {
   CONFIG_VERSION,
   DEFAULT_ACTIVE_TAB,
   defaultTabs,
   loadConfig,
+  mergeServerPanels,
   saveConfig,
+  tabToServerRows,
 } from '@/lib/visual/config';
 import {
   MAX_PANELS_PER_TAB,
@@ -68,18 +76,50 @@ export function DataResearchCardBoard() {
   const [pending, setPending] = useState<PendingRemoval | null>(null);
   const [undo, setUndo] = useState<UndoState | null>(null);
 
+  // tab_id → 上次已同步到服务端的行签名；相同则跳过重复 PUT
+  const syncedRef = useRef<Map<string, string>>(new Map());
+
+  const syncTab = useCallback((tab: PanelTab, deleted = false) => {
+    const rows = tabToServerRows(tab, deleted);
+    const signature = JSON.stringify(rows);
+    if (!deleted && syncedRef.current.get(tab.id) === signature) return;
+    if (deleted) syncedRef.current.delete(tab.id);
+    else syncedRef.current.set(tab.id, signature);
+    // FAIL-OPEN：网络/鉴权失败只影响跨设备一致性，不阻断看板操作
+    saveCardsConfig(tab.id, rows).catch(() => undefined);
+  }, []);
+
   // 首帧用默认配置（SSR / CSR 一致），挂载后再读 localStorage，避免水合不一致
   useEffect(() => {
+    let alive = true;
     const config = loadConfig();
     setTabs(config.tabs);
     setActiveId(config.activeId);
     setHydrated(true);
+
+    // SPEC-54 R3b：服务端为唯一事实源；拉取失败或未登录一律回落本地（FAIL-OPEN）
+    fetchCardsConfig()
+      .then((remote) => {
+        if (!alive || !remote.ok || !remote.items?.length) return;
+        const merged = mergeServerPanels(config, remote.items);
+        setTabs(merged.tabs);
+        setActiveId(merged.activeId);
+        // 服务端已有记录：按合并结果刷新同步基线，避免挂载后再整页回写
+        for (const tab of merged.tabs) {
+          syncedRef.current.set(tab.id, JSON.stringify(tabToServerRows(tab)));
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
     saveConfig({ version: CONFIG_VERSION, tabs, activeId });
-  }, [hydrated, tabs, activeId]);
+    for (const tab of tabs) syncTab(tab);
+  }, [hydrated, tabs, activeId, syncTab]);
 
   useEffect(() => {
     let alive = true;
@@ -180,6 +220,8 @@ export function DataResearchCardBoard() {
       label: pending.kind === 'tab' ? `tab「${pending.label}」` : `卡片「${pending.label}」`,
     };
     if (pending.kind === 'tab') {
+      const target = tabs.find((tab) => tab.id === pending.tabId);
+      if (target) syncTab(target, true);
       const next = removeTab(tabs, pending.tabId);
       setTabs(next);
       if (activeId === pending.tabId) setActiveId(next[0]?.id ?? DEFAULT_ACTIVE_TAB);
@@ -192,6 +234,17 @@ export function DataResearchCardBoard() {
     }
     setPending(null);
     setUndo(snapshot);
+  }
+
+  function handlePanelArgsChange(panel: PanelSpec, args: Record<string, unknown>) {
+    // 参数变了 panel_key 就变：视为同一张卡换参，位置不变，由看板统一同步服务端
+    setTabs(
+      tabs.map((tab) => ({
+        ...tab,
+        panels: tab.panels.map((item) => (item === panel ? { ...item, args } : item)),
+      })),
+    );
+    setUndo(null);
   }
 
   function handleUndo() {
@@ -207,7 +260,7 @@ export function DataResearchCardBoard() {
         <div>
           <h1 className="text-lg font-semibold text-slate-100">卡片模式</h1>
           <p className="mt-1 text-xs text-slate-500">
-            可自定义 tab 与能力卡，配置只存浏览器本地；不含买卖方向与仓位
+            可自定义 tab 与能力卡，配置随账号同步（本地仅缓存）；不含买卖方向与仓位
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -461,6 +514,7 @@ export function DataResearchCardBoard() {
               key={buildPanelKey(panel)}
               panel={panel}
               onRemove={requestRemovePanel}
+              onArgsChange={handlePanelArgsChange}
             />
           ))}
           <button

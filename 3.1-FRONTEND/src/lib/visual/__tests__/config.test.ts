@@ -2,15 +2,20 @@ import {
   CONFIG_KEY,
   DEFAULT_ACTIVE_TAB,
   DEFAULT_PANELS,
+  defaultArgsForSchema,
   defaultConfig,
   loadConfig,
+  mergeServerPanels,
   normalizeConfig,
   panelCount,
   parseConfig,
   saveConfig,
   serializeConfig,
+  tabToServerRows,
+  TAB_META_KEY,
   type ConfigStorage,
 } from '../config';
+import type { BoardConfig } from '../config';
 import { MAX_PANELS_PER_TAB, MAX_TABS } from '../panelKey';
 
 function memoryStorage(seed: Record<string, string> = {}): ConfigStorage & { data: Record<string, string> } {
@@ -128,5 +133,145 @@ describe('localStorage 持久化', () => {
     expect(saveConfig(defaultConfig(), storage)).toBe(false);
     expect(parseConfig(null).tabs).toHaveLength(2);
     expect(serializeConfig(defaultConfig())).toContain('"version"');
+  });
+});
+
+describe('卡片初始参数（SPEC-54 R3）', () => {
+  it('按 schema 写入资产/基准默认值', () => {
+    expect(
+      defaultArgsForSchema({
+        capability_id: 'D-A11',
+        accepts_extra: false,
+        requires_symbol: true,
+        requires_benchmark: true,
+        args: [
+          { name: 'x', type: 'series', required: true, default: null, source: 'auto' },
+        ],
+      }),
+    ).toEqual({ symbol: 'BTC', benchmark: 'US500' });
+  });
+
+  it('derived / 缺失 required 参数不写入 args', () => {
+    const args = defaultArgsForSchema({
+      capability_id: 'D-E08',
+      accepts_extra: false,
+      requires_symbol: true,
+      requires_benchmark: false,
+      args: [
+        { name: 'factor', type: 'series', required: true, default: null, source: 'derived', derived_by: 'momentum_20d' },
+        { name: 'forward', type: 'series', required: true, default: null, source: 'derived' },
+      ],
+    });
+    expect(args).toEqual({ symbol: 'BTC' });
+  });
+
+  it('auto 标量 default 会被带入，symbol/benchmark/days 不重复写', () => {
+    const args = defaultArgsForSchema({
+      capability_id: 'D-J21',
+      accepts_extra: false,
+      requires_symbol: true,
+      requires_benchmark: false,
+      args: [
+        { name: 'taus', type: 'scalar', required: false, default: [0.1, 0.5], source: 'auto' },
+        { name: 'window', type: 'scalar', required: false, default: 20, source: 'auto' },
+        { name: 'days', type: 'scalar', required: false, default: 750, source: 'auto' },
+      ],
+    });
+    expect(args).toEqual({ symbol: 'BTC', window: 20 });
+  });
+
+  it('纯宏观能力不写 symbol', () => {
+    expect(
+      defaultArgsForSchema({
+        capability_id: 'D-A10',
+        accepts_extra: false,
+        requires_symbol: false,
+        requires_benchmark: false,
+        args: [],
+      }),
+    ).toEqual({});
+  });
+});
+
+describe('服务端配置同步（SPEC-54 R3b）', () => {
+  function configWith(panels: BoardConfig['tabs'][number]['panels']): BoardConfig {
+    return {
+      version: 1,
+      tabs: [
+        { id: 'rec', title: '推荐总览', panels: [], builtin: true },
+        { id: 'all', title: '全部出口', panels, builtin: true },
+      ],
+      activeId: 'all',
+    };
+  }
+
+  it('tab → 服务端行含一条 tab 元数据行', () => {
+    const rows = tabToServerRows(configWith([]).tabs[1]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].panel_key).toBe(TAB_META_KEY);
+    expect(rows[0].args).toEqual({ title: '全部出口' });
+  });
+
+  it('删除 tab 只发墓碑行', () => {
+    const rows = tabToServerRows(
+      { id: 'mine', title: '我的', panels: [{ capability_id: 'D-A11', title: 'x', args: {} }] },
+      true,
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].args).toEqual({ title: '我的', deleted: true });
+  });
+
+  it('服务端有记录时以服务端为准（标题 / 参数 / 顺序）', () => {
+    const local = configWith([{ capability_id: 'D-E08', title: '本地旧卡', args: {} }]);
+    const merged = mergeServerPanels(local, [
+      { tab_id: 'all', panel_key: TAB_META_KEY, capability_id: TAB_META_KEY, args: { title: '服务端标题' } },
+      {
+        tab_id: 'all',
+        panel_key: 'D-A11#k',
+        capability_id: 'D-A11',
+        title: '跨资产相关',
+        kind: 'series',
+        args: { symbol: 'BTC' },
+      },
+    ]);
+
+    const tab = merged.tabs.find((item) => item.id === 'all')!;
+    expect(tab.title).toBe('服务端标题');
+    expect(tab.panels).toHaveLength(1);
+    expect(tab.panels[0]).toMatchObject({ capability_id: 'D-A11', title: '跨资产相关', kind: 'series' });
+  });
+
+  it('服务端空 tab 覆盖本地（清空后不回弹默认卡）', () => {
+    const local = configWith([{ capability_id: 'D-E08', title: '卡', args: {} }]);
+    const merged = mergeServerPanels(local, [
+      { tab_id: 'all', panel_key: TAB_META_KEY, capability_id: TAB_META_KEY, args: { title: '全部出口' } },
+    ]);
+    expect(merged.tabs.find((tab) => tab.id === 'all')!.panels).toHaveLength(0);
+  });
+
+  it('墓碑删除本地自建 tab；服务端未记录的 tab 保留本地', () => {
+    const local: BoardConfig = {
+      version: 1,
+      tabs: [
+        { id: 'rec', title: '推荐总览', panels: [], builtin: true },
+        { id: 'mine', title: '我的', panels: [], builtin: false },
+        { id: 'keep', title: '离线', panels: [], builtin: false },
+      ],
+      activeId: 'mine',
+    };
+    const merged = mergeServerPanels(local, [
+      { tab_id: 'mine', panel_key: TAB_META_KEY, capability_id: TAB_META_KEY, args: { title: '我的', deleted: true } },
+    ]);
+
+    expect(merged.tabs.map((tab) => tab.id)).toEqual(['rec', 'keep']);
+    expect(merged.activeId).toBe('rec');
+  });
+
+  it('builtin tab 不会被墓碑删除', () => {
+    const local = configWith([]);
+    const merged = mergeServerPanels(local, [
+      { tab_id: 'all', panel_key: TAB_META_KEY, capability_id: TAB_META_KEY, args: { title: '全部', deleted: true } },
+    ]);
+    expect(merged.tabs.some((tab) => tab.id === 'all')).toBe(true);
   });
 });

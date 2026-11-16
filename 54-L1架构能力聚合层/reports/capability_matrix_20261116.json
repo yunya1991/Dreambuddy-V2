@@ -1,0 +1,671 @@
+{
+  "generated_at": "2026-11-16T23:34:14",
+  "total": 94,
+  "by_code": {
+    "missing_args": 5,
+    "ok": 80,
+    "product_missing": 4,
+    "sample_insufficient": 2,
+    "unsupported": 3
+  },
+  "items": [
+    {
+      "capability_id": "D-A01",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 35,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-A02",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-A03",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-A04",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-A05",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 30,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-A06",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-A07",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 30,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-A08",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-A09",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-A10",
+      "code": "ok",
+      "n": 778,
+      "elapsed_ms": 77,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-A11",
+      "code": "ok",
+      "n": 513,
+      "elapsed_ms": 36,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-A12",
+      "code": "ok",
+      "n": 513,
+      "elapsed_ms": 34,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-A13",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-A15",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-A16",
+      "code": "unsupported",
+      "n": 0,
+      "elapsed_ms": 26,
+      "reason": "缺少稳定币规模序列"
+    },
+    {
+      "capability_id": "D-A14",
+      "code": "unsupported",
+      "n": 0,
+      "elapsed_ms": 26,
+      "reason": "缺少拥挤度分项序列（资金费率/持仓量/波动率）"
+    },
+    {
+      "capability_id": "D-E01",
+      "code": "ok",
+      "n": 726,
+      "elapsed_ms": 30,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-E02",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 47,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-E03",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 37,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-E04",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 33,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-E05",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 73,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-E06",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 73,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-E07",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 30,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-E08",
+      "code": "ok",
+      "n": 725,
+      "elapsed_ms": 30,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-E09",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 56,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-E10",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 30,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-E11",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 74,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-E12",
+      "code": "ok",
+      "n": 170,
+      "elapsed_ms": 80,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-E14",
+      "code": "sample_insufficient",
+      "n": 454,
+      "elapsed_ms": 45,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G14",
+      "code": "ok",
+      "n": 170,
+      "elapsed_ms": 61,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J30",
+      "code": "missing_args",
+      "n": 0,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G16",
+      "code": "ok",
+      "n": 170,
+      "elapsed_ms": 60,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G19",
+      "code": "ok",
+      "n": 725,
+      "elapsed_ms": 33,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G20",
+      "code": "ok",
+      "n": 725,
+      "elapsed_ms": 31,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G22",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 30,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G23",
+      "code": "unsupported",
+      "n": 0,
+      "elapsed_ms": 26,
+      "reason": "缺少事件日期序列（events）数据源"
+    },
+    {
+      "capability_id": "D-G25",
+      "code": "ok",
+      "n": 170,
+      "elapsed_ms": 71,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J02",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 77,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J04",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 205,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J05",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 80,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J22",
+      "code": "ok",
+      "n": 170,
+      "elapsed_ms": 287,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J24",
+      "code": "ok",
+      "n": 170,
+      "elapsed_ms": 361,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-B08",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 31,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-B09",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 30,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G08",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G09",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 59,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-E15",
+      "code": "ok",
+      "n": 746,
+      "elapsed_ms": 41,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-E16",
+      "code": "ok",
+      "n": 14,
+      "elapsed_ms": 69,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-E17",
+      "code": "ok",
+      "n": 170,
+      "elapsed_ms": 81,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-E18",
+      "code": "ok",
+      "n": 12,
+      "elapsed_ms": 67,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-E19",
+      "code": "product_missing",
+      "n": 0,
+      "elapsed_ms": 27,
+      "reason": "需要主览图 lights 块（上游产物，卡片直连不重建）"
+    },
+    {
+      "capability_id": "D-E20",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 38,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-K01",
+      "code": "product_missing",
+      "n": 0,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-K02",
+      "code": "product_missing",
+      "n": 0,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-K03",
+      "code": "product_missing",
+      "n": 0,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G01",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 60,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G02",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G03",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 58,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G04",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 30,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G05",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G06",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 31,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G07",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 41,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G10",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G11",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 31,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G12",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 30,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G13",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G15",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G18",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G21",
+      "code": "sample_insufficient",
+      "n": 0,
+      "elapsed_ms": 29,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-G24",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 280,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J01",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 43,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J03",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 34,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J06",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 31,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J07",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 59,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J08",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 30,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J09",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 35,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J10",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 33,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J11",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 33,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J12",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 56,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J13",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 30,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J14",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 58,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J15",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 31,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J16",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 33,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J17",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 31,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J18",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 32,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J19",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 202,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J20",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 37,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J21",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 67,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J23",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 98,
+      "reason": ""
+    },
+    {
+      "capability_id": "D-J25",
+      "code": "missing_args",
+      "n": 0,
+      "elapsed_ms": 31,
+      "reason": "需要空间坐标（coords）"
+    },
+    {
+      "capability_id": "D-J26",
+      "code": "missing_args",
+      "n": 0,
+      "elapsed_ms": 31,
+      "reason": "需要生存时间与事件标记（time/event）"
+    },
+    {
+      "capability_id": "D-J27",
+      "code": "missing_args",
+      "n": 0,
+      "elapsed_ms": 31,
+      "reason": "需要可靠性观测（time/event）"
+    },
+    {
+      "capability_id": "D-J28",
+      "code": "missing_args",
+      "n": 0,
+      "elapsed_ms": 30,
+      "reason": "需要效应量与标准误（effects/se）"
+    },
+    {
+      "capability_id": "D-J29",
+      "code": "ok",
+      "n": 0,
+      "elapsed_ms": 36,
+      "reason": ""
+    }
+  ]
+}

@@ -136,6 +136,10 @@ def op_explain(args: argparse.Namespace) -> Dict[str, Any]:
             item.kind == inspect.Parameter.VAR_KEYWORD for item in signature.parameters.values()
         )
         payload["executable"] = True
+        # SPEC-54 R1：参数 schema（唯一事实源，含 derived/unsupported 标注）
+        from l1agg.capabilities import param_schema
+
+        payload["schema"] = param_schema.for_capability(capability_id)
     except Exception as exc:  # noqa: BLE001
         payload["executable"] = False
         payload["degraded"] = True

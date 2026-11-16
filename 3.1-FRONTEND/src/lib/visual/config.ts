@@ -9,11 +9,17 @@ import {
   type PanelSpec,
   type PanelTab,
 } from './panelKey';
+import type { CapabilitySchema } from '@/components/visual/types';
 
 export const CONFIG_KEY = 'dreambuddy.visual.panels.v1';
 export const CONFIG_VERSION = 1;
 export const DEFAULT_ACTIVE_TAB = 'rec';
 export const BUILTIN_TAB_IDS = ['rec', 'all'] as const;
+
+// 装配器默认值（SPEC-54 R2 决策 1：基准 US500；与 capability_resolve.py 保持一致）
+export const DEFAULT_SYMBOL = 'BTC';
+export const DEFAULT_BENCHMARK = 'US500';
+export const DEFAULT_DAYS = 750;
 
 export interface BoardConfig {
   version: number;
@@ -175,4 +181,119 @@ export function saveConfig(config: BoardConfig, storage?: ConfigStorage | null):
 
 export function panelCount(tabs: PanelTab[]): number {
   return tabs.reduce((total, tab) => total + tab.panels.length, 0);
+}
+
+/**
+ * 按 schema 生成卡片初始 args（SPEC-54 R3：不再固定 `{}`）。
+ * 只填「装配器无法推断、但有能力层默认口径」的项：资产 / 基准 / auto 标量的 default；
+ * derived 与 unsupported 一律不写，交给服务端装配器或显式缺参提示。
+ */
+export function defaultArgsForSchema(schema: CapabilitySchema): Record<string, unknown> {
+  const args: Record<string, unknown> = {};
+  if (schema.requires_symbol) args.symbol = DEFAULT_SYMBOL;
+  if (schema.requires_benchmark) args.benchmark = DEFAULT_BENCHMARK;
+  for (const arg of schema.args) {
+    if (arg.source !== 'auto' || arg.required || arg.type !== 'scalar') continue;
+    if (arg.name === 'symbol' || arg.name === 'benchmark' || arg.name === 'days') continue;
+    const value = arg.default;
+    if (value === null || value === undefined || typeof value === 'object') continue;
+    args[arg.name] = value;
+  }
+  return args;
+}
+
+// ---------------------------------------------------------------- 服务端同步（SPEC-54 R3b）
+// 存储层只有「面板行」，tab 标题与删除态用一条元数据行承载：
+// panel_key = __tab__，args = {title, deleted?}。
+export const TAB_META_KEY = '__tab__';
+export const TAB_META_CAPABILITY = '__tab__';
+
+export interface ServerPanelRow {
+  tab_id: string;
+  panel_key: string;
+  capability_id: string;
+  title?: string;
+  kind?: string;
+  args: Record<string, unknown>;
+}
+
+export interface ServerTabPayload {
+  panel_key: string;
+  capability_id: string;
+  title?: string;
+  kind?: string;
+  args: Record<string, unknown>;
+  data_provenance?: string;
+}
+
+function panelRow(panel: PanelSpec): ServerTabPayload {
+  return {
+    panel_key: buildPanelKey(panel),
+    capability_id: panel.capability_id,
+    title: panel.title,
+    kind: panel.kind,
+    args: panel.args ?? {},
+    data_provenance: 'pool',
+  };
+}
+
+/** tab → 服务端行（含 tab 元数据行；deleted=true 时只发墓碑） */
+export function tabToServerRows(tab: PanelTab, deleted = false): ServerTabPayload[] {
+  const meta: ServerTabPayload = {
+    panel_key: TAB_META_KEY,
+    capability_id: TAB_META_CAPABILITY,
+    args: deleted ? { title: tab.title, deleted: true } : { title: tab.title },
+  };
+  if (deleted) return [meta];
+  return [meta, ...tab.panels.map(panelRow)];
+}
+
+/**
+ * 服务端行 → 本地配置：服务端有的 tab 以服务端为准（含空 tab 与墓碑删除），
+ * 服务端没有记录的 tab 保留本地（首次登录/离线新增）。
+ */
+export function mergeServerPanels(config: BoardConfig, items: ServerPanelRow[]): BoardConfig {
+  const groups = new Map<string, ServerPanelRow[]>();
+  for (const item of items) {
+    const list = groups.get(item.tab_id) ?? [];
+    list.push(item);
+    groups.set(item.tab_id, list);
+  }
+
+  let tabs: PanelTab[] = config.tabs.map((tab) => ({ ...tab }));
+  for (const [tabId, rows] of groups) {
+    const meta = rows.find((row) => row.panel_key === TAB_META_KEY);
+    const index = tabs.findIndex((tab) => tab.id === tabId);
+
+    if (meta?.args?.deleted === true) {
+      if (index >= 0 && !tabs[index].builtin) tabs = tabs.filter((tab) => tab.id !== tabId);
+      continue;
+    }
+
+    const title =
+      typeof meta?.args?.title === 'string' && meta.args.title.trim()
+        ? String(meta.args.title).trim()
+        : tabs[index]?.title ?? tabId;
+    const panels = normalizePanels(
+      rows
+        .filter((row) => row.panel_key !== TAB_META_KEY)
+        .map((row) => ({
+          capability_id: row.capability_id,
+          title: row.title || row.capability_id,
+          kind: row.kind || undefined,
+          args: row.args,
+        })),
+    );
+
+    if (index >= 0) {
+      tabs[index] = { ...tabs[index], title, panels };
+    } else if (tabs.length < MAX_TABS) {
+      tabs.push({ id: tabId, title, panels, builtin: false });
+    }
+  }
+
+  const activeId = tabs.some((tab) => tab.id === config.activeId)
+    ? config.activeId
+    : tabs[0]?.id ?? DEFAULT_ACTIVE_TAB;
+  return { version: CONFIG_VERSION, tabs, activeId };
 }

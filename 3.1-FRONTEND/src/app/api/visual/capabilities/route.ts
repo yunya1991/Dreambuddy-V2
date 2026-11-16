@@ -2,14 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
+import { resolveCapabilityViaWorker } from '@/lib/visual/resolve-worker';
 
 const execFileAsync = promisify(execFile);
 
 export const runtime = 'nodejs';
 export const revalidate = 60;
 
-type Op = 'list' | 'explain' | 'validate' | 'run';
-const OPS: Op[] = ['list', 'explain', 'validate', 'run'];
+type Op = 'list' | 'explain' | 'validate' | 'run' | 'resolve';
+const OPS: Op[] = ['list', 'explain', 'validate', 'run', 'resolve'];
 
 interface CliParams {
   capability_id?: string;
@@ -21,6 +22,15 @@ interface CliParams {
 }
 
 function buildArgs(op: Op, params: CliParams): string[] {
+  // SPEC-54 R2：装配走独立脚本，其余操作仍走能力 CLI
+  if (op === 'resolve') {
+    const resolvePath = path.join(process.cwd(), 'scripts', 'capability_resolve.py');
+    const args = [resolvePath, '--capability', String(params.capability_id || '')];
+    if (params.payload && Object.keys(params.payload).length > 0) {
+      args.push('--payload', JSON.stringify(params.payload));
+    }
+    return args;
+  }
   const scriptPath = path.join(process.cwd(), 'scripts', 'stats_capability.py');
   const args = [scriptPath, '--op', op];
   if (params.capability_id) args.push('--capability', String(params.capability_id));
@@ -104,14 +114,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const payload =
+    body?.payload && typeof body.payload === 'object' && !Array.isArray(body.payload)
+      ? body.payload
+      : {};
+
   try {
-    const data = await runCli(op, {
-      capability_id: capabilityId,
-      payload:
-        body?.payload && typeof body.payload === 'object' && !Array.isArray(body.payload)
-          ? body.payload
-          : {},
-    });
+    // SPEC-54 R6：resolve 走常驻 worker（import 只付一次），其余 op 仍走一次性 CLI
+    const data =
+      op === 'resolve'
+        ? await resolveCapabilityViaWorker(capabilityId, payload)
+        : await runCli(op, { capability_id: capabilityId, payload });
     return NextResponse.json(data);
   } catch (err: any) {
     return NextResponse.json(

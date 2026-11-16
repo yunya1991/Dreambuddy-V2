@@ -7,12 +7,29 @@
 import { useEffect, useMemo, useState } from 'react';
 import { V3Badge } from '@/components/V3Badge';
 import {
+  explainCapability,
   listCapabilities,
+  resolveCapability,
   runCapability,
   validateCapability,
   type CapabilityItem,
 } from '@/lib/visual/api';
+import { defaultArgsForSchema } from '@/lib/visual/config';
 import type { PanelSpec, VisualKind } from '@/lib/visual/panelKey';
+import type { CapabilitySchema } from './types';
+
+// SPEC-54 R9：关闭后回到「args: {} + 直接 run」的旧行为，用于灰度回滚
+const SCHEMA_V2 = process.env.NEXT_PUBLIC_CARDS_SCHEMA_V2 !== 'false';
+
+const CODE_HINT: Record<string, string> = {
+  missing_args: '还缺参数',
+  unsupported: '当前无数据源',
+  product_missing: '上游产物未生成',
+  sample_insufficient: '样本不足',
+  invalid_params: '参数不合法',
+  not_found: '能力不存在',
+  error: '能力不可用',
+};
 
 interface CapabilityPickerProps {
   open: boolean;
@@ -29,6 +46,7 @@ interface PreviewState {
   warnings: string[];
   reason?: string;
   kind?: VisualKind;
+  schema?: CapabilitySchema;
 }
 
 const DOMAINS: { key: string; label: string }[] = [
@@ -96,6 +114,30 @@ export function CapabilityPicker({
     setBusyId(item.capability_id);
     setPreview(null);
     try {
+      if (SCHEMA_V2) {
+        // 新路径：explain 拿 schema → resolve 走服务端装配（默认资产/基准/区间）
+        const explained = await explainCapability(item.capability_id);
+        const schema = explained.schema;
+        const resolved = await resolveCapability(item.capability_id, {});
+        setPreview({
+          id: item.capability_id,
+          ok: Boolean(resolved.ok),
+          missing: resolved.missing_params ?? [],
+          warnings: [],
+          reason: resolved.ok
+            ? undefined
+            : `${CODE_HINT[resolved.code] ?? resolved.code}${resolved.reason ? `：${resolved.reason}` : ''}`,
+          kind:
+            ((resolved.data?.visual?.kind as VisualKind | undefined) ??
+              ((
+                (resolved.data?.data as Record<string, unknown> | undefined)?.visual as
+                  | { kind?: VisualKind }
+                  | undefined
+              )?.kind as VisualKind | undefined)),
+          schema,
+        });
+        return;
+      }
       const validated = await validateCapability(item.capability_id, {});
       if (!validated.ok) {
         setPreview({
@@ -130,11 +172,14 @@ export function CapabilityPicker({
   }
 
   function handleAdd(item: CapabilityItem) {
+    const current = preview?.id === item.capability_id ? preview : null;
+    const args =
+      SCHEMA_V2 && current?.schema ? defaultArgsForSchema(current.schema) : {};
     onPick({
       capability_id: item.capability_id,
       title: `${item.capability_id} · ${item.intent}`,
-      kind: preview?.id === item.capability_id ? preview.kind : undefined,
-      args: {},
+      kind: current?.kind,
+      args,
     });
     onClose();
   }

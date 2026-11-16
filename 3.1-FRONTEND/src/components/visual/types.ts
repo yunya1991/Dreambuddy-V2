@@ -53,6 +53,38 @@ export interface RecommendItem {
   reason: string;
 }
 
+// ── 能力参数 schema（SPEC-54 R1 / R8）：与 l1agg.capabilities.param_schema 逐字段对应
+export type CapabilityArgType =
+  | 'scalar'
+  | 'series'
+  | 'series_map'
+  | 'asset_list'
+  | 'pair'
+  | 'macro_pair'
+  | 'events'
+  | 'json';
+
+export type CapabilityArgSource = 'auto' | 'user' | 'derived' | 'unsupported';
+
+export interface CapabilityArgSchema {
+  name: string;
+  type: CapabilityArgType;
+  required: boolean;
+  default: unknown;
+  source: CapabilityArgSource;
+  derived_by?: string | null;
+  options?: string[];
+}
+
+export interface CapabilitySchema {
+  capability_id: string;
+  accepts_extra: boolean;
+  args: CapabilityArgSchema[];
+  requires_symbol: boolean;
+  requires_benchmark: boolean;
+  unsupported?: string | null;
+}
+
 // ── matrix 附加注解（SPEC-54 matrix：数值矩阵走 dataset.values，状态/符号走 annotations）
 export interface MatrixAxis {
   key: string;
