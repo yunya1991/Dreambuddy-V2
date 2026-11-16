@@ -4,7 +4,7 @@
 覆盖:
   TR-1.1  实现 TrainingDataProvider 接口
   TR-1.2  get_source_name / get_quality_threshold
-  TR-1.3  fetch_cases 覆盖全部 golden 标注（_GOLDEN_TOTAL 随标注集递增）
+  TR-1.3  fetch_cases 完整覆盖全部 golden 标注（对数取自文件，且不低于历史下限）
   TR-1.4  TrainingCase 字段映射（intent/outcome_text/metadata/layer_tags）
   TR-1.5  unknown 标注标记为负样本
   TR-1.6  limit 生效
@@ -30,7 +30,8 @@ for _p in [_THIS_DIR, _ADAPTERS_DIR, _34_DIR]:
 import intent_golden_collector as igc  # noqa: E402
 from interfaces.training_data_provider import TrainingDataProvider  # noqa: E402
 
-_GOLDEN_TOTAL = 377
+# 标注集只增不减；下限用于捕捉误删/解析中断，实际条数取自文件（避免常量漂移）
+_GOLDEN_TOTAL_MIN = 377
 
 
 class IntentGoldenCollectorTest(unittest.TestCase):
@@ -43,9 +44,21 @@ class IntentGoldenCollectorTest(unittest.TestCase):
         self.assertEqual(c.get_quality_threshold(), "B")
 
     def test_fetch_all_cases(self):
-        cases = igc.IntentGoldenCollector().fetch_cases(limit=1000)
         self.assertTrue(os.path.exists(igc.GOLDEN_PATH), "golden set 缺失")
-        self.assertEqual(len(cases), _GOLDEN_TOTAL)
+        valid = 0
+        with open(igc.GOLDEN_PATH, encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if (row.get("message") or "").strip() and (row.get("intent") or "").strip():
+                    valid += 1
+        cases = igc.IntentGoldenCollector().fetch_cases(limit=100000)
+        self.assertEqual(len(cases), valid, "fetch_cases 必须完整覆盖标注集")
+        self.assertGreaterEqual(len(cases), _GOLDEN_TOTAL_MIN, "标注集条数不得低于历史下限")
 
     def test_case_mapping(self):
         cases = igc.IntentGoldenCollector().fetch_cases(limit=5)

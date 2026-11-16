@@ -2,7 +2,8 @@
 """L1 意图 golden set 采集器 — 人工标注集接入训练链路。
 
 数据源: 34-前端应用训练系统/l1_intent_golden.jsonl
-  311 条人工标注（12 个 L1 意图 + unknown），字段 {message, intent, variant}。
+  人工标注集（只增不减；当前 400+ 条，12 个 L1 意图 + unknown），
+  字段 {message, intent, variant}。
   与 tests/test_l1_intent_golden.py 共用同一份数据：
     - 测试侧做回归门禁（准确率不退化）
     - 训练侧经本 Provider 进入 TDR（意图分类的训练语料）
