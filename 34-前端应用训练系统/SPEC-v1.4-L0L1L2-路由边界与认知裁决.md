@@ -220,7 +220,7 @@ P3a 交付物（硬性）：
 | `L1_ROUTING_STRATEGY` | `S0` | `S1` | **已实现**：`S0`=现状（零行为变化）；`S1`=纯正则检测 + 能力契约门控 + D5 复合闸（E1/E2 选定） |
 | `L1_SUGGEST_SHADOW` | `0` | `0`/`1` | **已实现**：建议器影子模式，仅异步写日志（默认 `<repo>/logs/l1_suggest_shadow.jsonl`），不改返回契约 |
 | `L1_SUGGEST_ENABLED` | `1` | `1` | **已实现**：L2 交接实盘建议器；依赖常驻向量服务（默认 `127.0.0.1:8099`），不可用/超时则返回 `[]` |
-| `L1_SUGGEST_BUDGET_MS` | `1500` | `1500` | 建议计算预算；云端 8099 CPU 推理单条 embed 实测约 600ms（200ms 预算必然超时），故上调至 1500ms；仅走常驻服务，禁止本地冷加载 |
+| `L1_SUGGEST_BUDGET_MS` | `3000` | `3000` | 建议计算预算；云端 8099 CPU 推理单条 embed 实测 600–900ms，与 l1-loop/训练守护进程争抢时超 1.5s，故取 3000ms；仅走常驻服务，禁止本地冷加载 |
 | `L1_SEMANTIC_PRIMARY` | `0` | `1` | 语义通道开关（P0/P1 必须为 0） |
 | `L1_EMBED_SERVER_TIMEOUT` | 2 | 2 | 语义嵌入快速失败 |
 | `L1_EMBED_LOCAL_FALLBACK` | 0 | 0 | 禁止在线程内加载模型 |
@@ -473,7 +473,7 @@ P3a 交付物（硬性）：
 **建议器实盘契约（v1.4-r4 已交付）**
 - 返回位置：顶层 `suggestions`，**仅 `handled=false` 时存在**；L1 直答不返回该字段，不影响 `decision`/`route_confidence`；
 - 结构：`[{intent, label, query, score}]`；`query` 必须满足 `detect_intent_regex(query)==intent`，因此**点击后原样重发即在 S1 下必然命中**，服务端无需任何特判；
-- 预算：`L1_SUGGEST_BUDGET_MS=1500`（云端 embed 实测 583–660ms/条，200ms 必然超时），仅使用常驻向量服务（8099），服务不可达时快速返回 `[]`（不付 20s 冷加载代价）；
+- 预算：`L1_SUGGEST_BUDGET_MS=3000`（云端 embed 实测 600–900ms，CPU 争抢时超 1.5s），仅使用常驻向量服务（8099），服务不可达时快速返回 `[]`（不付 20s 冷加载代价）；
 - 前端：`ChatPanel` 在 L2 交接后展示 ≤3 条问法卡片，点击以 `query` 重走完整 L1 门控（等同用户输入）；
 - 已知限制：建议只覆盖语义 top3 且需存在可校验示例问法，口语段召回上限约 50%（E2-B）。
 
