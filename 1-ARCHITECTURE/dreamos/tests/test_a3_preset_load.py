@@ -194,9 +194,9 @@ def test_preset_plugin_outside_whitelist_is_rejected(tmp_path):
 
 
 def test_real_headless_preset_dry_run(tmp_path):
-    real = Path("/tmp/preset_headless.json")
+    real = Path(__file__).parent / "fixtures" / "preset_headless.json"
     if not real.exists():
-        pytest.skip("无真实 preset 样本")
+        pytest.skip("无真实 preset 样本（fixtures/preset_headless.json）")
     preset = json.loads(real.read_text(encoding="utf-8"))
     wl = Path(BASE).parent / "53-DSH插件模块" / "plugin_whitelist.yaml"
 

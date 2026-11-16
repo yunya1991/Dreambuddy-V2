@@ -1,0 +1,104 @@
+{
+  "schema_version": "1.0",
+  "name": "headless-baseline",
+  "version": "1.0.0",
+  "generated_at": "2026-11-16T18:06:10.847073+00:00",
+  "profile": "headless",
+  "plugins": [
+    {
+      "plugin_id": "dreambuddy-c-chain",
+      "version": "0.1.0",
+      "source": "",
+      "dependencies": []
+    },
+    {
+      "plugin_id": "dreambuddy-c1",
+      "version": "0.1.0",
+      "source": "",
+      "dependencies": []
+    },
+    {
+      "plugin_id": "dreambuddy-dreamos-cognitive",
+      "version": "0.1.0",
+      "source": "",
+      "dependencies": []
+    },
+    {
+      "plugin_id": "dreambuddy-fundamental",
+      "version": "0.1.0",
+      "source": "",
+      "dependencies": []
+    },
+    {
+      "plugin_id": "dreambuddy-graph-planner",
+      "version": "0.1.0",
+      "source": "",
+      "dependencies": []
+    },
+    {
+      "plugin_id": "dreambuddy-indicators",
+      "version": "0.1.0",
+      "source": "",
+      "dependencies": []
+    },
+    {
+      "plugin_id": "dreambuddy-intent-gateway",
+      "version": "0.1.0",
+      "source": "",
+      "dependencies": []
+    },
+    {
+      "plugin_id": "dreambuddy-jev-judge",
+      "version": "0.1.0",
+      "source": "",
+      "dependencies": []
+    },
+    {
+      "plugin_id": "dreambuddy-knowledge-wiki",
+      "version": "0.1.0",
+      "source": "",
+      "dependencies": []
+    },
+    {
+      "plugin_id": "dreambuddy-reflector",
+      "version": "0.1.0",
+      "source": "",
+      "dependencies": []
+    },
+    {
+      "plugin_id": "dreambuddy-session-consumer",
+      "version": "0.1.0",
+      "source": "",
+      "dependencies": []
+    },
+    {
+      "plugin_id": "dreambuddy-superagent-p0",
+      "version": "0.1.0",
+      "source": "",
+      "dependencies": []
+    }
+  ],
+  "skipped": [
+    {
+      "plugin_id": "@deepseek-ai/dsh-base",
+      "reason": "unregistered"
+    },
+    {
+      "plugin_id": "@deepseek-ai/dsh-headless",
+      "reason": "unregistered"
+    },
+    {
+      "plugin_id": "@deepseek-ai/dsh-subagent",
+      "reason": "unregistered"
+    },
+    {
+      "plugin_id": "@deepseek-ai/dsh-subagent-spawn-in-process",
+      "reason": "unregistered"
+    },
+    {
+      "plugin_id": "@deepseek-ai/dsh-tool-subagent",
+      "reason": "unregistered"
+    }
+  ],
+  "preset_hash": "sha256:213e802fd5506bbbd60373482979a2e0eb95e7af315acfebe241141afdee7d88"
+}
