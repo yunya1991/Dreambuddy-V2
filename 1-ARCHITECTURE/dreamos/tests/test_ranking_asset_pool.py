@@ -155,6 +155,7 @@ def test_match_symbol_aliases(ranking_news):
     assert ranking_news.match_symbol_aliases("英伟达财报超预期") == ["NVDA"]
     assert ranking_news.match_symbol_aliases("黄金价格创历史新高") == ["XAU"]
     assert ranking_news.match_symbol_aliases("Meta 发布新模型") == ["META"]
+    assert ranking_news.match_symbol_aliases("Uniswap 提案通过") == ["UNI"]
     assert ranking_news.match_symbol_aliases("metadata 字段更新") == []
 
 

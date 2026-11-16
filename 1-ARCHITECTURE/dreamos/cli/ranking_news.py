@@ -40,7 +40,13 @@ _SYMBOL_ALIASES = {
     "XCU": ("铜价", "lme铜", "copper"),
     "CL": ("原油", "wti", "crude"),
     "BZ": ("布伦特", "brent"),
+    "UNI": ("uniswap",),
+    "HYPE": ("hyperliquid",),
+    "PUMP": ("pump.fun", "pumpfun"),
 }
+
+# 快讯汇总类条目信息密度低，且会把大量 TICKER 硬塞进同一条，直接丢弃
+_NOISE_KEYWORDS = ("午讯", "早讯", "晚报", "早报", "日报", "周报", "一览", "汇总")
 
 
 def _repo_root() -> Path:
@@ -137,7 +143,7 @@ def build_snapshot(
         seen_ids.add(record_id)
 
         title = str(raw.get("title") or "").strip()
-        if not title:
+        if not title or any(keyword in title for keyword in _NOISE_KEYWORDS):
             continue
         published_ms = int(raw.get("publishTimestamp") or 0)
         if published_ms and published_ms < cutoff_ms:
