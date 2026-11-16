@@ -100,6 +100,8 @@ def _load_module(path: Path, name: str) -> Optional[Any]:
         if spec is None or spec.loader is None:
             return None
         module = importlib.util.module_from_spec(spec)
+        # dataclass 等依赖 cls.__module__ 的机制要求模块先登记到 sys.modules
+        sys.modules.setdefault(name, module)
         spec.loader.exec_module(module)
         return module
     except Exception:
@@ -361,15 +363,34 @@ def score_symbol(
     }
 
 
+def _registry_bound() -> Optional[set]:
+    """L1 龙头注册表已绑定标的集合；注册表缺失返回 None（FAIL-OPEN，不做裁剪）。"""
+    module = _load_module(
+        _repo_root() / "54-L1架构能力聚合层" / "l1agg" / "leader_registry.py",
+        "leader_registry_for_ranking",
+    )
+    bindings = getattr(module, "BINDINGS", None) if module else None
+    if not isinstance(bindings, dict) or not bindings:
+        return None
+    return set(bindings)
+
+
 def build_pool(dry_run: bool = False) -> dict:
     universe = _asset_universe()
     context = _load_cycle_context()
     nn_scores = _load_nn_scores()
     feed = OkxFeed()
 
+    # 只保留 L1 注册表可解析的标的：未绑定者的历史/统计在图表与统计层不可用，
+    # 放进榜单会贡献「有分数但无数据」的无效占位（BRKB/USO/XPT 等）。
+    bound = _registry_bound()
+    skipped: List[str] = []
     jobs = []
     for category in ("commodity", "index"):
         for symbol in universe[category]:
+            if bound is not None and symbol not in bound:
+                skipped.append(symbol)
+                continue
             jobs.append((category, symbol))
 
     def _work(job) -> Optional[dict]:
@@ -407,6 +428,7 @@ def build_pool(dry_run: bool = False) -> dict:
         "coverage": {
             "commodity": len([i for i in items if i["category"] == "commodity"]),
             "index": len([i for i in items if i["category"] == "index"]),
+            "registry_unbound_skipped": sorted(skipped),
         },
         "items": items,
     }

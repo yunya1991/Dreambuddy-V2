@@ -22,11 +22,9 @@ export function VisualWorkbench({ compact = false }: { compact?: boolean }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState('');
-  const [rankingSymbols, setRankingSymbols] = useState<string[]>([]);
 
-  const load = useCallback(async (symbols: string[], keepActive: boolean) => {
-    const query = symbols.length > 0 ? `?symbols=${encodeURIComponent(symbols.join(','))}` : '';
-    const response = await fetch(`/api/visual/overview${query}`, { cache: 'no-store' });
+  const load = useCallback(async (keepActive: boolean) => {
+    const response = await fetch('/api/visual/overview', { cache: 'no-store' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const payload: VisualOverview = await response.json();
     if (!payload?.ok) throw new Error(payload?.error || '后端未返回可用数据');
@@ -36,39 +34,13 @@ export function VisualWorkbench({ compact = false }: { compact?: boolean }) {
     }
   }, []);
 
-  // 首屏：默认资产池，不等待排行榜
+  // 资产池固定为后端默认池（leader_registry.DEFAULT_POOL），不再被交易榜单覆盖
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    load([], false)
+    load(false)
       .catch(err => alive && setError(err?.message || String(err)))
       .finally(() => alive && setLoading(false));
-    return () => {
-      alive = false;
-    };
-  }, [load]);
-
-  // 细化：回测排行 Top 标的驱动资产池；失败保持默认池
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const response = await fetch('/api/trading-ranking/today', { cache: 'no-store' });
-        const ranking = await response.json();
-        const symbols: string[] = Array.from(
-          new Set(
-            (ranking?.items ?? [])
-              .map((item: { symbol?: string }) => String(item.symbol ?? '').toUpperCase())
-              .filter(Boolean),
-          ),
-        ).slice(0, 6) as string[];
-        if (!alive || symbols.length === 0) return;
-        setRankingSymbols(symbols);
-        await load(symbols, true);
-      } catch {
-        /* 排行不可用 → 保持默认资产池 */
-      }
-    })();
     return () => {
       alive = false;
     };
@@ -152,9 +124,7 @@ export function VisualWorkbench({ compact = false }: { compact?: boolean }) {
           <div className="mb-2 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-400">动态推荐</h2>
             <p className="text-[10px] text-slate-600">
-              {rankingSymbols.length > 0
-                ? `资产池跟随回测排行：${rankingSymbols.join(' / ')}`
-                : `资产池：${(data?.assets ?? []).join(' / ') || '—'}`}
+              资产池：{(data?.assets ?? []).join(' / ') || '—'}
             </p>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">

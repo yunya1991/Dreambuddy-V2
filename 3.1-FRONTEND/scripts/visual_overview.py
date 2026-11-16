@@ -66,7 +66,7 @@ def _parse_args(argv):
     symbols = [s.strip().upper() for s in args.symbols.split(",") if s.strip()]
     if not symbols:
         symbols = _default_assets()
-    # 去重保序，最多 12 个资产（相关矩阵上限由能力层自律，这里只控制输入规模）
+    # 去重保序，最多 16 个资产（默认池 13 + 动态美股龙头 3 的余量）
     seen = set()
     deduped = []
     for symbol in symbols:
@@ -76,7 +76,7 @@ def _parse_args(argv):
     base = args.base.strip().upper() or deduped[0]
     if base not in deduped:
         deduped.insert(0, base)
-    return deduped[:12], base, max(int(args.days), 120)
+    return deduped[:16], base, max(int(args.days), 120)
 
 
 def _load_series(symbols, days):

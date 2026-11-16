@@ -138,9 +138,9 @@ def test_min_rows_falls_back_to_global(tmp_path):
 
 
 # ============================================================ 首屏池与跨层一致性
-def test_default_pool_twelve_and_five_views(pool):
+def test_default_pool_fourteen_and_five_views(pool):
     members = pool.pool("default")
-    assert len(members) == 12
+    assert len(members) == 14
     assert [a.id for a in members][0] == "BTC"
     covered = {a.view_class for a in members}
     assert covered == set(VIEWS)
@@ -153,7 +153,7 @@ def test_pools_match_leader_registry(pool):
     extended_ids = {a.id for a in pool.pool("extended")}
     assert default_ids == set(R.DEFAULT_POOL) - {"US500", "US100", "CL"} | {"SPX", "IXIC", "WTI"}
     assert extended_ids == set(R.EXTENDED_POOL) - {"TLT", "DXY"}
-    assert len(R.default_pool()) == 12
+    assert len(R.default_pool()) == 14
     assert len({*default_ids, *extended_ids}) == len(default_ids) + len(extended_ids)
 
 
@@ -182,7 +182,7 @@ def test_registry_view_grouping():
     assert list(grouped) == list(VIEWS)
     assert grouped["加密"] == ["BTC", "ETH"]
     assert grouped["美股"] == ["US500", "US100", "DJIA", "NVDA"]
-    assert grouped["情绪"] == ["VIX"]
+    assert grouped["情绪"] == ["VIX", "US10Y"]
     assert R.view_of("AMD") == "美股"
     assert R.view_of("NOT_A_SYMBOL") is None
 

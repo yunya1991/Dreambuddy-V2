@@ -105,17 +105,18 @@
 5. **回填幂等**：新增标的的回填脚本一律 `INSERT OR REPLACE`，云端可重复执行。
 6. **质量下限 per-anchor 覆盖（B-LT5）**：`anchors[].history.min_rows` / `extended_anchors[].history.min_rows` 覆盖全局 `quality.min_rows_3y(_trading)`；OKX 代币化美股与短历史标的（AMD/GEV/SPCX/SKHYNIX/XAG/XCU）一律 `min_rows: 250` + `history_lt_3y: true`，Nasdaq/FRED 满 3 年的写 `min_rows: 740`（**不再一刀切给 us_stock 250**，否则等于对 752 天的长历史降标准）。**全局 `quality` 段不动**（[test_asset_pool.py](./tests/test_asset_pool.py) 对 `min_rows_3y == 1090` 的断言继续成立），[coverage_audit.py](./scripts/coverage_audit.py) 改为「先读 per-anchor，缺失再回落全局」，且 `nasdaq` 与 `fred` 同用交易日缺口口径。
 
-### 2.4 `DEFAULT_POOL` 五类首屏（12 个，与前端统一）
+### 2.4 `DEFAULT_POOL` 五类首屏（14 个，与前端统一）
 
 ```
 加密   BTC ETH
 避险   XAU XAG
-大宗   CL BZ NG
+大宗   CL BZ NG XCU
 美股   US500 US100 DJIA NVDA
-情绪   VIX
+情绪   VIX US10Y
 ```
-> 首屏 12 个 = [visual_overview.py](../3.1-FRONTEND/scripts/visual_overview.py) 的 `[:12]` 上限，与 `config/asset_pool.yaml` 的 `pools.default` 逐项一致（`test_asset_pool_v2.py::test_pools_match_leader_registry` 机器断言）。
-> `AAPL/MSFT/AMZN/GOOGL/META/TSLA/AMD/GEV/SPCX/SKHYNIX/SPY/QQQ/XCU/T10Y2Y/US10Y` 进 `EXTENDED_POOL`，按类别展开时懒加载（ADR-V6），避免同屏过载；`AMZN` 因此不进首屏。
+> 首屏 14 个 = [visual_overview.py](../3.1-FRONTEND/scripts/visual_overview.py) 的 `[:16]` 上限（留 3 个动态美股龙头余量），与 `config/asset_pool.yaml` 的 `pools.default` 逐项一致（`test_asset_pool_v2.py::test_pools_match_leader_registry` 机器断言）。
+> `AAPL/MSFT/AMZN/GOOGL/META/TSLA/AMD/GEV/SPCX/SKHYNIX/SPY/QQQ/T10Y2Y` 进 `EXTENDED_POOL`，按类别展开时懒加载（ADR-V6），避免同屏过载。
+> `XCU`（铜）与 `US10Y`（FRED DGS10 收益率，与 `TLT` 同序列）为 2026-11-16 用户指定补入首屏。
 
 ### 2.5 龙头排名口径（B-LT4，硬约束）
 

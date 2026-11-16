@@ -237,6 +237,17 @@ BINDINGS: Dict[str, Binding] = {
         proxy=True,
         note="FRED DGS10，1962 起 16,206 点",
     ),
+    # 首屏情绪/利率成员：与 TLT 同一条 DGS10 序列（asset_pool.yaml 的 US10Y 锚）
+    "US10Y": _b(
+        "US10Y",
+        "rates_credit",
+        "美国 10 年期国债收益率",
+        "DGS10",
+        "value",
+        unit="%",
+        proxy=True,
+        note="FRED DGS10，与 TLT 同序列；用户 2026-11-16 指定入首屏",
+    ),
     # G0 门控序列（不可交易，但相关性研究必需）
     "T10Y2Y": _b(
         "T10Y2Y", "rates_credit", "10Y-2Y 利差", "T10Y2Y", "value", unit="%", note="FRED 日频"
@@ -272,9 +283,9 @@ UNBOUND: Dict[str, str] = {
 }
 
 
-# ── 默认资产池（「数据与图表」首屏 12 个，用户 2026-11-15 确认，五类覆盖）──────
-# 加密 2 / 避险 2 / 大宗 3 / 美股 4（3 指数 + NVDA）/ 情绪 1；与 asset_pool.yaml
-# pools.default 同口径，前端零硬编码（visual_overview 取 [:12]）。
+# ── 默认资产池（「数据与图表」首屏 14 个，用户 2026-11-16 确认，五类覆盖）──────
+# 加密 2 / 避险 2 / 大宗 4（CL/BZ/NG/XCU）/ 美股 4（3 指数 + NVDA）/ 情绪 2（VIX/US10Y）；
+# 与 asset_pool.yaml pools.default 同口径，前端零硬编码（visual_overview 取 [:16]，留动态美股余量）。
 DEFAULT_POOL: Tuple[str, ...] = (
     "BTC",
     "ETH",
@@ -283,11 +294,13 @@ DEFAULT_POOL: Tuple[str, ...] = (
     "CL",
     "BZ",
     "NG",
+    "XCU",
     "US500",
     "US100",
     "DJIA",
     "NVDA",
     "VIX",
+    "US10Y",
 )
 
 # ── 扩展池：按类别展开时懒加载（ADR-V6）；含 OKX 代币化美股（短历史，禁止点亮）──
@@ -304,9 +317,7 @@ EXTENDED_POOL: Tuple[str, ...] = (
     "SKHYNIX",
     "SPY",
     "QQQ",
-    "XCU",
     "T10Y2Y",
-    "US10Y",
     "TLT",
     "DXY",
 )

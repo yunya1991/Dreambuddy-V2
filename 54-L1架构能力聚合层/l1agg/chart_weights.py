@@ -110,7 +110,13 @@ def normalize(raw: Mapping[str, float]) -> Dict[str, float]:
     total = sum(shifted.values())
     if total <= _EPS:
         raise ChartWeightsError("权重和必须 > 0，禁止空/全零权重")
-    return {k: round(v / total, 6) for k, v in shifted.items()}
+    rounded = {k: round(v / total, 6) for k, v in shifted.items()}
+    # 6 位小数归一后的舍入残差回填到最大权重项，保证 sum(weights) == 1（与 _equal 同口径）
+    drift = round(1.0 - sum(rounded.values()), 6)
+    if drift and rounded:
+        key = max(rounded, key=lambda k: rounded[k])
+        rounded[key] = round(rounded[key] + drift, 6)
+    return rounded
 
 
 def validate_weights(

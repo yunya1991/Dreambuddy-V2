@@ -576,7 +576,7 @@ extended_anchors:
     history: {granularity: 1D, years: 3, backfill: fred_history, min_rows: 740}
 
 # ============================================================ 首屏 / 扩展池（前端零硬编码）
-# default = 「数据与图表」首屏 12 个（= visual_overview 的 [:12] 上限），五类均有覆盖；
+# default = 「数据与图表」首屏 14 个（= visual_overview 的 [:16] 上限留动态美股余量），五类均有覆盖；
 # extended = 按类别展开时懒加载，含全部代币化美股（短历史，禁止点亮）。
 pools:
   default:
@@ -587,11 +587,13 @@ pools:
     - CL
     - BZ
     - NG
+    - XCU
     - US500
     - US100
     - DJIA
     - NVDA
     - VIX
+    - US10Y
   extended:
     - AAPL
     - MSFT
@@ -605,9 +607,7 @@ pools:
     - SKHYNIX
     - SPY
     - QQQ
-    - XCU
     - T10Y2Y
-    - US10Y
 
 # ============================================================
 # 动态资产（非锚定代币）：不进锚定表，查询时按需取数
