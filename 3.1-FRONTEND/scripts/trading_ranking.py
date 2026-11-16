@@ -95,6 +95,44 @@ def _score_to_signal(score: float) -> str:
     return "NEUTRAL"
 
 
+def _direction_signal(score: float, direction: str) -> str:
+    """分数 + 方向 → signal。方向优先，避免买入候选落到卖出档。
+
+    榜单候选池的方向（BUY/SELL/HOLD）与评分数值域(0-1)并不等价：
+    影子模式候选分数常年在 0.43-0.55，若只按分数映射会出现
+    「Top10 买入候选显示弱卖」；HOLD 候选更会被映射成卖出。
+    """
+    if direction == "HOLD":
+        return "NEUTRAL"
+    if direction == "SELL":
+        if score >= 0.75:
+            return "STRONG_SELL"
+        if score >= 0.6:
+            return "SELL"
+        return "WEAK_SELL"
+    signal = _score_to_signal(score)
+    if signal in ("NEUTRAL", "WEAK_SELL", "SELL", "STRONG_SELL"):
+        return "WEAK_BUY"
+    return signal
+
+
+def _normalize_take_profit(raw) -> list:
+    """决策卡止盈统一为数字数组（前端契约 takeProfit: number[]）。
+
+    生产端为了携带分批比例输出 [{price, pct}]，直接透传会让前端
+    fmtPrice 拿到对象显示「待定」、一键入场拼出 [object Object]。
+    """
+    normalized = []
+    for entry in raw or []:
+        value = entry.get("price") if isinstance(entry, dict) else entry
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            continue
+        normalized.append(round(number, 6))
+    return normalized
+
+
 _FALLBACK_COMMODITY = {"XAU", "XAG", "XPT", "XPD", "XCU", "CL", "BZ", "NG", "USO"}
 _FALLBACK_INDEX = {
     "US500",
@@ -559,9 +597,7 @@ def _orchestrator_to_items(orch_data: dict, decision_cards: dict | None = None) 
         score = c["score"]
         direction = c["direction"]
         category = c.get("category") or _symbol_category(symbol)
-        signal_type = (
-            _score_to_signal(score) if direction != "SELL" else _score_to_signal(1 - score)
-        )
+        signal_type = _direction_signal(score, direction)
 
         # 最新价：大宗/美股取池内 last_close，加密取 OKX ticker；都没有则为 None（前端做空值展示）
         price = c.get("price")
@@ -589,24 +625,32 @@ def _orchestrator_to_items(orch_data: dict, decision_cards: dict | None = None) 
         }
 
         # P0 合并预计算决策卡（FAIL-OPEN：无预计算则保留默认值）
-        pre = (decision_cards or {}).get(symbol)
-        if isinstance(pre, dict) and pre.get("inferred"):
+        # 门槛不再依赖 inferred（BCRM2 不可用时 ATR 兜底卡同样有效），
+        # 只要卡里有可用入场价或止损即合并。
+        pre = (decision_cards or {}).get(symbol) or (decision_cards or {}).get(
+            _normalize_symbol(symbol)
+        )
+        if isinstance(pre, dict) and (
+            (pre.get("entry") or {}).get("price") is not None or pre.get("stopLoss") is not None
+        ):
             # 入场
             if pre.get("entry"):
                 decision["entry"] = pre["entry"]
+                if decision["entry"].get("price") is None and price is not None:
+                    decision["entry"]["price"] = price
             elif price is not None:
                 decision["entry"]["price"] = price
             # 止损止盈
             if pre.get("stopLoss") is not None:
                 decision["stopLoss"] = pre["stopLoss"]
             if pre.get("takeProfit"):
-                decision["takeProfit"] = pre["takeProfit"]
+                decision["takeProfit"] = _normalize_take_profit(pre["takeProfit"])
             # 风险分级
             decision["riskLevel"] = pre.get("riskLevel", decision["riskLevel"])
             # 历史类比
             if pre.get("historicalAnalogy"):
                 decision["historicalAnalogy"] = pre["historicalAnalogy"]
-            # 方向/置信度（BCRM2 推理的）
+            # 方向/置信度（BCRM2 推理的；ATR 兜底时为趋势方向）
             if pre.get("direction"):
                 decision["bcrm2Direction"] = pre["direction"]
             if pre.get("confidence") is not None:
@@ -615,7 +659,7 @@ def _orchestrator_to_items(orch_data: dict, decision_cards: dict | None = None) 
                 decision["positionFactor"] = pre["positionFactor"]
             if pre.get("warnings"):
                 decision["warnings"] = pre["warnings"]
-            decision["inferred"] = True
+            decision["inferred"] = bool(pre.get("inferred"))
 
         items.append(
             {
@@ -634,7 +678,7 @@ def _orchestrator_to_items(orch_data: dict, decision_cards: dict | None = None) 
 
 
 def _load_frontend_cache() -> dict | None:
-    """读榜单 API 4h 缓存，过期或损坏返回 None。"""
+    """读榜单 API 4h 缓存，过期、损坏或上游数据已更新时返回 None。"""
     try:
         if not os.path.isfile(_FRONTEND_CACHE_FILE):
             return None
@@ -644,6 +688,11 @@ def _load_frontend_cache() -> dict | None:
         age = datetime.now(timezone.utc) - generated
         if age > timedelta(hours=_FRONTEND_CACHE_MAX_AGE_HOURS):
             return None
+        # 决策卡/资产池重新生成后，旧缓存里的空白决策卡必须一并失效
+        cache_mtime = os.path.getmtime(_FRONTEND_CACHE_FILE)
+        for dependency in (_DECISION_CARD_FILE, _RANKING_POOL_FILE):
+            if os.path.isfile(dependency) and os.path.getmtime(dependency) > cache_mtime:
+                return None
         return cache.get("result")
     except Exception:
         return None

@@ -25,6 +25,13 @@ def producer():
     return _load("1-ARCHITECTURE/dreamos/cli/ranking_asset_pool.py", "ranking_asset_pool_for_test")
 
 
+@pytest.fixture(scope="module")
+def decision_card():
+    return _load(
+        "1-ARCHITECTURE/dreamos/cli/ranking_decision_card.py", "ranking_decision_card_for_test"
+    )
+
+
 def test_symbol_category_mapping(ranking):
     assert ranking._symbol_category("BTC") == "crypto"
     assert ranking._symbol_category("BTC-USDT-SWAP") == "crypto"
@@ -79,6 +86,38 @@ def test_score_symbol_uptrend_scores_higher_than_downtrend(producer):
 
 def test_score_symbol_requires_enough_history(producer):
     assert producer.score_symbol("XAU", _candles([100] * 10), None, {}) is None
+
+
+def test_score_symbol_skips_flat_quote(producer):
+    # OKX 合成合约无成交时连续复制收盘价，不能当作真实行情进榜单
+    assert producer.score_symbol("NG", _candles([3.366] * 60), None, {}) is None
+
+
+def test_score_symbol_omits_zero_momentum_reason(producer):
+    closes = [100.0] * 30 + [100.0 + i * 0.2 for i in range(1, 21)]
+    scored = producer.score_symbol("USO", _candles(closes), None, {})
+    assert scored is not None
+    assert not any(reason.startswith("7日+0.0%") for reason in scored["reasons"])
+
+
+def test_direction_signal_never_maps_buy_candidate_to_sell(ranking):
+    assert ranking._direction_signal(0.43, "BUY") == "WEAK_BUY"
+    assert ranking._direction_signal(0.88, "BUY") == "STRONG_BUY"
+    assert ranking._direction_signal(0.3, "HOLD") == "NEUTRAL"
+    assert ranking._direction_signal(0.43, "SELL") == "WEAK_SELL"
+    assert ranking._direction_signal(0.88, "SELL") == "STRONG_SELL"
+
+
+def test_normalize_take_profit_supports_dict_and_number(ranking):
+    raw = [{"price": 81.5631, "pct": 0.5}, 87.4939, {"pct": 0.5}]
+    assert ranking._normalize_take_profit(raw) == [81.5631, 87.4939]
+
+
+def test_resolve_direction_falls_back_to_long(decision_card):
+    # BCRM2 不可用时不能生成与榜单多头相反的卡片
+    assert decision_card._resolve_direction("neutral") == "long"
+    assert decision_card._resolve_direction("") == "long"
+    assert decision_card._resolve_direction("short") == "short"
 
 
 def test_crypto_filter_drops_unlisted_low_volume_and_small_cap(ranking):

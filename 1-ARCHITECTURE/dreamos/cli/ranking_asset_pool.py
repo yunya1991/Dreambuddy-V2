@@ -262,6 +262,10 @@ def _load_nn_scores() -> Dict[str, dict]:
 
 
 # ── 评分 ────────────────────────────────────────────────────────────
+_MA_EPS = 0.001  # MA 比较容差：价格与均线几乎相等时不判「站上/低于」
+_MOM_EPS = 0.05  # 动量绝对值低于此阈值时不展示（否则出现「+0.0%」噪音）
+
+
 def _clamp(value: float, low: float = 0.0, high: float = 1.0) -> float:
     return max(low, min(high, value))
 
@@ -294,6 +298,12 @@ def score_symbol(
     if len(closes) < 30:
         return None
 
+    # 横盘钳制：OKX 合成合约无成交时会连续复制同一收盘价，
+    # 出现「7日/30日 0.0%」的假行情。这类标的不能进推荐。
+    recent = closes[-31:]
+    if len(recent) >= 31 and max(recent) == min(recent):
+        return None
+
     last = closes[-1]
     ma20 = statistics.fmean(closes[-20:])
     ma200 = statistics.fmean(closes[-200:]) if len(closes) >= 200 else None
@@ -314,19 +324,22 @@ def score_symbol(
         weighted += normalized * weight
         weight_sum += weight
     tech = weighted / weight_sum if weight_sum > 0 else 0.5
-    structure = 0.5 * (1.0 if last > ma20 else 0.0) + 0.5 * (
-        1.0 if ma200 is not None and last > ma200 else 0.0
-    )
+
+    above_ma20 = last > ma20 * (1 + _MA_EPS)
+    below_ma20 = last < ma20 * (1 - _MA_EPS)
+    above_ma200 = ma200 is not None and last > ma200 * (1 + _MA_EPS)
+    below_ma200 = ma200 is not None and last < ma200 * (1 - _MA_EPS)
+    structure = 0.5 * (1.0 if above_ma20 else 0.0) + 0.5 * (1.0 if above_ma200 else 0.0)
     tech_score = _clamp(tech * 0.8 + structure * 0.2)
 
     reasons = []
-    if mom7 is not None:
+    if mom7 is not None and abs(mom7) >= _MOM_EPS:
         reasons.append(f"7日{mom7:+.1f}%")
-    if mom30 is not None:
+    if mom30 is not None and abs(mom30) >= _MOM_EPS:
         reasons.append(f"30日{mom30:+.1f}%")
-    reasons.append("站上MA20" if last > ma20 else "低于MA20")
+    reasons.append("站上MA20" if above_ma20 else "低于MA20" if below_ma20 else "贴近MA20")
     if ma200 is not None:
-        reasons.append("站上MA200" if last > ma200 else "低于MA200")
+        reasons.append("站上MA200" if above_ma200 else "低于MA200" if below_ma200 else "贴近MA200")
 
     final = tech_score
     nn_score = None

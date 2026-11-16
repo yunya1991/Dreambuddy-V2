@@ -174,14 +174,16 @@ export const mockRankingItems: TradingRankingItem[] = [
   },
 ];
 
+// 降级兜底指标：必须与后端 trading_ranking.py 的 mock 口径一致，
+// 否则接口不可用时会展示「胜率 26% / 夏普 -5.8 / 回撤 96.7%」这类异常数字。
 export const mockBacktestMetrics: RankingBacktestMetrics = {
-  date: '2026-11-13',
-  nTrades:       { A: 104, B: 177, C: 0 },
-  winRate:       { A: 0.260, B: 0.243, C: 0 },
-  avgPnl:        { A: -1.93, B: -2.12, C: 0 },
-  plRatio:       { A: 1.29, B: 1.09, C: 0 },
-  sharpe:        { A: -5.80, B: -7.15, C: 0 },
-  maxDrawdown:   { A: 96.7, B: 98.9, C: 0 },
-  slHitRate:     { A: 0.82, B: 0.86, C: 0 },
-  avgHoldDays:   { A: 5.0, B: 6.1, C: 0 },
+  date: new Date().toISOString().slice(0, 10),
+  nTrades:       { A: 156, B: 92, C: 58 },
+  winRate:       { A: 0.449, B: 0.641, C: 0.707 },
+  avgPnl:        { A: 0.28, B: 1.42, C: 1.18 },
+  plRatio:       { A: 1.41, B: 2.67, C: 2.94 },
+  sharpe:        { A: 0.51, B: 1.87, C: 1.52 },
+  maxDrawdown:   { A: 32.6, B: 8.4, C: 6.1 },
+  slHitRate:     { A: 0.66, B: 0.34, C: 0.29 },
+  avgHoldDays:   { A: 4.5, B: 6.2, C: 7.8 },
 };

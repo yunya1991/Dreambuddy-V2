@@ -17,6 +17,7 @@ trading_ranking.py 在构建决策卡时读取并合并，文件缺失/过期时
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -60,7 +61,27 @@ def _to_inst_id(symbol: str) -> str:
     return f"{s}-USDT-SWAP"
 
 
+# 榜单核心币种（影子模式/完整币池可能出现的候选，coin_pool 未必覆盖）
+_RANKING_CORE_CRYPTO = (
+    "BTC",
+    "ETH",
+    "SOL",
+    "BNB",
+    "UNI",
+    "HYPE",
+    "PUMP",
+    "ZEC",
+    "ARB",
+    "LINK",
+)
+
+
 # ── ATR ──────────────────────────────────────────────────────────────
+def _resolve_direction(bcrm2_direction: str) -> str:
+    """方向：BCRM2 优先；缺失/neutral 时按榜单多头口径兜底。"""
+    return bcrm2_direction if bcrm2_direction in ("long", "short") else "long"
+
+
 def _atr(df: pd.DataFrame, period: int = 14) -> Optional[float]:
     if df is None or len(df) < period + 1 or not {"high", "low", "close"}.issubset(df.columns):
         return None
@@ -107,6 +128,12 @@ def _collect_symbols() -> List[str]:
                     symbols.append(s)
         except Exception:
             pass
+
+    # 3. 榜单核心币种（影子模式触发候选，coin_pool 可能未收录）
+    for s in _RANKING_CORE_CRYPTO:
+        if s not in seen:
+            seen.add(s)
+            symbols.append(s)
 
     return symbols
 
@@ -271,10 +298,16 @@ def build_decision_cards(symbols: Optional[List[str]] = None) -> Dict[str, Any]:
         cbr = _cbr_analogy(symbol, bcrm2)
 
         # 5. 组装决策卡
-        direction = bcrm2.get("direction", "neutral")
-        risk_level_raw = bcrm2.get("risk_level", "NORMAL")
-        card["riskLevel"] = _bcrm2_risk_to_display(risk_level_raw)
+        direction = _resolve_direction(bcrm2.get("direction", "neutral"))
+        if bcrm2.get("risk_level"):
+            card["riskLevel"] = _bcrm2_risk_to_display(bcrm2["risk_level"])
+        else:
+            card["riskLevel"] = "intermediate"
         card["positionFactor"] = bcrm2.get("position_factor", 1.0)
+
+        # 入场：现价单点先行（区间由 ATR 补足，SPEC §7 降级口径）
+        if price > 0:
+            card["entry"]["price"] = round(price, 4)
 
         # 入场区间（±0.5 ATR）
         if atr and atr > 0 and price > 0:
@@ -300,12 +333,14 @@ def build_decision_cards(symbols: Optional[List[str]] = None) -> Dict[str, Any]:
                     {"price": round(price - atr * tp_atr, 4), "pct": 0.5},
                 ]
 
-        # 风险标签与方向
+        # 方向与推断标记：ATR 兜底卡片也算已推断（否则消费端会丢弃整张卡）
+        card["direction"] = direction
+        card["inferred"] = bool(price > 0)
         if bcrm2:
-            card["inferred"] = True
-            card["direction"] = direction
             card["confidence"] = round(bcrm2.get("confidence", 0.0), 3)
             card["warnings"] = bcrm2.get("warnings", [])[:2]
+        else:
+            card["warnings"] = ["bcrm2_unavailable_atr_fallback"]
 
         # 历史类比
         if cbr.get("historicalAnalogy"):
@@ -331,7 +366,9 @@ def build_decision_cards(symbols: Optional[List[str]] = None) -> Dict[str, Any]:
 def main(argv: Optional[List[str]] = None) -> int:
     argv = argv or sys.argv[1:]
     payload = build_decision_cards(argv or None)
-    OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp = OUT.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    os.replace(tmp, OUT)
     print(f"→ 写入 {OUT}")
     return 0
 
