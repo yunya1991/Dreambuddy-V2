@@ -216,7 +216,7 @@
 | 统计图表化 SPEC（T1–T4 图 + L1 三层） | [54-L1架构能力聚合层/SPEC-54-统计图表化能力.md](../54-L1架构能力聚合层/SPEC-54-统计图表化能力.md) | v0.22（P0 六项 + L1D-03…09 + L1X-01…04 + DOC-01/02 全部验收；L1S-03…06 四项待办：新闻出口/制品落盘/T4 消费/状态刷新） |
 | 能力卡片全景接入 SPEC（消费侧） | [54-L1架构能力聚合层/SPEC-54-能力卡片全景接入.md](../54-L1架构能力聚合层/SPEC-54-能力卡片全景接入.md) | v1.0（94 项 schema + `op=resolve` 装配器 + R3b 持久化 + R6 60s 缓存/日聚合分档 P95 报表/5 分钟告警 + AC1–AC10 全绿；常驻 resolve worker 热请求 0.05s；AC2 六型取证归档 `acceptance_bundles/20261116_spec54_ac2/`） |
 | 剩余能力放开与产物落盘 SPEC | [54-L1架构能力聚合层/SPEC-54c-剩余能力放开与产物落盘.md](../54-L1架构能力聚合层/SPEC-54c-剩余能力放开与产物落盘.md) | v0.1（E14/G21/G23/A14/A16 全部 `code=ok`；E19 `lights_latest.json`+`lights_daily.jsonl`、K02 `reports/discovery/20261117-0150/` 已落盘；矩阵 ok 82→87；云端双实例取证） |
-| 卡片动态推荐 SPEC | [54-L1架构能力聚合层/SPEC-54d-卡片动态推荐.md](../54-L1架构能力聚合层/SPEC-54d-卡片动态推荐.md) | v0.1（默认「推荐卡片」tab 6 张价格信号卡；`card_recommender.py` 回测打分 + `GET/POST /api/visual/cards/recommend` 动态刷新；20 日胜率 50.6%–54.7%，n=644–1747） |
+| 卡片动态推荐 SPEC | [54-L1架构能力聚合层/SPEC-54d-卡片动态推荐.md](../54-L1架构能力聚合层/SPEC-54d-卡片动态推荐.md) | v0.1（默认「推荐卡片」tab 6 张价格信号卡；`card_recommender.py` 回测打分 + `GET/POST /api/visual/cards/recommend` 动态刷新；云端 20 日胜率 50.6%–54.7%，n=644–1747，6 卡 resolve 全 ok） |
 | 延续性统计分析 SPEC（T0） | [54-L1架构能力聚合层/SPEC-54-延续性统计分析模块.md](../54-L1架构能力聚合层/SPEC-54-延续性统计分析模块.md) | v1.6（T0 已实现，T2/D-E14 一维首版） |
 | 技术设计 | [54-L1架构能力聚合层/docs/TECHNICAL_DESIGN.md](../54-L1架构能力聚合层/docs/TECHNICAL_DESIGN.md) | 门禁/信封/能力层分工 |
 | 方法库 SSoT | [54-L1架构能力聚合层/docs/METHOD_LIBRARY.md](../54-L1架构能力聚合层/docs/METHOD_LIBRARY.md) | 方法编号 I35–I39 冲突已修正 |

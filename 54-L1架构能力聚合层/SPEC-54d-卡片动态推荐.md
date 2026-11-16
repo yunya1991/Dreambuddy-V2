@@ -49,3 +49,14 @@
 | 胜率受样本期影响（近年行情） | 全部披露 n、Wilson 下界、前后段稳定性；标注「历史统计，不代表未来」 |
 | 规则过于简单被误读为策略 | 卡片只给统计事实，不给方向/仓位（沿用能力层信封口径） |
 | 动态刷新覆盖用户调整 | 推荐 tab 独立于服务端配置；用户调整请落到自建 tab |
+
+## 5. 云端验收记录（2026-11-17，BUILD_ID `dtIRbf7I6DuEbCPFKbQeU`）
+
+| 项 | 结果 |
+| --- | --- |
+| 推荐制品 | `artifacts/cards/recommendation.json`（6 张，`generated_at` 02:10） |
+| 入选与胜率 | E15 54.7%（n=1727）/ E01 53.6%（1747）/ E07 53.6%（1747）/ E02 53.8%（839）/ E14 53.7%（650）/ G20 50.6%（644） |
+| GET 接口 | 3001/3002 均 `200 {ok:true, source:"artifact", stale:false}` |
+| POST 刷新 | 3001 `200`，重跑脚本后 `generated_at` 前移 |
+| 卡片可运行 | 6 张 `POST op=resolve` 全部 `ok`（symbol=BTC / benchmark=US500 / days=750） |
+| 默认落地 | 前端 `config` 单测：3 个 builtin tab、默认 `rec-cards`、v1 配置自动迁移 |
