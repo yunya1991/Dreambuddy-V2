@@ -688,10 +688,12 @@ class OdailyNewsflashCollector(BaseCollector):
             )
             return None
 
-    def _fetch_page(self, limit: int = 20) -> list[DataRecord]:
+    def _fetch_page(self, limit: int = 20, page: int = 1) -> list[DataRecord]:
+        # page=1 为最新一页；page>1 用于榜单事件这类需要更长窗口的场景
+        params = {"cursor": 0, "limit": int(limit), "page": max(1, int(page))}
         resp = requests.get(
             f"{_ODAILY_API}/newsflash/page",
-            params={"cursor": 0, "limit": int(limit)},
+            params=params,
             headers=_HTTP_HEADERS,
             timeout=_HTTP_TIMEOUT,
         )

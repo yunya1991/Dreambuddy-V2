@@ -47,12 +47,24 @@ _DECISION_CARD_FILE = os.path.join(
 )
 _DECISION_CARD_MAX_AGE_HOURS = 36  # 1 天 + 缓冲
 
+# 榜单新闻事件（Odaily 快讯按 TICKER 聚合），由 ranking_news.py 每小时产出
+_RANKING_NEWS_FILE = os.path.join(
+    _resolve_repo_root(),
+    "1-ARCHITECTURE",
+    "dreamos",
+    "cli",
+    "scheduler_data",
+    "ranking_news.json",
+)
+_RANKING_NEWS_MAX_AGE_HOURS = 24  # 生产者每小时刷新，24h 内仍可降级展示
+_RANKING_EVENTS_PER_SYMBOL = 3
+
 # 品类配额（对齐 TOP10_RANKING_RECOMMENDATION_SPEC §3.1 / §4.4：6+2+2）
 _CATEGORY_QUOTA = (("crypto", 6), ("commodity", 2), ("index", 2))
 _TOP_N = 10
 
-# 前端榜单 API 缓存 — 4 小时内直接返回，不重跑 orchestrator / scan / fusion
-# 原因：云端每次都调 orchestrator + OKX 拉行情，首次很慢；榜单本身是每日粒度，4h 刷新足够
+# 前端榜单 API 缓存 — 1 小时内直接返回，不重跑 orchestrator / scan / fusion
+# 云端每次都要调 orchestrator + OKX 拉行情（首次约 10s），1h 刷新兼顾时效与成本
 _FRONTEND_CACHE_FILE = os.path.join(
     _resolve_repo_root(),
     "1-ARCHITECTURE",
@@ -61,7 +73,7 @@ _FRONTEND_CACHE_FILE = os.path.join(
     "scheduler_data",
     "ranking_frontend_cache.json",
 )
-_FRONTEND_CACHE_MAX_AGE_HOURS = 4
+_FRONTEND_CACHE_MAX_AGE_HOURS = 1
 
 # 回测数据 mock（营销版）— 等真实系统稳定后替换成 ranking_backtest.py 的 groups
 # 设计意图：A 组 = 传统技术分析基准 / B 组 = NN 融合核心卖点（夏普最高）/ C 组 = 自进化（胜率最高）
@@ -291,6 +303,47 @@ def _load_decision_cards() -> dict:
         return items if isinstance(items, dict) else {}
     except Exception:
         return {}
+
+
+def _load_ranking_news() -> dict:
+    """读取 Odaily 新闻快照（TICKER → 事件列表）；缺失/过期/损坏返回 {}。"""
+    try:
+        if not os.path.isfile(_RANKING_NEWS_FILE):
+            return {}
+        with open(_RANKING_NEWS_FILE, encoding="utf-8") as fh:
+            data = json.load(fh)
+        generated_at = data.get("generated_at")
+        if not generated_at:
+            return {}
+        generated = datetime.fromisoformat(str(generated_at).replace("Z", "+00:00"))
+        age = datetime.now(timezone.utc) - generated
+        if age > timedelta(hours=_RANKING_NEWS_MAX_AGE_HOURS):
+            return {}
+        by_symbol = data.get("by_symbol")
+        return by_symbol if isinstance(by_symbol, dict) else {}
+    except Exception:
+        return {}
+
+
+def _attach_news_events(items: list, news: dict) -> None:
+    """把代币相关新闻并入每个标的的决策卡「事件」Tab（最多 3 条）。"""
+    if not news:
+        return
+    for item in items:
+        symbol = str(item.get("symbol") or "")
+        events = news.get(symbol) or news.get(_normalize_symbol(symbol)) or []
+        if not events:
+            continue
+        card = item.setdefault("decisionCard", {})
+        card["events"] = [
+            {
+                "date": str(event.get("date", "")),
+                "name": str(event.get("name", "")),
+                "impact": str(event.get("impact", "低")),
+            }
+            for event in events[:_RANKING_EVENTS_PER_SYMBOL]
+            if event.get("name")
+        ]
 
 
 # ---- 加密候选流动性 / 市值门槛（过滤 HEMI 这类未上 OKX、成交额或市值过小的标的）----
@@ -705,7 +758,7 @@ def _orchestrator_to_items(orch_data: dict, decision_cards: dict | None = None) 
 
 
 def _load_frontend_cache() -> dict | None:
-    """读榜单 API 4h 缓存，过期、损坏或上游数据已更新时返回 None。"""
+    """读榜单 API 1h 缓存，过期、损坏或上游数据已更新时返回 None。"""
     try:
         if not os.path.isfile(_FRONTEND_CACHE_FILE):
             return None
@@ -717,7 +770,7 @@ def _load_frontend_cache() -> dict | None:
             return None
         # 决策卡/资产池重新生成后，旧缓存里的空白决策卡必须一并失效
         cache_mtime = os.path.getmtime(_FRONTEND_CACHE_FILE)
-        for dependency in (_DECISION_CARD_FILE, _RANKING_POOL_FILE):
+        for dependency in (_DECISION_CARD_FILE, _RANKING_POOL_FILE, _RANKING_NEWS_FILE):
             if os.path.isfile(dependency) and os.path.getmtime(dependency) > cache_mtime:
                 return None
         return cache.get("result")
@@ -743,7 +796,7 @@ def _write_frontend_cache(result: dict) -> None:
 
 
 def main():
-    # ── 4h 缓存命中 → 直接返回 ──
+    # ── 1h 缓存命中 → 直接返回 ──
     cached = _load_frontend_cache()
     if cached is not None:
         sys.stdout.write(json.dumps(cached, ensure_ascii=False, default=str) + "\n")
@@ -814,6 +867,9 @@ def main():
             item_map[sym]["busConfidence"] = fused.get("confidence")
             item_map[sym]["fusionScore"] = fused.get("fusion_score")
 
+    # 新闻事件：Odaily 快讯按 TICKER 匹配到每个标的的决策卡「事件」Tab
+    _attach_news_events(items, _load_ranking_news())
+
     # 子系统分榜输出：每条含 subsystem tag
     subsystem_rankings = {}
     for sub, sigs in bus_by_subsystem.items():
@@ -846,7 +902,7 @@ def main():
     sys.stdout.write(json.dumps(result, ensure_ascii=False, default=str) + "\n")
     sys.stdout.flush()
 
-    # ── 写入 4h 缓存（FAIL-OPEN，写失败不影响输出） ──
+    # ── 写入 1h 缓存（FAIL-OPEN，写失败不影响输出） ──
     _write_frontend_cache(result)
 
 

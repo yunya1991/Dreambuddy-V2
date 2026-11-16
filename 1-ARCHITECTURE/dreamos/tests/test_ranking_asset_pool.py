@@ -32,6 +32,11 @@ def decision_card():
     )
 
 
+@pytest.fixture(scope="module")
+def ranking_news():
+    return _load("1-ARCHITECTURE/dreamos/cli/ranking_news.py", "ranking_news_for_test")
+
+
 def test_symbol_category_mapping(ranking):
     assert ranking._symbol_category("BTC") == "crypto"
     assert ranking._symbol_category("BTC-USDT-SWAP") == "crypto"
@@ -137,6 +142,54 @@ def test_resolve_direction_falls_back_to_long(decision_card):
     assert decision_card._resolve_direction("neutral") == "long"
     assert decision_card._resolve_direction("") == "long"
     assert decision_card._resolve_direction("short") == "short"
+
+
+def test_classify_impact_priority(ranking_news):
+    assert ranking_news.classify_impact("某交易所被盗，资金安全受质疑") == "高"
+    assert ranking_news.classify_impact("BTC 突破 10 万美元，创历史新高") == "中"
+    assert ranking_news.classify_impact("某项目发布例行周报") == "低"
+    assert ranking_news.classify_impact("例行周报", is_important=True) == "高"
+
+
+def test_build_news_snapshot_groups_filters_and_dedupes(ranking_news):
+    from datetime import datetime, timedelta, timezone
+    from types import SimpleNamespace
+
+    now = datetime(2026, 11, 16, 12, 0, tzinfo=timezone.utc)
+    recent = int((now - timedelta(hours=2)).timestamp() * 1000)
+    stale = int((now - timedelta(hours=100)).timestamp() * 1000)
+
+    def record(record_id, title, published_ms, tickers):
+        return SimpleNamespace(
+            raw={"title": title, "publishTimestamp": published_ms, "tickers_hit": tickers},
+            metrics={"od_source_id": record_id, "od_is_important": "false"},
+        )
+
+    snapshot = ranking_news.build_snapshot(
+        [
+            record(1, "BTC 突破 10 万美元，创历史新高", recent, ["BTC"]),
+            record(2, "某交易所被盗，SOL 受影响", recent, ["SOL"]),
+            record(3, "100 小时前的旧闻", stale, ["BTC"]),
+            record(1, "重复记录", recent, ["ETH"]),
+        ],
+        now=now,
+    )
+
+    assert sorted(snapshot["by_symbol"]) == ["BTC", "SOL"]
+    assert len(snapshot["by_symbol"]["BTC"]) == 1
+    assert snapshot["by_symbol"]["BTC"][0]["date"] == "11-16 10:00"
+    assert snapshot["by_symbol"]["BTC"][0]["impact"] == "中"
+    assert snapshot["by_symbol"]["SOL"][0]["impact"] == "高"
+
+
+def test_attach_news_events_normalizes_symbol_and_caps(ranking):
+    items = [{"symbol": "BTC-USDT-SWAP", "decisionCard": {"events": []}}]
+    news = {"BTC": [{"date": "11-16 10:00", "name": f"新闻{i}", "impact": "低"} for i in range(5)]}
+
+    ranking._attach_news_events(items, news)
+
+    assert len(items[0]["decisionCard"]["events"]) == 3
+    assert items[0]["decisionCard"]["events"][0]["name"] == "新闻0"
 
 
 def test_crypto_filter_drops_unlisted_low_volume_and_small_cap(ranking):

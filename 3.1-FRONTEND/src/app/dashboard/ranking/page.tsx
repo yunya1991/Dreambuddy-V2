@@ -30,6 +30,8 @@ export default function RankingPage() {
     queryKey: queryKey('ranking', 'today'),
     queryFn: fetchTradingRanking,
     staleTime: queryStaleTime('ranking'),
+    // 后端榜单缓存 1h，页面保持同步自动刷新（含事件新闻）
+    refetchInterval: 60 * 60 * 1000,
   });
 
   const apiItems = rankingQuery.data?.items?.length

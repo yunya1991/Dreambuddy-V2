@@ -142,12 +142,16 @@ function EventsModule({ data }: { data: DecisionCardData }) {
   return (
     <div className="space-y-1.5">
       {data.events.map((e, i) => (
-        <div key={i} className="flex items-center gap-2 bg-slate-800/40 rounded p-2">
-          <span className="text-[10px] text-slate-400 font-mono w-20">{e.date}</span>
-          <span className="text-xs text-slate-200 flex-1">{e.name}</span>
-          <V3Badge variant={e.impact === '高' ? 'danger' : e.impact === '中' ? 'warning' : 'default'}>
-            {e.impact}
-          </V3Badge>
+        <div key={i} className="flex items-start gap-2 bg-slate-800/40 rounded p-2">
+          <span className="text-[10px] text-slate-400 font-mono w-[72px] shrink-0 pt-0.5">{e.date}</span>
+          <span className="text-xs text-slate-200 flex-1 min-w-0 line-clamp-2 leading-snug" title={e.name}>
+            {e.name}
+          </span>
+          <span className="shrink-0">
+            <V3Badge variant={e.impact === '高' ? 'danger' : e.impact === '中' ? 'warning' : 'default'}>
+              {e.impact}
+            </V3Badge>
+          </span>
         </div>
       ))}
     </div>
