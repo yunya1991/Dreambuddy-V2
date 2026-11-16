@@ -1,7 +1,7 @@
 // 统计能力目录 / 预检 / 执行的前端客户端（TASKS-20261116 T2-1 / T2-3 / T8-1）
 // 原则：前端零计算，一切数值都来自 capability_result 信封。
 
-import type { CapabilitySchema, VisualSpec } from '@/components/visual/types';
+import type { CapabilitySchema, VisualSpec } from "@/components/visual/types";
 
 export interface CapabilityItem {
   capability_id: string;
@@ -73,24 +73,30 @@ export interface ListParams {
   min_n_max?: number;
 }
 
-export async function listCapabilities(params: ListParams = {}): Promise<CapabilityListResponse> {
+export async function listCapabilities(
+  params: ListParams = {},
+): Promise<CapabilityListResponse> {
   const search = new URLSearchParams();
-  if (params.domain) search.set('domain', params.domain);
-  if (params.q) search.set('q', params.q);
-  if (params.limit) search.set('limit', String(params.limit));
-  if (params.min_n_max !== undefined) search.set('min_n_max', String(params.min_n_max));
-  const response = await fetch(`/api/visual/capabilities?${search.toString()}`, {
-    cache: 'no-store',
-  });
+  if (params.domain) search.set("domain", params.domain);
+  if (params.q) search.set("q", params.q);
+  if (params.limit) search.set("limit", String(params.limit));
+  if (params.min_n_max !== undefined)
+    search.set("min_n_max", String(params.min_n_max));
+  const response = await fetch(
+    `/api/visual/capabilities?${search.toString()}`,
+    {
+      cache: "no-store",
+    },
+  );
   return (await response.json()) as CapabilityListResponse;
 }
 
 async function post(body: Record<string, unknown>): Promise<any> {
-  const response = await fetch('/api/visual/capabilities', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const response = await fetch("/api/visual/capabilities", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-    cache: 'no-store',
+    cache: "no-store",
   });
   return response.json();
 }
@@ -99,12 +105,14 @@ export async function validateCapability(
   capabilityId: string,
   payload: Record<string, unknown> = {},
 ): Promise<ValidateResponse> {
-  return (await post({ op: 'validate', capability_id: capabilityId, payload })) as ValidateResponse;
+  return (await post({
+    op: "validate",
+    capability_id: capabilityId,
+    payload,
+  })) as ValidateResponse;
 }
 
-export async function explainCapability(
-  capabilityId: string,
-): Promise<
+export async function explainCapability(capabilityId: string): Promise<
   CapabilityItem & {
     ok?: boolean;
     schema?: CapabilitySchema;
@@ -115,14 +123,18 @@ export async function explainCapability(
     reason?: string;
   }
 > {
-  return post({ op: 'explain', capability_id: capabilityId });
+  return post({ op: "explain", capability_id: capabilityId });
 }
 
 export async function runCapability(
   capabilityId: string,
   payload: Record<string, unknown> = {},
 ): Promise<RunResponse> {
-  return (await post({ op: 'run', capability_id: capabilityId, payload })) as RunResponse;
+  return (await post({
+    op: "run",
+    capability_id: capabilityId,
+    payload,
+  })) as RunResponse;
 }
 
 /** SPEC-54 R2：服务端装配后再跑能力（资产 + 基准 + 区间 → 序列） */
@@ -133,8 +145,17 @@ export interface ResolveResponse {
   reason?: string | null;
   missing_params?: string[];
   data?: CapabilityEnvelope;
-  quality?: { n?: number; status?: string; degraded?: boolean; degraded_reason?: string | null };
-  meta?: { warmup_trimmed?: number; elapsed_ms?: number; data_provenance?: string };
+  quality?: {
+    n?: number;
+    status?: string;
+    degraded?: boolean;
+    degraded_reason?: string | null;
+  };
+  meta?: {
+    warmup_trimmed?: number;
+    elapsed_ms?: number;
+    data_provenance?: string;
+  };
 }
 
 export async function resolveCapability(
@@ -142,7 +163,7 @@ export async function resolveCapability(
   payload: Record<string, unknown> = {},
 ): Promise<ResolveResponse> {
   return (await post({
-    op: 'resolve',
+    op: "resolve",
     capability_id: capabilityId,
     payload,
   })) as ResolveResponse;
@@ -178,9 +199,13 @@ export interface CardPanelPayload {
   data_provenance?: string;
 }
 
-export async function fetchCardsConfig(tabId?: string): Promise<CardsConfigResponse> {
-  const search = tabId ? `?tabId=${encodeURIComponent(tabId)}` : '';
-  const response = await fetch(`/api/visual/cards/config${search}`, { cache: 'no-store' });
+export async function fetchCardsConfig(
+  tabId?: string,
+): Promise<CardsConfigResponse> {
+  const search = tabId ? `?tabId=${encodeURIComponent(tabId)}` : "";
+  const response = await fetch(`/api/visual/cards/config${search}`, {
+    cache: "no-store",
+  });
   return (await response.json()) as CardsConfigResponse;
 }
 
@@ -188,11 +213,55 @@ export async function saveCardsConfig(
   tabId: string,
   panels: CardPanelPayload[],
 ): Promise<CardsConfigResponse> {
-  const response = await fetch('/api/visual/cards/config', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+  const response = await fetch("/api/visual/cards/config", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ tabId, panels }),
-    cache: 'no-store',
+    cache: "no-store",
   });
   return (await response.json()) as CardsConfigResponse;
+}
+
+// ------------------------------------------------ 动态推荐卡（SPEC-54d）
+export interface RecommendedCard {
+  capability_id: string;
+  title: string;
+  kind?: string;
+  args: Record<string, unknown>;
+  rule?: string;
+  desc?: string;
+  n_5d?: number;
+  n_20d?: number;
+  win_rate_5d?: number | null;
+  win_rate_20d?: number | null;
+  wilson_20d?: number | null;
+  stability_20d?: number | null;
+  score?: number;
+}
+
+export interface CardsRecommendResponse {
+  ok: boolean;
+  code: string;
+  source?: "artifact" | "builtin";
+  generated_at?: string | null;
+  stale?: boolean;
+  cards?: RecommendedCard[];
+  reason?: string;
+}
+
+export async function fetchCardRecommendation(): Promise<CardsRecommendResponse> {
+  const response = await fetch("/api/visual/cards/recommend", {
+    cache: "no-store",
+  });
+  return (await response.json()) as CardsRecommendResponse;
+}
+
+export async function refreshCardRecommendation(): Promise<CardsRecommendResponse> {
+  const response = await fetch("/api/visual/cards/recommend", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "refresh" }),
+    cache: "no-store",
+  });
+  return (await response.json()) as CardsRecommendResponse;
 }

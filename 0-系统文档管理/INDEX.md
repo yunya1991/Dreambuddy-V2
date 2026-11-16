@@ -216,6 +216,7 @@
 | 统计图表化 SPEC（T1–T4 图 + L1 三层） | [54-L1架构能力聚合层/SPEC-54-统计图表化能力.md](../54-L1架构能力聚合层/SPEC-54-统计图表化能力.md) | v0.22（P0 六项 + L1D-03…09 + L1X-01…04 + DOC-01/02 全部验收；L1S-03…06 四项待办：新闻出口/制品落盘/T4 消费/状态刷新） |
 | 能力卡片全景接入 SPEC（消费侧） | [54-L1架构能力聚合层/SPEC-54-能力卡片全景接入.md](../54-L1架构能力聚合层/SPEC-54-能力卡片全景接入.md) | v1.0（94 项 schema + `op=resolve` 装配器 + R3b 持久化 + R6 60s 缓存/日聚合分档 P95 报表/5 分钟告警 + AC1–AC10 全绿；常驻 resolve worker 热请求 0.05s；AC2 六型取证归档 `acceptance_bundles/20261116_spec54_ac2/`） |
 | 剩余能力放开与产物落盘 SPEC | [54-L1架构能力聚合层/SPEC-54c-剩余能力放开与产物落盘.md](../54-L1架构能力聚合层/SPEC-54c-剩余能力放开与产物落盘.md) | v0.1（E14/G21/G23/A14/A16 全部 `code=ok`；E19 `lights_latest.json`+`lights_daily.jsonl`、K02 `reports/discovery/20261117-0150/` 已落盘；矩阵 ok 82→87；云端双实例取证） |
+| 卡片动态推荐 SPEC | [54-L1架构能力聚合层/SPEC-54d-卡片动态推荐.md](../54-L1架构能力聚合层/SPEC-54d-卡片动态推荐.md) | v0.1（默认「推荐卡片」tab 6 张价格信号卡；`card_recommender.py` 回测打分 + `GET/POST /api/visual/cards/recommend` 动态刷新；20 日胜率 50.6%–54.7%，n=644–1747） |
 | 延续性统计分析 SPEC（T0） | [54-L1架构能力聚合层/SPEC-54-延续性统计分析模块.md](../54-L1架构能力聚合层/SPEC-54-延续性统计分析模块.md) | v1.6（T0 已实现，T2/D-E14 一维首版） |
 | 技术设计 | [54-L1架构能力聚合层/docs/TECHNICAL_DESIGN.md](../54-L1架构能力聚合层/docs/TECHNICAL_DESIGN.md) | 门禁/信封/能力层分工 |
 | 方法库 SSoT | [54-L1架构能力聚合层/docs/METHOD_LIBRARY.md](../54-L1架构能力聚合层/docs/METHOD_LIBRARY.md) | 方法编号 I35–I39 冲突已修正 |
@@ -236,10 +237,11 @@
 | 文档 | 路径 | 版本 |
 |------|------|------|
 | 母 SPEC（L2 架构能力聚合层） | [56-L2架构能力聚合层/SPEC-56-L2架构能力聚合层.md](../56-L2架构能力聚合层/SPEC-56-L2架构能力聚合层.md) | v0.6（ADR-01~10 / IF-1~IF-6 / G-L2-1~9 / 路线 P0–P5；IF-5/IF-6 已可执行） |
-| Harness 能力增强（HCP） | [56-L2架构能力聚合层/SPEC-56-Harness能力增强-v0.1.md](../56-L2架构能力聚合层/SPEC-56-Harness能力增强-v0.1.md) | v0.1（设计稿：Trae M1–M5 → H1–H5 + G-L2-12~16 + P0–P2） |
+| Harness 能力增强（HCP） | [56-L2架构能力聚合层/SPEC-56-Harness能力增强-v0.2.md](../56-L2架构能力聚合层/SPEC-56-Harness能力增强-v0.2.md) | v0.2（评审修订稿：修 M1–M4；P0 收缩为 H3+H5；补统计口径/RACI/回滚；v0.1 已被取代） |
+| HCP 评审记录 | [56-L2架构能力聚合层/docs/REVIEW-20261117-SPEC-56-H-HCP.md](../56-L2架构能力聚合层/docs/REVIEW-20261117-SPEC-56-H-HCP.md) | v0.1（四视角 + Devil's Advocate；M1–M4 必改；P0 收缩为 H3+H5） |
 | 总技术文档 + 能力登记 | [56-L2架构能力聚合层/docs/TECHNICAL_DESIGN.md](../56-L2架构能力聚合层/docs/TECHNICAL_DESIGN.md) | v1.16（五子层能力地图，50 项能力登记，30 项缺口；A0–A3 全链路 + preset 导出/加载 + 四类 probe + Cordis loader 探针 + sandbox profile 实装挂载） |
 | 协议层逆向解析（REA） | [56-L2架构能力聚合层/docs/REA-lobehub协议逆向解析-v0.1.md](../56-L2架构能力聚合层/docs/REA-lobehub协议逆向解析-v0.1.md) | v0.1（LobeHub 协议事实 + L2 聚合调度缺失 GAP-17~23 + 对照实验设计） |
-| Trae 逆向解析与交互学习（研究） | [56-L2架构能力聚合层/docs/RESEARCH-20261117-Trae逆向解析与交互学习-v0.1.md](../56-L2架构能力聚合层/docs/RESEARCH-20261117-Trae逆向解析与交互学习-v0.1.md) | v0.1.4（三层结构 + 五装配机制；R1/R2：3 miner + 5 机制卡 + 627 交互案例；R3：5 个 GAP-T*；已固化 SKILL 并产出 HCP 优化 SPEC） |
+| Trae 逆向解析与交互学习（研究） | [56-L2架构能力聚合层/docs/RESEARCH-20261117-Trae逆向解析与交互学习-v0.1.md](../56-L2架构能力聚合层/docs/RESEARCH-20261117-Trae逆向解析与交互学习-v0.1.md) | v0.1.5（三层结构 + 五装配机制；R1/R2：3 miner + 5 机制卡 + 627 交互案例；R3：5 个 GAP-T*；已固化 SKILL；HCP SPEC v0.2 待复审） |
 | 总装线对标（三源） | [56-L2架构能力聚合层/docs/总装线对标-三源与DreamOS逐模块优化-v0.1.md](../56-L2架构能力聚合层/docs/总装线对标-三源与DreamOS逐模块优化-v0.1.md) | v0.1（LobeHub/OpenAI/Claude 七段契约 + DreamOS 逐模块改造 + GAP-24~30） |
 | A0 契约评审记录 | [56-L2架构能力聚合层/docs/REVIEW-20261116-A0契约与总装线对标评审.md](../56-L2架构能力聚合层/docs/REVIEW-20261116-A0契约与总装线对标评审.md) | v1.2（✅ 通过/A0 关闭：4 阻断已修，28/28 自检 PASSED） |
 | L2 可执行契约 | [56-L2架构能力聚合层/contracts/](../56-L2架构能力聚合层/contracts/) | 台账 schema / 插件契约 schema / 状态机 yaml；校验器 `scripts/validate_contracts.py` |

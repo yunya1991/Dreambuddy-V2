@@ -8,17 +8,18 @@ import {
   buildPanelKey,
   type PanelSpec,
   type PanelTab,
-} from './panelKey';
-import type { CapabilitySchema } from '@/components/visual/types';
+} from "./panelKey";
+import type { CapabilitySchema } from "@/components/visual/types";
 
-export const CONFIG_KEY = 'dreambuddy.visual.panels.v1';
-export const CONFIG_VERSION = 1;
-export const DEFAULT_ACTIVE_TAB = 'rec';
-export const BUILTIN_TAB_IDS = ['rec', 'all'] as const;
+export const CONFIG_KEY = "dreambuddy.visual.panels.v1";
+export const CONFIG_VERSION = 2;
+export const REC_TAB_ID = "rec-cards";
+export const DEFAULT_ACTIVE_TAB = REC_TAB_ID;
+export const BUILTIN_TAB_IDS = [REC_TAB_ID, "rec", "all"] as const;
 
 // 装配器默认值（SPEC-54 R2 决策 1：基准 US500；与 capability_resolve.py 保持一致）
-export const DEFAULT_SYMBOL = 'BTC';
-export const DEFAULT_BENCHMARK = 'US500';
+export const DEFAULT_SYMBOL = "BTC";
+export const DEFAULT_BENCHMARK = "US500";
 export const DEFAULT_DAYS = 750;
 
 export interface BoardConfig {
@@ -28,52 +29,166 @@ export interface BoardConfig {
 }
 
 /**
- * 默认 13 卡（首次进入）。
- * 只有数据自足出口（D-K01/K02/K03）能直接取数；其余 10 张需要输入序列，
- * 卡片会显式提示「需要输入序列」，由「＋ 能力库」补参后使用，绝不伪造图。
+ * 推荐卡（默认落地）。
+ * 口径：价格派生、可复现、带前瞻统计；顺序与入选由 `scripts/card_recommender.py`
+ * 回测（触发后 5/20 日胜率 + Wilson 下界）动态产出，这里是离线兜底，
+ * 仅在推荐制品不可用时使用，绝不伪造指标。
  */
+export const DEFAULT_REC_PANELS: PanelSpec[] = [
+  {
+    capability_id: "D-E15",
+    title: "趋势跟踪：价格 + EMA26",
+    args: { symbol: DEFAULT_SYMBOL, days: DEFAULT_DAYS },
+    kind: "series",
+  },
+  {
+    capability_id: "D-E01",
+    title: "20 日动量 → 后续收益",
+    args: { symbol: DEFAULT_SYMBOL, days: DEFAULT_DAYS },
+    kind: "table",
+  },
+  {
+    capability_id: "D-E07",
+    title: "状态转移（涨跌延续）",
+    args: { symbol: DEFAULT_SYMBOL, days: DEFAULT_DAYS },
+    kind: "matrix",
+  },
+  {
+    capability_id: "D-E02",
+    title: "价格分位（高位/低位）",
+    args: { symbol: DEFAULT_SYMBOL, days: DEFAULT_DAYS },
+    kind: "table",
+  },
+  {
+    capability_id: "D-E14",
+    title: "相关状态 → 前瞻分布",
+    args: {
+      symbol: DEFAULT_SYMBOL,
+      benchmark: DEFAULT_BENCHMARK,
+      days: DEFAULT_DAYS,
+    },
+    kind: "table",
+  },
+  {
+    capability_id: "D-G20",
+    title: "动量分位胜率（最高档）",
+    args: { symbol: DEFAULT_SYMBOL, days: DEFAULT_DAYS },
+    kind: "table",
+  },
+];
+
+/** 推荐卡 tab 为系统策展：由回测制品驱动，不参与服务端持久化 */
+export function isDynamicRecTab(tabId: string): boolean {
+  return tabId === REC_TAB_ID;
+}
+
+/** 全部出口（13 卡，兜底全集；推荐 tab 只展示回测入选的 6–8 张） */
 export const DEFAULT_PANELS: PanelSpec[] = [
-  { capability_id: 'D-K01', title: '关系推荐（只读出口）', args: { target: 'BTC' }, kind: 'table' },
-  { capability_id: 'D-K02', title: '同类现象归纳', args: {}, kind: 'table' },
-  { capability_id: 'D-K03', title: '期级信号（只读出口）', args: {}, kind: 'table' },
-  { capability_id: 'D-E17', title: '类别看板（跨资产）', args: {}, kind: 'table' },
-  { capability_id: 'D-E16', title: '聚合曲线（跨资产）', args: {}, kind: 'series' },
-  { capability_id: 'D-E15', title: '趋势：价格 + EMA26', args: {}, kind: 'series' },
-  { capability_id: 'D-E10', title: '回撤路径', args: {}, kind: 'series' },
-  { capability_id: 'D-A14', title: '拥挤度（分位）', args: {}, kind: 'table' },
-  { capability_id: 'D-G22', title: '显著性（HAC / DSR）', args: {}, kind: 'table' },
-  { capability_id: 'D-E19', title: '点亮投影（四轴五态）', args: {}, kind: 'matrix' },
-  { capability_id: 'D-E07', title: '状态转移（周期）', args: {}, kind: 'matrix' },
-  { capability_id: 'D-J13', title: '长记忆（Hurst / DFA）', args: {}, kind: 'table' },
-  { capability_id: 'D-G16', title: '组合 VaR / CVaR', args: {}, kind: 'table' },
+  {
+    capability_id: "D-K01",
+    title: "关系推荐（只读出口）",
+    args: { target: "BTC" },
+    kind: "table",
+  },
+  { capability_id: "D-K02", title: "同类现象归纳", args: {}, kind: "table" },
+  {
+    capability_id: "D-K03",
+    title: "期级信号（只读出口）",
+    args: {},
+    kind: "table",
+  },
+  {
+    capability_id: "D-E17",
+    title: "类别看板（跨资产）",
+    args: {},
+    kind: "table",
+  },
+  {
+    capability_id: "D-E16",
+    title: "聚合曲线（跨资产）",
+    args: {},
+    kind: "series",
+  },
+  {
+    capability_id: "D-E15",
+    title: "趋势：价格 + EMA26",
+    args: {},
+    kind: "series",
+  },
+  { capability_id: "D-E10", title: "回撤路径", args: {}, kind: "series" },
+  { capability_id: "D-A14", title: "拥挤度（分位）", args: {}, kind: "table" },
+  {
+    capability_id: "D-G22",
+    title: "显著性（HAC / DSR）",
+    args: {},
+    kind: "table",
+  },
+  {
+    capability_id: "D-E19",
+    title: "点亮投影（四轴五态）",
+    args: {},
+    kind: "matrix",
+  },
+  {
+    capability_id: "D-E07",
+    title: "状态转移（周期）",
+    args: {},
+    kind: "matrix",
+  },
+  {
+    capability_id: "D-J13",
+    title: "长记忆（Hurst / DFA）",
+    args: {},
+    kind: "table",
+  },
+  { capability_id: "D-G16", title: "组合 VaR / CVaR", args: {}, kind: "table" },
 ];
 
 export function defaultTabs(): PanelTab[] {
   return [
-    { id: 'rec', title: '推荐总览', panels: [], builtin: true },
-    { id: 'all', title: '全部出口', panels: DEFAULT_PANELS.map((panel) => ({ ...panel })), builtin: true },
+    {
+      id: REC_TAB_ID,
+      title: "推荐卡片",
+      panels: DEFAULT_REC_PANELS.map((panel) => ({ ...panel })),
+      builtin: true,
+    },
+    { id: "rec", title: "推荐总览", panels: [], builtin: true },
+    {
+      id: "all",
+      title: "全部出口",
+      panels: DEFAULT_PANELS.map((panel) => ({ ...panel })),
+      builtin: true,
+    },
   ];
 }
 
 export function defaultConfig(): BoardConfig {
-  return { version: CONFIG_VERSION, tabs: defaultTabs(), activeId: DEFAULT_ACTIVE_TAB };
+  return {
+    version: CONFIG_VERSION,
+    tabs: defaultTabs(),
+    activeId: DEFAULT_ACTIVE_TAB,
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function normalizePanel(raw: unknown): PanelSpec | null {
   if (!isRecord(raw)) return null;
-  const capabilityId = typeof raw.capability_id === 'string' ? raw.capability_id.trim() : '';
+  const capabilityId =
+    typeof raw.capability_id === "string" ? raw.capability_id.trim() : "";
   if (!capabilityId) return null;
   const args = isRecord(raw.args) ? (raw.args as Record<string, unknown>) : {};
   const panel: PanelSpec = {
     capability_id: capabilityId,
-    title: typeof raw.title === 'string' && raw.title.trim() ? raw.title.trim() : capabilityId,
+    title:
+      typeof raw.title === "string" && raw.title.trim()
+        ? raw.title.trim()
+        : capabilityId,
     args,
   };
-  if (typeof raw.kind === 'string') panel.kind = raw.kind as PanelSpec['kind'];
+  if (typeof raw.kind === "string") panel.kind = raw.kind as PanelSpec["kind"];
   if (raw.collapsed === true) panel.collapsed = true;
   return panel;
 }
@@ -107,13 +222,16 @@ export function normalizeConfig(raw: unknown): BoardConfig {
 
   const byId = new Map<string, PanelTab>();
   for (const item of rawTabs) {
-    if (!isRecord(item) || typeof item.id !== 'string' || !item.id.trim()) continue;
+    if (!isRecord(item) || typeof item.id !== "string" || !item.id.trim())
+      continue;
     const id = item.id.trim();
     if (byId.has(id)) continue;
     byId.set(id, {
       id,
       title:
-        typeof item.title === 'string' && item.title.trim() ? item.title.trim() : id,
+        typeof item.title === "string" && item.title.trim()
+          ? item.title.trim()
+          : id,
       panels: normalizePanels(item.panels),
       builtin: item.builtin === true,
     });
@@ -136,8 +254,17 @@ export function normalizeConfig(raw: unknown): BoardConfig {
     tabs.push({ ...tab, builtin: false });
   }
 
-  const requestedActive = typeof source.activeId === 'string' ? source.activeId : '';
-  const activeId = tabs.some((tab) => tab.id === requestedActive) ? requestedActive : DEFAULT_ACTIVE_TAB;
+  const requestedActive =
+    typeof source.activeId === "string" ? source.activeId : "";
+  // v1 → v2：默认落地切到「推荐卡片」tab（老用户升级后也能看到回测入选卡）
+  const legacyVersion =
+    typeof source.version === "number" ? source.version : CONFIG_VERSION;
+  const activeId =
+    legacyVersion < CONFIG_VERSION
+      ? REC_TAB_ID
+      : tabs.some((tab) => tab.id === requestedActive)
+        ? requestedActive
+        : DEFAULT_ACTIVE_TAB;
 
   return { version: CONFIG_VERSION, tabs, activeId };
 }
@@ -155,10 +282,11 @@ export function serializeConfig(config: BoardConfig): string {
   return JSON.stringify(normalizeConfig(config));
 }
 
-export type ConfigStorage = Pick<Storage, 'getItem' | 'setItem'>;
+export type ConfigStorage = Pick<Storage, "getItem" | "setItem">;
 
 export function loadConfig(storage?: ConfigStorage | null): BoardConfig {
-  const target = storage ?? (typeof window === 'undefined' ? null : window.localStorage);
+  const target =
+    storage ?? (typeof window === "undefined" ? null : window.localStorage);
   if (!target) return defaultConfig();
   try {
     return parseConfig(target.getItem(CONFIG_KEY));
@@ -167,8 +295,12 @@ export function loadConfig(storage?: ConfigStorage | null): BoardConfig {
   }
 }
 
-export function saveConfig(config: BoardConfig, storage?: ConfigStorage | null): boolean {
-  const target = storage ?? (typeof window === 'undefined' ? null : window.localStorage);
+export function saveConfig(
+  config: BoardConfig,
+  storage?: ConfigStorage | null,
+): boolean {
+  const target =
+    storage ?? (typeof window === "undefined" ? null : window.localStorage);
   if (!target) return false;
   try {
     target.setItem(CONFIG_KEY, serializeConfig(config));
@@ -188,15 +320,24 @@ export function panelCount(tabs: PanelTab[]): number {
  * 只填「装配器无法推断、但有能力层默认口径」的项：资产 / 基准 / auto 标量的 default；
  * derived 与 unsupported 一律不写，交给服务端装配器或显式缺参提示。
  */
-export function defaultArgsForSchema(schema: CapabilitySchema): Record<string, unknown> {
+export function defaultArgsForSchema(
+  schema: CapabilitySchema,
+): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   if (schema.requires_symbol) args.symbol = DEFAULT_SYMBOL;
   if (schema.requires_benchmark) args.benchmark = DEFAULT_BENCHMARK;
   for (const arg of schema.args) {
-    if (arg.source !== 'auto' || arg.required || arg.type !== 'scalar') continue;
-    if (arg.name === 'symbol' || arg.name === 'benchmark' || arg.name === 'days') continue;
+    if (arg.source !== "auto" || arg.required || arg.type !== "scalar")
+      continue;
+    if (
+      arg.name === "symbol" ||
+      arg.name === "benchmark" ||
+      arg.name === "days"
+    )
+      continue;
     const value = arg.default;
-    if (value === null || value === undefined || typeof value === 'object') continue;
+    if (value === null || value === undefined || typeof value === "object")
+      continue;
     args[arg.name] = value;
   }
   return args;
@@ -232,34 +373,41 @@ export function parseJsonArg(text: string): ParsedArg {
   try {
     return { value: JSON.parse(text) };
   } catch {
-    return { error: 'JSON 解析失败' };
+    return { error: "JSON 解析失败" };
   }
 }
 
 /** schema 是否含需要用户填写的参数（不含资产/基准这类公共项） */
-export function hasUserArgs(schema: CapabilitySchema | null | undefined): boolean {
+export function hasUserArgs(
+  schema: CapabilitySchema | null | undefined,
+): boolean {
   return Boolean(
     schema?.args?.some(
-      (arg) => arg.source === 'user' && arg.name !== 'symbol' && arg.name !== 'benchmark',
+      (arg) =>
+        arg.source === "user" &&
+        arg.name !== "symbol" &&
+        arg.name !== "benchmark",
     ),
   );
 }
 
 /** 把已持久化的参数值转回表单文本（数组逗号分隔，对象 JSON） */
 export function argToText(value: unknown): string {
-  if (value === null || value === undefined) return '';
+  if (value === null || value === undefined) return "";
   if (Array.isArray(value)) {
-    return value.every((item) => typeof item === 'number') ? value.join(', ') : JSON.stringify(value);
+    return value.every((item) => typeof item === "number")
+      ? value.join(", ")
+      : JSON.stringify(value);
   }
-  if (typeof value === 'object') return JSON.stringify(value);
+  if (typeof value === "object") return JSON.stringify(value);
   return String(value);
 }
 
 // ---------------------------------------------------------------- 服务端同步（SPEC-54 R3b）
 // 存储层只有「面板行」，tab 标题与删除态用一条元数据行承载：
 // panel_key = __tab__，args = {title, deleted?}。
-export const TAB_META_KEY = '__tab__';
-export const TAB_META_CAPABILITY = '__tab__';
+export const TAB_META_KEY = "__tab__";
+export const TAB_META_CAPABILITY = "__tab__";
 
 export interface ServerPanelRow {
   tab_id: string;
@@ -286,12 +434,15 @@ function panelRow(panel: PanelSpec): ServerTabPayload {
     title: panel.title,
     kind: panel.kind,
     args: panel.args ?? {},
-    data_provenance: 'pool',
+    data_provenance: "pool",
   };
 }
 
 /** tab → 服务端行（含 tab 元数据行；deleted=true 时只发墓碑） */
-export function tabToServerRows(tab: PanelTab, deleted = false): ServerTabPayload[] {
+export function tabToServerRows(
+  tab: PanelTab,
+  deleted = false,
+): ServerTabPayload[] {
   const meta: ServerTabPayload = {
     panel_key: TAB_META_KEY,
     capability_id: TAB_META_CAPABILITY,
@@ -305,7 +456,10 @@ export function tabToServerRows(tab: PanelTab, deleted = false): ServerTabPayloa
  * 服务端行 → 本地配置：服务端有的 tab 以服务端为准（含空 tab 与墓碑删除），
  * 服务端没有记录的 tab 保留本地（首次登录/离线新增）。
  */
-export function mergeServerPanels(config: BoardConfig, items: ServerPanelRow[]): BoardConfig {
+export function mergeServerPanels(
+  config: BoardConfig,
+  items: ServerPanelRow[],
+): BoardConfig {
   const groups = new Map<string, ServerPanelRow[]>();
   for (const item of items) {
     const list = groups.get(item.tab_id) ?? [];
@@ -319,14 +473,15 @@ export function mergeServerPanels(config: BoardConfig, items: ServerPanelRow[]):
     const index = tabs.findIndex((tab) => tab.id === tabId);
 
     if (meta?.args?.deleted === true) {
-      if (index >= 0 && !tabs[index].builtin) tabs = tabs.filter((tab) => tab.id !== tabId);
+      if (index >= 0 && !tabs[index].builtin)
+        tabs = tabs.filter((tab) => tab.id !== tabId);
       continue;
     }
 
     const title =
-      typeof meta?.args?.title === 'string' && meta.args.title.trim()
+      typeof meta?.args?.title === "string" && meta.args.title.trim()
         ? String(meta.args.title).trim()
-        : tabs[index]?.title ?? tabId;
+        : (tabs[index]?.title ?? tabId);
     const panels = normalizePanels(
       rows
         .filter((row) => row.panel_key !== TAB_META_KEY)
@@ -347,6 +502,6 @@ export function mergeServerPanels(config: BoardConfig, items: ServerPanelRow[]):
 
   const activeId = tabs.some((tab) => tab.id === config.activeId)
     ? config.activeId
-    : tabs[0]?.id ?? DEFAULT_ACTIVE_TAB;
+    : (tabs[0]?.id ?? DEFAULT_ACTIVE_TAB);
   return { version: CONFIG_VERSION, tabs, activeId };
 }
