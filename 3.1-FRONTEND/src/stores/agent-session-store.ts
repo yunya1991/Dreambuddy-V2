@@ -4,10 +4,10 @@
 // 与交易域 session-store 完全解耦：独立 key、独立类型、独立生命周期。
 // 硬约束：最多 50 会话 / 单会话 500 条消息；写入节流 500ms；localStorage 不可用时静默降级。
 
-import { create } from 'zustand';
-import type { AgentMessage } from '@/types/agent-message';
+import { create } from "zustand";
+import type { AgentMessage } from "@/types/agent-message";
 
-export const AGENT_SESSION_STORAGE_KEY = 'dreambuddy.agent.sessions.v1';
+export const AGENT_SESSION_STORAGE_KEY = "dreambuddy.agent.sessions.v1";
 export const MAX_SESSIONS = 50;
 export const MAX_MESSAGES_PER_SESSION = 500;
 export const PERSIST_THROTTLE_MS = 500;
@@ -18,6 +18,10 @@ export interface AgentSession {
   createdAt: number;
   updatedAt: number;
   messages: AgentMessage[];
+  /** AI Agent 开关（默认关闭；按会话保存） */
+  agentEnabled?: boolean;
+  /** 是否已确认过计费提示（首次开启后置 true，后续切换不再弹窗） */
+  agentAcknowledged?: boolean;
 }
 
 export interface PersistedAgentSessions {
@@ -36,6 +40,7 @@ interface AgentSessionState {
   selectSession: (id: string) => void;
   appendMessage: (sessionId: string, message: AgentMessage) => void;
   setMessages: (sessionId: string, messages: AgentMessage[]) => void;
+  setAgentEnabled: (sessionId: string, enabled: boolean) => void;
   clearAll: () => void;
 }
 
@@ -46,16 +51,23 @@ export function createAgentSessionId(now: number = Date.now()): string {
 
 /** 按 updatedAt 倒序保留最近 MAX_SESSIONS 个；每个会话只保留最后 MAX_MESSAGES_PER_SESSION 条 */
 export function trimSessions(sessions: AgentSession[]): AgentSession[] {
-  const sorted = [...sessions].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, MAX_SESSIONS);
+  const sorted = [...sessions]
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, MAX_SESSIONS);
   return sorted.map((session) =>
     session.messages.length > MAX_MESSAGES_PER_SESSION
-      ? { ...session, messages: session.messages.slice(-MAX_MESSAGES_PER_SESSION) }
+      ? {
+          ...session,
+          messages: session.messages.slice(-MAX_MESSAGES_PER_SESSION),
+        }
       : session,
   );
 }
 
 /** 反序列化持久化数据；非法/损坏一律返回 null（FAIL-OPEN） */
-export function parsePersistedSessions(raw: string | null): PersistedAgentSessions | null {
+export function parsePersistedSessions(
+  raw: string | null,
+): PersistedAgentSessions | null {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as Partial<PersistedAgentSessions> | null;
@@ -63,13 +75,14 @@ export function parsePersistedSessions(raw: string | null): PersistedAgentSessio
     const sessions = parsed.sessions.filter(
       (s): s is AgentSession =>
         !!s &&
-        typeof s.id === 'string' &&
-        typeof s.title === 'string' &&
+        typeof s.id === "string" &&
+        typeof s.title === "string" &&
         Array.isArray(s.messages),
     );
     if (sessions.length === 0) return null;
     const activeSessionId =
-      typeof parsed.activeSessionId === 'string' && sessions.some((s) => s.id === parsed.activeSessionId)
+      typeof parsed.activeSessionId === "string" &&
+      sessions.some((s) => s.id === parsed.activeSessionId)
         ? parsed.activeSessionId
         : sessions[0].id;
     return { sessions: trimSessions(sessions), activeSessionId };
@@ -87,14 +100,16 @@ export function resolveDeepLinkSessionId(
   sessions: AgentSession[],
 ): string | null {
   if (!search) return null;
-  const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
-  const requested = params.get('session');
+  const params = new URLSearchParams(
+    search.startsWith("?") ? search.slice(1) : search,
+  );
+  const requested = params.get("session");
   if (!requested) return null;
   return sessions.some((s) => s.id === requested) ? requested : null;
 }
 
 function safeStorage(): Storage | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
   try {
     return window.localStorage;
   } catch {
@@ -136,7 +151,10 @@ function flushPersist(): void {
 }
 
 /** 节流写入（500ms 内的多次变更合并为一次） */
-export function schedulePersist(state: PersistedAgentSessions, throttleMs = PERSIST_THROTTLE_MS): void {
+export function schedulePersist(
+  state: PersistedAgentSessions,
+  throttleMs = PERSIST_THROTTLE_MS,
+): void {
   pending = state;
   if (persistTimer) return;
   persistTimer = setTimeout(flushPersist, throttleMs);
@@ -165,7 +183,11 @@ export const useAgentSessionStore = create<AgentSessionState>((set, get) => {
       if (get().hydrated) return;
       const persisted = readPersisted();
       if (persisted) {
-        set({ sessions: persisted.sessions, activeSessionId: persisted.activeSessionId, hydrated: true });
+        set({
+          sessions: persisted.sessions,
+          activeSessionId: persisted.activeSessionId,
+          hydrated: true,
+        });
         return;
       }
       set({ hydrated: true });
@@ -176,10 +198,13 @@ export const useAgentSessionStore = create<AgentSessionState>((set, get) => {
       const id = createAgentSessionId(now);
       const session: AgentSession = {
         id,
-        title: title || `会话 ${new Date(now).toLocaleString('zh-CN', { hour12: false })}`,
+        title:
+          title ||
+          `会话 ${new Date(now).toLocaleString("zh-CN", { hour12: false })}`,
         createdAt: now,
         updatedAt: now,
         messages: [],
+        agentEnabled: false,
       };
       commit([session, ...get().sessions], id);
       return id;
@@ -189,14 +214,19 @@ export const useAgentSessionStore = create<AgentSessionState>((set, get) => {
       const next = title.trim();
       if (!next) return;
       commit(
-        get().sessions.map((s) => (s.id === id ? { ...s, title: next, updatedAt: Date.now() } : s)),
+        get().sessions.map((s) =>
+          s.id === id ? { ...s, title: next, updatedAt: Date.now() } : s,
+        ),
         get().activeSessionId,
       );
     },
 
     deleteSession: (id) => {
       const remaining = get().sessions.filter((s) => s.id !== id);
-      const activeSessionId = get().activeSessionId === id ? remaining[0]?.id ?? null : get().activeSessionId;
+      const activeSessionId =
+        get().activeSessionId === id
+          ? (remaining[0]?.id ?? null)
+          : get().activeSessionId;
       commit(remaining, activeSessionId);
     },
 
@@ -209,7 +239,11 @@ export const useAgentSessionStore = create<AgentSessionState>((set, get) => {
       commit(
         get().sessions.map((s) =>
           s.id === sessionId
-            ? { ...s, messages: [...s.messages, message], updatedAt: Date.now() }
+            ? {
+                ...s,
+                messages: [...s.messages, message],
+                updatedAt: Date.now(),
+              }
             : s,
         ),
         get().activeSessionId,
@@ -220,6 +254,23 @@ export const useAgentSessionStore = create<AgentSessionState>((set, get) => {
       commit(
         get().sessions.map((s) =>
           s.id === sessionId ? { ...s, messages, updatedAt: Date.now() } : s,
+        ),
+        get().activeSessionId,
+      );
+    },
+
+    setAgentEnabled: (sessionId, enabled) => {
+      commit(
+        get().sessions.map((s) =>
+          s.id === sessionId
+            ? {
+                ...s,
+                agentEnabled: enabled,
+                // 首次确认后记住，后续开关不再弹计费提示
+                agentAcknowledged: enabled ? true : s.agentAcknowledged,
+                updatedAt: Date.now(),
+              }
+            : s,
         ),
         get().activeSessionId,
       );

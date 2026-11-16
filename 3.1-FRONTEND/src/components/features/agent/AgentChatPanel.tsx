@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 // ============================================
 // AgentChatPanel — 协议层对话面板（SPEC-20261111-B §3.6 ~ §3.9）
@@ -8,23 +8,32 @@
 // T-B8：>50 条消息启用 content-visibility 虚拟化。
 // T-B9：ChatInput 增强（停止/重生成/草稿/历史/@ 候选/附件文件名）。
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
-import type { UIMessage } from 'ai';
-import { PartList } from './PartRenderer';
-import { ChatInput, type ChatInputSuggestion } from '@/components/features/chat/ChatInput';
-import { uiMessageToParts, type LooseUIMessage } from '@/lib/adapters/ui-message-to-parts';
-import { shouldVirtualize, VIRTUALIZED_ROW_STYLE } from '@/lib/virtualization';
-import { useAgentSessionStore, type AgentSession } from '@/stores/agent-session-store';
-import type { AgentMessage } from '@/types/agent-message';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+import type { UIMessage } from "ai";
+import { PartList } from "./PartRenderer";
+import {
+  ChatInput,
+  type ChatInputSuggestion,
+} from "@/components/features/chat/ChatInput";
+import {
+  uiMessageToParts,
+  type LooseUIMessage,
+} from "@/lib/adapters/ui-message-to-parts";
+import { shouldVirtualize, VIRTUALIZED_ROW_STYLE } from "@/lib/virtualization";
+import {
+  useAgentSessionStore,
+  type AgentSession,
+} from "@/stores/agent-session-store";
+import type { AgentMessage } from "@/types/agent-message";
 
 /** 静态技能候选（无 skills API 时的降级清单，SPEC-B §3.9） */
 const STATIC_SUGGESTIONS: ChatInputSuggestion[] = [
-  { label: '行情分析', value: '@行情分析', hint: '技能' },
-  { label: '风控检查', value: '@风控检查', hint: '技能' },
-  { label: '基本面', value: '@基本面', hint: '技能' },
-  { label: '报告生成', value: '@报告生成', hint: '技能' },
+  { label: "行情分析", value: "@行情分析", hint: "技能" },
+  { label: "风控检查", value: "@风控检查", hint: "技能" },
+  { label: "基本面", value: "@基本面", hint: "技能" },
+  { label: "报告生成", value: "@报告生成", hint: "技能" },
 ];
 
 /** 浏览器 fetch 被网络层掐断时的错误文案（瞬时可恢复，值得自动重试一次） */
@@ -38,14 +47,17 @@ function toUiMessages(session: AgentSession | undefined): UIMessage[] {
   );
 }
 
-function toAgentMessages(messages: UIMessage[], isError: boolean): AgentMessage[] {
+function toAgentMessages(
+  messages: UIMessage[],
+  isError: boolean,
+): AgentMessage[] {
   const now = Date.now();
   return messages.map((m) => ({
     id: m.id,
     role: m.role,
     parts: uiMessageToParts(m as unknown as LooseUIMessage),
     createdAt: now,
-    status: isError ? 'error' : 'done',
+    status: isError ? "error" : "done",
   }));
 }
 
@@ -53,16 +65,30 @@ export interface AgentChatPanelProps {
   sessionId: string;
   /** 会话标题（用于头部展示） */
   title?: string;
+  /** AI Agent 开关；关闭时服务端只走默认规则，不调用大模型 */
+  agentEnabled?: boolean;
 }
 
-function AgentChatPanelInner({ sessionId, title }: AgentChatPanelProps) {
+function AgentChatPanelInner({
+  sessionId,
+  title,
+  agentEnabled = false,
+}: AgentChatPanelProps) {
   const setMessages = useAgentSessionStore((s) => s.setMessages);
-  const storedSession = useAgentSessionStore((s) => s.sessions.find((item) => item.id === sessionId));
-  const initialMessages = useMemo(() => toUiMessages(storedSession), [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
-  const [input, setInput] = useState('');
+  const storedSession = useAgentSessionStore((s) =>
+    s.sessions.find((item) => item.id === sessionId),
+  );
+  const initialMessages = useMemo(
+    () => toUiMessages(storedSession),
+    [sessionId],
+  ); // eslint-disable-line react-hooks/exhaustive-deps
+  const [input, setInput] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
 
-  const transport = useMemo(() => new DefaultChatTransport({ api: '/api/agent/chat' }), []);
+  const transport = useMemo(
+    () => new DefaultChatTransport({ api: "/api/agent/chat" }),
+    [],
+  );
   const { messages, sendMessage, status, error, stop, regenerate } = useChat({
     id: sessionId,
     messages: initialMessages,
@@ -72,8 +98,13 @@ function AgentChatPanelInner({ sessionId, title }: AgentChatPanelProps) {
     },
   });
 
-  const busy = status === 'submitted' || status === 'streaming';
+  const busy = status === "submitted" || status === "streaming";
   const virtualize = shouldVirtualize(messages.length);
+  // AI Agent 档位随每次发送/重生成带到服务端；关闭时服务端不调用大模型
+  const requestOptions = useMemo(
+    () => ({ body: { agent_enabled: agentEnabled } }),
+    [agentEnabled],
+  );
 
   // 断网续流：流被网络中断时记下「待恢复」，联网恢复后自动重试该轮一次
   const [online, setOnline] = useState(true);
@@ -83,11 +114,11 @@ function AgentChatPanelInner({ sessionId, title }: AgentChatPanelProps) {
   const autoRetriedRef = useRef(false);
 
   useEffect(() => {
-    if (status === 'submitted' || status === 'streaming') {
+    if (status === "submitted" || status === "streaming") {
       // 新一轮请求已发出且仍在进行：清除中断标记，允许下次中断再续
       interruptedRef.current = false;
       retriedRef.current = false;
-    } else if (status === 'error') {
+    } else if (status === "error") {
       interruptedRef.current = true;
     }
   }, [status]);
@@ -99,38 +130,42 @@ function AgentChatPanelInner({ sessionId, title }: AgentChatPanelProps) {
       setOnline(true);
       // 仅对「因断网中断的一轮」自动续一次，避免服务端持续报错时无限重试
       // messages 为空时 regenerate 会抛 "message not found"，故先判空
-      if (messages.length > 0 && interruptedRef.current && !retriedRef.current) {
+      if (
+        messages.length > 0 &&
+        interruptedRef.current &&
+        !retriedRef.current
+      ) {
         retriedRef.current = true;
         interruptedRef.current = false;
-        void regenerate().catch(() => {
+        void regenerate(requestOptions).catch(() => {
           // 续流失败保持原样，由用户手动「重生成」
         });
       }
     };
-    window.addEventListener('offline', handleOffline);
-    window.addEventListener('online', handleOnline);
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
     return () => {
-      window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('online', handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
     };
-  }, [regenerate, messages.length]);
+  }, [regenerate, messages.length, requestOptions]);
 
   // 网络级失败（浏览器侧 fetch 被掐断）→ 自动重试该轮一次，成功则错误自然清除
   useEffect(() => {
-    if (status !== 'error' || autoRetriedRef.current) return;
-    const reason = error instanceof Error ? error.message : '';
+    if (status !== "error" || autoRetriedRef.current) return;
+    const reason = error instanceof Error ? error.message : "";
     if (!NETWORK_ERROR_RE.test(reason) || messages.length === 0) return;
     autoRetriedRef.current = true;
     const timer = setTimeout(() => {
-      void regenerate().catch(() => {
+      void regenerate(requestOptions).catch(() => {
         // 重试仍失败：保留原始错误，由用户手动「重新生成」
       });
     }, 800);
     return () => clearTimeout(timer);
-  }, [status, error, messages.length, regenerate]);
+  }, [status, error, messages.length, regenerate, requestOptions]);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, status]);
 
   const handleSend = (attachments?: string[]) => {
@@ -138,27 +173,31 @@ function AgentChatPanelInner({ sessionId, title }: AgentChatPanelProps) {
     if (!text || busy) return;
     const composed =
       attachments && attachments.length > 0
-        ? `${text}\n\n[附件] ${attachments.join(', ')}`
+        ? `${text}\n\n[附件] ${attachments.join(", ")}`
         : text;
-    setInput('');
+    setInput("");
     interruptedRef.current = false;
     retriedRef.current = false;
     autoRetriedRef.current = false;
-    void sendMessage({ text: composed });
+    void sendMessage({ text: composed }, requestOptions);
   };
 
   return (
     <div className="flex h-full flex-col">
       <header className="shrink-0 border-b border-slate-800 px-4 py-2 text-xs text-slate-400">
-        {title || '新会话'}
-        <span className="ml-2 text-[10px] text-slate-600">协议层 · 只读</span>
+        {title || "新会话"}
+        <span className="ml-2 text-[10px] text-slate-600">
+          {agentEnabled ? "AI Agent · 按 token 计费" : "默认模式 · 不扣积分"}
+        </span>
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
         {messages.length === 0 && !busy && (
           <div className="flex h-full flex-col items-center justify-center text-slate-500">
             <p className="text-sm">Agent 工作台已就绪</p>
-            <p className="mt-1 text-xs text-slate-600">输入问题，或输入 @ 选择技能</p>
+            <p className="mt-1 text-xs text-slate-600">
+              输入问题，或输入 @ 选择技能
+            </p>
           </div>
         )}
 
@@ -169,15 +208,19 @@ function AgentChatPanelInner({ sessionId, title }: AgentChatPanelProps) {
               key={message.id}
               data-testid="agent-message-row"
               style={virtualize ? VIRTUALIZED_ROW_STYLE : undefined}
-              className={message.role === 'user' ? 'flex justify-end' : 'flex justify-start'}
+              className={
+                message.role === "user"
+                  ? "flex justify-end"
+                  : "flex justify-start"
+              }
             >
               <div className="max-w-[85%]">
-                {message.role === 'user' ? (
+                {message.role === "user" ? (
                   <div className="rounded-xl border border-slate-700/40 bg-slate-800/60 px-4 py-2.5 text-sm text-slate-200 whitespace-pre-wrap">
                     {parts
-                      .filter((p) => p.type === 'text')
-                      .map((p) => (p.type === 'text' ? p.text : ''))
-                      .join('\n')}
+                      .filter((p) => p.type === "text")
+                      .map((p) => (p.type === "text" ? p.text : ""))
+                      .join("\n")}
                   </div>
                 ) : (
                   <PartList parts={parts} />
@@ -190,20 +233,20 @@ function AgentChatPanelInner({ sessionId, title }: AgentChatPanelProps) {
         {busy && (
           <div className="flex items-center gap-2 px-2 text-xs text-slate-500">
             <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-400" />
-            {status === 'submitted' ? '正在提交…' : '正在生成…'}
+            {status === "submitted" ? "正在提交…" : "正在生成…"}
           </div>
         )}
 
         {!online && (
           <div className="rounded-lg border border-amber-800/40 bg-amber-950/30 px-3 py-2 text-xs text-amber-300">
-            网络已断开{busy ? '，正在等待重连…' : '，恢复联网后将自动重试'}
+            网络已断开{busy ? "，正在等待重连…" : "，恢复联网后将自动重试"}
           </div>
         )}
 
         {error && (
           <div className="rounded-lg border border-red-800/40 bg-red-950/30 px-3 py-2 text-xs text-red-300">
             {NETWORK_ERROR_RE.test(error.message)
-              ? '网络连接中断，已自动重试；仍失败请点击「重新生成」'
+              ? "网络连接中断，已自动重试；仍失败请点击「重新生成」"
               : `请求失败：${error.message}`}
           </div>
         )}
@@ -225,7 +268,7 @@ function AgentChatPanelInner({ sessionId, title }: AgentChatPanelProps) {
             /* 仅文件名引用，发送时随消息携带 */
           }}
           onStop={stop}
-          onRegenerate={() => void regenerate()}
+          onRegenerate={() => void regenerate(requestOptions)}
           placeholder="输入问题，Enter 发送，Shift+Enter 换行，@ 选择技能"
         />
       </div>
@@ -235,7 +278,9 @@ function AgentChatPanelInner({ sessionId, title }: AgentChatPanelProps) {
 
 /** 外层按 sessionId 重挂载：useChat 的初始 messages 只在挂载时生效 */
 export function AgentChatPanel({ sessionId, title }: AgentChatPanelProps) {
-  return <AgentChatPanelInner key={sessionId} sessionId={sessionId} title={title} />;
+  return (
+    <AgentChatPanelInner key={sessionId} sessionId={sessionId} title={title} />
+  );
 }
 
 export default AgentChatPanel;
