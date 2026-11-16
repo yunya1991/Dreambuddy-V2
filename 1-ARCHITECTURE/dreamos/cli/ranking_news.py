@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -19,8 +20,27 @@ from typing import Any, Dict, Iterable, List, Optional
 
 MAX_PER_SYMBOL = 5
 LOOKBACK_HOURS = 72
-FETCH_PAGES = 3
+FETCH_PAGES = 4
 TITLE_MAX_LEN = 80
+
+# Odaily 以加密快讯为主，美股/大宗常以公司名或中文品种出现，补一层别名匹配
+_SYMBOL_ALIASES = {
+    "AMD": ("amd", "超威", "超微半导体"),
+    "AMZN": ("amazon", "亚马逊"),
+    "MSFT": ("microsoft", "微软"),
+    "META": ("meta", "脸书"),
+    "AAPL": ("apple", "苹果公司"),
+    "NVDA": ("nvidia", "英伟达"),
+    "TSLA": ("tesla", "特斯拉"),
+    "GOOGL": ("google", "谷歌"),
+    "BRKB": ("berkshire", "伯克希尔"),
+    "SPY": ("s&p 500", "标普500"),
+    "QQQ": ("纳斯达克100",),
+    "XAU": ("黄金", "gold"),
+    "XCU": ("铜价", "lme铜", "copper"),
+    "CL": ("原油", "wti", "crude"),
+    "BZ": ("布伦特", "brent"),
+}
 
 
 def _repo_root() -> Path:
@@ -80,6 +100,22 @@ def classify_impact(title: str, is_important: bool = False) -> str:
     return "低"
 
 
+def match_symbol_aliases(haystack: str) -> List[str]:
+    """公司名/中文品种别名 → 榜单 symbol（补 Odaily 纯 TICKER 规则的盲区）。"""
+    lower = haystack.lower()
+    hits: List[str] = []
+    for symbol, aliases in _SYMBOL_ALIASES.items():
+        for alias in aliases:
+            if alias.isascii():
+                if re.search(rf"(?<![a-z0-9]){re.escape(alias)}(?![a-z0-9])", lower):
+                    hits.append(symbol)
+                    break
+            elif alias in haystack:
+                hits.append(symbol)
+                break
+    return hits
+
+
 def build_snapshot(
     records: Iterable[Any],
     now: Optional[datetime] = None,
@@ -110,6 +146,8 @@ def build_snapshot(
         tickers = raw.get("tickers_hit") or [
             ticker for ticker in str(metrics.get("od_tickers_hit_csl") or "").split(",") if ticker
         ]
+        description = str(raw.get("description") or "")
+        tickers = list(dict.fromkeys([*tickers, *match_symbol_aliases(f"{title} {description}")]))
         if not tickers:
             continue
 

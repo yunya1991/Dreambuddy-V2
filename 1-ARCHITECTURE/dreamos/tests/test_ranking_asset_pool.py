@@ -151,6 +151,13 @@ def test_classify_impact_priority(ranking_news):
     assert ranking_news.classify_impact("例行周报", is_important=True) == "高"
 
 
+def test_match_symbol_aliases(ranking_news):
+    assert ranking_news.match_symbol_aliases("英伟达财报超预期") == ["NVDA"]
+    assert ranking_news.match_symbol_aliases("黄金价格创历史新高") == ["XAU"]
+    assert ranking_news.match_symbol_aliases("Meta 发布新模型") == ["META"]
+    assert ranking_news.match_symbol_aliases("metadata 字段更新") == []
+
+
 def test_build_news_snapshot_groups_filters_and_dedupes(ranking_news):
     from datetime import datetime, timedelta, timezone
     from types import SimpleNamespace
