@@ -193,6 +193,29 @@ def test_health_missed_run_streak_alerts():
     assert out["degraded_reasons"]["job:missed_run"] == 3
 
 
+def test_health_ignores_legacy_window_numbering_after_window_sec_change():
+    """6h→24h 重编号后，旧遗留 missed_run（编号更大）不得继续计入 streak。"""
+    now = 1794830400.0
+    store = _store_with(
+        [
+            _run("os.memory-cleanup.cloud", 20772, "succeeded", 1794765900, 1794765901),
+            _run("os.memory-cleanup.cloud", 83092, "missed_run", 1794787200),
+        ]
+    )
+    out = collect_l0_health(
+        store=store,
+        registry=_registry(),
+        capabilities_path=CAPABILITIES_PATH,
+        repo_root=REPO_ROOT,
+        host="cloud",
+        now=now,
+        runner=FakeRunner([]),
+    )
+    task = out["scheduling"]["tasks"]["os.memory-cleanup.cloud"]
+    assert task["missed_streak"] == 0
+    assert task["alert"] is False
+
+
 # ── 能力分项：health_cmd 探活（ok/missing/error/timeout）────────────────────
 def test_health_capabilities_probe_statuses(tmp_path):
     caps = _caps_file(

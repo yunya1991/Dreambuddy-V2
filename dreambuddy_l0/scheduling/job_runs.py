@@ -195,18 +195,38 @@ class JobRunRecorder:
         """扫描已关闭但无 run 的窗口；连续 >=3 窗触发 missing_run 告警。
 
         host 非空时只审计该主机的任务（云端审计不得把 local 任务误判为缺失）。
+
+        性能约束：只做一次全表读取并按 task_key 分组，禁止"每个任务查一次全表"
+        （jsonl 载体每查一次都重解析全文件，任务数 × 文件行数会放大到分钟级）。
         """
         try:
+            specs = [
+                spec
+                for spec in self.registry.list(enabled_only=True)
+                if not host or spec.host == host
+            ]
+            if not specs:
+                return {"degraded": False, "missed": {}, "alerts": 0}
+
+            # 单次遍历：一次取回全部 run 行，按 task_key 归并已存在的窗口
+            have_by_task: Dict[str, set] = {}
+            for row in self._query(limit=1_000_000):
+                if row.get("state") == "missed_run":
+                    continue
+                task_key = row.get("task_key")
+                if task_key is None:
+                    continue
+                have_by_task.setdefault(str(task_key), set()).add(
+                    int(row.get("logical_window", -1))
+                )
+
             missed: Dict[str, List[int]] = {}
             alerts = 0
-            for spec in self.registry.list(enabled_only=True):
-                if host and spec.host != host:
-                    continue
-                rows = self._query(filters={"task_key": spec.task_key})
-                have = {
-                    int(r.get("logical_window", -1)) for r in rows if r.get("state") != "missed_run"
-                }
+            for spec in specs:
                 now_idx = window_index(now_ts, spec.window_sec)
+                # 窗口口径变更后（如 6h→24h 重编号），旧编号可能大于当前 now_idx；
+                # 这类历史遗留窗口不参与起点推断，否则审计会永久停在旧编号上成为盲区。
+                have = {w for w in have_by_task.get(spec.task_key, set()) if w <= now_idx}
                 if since_ts is not None:
                     start_idx = window_index(since_ts, spec.window_sec)
                 elif have:

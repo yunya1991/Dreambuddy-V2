@@ -19,6 +19,7 @@ from typing import Any, Callable, Dict, Optional, Tuple
 import yaml
 
 from .registry import TaskRegistry, load_registry
+from .windows import window_index
 
 OPEN_STATES = ("pending", "claimed", "running")
 TERMINAL_STATES = ("succeeded", "failed", "timeout", "dead")
@@ -59,7 +60,9 @@ def _default_store(repo_root: str, job_runs_path: str):
 
 
 # ── 调度分项：跑没跑 / 成功率 / 最老滞留 / missed streak ────────────────────
-def _task_stats(rows, *, now: float, streak_alert: int) -> Dict[str, Any]:
+def _task_stats(
+    rows, *, now: float, streak_alert: int, now_idx: Optional[int] = None
+) -> Dict[str, Any]:
     state_counts: Dict[str, int] = {}
     for r in rows:
         state = str(r.get("state", "unknown"))
@@ -75,6 +78,9 @@ def _task_stats(rows, *, now: float, streak_alert: int) -> Dict[str, Any]:
     ordered = sorted(rows, key=lambda r: int(r.get("logical_window", 0)))
     streak = 0
     for r in reversed(ordered):
+        # 窗口口径变更后旧编号可能大于当前 now_idx，属历史遗留，不计入连续缺失
+        if now_idx is not None and int(r.get("logical_window") or 0) > now_idx:
+            continue
         if r.get("state") == "missed_run":
             streak += 1
         else:
@@ -123,6 +129,7 @@ def _scheduling_section(
             by_task.get(spec.task_key, []),
             now=now,
             streak_alert=registry.missed_streak_alert,
+            now_idx=window_index(now, spec.window_sec),
         )
         stats.update(
             {

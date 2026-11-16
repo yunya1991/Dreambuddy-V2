@@ -215,6 +215,32 @@ def test_missed_run_and_three_window_alert():
     assert len(store.query("job_runs", filters=mv)["rows"]) == 3
 
 
+def test_audit_ignores_legacy_window_numbering_after_window_sec_change():
+    """6h→24h 重编号后，旧遗留窗口编号大于 now_idx，不得把审计起点顶到未来。"""
+    store, event = FakeStore(), FakeEvent()
+    rec = JobRunRecorder(store=store, event=event, registry=load_registry(REGISTRY_PATH))
+    store.write(
+        "job_runs",
+        data={
+            "id": "os.memory-cleanup.cloud@83031",
+            "run_id": "os.memory-cleanup.cloud@83031",
+            "task_key": "os.memory-cleanup.cloud",
+            "logical_window": 83031,
+            "state": "succeeded",
+            "attempts": 1,
+            "started_at": 1793469901.0,
+            "heartbeat_at": 1793469901.0,
+            "finished_at": 1793469901.0,
+            "error": "",
+            "detail": {},
+        },
+        idempotency_key="os.memory-cleanup.cloud@83031",
+    )
+    # 24h 口径下窗口 20770/20771/20772 已关闭且无 run；旧编号 83031 不得参与起点推断
+    result = rec.audit(now_ts=1794830400, host="cloud")
+    assert sorted(result["missed"]["os.memory-cleanup.cloud"]) == [20770, 20771, 20772]
+
+
 def test_audit_scoped_by_host_ignores_other_host_tasks():
     """云端审计只能判定本机任务，否则 local 任务会被误判为连续缺失。"""
     store, event = FakeStore(), FakeEvent()
