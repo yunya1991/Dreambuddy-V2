@@ -1,8 +1,8 @@
 # SPEC — 残差记忆准入与遗忘治理（Residual Memory Admission）
 
-> **版本**: v1.3（P0-P2b 已实施：fail-loud 索引 + 记忆树 + 分级 TTL 两阶段 + 指纹去重 + 近义合并双门 + M1 指针索引 + 缺口适配层 + D0-D4 级联编排器与 telemetry；P3 分级 grace 已改）
+> **版本**: v1.4（P0-P4 全部实施：fail-loud 索引 + 记忆树 + 分级 TTL 两阶段 + 指纹去重 + 近义合并双门 + M1 指针索引 + 缺口适配 + M1-T 路由表 + D0-D4 级联编排 + 分级 grace + `verify(supersedes)` + 记忆漂移检测）
 > **日期**: 2026-11-16
-> **状态**: P0 / P0.5 / P0b / P1 / P2 / P2b 已实施（P2 剩 `rea_routing_table.yaml`）；P3 第 1、2、3 条已实施（第 2 条云端 systemd timer 已挂，2026-11-16，连续 7 天验收中）；P4 待实施（生产写待云端）
+> **状态**: P0 / P0.5 / P0b / P1 / P2 / P2b 已实施；P3 第 1、2、3 条已实施（第 2 条云端 systemd timer 已挂，2026-11-16，连续 7 天验收中）；P4 已实施（`verify(supersedes=)` + `memory_drift_detector`，7 项单测）
 > **归属**: 35-广义认知系统协作模块（协作设计 SSoT，不含实现）
 > **硬约束源**: [CLAUDE.md §记忆准入标准](../CLAUDE.md) · 认知库 `VM-1794758596238-7af17f8c`
 > **实现落点**: `4-MEMORY/9-工具与接口/` · `2-KNOWLEDGE/9-RAG-INFRA/`
@@ -333,7 +333,8 @@ REA 逆向解析已封装 MCP，是**默认求解器**；记忆只负责**指路
 > ① `memory_pointer_index.py` — M1 指针表落在 `cognitive_memory.db` 的 `memory_pointers`（**不新建库**），签名归一化后唯一、150 条容量门超限 fail-loud 并提示"抽象合并旧指针"；`query` 只做确定性关键词匹配、返回锚点与 ≤120 字摘要（**不读正文**），0 命中返回 `pointer_no_hit` / `pointer_index_empty` + `next=D1/D3`，与契约 C2b 同款。
 > ② `tools/capability_gap_adapter.py` — 复用 `48-涌现架构/registry/capability_gaps.py`，同 `(问题类别, 失败模式, 缺失工具)` 键**聚合为 1 条**并累加 `occurrences`，≥2 次标 `escalate=True` 交上游升级；**禁止**新建平行存储（读写都落 registry 的 `capability_gaps.jsonl`）。
 > 单测：指针索引 7 项 + 缺口适配 5 项。
-> **仍待**：`tools/rea_routing_table.yaml`（M1-T 路由表，属需人工策展的数据，未建）。
+> **已建（2026-11-16）**：`tools/rea_routing_table.yaml`（12 类：入口追链/影响面/架构摸底/工程对比/依赖环/配置定位/数据流/根因/接口契约/测试覆盖/死代码/历史做法）+ `tools/rea_routing.py`（`load_table` 结构校验 + `route` 确定性关键词路由 + CLI `list/route/validate`，7 项单测）。
+> 硬门：条目数 > `budget`（150）→ `routing_budget_exceeded`（要求抽象合并，禁止扩容）；表缺失/结构非法/未命中一律 `degraded_reason` + `next`，**禁止**伪装成"没有这类问题"。
 
 ### P2b 求解级联编排器 + telemetry（已交付，2026-11-16）
 
@@ -356,9 +357,17 @@ REA 逆向解析已封装 MCP，是**默认求解器**；记忆只负责**指路
 > 生产首跑实测：候选 **285,685**（`rag-bridge` C 级 302,777 为主，均从未被使用），每批 `promoted/vec_removed = 20,000`；已验证批次推进（`pending_total` 20,000 → 40,000），`stage2` 待 7 天宽限后触发。验收口径：连跑 7 天无失败（G4）。
 > **云端前置修复**：生产库缺 `access_count`/`last_used_at`（P0-2 迁移未落），已按 `VectorMemoryInterface._migrate_usage_columns` 同口径补列 + `idx_last_used_at` 后 TTL 方可运行。
 
-### P4 再巩固（后续）
+### P4 再巩固（已交付，2026-11-16）
 
-`verify()` 增加 `supersedes=<旧 id>` 语义，允许"修正"而非仅"加权"，接 `drift_detector` 检测内容与代码/doc 漂移。
+1. **`verify(supersedes=<旧 id>)`**（`cognitive_loop_entry.py`）：允许"修正"而非仅"加权"。
+   - 预校验 fail-loud：自指 → `supersedes_self`；旧 id 不存在 → `superseded_target_not_found`，且**不产生任何写入**（置信度更新也不做）。
+   - 落地方式：在双时序图置 `invalidated_by=<新 id>` 并 `persist()`，**不删行、不改质量等级**；recall 侧经 `filter_recall_results` 呈现 `temporal_status=superseded` + `invalidated_by`。
+   - 幂等：重复标记同一对 → 成功并回传 `previous_invalidated_by`；标记失败 FAIL-OPEN 上报 `supersedes.ok=false`，不撤销已完成的置信度更新。
+   - CLI：`verify VM-xxx --supersedes VM-yyy`。
+2. **`memory_drift_detector.py`**（与 TB1 的 `drift_detector.py` PSI 数值漂移**不是同一件事**）：扫 S/A/B 级、非轨迹记忆里的文件锚点，与仓库现状比对。
+   - `anchor_missing`（文件已不存在）/ `file_changed_after_memory`（文件 mtime 晚于记忆创建）；
+   - 默认 dry-run 只读（`file:...?mode=ro`）；`--apply` 对命中项调用 `verify(success=False, drift_detected=True)` 走既有 Beta 先验重置链路，不新建平行状态。
+   - 单测：supersedes 5 项 + 漂移 7 项。
 
 ---
 
@@ -404,7 +413,7 @@ REA 逆向解析已封装 MCP，是**默认求解器**；记忆只负责**指路
 | G5 准入门单测 | 四禁入各 1 例拒绝 + 四残差各 1 例通过 + 三测试各 1 例 | ✅ | ⏳ **P1**（`record()` 前置准入门未实现） |
 | G6 硬约束可检索 | recall 能命中 `VM-1794758596238-7af17f8c` | ✅ | ✅ 实测 top1 score **0.702** 命中 `VM-1794758596238-7af17f8c`（engine=sqlite_vec, dim=512） |
 | G7 三形态落地 | recall 默认返回指针/摘要 ≤120 字 + 路径锚点；M1 条目 ≤150；M3 类问题写入 = 0 | ✅ | 🟡 P0b 已交付树构建器（节点 + 双锚点）；**P2 已交付 M1 指针索引（150 容量门 + ≤120 字摘要）**；`recall` 返回形态改造仍属 P1 |
-| G8 减记忆增能力 | 现拆失败 100% 落缺口工单且同类聚合；M1-T 路由表可命中；工具缺口关闭数 ≥3/季度 | ✅ | 🟡 **P2**（`tools/capability_gap_adapter.py` 同键聚合 + 复现计数 + escalate 已建并有 5 项单测；`tools/rea_routing_table.yaml` 未建） |
+| G8 减记忆增能力 | 现拆失败 100% 落缺口工单且同类聚合；M1-T 路由表可命中；工具缺口关闭数 ≥3/季度 | ✅ | 🟡 **P2 ✅**（`capability_gap_adapter` 5 项单测 + `rea_routing_table.yaml` 12 类 / `rea_routing.py` 7 项单测）；工具缺口关闭数需按季度统计 |
 | G9 求解级联落地 | D0-D2 命中不触发向量检索；D3/D4 后树回写率 100%；D0-D2 占比 ≥60% | ✅ | 🟡 **P2b** 已交付 `cascade_orchestrator.py`（固定顺序 + 命中即停 + D3/D4 强制回写 + telemetry 汇总），单测 9 项；真实命中分布待生产跑满一周 |
 | G10 契约一致性 | 召回 0 命中或索引异常时**必须**返回 `degraded(reason)` + `ok=false`（契约 C2b）；准入门作为 C5 评测门的 **pre-filter**，**禁止**新增第二道平行门 | ✅ | ✅ 实测：`HYPE long 离场 止损 止盈` → `count=0, degraded=true, degraded_reason="no_hit"`（改前必中 RAG 日志） |
 | G11 痕迹归位 | 痕迹**全部**挂在已存在叶节点或项目 `_orphan` 下；每叶 ≤20、全局 ≤5000；无全局大池；`rag-bridge` 零痕迹 | ✅ | 🟡 `memory_traces` 表 + 归位逻辑（树 query 下钻到最深处，无命中挂 `_orphan`）+ 双容量门已实现并单测；生产痕迹数 0（阶段二待云端执行） |
@@ -463,7 +472,9 @@ G1-G3 为**存量止血**，必须先于 G4-G5（否则遗忘只是在给漏水�
 | 薄适配层 `tools/capability_gap_adapter.py` | **复用** `48-涌现架构/registry/capability_gaps.py`（open→claimed→resolved 已可用），只补「按问题类别聚合 + 复现计数」，**禁止**新建平行存储 | **P2 ✅ 2026-11-16**（同键聚合为 1 条 + `occurrences` 累加 + ≥2 次 `escalate`） |
 | 新增 `4-MEMORY/9-工具与接口/tests/test_memory_pointer_index.py` / `tests/test_capability_gap_adapter.py` | 指针索引 7 项 + 缺口适配 5 项单测 | **P2 ✅ 2026-11-16** |
 | 修改 `rebuild_vector_index.py` | 增 `--source/--ids/--where` 排除参数；`BEGIN IMMEDIATE` 包住 DROP→CREATE→INSERT（现 `:147-155` 非事务，崩溃即 recall 全盲） | **P0** |
-| 新增 `tools/rea_routing_table.yaml` | M1-T 问题类别 → 工具链路由表，计入 150 上限 | P2 |
+| 新增 `tools/rea_routing_table.yaml` + `tools/rea_routing.py` | M1-T 问题类别 → 工具链路由表，计入 150 上限 | **P2 ✅ 2026-11-16**（12 类；`load_table` 结构校验 + `route` 确定性路由 + budget 硬门；7 项单测） |
+| 修改 `cognitive_loop_entry.py`（`verify`） | 增 `supersedes=<旧 id>`：预校验 fail-loud + 双时序图 `invalidated_by` 标记 + CLI `--supersedes` | **P4 ✅ 2026-11-16**（5 项单测） |
+| 新增 `memory_drift_detector.py` | 记忆内容漂移（锚点缺失 / 文件晚于记忆），默认只读，`--apply` 走 `verify(drift_detected=True)` | **P4 ✅ 2026-11-16**（7 项单测；与 TB1 `drift_detector.py` 的 PSI 数值漂移区分） |
 | 新增 `memory_tree.py` | 三级树（项目/目录/章节）+ D1 查询 / D2 遍历 / D3-D4 回写；节点只存关键词与锚点 | **P0b ✅ 2026-11-16**：893 节点（58/344/491），树文件 670 KB |
 | 新增 `tests/test_memory_tree.py` | 记忆树 7 项单测（分词 / 构建 / 命中 / 遍历 / 回写 / 容量门 / 标题提取） | **P0b ✅** |
 | 调度：`com.dreambuddy.cognitive-daemon.plist` / 云端 systemd timer | 新增每日维护周期 | P3 |

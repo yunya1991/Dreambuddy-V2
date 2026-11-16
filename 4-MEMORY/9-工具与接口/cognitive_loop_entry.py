@@ -1338,6 +1338,7 @@ class CognitiveLoopEntry:
         success: bool = True,
         known_gaps_update: Optional[List[str]] = None,
         drift_detected: bool = False,
+        supersedes: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         A8 校验验证 — 更新记忆置信度并可能触发蒸馏（Phase1 扩展：连续成功计数 → AUTO 草案）。
@@ -1347,6 +1348,10 @@ class CognitiveLoopEntry:
             success: 校验是否通过
             known_gaps_update: 验证后更新的已知局限列表（仅 success=True 时生效）
             drift_detected: TB1 PSI 漂移检测结果 → True 时 Beta 先验重置
+            supersedes: P4 再巩固——本条记忆「修正」了哪条旧记忆的 id。
+                只做标记不删行：旧记忆在双时序图中置 `invalidated_by=memory_id`，
+                recall 时呈现 `temporal_status=superseded`（见 §3.7 再巩固）。
+                旧 id 不存在 / 自指时 fail-loud 返回 success=False，不产生任何写入。
 
         Returns:
             更新结果。Phase1 新增子键 "voyager"：
@@ -1415,6 +1420,30 @@ class CognitiveLoopEntry:
                 "poe_quality_cap": poe_quality_cap,
                 "poe_blocked": poe_blocked,
             }
+
+        # P4 再巩固：supersedes 预校验（fail-loud，校验不过不产生任何写入）
+        supersede_report: Optional[Dict[str, Any]] = None
+        if supersedes:
+            supersede_report = self._supersede_validate(supersedes, memory_id)
+            if not supersede_report.get("ok"):
+                _q = mem.get("quality_level", "C")
+                _c = round(float(mem.get("confidence") or 0.0), 4)
+                return {
+                    "success": False,
+                    "error": str(supersede_report.get("error") or "supersedes_failed"),
+                    "memory_id": memory_id,
+                    "old_quality": _q,
+                    "new_quality": _q,
+                    "old_confidence": _c,
+                    "new_confidence": _c,
+                    "quality_changed": False,
+                    "distill_may_triggered": False,
+                    "supersedes": supersede_report,
+                    "poe_trust": poe_trust,
+                    "receipt_hash": receipt_hash,
+                    "poe_quality_cap": poe_quality_cap,
+                    "poe_blocked": poe_blocked,
+                }
 
         old_quality = mem.get("quality_level", "C")
         old_confidence = float(mem.get("confidence") or 0.0)
@@ -1567,7 +1596,11 @@ class CognitiveLoopEntry:
             pass  # FAIL-OPEN
         # ---------- END L4 verify ----------
 
-        return {
+        # P4 再巩固：落 supersedes 标记（预校验已过；失败不撤销已完成的置信度更新，但显式上报）
+        if supersede_report is not None:
+            supersede_report = self._supersede_apply(supersede_report, mem)
+
+        result: Dict[str, Any] = {
             "success": not poe_blocked,  # strict 模式无 receipt → False
             "memory_id": memory_id,
             "old_quality": old_quality,
@@ -1590,6 +1623,48 @@ class CognitiveLoopEntry:
             "drift_detected": beta_result["drift_detected"],
             "data_schema_version": beta_result["data_schema_version"],
         }
+        if supersede_report is not None:
+            result["supersedes"] = supersede_report
+        return result
+
+    # ============================================================
+    # P4 再巩固：supersedes（修正而非仅加权）
+    # ============================================================
+
+    def _supersede_validate(self, old_id: str, new_id: str) -> Dict[str, Any]:
+        """校验 supersedes 目标可用（只读）。"""
+        if not isinstance(old_id, str) or not old_id.strip():
+            return {"ok": False, "error": "supersedes_invalid_id"}
+        if old_id == new_id:
+            return {"ok": False, "error": "supersedes_self", "old_id": old_id}
+        old_mem = self._vm.get(old_id)
+        if not old_mem:
+            return {"ok": False, "error": "superseded_target_not_found", "old_id": old_id}
+        entry = self.temporal_graph.get(old_id) or {}
+        return {
+            "ok": True,
+            "old_id": old_id,
+            "invalidated_by": new_id,
+            "entry_exists": bool(entry),
+            "previous_invalidated_by": entry.get("invalidated_by"),
+        }
+
+    def _supersede_apply(self, report: Dict[str, Any], old_mem: Dict[str, Any]) -> Dict[str, Any]:
+        """在双时序图中标记「旧记忆被本条否定」，并持久化。"""
+        old_id = report["old_id"]
+        new_id = report["invalidated_by"]
+        try:
+            # invalidate 只对已知条目生效；无时序元数据时先补一条（内容截断，避免图体积膨胀）
+            if not report.get("entry_exists"):
+                self.temporal_graph.add_temporal_memory(
+                    old_id, content=(old_mem.get("content") or "")[:400]
+                )
+            if not self.temporal_graph.invalidate(old_id, new_id):
+                return {**report, "ok": False, "error": "temporal_entry_missing"}
+            persisted = bool(self.temporal_graph.persist())
+        except Exception as exc:  # FAIL-OPEN：标记失败不影响已完成的 verify
+            return {**report, "ok": False, "error": f"supersede_apply_failed: {exc}"}
+        return {**report, "ok": True, "persisted": persisted}
 
     def _beta_verify_adapter(
         self,
@@ -2726,6 +2801,9 @@ def main():
     p_verify.add_argument("memory_id", help="记忆ID")
     p_verify.add_argument("--success", action="store_true", default=True)
     p_verify.add_argument("--fail", action="store_true", help="校验失败")
+    p_verify.add_argument(
+        "--supersedes", default=None, help="P4：本条修正的旧记忆 ID（只标记不删行）"
+    )
 
     # upgrade
     p_upgrade = sub.add_parser("upgrade", help="手动升级记忆")
@@ -2824,7 +2902,7 @@ def main():
 
         elif args.command == "verify":
             success = not args.fail
-            result = cle.verify(args.memory_id, success=success)
+            result = cle.verify(args.memory_id, success=success, supersedes=args.supersedes)
             print(f"\n{'✅' if success else '❌'} 验证: {args.memory_id}")
             if result.get("success"):
                 print(f"   质量: {result['old_quality']} → {result['new_quality']}")
@@ -2833,6 +2911,14 @@ def main():
                     print("   🔄 可能触发蒸馏")
             else:
                 print(f"   错误: {result.get('error')}")
+            sup = result.get("supersedes")
+            if sup:
+                if sup.get("ok"):
+                    print(
+                        f"   🔁 修正: {sup['old_id']} → {sup['invalidated_by']}（已标记 superseded）"
+                    )
+                else:
+                    print(f"   ⚠️  修正未生效: {sup.get('error')}")
 
         elif args.command == "upgrade":
             result = cle.upgrade(args.memory_id, args.quality, args.confidence)

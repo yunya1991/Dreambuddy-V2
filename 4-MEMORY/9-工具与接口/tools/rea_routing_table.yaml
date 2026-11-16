@@ -1,0 +1,70 @@
+# M1-T 问题类别 → REA 工具链路由表（计入 M1 指针 150 条上限）
+# 用途：进入陌生模块 / 影响面分析 / 现拆失败时，先按类别查这里，决定调哪个 REA 工具，
+#       避免每次都从头试探。条目只存「类别 → 工具链」，不存方法论正文（正文见 33-REA）。
+version: 1
+updated_at: "2026-11-16"
+budget: 150
+note: >-
+  指针型路由表：新增条目必须先做「删除测试」——删掉它未来会走错工具或重复试探，才允许入表。
+  条目数计入 M1 指针 150 条上限，超限必须抽象合并同类类别，禁止直接扩容。
+
+categories:
+  - id: entry-point-trace
+    summary: 从入口向下追调用链，回答「谁调用 / 怎么走到这里」
+    keywords: [入口, 调用链, 调用关系, 谁调用, 怎么触发, entry, call chain, caller, trace]
+    tools: [mcp_rea_submit_rea_trace, mcp_rea_poll_rea_trace]
+
+  - id: impact-analysis
+    summary: 改一处前判断影响面，回答「改这个会波及什么」
+    keywords: [影响面, 影响分析, 波及, 改这个会怎样, 回归风险, impact, blast radius]
+    tools: [mcp_rea_rea_audit]
+
+  - id: architecture-overview
+    summary: 进入陌生模块先摸底，回答「这里由哪些层/模块组成」
+    keywords: [架构, 摸底, 模块结构, 分层, 整体设计, architecture, overview, layout]
+    tools: [mcp_rea_get_rea_snapshot, mcp_rea_get_rea_methodology]
+
+  - id: module-compare
+    summary: 两个工程/两套实现对比，回答「差异在哪」
+    keywords: [对比, 差异, 两个版本, 迁移前后, compare, diff, versus]
+    tools: [mcp_rea_submit_rea_compare, mcp_rea_poll_rea_compare]
+
+  - id: dependency-cycle
+    summary: 依赖方向与环检测，回答「为什么会互相 import」
+    keywords: [依赖, 依赖环, 循环引用, import 环, 耦合, dependency, circular]
+    tools: [mcp_rea_rea_audit]
+
+  - id: config-locate
+    summary: 定位配置项/开关/阈值的定义与读取点
+    keywords: [配置项, 开关, 默认值, 阈值, 环境变量, 在哪定义, config, flag, env]
+    tools: [mcp_rea_submit_rea_analyze, mcp_rea_poll_rea_analyze]
+
+  - id: dataflow
+    summary: 追字段/数据的来源与去向，回答「这个数从哪来的」
+    keywords: [数据流, 字段来源, 从哪来, 写入口, 落库, 链路, dataflow, provenance]
+    tools: [mcp_rea_submit_rea_analyze, mcp_rea_submit_rea_trace]
+
+  - id: error-root-cause
+    summary: 报错/异常定位根因，回答「为什么炸」
+    keywords: [报错, 异常, 崩溃, 根因, 为什么失败, error, exception, root cause]
+    tools: [mcp_rea_submit_rea_analyze]
+
+  - id: api-contract
+    summary: 核对接口契约与调用方契约是否一致
+    keywords: [接口, 契约, 入参, 出参, 签名, 契约不一致, api, contract, schema]
+    tools: [mcp_rea_get_rea_snapshot]
+
+  - id: test-coverage
+    summary: 判断某模块有无测试、测试是否覆盖目标行为
+    keywords: [测试, 覆盖率, 单测, 有没有测试, test, coverage, spec]
+    tools: [mcp_rea_rea_audit]
+
+  - id: dead-code
+    summary: 判断某函数/模块是否仍被使用（死代码）
+    keywords: [死代码, 未使用, 还在用吗, 冗余, dead code, unused, orphan]
+    tools: [mcp_rea_rea_audit]
+
+  - id: prior-art
+    summary: 找历史上同类问题的处理记录与既有结论
+    keywords: [历史, 以前怎么做的, 既有方案, 之前修过, prior art, history]
+    tools: [mcp_rea_recall, mcp_rea_get_rea_methodology]
