@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dreambuddy.local/56/checkpoint.schema.json",
+  "title": "L2 Ticket Checkpoint v1.0",
+  "description": "paused Ticket 的可选恢复点：只存引用与 hash，不存凭据/大对象；resume 前必须校验 content_hash。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "checkpoint_id", "session_id", "ticket_id", "state", "content_hash",
+    "git", "artifacts", "created_at", "resume_guard"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "checkpoint_id": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{3,64}$" },
+    "session_id": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{3,64}$" },
+    "ticket_id": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{1,64}$" },
+    "state": { "const": "paused" },
+    "content_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo", "commit", "dirty"],
+      "properties": {
+        "repo": { "type": "string", "minLength": 1 },
+        "commit": { "type": "string", "minLength": 1 },
+        "dirty": { "type": "boolean" }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "hash"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "resume_guard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requires_same_hash", "max_age_s"],
+      "properties": {
+        "requires_same_hash": { "const": true },
+        "max_age_s": { "const": 604800 }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "git": { "properties": { "dirty": { "const": true } } } },
+        "required": ["git"]
+      },
+      "then": {
+        "properties": { "artifacts": { "minItems": 1 } },
+        "required": ["artifacts"]
+      }
+    }
+  ]
+}

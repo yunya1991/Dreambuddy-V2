@@ -134,17 +134,42 @@ def call_worker_tool(
     manager: Any = None,
     flags: Optional[Dict[str, Any]] = None,
     trace_id: Optional[str] = None,
+    session_id: Optional[str] = None,
+    tool_call_id: Optional[str] = None,
     recorder: Optional[Callable[[Dict[str, Any]], None]] = None,
     registry_path: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Worker 经门禁 → 句柄 → 壳 调用一个工具,返回统一信封。"""
     entry = {"role": role, "tool": tool, "ok": False, "trace_id": trace_id, "ts": time.time()}
+    if session_id:
+        entry["session_id"] = session_id
+    if tool_call_id:
+        entry["tool_call_id"] = tool_call_id
+
+    # H3 影子：命令信封携带同一 trace_id/session_id（开关默认关）
+    _hcp_shadow = bool(isinstance(flags, dict) and flags.get("hcp.trace.shadow", False))
+
+    def _done(envelope: Dict[str, Any]) -> Dict[str, Any]:
+        if _hcp_shadow:
+            try:
+                from core.hcp_trace import stamp_envelope
+
+                stamp_envelope(
+                    envelope,
+                    trace_id=trace_id,
+                    session_id=session_id,
+                    tool_call_id=tool_call_id,
+                )
+            except Exception:
+                pass  # FAIL-OPEN：观测注入不击穿调用
+        return _audit_and(recorder, entry, envelope)
+
     try:
         enabled = isinstance(flags, dict) and bool(flags.get(_SWITCH, False))
         if not enabled:
-            return _audit_and(recorder, entry, _fail("disabled", trace_id))
+            return _done(_fail("disabled", trace_id))
         if not isinstance(role, str) or not role or not isinstance(tool, str) or not tool:
-            return _audit_and(recorder, entry, _fail("invalid", trace_id))
+            return _done(_fail("invalid", trace_id))
 
         check = checker if callable(checker) else _default_checker
         try:
@@ -152,11 +177,11 @@ def call_worker_tool(
         except Exception:
             allowed = False  # deny-by-default
         if not allowed:
-            return _audit_and(recorder, entry, _fail("forbidden", trace_id))
+            return _done(_fail("forbidden", trace_id))
 
         shell_id = load_tool_shell_map(registry_path).get(tool)
         if shell_id is None:
-            return _audit_and(recorder, entry, _fail("not_found", trace_id))
+            return _done(_fail("not_found", trace_id))
 
         handle = None
         try:
@@ -165,7 +190,7 @@ def call_worker_tool(
         except Exception:
             handle = None
         if handle is None:
-            return _audit_and(recorder, entry, _fail("unavailable", trace_id, degraded=True))
+            return _done(_fail("unavailable", trace_id, degraded=True))
 
         # SPEC-DSH-P5 HC-6/HC-7: try-retry-degrade 三态
         # HC-6: 传输层失败(壳 crash/SSH 断连/超时) → 重拉壳 → 重试 1 次
@@ -221,9 +246,9 @@ def call_worker_tool(
                 "error_code": None,
                 "meta": {"trace_id": trace_id},
             }
-        return _audit_and(recorder, entry, envelope)
+        return _done(envelope)
     except Exception:
-        return _audit_and(recorder, entry, _fail("unavailable", trace_id, degraded=True))
+        return _done(_fail("unavailable", trace_id, degraded=True))
 
 
 def _audit_and(recorder, entry, envelope):

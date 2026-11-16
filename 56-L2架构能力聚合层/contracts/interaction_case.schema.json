@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dreambuddy.local/56/interaction_case.schema.json",
+  "title": "L2 InteractionCase v1.0",
+  "description": "交互案例契约：作者只写 author_claim，derived 由证据门禁写入；A 级才可进入优化/训练。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "case_id", "session_id", "intent", "actions", "outcome", "learned",
+    "refs", "author_claim", "derived"
+  ],
+  "properties": {
+    "case_id": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{3,64}$" },
+    "session_id": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{3,64}$" },
+    "intent": { "type": "string", "minLength": 1 },
+    "actions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "outcome": { "type": "string", "minLength": 1 },
+    "learned": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "id"],
+        "properties": {
+          "type": { "enum": ["span", "checkpoint", "file", "ledger", "commit", "command"] },
+          "id": { "type": "string", "minLength": 1 },
+          "hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "author_claim": { "enum": ["observation", "inference"] },
+    "derived": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "admissibility"],
+      "properties": {
+        "level": { "enum": ["observation", "inference"] },
+        "admissibility": { "enum": ["A", "B", "C"] }
+      }
+    },
+    "human_confirmation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["by", "at", "ref"],
+      "properties": {
+        "by": { "type": "string", "minLength": 1 },
+        "at": { "type": "string", "format": "date-time" },
+        "ref": { "type": "string", "minLength": 1 }
+      }
+    },
+    "reproduction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cmd", "artifact_hash"],
+      "properties": {
+        "cmd": { "type": "string", "minLength": 1 },
+        "artifact_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "links": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "trace_id": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{3,64}$" },
+        "ledger_task_id": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{3,64}$" }
+      }
+    }
+  }
+}

@@ -237,11 +237,11 @@
 | 文档 | 路径 | 版本 |
 |------|------|------|
 | 母 SPEC（L2 架构能力聚合层） | [56-L2架构能力聚合层/SPEC-56-L2架构能力聚合层.md](../56-L2架构能力聚合层/SPEC-56-L2架构能力聚合层.md) | v0.6（ADR-01~10 / IF-1~IF-6 / G-L2-1~9 / 路线 P0–P5；IF-5/IF-6 已可执行） |
-| Harness 能力增强（HCP） | [56-L2架构能力聚合层/SPEC-56-Harness能力增强-v0.2.md](../56-L2架构能力聚合层/SPEC-56-Harness能力增强-v0.2.md) | v0.2（评审修订稿：修 M1–M4；P0 收缩为 H3+H5；补统计口径/RACI/回滚；v0.1 已被取代） |
-| HCP 评审记录 | [56-L2架构能力聚合层/docs/REVIEW-20261117-SPEC-56-H-HCP.md](../56-L2架构能力聚合层/docs/REVIEW-20261117-SPEC-56-H-HCP.md) | v0.1（四视角 + Devil's Advocate；M1–M4 必改；P0 收缩为 H3+H5） |
-| 总技术文档 + 能力登记 | [56-L2架构能力聚合层/docs/TECHNICAL_DESIGN.md](../56-L2架构能力聚合层/docs/TECHNICAL_DESIGN.md) | v1.16（五子层能力地图，50 项能力登记，30 项缺口；A0–A3 全链路 + preset 导出/加载 + 四类 probe + Cordis loader 探针 + sandbox profile 实装挂载） |
+| Harness 能力增强（HCP） | [56-L2架构能力聚合层/SPEC-56-Harness能力增强-v0.3.md](../56-L2架构能力聚合层/SPEC-56-Harness能力增强-v0.3.md) | v0.3（修复审阻断项 R1–R13；H-D0b 注入点已落表；H1 声明层 + H2/H3/H4/H5 影子/门禁已落地；H4 强制绑定与 ledger v1.2 延后） |
+| HCP 评审记录 | [56-L2架构能力聚合层/docs/REVIEW-20261117-SPEC-56-H-HCP.md](../56-L2架构能力聚合层/docs/REVIEW-20261117-SPEC-56-H-HCP.md) | v0.2（四视角 + Devil's Advocate；复审：设计层通过，G-R1–G-R3 实现待验证） |
+| 总技术文档 + 能力登记 | [56-L2架构能力聚合层/docs/TECHNICAL_DESIGN.md](../56-L2架构能力聚合层/docs/TECHNICAL_DESIGN.md) | v1.18（五子层能力地图，50 项能力登记，30 项缺口；A0–A3 全链路 + preset + probe + HCP H1–H5 落地） |
 | 协议层逆向解析（REA） | [56-L2架构能力聚合层/docs/REA-lobehub协议逆向解析-v0.1.md](../56-L2架构能力聚合层/docs/REA-lobehub协议逆向解析-v0.1.md) | v0.1（LobeHub 协议事实 + L2 聚合调度缺失 GAP-17~23 + 对照实验设计） |
-| Trae 逆向解析与交互学习（研究） | [56-L2架构能力聚合层/docs/RESEARCH-20261117-Trae逆向解析与交互学习-v0.1.md](../56-L2架构能力聚合层/docs/RESEARCH-20261117-Trae逆向解析与交互学习-v0.1.md) | v0.1.5（三层结构 + 五装配机制；R1/R2：3 miner + 5 机制卡 + 627 交互案例；R3：5 个 GAP-T*；已固化 SKILL；HCP SPEC v0.2 待复审） |
+| Trae 逆向解析与交互学习（研究） | [56-L2架构能力聚合层/docs/RESEARCH-20261117-Trae逆向解析与交互学习-v0.1.md](../56-L2架构能力聚合层/docs/RESEARCH-20261117-Trae逆向解析与交互学习-v0.1.md) | v0.1.6（三层结构 + 五装配机制；R1/R2：3 miner + 5 机制卡 + 627 交互案例；R3：5 个 GAP-T*；SKILL 已固化；HCP v0.2 设计复审通过） |
 | 总装线对标（三源） | [56-L2架构能力聚合层/docs/总装线对标-三源与DreamOS逐模块优化-v0.1.md](../56-L2架构能力聚合层/docs/总装线对标-三源与DreamOS逐模块优化-v0.1.md) | v0.1（LobeHub/OpenAI/Claude 七段契约 + DreamOS 逐模块改造 + GAP-24~30） |
 | A0 契约评审记录 | [56-L2架构能力聚合层/docs/REVIEW-20261116-A0契约与总装线对标评审.md](../56-L2架构能力聚合层/docs/REVIEW-20261116-A0契约与总装线对标评审.md) | v1.2（✅ 通过/A0 关闭：4 阻断已修，28/28 自检 PASSED） |
 | L2 可执行契约 | [56-L2架构能力聚合层/contracts/](../56-L2架构能力聚合层/contracts/) | 台账 schema / 插件契约 schema / 状态机 yaml；校验器 `scripts/validate_contracts.py` |

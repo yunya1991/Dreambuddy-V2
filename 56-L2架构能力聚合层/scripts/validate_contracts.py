@@ -47,6 +47,8 @@ STOP_REASON_SCHEMA = CONTRACTS / "stop_reason.schema.json"
 TOOL_SET_SCHEMA = CONTRACTS / "tool_set.schema.json"
 SPAN_SCHEMA = CONTRACTS / "span.schema.json"
 PLAN_SCHEMA = CONTRACTS / "plan_handoff.schema.json"
+CHECKPOINT_SCHEMA = CONTRACTS / "checkpoint.schema.json"
+CASE_SCHEMA = CONTRACTS / "interaction_case.schema.json"
 
 RESOLVER_PATTERNS = {
     "48.experiment_id": r"^(D2B|D3B|XA)-[A-Za-z0-9._-]{3,}$",
@@ -236,6 +238,41 @@ def validate_plan(doc: Dict[str, Any]) -> List[str]:
     return errors
 
 
+def validate_checkpoint(doc: Dict[str, Any]) -> List[str]:
+    errors = schema_errors(doc, load_json(CHECKPOINT_SCHEMA))
+    try:
+        _parse_ts(doc["created_at"])
+    except (KeyError, ValueError) as exc:
+        errors.append(f"created_at 不是合法 RFC3339 时间: {exc}")
+    git = doc.get("git") or {}
+    if git.get("dirty") is True and not (doc.get("artifacts") or []):
+        errors.append("git.dirty=true 时 artifacts 不得为空")
+    return errors
+
+
+def validate_interaction_case(doc: Dict[str, Any]) -> List[str]:
+    errors = schema_errors(doc, load_json(CASE_SCHEMA))
+    derived = doc.get("derived") or {}
+    level = derived.get("level")
+    admissibility = derived.get("admissibility")
+    if level == "observation" and doc.get("author_claim") != "observation":
+        errors.append("derived.level=observation 与 author_claim 不一致")
+
+    types = {r.get("type") for r in (doc.get("refs") or []) if isinstance(r, dict)}
+    confirmed = bool(doc.get("human_confirmation")) or bool(doc.get("reproduction"))
+    if admissibility == "A":
+        if not types & {"span", "checkpoint"}:
+            errors.append("A 级 refs 必须含 span/checkpoint")
+        if not confirmed:
+            errors.append("A 级必须有 reproduction 或 human_confirmation")
+    elif admissibility == "B":
+        if not confirmed:
+            errors.append("B 级必须有 reproduction 或 human_confirmation")
+    elif admissibility == "C" and confirmed:
+        errors.append("C 级不得携带确认记录")
+    return errors
+
+
 # --------------------------------------------------------------------------
 # 自检：1 个正例 + 5 个负例（台账）+ 1 个正例 + 1 个负例（插件）
 # --------------------------------------------------------------------------
@@ -410,6 +447,41 @@ def _base_plan(mode: str = "self") -> Dict[str, Any]:
     return doc
 
 
+def _base_checkpoint() -> Dict[str, Any]:
+    return {
+        "schema_version": "1.0",
+        "checkpoint_id": "ckpt-20261117-001",
+        "session_id": "sess-20261117-001",
+        "ticket_id": "ticket-20261117-001",
+        "state": "paused",
+        "content_hash": "sha256:" + "a" * 64,
+        "git": {"repo": "dreambuddy-v2", "commit": "a1b2c3d", "dirty": False},
+        "artifacts": [],
+        "created_at": "2026-11-17T10:00:00+08:00",
+        "resume_guard": {"requires_same_hash": True, "max_age_s": 604800},
+    }
+
+
+def _base_case() -> Dict[str, Any]:
+    return {
+        "case_id": "case-20261117-001",
+        "session_id": "sess-20261117-001",
+        "intent": "修复空候选集路由异常",
+        "actions": ["reproduce", "fix"],
+        "outcome": "regression passed",
+        "learned": ["空集需 early-return"],
+        "refs": [{"type": "span", "id": "sp-001", "hash": "sha256:" + "b" * 64}],
+        "author_claim": "observation",
+        "derived": {"level": "observation", "admissibility": "A"},
+        "human_confirmation": {
+            "by": "u1",
+            "at": "2026-11-17T10:00:00+08:00",
+            "ref": "pr#1",
+        },
+        "links": {"trace_id": "trace-20261117-001"},
+    }
+
+
 def self_test() -> int:
     failures: List[str] = []
     ran: List[str] = []
@@ -541,6 +613,17 @@ def self_test() -> int:
     no_trace_plan.pop("trace_id")
     expect_fail("负例20-Plan缺trace_id", no_trace_plan, validate_plan, "trace_id")
 
+    # ---- H4 / H5 契约 ----
+    expect_ok("正例-checkpoint", _base_checkpoint(), validate_checkpoint)
+    dirty_ckpt = _base_checkpoint()
+    dirty_ckpt["git"]["dirty"] = True
+    expect_fail("负例21-dirty无artifacts", dirty_ckpt, validate_checkpoint, "artifacts")
+
+    expect_ok("正例-InteractionCase", _base_case(), validate_interaction_case)
+    bad_case = _base_case()
+    bad_case["refs"] = [{"type": "file", "id": "core/x.py", "hash": "sha256:" + "c" * 64}]
+    expect_fail("负例22-A级缺span", bad_case, validate_interaction_case, "span/checkpoint")
+
     total = len(ran)
     if failures:
         print(f"SELF-TEST FAILED ({len(failures)}/{total})")
@@ -570,6 +653,8 @@ def main() -> int:
     ap.add_argument("--tool-set", type=Path, help="工具集快照 json 路径")
     ap.add_argument("--span", type=Path, help="span 契约 json 路径")
     ap.add_argument("--plan", type=Path, help="Plan/Handoff 契约 json 路径")
+    ap.add_argument("--checkpoint", type=Path, help="paused Ticket checkpoint json 路径")
+    ap.add_argument("--interaction-case", type=Path, help="InteractionCase json 路径")
     args = ap.parse_args()
 
     if args.self_test:
@@ -582,6 +667,8 @@ def main() -> int:
         (args.tool_set, validate_tool_set),
         (args.span, validate_span),
         (args.plan, validate_plan),
+        (args.checkpoint, validate_checkpoint),
+        (args.interaction_case, validate_interaction_case),
     ]
     if not any(path for path, _ in targets):
         ap.print_help()

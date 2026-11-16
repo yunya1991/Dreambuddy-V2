@@ -22,6 +22,8 @@ D3 配额交叉校验见 quota_report()：分层配额 / max_total_tools / 单�
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 import uuid
 from datetime import datetime, timezone
@@ -56,6 +58,10 @@ _EXPOSURE_MAP = {
 DEFAULT_REGISTRY_PATH = (
     Path(__file__).resolve().parents[4] / "47-MCP管理系统" / "registry" / "mcp_capabilities.yaml"
 )
+
+# H2 影子阶段：v1.0 快照不动，旁路写 tool_set.hcp.json（SPEC-56-H v0.3 §4.2）
+HCP_SIDECAR_SCHEMA_VERSION = "hcp-1.0"
+HCP_TOOL_LIMIT = 15
 
 
 class ToolSetError(ValueError):
@@ -226,6 +232,139 @@ def build_tool_set(
         generated_at=generated_at,
         extra_denied=extra_denied,
     )
+
+
+# ============================================================
+# H2：tool_set 影子 sidecar（hash / version / diff / 审批绑定）
+# ============================================================
+
+
+def _canonical_tools_json(tools: Iterable[Dict[str, Any]]) -> str:
+    normalized = sorted(
+        (dict(item) for item in tools or [] if isinstance(item, dict)),
+        key=lambda item: str(item.get("name") or ""),
+    )
+    return json.dumps(normalized, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def compute_tool_set_hash(tools: Iterable[Dict[str, Any]]) -> str:
+    """对排序后的 tools canonical JSON 做 sha256；同会话同 mode 且工具未变时稳定"""
+    digest = hashlib.sha256(_canonical_tools_json(tools).encode("utf-8")).hexdigest()
+    return f"sha256:{digest}"
+
+
+def diff_tools(
+    previous: Iterable[Dict[str, Any]],
+    current: Iterable[Dict[str, Any]],
+) -> Dict[str, List[str]]:
+    """按 name 对比两次工具面；changed 仅记录内容变化的同名工具"""
+    prev = {str(t.get("name")): t for t in previous or [] if isinstance(t, dict)}
+    curr = {str(t.get("name")): t for t in current or [] if isinstance(t, dict)}
+    return {
+        "added": sorted(curr.keys() - prev.keys()),
+        "removed": sorted(prev.keys() - curr.keys()),
+        "changed": sorted(name for name in prev.keys() & curr.keys() if prev[name] != curr[name]),
+    }
+
+
+def _parse_rfc3339(value: Any) -> datetime:
+    try:
+        stamp = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError) as exc:
+        raise ToolSetError(f"时间字段不是合法 RFC3339: {value!r}") from exc
+    if stamp.tzinfo is None:
+        stamp = stamp.replace(tzinfo=timezone.utc)
+    return stamp
+
+
+def build_hcp_sidecar(
+    snapshot: Dict[str, Any],
+    *,
+    session_id: str,
+    tool_set_id: Optional[str] = None,
+    previous: Optional[Dict[str, Any]] = None,
+    approval_ref: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """生成 hcp-1.0 影子快照（不改写 v1.0 快照本体）。
+
+    previous: {"version": int, "snapshot": <上一次 v1.0 快照>}
+    规则: 工具面未变 → 沿用 version 且 diff 为空；变更 → version+1 并输出 diff。
+    """
+    if not isinstance(snapshot, dict):
+        raise ToolSetError("snapshot 必须是 dict")
+
+    tools = snapshot.get("tools") or []
+    if not isinstance(tools, list):
+        raise ToolSetError("snapshot.tools 必须是数组")
+    if len(tools) > HCP_TOOL_LIMIT:
+        raise ToolSetError(
+            f"工具面 {len(tools)} 个超过上限 {HCP_TOOL_LIMIT}（G-L2-13：len(tools) ≤ max_tools_per_shell）"
+        )
+    if not isinstance(session_id, str) or not session_id.strip():
+        raise ToolSetError("H2 sidecar 必须绑定非空 session_id")
+
+    current_hash = compute_tool_set_hash(tools)
+    prev = previous or {}
+    prev_tools = (prev.get("snapshot") or {}).get("tools") or []
+    prev_version = int(prev.get("version") or 0)
+    unchanged = bool(prev) and compute_tool_set_hash(prev_tools) == current_hash
+
+    if not prev or unchanged:
+        diff = {"added": [], "removed": [], "changed": []}
+    else:
+        diff = diff_tools(prev_tools, tools)
+
+    version = prev_version if unchanged else prev_version + 1
+
+    return {
+        "schema_version": HCP_SIDECAR_SCHEMA_VERSION,
+        "tool_set_id": tool_set_id or f"ts-{uuid.uuid4().hex[:12]}",
+        "run_id": snapshot.get("run_id"),
+        "session_id": session_id,
+        "mode": (snapshot.get("policy") or {}).get("mode") or "default",
+        "version": max(1, version),
+        "hash": current_hash,
+        "diff": diff,
+        "approval_ref": approval_ref,
+    }
+
+
+def validate_tool_set_approval(
+    sidecar: Dict[str, Any],
+    mandate: Dict[str, Any],
+    *,
+    generated_at: Any,
+) -> None:
+    """G-L2-13：审批必须引用同一 hash，且签发时间晚于快照生成时间（先快照后审批）"""
+    if not isinstance(sidecar, dict) or not isinstance(mandate, dict):
+        raise ToolSetError("sidecar / mandate 必须是 dict")
+
+    mandate_id = mandate.get("mandate_id")
+    if not mandate_id:
+        raise ToolSetError("mandate 缺少 mandate_id")
+    if mandate.get("tool_set_hash") != sidecar.get("hash"):
+        raise ToolSetError("mandate.tool_set_hash 与 tool_set 快照 hash 不一致（G-L2-13）")
+
+    approval_ref = sidecar.get("approval_ref") or {}
+    if approval_ref:
+        if approval_ref.get("tool_set_hash") != sidecar.get("hash"):
+            raise ToolSetError("approval_ref.tool_set_hash 与快照 hash 不一致")
+        if approval_ref.get("mandate_id") != mandate_id:
+            raise ToolSetError("approval_ref.mandate_id 与 mandate 不一致")
+
+    if _parse_rfc3339(mandate.get("issued_at")) <= _parse_rfc3339(generated_at):
+        raise ToolSetError("审批签发时间必须晚于快照 generated_at（先快照后审批）")
+
+
+def write_hcp_sidecar(sidecar: Dict[str, Any], path: Path) -> Path:
+    """旁路落盘 tool_set.hcp.json（v1.0 原文件不动）"""
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        json.dumps(sidecar, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return target
 
 
 # ============================================================

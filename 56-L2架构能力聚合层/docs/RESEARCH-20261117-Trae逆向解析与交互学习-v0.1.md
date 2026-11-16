@@ -242,6 +242,8 @@ C. 数据平面（可审计产物）
 2. **56 GAP 清单**：M1–M5 对照现有 GAP-17~30，新增「能力装配/工具面快照/命令信封/检查点/摘要记忆」五类缺口。
 3. **47 注册表**：把 `tool_set` 快照与 `stop_reason` 契约用于 L2 壳的工具面审计。
 4. **56 TECHNICAL_DESIGN**：只登记「已验证的机制」，不把 Trae 的内部实现写成我们的实现。
+5. **可复用 SKILL**：已固化为 `~/.trae-cn/skills/harness-reverse-engineering/`（三线采集 → 四类对象 → 证据门禁 → 差距映射），案例见其 `references/trae-case-20261117.md`。
+6. **L2 优化 SPEC**：已产出 [SPEC-56-Harness能力增强-v0.3.md](../SPEC-56-Harness能力增强-v0.3.md)，把 M1–M5 转为 H1–H5 五组件与 G-L2-12~16 五门禁；P0 收缩为 H3+H5。
 
 ### 6.4 与 52 蒸馏桥的区别
 
@@ -262,8 +264,8 @@ C. 数据平面（可审计产物）
 | **R1** | 机制卡抽取：M1–M5 各 1 张，附路径与样例 | 5 张 `HarnessPattern` | 每张至少 2 条 observation | ✅（M4 证据较薄，见 §7.1） |
 | **R2** | 交互试点：50 个会话，抽 P1–P4，算指标 | `InteractionCase` schema + 试点报告 | 至少 30% 案例有命令/快照交叉证据 | 🟡 摘要级完成；**交叉证据门禁未满足** |
 | **R3** | 差距映射：M1–M5 × 56 GAP/门禁 | `GapCandidate` 清单 | 每条缺口有 contract_ref | ✅（5 个候选，未合并官方 GAP 表） |
-| **R4** | SPEC：TKF v0.1（采集/归一化/回灌/门禁/隐私） | SPEC 草案 | 评审通过才进入实现 | ⬜ |
-| **R5** | 实现（可选）：miner + 校验器 + 试点 | 代码 + 测试 | TDD + 对照实验 | 🟡 miner 已落，校验器待建 |
+| **R4** | SPEC：TKF v0.1（采集/归一化/回灌/门禁/隐私） | SPEC 草案 | 评审通过才进入实现 | 🟡 HCP SPEC v0.2 设计复审通过；实现待 H-D0/H-D1；TKF 采集 SPEC 待写 |
+| **R5** | 实现（可选）：miner + 校验器 + 试点 | 代码 + 测试 | TDD + 对照实验 | 🟡 miner + gap_mapper + SKILL 已落；对照实验待补 |
 
 ### 7.1 R1/R2 试点产出（2026-11-17）
 
@@ -286,6 +288,7 @@ C. 数据平面（可审计产物）
 | 证据包 | [evidence.json](../../33-REA逆向解析工程/reports/trae-20261117/evidence.json) | 三线证据与 known_gaps |
 | R3 差距映射 | [gap_mapping.md](../../33-REA逆向解析工程/reports/trae-20261117/gap_mapping.md) | M1–M5 × 56 GAP/门禁矩阵 |
 | R3 候选缺口 | [gap_candidates.json](../../33-REA逆向解析工程/reports/trae-20261117/gap_candidates.json) | 5 个 `GAP-T*` 候选 + contract_ref |
+| L2 优化 SPEC | [SPEC-56-Harness能力增强-v0.3.md](../SPEC-56-Harness能力增强-v0.3.md) | HCP：M1–M5 → H1–H5 + G-L2-12~16；P0=H3+H5；评审 M1–M4 已修，复审 R1–R13 已修 |
 
 **关键数字（快照，随运行变化）**：
 
@@ -373,3 +376,7 @@ PY
 | v0.1 | 2026-11-17 | 首版：证据地图、五机制、REA 适配度、交互基线、TKF 提案、R0–R5 路线 |
 | v0.1.1 | 2026-11-17 | 落地 R1/R2：三个 miner + 8 项测试 + 5 张机制卡 + 627 条交互案例；R2 交叉证据门禁未满足 |
 | v0.1.2 | 2026-11-17 | 落地 R3：`gap_mapper.py` + 5 个 `GAP-T*` 候选 + 映射矩阵；推荐顺序 T3→T5→T1→T2→T4 |
+| v0.1.3 | 2026-11-17 | 固化 `harness-reverse-engineering` SKILL；案例写入 55 论文 §1.4（v0.2） |
+| v0.1.4 | 2026-11-17 | 产出 `SPEC-56-Harness能力增强-v0.1.md`：M1–M5 → H1–H5 + G-L2-12~16 |
+| v0.1.5 | 2026-11-17 | HCP SPEC 修订到 v0.2：修评审 M1–M4、P0 收缩为 H3+H5、补统计口径 |
+| v0.1.6 | 2026-11-17 | HCP v0.2 设计复审通过；G-R1–G-R3 实现层待 H-D0/H-D1 验证 |

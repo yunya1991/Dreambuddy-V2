@@ -8,7 +8,7 @@
 > - 模块归层口径：[3+3架构模块映射.md](../1-ARCHITECTURE/3+3架构模块映射.md) v1.2（§二.2 L2 五子层）
 > - 路由边界：[SPEC-v1.4-L0L1L2-路由边界与认知裁决.md](../34-前端应用训练系统/SPEC-v1.4-L0L1L2-路由边界与认知裁决.md) v1.4-r3
 > - 层级 MCP：[SPEC-L1L2-MCP-PACKAGING-v0.1.md](../47-MCP管理系统/docs/tech/SPEC-L1L2-MCP-PACKAGING-v0.1.md)
-> **下游**: [docs/TECHNICAL_DESIGN.md](./docs/TECHNICAL_DESIGN.md)（能力登记）、06/47/49 各域 SPEC
+> **下游**: [docs/TECHNICAL_DESIGN.md](./docs/TECHNICAL_DESIGN.md)（能力登记）、06/47/49 各域 SPEC；Harness 能力增强见 [SPEC-56-Harness能力增强-v0.3.md](./SPEC-56-Harness能力增强-v0.3.md)（HCP，复审修订稿）
 > **不做什么**: 本文不重复定义 L0/L1 契约，不重写各模块自身 SPEC，不新建业务能力。
 
 ---
