@@ -74,6 +74,18 @@ def test_s1_admission_off_still_builds_suggestions(monkeypatch):
     assert [s["intent"] for s in out] == ["price_query"]
 
 
+def test_lexical_fallback_when_embed_unavailable(monkeypatch):
+    """8099 不可达/超时时用本地 2-gram 兜底，保证云端建议不缺席。"""
+    monkeypatch.setattr(sug, "_embed_server_ready", lambda: False)
+    monkeypatch.setattr(
+        sug,
+        "_load_examples",
+        lambda intent: ["BTC现在什么价格"] if intent == "price_query" else [],
+    )
+    out = sug.build_suggestions("BTC现在啥价格")
+    assert [s["intent"] for s in out] == ["price_query"]
+
+
 def test_route_query_l2_has_suggestions(monkeypatch, examples):
     monkeypatch.setenv("L1_SUGGEST_ENABLED", "1")
     out = lrs.route_query("你好")
