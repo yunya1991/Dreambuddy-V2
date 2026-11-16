@@ -134,7 +134,7 @@ function Panel({
   );
 }
 
-export function TechnicalChartBoard() {
+export function TechnicalChartBoard({ embedded = false }: { embedded?: boolean }) {
   const [overview, setOverview] = useState<VisualOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -306,10 +306,16 @@ export function TechnicalChartBoard() {
     <div className="space-y-4">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-slate-100">技术图表</h1>
-          <p className="mt-1 text-xs text-slate-500">
-            加权信号点阵 → 点亮图影 → 技术分析叠加 → 信号反馈；承接「数据研究」的推荐锚点，不给买卖方向
-          </p>
+          {embedded ? (
+            <p className="text-[11px] text-slate-500">八子页 · 只读图与证据，不改推荐</p>
+          ) : (
+            <>
+              <h1 className="text-lg font-semibold text-slate-100">技术图表</h1>
+              <p className="mt-1 text-xs text-slate-500">
+                加权信号点阵 → 点亮图影 → 技术分析叠加 → 信号反馈；承接「数据研究」的推荐锚点，不给买卖方向
+              </p>
+            </>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {overview?.as_of && <V3Badge variant="info" label={`数据截至 ${overview.as_of}`} />}

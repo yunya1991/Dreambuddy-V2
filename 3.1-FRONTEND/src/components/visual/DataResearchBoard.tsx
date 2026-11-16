@@ -176,7 +176,7 @@ function GateItem({ item }: { item: GateRow }) {
   );
 }
 
-export function DataResearchBoard() {
+export function DataResearchBoard({ embedded = false }: { embedded?: boolean }) {
   const [active, setActive] = useState('coverage');
   const [payload, setPayload] = useState<ResearchPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -253,10 +253,16 @@ export function DataResearchBoard() {
     <div className="space-y-4">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-slate-100">数据研究</h1>
-          <p className="mt-1 text-xs text-slate-500">
-            目标 → 分类 → 归纳 → 验证（≥60%）→ 数据卡片；同一闭环，全部只读历史统计
-          </p>
+          {embedded ? (
+            <p className="text-[11px] text-slate-500">研究视图 · 固定五子页，只读历史统计</p>
+          ) : (
+            <>
+              <h1 className="text-lg font-semibold text-slate-100">数据研究</h1>
+              <p className="mt-1 text-xs text-slate-500">
+                目标 → 分类 → 归纳 → 验证（≥60%）→ 数据卡片；同一闭环，全部只读历史统计
+              </p>
+            </>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <V3Badge variant="success" label="零 LLM · 全统计" />
@@ -777,7 +783,7 @@ export function DataResearchBoard() {
                 ))}
               </div>
             }
-            note="卡片字段全部来自 relationship_eval（不重算）；「加入技术图表」只写前端配置，不改注册表。"
+            note="卡片字段全部来自 relationship_eval（不重算）；自定义卡片请在「卡片模式」中添加，不改注册表。"
           >
             {usingCandidates && (
               <p className="mb-2 rounded border border-amber-500/30 bg-amber-500/5 px-2 py-1 text-[10px] text-amber-300">

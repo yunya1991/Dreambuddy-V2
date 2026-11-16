@@ -1,9 +1,9 @@
-import { TechnicalChartBoard } from '@/components/visual';
+import { VisualHub } from '@/components/visual';
 
 export default function TechnicalChartPage() {
   return (
     <div className="p-6">
-      <TechnicalChartBoard />
+      <VisualHub initialTab="technical" />
     </div>
   );
 }

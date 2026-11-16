@@ -84,7 +84,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               const prev = NAV_ITEMS[index - 1];
               const isNewSection = item.section !== prev?.section;
               const groupLabel = SECTION_LABELS[item.section];
-              const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+              const isActive =
+                pathname === item.href ||
+                (item.href !== '/dashboard' && pathname.startsWith(item.href)) ||
+                (item.matchPaths ?? []).some((prefix) => pathname.startsWith(prefix));
               const badge = badgeFor(item);
               return (
                 <Fragment key={item.href}>
