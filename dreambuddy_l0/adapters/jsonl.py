@@ -45,26 +45,73 @@ class _JsonlBase:
 
 
 class JsonlStore(_JsonlBase):
-    """append-only JSONL，按 (table, id) 后写覆盖；idempotency_key 跨重启去重。"""
+    """append-only JSONL，按 (table, id) 后写覆盖；idempotency_key 跨重启去重。
 
-    def _state(self) -> Dict[str, Dict[str, Dict[str, Any]]]:
-        tables: Dict[str, Dict[str, Dict[str, Any]]] = {}
-        idem: Dict[str, str] = {}
-        for rec in self._read_all():
-            if rec.get("kind") != "store":
-                continue
-            table = rec.get("table", "")
-            bucket = tables.setdefault(table, {})
-            if rec.get("op") == "delete":
-                for rid in rec.get("ids") or []:
-                    bucket.pop(str(rid), None)
-                continue
-            data = rec.get("data") or {}
-            rid = str(data.get("id", len(bucket)))
-            bucket[rid] = data
-            if rec.get("idempotency_key"):
-                idem[str(rec["idempotency_key"])] = rid
-        return {"tables": tables, "idem": idem}
+    状态按文件增量刷新：只在检测到文件被外部追加/重写时重新解析新增部分，
+    避免"每写一条就重解析全文件"（audit 批量写 missed_run 时的平方级退化）。
+    """
+
+    def __init__(self, path: str) -> None:
+        super().__init__(path)
+        self._cache: Dict[str, Dict[str, Dict[str, Any]]] = {"tables": {}, "idem": {}}
+        self._offset = 0  # 已消费字节数
+        self._sig: Optional[tuple] = None  # (mtime_ns, size)
+
+    def _stat_sig(self) -> tuple:
+        try:
+            st = os.stat(self.path)
+            return (st.st_mtime_ns, st.st_size)
+        except OSError:
+            return (0, 0)
+
+    def _apply(self, rec: Dict[str, Any]) -> None:
+        if rec.get("kind") != "store":
+            return
+        tables = self._cache["tables"]
+        idem = self._cache["idem"]
+        table = rec.get("table", "")
+        bucket = tables.setdefault(table, {})
+        if rec.get("op") == "delete":
+            for rid in rec.get("ids") or []:
+                bucket.pop(str(rid), None)
+            return
+        data = rec.get("data") or {}
+        rid = str(data.get("id", len(bucket)))
+        bucket[rid] = data
+        if rec.get("idempotency_key"):
+            idem[str(rec["idempotency_key"])] = rid
+
+    def _refresh(self) -> None:
+        sig = self._stat_sig()
+        size = sig[1]
+        if size < self._offset or (size == self._offset and sig != self._sig):
+            # 文件被截断/轮转/同长度重写 → 全量重读
+            self._cache = {"tables": {}, "idem": {}}
+            self._offset = 0
+        if size == self._offset and sig == self._sig:
+            return
+        if size > self._offset:
+            with open(self.path, "rb") as f:
+                f.seek(self._offset)
+                chunk = f.read()
+            last_nl = chunk.rfind(b"\n")
+            if last_nl < 0:
+                self._sig = sig
+                return
+            complete = chunk[: last_nl + 1]
+            for raw in complete.split(b"\n"):
+                if not raw.strip():
+                    continue
+                try:
+                    self._apply(json.loads(raw.decode("utf-8")))
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    continue
+            self._offset += len(complete)
+        self._sig = self._stat_sig()
+
+    def _state(self) -> Dict[str, Any]:
+        self._refresh()
+        return self._cache
 
     def read(
         self, table: str, *, key: str, cursor: Optional[str] = None, limit: int = 100
@@ -84,15 +131,19 @@ class JsonlStore(_JsonlBase):
         if idempotency_key:
             if idempotency_key in self._state()["idem"]:
                 return True
-        self._append(
-            {
-                "kind": "store",
-                "op": "upsert",
-                "table": table,
-                "idempotency_key": idempotency_key,
-                "data": data,
-            }
-        )
+        rec = {
+            "kind": "store",
+            "op": "upsert",
+            "table": table,
+            "idempotency_key": idempotency_key,
+            "data": data,
+        }
+        self._append(rec)
+        # 自己写入的记录同步进缓存，避免下一条写入又触发全量解析
+        self._apply(rec)
+        sig = self._stat_sig()
+        self._offset = sig[1]
+        self._sig = sig
         return True
 
     def query(
@@ -112,7 +163,12 @@ class JsonlStore(_JsonlBase):
         existing = self._state()["tables"].get(table) or {}
         hit = [i for i in ids if str(i) in existing]
         if hit:
-            self._append({"kind": "store", "op": "delete", "table": table, "ids": hit})
+            rec = {"kind": "store", "op": "delete", "table": table, "ids": hit}
+            self._append(rec)
+            self._apply(rec)
+            sig = self._stat_sig()
+            self._offset = sig[1]
+            self._sig = sig
         return len(hit)
 
     def health(self) -> Dict[str, Any]:
