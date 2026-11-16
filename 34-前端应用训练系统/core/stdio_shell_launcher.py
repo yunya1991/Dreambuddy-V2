@@ -28,6 +28,7 @@ import os
 import queue
 import shlex
 import subprocess
+import sys
 import threading
 import time
 from typing import Any, Dict, List, Optional
@@ -258,6 +259,11 @@ def stdio_launcher(
         raise StdioShellError("bad shell_cmd: %s" % exc) from exc
     if not argv:
         raise StdioShellError("empty shell_cmd")
+
+    # 解释器统一口径：registry 的 `python3 {path}` 不允许按 PATH 命中系统解释器，
+    # 否则云端会缺 venv 依赖（fastembed/statsmodels）→ 壳功能降级。
+    if os.path.basename(argv[0]) in ("python", "python3"):
+        argv[0] = os.environ.get("COGNITIVE_PYTHON") or os.environ.get("PYTHON") or sys.executable
 
     env = dict(os.environ)
     env["PYTHONPATH"] = _REPO_ROOT + os.pathsep + env.get("PYTHONPATH", "")

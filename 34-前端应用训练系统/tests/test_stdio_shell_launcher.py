@@ -13,6 +13,7 @@ import shlex
 import sys
 
 import pytest
+from core import stdio_shell_launcher as launcher_mod
 from core.shell_handles import ShellHandleManager
 from core.stdio_shell_launcher import (
     StdioShell,
@@ -148,6 +149,48 @@ class TestClose:
         shell = stdio_launcher(_spec())
         shell.close()
         shell.close()  # 不抛
+
+
+class TestInterpreterResolution:
+    """`python3 {path}` 必须解析到宿主解释器链：COGNITIVE_PYTHON || PYTHON || sys.executable。
+
+    云端 registry 的 shell_cmd 统一写 `python3 {path}`；若按 PATH 命中系统
+    /usr/bin/python3，会缺 venv 依赖（fastembed/statsmodels），导致认知壳降级。
+    """
+
+    @staticmethod
+    def _capture_argv(monkeypatch):
+        captured = {}
+
+        def fake_popen(argv, **_kwargs):
+            captured["argv"] = list(argv)
+            raise OSError("stop-after-capture")
+
+        monkeypatch.setattr(launcher_mod.subprocess, "Popen", fake_popen)
+        return captured
+
+    def test_prefers_cognitive_python_over_python(self, monkeypatch):
+        captured = self._capture_argv(monkeypatch)
+        monkeypatch.setenv("COGNITIVE_PYTHON", "/opt/cognitive/bin/python")
+        monkeypatch.setenv("PYTHON", "/opt/other/bin/python")
+        with pytest.raises(StdioShellError):
+            stdio_launcher(_spec(shell_cmd="python3 {path}"))
+        assert captured["argv"][0] == "/opt/cognitive/bin/python"
+
+    def test_falls_back_to_python_env(self, monkeypatch):
+        captured = self._capture_argv(monkeypatch)
+        monkeypatch.delenv("COGNITIVE_PYTHON", raising=False)
+        monkeypatch.setenv("PYTHON", "/opt/other/bin/python")
+        with pytest.raises(StdioShellError):
+            stdio_launcher(_spec(shell_cmd="python {path}"))
+        assert captured["argv"][0] == "/opt/other/bin/python"
+
+    def test_absolute_interpreter_untouched(self, monkeypatch):
+        captured = self._capture_argv(monkeypatch)
+        monkeypatch.setenv("COGNITIVE_PYTHON", "/opt/cognitive/bin/python")
+        with pytest.raises(StdioShellError):
+            stdio_launcher(_spec(shell_cmd="/usr/local/bin/python3.12 {path}"))
+        assert captured["argv"][0] == "/usr/local/bin/python3.12"
 
 
 class TestManagerIntegration:
