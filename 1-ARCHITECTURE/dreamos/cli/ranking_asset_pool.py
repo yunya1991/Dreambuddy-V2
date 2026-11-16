@@ -157,11 +157,16 @@ class OkxFeed:
             self._venue = None
 
     def candles(self, inst_id: str) -> List[List[Any]]:
+        # venue bridge 返回空列表时也要继续回退（新上市合约常不在 bridge 缓存里）
         if self._venue is not None:
             try:
-                return self._venue.get_candles(inst_id, bar="1D", limit=CANDLE_LIMIT)["candles"]
+                venue_candles = self._venue.get_candles(inst_id, bar="1D", limit=CANDLE_LIMIT)[
+                    "candles"
+                ]
             except Exception:
-                pass
+                venue_candles = []
+            if venue_candles:
+                return venue_candles
         candles = self._cli_candles(inst_id)
         return candles or self._rest_candles(inst_id)
 
