@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { V3Badge, V3Card, V3Empty, V3Spinner } from '@/components';
 import { LightsView } from './LightsView';
 import { VisualRenderer } from './VisualRenderer';
-import type { VisualOverview } from './types';
+import type { VisualOverview, VisualSpec } from './types';
 
 const KIND_LABEL: Record<string, string> = {
   tree: '思维导图',
@@ -82,6 +82,14 @@ export function VisualWorkbench({ compact = false }: { compact?: boolean }) {
     [visuals, activeId],
   );
 
+  // 主览图固定两张：核心资产走势 + 加权信号点阵（后端未产出时不占位、不伪造）
+  const mainVisuals = useMemo(() => {
+    const ids = ['series:core-assets', 'matrix:signals'];
+    return ids
+      .map(id => visuals.find(visual => visual.id === id))
+      .filter((visual): visual is VisualSpec => Boolean(visual));
+  }, [visuals]);
+
   return (
     <div className="space-y-4">
       {compact ? (
@@ -118,6 +126,25 @@ export function VisualWorkbench({ compact = false }: { compact?: boolean }) {
           <V3Spinner size="sm" />
           正在聚合跨资产统计…
         </div>
+      )}
+
+      {mainVisuals.length > 0 && (
+        <V3Card
+          title="主览图"
+          subtitle="核心资产归一化走势 + 加权信号点阵 · 后端聚合，前端零统计"
+          padding="md"
+        >
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+            {mainVisuals.map(visual => (
+              <div
+                key={visual.id}
+                className="rounded-xl border border-slate-700/40 bg-slate-800/20 p-2"
+              >
+                <VisualRenderer visual={visual} />
+              </div>
+            ))}
+          </div>
+        </V3Card>
       )}
 
       {recommended.length > 0 && (

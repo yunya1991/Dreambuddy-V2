@@ -18,6 +18,8 @@ interface SeriesMeta {
   smoothing?: { method?: string; window?: number };
   unit?: string;
   n?: number;
+  /** 主览图多线：每条线对应 points[].members[key]（值已由后端 rebase，前端零重算） */
+  lines?: { key: string; label: string }[];
   [key: string]: unknown;
 }
 
@@ -25,6 +27,8 @@ type CoveragePoint = VisualPoint & {
   coverage_ratio?: number | null;
   partial_members?: string[] | null;
 };
+
+const LINE_COLORS = ['#60a5fa', '#fbbf24', '#34d399', '#f472b6', '#a78bfa', '#22d3ee'];
 
 function coverageClass(ratio: number | null): string {
   if (ratio === null) return 'bg-slate-700/40';
@@ -37,6 +41,8 @@ export function SeriesView({ points, meta }: { points: VisualPoint[]; meta: Seri
   const hasSmoothed = points.some(point => point.smoothed !== null && point.smoothed !== undefined);
   const smoothing = meta?.smoothing;
   const unit = meta?.unit;
+  const lines = Array.isArray(meta?.lines) ? meta.lines : [];
+  const isMultiLine = lines.length > 1;
   const coveragePoints = (points as CoveragePoint[]).filter(
     point => typeof point.coverage_ratio === 'number',
   );
@@ -61,25 +67,49 @@ export function SeriesView({ points, meta }: { points: VisualPoint[]; meta: Seri
             labelStyle={{ color: '#94a3b8' }}
           />
           <Legend wrapperStyle={{ fontSize: 10, color: '#64748b' }} />
-          <Line
-            type="monotone"
-            dataKey="y"
-            name={unit ? `原始（${unit}）` : '原始'}
-            stroke="#60a5fa"
-            strokeWidth={1.5}
-            dot={false}
-            connectNulls={false}
-          />
-          {hasSmoothed && (
-            <Line
-              type="monotone"
-              dataKey="smoothed"
-              name={smoothing?.method ? `${smoothing.method}${smoothing.window ?? ''}` : '平滑'}
-              stroke="#a78bfa"
-              strokeWidth={1.2}
-              dot={false}
-              connectNulls={false}
-            />
+          {isMultiLine ? (
+            lines.map((line, index) => (
+              <Line
+                key={line.key}
+                type="monotone"
+                dataKey={(point: VisualPoint) => {
+                  const members = (point as VisualPoint & { members?: Record<string, number | null> })
+                    .members;
+                  const value = members?.[line.key];
+                  return value === undefined ? null : value;
+                }}
+                name={line.label}
+                stroke={LINE_COLORS[index % LINE_COLORS.length]}
+                strokeWidth={1.4}
+                dot={false}
+                connectNulls={false}
+              />
+            ))
+          ) : (
+            <>
+              <Line
+                type="monotone"
+                dataKey="y"
+                name={unit ? `原始（${unit}）` : '原始'}
+                stroke="#60a5fa"
+                strokeWidth={1.5}
+                dot={false}
+                connectNulls={false}
+              />
+              {hasSmoothed && (
+                <Line
+                  type="monotone"
+                  dataKey="smoothed"
+                  name={
+                    smoothing?.method ? `${smoothing.method}${smoothing.window ?? ''}` : '平滑'
+                  }
+                  stroke="#a78bfa"
+                  strokeWidth={1.2}
+                  dot={false}
+                  connectNulls={false}
+                />
+              )}
+            </>
           )}
         </LineChart>
       </ResponsiveContainer>

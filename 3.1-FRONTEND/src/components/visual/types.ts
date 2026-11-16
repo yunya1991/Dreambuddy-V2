@@ -40,6 +40,7 @@ export interface VisualSpec {
   n_scope: 'global' | 'per_row' | 'per_cell';
   dataset: Record<string, unknown>;
   encodings: Record<string, string>;
+  annotations?: MatrixAnnotations;
   quality_ref: string;
   truncated: boolean;
   caveat: string;
@@ -50,6 +51,38 @@ export interface RecommendItem {
   title: string;
   kind: string;
   reason: string;
+}
+
+// ── matrix 附加注解（SPEC-54 matrix：数值矩阵走 dataset.values，状态/符号走 annotations）
+export interface MatrixAxis {
+  key: string;
+  label: string;
+  weight?: number | null;
+}
+
+export interface MatrixCell {
+  state: LightState | string;
+  strength: number | null;
+  bucket: string;
+  sign: number;
+  flags?: string[];
+}
+
+export interface MatrixRowMeta {
+  label?: string;
+  class?: string;
+  as_of?: string | null;
+  strength?: number | null;
+  summary?: Record<string, number>;
+}
+
+export interface MatrixAnnotations {
+  axes?: MatrixAxis[];
+  cells?: Record<string, MatrixCell>;
+  rows?: Record<string, MatrixRowMeta>;
+  light_weights_hash?: string;
+  thresholds?: { lit_pct?: number; warm_pct?: number };
+  thresholds_uncalibrated?: boolean;
 }
 
 // ── D-E19 点亮投影（SPEC-54 §5.3）：五态 + 四轴，前端只读不重算

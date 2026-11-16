@@ -4,6 +4,7 @@ export { VisualWorkbench } from './VisualWorkbench';
 export { TreeView } from './TreeView';
 export { GraphView } from './GraphView';
 export { SeriesView } from './SeriesView';
+export { MatrixView } from './MatrixView';
 export { TableView } from './TableView';
 export { formatValue, formatCell } from './types';
 export type {

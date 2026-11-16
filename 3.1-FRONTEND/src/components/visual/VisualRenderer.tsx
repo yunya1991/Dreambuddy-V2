@@ -4,6 +4,7 @@
 
 import { V3Badge, V3Empty } from '@/components';
 import { GraphView } from './GraphView';
+import { MatrixView } from './MatrixView';
 import { SeriesView } from './SeriesView';
 import { TableView } from './TableView';
 import { TreeView } from './TreeView';
@@ -43,6 +44,23 @@ function renderBody(visual: VisualSpec) {
     const points = (dataset?.points ?? []) as VisualPoint[];
     if (points.length === 0) return <V3Empty title="曲线无数据点" description="当前样本不足以产图" />;
     return <SeriesView points={points} meta={(dataset?.meta ?? {}) as Record<string, any>} />;
+  }
+
+  if (visual.kind === 'matrix') {
+    const rowLabels = (dataset?.row_labels ?? []) as string[];
+    const colLabels = (dataset?.col_labels ?? []) as string[];
+    const values = (dataset?.values ?? []) as (number | null)[][];
+    if (rowLabels.length === 0 || colLabels.length === 0) {
+      return <V3Empty title="矩阵无数据" description="后端未返回 matrix 的行列标签" />;
+    }
+    return (
+      <MatrixView
+        rowLabels={rowLabels}
+        colLabels={colLabels}
+        values={values}
+        annotations={visual.annotations}
+      />
+    );
   }
 
   if (visual.kind === 'table') {

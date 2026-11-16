@@ -772,3 +772,173 @@ def test_t3_tree_has_no_direction_wording():
         text = leaf["label"] + str(leaf["meta"].get("reason") or "")
         assert not any(word in text for word in banned)
     assert not any(word in visual["title"] for word in banned)
+
+
+# ---------------- 主览图：核心资产多线 + 加权信号点阵 ----------------
+
+
+def _core_block():
+    return {
+        "gate": "ok",
+        "points": [
+            {
+                "date": "2024-01-01",
+                "agg": 100.0,
+                "ema26": 100.0,
+                "members": {
+                    "BTC": 100.0,
+                    "ETH": 100.0,
+                    "XAU": 100.0,
+                    "US500": 100.0,
+                    "CL": 100.0,
+                },
+                "coverage_ratio": 1.0,
+                "partial_members": False,
+            },
+            {
+                "date": "2024-01-02",
+                "agg": 101.0,
+                "ema26": 100.5,
+                "members": {"BTC": 101.0, "ETH": 99.0, "XAU": 100.5},
+                "coverage_ratio": 0.6,
+                "partial_members": True,
+            },
+        ],
+        "meta": {
+            "smoothing": {"method": "EMA", "window": 26},
+            "n": 2,
+            "base_date": "2024-01-01",
+        },
+    }
+
+
+def test_core_asset_series_projects_only_core_members_without_recompute():
+    from l1agg.capabilities.visual import core_asset_series
+
+    visual = core_asset_series(_core_block(), quality_for(2, min_n=1))
+    assert visual["kind"] == "series"
+    assert visual["source_capability"] == "D-E16"
+    assert [line["key"] for line in visual["dataset"]["meta"]["lines"]] == [
+        "BTC",
+        "XAU",
+        "US500",
+        "CL",
+    ]
+    points = visual["dataset"]["points"]
+    assert points[0]["members"] == {"BTC": 100.0, "XAU": 100.0, "US500": 100.0, "CL": 100.0}
+    # ETH 被裁剪；缺失成员保留缺口，禁止前向填充
+    assert points[1]["members"] == {"BTC": 101.0, "XAU": 100.5}
+    assert points[1]["y"] == 101.0
+    assert points[0]["members"]["BTC"] == _core_block()["points"][0]["members"]["BTC"]
+
+
+def test_core_asset_series_requires_ok_gate_and_non_empty_quality():
+    from l1agg.capabilities.visual import core_asset_series
+
+    q = quality_for(2, min_n=1)
+    assert core_asset_series({"gate": "partial", "points": []}, q) is None
+    assert core_asset_series(_core_block(), quality_for(0, min_n=1)) is None
+
+
+def _lights_block():
+    axes = {
+        "trend": {
+            "state": "lit",
+            "strength": 0.9,
+            "bucket": "high",
+            "evidence": {"axis_value": 36.0, "axis_weight": 40},
+            "flags": [],
+        },
+        "inertia": {
+            "state": "dim",
+            "strength": 0.2,
+            "bucket": "low",
+            "evidence": {"axis_value": -4.0, "axis_weight": 20},
+            "flags": [],
+        },
+        "cycle": {
+            "state": "unavailable",
+            "strength": None,
+            "bucket": "none",
+            "evidence": {},
+            "flags": ["cycle_missing"],
+        },
+        "foresight": {
+            "state": "conflict",
+            "strength": 0.6,
+            "bucket": "mid",
+            "evidence": {"axis_value": 9.0},
+            "flags": ["vix_divergence"],
+        },
+    }
+    return {
+        "gate": "ok",
+        "methods": ["D-E15"],
+        "lights": [
+            {
+                "symbol": "BTC",
+                "class": "加密",
+                "as_of": "2024-01-02",
+                "axes": axes,
+                "strength": 0.5,
+                "summary": {"lit_n": 1, "warm_n": 0, "conflict_n": 1, "unavailable_n": 1},
+                "light_weights_hash": "abc",
+                "n": 300,
+                "min_rows": 250,
+                "status": "partial",
+                "flags": [],
+            }
+        ],
+        "meta": {
+            "light_weights": {"trend": 0.4, "inertia": 0.25, "cycle": 0.15, "foresight": 0.2},
+            "light_weights_hash": "abc",
+            "thresholds": {"lit_pct": 0.76, "warm_pct": 0.57},
+            "thresholds_uncalibrated": False,
+        },
+    }
+
+
+def test_signal_matrix_projects_state_strength_and_axis_sign():
+    from l1agg.capabilities.visual import signal_matrix
+
+    visual = signal_matrix(_lights_block(), quality_for(1, min_n=1), labels={"BTC": "比特币"})
+    assert visual["kind"] == "matrix"
+    assert visual["spec_version"] == "1.0"
+    assert visual["source_capability"] == "D-E19"
+    assert visual["n_scope"] == "per_cell"
+    assert len(visual["title"]) <= 60
+    assert visual["dataset"]["row_labels"] == ["BTC"]
+    assert visual["dataset"]["col_labels"] == ["趋势", "惯性", "周期", "前瞻"]
+    assert visual["dataset"]["values"][0] == [0.9, 0.2, None, 0.6]
+    cells = visual["annotations"]["cells"]
+    assert cells["BTC|trend"]["sign"] == 1
+    assert cells["BTC|inertia"]["sign"] == -1
+    assert cells["BTC|cycle"]["state"] == "unavailable"
+    assert cells["BTC|cycle"]["sign"] == 0
+    assert cells["BTC|foresight"]["state"] == "conflict"
+    assert visual["annotations"]["rows"]["BTC"]["label"] == "比特币"
+    assert visual["annotations"]["axes"][0]["weight"] == 0.4
+
+
+def test_signal_matrix_requires_ok_gate():
+    from l1agg.capabilities.visual import signal_matrix
+
+    q = quality_for(1, min_n=1)
+    assert signal_matrix({"gate": "empty", "lights": []}, q) is None
+    assert signal_matrix({"gate": "ok", "lights": []}, q) is None
+
+
+def test_main_overview_visuals_validate_against_schema():
+    jsonschema = pytest.importorskip("jsonschema")
+    schema_path = os.path.join(_MODULE_ROOT, "contracts", "capability_result.schema.json")
+    with open(schema_path, "r", encoding="utf-8") as fh:
+        schema = json.load(fh)
+    from l1agg.capabilities.visual import core_asset_series, signal_matrix
+
+    q = quality_for(2, min_n=1)
+    jsonschema.validate(
+        instance=core_asset_series(_core_block(), q), schema=schema["$defs"]["visual"]
+    )
+    jsonschema.validate(
+        instance=signal_matrix(_lights_block(), q), schema=schema["$defs"]["visual"]
+    )

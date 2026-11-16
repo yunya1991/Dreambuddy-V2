@@ -113,7 +113,10 @@ def _load_series(symbols, days):
         )
     aligned = {name: [values[date] for date in dates] for name, values in raw.items()}
     # raw 保留逐标的自有历史（D-E16 聚合按成员各自可用日 rebase，禁止前向填充）
-    return aligned, dates, dates[-1], unavailable, raw
+    # 面板 as_of 取各资产最新日的最大值：保留最新数据，不被公共日期轴截断；
+    # 每个资产的实际最新日随 lights.rows[].as_of 下发并在前端行内标注。
+    panel_as_of = max((max(values) for values in raw.values() if values), default=dates[-1])
+    return aligned, dates, panel_as_of, unavailable, raw
 
 
 def _collect(blocks, envelope, only=None):
@@ -461,13 +464,34 @@ def _board_assets(aligned, base, counts, pool):
     return assets
 
 
-def _extra_panels(raw, aligned, base, blocks, envelopes, days):
-    """一次进程产出 B 链路四面板：D-E19 点亮 → D-E16 聚合 → D-E17 看板 → D-E18 导图。"""
+def _core_assets():
+    """主览图核心资产（BTC/黄金/标普/原油）→ 后端注册表标签，前端零硬编码。"""
+    from l1agg.capabilities.visual import CORE_ASSET_KEYS
+    from l1agg.leader_registry import resolve
+
+    out = []
+    for symbol in CORE_ASSET_KEYS:
+        binding = resolve(symbol)
+        out.append({"key": symbol, "label": binding.label if binding else symbol})
+    return out
+
+
+def _extra_panels(raw, aligned, base, blocks, envelopes, days, as_of=None):
+    """一次进程产出 B 链路四面板：D-E19 点亮 → D-E16 聚合 → D-E17 看板 → D-E18 导图。
+
+    `as_of` 必须贯穿：点亮行与聚合曲线都按面板数据截止日截断，避免行日期/曲线尾部
+    越过顶部标注的「数据截至」。
+    """
     from l1agg.asset_pool import load as load_asset_pool
     from l1agg.capabilities.aggregate import aggregate_curve, class_board
     from l1agg.capabilities.flow import flow_graph
     from l1agg.capabilities.lights import lights
-    from l1agg.capabilities.visual import build_visual
+    from l1agg.capabilities.visual import (
+        build_visual,
+        core_asset_series,
+        signal_matrix,
+    )
+    from l1agg.leader_registry import resolve
 
     try:
         pool = load_asset_pool()
@@ -477,7 +501,7 @@ def _extra_panels(raw, aligned, base, blocks, envelopes, days):
     visuals = []
 
     # 1) D-E19 点亮（先算：D-E17 只消费 lit_n/warm_n 计数）
-    entries = _lights_entries(raw, pool, base=base)
+    entries = _lights_entries(raw, pool, as_of=as_of, base=base)
     lights_env = lights(entries) if entries else {}
     lights_block = ((lights_env.get("data") or {}).get("capabilities") or {}).get("D-E19") or {}
     light_rows = list(lights_block.get("lights") or [])
@@ -493,8 +517,22 @@ def _extra_panels(raw, aligned, base, blocks, envelopes, days):
         envelopes["D-E19"] = lights_env
         _collect(blocks, lights_env, only={"D-E19"})
 
-    # 2) D-E16 聚合曲线（逐标的自有历史，成员 rebase 后加权）
-    agg_env = aggregate_curve(raw) or {}
+    # 1.1) 主览图右：加权信号点阵（资产 × 四轴，状态/强度/轴值符号零重算）
+    labels = {}
+    for row in light_rows:
+        symbol = str(row.get("symbol"))
+        binding = resolve(symbol)
+        labels[symbol] = binding.label if binding else symbol
+    matrix_visual = signal_matrix(lights_block, lights_env.get("quality"), labels=labels)
+    if matrix_visual is not None:
+        visuals.append({"id": "matrix:signals", **matrix_visual})
+
+    # 2) D-E16 聚合曲线（逐标的历史先按 as_of 截断，再 rebase 加权，曲线不越过数据截止）
+    agg_series = {
+        symbol: {day: value for day, value in history.items() if not as_of or day <= as_of}
+        for symbol, history in raw.items()
+    }
+    agg_env = aggregate_curve(agg_series) or {}
     if agg_env:
         envelopes["D-E16"] = agg_env
         _collect(blocks, agg_env, only={"D-E16"})
@@ -505,6 +543,14 @@ def _extra_panels(raw, aligned, base, blocks, envelopes, days):
         )
         if visual is not None:
             visuals.append({"id": "series:d-e16", **visual})
+        # 2.1) 主览图左：核心资产归一化多线（只裁剪 members，不重算）
+        core_visual = core_asset_series(
+            ((agg_env.get("data") or {}).get("capabilities") or {}).get("D-E16") or {},
+            agg_env.get("quality"),
+            assets=_core_assets(),
+        )
+        if core_visual is not None:
+            visuals.append({"id": "series:core-assets", **core_visual})
 
     # 3) D-E17 类别看板（公共轴 + 组内 ret_60 降序）
     board_env = class_board(_board_assets(aligned, base, counts, pool)) or {}
@@ -672,6 +718,11 @@ def main():
     # B 链路四面板：同一进程内直调能力层（避免每图一次 python spawn）
     extra_visuals, lights_payload = _extra_panels(raw, series, base, blocks, envelopes, days)
     visuals.extend(extra_visuals)
+    # 主览图前置（前端按 id 取用，顺序只影响"全景观图"标签栏的阅读顺序）
+    main_ids = ("matrix:signals", "series:core-assets")
+    visuals = [item for item in visuals if item.get("id") in main_ids] + [
+        item for item in visuals if item.get("id") not in main_ids
+    ]
     payload = {
         "ok": True,
         "as_of": as_of,

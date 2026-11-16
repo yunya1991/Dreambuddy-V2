@@ -25,6 +25,17 @@ SPEC_VERSION = "1.0"
 KINDS = ("table", "series", "matrix", "tree", "graph")
 MAX_ROWS = 500
 
+# 主览图核心资产（用户 2026-11-16 确认）：BTC / 黄金 / 标普 / 原油
+CORE_ASSET_KEYS = ("BTC", "XAU", "US500", "CL")
+
+# 信号点阵四轴（顺序与 D-E19 AXES 一致）
+SIGNAL_AXES = (
+    {"key": "trend", "label": "趋势"},
+    {"key": "inertia", "label": "惯性"},
+    {"key": "cycle", "label": "周期"},
+    {"key": "foresight", "label": "前瞻"},
+)
+
 # D-E12 对齐切片固定 8 列（SPEC §4.3 / V-AC5）
 ALIGNMENT_COLUMNS: List[Dict[str, str]] = [
     {"key": "asset", "label": "资产", "type": "string"},
@@ -328,6 +339,166 @@ def _class_board_table(
         n_scope="per_row",
         groups=["class", "role"],
     )
+
+
+def _sign(value: Any) -> int:
+    """数值符号 → -1/0/1（展示层投影，不新增统计口径）。"""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return 0
+    if abs(number) < 1e-12:
+        return 0
+    return 1 if number > 0 else -1
+
+
+def core_asset_series(
+    block: Mapping[str, Any],
+    quality_block: Optional[Mapping[str, Any]] = None,
+    *,
+    assets: Optional[List[Mapping[str, str]]] = None,
+) -> Optional[Dict[str, Any]]:
+    """D-E16 → 主览图多线：只投影核心资产的 rebased_100 成员值（零重算）。
+
+    `block.points[].members` 已是能力层先 rebase 后加权的中间结果，这里仅按
+    `assets` 键集裁剪，不改任何数值；缺口保留 None，禁止前向填充。
+    """
+    if not enabled() or _quality_status(quality_block) == "empty":
+        return None
+    if not isinstance(block, Mapping) or block.get("gate") != "ok":
+        return None
+    specs = list(assets or [{"key": key, "label": key} for key in CORE_ASSET_KEYS])
+    keys = [str(item.get("key")) for item in specs if item.get("key")]
+    label_of = {str(item.get("key")): str(item.get("label") or item.get("key")) for item in specs}
+    points: List[Dict[str, Any]] = []
+    seen = set()
+    for row in block.get("points") or ():
+        value = row.get("agg")
+        if value is None:
+            continue
+        members = row.get("members") or {}
+        picked = {key: members[key] for key in keys if members.get(key) is not None}
+        seen.update(picked)
+        points.append(
+            {
+                "x": row.get("date"),
+                "y": value,
+                "smoothed": row.get("ema26"),
+                "members": picked,
+                "coverage_ratio": row.get("coverage_ratio"),
+                "partial_members": bool(row.get("partial_members")),
+            }
+        )
+    if not points or not seen:
+        return None
+    meta = dict(block.get("meta") or {})
+    meta["smoothing"] = dict(meta.get("smoothing") or {"method": "EMA", "window": 26})
+    meta["unit"] = "rebased_index"
+    meta["n"] = int(meta.get("n") or len(points))
+    meta["lines"] = [{"key": key, "label": label_of.get(key, key)} for key in keys if key in seen]
+    labels_joined = "/".join(line["label"] for line in meta["lines"])
+    title = f"核心资产归一化走势（{labels_joined}）"
+    return _series(
+        title=title[:60],
+        source_capability="D-E16",
+        points=points,
+        meta=meta,
+        encodings={"x": "date", "y": "agg", "members": "members", "lines": "lines"},
+    )
+
+
+def signal_matrix(
+    block: Mapping[str, Any],
+    quality_block: Optional[Mapping[str, Any]] = None,
+    *,
+    labels: Optional[Mapping[str, str]] = None,
+) -> Optional[Dict[str, Any]]:
+    """D-E19 → 主览图信号点阵（资产 × 四轴）：状态/强度/轴值符号原样投影。
+
+    `values` 只放强度（满足 matrix 契约的数值矩阵）；状态色与轴值符号放
+    `annotations`，前端零统计。轴值符号来自已公开的 `evidence.axis_value`，
+    周期轴退回 `evidence.cycle_slope`；不引入 `direction_rule.direction`（ADR-V14）。
+    """
+    if not enabled() or _quality_status(quality_block) == "empty":
+        return None
+    if not isinstance(block, Mapping) or block.get("gate") != "ok":
+        return None
+    rows_in = [row for row in block.get("lights") or () if isinstance(row, Mapping)][:20]
+    if not rows_in:
+        return None
+
+    meta = dict(block.get("meta") or {})
+    weights = dict(meta.get("light_weights") or {})
+    axes = [
+        {"key": axis["key"], "label": axis["label"], "weight": weights.get(axis["key"])}
+        for axis in SIGNAL_AXES
+    ]
+    row_labels: List[str] = []
+    values: List[List[Optional[float]]] = []
+    cells: Dict[str, Dict[str, Any]] = {}
+    row_meta: Dict[str, Dict[str, Any]] = {}
+    for row in rows_in:
+        symbol = str(row.get("symbol") or "")
+        if not symbol:
+            continue
+        row_labels.append(symbol)
+        line: List[Optional[float]] = []
+        for axis in SIGNAL_AXES:
+            fact = (row.get("axes") or {}).get(axis["key"]) or {}
+            strength = fact.get("strength")
+            line.append(strength)
+            evidence = fact.get("evidence") or {}
+            sign = _sign(evidence.get("axis_value"))
+            if sign == 0 and axis["key"] == "cycle":
+                sign = _sign(evidence.get("cycle_slope"))
+            cells[f"{symbol}|{axis['key']}"] = {
+                "state": str(fact.get("state") or "unavailable"),
+                "strength": strength,
+                "bucket": str(fact.get("bucket") or "none"),
+                "sign": sign,
+                "flags": [str(flag) for flag in fact.get("flags") or ()],
+            }
+        values.append(line)
+        row_meta[symbol] = {
+            "label": (labels or {}).get(symbol) or symbol,
+            "class": str(row.get("class") or ""),
+            "as_of": row.get("as_of"),
+            "strength": row.get("strength"),
+            "summary": dict(row.get("summary") or {}),
+        }
+    if not row_labels:
+        return None
+    total = len(block.get("lights") or ())
+    return {
+        "kind": "matrix",
+        "spec_version": SPEC_VERSION,
+        "title": "加权信号点阵（资产 × 四轴）"[:60],
+        "source_capability": "D-E19",
+        "n_scope": "per_cell",
+        "dataset": {
+            "row_labels": row_labels,
+            "col_labels": [axis["label"] for axis in SIGNAL_AXES],
+            "values": values,
+        },
+        "encodings": {
+            "row": "symbol",
+            "col": "axis",
+            "value": "strength",
+            "state": "state",
+            "sign": "sign",
+        },
+        "annotations": {
+            "axes": axes,
+            "cells": cells,
+            "rows": row_meta,
+            "light_weights_hash": meta.get("light_weights_hash"),
+            "thresholds": meta.get("thresholds"),
+            "thresholds_uncalibrated": bool(meta.get("thresholds_uncalibrated")),
+        },
+        "quality_ref": "quality",
+        "caveat": f"{CAVEAT}；点色=统计状态，箭头=轴值符号，不代表多空建议",
+        "truncated": total > 20,
+    }
 
 
 _PRODUCERS = {
