@@ -942,3 +942,24 @@ def test_main_overview_visuals_validate_against_schema():
     jsonschema.validate(
         instance=signal_matrix(_lights_block(), q), schema=schema["$defs"]["visual"]
     )
+
+
+def test_tree_layout_fields_are_registered_in_contract():
+    """T3 读取的每个能力块首层字段必须在 TD §7.10 表 A-1 登记，防止契约外依赖。"""
+    import re
+
+    from l1agg.capabilities.overview import TREE_LAYOUT
+
+    doc_path = os.path.join(_MODULE_ROOT, "docs", "TECHNICAL_DESIGN.md")
+    with open(doc_path, "r", encoding="utf-8") as fh:
+        text = fh.read()
+    start = text.index("**表 A-1")
+    end = text.index("**表 A 缺口", start)
+    registered = dict(re.findall(r"^\| (D-[A-Z]\d{2}) \| (.+?) \|", text[start:end], re.M))
+
+    for _group, _label, leaves in TREE_LAYOUT:
+        for leaf_id, _leaf_label, capability, path, _unit in leaves:
+            assert capability in registered, f"{leaf_id} 依赖未登记能力 {capability}"
+            assert (
+                path[0] in registered[capability]
+            ), f"{leaf_id} 读取 {capability}.{path[0]} 未在表 A-1 登记"

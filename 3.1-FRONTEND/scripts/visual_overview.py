@@ -204,6 +204,53 @@ def _load_flows(days):
     return rows
 
 
+def _load_l0_flow_series(base, days):
+    """L0 巨鲸净流入（USD → 亿美元）→ T3 资金流序列叶；无数据返回 None（不伪造）。"""
+    from l1agg.align import AlignError, load_daily
+
+    end_ts = int(datetime.now(tz=timezone.utc).timestamp()) + 86400
+    start_ts = end_ts - int(days) * 86400
+    try:
+        history = load_daily(
+            DB_PATH,
+            "exchanges_whales",
+            "whale_netflow_to_ex_usd",
+            start_ts=start_ts,
+            end_ts=end_ts,
+        )
+    except (AlignError, OSError, sqlite3.Error):
+        return None
+    if not history:
+        return None
+    latest_day = max(history)
+    return [
+        {
+            "asset": base,
+            "series_id": "exchanges_whales::whale_netflow_to_ex_usd",
+            "value": history[latest_day] / 1e8,
+        }
+    ]
+
+
+def _run_crowding(base):
+    """D-A14：复用 L1 直答同一取数口径；数据不足时仍返回信封，让树披露门禁原因。"""
+    try:
+        from data_query_executor import _load_crowding_panel
+    except Exception:  # noqa: BLE001  FAIL-OPEN：直答模块不可用时不阻塞其余图
+        return None
+    panel, dates, _missing = _load_crowding_panel()
+    envelope = _run("D-A14", series=panel, dates=dates, symbol=base)
+    data = envelope.get("data")
+    if not isinstance(data, dict):
+        data = {}
+        envelope["data"] = data
+    if not (data.get("capabilities") or {}):
+        # empty 信封不带能力块；补一条 no_data 事实，供 T3 树披露真实门禁原因。
+        reason = (envelope.get("quality") or {}).get("degraded_reason") or "拥挤度数据不足"
+        data["capabilities"] = {"D-A14": {"gate": "no_data", "reason": reason}}
+    return envelope
+
+
 def _flow_nodes(flows):
     """ETF → BTC 节点；标签取龙头注册表（缺失回落符号本身）。"""
     from l1agg.leader_registry import resolve
@@ -582,14 +629,14 @@ def _extra_panels(raw, aligned, base, blocks, envelopes, days, as_of=None):
     return visuals, lights_payload
 
 
-def _build_visuals(blocks, envelopes, base, as_of):
+def _build_visuals(blocks, envelopes, base, as_of, series_inputs=None):
     """产出图规格列表；任何门禁不通过的能力不产图（FAIL-OPEN）。"""
     from l1agg.capabilities.overview import build_graph, build_tree
     from l1agg.capabilities.visual import build_visual
 
     visuals = []
 
-    tree = build_tree(blocks=blocks, as_of=as_of)
+    tree = build_tree(blocks=blocks, as_of=as_of, series_inputs=series_inputs)
     visuals.append({"id": "tree", **tree})
 
     graph = build_graph(blocks=blocks)
@@ -700,12 +747,21 @@ def main():
     envelopes["D-E12"] = alignment
     _collect(blocks, alignment)
 
-    prices = series[base]
-    drawdown = _run("D-E10", prices=prices, dates=dates, symbol=base)
+    # 单资产能力（D-E10/D-E15/D-G22）只依赖 base 自身历史，必须用 raw 自有日期轴；
+    # 公共交集只服务多资产矩阵（D-E05）与对齐切片（D-E12），否则 D-G22 会被截断到 <250。
+    base_history = raw.get(base) or {}
+    if base_history:
+        base_dates = sorted(base_history)
+        prices = [base_history[day] for day in base_dates]
+    else:
+        base_dates = list(dates)
+        prices = list(series[base])
+
+    drawdown = _run("D-E10", prices=prices, dates=base_dates, symbol=base)
     envelopes["D-E10"] = drawdown
     _collect(blocks, drawdown)
 
-    trend = _run("D-E15", prices=prices, dates=dates, symbol=base)
+    trend = _run("D-E15", prices=prices, dates=base_dates, symbol=base)
     envelopes["D-E15"] = trend
     _collect(blocks, trend)
 
@@ -714,7 +770,13 @@ def main():
     envelopes["D-G22"] = significance
     _collect(blocks, significance)
 
-    visuals = _build_visuals(blocks, envelopes, base, as_of)
+    crowding = _run_crowding(base)
+    if crowding:
+        envelopes["D-A14"] = crowding
+        _collect(blocks, crowding)
+
+    series_inputs = _load_l0_flow_series(base, days)
+    visuals = _build_visuals(blocks, envelopes, base, as_of, series_inputs)
     # B 链路四面板：同一进程内直调能力层（避免每图一次 python spawn）
     extra_visuals, lights_payload = _extra_panels(raw, series, base, blocks, envelopes, days)
     visuals.extend(extra_visuals)

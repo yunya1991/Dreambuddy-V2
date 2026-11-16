@@ -333,8 +333,11 @@ def score(inputs: Mapping[str, Any], params: Optional[Mapping[str, Any]] = None)
     gap_axis = _gap_axis(clock.get("equilibrium_gap"), p, weights, flags)
 
     p_adj = clock.get("p_adj")
-    if p.get("use_significance", True) and p_adj is not None:
-        if float(p_adj) > float(p["hac_alpha"]):
+    if p.get("use_significance", True):
+        if p_adj is None:
+            # D-G22 缺失时不得静默跳过显著性门：显式降级，便于下游审计。
+            flags.append("significance_unavailable")
+        elif float(p_adj) > float(p["hac_alpha"]):
             adx_axis = _r6(adx_axis * 0.5)
             flags.append("hac_insignificant")
 

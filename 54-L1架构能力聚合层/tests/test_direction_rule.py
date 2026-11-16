@@ -126,6 +126,14 @@ def test_hac_insignificant_halves_strength_axis():
     assert "hac_insignificant" in record["flags"]
 
 
+def test_significance_missing_is_flagged_not_silently_skipped():
+    inputs = dict(_LONG)
+    inputs.pop("p_adj")
+    record = DR.decide(inputs)
+    assert record["axes"]["adx"] == 25.0
+    assert "significance_unavailable" in record["flags"]
+
+
 def test_ema_order_derived_when_missing():
     inputs = dict(_LONG, ema={"ema12": 110.0, "ema26": 105.0, "ema50": 100.0})
     record = DR.decide(inputs)

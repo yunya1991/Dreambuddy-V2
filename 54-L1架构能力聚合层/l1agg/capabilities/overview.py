@@ -192,7 +192,9 @@ def _missing_reason(block: Any, capability: str, path: Sequence[Any]) -> Optiona
     if not isinstance(block, Mapping):
         return f"{capability} 未提供"
     if block.get("gate") != "ok":
-        return f"{capability} 门禁未通过（gate={block.get('gate')}）"
+        detail = block.get("reason") or block.get("degraded_reason")
+        suffix = f"：{detail}" if detail else ""
+        return f"{capability} 门禁未通过（gate={block.get('gate')}）{suffix}"
     return None if _number(_dig(block, path)) is not None else f"{capability}.{dotted} 为空"
 
 

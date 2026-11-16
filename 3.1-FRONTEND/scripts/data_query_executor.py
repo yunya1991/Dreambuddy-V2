@@ -1018,28 +1018,47 @@ _STAT_METRIC_CAPS = frozenset(
 _STAT_PRICE_DATE_CAPS = frozenset({"D-A07", "D-B08", "D-B09", "D-G08", "D-G09"})
 
 # 拥挤度合成（F26 固定权重 0.4/0.3/0.3）所需三指标：sub_category / metric_name / 展示名
+# 统一取 Binance 长历史口径：三条日频序列共同交叠 180 天（2026-05-18..11-13），满足 min_n=60。
 _CROWDING_SERIES = (
-    ("okx_derivatives", "funding_rate_pct", "资金费率"),
-    ("open_interest", "open_interest_value", "未平仓"),
+    ("funding_rate", "funding_rate_pct", "资金费率"),
+    ("open_interest", "open_interest_value_binance", "未平仓"),
     ("long_short_ratio", "long_short_ratio", "多空比"),
 )
 
 
 def _load_crowding_panel(days: int = 180):
-    """拥挤度三指标日频序列；返回 (panel, 缺失项中文名)。全部可用才允许合成。"""
-    panel, missing = {}, []
+    """拥挤度三指标日频序列，按 UTC 日期取三序列交集。
+
+    返回 (panel, dates, 缺失项中文名)。三序列日历不同，禁止按位置拼接；
+    任一序列缺失或三序列无共同交易日时不合成。
+    """
+    from datetime import datetime, timezone
+
+    by_metric, missing = {}, []
     for sub, metric, label in _CROWDING_SERIES:
         ctx = get_l0().fetch_context(
             "datacenter.series",
             {"sub_category": sub, "metric_name": metric, "days": days, "agg": "daily"},
         )
         points = (ctx.get("data") or {}).get("points") or []
-        values = [float(p["value"]) for p in points if p.get("value") is not None]
-        if values:
-            panel[label] = values
+        daily = {}
+        for point in points:
+            value, ts = point.get("value"), point.get("ts")
+            if value is None or ts is None:
+                continue
+            day = datetime.fromtimestamp(int(ts), timezone.utc).date().isoformat()
+            daily[day] = float(value)
+        if daily:
+            by_metric[label] = daily
         else:
             missing.append(label)
-    return panel, missing
+    if missing:
+        return {}, [], missing
+    common = sorted(set.intersection(*(set(values) for values in by_metric.values())))
+    if not common:
+        return {}, [], ["三指标无共同交易日"]
+    panel = {label: [values[day] for day in common] for label, values in by_metric.items()}
+    return panel, common, []
 
 
 def _stat_dates(ts_values):
@@ -1304,7 +1323,7 @@ def exec_stat_query(message):
 
     if capability_id == "D-A14":
         # 拥挤度合成按冻结口径 F26 固定权重 0.4/0.3/0.3，三指标缺一不合成（不拿单指标冒充）
-        panel, missing = _load_crowding_panel()
+        panel, dates, missing = _load_crowding_panel()
         if missing:
             return {
                 "success": True,
@@ -1315,7 +1334,7 @@ def exec_stat_query(message):
                 "capability": "D-A14",
             }
         try:
-            envelope = run_capability("D-A14", series=panel, symbol=symbol)
+            envelope = run_capability("D-A14", series=panel, dates=dates, symbol=symbol)
         except Exception as e:  # noqa: BLE001  FAIL-OPEN
             return {
                 "success": True,
