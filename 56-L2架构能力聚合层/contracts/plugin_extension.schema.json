@@ -1,0 +1,223 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dreambuddy.local/l2/plugin_extension.schema.json",
+  "title": "L2 Plugin Extension Contract",
+  "description": "自扩展插件四动作契约（SPEC-56 v0.6 §4.6 / ADR-10）。install 必须携带 rollback_verified=true 与 Mandate；无回滚不安装。",
+  "schema_version": "1.0",
+  "$defs": {
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "enum": [
+            "E_MANIFEST_INVALID",
+            "E_DEP_MISSING",
+            "E_CHANNEL_CONFLICT",
+            "E_ROLLBACK_FAILED",
+            "E_TIMEOUT",
+            "E_PERMISSION_DENIED"
+          ]
+        },
+        "message": { "type": "string", "minLength": 3 },
+        "field": { "type": "string" }
+      }
+    },
+    "side_effect": { "enum": ["subscription", "connection", "handle", "timer"] },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["plugin_id", "version", "entry", "permissions"],
+      "properties": {
+        "plugin_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "entry": { "type": "string", "minLength": 3 },
+        "dependencies": { "type": "array", "items": { "type": "string", "minLength": 2 }, "default": [] },
+        "event_channels": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "publish": { "type": "array", "items": { "type": "string", "minLength": 2 } },
+            "subscribe": { "type": "array", "items": { "type": "string", "minLength": 2 } }
+          }
+        },
+        "permissions": {
+          "type": "array",
+          "items": { "enum": ["fs.read", "fs.write", "net", "exec", "ui"] }
+        },
+        "requires_restart": { "type": "boolean", "default": false }
+      }
+    },
+    "plugin_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["plugin_id", "version", "event_channels"],
+      "properties": {
+        "plugin_id": { "type": "string" },
+        "version": { "type": "string" },
+        "dependencies": { "type": "array", "items": { "type": "string" } },
+        "event_channels": {
+          "type": "object",
+          "properties": {
+            "publish": { "type": "array", "items": { "type": "string" } },
+            "subscribe": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "capabilities": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "rollback_token": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["token_id", "expires_at", "idempotency_key"],
+      "properties": {
+        "token_id": { "type": "string", "minLength": 8 },
+        "expires_at": { "type": "string", "format": "date-time" },
+        "idempotency_key": { "type": "string", "minLength": 8 }
+      }
+    },
+    "mandate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mandate_id", "granted_by", "scope", "expires_at"],
+      "properties": {
+        "mandate_id": { "type": "string", "minLength": 4 },
+        "granted_by": { "type": "string", "minLength": 2 },
+        "scope": { "enum": ["plugin.install", "plugin.unload"] },
+        "expires_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "title": "inspect.request",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "op", "direction", "request_id"],
+      "properties": {
+        "schema_version": { "const": "1.0" },
+        "op": { "const": "inspect" },
+        "direction": { "const": "request" },
+        "request_id": { "type": "string", "minLength": 6 }
+      }
+    },
+    {
+      "title": "inspect.response",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "op", "direction", "request_id", "ok", "plugins", "graph"],
+      "properties": {
+        "schema_version": { "const": "1.0" },
+        "op": { "const": "inspect" },
+        "direction": { "const": "response" },
+        "request_id": { "type": "string" },
+        "ok": { "const": true },
+        "plugins": { "type": "array", "items": { "$ref": "#/$defs/plugin_record" } },
+        "graph": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["acyclic"],
+          "properties": {
+            "acyclic": { "const": true },
+            "unresolved": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    {
+      "title": "experiment.request",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "op", "direction", "request_id", "manifest"],
+      "properties": {
+        "schema_version": { "const": "1.0" },
+        "op": { "const": "experiment" },
+        "direction": { "const": "request" },
+        "request_id": { "type": "string", "minLength": 6 },
+        "manifest": { "$ref": "#/$defs/manifest" }
+      }
+    },
+    {
+      "title": "experiment.response",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "op", "direction", "request_id", "ok", "loaded", "errors", "rollback_ok", "disk_writes"],
+      "properties": {
+        "schema_version": { "const": "1.0" },
+        "op": { "const": "experiment" },
+        "direction": { "const": "response" },
+        "request_id": { "type": "string" },
+        "ok": { "type": "boolean" },
+        "loaded": { "type": "boolean" },
+        "errors": { "type": "array", "items": { "$ref": "#/$defs/error" } },
+        "rollback_ok": { "type": "boolean" },
+        "disk_writes": { "const": 0 }
+      }
+    },
+    {
+      "title": "install.request",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "op", "direction", "request_id", "manifest", "mandate", "rollback_verified"],
+      "properties": {
+        "schema_version": { "const": "1.0" },
+        "op": { "const": "install" },
+        "direction": { "const": "request" },
+        "request_id": { "type": "string", "minLength": 6 },
+        "manifest": { "$ref": "#/$defs/manifest" },
+        "mandate": { "$ref": "#/$defs/mandate" },
+        "rollback_verified": { "const": true }
+      }
+    },
+    {
+      "title": "install.response",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "op", "direction", "request_id", "ok", "installed", "plugin_id", "rollback_token"],
+      "properties": {
+        "schema_version": { "const": "1.0" },
+        "op": { "const": "install" },
+        "direction": { "const": "response" },
+        "request_id": { "type": "string" },
+        "ok": { "const": true },
+        "installed": { "const": true },
+        "plugin_id": { "type": "string" },
+        "rollback_token": { "$ref": "#/$defs/rollback_token" }
+      }
+    },
+    {
+      "title": "unload.request",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "op", "direction", "request_id", "plugin_id", "rollback_token", "mandate"],
+      "properties": {
+        "schema_version": { "const": "1.0" },
+        "op": { "const": "unload" },
+        "direction": { "const": "request" },
+        "request_id": { "type": "string" },
+        "plugin_id": { "type": "string" },
+        "rollback_token": { "$ref": "#/$defs/rollback_token" },
+        "mandate": { "$ref": "#/$defs/mandate" }
+      }
+    },
+    {
+      "title": "unload.response",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "op", "direction", "request_id", "ok", "unloaded", "side_effects_reverted"],
+      "properties": {
+        "schema_version": { "const": "1.0" },
+        "op": { "const": "unload" },
+        "direction": { "const": "response" },
+        "request_id": { "type": "string" },
+        "ok": { "type": "boolean" },
+        "unloaded": { "type": "boolean" },
+        "side_effects_reverted": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/side_effect" }
+        }
+      }
+    }
+  ]
+}

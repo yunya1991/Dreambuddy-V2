@@ -16,6 +16,27 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 # ============================================================
+# 循环出口契约 (对齐 56/contracts/stop_reason.schema.json v1.1)
+# ============================================================
+
+STOP_SCHEMA_VERSION = "1.1"
+
+STOP_REASONS = (
+    "done",
+    "error",
+    "interrupted",
+    "parked",
+    "cost_limit",
+    "max_steps",
+    "no_next_context",
+)
+
+PARKED_REASONS = ("waiting_for_human", "async_tool", "client")
+
+# resumable 只能由 stop_reason 推导，禁止调用方各自解释
+RESUMABLE_STOP_REASONS = frozenset({"interrupted", "parked", "cost_limit", "max_steps"})
+
+# ============================================================
 # 反射动作
 # ============================================================
 
@@ -149,6 +170,47 @@ class ExecutionReport:
     early_terminated: bool = False
     termination_reason: Optional[str] = None
 
+    # ── 循环出口契约 (stop_reason v1.1) ────────────────
+    trace_id: str = ""
+    run_id: str = ""
+    steps: int = 0
+    stop_reason: Optional[str] = None
+    parked_reason: Optional[str] = None
+    resume_from: Optional[str] = None
+    cost_cu: float = 0.0
+    parked_nodes: int = 0
+    stop_detail: Dict[str, Any] = field(default_factory=dict)
+
+    # ── tripwire（45 门禁 shadow/hard）与循环内压缩 ──
+    tripwire_history: List[Dict[str, Any]] = field(default_factory=list)
+    compression_count: int = 0
+
+    @property
+    def resumable(self) -> bool:
+        """是否可续跑 — 唯一由 stop_reason 推导"""
+        return self.stop_reason in RESUMABLE_STOP_REASONS
+
+    def stop_contract(self) -> Dict[str, Any]:
+        """唯一出口契约（供 API/前端/调度统一消费）
+
+        注意: parked_reason 仅在 parked 时出现；schema 基类 enum 不接受 null。
+        """
+        contract: Dict[str, Any] = {
+            "schema_version": STOP_SCHEMA_VERSION,
+            "trace_id": self.trace_id,
+            "run_id": self.run_id,
+            "stop_reason": self.stop_reason or "error",
+            "resumable": self.resumable,
+            "steps": int(self.steps),
+            "tokens_used": int(self.total_tokens),
+            "cost_cu": round(float(self.cost_cu), 6),
+        }
+        if self.stop_reason == "parked":
+            contract["parked_reason"] = self.parked_reason or "waiting_for_human"
+        if self.stop_detail:
+            contract["detail"] = dict(self.stop_detail)
+        return contract
+
     @property
     def success_rate(self) -> float:
         if self.executed_nodes == 0:
@@ -168,6 +230,8 @@ class ExecutionReport:
             self.degraded_nodes += 1
         elif record.status == "skipped":
             self.skipped_nodes += 1
+        elif record.status == "parked":
+            self.parked_nodes += 1
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -189,4 +253,16 @@ class ExecutionReport:
             "final_risks": self.final_risks,
             "early_terminated": self.early_terminated,
             "termination_reason": self.termination_reason,
+            "trace_id": self.trace_id,
+            "run_id": self.run_id,
+            "steps": self.steps,
+            "stop_reason": self.stop_reason,
+            "parked_reason": self.parked_reason,
+            "resume_from": self.resume_from,
+            "resumable": self.resumable,
+            "cost_cu": round(self.cost_cu, 6),
+            "parked_nodes": self.parked_nodes,
+            "stop_detail": self.stop_detail,
+            "tripwire_history": self.tripwire_history,
+            "compression_count": self.compression_count,
         }

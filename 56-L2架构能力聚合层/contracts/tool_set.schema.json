@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dreambuddy.local/56/tool_set.schema.json",
+  "title": "L2 ToolSet Snapshot v1.0",
+  "description": "运行时工具集唯一副本：由 capability 层生成，3.1/52/DreamOS 只读消费；可见性与审批策略随快照冻结。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "generated_at", "source", "policy", "tools"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "run_id": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{3,64}$" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "source": { "const": "47-registry" },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["order", "mode"],
+      "properties": {
+        "order": {
+          "const": ["deny", "mode", "allow", "human"]
+        },
+        "mode": { "enum": ["default", "plan", "accept_edits", "bypass"] }
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "shell", "layer", "exposure", "effect", "requires_mandate", "visibility", "approval"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^l[0-2]\\.[a-z0-9_]+\\.[a-z0-9_]+$" },
+          "shell": { "type": "string", "pattern": "^l[0-2]\\.[a-z0-9_]+\\.mcp$" },
+          "layer": { "enum": ["L0", "L1", "L2"] },
+          "exposure": { "enum": ["read", "control"] },
+          "effect": { "enum": ["read", "write", "trade"] },
+          "requires_mandate": { "type": "boolean" },
+          "visibility": { "enum": ["model", "app", "both"] },
+          "approval": { "enum": ["auto", "human", "deny"] }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "effect": { "const": "write" } } },
+            "then": { "properties": { "requires_mandate": { "const": true } } }
+          },
+          {
+            "if": { "properties": { "effect": { "const": "trade" } } },
+            "then": {
+              "properties": {
+                "requires_mandate": { "const": true },
+                "approval": { "enum": ["human", "deny"] }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "denied_tools": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^l[0-2]\\.[a-z0-9_]+\\.[a-z0-9_]+$" },
+      "uniqueItems": true
+    }
+  }
+}

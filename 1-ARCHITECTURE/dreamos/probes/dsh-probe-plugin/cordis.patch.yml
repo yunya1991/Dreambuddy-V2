@@ -1,0 +1,4 @@
+# dsh bundle patch: 把四类副作用探针插入 profile 组合树
+- insert:
+    - id: dreambuddy-side-effect-probe
+      name: 'dreambuddy-side-effect-probe'

@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dreambuddy.local/l2/repair_ledger.schema.json",
+  "title": "L2 RepairLedger v1.1",
+  "description": "开发端修复/优化台账（SPEC-56 v0.6 §4.5）。落地文件：34-前端应用训练系统/l2_repair_ledger.jsonl（每行一条）。v1.1：允许初始入队自迁移 reported→reported（L1 发现入队）。",
+  "schema_version": "1.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "task_id", "kind", "trigger", "state", "history",
+    "attempts", "symptom", "reported", "evidence", "metrics",
+    "created_at", "updated_at"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.1" },
+    "task_id": { "type": "string", "pattern": "^(fix|opt)-[0-9]{8}-[0-9]{3}$" },
+    "kind": { "enum": ["bugfix", "optimization"] },
+    "trigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "resolver", "ref", "resolved_at"],
+      "properties": {
+        "source": { "enum": ["l1_finding", "bug_report"] },
+        "resolver": { "enum": ["48.experiment_id", "54.discovery_path", "github.issue"] },
+        "ref": { "type": "string", "minLength": 3 },
+        "resolved_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "state": {
+      "enum": ["reported", "reproduced", "root_caused", "fixed", "regression_passed", "settled", "abandoned"]
+    },
+    "history": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "to", "at"],
+        "properties": {
+          "from": { "enum": ["reported", "reproduced", "root_caused", "fixed", "regression_passed"] },
+          "to": { "enum": ["reported", "reproduced", "root_caused", "fixed", "regression_passed", "settled", "abandoned"] },
+          "at": { "type": "string", "format": "date-time" },
+          "by": { "type": "string", "minLength": 2 },
+          "reason": { "type": "string", "minLength": 5 }
+        }
+      }
+    },
+    "attempts": { "type": "integer", "minimum": 0, "maximum": 3 },
+    "symptom": { "type": "string", "minLength": 10 },
+    "reported": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo", "base_commit", "env"],
+      "properties": {
+        "repo": { "type": "string", "minLength": 2 },
+        "base_commit": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+        "env": { "type": "string", "minLength": 3 }
+      }
+    },
+    "root_cause": { "type": "string", "minLength": 10 },
+    "change_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "summary"],
+      "properties": {
+        "type": { "enum": ["commit", "pr", "diff"] },
+        "sha": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+        "url": { "type": "string", "format": "uri" },
+        "summary": { "type": "string", "minLength": 5 }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repro"],
+      "properties": {
+        "repro": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["cmd", "fails_on_base", "artifact_hash"],
+          "properties": {
+            "cmd": { "type": "string", "minLength": 3 },
+            "fails_on_base": { "const": true },
+            "artifact_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+          }
+        },
+        "regression": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["runner", "cmd", "exit_code", "passed", "ts", "log_uri"],
+          "properties": {
+            "runner": { "enum": ["pytest", "ci", "gate45"] },
+            "cmd": { "type": "string", "minLength": 3 },
+            "exit_code": { "type": "integer" },
+            "passed": { "type": "boolean" },
+            "ts": { "type": "string", "format": "date-time" },
+            "log_uri": { "type": "string", "minLength": 3 },
+            "artifact_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+          }
+        },
+        "optimization": {
+          "type": "object",
+          "additionalProperties": false,
+          "anyOf": [
+            { "required": ["gate45"] },
+            { "required": ["stats"] }
+          ],          "properties": {
+            "gate45": { "enum": ["PASS", "BLOCK", "INCONCLUSIVE"] },
+            "stats": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["test_set", "n", "effect", "p_adj", "report_uri"],
+              "properties": {
+                "test_set": { "type": "string", "minLength": 3 },
+                "n": { "type": "integer", "minimum": 30 },
+                "effect": { "type": "number" },
+                "p_adj": { "type": "number", "maximum": 0.05 },
+                "report_uri": { "type": "string", "minLength": 3 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "unit", "before", "after"],
+        "properties": {
+          "name": { "type": "string", "minLength": 2 },
+          "unit": { "type": "string", "minLength": 1 },
+          "before": { "type": "number" },
+          "after": { "type": "number" },
+          "n": { "type": "integer", "minimum": 1 },
+          "ci_low": { "type": "number" },
+          "ci_high": { "type": "number" }
+        }
+      }
+    },
+    "settled": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case", "cognition", "process", "doc"],
+      "properties": {
+        "case": { "enum": ["done", "skipped"] },
+        "cognition": { "enum": ["done", "skipped"] },
+        "process": { "enum": ["done", "skipped"] },
+        "doc": { "enum": ["done", "skipped"] }
+      }
+    },
+    "run_ids": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 3 }
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "state": { "enum": ["root_caused", "fixed", "regression_passed", "settled"] } }, "required": ["state"] },
+      "then": { "required": ["root_cause"] }
+    },
+    {
+      "if": { "properties": { "state": { "enum": ["fixed", "regression_passed", "settled"] } }, "required": ["state"] },
+      "then": { "required": ["change_ref"] }
+    },
+    {
+      "if": { "properties": { "state": { "enum": ["regression_passed", "settled"] } }, "required": ["state"] },
+      "then": {
+        "required": ["evidence"],
+        "properties": {
+          "evidence": {
+            "required": ["regression"],
+            "properties": {
+              "regression": {
+                "properties": {
+                  "passed": { "const": true },
+                  "exit_code": { "const": 0 }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "state": { "const": "settled" } }, "required": ["state"] },
+      "then": { "required": ["settled", "run_ids"] }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "optimization" } }, "required": ["kind"] },
+      "then": {
+        "required": ["evidence", "metrics"],
+        "properties": {
+          "evidence": { "required": ["optimization"] },
+          "metrics": { "minItems": 1 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "state": { "const": "abandoned" } }, "required": ["state"] },
+      "then": {
+        "properties": {
+          "history": { "contains": { "required": ["reason"] } }
+        }
+      }
+    }
+  ]
+}

@@ -11,7 +11,8 @@
   7. write 工具 requires_mandate 必须为 true
   8. annotations.readOnlyHint 与 read_write=write 不冲突
   9. worker_roles（若存在）：引用的 shell_id/tool 必须存在；每角色工具数 ≤
-     max_tools_per_shell；Worker 只读（ADR-9/H7）——角色工具集禁止含
+     max_tools_per_role（默认 10，v1.2.1 拆分自 max_tools_per_shell）；
+     Worker 只读（ADR-9/H7）——角色工具集禁止含
      requires_mandate=true 的写工具
  10. v1.2 层级新增校验：
     V1 所有 shell 必须声明 layer（E-LAYER-MISSING）
@@ -182,6 +183,8 @@ def validate(registry_path: Path, quiet: bool = False) -> int:
         status_enum = set(enums.get("status", []))
         env_enum = set(enums.get("envelope_version", []))
         max_tools_per_shell = enums.get("max_tools_per_shell", 10)
+        # v1.2.1：角色上限与单壳上限解耦（3+3 口径：Worker ≤10 工具/角色）
+        max_tools_per_role = enums.get("max_tools_per_role", 10)
         # v1.2：优先用分层配额 total 替代单一 max_total_tools
         layer_quota = enums.get("layer_quota") or {}
         max_total_tools = layer_quota.get("total") or enums.get("max_total_tools", 80)
@@ -406,11 +409,11 @@ def validate(registry_path: Path, quiet: bool = False) -> int:
                     violations,
                 )
             _check(
-                0 < len(role_tools) <= max_tools_per_shell,
+                0 < len(role_tools) <= max_tools_per_role,
                 "ERR",
                 f"{path}.tools",
                 (
-                    f"{len(role_tools)} 工具超出每角色上限 {max_tools_per_shell}（ADR-4）"
+                    f"{len(role_tools)} 工具超出每角色上限 {max_tools_per_role}（ADR-4）"
                     if role_tools
                     else "角色工具集为空"
                 ),

@@ -1,0 +1,86 @@
+schema_version: "1.0"
+# 开发端闭环状态机（SPEC-56 v0.6 §2.5）
+# 校验器: scripts/validate_contracts.py（迁移合法性 + guard 求值）
+
+initial: reported
+
+states:
+  - id: reported
+    kind: active
+  - id: reproduced
+    kind: active
+  - id: root_caused
+    kind: active
+  - id: fixed
+    kind: active
+  - id: regression_passed
+    kind: active
+  - id: settled
+    kind: terminal
+  - id: abandoned
+    kind: terminal
+
+terminal: [settled, abandoned]
+max_attempts: 3
+
+# 重开策略：回归失败允许回到 root_caused，必须给 reason，并把 attempts +1
+reopen:
+  from: fixed
+  to: root_caused
+  require_reason: true
+  increments: attempts
+  max: 3
+
+# guard 求值算子：non_empty / present / eq / in / min_len / min_items / keys
+guards:
+  repro_cmd_present:
+    field: evidence.repro.cmd
+    op: non_empty
+  baseline_fails:
+    field: evidence.repro.fails_on_base
+    op: eq
+    value: true
+  root_cause_meaningful:
+    field: root_cause
+    op: min_len
+    value: 10
+  change_sha_present:
+    field: change_ref.sha
+    op: present
+  regression_signed:
+    field: evidence.regression.runner
+    op: in
+    value: [pytest, ci, gate45]
+  regression_passed:
+    field: evidence.regression.passed
+    op: eq
+    value: true
+  regression_failed:
+    field: evidence.regression.passed
+    op: eq
+    value: false
+  settled_four_way:
+    field: settled
+    op: keys
+    value: [case, cognition, process, doc]
+  run_ids_present:
+    field: run_ids
+    op: min_items
+    value: 1
+  reason_present:
+    field: history[-1].reason
+    op: non_empty
+
+transitions:
+  # v1.1 初始入队自迁移：L1 发现写入台账即 reported→reported，不计数 attempts、不要求 guard
+  - { from: reported, to: reported }
+  - { from: reported, to: reproduced, guards: [repro_cmd_present, baseline_fails] }
+  - { from: reported, to: abandoned, guards: [reason_present] }
+  - { from: reproduced, to: root_caused, guards: [root_cause_meaningful] }
+  - { from: reproduced, to: abandoned, guards: [reason_present] }
+  - { from: root_caused, to: fixed, guards: [change_sha_present] }
+  - { from: root_caused, to: abandoned, guards: [reason_present] }
+  - { from: fixed, to: regression_passed, guards: [regression_signed, regression_passed] }
+  - { from: fixed, to: root_caused, reopen: true, guards: [regression_failed, reason_present] }
+  - { from: regression_passed, to: settled, guards: [settled_four_way, run_ids_present] }
+  - { from: regression_passed, to: abandoned, guards: [reason_present] }

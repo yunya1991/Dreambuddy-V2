@@ -69,6 +69,13 @@ class CompressedState:
     retained_trace_count: int = 0
     removed_trace_count: int = 0
 
+    # ── 锚点（对齐 24 BAC：Blueprint / Architecture / Chronicle）──
+    anchors: Dict[str, Any] = field(default_factory=dict)
+    """压缩后必须原文保留并重注入的锚点（目标 / 最新指令 / 未完成节点）"""
+
+    anchored_node_ids: List[str] = field(default_factory=list)
+    """受锚点保护的节点：结果不降级、证据不外置"""
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "original_size": self.original_size,
@@ -77,6 +84,8 @@ class CompressedState:
             "summary": self.summary,
             "retained_trace_count": self.retained_trace_count,
             "removed_trace_count": self.removed_trace_count,
+            "anchors": self.anchors,
+            "anchored_node_ids": self.anchored_node_ids,
         }
 
 

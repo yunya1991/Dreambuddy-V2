@@ -39,6 +39,7 @@ def main() -> int:
         "data": req.get("data"),
     }
     try:
+        from gate_45_runtime import resolve_settle_gate
         from l0_foundation import get_l0
 
         context = {"intent": intent, "message": message}
@@ -46,7 +47,7 @@ def main() -> int:
         for _k in ("complexity", "entities"):
             if req.get(_k) is not None:
                 context[_k] = req.get(_k)
-        get_l0().settle(result, context)
+        get_l0().settle(result, context, gate=resolve_settle_gate())
         print(json.dumps({"success": True, "settled": True}, ensure_ascii=False))
         return 0
     except Exception as e:  # FAIL-OPEN

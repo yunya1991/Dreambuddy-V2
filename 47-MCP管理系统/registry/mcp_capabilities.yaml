@@ -1175,6 +1175,7 @@ enums:
   - '0.1'
   - '0.2'
   max_tools_per_shell: 15
+  max_tools_per_role: 10
   max_total_tools: 80
   layer:
   - L0

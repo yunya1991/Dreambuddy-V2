@@ -47,7 +47,7 @@ class TestLoadRegistry:
     def test_load_worker_roles_real_registry(self):
         roles = load_worker_roles()  # 默认 47 registry 路径
         # 角色集快照：含 SPEC-33-E 的 data_reader（data_fetch/data_store_read 从 engineer 迁出）
-        # 与 52-LobeHub 的 lobehub_frontend（恒只读）等后续新增角色
+        # 与 52-LobeHub 的 lobehub_frontend（恒只读）、L1 观察/运维与 L2 规划/研究等后续新增角色
         assert set(roles.keys()) == {
             "research",
             "engineer",
@@ -57,6 +57,10 @@ class TestLoadRegistry:
             "l2_analysis",
             "l2_trading_analysis",
             "lobehub_frontend",
+            "l1_observer",
+            "l1_ops",
+            "l2_planner",
+            "l2_researcher",
         }
         assert "recall" in roles["research"]
         assert "data_fetch" in roles["data_reader"]

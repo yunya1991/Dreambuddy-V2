@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dreambuddy.local/56/span.schema.json",
+  "title": "L2 Assembly Span v1.0",
+  "description": "总装线跨段观测契约：sense/arrange/capability/compute/gate/memory/scheduler/artifact 每段至少一个 span，字段跨 DreamOS/52/3.1 统一。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "trace_id", "run_id", "span_id", "name", "segment",
+    "started_at", "ended_at", "model_id", "tokens_in", "tokens_out", "cost_cu", "context_hash"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "trace_id": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{3,64}$" },
+    "run_id": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{3,64}$" },
+    "span_id": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{3,64}$" },
+    "parent_span_id": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9._:-]{3,64}$" },
+    "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$" },
+    "segment": {
+      "enum": ["sense", "arrange", "capability", "compute", "gate", "memory", "scheduler", "artifact"]
+    },
+    "started_at": { "type": "string", "format": "date-time" },
+    "ended_at": { "type": "string", "format": "date-time" },
+    "model_id": { "type": "string", "pattern": "^([a-z0-9._-]+|none)$" },
+    "tokens_in": { "type": "integer", "minimum": 0 },
+    "tokens_out": { "type": "integer", "minimum": 0 },
+    "cost_cu": { "type": "number", "minimum": 0 },
+    "stop_reason": {
+      "enum": ["done", "error", "interrupted", "parked", "cost_limit", "max_steps", "no_next_context", null]
+    },
+    "context_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "attrs": { "type": "object" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "model_id": { "const": "none" } } },
+      "then": {
+        "properties": {
+          "tokens_in": { "const": 0 },
+          "tokens_out": { "const": 0 }
+        }
+      }
+    }
+  ]
+}

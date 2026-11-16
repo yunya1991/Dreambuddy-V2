@@ -25,7 +25,7 @@ import {
 } from 'ai';
 import type { Tool, UIMessage } from 'ai';
 import { resolveAgentModel } from '@/lib/agent/providers';
-import { getCognitionMcpClient } from '@/lib/agent/mcp-client';
+import { getAgentMcpTools } from '@/lib/agent/mcp-multi-shell';
 import { filterToolsByProfile, profileSystemPrompt, resolveToolProfile } from '@/lib/agent/tool-profiles';
 import { isEntitled } from '@/lib/product/entitlement';
 import {
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
     // MCP tools 获取失败不致命：退化为无工具对话
     let tools: Record<string, Tool> | undefined;
     try {
-      const allTools = await getCognitionMcpClient().toAiSdkTools();
+      const allTools = await getAgentMcpTools();
       tools = filterToolsByProfile(allTools, profile);
     } catch (e) {
       console.warn('[AgentChat] MCP tools 降级:', e instanceof Error ? e.message : e);

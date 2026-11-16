@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dreambuddy.local/56/stop_reason.schema.json",
+  "title": "L2 StopReason v1.1",
+  "description": "总装线执行循环的唯一出口契约：任何 loop 结束都必须返回本结构，禁止由 UI/服务端各自推导。v1.1 起强制 trace_id。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "trace_id", "run_id", "stop_reason", "resumable", "steps", "tokens_used", "cost_cu"],
+  "properties": {
+    "schema_version": { "const": "1.1" },
+    "trace_id": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{3,64}$" },
+    "run_id": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{3,64}$" },
+    "stop_reason": {
+      "enum": ["done", "error", "interrupted", "parked", "cost_limit", "max_steps", "no_next_context"]
+    },
+    "parked_reason": {
+      "enum": ["waiting_for_human", "async_tool", "client"]
+    },
+    "resumable": { "type": "boolean" },
+    "steps": { "type": "integer", "minimum": 0 },
+    "tokens_used": { "type": "integer", "minimum": 0 },
+    "cost_cu": { "type": "number", "minimum": 0 },
+    "detail": { "type": "object" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "stop_reason": { "const": "parked" } } },
+      "then": {
+        "required": ["parked_reason"],
+        "properties": {
+          "parked_reason": { "enum": ["waiting_for_human", "async_tool", "client"] },
+          "resumable": { "const": true }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "stop_reason": { "enum": ["done", "error"] } } },
+      "then": {
+        "properties": {
+          "parked_reason": { "type": "null" },
+          "resumable": { "const": false }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "stop_reason": { "enum": ["interrupted", "cost_limit", "max_steps"] } } },
+      "then": {
+        "properties": {
+          "parked_reason": { "type": "null" },
+          "resumable": { "const": true }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "stop_reason": { "const": "no_next_context" } } },
+      "then": {
+        "properties": {
+          "parked_reason": { "type": "null" },
+          "resumable": { "const": false }
+        }
+      }
+    }
+  ]
+}

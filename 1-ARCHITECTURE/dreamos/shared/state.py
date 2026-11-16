@@ -37,6 +37,7 @@ class NodeStatus(Enum):
     FAILED = "failed"  # 失败
     SKIPPED = "skipped"  # 跳过
     DEGRADED = "degraded"  # 降级执行
+    PARKED = "parked"  # 挂起等待外部输入（人工审批/异步工具/客户端）
 
 
 # ============================================================
@@ -65,6 +66,9 @@ class NodeResult:
     degraded: bool = False
     warnings: List[str] = field(default_factory=list)
     suggestions: List[str] = field(default_factory=list)
+    parked_reason: Optional[str] = (
+        None  # status=PARKED 时的子因（waiting_for_human/async_tool/client）
+    )
 
     @property
     def success(self) -> bool:
@@ -84,6 +88,7 @@ class NodeResult:
             "tokens_used": self.tokens_used,
             "retries": self.retries,
             "degraded": self.degraded,
+            "parked_reason": self.parked_reason,
         }
 
 
@@ -257,6 +262,7 @@ class State:
                 tokens_used=r.get("tokens_used", 0),
                 retries=r.get("retries", 0),
                 degraded=r.get("degraded", False),
+                parked_reason=r.get("parked_reason"),
             )
         return s
 

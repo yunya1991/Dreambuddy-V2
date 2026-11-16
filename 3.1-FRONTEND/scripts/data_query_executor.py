@@ -27,6 +27,7 @@ _TRAINING_SYS_DIR = os.path.join(
 )
 if _TRAINING_SYS_DIR not in sys.path:
     sys.path.insert(0, _TRAINING_SYS_DIR)
+from core.gate_45_runtime import resolve_settle_gate  # noqa: E402
 from core.l0_foundation import get_l0  # noqa: E402
 
 # 18 中心已迁移 PostgreSQL，复用 39 模块统一 PG 辅助模块（FAIL-OPEN）
@@ -1714,7 +1715,7 @@ def settle_to_cognitive(intent, message, result, trace_id=""):
     context = {"intent": intent, "message": message}
     if trace_id:
         context["trace_id"] = trace_id
-    get_l0().settle(result, context)
+    get_l0().settle(result, context, gate=resolve_settle_gate())
 
 
 _RISK_STATE_DESC = {"IDLE": "待命", "ARMED": "已武装", "TRIGGERED": "已触发", "CLOSED": "已平仓"}

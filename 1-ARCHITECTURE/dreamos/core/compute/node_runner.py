@@ -126,6 +126,8 @@ class NodeRunner:
                 status_str = "failed"
             elif last_result.status == NodeStatus.SKIPPED:
                 status_str = "skipped"
+            elif last_result.status == NodeStatus.PARKED:
+                status_str = "parked"
 
         if last_result and last_result.node_id:
             state.update(node.node_id, last_result)
