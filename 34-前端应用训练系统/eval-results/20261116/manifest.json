@@ -1,0 +1,122 @@
+{
+  "dataset_version": "e1_d1@2026-11-16",
+  "dataset_sha256": "919bf4ee19d7cef63487b303c5e1bcea0c73828cc3e96b314d50f23bfa099f10",
+  "generated_at": "2026-11-16T18:32:21",
+  "git_commit": "3798cfa72cd9e6bfdb971612f5cbf605ac1c0895",
+  "semantic_model": "BAAI/bge-base-zh-v1.5",
+  "semantic_threshold_default": 0.66,
+  "seed": 20261116,
+  "grid": {
+    "thresholds": [
+      0.6,
+      0.63,
+      0.66,
+      0.7
+    ],
+    "deltas": [
+      0.02,
+      0.03,
+      0.05,
+      0.08
+    ]
+  },
+  "recall_cache": {
+    "n": 500,
+    "available_rate": 1.0,
+    "errors": 0
+  },
+  "winner": {
+    "status": "no_eligible",
+    "reference_coverage": {
+      "strategy": "S3",
+      "threshold": 0.63,
+      "delta": 0.02,
+      "metrics": {
+        "n": 500,
+        "far": 0.404,
+        "far_critical": 2,
+        "crit_total": 9,
+        "coverage": 0.736,
+        "intent_acc": 0.9292929292929293,
+        "answered_l1_rate": 0.792,
+        "handoff_acc": 0.596,
+        "p95_ms": 46.19666706740856,
+        "exception_rate": 0.0,
+        "l2_count": 201,
+        "segments": {
+          "data": {
+            "n": 80,
+            "coverage": 0.9875
+          },
+          "semantic": {
+            "n": 80,
+            "coverage": 0.2625
+          },
+          "trap": {
+            "n": 10,
+            "coverage": 0.4
+          },
+          "clarify": {
+            "n": 40,
+            "coverage": 1.0
+          },
+          "regression": {
+            "n": 40,
+            "coverage": 1.0
+          }
+        }
+      }
+    },
+    "reference_safety": {
+      "strategy": "S5",
+      "threshold": 0.7,
+      "delta": 0.08,
+      "metrics": {
+        "n": 500,
+        "far": 0.068,
+        "far_critical": 0,
+        "crit_total": 9,
+        "coverage": 0.268,
+        "intent_acc": 0.9436619718309859,
+        "answered_l1_rate": 0.284,
+        "handoff_acc": 0.932,
+        "p95_ms": 46.19670897692442,
+        "exception_rate": 0.0,
+        "l2_count": 412,
+        "segments": {
+          "data": {
+            "n": 80,
+            "coverage": 0.3625
+          },
+          "semantic": {
+            "n": 80,
+            "coverage": 0.1125
+          },
+          "trap": {
+            "n": 10,
+            "coverage": 0.2
+          },
+          "clarify": {
+            "n": 40,
+            "coverage": 0.15
+          },
+          "regression": {
+            "n": 40,
+            "coverage": 0.525
+          }
+        }
+      }
+    }
+  },
+  "runner_up": null,
+  "bootstrap_ci_diff": [
+    0.408,
+    0.532
+  ],
+  "mcnemar": {
+    "b": 117,
+    "c": 84,
+    "n": 201,
+    "p": 0.023761175886632388
+  }
+}
