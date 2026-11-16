@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-11-16T11:39:32.123Z",
+  "generated_at": "2026-11-16T12:44:48.610Z",
   "note": "只允许下降。新增 fs/child_process 使用必须先评审，再运行 node scripts/check-route-boundary.mjs --update-baseline 登记。",
   "totals": {
     "fs": 43,
-    "child_process": 34
+    "child_process": 35
   },
   "files": {
     "src/app/api/agent/brainstorm/route.ts": {
@@ -123,6 +123,10 @@
       "child_process": 1
     },
     "src/app/api/visual/overview/route.ts": {
+      "fs": 0,
+      "child_process": 1
+    },
+    "src/app/api/visual/research/route.ts": {
       "fs": 0,
       "child_process": 1
     },

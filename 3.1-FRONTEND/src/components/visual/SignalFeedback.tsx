@@ -58,6 +58,65 @@ function signedPct(value: number | null | undefined, digits = 1): string {
   return `${sign}${(value * 100).toFixed(digits)}%`;
 }
 
+// 反馈信封：表格与分档卡各自取一次；服务端已按 n_eff 结算，前端只展示
+function loadFeedback(): Promise<FeedbackPayload> {
+  return fetch('/api/visual/signal-feedback?horizons=5,20', { cache: 'no-store' })
+    .then(async (response) => (await response.json()) as FeedbackPayload)
+    .catch((err: unknown) => ({ ok: false, error: err instanceof Error ? err.message : 'fetch_failed' }));
+}
+
+/** 按强度分档命中率（设计稿 v3 信号反馈右栏）：只读同一份反馈信封。 */
+export function SignalFeedbackBuckets() {
+  const [payload, setPayload] = useState<FeedbackPayload | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    loadFeedback().then((data) => {
+      if (alive) setPayload(data);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (!payload) return <div className="h-20 animate-pulse rounded-lg bg-slate-800/40" />;
+  if (!payload.ok) {
+    return <p className="text-[11px] text-slate-500">分档命中率不可用：{payload.error || '反馈脚本未返回'}</p>;
+  }
+  const blocks = (payload.horizons ?? []).filter((block) => block.buckets.length > 0);
+  if (blocks.length === 0) {
+    return <p className="text-[11px] text-slate-500">暂无分档样本（需已结算信号且带 strength 分档）</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {blocks.map((block) => (
+        <div key={block.horizon} className="space-y-1.5">
+          <p className="text-[10px] text-slate-500">后 {block.horizon} 日 · 基线 50%</p>
+          {block.buckets.map((bucket) => {
+            const value = bucket.hit_rate ?? 0;
+            return (
+              <div key={bucket.strength} className="grid grid-cols-[76px_1fr_44px] items-center gap-2">
+                <span className="text-[10.5px] text-slate-400">
+                  {STRENGTH_LABEL[bucket.strength] ?? bucket.strength}
+                </span>
+                <span className="relative h-3 overflow-hidden rounded bg-slate-900">
+                  <span
+                    className={`block h-full rounded ${value >= 0.5 ? 'bg-emerald-500/55' : 'bg-slate-500/40'}`}
+                    style={{ width: `${Math.max(1, value * 100)}%` }}
+                  />
+                  <span className="absolute inset-y-0 left-1/2 w-px bg-slate-300/60" />
+                </span>
+                <span className="text-right font-mono text-[10px] text-slate-300">{pct(bucket.hit_rate)}</span>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function SignalFeedback() {
   const [payload, setPayload] = useState<FeedbackPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,15 +124,9 @@ export function SignalFeedback() {
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    fetch('/api/visual/signal-feedback?horizons=5,20', { cache: 'no-store' })
-      .then(async (response) => (await response.json()) as FeedbackPayload)
+    loadFeedback()
       .then((data) => {
         if (alive) setPayload(data);
-      })
-      .catch((err: unknown) => {
-        if (alive) {
-          setPayload({ ok: false, error: err instanceof Error ? err.message : 'fetch_failed' });
-        }
       })
       .finally(() => {
         if (alive) setLoading(false);

@@ -595,6 +595,87 @@ def _lights_history(
     return out
 
 
+def _row_state(row, lit_pct: float, warm_pct: float):
+    """合成状态（只读投影）：conflict 轴优先，其次按 strength 与阈值分档。"""
+    axes = row.get("axes") or {}
+    if any(str((axes.get(axis) or {}).get("state")) == "conflict" for axis in axes):
+        return "conflict"
+    strength = row.get("strength")
+    if strength is None:
+        return "unavailable"
+    try:
+        value = float(strength)
+    except (TypeError, ValueError):
+        return "unavailable"
+    if value >= lit_pct:
+        return "lit"
+    if value >= warm_pct:
+        return "warm"
+    return "dim"
+
+
+def _persistence(history, meta):
+    """由逐期点亮快照投影持续性（连续 lit / 24d lit 占比 / 翻转次数）。
+
+    仅做状态序列计数，不重算任何统计量；缺失期跳过，不补造。
+    """
+    thresholds = (meta or {}).get("thresholds") or {}
+    try:
+        lit_pct = float(thresholds.get("lit_pct", 0.70))
+        warm_pct = float(thresholds.get("warm_pct", 0.40))
+    except (TypeError, ValueError):
+        lit_pct, warm_pct = 0.70, 0.40
+
+    series = {}
+    for period in history or []:
+        for row in period.get("rows") or []:
+            symbol = str(row.get("symbol") or "")
+            if not symbol:
+                continue
+            series.setdefault(symbol, []).append(_row_state(row, lit_pct, warm_pct))
+    rows = []
+    for symbol, states in series.items():
+        valid = [state for state in states if state != "unavailable"]
+        if not valid:
+            rows.append(
+                {
+                    "symbol": symbol,
+                    "available": False,
+                    "consecutive_lit": None,
+                    "lit_ratio": None,
+                    "flips": None,
+                }
+            )
+            continue
+        consecutive = 0
+        for state in reversed(states):
+            if state == "lit":
+                consecutive += 1
+            elif state == "unavailable":
+                continue
+            else:
+                break
+        lit_ratio = sum(1 for state in valid if state == "lit") / float(len(valid))
+        flips = sum(
+            1
+            for prev, cur in zip(valid, valid[1:], strict=False)
+            if (prev == "lit") != (cur == "lit")
+        )
+        rows.append(
+            {
+                "symbol": symbol,
+                "available": True,
+                "consecutive_lit": consecutive,
+                "lit_ratio": round(lit_ratio, 4),
+                "flips": flips,
+                "periods": len(valid),
+                "state": valid[-1],
+            }
+        )
+    rows.sort(key=lambda item: (-(item.get("consecutive_lit") or -1), item["symbol"]))
+    return {"available": bool(rows), "periods": len(history or []), "rows": rows}
+
+
 def _extra_panels(raw, aligned, base, blocks, envelopes, days, as_of=None, history_periods=0):
     """一次进程产出 B 链路四面板：D-E19 点亮 → D-E16 聚合 → D-E17 看板 → D-E18 导图。
 
@@ -639,11 +720,12 @@ def _extra_panels(raw, aligned, base, blocks, envelopes, days, as_of=None, histo
     # 1.0) 多期点亮影带（T9-2）：仅在显式请求 `--history N` 时回放，默认 0 保持旧 payload
     if history_periods > 0:
         try:
-            lights_payload["history"] = _lights_history(
-                raw, pool, base=base, upto=as_of, periods=history_periods
-            )
+            history = _lights_history(raw, pool, base=base, upto=as_of, periods=history_periods)
+            lights_payload["history"] = history
+            lights_payload["persistence"] = _persistence(history, lights_block.get("meta") or {})
         except Exception as exc:  # FAIL-OPEN：影带回放失败不影响当期点亮
             lights_payload["history"] = []
+            lights_payload["persistence"] = {"available": False, "rows": []}
             lights_payload["history_error"] = f"{type(exc).__name__}: {exc}"
 
     # 1.1) 主览图右：加权信号点阵（资产 × 四轴，状态/强度/轴值符号零重算）
@@ -863,6 +945,55 @@ def main():
         "D-A04"
     ) or {}
 
+    # 技术叠加右侧读数（设计稿 v3）：波动 / 回撤 / 拥挤；只读能力块，不进 blocks
+    volatility_env = _run("D-A06", values=prices, dates=base_dates, symbol=base)
+    volatility_block = ((volatility_env.get("data") or {}).get("capabilities") or {}).get(
+        "D-A06"
+    ) or {}
+    trend_block = ((trend.get("data") or {}).get("capabilities") or {}).get("D-E15") or {}
+    drawdown_block = ((drawdown.get("data") or {}).get("capabilities") or {}).get("D-E10") or {}
+    crowding_block = ((crowding or {}).get("data") or {}).get("capabilities", {}).get("D-A14") or {}
+    kalman = dict(trend_block.get("kalman") or {})
+    panel_metrics = {
+        "trend": {
+            "ema": trend_block.get("ema"),
+            "ema_order": trend_block.get("ema_order"),
+            "slope_table": trend_block.get("slope_table") or [],
+            "kalman": {
+                "level": kalman.get("level"),
+                "band": kalman.get("band"),
+                "slope": kalman.get("slope"),
+                "slope_se": kalman.get("slope_se"),
+            },
+        },
+        "volatility": {
+            "annualized": volatility_block.get("volatility"),
+            "window": volatility_block.get("window"),
+            "sample_n": volatility_block.get("sample_n"),
+            "capability": "D-A06",
+        },
+        "drawdown": {
+            "mdd": drawdown_block.get("mdd"),
+            "current": drawdown_block.get("current_drawdown"),
+            "peak_date": drawdown_block.get("peak_date"),
+            "trough_price": drawdown_block.get("trough_price"),
+            "peak_price": drawdown_block.get("peak_price"),
+            "peak_to_trough_days": drawdown_block.get("peak_to_trough_days"),
+            "duration_days": drawdown_block.get("duration_days"),
+            "recovery_days": drawdown_block.get("recovery_days"),
+            "recovered": drawdown_block.get("recovered"),
+            "capability": "D-E10",
+        },
+        "crowding": {
+            "score": crowding_block.get("score"),
+            "percentile": crowding_block.get("percentile"),
+            "level": crowding_block.get("level"),
+            "n": crowding_block.get("n"),
+            "as_of": crowding_block.get("as_of"),
+            "capability": "D-A14",
+        },
+    }
+
     series_inputs = _load_l0_flow_series(base, days)
     visuals = _build_visuals(blocks, envelopes, base, as_of, series_inputs)
     # B 链路四面板：同一进程内直调能力层（避免每图一次 python spawn）
@@ -892,6 +1023,7 @@ def main():
             },
             "as_of": as_of,
         },
+        "panel_metrics": panel_metrics,
         "recommended": _recommend(visuals, blocks, list(series), base, unavailable),
         "degraded": bool(unavailable)
         or any((envelope or {}).get("ok") is False for envelope in envelopes.values()),

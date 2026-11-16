@@ -128,6 +128,22 @@ export interface LightsMeta {
   [key: string]: unknown;
 }
 
+export interface PersistenceRow {
+  symbol: string;
+  available: boolean;
+  consecutive_lit: number | null;
+  lit_ratio: number | null;
+  flips: number | null;
+  periods?: number;
+  state?: LightState;
+}
+
+export interface PersistencePayload {
+  available: boolean;
+  periods?: number;
+  rows: PersistenceRow[];
+}
+
 export interface LightsPayload {
   ok: boolean;
   rows: LightRow[];
@@ -136,7 +152,50 @@ export interface LightsPayload {
   quality?: Record<string, unknown> | null;
   /** T9-2 逐期回放（仅在 `?history=N` 时下发；缺期不补造） */
   history?: { as_of: string; rows: LightRow[] }[];
+  /** 持续性（由逐期快照投影，仅在 `?history=N` 时下发） */
+  persistence?: PersistencePayload;
   history_error?: string;
+}
+
+export interface SlopeRow {
+  window: number;
+  slope: number | null;
+  se?: number | null;
+  t?: number | null;
+  r2?: number | null;
+  n?: number | null;
+  degraded?: boolean;
+  degraded_reason?: string | null;
+}
+
+export interface PanelMetrics {
+  trend?: {
+    ema?: Record<string, number> | null;
+    ema_order?: string | null;
+    slope_table?: SlopeRow[];
+    kalman?: { level?: number | null; band?: number[] | null; slope?: number | null; slope_se?: number | null };
+  };
+  volatility?: { annualized?: number | null; window?: number | null; sample_n?: number | null; capability?: string };
+  drawdown?: {
+    mdd?: number | null;
+    current?: number | null;
+    peak_date?: string | null;
+    trough_price?: number | null;
+    peak_price?: number | null;
+    peak_to_trough_days?: number | null;
+    duration_days?: number | null;
+    recovery_days?: number | null;
+    recovered?: boolean | null;
+    capability?: string;
+  };
+  crowding?: {
+    score?: number | null;
+    percentile?: number | null;
+    level?: string | null;
+    n?: number | null;
+    as_of?: string | null;
+    capability?: string;
+  };
 }
 
 export interface BaseMetrics {
@@ -146,6 +205,7 @@ export interface BaseMetrics {
     sample_n?: number | null;
     capability?: string;
   } | null;
+  panel_metrics?: PanelMetrics | null;
   as_of?: string | null;
 }
 
