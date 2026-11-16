@@ -43,7 +43,22 @@
 ## 验收结论
 - 五维全部通过；T7-3 / T7-4 / T8-3 / T8-4 / T8-6 / T8-7 / T9-1…T9-5 验收通过。
 - SPEC 计数 55/55 闭合（T10-1…T10-4 见 TASKS 进度表）。
-- 未执行 commit、push、云端同步或部署。
+- 已执行 commit / push / 云端同步与部署（记录见下节）。
+
+## 部署记录（2026-11-16 追加）
+
+| 环节 | 结果 |
+|---|---|
+| 本地 commit | `01a81ce0be` feat(l1)（93 文件）；`ab442263c3` ci: 修复 C10 白名单与路由边界基线 + 入库 E1/E2 证据 |
+| push | `origin/main` = `ab442263c3`（远端 main 无分叉，`--ff-only` 快进） |
+| CI | `CI` 与 `L0 Contracts` 在 `ab442263c3` 均 **success**（此前 `01a81ce0be` 因 C10 白名单 18 项与 2 处新增 `execFile` 路由、1 处文档断链而 failed，已在 `ab442263c3` 修复） |
+| 云端代码 | `/home/luke/dreambuddy` HEAD = `ab442263`；合并前备份了云端运行态 `library.json` 至 `/home/luke/deploy-backups/`，并删除了与仓库同 md5 的未跟踪 `05-frontend-rolling-deploy.sh` |
+| 云端构建 | `pnpm build` → `✓ Compiled successfully in 63s`；`BUILD_ID=LSycCZuNoVXz2mdTuiX9r`；构建前 `.next` 已备份（690M） |
+| 服务 | `dreambuddy-frontend.service` = active，`ActiveEnterTimestamp` 19:34:53 晚于构建完成 19:30:17 |
+| 端点 | `/login` 200、`/api/cognitive/health` 200、`/api/product/entitlement` 200、`/api/billing/balance` 200、`/api/plugins` 200、`/api/venue/health` 200；`/dashboard/visual/{research,technical}` 307（AUTH_REQUIRED 正常）；`/api/visual/overview` 200 / 0.45s，`ok=true`、`as_of=2026-11-16`、含 `matrix:signals` |
+
+> 排障记录：首次重启失败为 `EADDRINUSE 127.0.0.1:3001`——端口被一个非 systemd 托管的旧 `next start -p 3001`（PID 4182057，启动约 33 分钟）占用，systemd 已空转重启 210 次。终止该孤儿进程后服务正常激活。3002/3456 上的其他 node 进程与本服务无关，未处理。
+
 
 ## 签字
 AI 验收：2026-11-16
