@@ -82,13 +82,13 @@ tasks:
     enabled: true
     fallback: skip
 
-  # 云端：memory-cleanup（C13 只读旁路，禁改 ExecStart；6h 周期与窗口对齐）
+  # 云端：memory-cleanup（C13 只读旁路，禁改 ExecStart；与 timer 每日 02:05 对齐为 24h 窗口）
   - task_key: os.memory-cleanup.cloud
     carrier: systemd-timer
     unit: memory-cleanup.timer
     host: cloud
-    schedule: "interval:21600"
-    window_sec: 21600
+    schedule: "interval:86400"
+    window_sec: 86400
     timeout_sec: 1800
     max_concurrency: 1
     retry: 0

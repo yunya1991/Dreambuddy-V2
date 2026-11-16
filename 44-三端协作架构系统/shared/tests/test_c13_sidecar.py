@@ -77,7 +77,7 @@ def test_registry_declares_c13_sidecar_tasks():
     assert cleanup is not None, "注册表缺 os.memory-cleanup.cloud"
     assert cleanup.carrier == "systemd-timer" and cleanup.host == "cloud"
     assert cleanup.unit == "memory-cleanup.timer"
-    assert cleanup.window_sec == 21600  # 6h 周期
+    assert cleanup.window_sec == 86400  # 与 memory-cleanup.timer 每日 02:05 对齐
 
 
 def test_c13_tasks_not_search_trigger_targets():
@@ -208,8 +208,8 @@ def test_sync_sidecar_records_systemd_run():
     row = rows[0]
     assert row["task_key"] == "os.memory-cleanup.cloud"
     assert row["state"] == "succeeded"
-    # 21600s 窗口对齐：window = ts // 21600
-    assert row["logical_window"] == int(1793503200 // 21600)
+    # 86400s 窗口对齐（timer 每日 02:05）：window = ts // 86400
+    assert row["logical_window"] == int(1793503200 // 86400)
 
 
 def test_sync_sidecar_idempotent_within_window():
@@ -230,7 +230,7 @@ def test_sync_sidecar_upgrades_audit_missed_run_row():
     # 审计先行写入 missed_run（当时无证据）；旁路后到证据应升级为真实终态
     store = FakeStore()
     ts = 1793503200.0
-    window = int(ts // 21600)
+    window = int(ts // 86400)
     store.write(
         "job_runs",
         data=_run("os.memory-cleanup.cloud", window, "missed_run", ts),
