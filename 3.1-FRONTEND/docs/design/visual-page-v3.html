@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>数据与图表 · 数据研究 / 技术图表（设计稿 v3）</title>
+<style>
+  :root {
+    --bg: #070b14;
+    --panel: #0e1626;
+    --panel-2: #111c30;
+    --panel-3: #16233a;
+    --border: #1e293b;
+    --border-soft: #172033;
+    --text: #e2e8f0;
+    --text-soft: #b6c2d4;
+    --muted: #7f8ea3;
+    --accent: #818cf8;
+    --accent-strong: #6366f1;
+    --accent-soft: rgba(99, 102, 241, .16);
+    --green: #34d399;
+    --green-soft: rgba(52, 211, 153, .14);
+    --amber: #fbbf24;
+    --amber-soft: rgba(251, 191, 36, .14);
+    --rose: #fb7185;
+    --rose-soft: rgba(251, 113, 133, .14);
+    --cyan: #22d3ee;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --mono: "SFMono-Regular", "JetBrains Mono", Menlo, monospace;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--font); font-size: 13px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { max-width: 1360px; margin: 0 auto; padding: 20px 24px 56px; }
+  .topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 14px; }
+  h1 { font-size: 19px; line-height: 1.3; margin: 0; font-weight: 700; letter-spacing: -.01em; }
+  .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .subtitle { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .design-tag {
+    font-size: 10px; color: var(--accent); background: var(--accent-soft);
+    border: 1px solid rgba(129, 140, 248, .3); border-radius: 999px; padding: 2px 8px;
+  }
+  .meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 11px; padding: 3px 9px;
+    border-radius: 999px; color: var(--text-soft); background: var(--panel-2); border: 1px solid var(--border); white-space: nowrap;
+  }
+  .badge.ok { color: var(--green); background: var(--green-soft); border-color: rgba(52,211,153,.24); }
+  .badge.warn { color: var(--amber); background: var(--amber-soft); border-color: rgba(251,191,36,.24); }
+  .badge.info { color: var(--accent); background: var(--accent-soft); border-color: rgba(129,140,248,.24); }
+  .dot-mark { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  .dot-mark.green { background: var(--green); } .dot-mark.amber { background: var(--amber); }
+
+  /* ---------- 顶栏：数据研究 / 技术图表 ---------- */
+  .main-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+  .main-tab {
+    appearance: none; text-align: left; cursor: pointer; font-family: var(--font);
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 14px; color: var(--muted); position: relative; overflow: hidden;
+    transition: border-color .15s, background .15s;
+  }
+  .main-tab:hover { border-color: #2b3a52; }
+  .main-tab .mt-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text-soft); }
+  .main-tab .mt-sub { font-size: 11px; margin-top: 4px; color: var(--muted); }
+  .main-tab .mt-steps { position: absolute; right: 14px; top: 13px; font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .main-tab.active {
+    border-color: rgba(129,140,248,.55); background: linear-gradient(180deg, rgba(99,102,241,.12), rgba(99,102,241,.03));
+  }
+  .main-tab.active .mt-title { color: #c7d2fe; }
+  .main-tab.active .mt-steps { color: var(--accent); }
+
+  .subtabs {
+    display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 18px;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .subtabs::-webkit-scrollbar { display: none; }
+  .tab {
+    appearance: none; border: 0; background: transparent; color: var(--muted); font-family: var(--font);
+    font-size: 12px; padding: 9px 13px 10px; border-bottom: 2px solid transparent; cursor: pointer;
+    white-space: nowrap; transition: color .15s, border-color .15s, background .15s;
+  }
+  .tab:hover { color: var(--text-soft); background: rgba(148,163,184,.05); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent-strong); background: rgba(99,102,241,.08); }
+  .tab .idx { font-family: var(--mono); font-size: 10px; opacity: .7; margin-right: 4px; }
+  .root { display: none; }
+  .root.active { display: block; }
+  .panel { display: none; }
+  .panel.active { display: block; animation: fade .18s ease-out; }
+  @keyframes fade { from { opacity: .3; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+
+  .grid { display: grid; gap: 14px; }
+  .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grid.side { grid-template-columns: minmax(0, 1.55fr) minmax(300px, .85fr); }
+  .grid.side-r { grid-template-columns: minmax(280px, .85fr) minmax(0, 1.55fr); }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; min-width: 0; }
+  .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .card-title { font-size: 13px; font-weight: 600; margin: 0; }
+  .card-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .card-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .section-title { font-size: 12px; font-weight: 600; color: var(--text-soft); margin: 0 0 10px; }
+  .muted { color: var(--muted); } .mono { font-family: var(--mono); }
+  .tiny { font-size: 10px; } .right { text-align: right; } .nowrap { white-space: nowrap; }
+  .footer-note { color: var(--muted); font-size: 10px; margin-top: 8px; line-height: 1.6; }
+  .divider { height: 1px; background: var(--border-soft); margin: 12px 0; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; font-size: 10px; font-weight: 500; color: var(--muted); padding: 6px 8px;
+    border-bottom: 1px solid var(--border); white-space: nowrap; text-transform: uppercase; letter-spacing: .03em;
+  }
+  td { font-size: 12px; padding: 7px 8px; border-bottom: 1px solid var(--border-soft); white-space: nowrap; color: var(--text-soft); }
+  tr:last-child td { border-bottom: 0; }
+  tbody tr:hover td { background: rgba(148,163,184,.04); }
+  td.num { font-family: var(--mono); text-align: right; color: var(--text); }
+  td.ref { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 999px;
+    font-size: 10px; border: 1px solid var(--border); color: var(--muted); background: var(--panel-2);
+  }
+  .pill.ok { color: var(--green); border-color: rgba(52,211,153,.25); background: var(--green-soft); }
+  .pill.warn { color: var(--amber); border-color: rgba(251,191,36,.25); background: var(--amber-soft); }
+  .pill.rose { color: var(--rose); border-color: rgba(251,113,133,.25); background: var(--rose-soft); }
+  .pill.info { color: var(--accent); border-color: rgba(129,140,248,.25); background: var(--accent-soft); }
+  .chip { font-size: 10px; color: var(--text-soft); background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; padding: 3px 7px; font-family: var(--mono); }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .btn {
+    appearance: none; border: 1px solid var(--border); background: var(--panel-2); color: var(--text-soft);
+    font-family: var(--font); font-size: 11px; padding: 4px 9px; border-radius: 7px; cursor: pointer; white-space: nowrap;
+  }
+  .btn:hover { border-color: #334155; color: var(--text); }
+  .btn.primary { background: var(--accent-soft); border-color: rgba(129,140,248,.35); color: #c7d2fe; }
+  .segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; padding: 2px; background: var(--panel-2); }
+  .segmented button {
+    appearance: none; border: 0; background: transparent; color: var(--muted); font-family: var(--font);
+    font-size: 11px; padding: 4px 9px; border-radius: 6px; cursor: pointer;
+  }
+  .segmented button.active { background: var(--accent-soft); color: #c7d2fe; }
+
+  /* ---------- 关系类型卡 ---------- */
+  .relcard { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--panel-2); padding: 11px 12px; }
+  .relcard .rc-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .relcard .rc-id { font-family: var(--mono); font-size: 10px; color: var(--accent); }
+  .relcard .rc-name { font-size: 12px; font-weight: 600; margin: 5px 0 3px; }
+  .relcard .rc-def { font-size: 11px; color: var(--muted); line-height: 1.55; min-height: 34px; }
+  .relcard .rc-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .relcard .rc-stat { display: flex; gap: 10px; margin-top: 9px; font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .relcard .rc-stat b { color: var(--text); font-weight: 600; }
+
+  /* ---------- 覆盖矩阵 / 归纳矩阵 ---------- */
+  .matrix { width: 100%; border-collapse: separate; border-spacing: 2px; }
+  .matrix th { border: 0; font-size: 9px; padding: 3px 2px; text-align: center; color: var(--muted); font-weight: 400; }
+  .matrix th.rowhead { text-align: left; font-family: var(--mono); font-size: 10px; color: var(--text-soft); padding-left: 4px; width: 74px; }
+  .matrix td { border: 0; padding: 0; }
+  .mc {
+    height: 26px; border-radius: 4px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 9px; background: var(--panel-3); color: var(--muted);
+  }
+  .mc.ok { background: rgba(52,211,153,.16); color: var(--green); }
+  .mc.part { background: rgba(251,191,36,.13); color: var(--amber); }
+  .mc.miss { background: rgba(251,113,133,.10); color: rgba(251,113,133,.75); }
+  .mc.h1 { background: rgba(99,102,241,.10); color: #a5b4fc; }
+  .mc.h2 { background: rgba(99,102,241,.18); color: #c7d2fe; }
+  .mc.h3 { background: rgba(99,102,241,.30); color: #e0e7ff; }
+  .mc.h4 { background: rgba(99,102,241,.46); color: #eef2ff; }
+
+  /* ---------- 四门禁漏斗 ---------- */
+  .funnel { display: flex; flex-direction: column; gap: 6px; }
+  .fstep {
+    display: grid; grid-template-columns: 78px 1fr 62px; gap: 10px; align-items: center;
+    font-size: 11px; color: var(--text-soft);
+  }
+  .fbar { height: 16px; border-radius: 4px; background: var(--panel-3); overflow: hidden; }
+  .fbar i { display: block; height: 100%; background: linear-gradient(90deg, rgba(99,102,241,.75), rgba(129,140,248,.45)); border-radius: 4px; }
+  .fbar i.final { background: linear-gradient(90deg, rgba(52,211,153,.75), rgba(52,211,153,.35)); }
+  .fnum { font-family: var(--mono); font-size: 10px; text-align: right; color: var(--text); }
+
+  .gate-list { display: flex; flex-direction: column; gap: 8px; }
+  .gate {
+    display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; align-items: start;
+    padding: 8px 9px; border: 1px solid var(--border-soft); border-radius: var(--radius-sm); background: var(--panel-2);
+  }
+  .gate .gid { font-family: var(--mono); font-size: 10px; color: var(--accent); padding-top: 1px; }
+  .gate .gname { font-size: 11px; color: var(--text-soft); }
+  .gate .grule { font-size: 10px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+  .gate .gst { font-size: 10px; }
+
+  /* ---------- 加权信号点阵 ---------- */
+  .axbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .axw { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); font-family: var(--mono); }
+  .axw .bar { width: 56px; height: 4px; border-radius: 999px; background: var(--panel-3); overflow: hidden; }
+  .axw .bar i { display: block; height: 100%; background: var(--accent); }
+  .dotgrid { display: grid; grid-template-columns: 66px repeat(5, 1fr) 54px; gap: 2px; align-items: center; }
+  .dotgrid .h { font-size: 9px; color: var(--muted); text-align: center; padding-bottom: 4px; font-family: var(--mono); }
+  .dotgrid .rh { font-size: 10px; color: var(--text-soft); font-family: var(--mono); }
+  .dcell { height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 4px; background: rgba(148,163,184,.03); position: relative; }
+  .dcell b { display: block; border-radius: 50%; }
+  .dcell b.lit { background: rgba(52,211,153,.85); box-shadow: 0 0 8px rgba(52,211,153,.35); }
+  .dcell b.warm { background: rgba(251,191,36,.8); }
+  .dcell b.dim { background: rgba(148,163,184,.35); }
+  .dcell b.conflict { background: transparent; border: 1.5px solid var(--rose); }
+  .dcell b.na { background: transparent; border: 1px dashed #334155; }
+  .comp { display: flex; align-items: center; gap: 6px; }
+  .comp .cbar { flex: 1; height: 5px; border-radius: 999px; background: var(--panel-3); overflow: hidden; }
+  .comp .cbar i { display: block; height: 100%; border-radius: 999px; }
+  .comp .cnum { font-family: var(--mono); font-size: 10px; width: 22px; text-align: right; color: var(--text); }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 10px; margin-top: 10px; }
+  .legend-item { display: inline-flex; align-items: center; gap: 5px; }
+  .legend-item i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  /* ---------- 点亮图影 ---------- */
+  .hist-grid { display: grid; grid-template-columns: 56px repeat(24, 1fr); gap: 2px; align-items: center; }
+  .hist-grid .rh { font-size: 10px; color: var(--text-soft); font-family: var(--mono); }
+  .hcell { aspect-ratio: 1 / 1; border-radius: 2px; background: rgba(148,163,184,.05); }
+  .hcell.lit { background: rgba(52,211,153,.75); }
+  .hcell.warm { background: rgba(251,191,36,.55); }
+  .hcell.dim { background: rgba(148,163,184,.16); }
+  .hcell.conflict { background: rgba(251,113,133,.55); }
+  .axis-note { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 9px; color: var(--muted); margin-top: 6px; }
+
+  /* ---------- 反馈 ---------- */
+  .bucket { display: flex; flex-direction: column; gap: 10px; }
+  .bucket-row { display: grid; grid-template-columns: 76px 1fr 44px; gap: 8px; align-items: center; font-size: 11px; color: var(--text-soft); }
+  .bucket-bar { height: 14px; border-radius: 4px; background: var(--panel-3); position: relative; overflow: hidden; }
+  .bucket-bar i { display: block; height: 100%; background: rgba(52,211,153,.55); }
+  .bucket-bar .base { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(226,232,240,.6); }
+  .bucket-val { font-family: var(--mono); font-size: 10px; text-align: right; }
+
+  .empty-note { border: 1px dashed var(--border); border-radius: 10px; padding: 16px; color: var(--muted); font-size: 11px; text-align: center; }
+  .kpi { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  .kpi .k { border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 9px 10px; background: var(--panel-2); }
+  .kpi .k .kv { font-family: var(--mono); font-size: 17px; color: var(--text); line-height: 1.2; }
+  .kpi .k .kl { font-size: 10px; color: var(--muted); margin-top: 3px; }
+  .kpi .k .kd { font-size: 9px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+
+  @media (max-width: 1040px) {
+    .app { padding: 16px 14px 36px; }
+    .grid.two, .grid.three, .grid.side, .grid.side-r, .kpi { grid-template-columns: 1fr; }
+    .main-tabs { grid-template-columns: 1fr; }
+    .topbar { flex-direction: column; gap: 10px; }
+    .meta { justify-content: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div>
+      <div class="title-row">
+        <h1>数据与图表</h1>
+        <span class="design-tag">设计稿 v3 · 双顶栏</span>
+      </div>
+      <div class="subtitle">数据研究（关系发现 1–5）→ 技术图表（信号与反馈 6–7）；同一闭环，两种研究对象</div>
+    </div>
+    <div class="meta">
+      <span class="badge ok"><span class="dot-mark green"></span>零 LLM · 全统计</span>
+      <span class="badge info">L2 只消费「数据研究」</span>
+      <span class="badge">D-E19 / D-E15 / D-K01 / D-K02</span>
+    </div>
+  </header>
+
+  <!-- ===================== 顶栏切换 ===================== -->
+  <nav class="main-tabs" id="mainTabs">
+    <button class="main-tab active" data-root="research">
+      <span class="mt-steps">步骤 1–5</span>
+      <span class="mt-title">数据研究</span>
+      <span class="mt-sub">目标 → 分类 → 归纳 → 验证（≥60%）→ 推荐卡片</span>
+    </button>
+    <button class="main-tab" data-root="tech">
+      <span class="mt-steps">步骤 6–7</span>
+      <span class="mt-title">技术图表</span>
+      <span class="mt-sub">加权信号点阵 → 点亮图影 → 技术叠加 → 信号反馈</span>
+    </button>
+  </nav>
+
+  <!-- ============================================================
+       数据研究
+       ============================================================ -->
+  <div class="root active" id="root-research">
+    <div class="subtabs" data-scope="research">
+      <button class="tab active" data-sub="r-goal"><span class="idx">1</span>目标与覆盖</button>
+      <button class="tab" data-sub="r-tax"><span class="idx">2</span>算法分类</button>
+      <button class="tab" data-sub="r-pat"><span class="idx">3</span>现象归纳</button>
+      <button class="tab" data-sub="r-val"><span class="idx">4</span>假设验证</button>
+      <button class="tab" data-sub="r-rec"><span class="idx">5</span>数据卡片</button>
+    </div>
+
+    <!-- 1 目标 -->
+    <section class="panel active" data-panel="r-goal">
+      <div class="grid side">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">目标 × 数据域 覆盖矩阵</h2>
+              <div class="card-sub">目标恒为「价格前瞻收益」，不预测绝对价格</div>
+            </div>
+            <div class="card-actions"><span class="pill info">h ∈ {1, 5, 20}</span></div>
+          </div>
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th class="rowhead">目标资产</th>
+                <th>价格自身</th><th>宏观利率</th><th>情绪</th><th>资金流</th><th>持仓/杠杆</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><th class="rowhead">BTC</th><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td></tr>
+              <tr><th class="rowhead">ETH</th><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td></tr>
+              <tr><th class="rowhead">SOL</th><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td><td><div class="mc part">◐</div></td><td><div class="mc ok">✓</div></td></tr>
+              <tr><th class="rowhead">NASDAQCOM</th><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td><td><div class="mc part">◐</div></td><td><div class="mc miss">—</div></td></tr>
+              <tr><th class="rowhead">SP500</th><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td><td><div class="mc part">◐</div></td><td><div class="mc miss">—</div></td></tr>
+              <tr><th class="rowhead">XAU</th><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td><td><div class="mc miss">—</div></td><td><div class="mc miss">—</div></td></tr>
+              <tr><th class="rowhead">CL</th><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td><td><div class="mc part">◐</div></td><td><div class="mc miss">—</div></td><td><div class="mc part">◐</div></td></tr>
+              <tr><th class="rowhead">DGS10</th><td><div class="mc ok">✓</div></td><td><div class="mc ok">✓</div></td><td><div class="mc part">◐</div></td><td><div class="mc miss">—</div></td><td><div class="mc miss">—</div></td></tr>
+            </tbody>
+          </table>
+          <div class="legend">
+            <span class="legend-item"><i style="border-radius:2px;background:rgba(52,211,153,.16)"></i>已入池且达 min_n</span>
+            <span class="legend-item"><i style="border-radius:2px;background:rgba(251,191,36,.13)"></i>覆盖不足 / 降级</span>
+            <span class="legend-item"><i style="border-radius:2px;background:rgba(251,113,133,.10)"></i>未采集</span>
+          </div>
+          <div class="footer-note">
+            覆盖矩阵只反映「能不能算」，不代表关系成立。灰格能力在「数据口径」子页给出未达门原因（n / gate / not_collected）。
+          </div>
+        </div>
+
+        <div>
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-head">
+              <div><h2 class="card-title">本期预注册空间</h2><div class="card-sub">discovery_space v1 · seed 42 · 冻结</div></div>
+              <span class="pill warn">运行期禁扩张</span>
+            </div>
+            <div class="kpi">
+              <div class="k"><div class="kv">16</div><div class="kl">序列池</div><div class="kd">8 资产 + 8 宏观</div></div>
+              <div class="k"><div class="kv">6</div><div class="kl">变换</div><div class="kd">raw/pct/z60/rank/quintile</div></div>
+              <div class="k"><div class="kv">20</div><div class="kl">关系型方法</div><div class="kd">M/B/R/SC 子集</div></div>
+              <div class="k"><div class="kv">5000</div><div class="kl">单元预算</div><div class="kd">≤10 min</div></div>
+            </div>
+            <div class="divider"></div>
+            <div class="chips">
+              <span class="chip">单序列 + 双序列</span>
+              <span class="chip">pair ≤ 300</span>
+              <span class="chip">FDR α=0.05</span>
+              <span class="chip">去重 |corr|&gt;0.95</span>
+              <span class="chip">分段 70/30</span>
+              <span class="chip">发现上限 50</span>
+            </div>
+            <div class="footer-note">
+              任何维度改动 = 新一期预注册（version+1 并重跑基线）；不支持在同一 version 内追加序列或方法。
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h2 class="card-title">最近一期产出</h2><div class="card-sub">reports/discovery/20261116-0200</div></div><span class="pill ok">已完成</span></div>
+            <table>
+              <tbody>
+                <tr><td>枚举单元</td><td class="num">5,000</td><td class="ref right">截断 12,480</td></tr>
+                <tr><td>可评估（n ≥ 250）</td><td class="num">1,287</td><td class="ref right">25.7%</td></tr>
+                <tr><td>显著（p_adj &lt; 0.05）</td><td class="num">214</td><td class="ref right">BH-FDR</td></tr>
+                <tr><td>样本外同号</td><td class="num">96</td><td class="ref right">holdout 30%</td></tr>
+                <tr><td>过四门禁</td><td class="num">37</td><td class="ref right">candidate</td></tr>
+                <tr><td>升 stable</td><td class="num">12</td><td class="ref right">连击 ≥ 3</td></tr>
+              </tbody>
+            </table>
+            <div class="footer-note">运行期只写 reports/，不写 relationship_registry.db；落库由 MERS 复核后执行。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 分类 -->
+    <section class="panel" data-panel="r-tax">
+      <div class="grid three" style="margin-bottom:14px">
+        <div class="relcard">
+          <div class="rc-top"><span class="rc-id">R1</span><span class="pill ok">stable 5</span></div>
+          <div class="rc-name">趋势延续</div>
+          <div class="rc-def">状态有粘性：今天强/弱，明天大概率同向。</div>
+          <div class="rc-meta"><span class="chip">D-E07 转移</span><span class="chip">D-J01</span><span class="chip">D-J13</span></div>
+          <div class="rc-stat"><span>对角 <b>0.58</b></span><span>算法包 <b>9</b></span><span>过门 <b>7</b></span></div>
+        </div>
+        <div class="relcard">
+          <div class="rc-top"><span class="rc-id">R2</span><span class="pill warn">candidate 3</span></div>
+          <div class="rc-name">趋势变化（形态切换）</div>
+          <div class="rc-def">结构发生切换，方向反转或震荡化。</div>
+          <div class="rc-meta"><span class="chip">D-J04 变点</span><span class="chip">D-E07</span><span class="chip">D-J07</span></div>
+          <div class="rc-stat"><span>变点 <b>4</b>/年</span><span>算法包 <b>6</b></span><span>过门 <b>3</b></span></div>
+        </div>
+        <div class="relcard">
+          <div class="rc-top"><span class="rc-id">R3</span><span class="pill ok">stable 3</span></div>
+          <div class="rc-name">周期规律与方向</div>
+          <div class="rc-def">固定相位下的方向偏向（周/月/季效应）。</div>
+          <div class="rc-meta"><span class="chip">D-J05 谱</span><span class="chip">D-E03</span><span class="chip">D-J02</span></div>
+          <div class="rc-stat"><span>主周期 <b>47d</b></span><span>算法包 <b>5</b></span><span>过门 <b>4</b></span></div>
+        </div>
+        <div class="relcard">
+          <div class="rc-top"><span class="rc-id">R4</span><span class="pill ok">stable 4</span></div>
+          <div class="rc-name">惯性规律</div>
+          <div class="rc-def">自身历史预测未来：动量延续或反转。</div>
+          <div class="rc-meta"><span class="chip">D-A12</span><span class="chip">D-G08</span><span class="chip">D-E01</span><span class="chip">D-G20</span></div>
+          <div class="rc-stat"><span>RankIC <b>0.18</b></span><span>算法包 <b>8</b></span><span>过门 <b>9</b></span></div>
+        </div>
+        <div class="relcard">
+          <div class="rc-top"><span class="rc-id">R5</span><span class="pill ok">stable 2</span></div>
+          <div class="rc-name">前瞻指标</div>
+          <div class="rc-def">外部序列领先价格，存在稳定时滞。</div>
+          <div class="rc-meta"><span class="chip">D-A12</span><span class="chip">D-J11</span><span class="chip">D-E08</span></div>
+          <div class="rc-stat"><span>领先 <b>7d</b></span><span>算法包 <b>7</b></span><span>过门 <b>5</b></span></div>
+        </div>
+        <div class="relcard">
+          <div class="rc-top"><span class="rc-id">R6</span><span class="pill">等 FNS</span></div>
+          <div class="rc-name">阻力最小方向</div>
+          <div class="rc-def">条件收益非对称：上行阻力 &lt; 下行阻力。</div>
+          <div class="rc-meta"><span class="chip">D-E01</span><span class="chip">D-G20</span><span class="chip">FNS 价尺</span></div>
+          <div class="rc-stat"><span>算法包 <b>0</b></span><span>过门 <b>0</b></span><span class="muted">未启用</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div><h2 class="card-title">算法包统计（algorithm_registry 视图）</h2><div class="card-sub">按关系类聚合；算法包 = 变换 × 方法 × 目标 × 冻结参数</div></div>
+          <div class="card-actions"><span class="pill info">35 个算法包</span><span class="pill">component stats-2026.11.1</span></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>关系类</th><th>算法包</th><th>覆盖方法</th><th>过门禁</th><th>平均 |RankIC|</th><th>平均 hit</th><th>状态分布</th><th>备注</th></tr></thead>
+            <tbody>
+              <tr><td>R1 趋势延续</td><td class="num">9</td><td class="num">5</td><td class="num">7</td><td class="num">0.164</td><td class="num">0.61</td><td><span class="pill ok">stable 5</span> <span class="pill warn">cand 2</span></td><td class="muted">h=5 最多</td></tr>
+              <tr><td>R2 形态切换</td><td class="num">6</td><td class="num">4</td><td class="num">3</td><td class="num">0.121</td><td class="num">0.57</td><td><span class="pill warn">cand 3</span> <span class="pill rose">decayed 1</span></td><td class="muted">样本稀</td></tr>
+              <tr><td>R3 周期方向</td><td class="num">5</td><td class="num">3</td><td class="num">4</td><td class="num">0.138</td><td class="num">0.59</td><td><span class="pill ok">stable 3</span> <span class="pill warn">cand 1</span></td><td class="muted">I39 n≥750</td></tr>
+              <tr><td>R4 惯性</td><td class="num">8</td><td class="num">6</td><td class="num">9</td><td class="num">0.181</td><td class="num">0.63</td><td><span class="pill ok">stable 4</span> <span class="pill warn">cand 5</span></td><td class="muted">最稳</td></tr>
+              <tr><td>R5 前瞻</td><td class="num">7</td><td class="num">5</td><td class="num">5</td><td class="num">0.152</td><td class="num">0.60</td><td><span class="pill ok">stable 2</span> <span class="pill warn">cand 3</span></td><td class="muted">领先 5–10d</td></tr>
+              <tr><td>R6 阻力最小</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">—</td><td class="num">—</td><td><span class="pill">待 FNS</span></td><td class="muted">价尺未落地</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="footer-note">
+          分类不是人工贴标签：`relation_type` 由算法包声明，验证阶段用绑定能力（D-E07/D-J04/D-J05/D-A12/D-J11/D-E01）复核判据；对不上则算法包作废。
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 归纳 -->
+    <section class="panel" data-panel="r-pat">
+      <div class="grid side">
+        <div class="card">
+          <div class="card-head">
+            <div><h2 class="card-title">同类现象归纳矩阵</h2><div class="card-sub">值 = 同向率 sign_agreement（support / (support+oppose)）</div></div>
+            <span class="pill info">patterns.json</span>
+          </div>
+          <table class="matrix">
+            <thead><tr><th class="rowhead">关系类</th><th>h=1</th><th>h=5</th><th>h=20</th><th>跨期限一致</th></tr></thead>
+            <tbody>
+              <tr><th class="rowhead">R1</th><td><div class="mc h3">0.78</div></td><td><div class="mc h4">0.88</div></td><td><div class="mc h2">0.69</div></td><td><div class="mc ok">是</div></td></tr>
+              <tr><th class="rowhead">R2</th><td><div class="mc h1">0.54</div></td><td><div class="mc h2">0.62</div></td><td><div class="mc h2">0.66</div></td><td><div class="mc part">部分</div></td></tr>
+              <tr><th class="rowhead">R3</th><td><div class="mc h2">0.60</div></td><td><div class="mc h3">0.75</div></td><td><div class="mc h3">0.80</div></td><td><div class="mc ok">是</div></td></tr>
+              <tr><th class="rowhead">R4</th><td><div class="mc h2">0.66</div></td><td><div class="mc h4">0.88</div></td><td><div class="mc h1">0.58</div></td><td><div class="mc part">部分</div></td></tr>
+              <tr><th class="rowhead">R5</th><td><div class="mc h1">0.57</div></td><td><div class="mc h3">0.73</div></td><td><div class="mc h3">0.77</div></td><td><div class="mc ok">是</div></td></tr>
+              <tr><th class="rowhead">R6</th><td><div class="mc">—</div></td><td><div class="mc">—</div></td><td><div class="mc">—</div></td><td><div class="mc">—</div></td></tr>
+            </tbody>
+          </table>
+          <div class="legend">
+            <span class="legend-item"><i style="border-radius:2px;background:rgba(99,102,241,.10)"></i>0.50–0.60</span>
+            <span class="legend-item"><i style="border-radius:2px;background:rgba(99,102,241,.18)"></i>0.60–0.70</span>
+            <span class="legend-item"><i style="border-radius:2px;background:rgba(99,102,241,.30)"></i>0.70–0.80</span>
+            <span class="legend-item"><i style="border-radius:2px;background:rgba(99,102,241,.46)"></i>≥ 0.80</span>
+          </div>
+          <div class="footer-note">
+            0.50 = 抛硬币。矩阵只报同向率与 p_adj，不写因果句；文案由前端模板渲染（如「8 条同类关系里 7 条同向」）。
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h2 class="card-title">pattern 明细</h2><div class="card-sub">可回溯到 findings.jsonl 成员</div></div><span class="pill">6 条</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>pattern</th><th class="right">支持/反对</th><th class="right">同向率</th><th class="right">p_adj</th><th>状态</th></tr></thead>
+              <tbody>
+                <tr><td class="ref">PAT-R4-mom-h5</td><td class="num">7 / 1</td><td class="num">0.88</td><td class="num">0.012</td><td><span class="pill ok">strong</span></td></tr>
+                <tr><td class="ref">PAT-R1-trend-h5</td><td class="num">7 / 1</td><td class="num">0.88</td><td class="num">0.018</td><td><span class="pill ok">strong</span></td></tr>
+                <tr><td class="ref">PAT-R3-cycle-h20</td><td class="num">6 / 2</td><td class="num">0.75</td><td class="num">0.041</td><td><span class="pill ok">strong</span></td></tr>
+                <tr><td class="ref">PAT-R5-lead-h5</td><td class="num">5 / 2</td><td class="num">0.71</td><td class="num">0.047</td><td><span class="pill warn">weak</span></td></tr>
+                <tr><td class="ref">PAT-R2-shift-h20</td><td class="num">3 / 2</td><td class="num">0.60</td><td class="num">0.182</td><td><span class="pill warn">weak</span></td></tr>
+                <tr><td class="ref">PAT-R4-rev-h20</td><td class="num">2 / 3</td><td class="num">0.40</td><td class="num">0.264</td><td><span class="pill rose">opposed</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="divider"></div>
+          <div class="section-title">归纳规则（确定性，无模型）</div>
+          <div class="chips">
+            <span class="chip">按 relation_type × horizon 分组</span>
+            <span class="chip">符号一致计数</span>
+            <span class="chip">二项检验 + BH</span>
+            <span class="chip">|corr|&gt;0.95 去重</span>
+          </div>
+          <div class="footer-note">反对数 &gt; 支持数 → 标 opposed，不隐藏：反向现象本身也是关系。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 验证 -->
+    <section class="panel" data-panel="r-val">
+      <div class="grid side-r">
+        <div class="card">
+          <div class="card-head"><div><h2 class="card-title">四门禁</h2><div class="card-sub">全过才 gate_pass=1</div></div><span class="pill warn">Q1 待裁定</span></div>
+          <div class="gate-list">
+            <div class="gate">
+              <span class="gid">G1</span>
+              <div><div class="gname">方向命中率</div><div class="grule">hit ≥ 0.60 且 Wilson 95% 下界 &gt; 0.50</div></div>
+              <span class="gst pill ok">已实现</span>
+            </div>
+            <div class="gate">
+              <span class="gid">G2</span>
+              <div><div class="gname">样本外同号</div><div class="grule">70/30 · holdout hit ≥ 0.55 且与 screen 同号</div></div>
+              <span class="gst pill ok">已实现</span>
+            </div>
+            <div class="gate">
+              <span class="gid">G3</span>
+              <div><div class="gname">多重检验</div><div class="grule">整期 BH-FDR · p_adj &lt; 0.05</div></div>
+              <span class="gst pill ok">已实现</span>
+            </div>
+            <div class="gate">
+              <span class="gid">G4</span>
+              <div><div class="gname">稳定性连击</div><div class="grule">pass_streak ≥ 3 → stable；fail ≥ 2 → decayed</div></div>
+              <span class="gst pill ok">已实现</span>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="section-title">为什么不是只看 60%</div>
+          <div class="footer-note">
+            n=250、hit=0.60 → Wilson 下界 ≈ 0.537（过）；n=30、hit=0.67 → 下界 ≈ 0.49（不过）。
+            只卡点估计会让小样本抢占推荐 Top3。
+          </div>
+        </div>
+
+        <div>
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-head">
+              <div><h2 class="card-title">验证漏斗</h2><div class="card-sub">20261116-0200 期 · 5000 → 37</div></div>
+              <span class="pill ok">通过率 0.74%</span>
+            </div>
+            <div class="funnel">
+              <div class="fstep"><span>预注册单元</span><div class="fbar"><i style="width:100%"></i></div><span class="fnum">5,000</span></div>
+              <div class="fstep"><span>n ≥ 250</span><div class="fbar"><i style="width:25.7%"></i></div><span class="fnum">1,287</span></div>
+              <div class="fstep"><span>p_adj &lt; .05</span><div class="fbar"><i style="width:4.3%"></i></div><span class="fnum">214</span></div>
+              <div class="fstep"><span>holdout 同号</span><div class="fbar"><i style="width:1.9%"></i></div><span class="fnum">96</span></div>
+              <div class="fstep"><span>hit ≥ .60 / Wilson</span><div class="fbar"><i style="width:0.74%"></i></div><span class="fnum">37</span></div>
+              <div class="fstep"><span>stable（≥3 连击）</span><div class="fbar"><i class="final" style="width:0.24%"></i></div><span class="fnum">12</span></div>
+            </div>
+            <div class="footer-note">漏斗每层都可下钻到 eval_id；任何一层为 0 不隐藏，标 blocked 并给原因。</div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div><h2 class="card-title">样本外命中率（滚动季度）</h2><div class="card-sub">holdout only · 基线 50%</div></div>
+              <div class="segmented"><button class="active">h=5</button><button>h=20</button></div>
+            </div>
+            <svg viewBox="0 0 640 170" class="chart" style="width:100%;height:170px;display:block" role="img" aria-label="滚动季度样本外命中率">
+              <line x1="40" y1="20" x2="40" y2="140" stroke="#1e293b" />
+              <line x1="40" y1="140" x2="620" y2="140" stroke="#1e293b" />
+              <line x1="40" y1="60" x2="620" y2="60" stroke="#2a3b55" stroke-dasharray="3 4" />
+              <text x="12" y="63" fill="#7f8ea3" font-size="9" font-family="monospace">0.60</text>
+              <text x="12" y="143" fill="#7f8ea3" font-size="9" font-family="monospace">0.50</text>
+              <polyline fill="none" stroke="#818cf8" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"
+                points="60,116 108,104 156,96 204,88 252,92 300,78 348,72 396,80 444,66 492,70 540,60 588,64" />
+              <g fill="#34d399">
+                <circle cx="60" cy="116" r="2.5" /><circle cx="108" cy="104" r="2.5" /><circle cx="156" cy="96" r="2.5" />
+                <circle cx="204" cy="88" r="2.5" /><circle cx="252" cy="92" r="2.5" /><circle cx="300" cy="78" r="2.5" />
+                <circle cx="348" cy="72" r="2.5" /><circle cx="396" cy="80" r="2.5" /><circle cx="444" cy="66" r="2.5" />
+                <circle cx="492" cy="70" r="2.5" /><circle cx="540" cy="60" r="2.5" /><circle cx="588" cy="64" r="2.5" />
+              </g>
+              <g fill="#7f8ea3" font-size="9" font-family="monospace">
+                <text x="52" y="156">25Q1</text><text x="148" y="156">25Q2</text><text x="244" y="156">25Q3</text>
+                <text x="340" y="156">25Q4</text><text x="436" y="156">26Q1</text><text x="532" y="156">26Q2</text>
+              </g>
+            </svg>
+            <div class="footer-note">滚动 4 个季度中 4 次 ≥ 0.55；仅当连续 2 个季度 &lt; 0.55 才触发降级复核。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 推荐 -->
+    <section class="panel" data-panel="r-rec">
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-head">
+          <div><h2 class="card-title">关系卡片（只读出口 D-K01）</h2><div class="card-sub">仅 status ∈ {stable, candidate} 且 gate_pass=1；按 |RankIC| 降序</div></div>
+          <div class="card-actions">
+            <div class="segmented"><button class="active">h=5</button><button>h=1</button><button>h=20</button></div>
+            <button class="btn primary">+ 加入技术图表</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>relation</th><th>类型</th><th>方法 × 变换</th><th class="right">RankIC</th><th class="right">hit</th><th class="right">Wilson</th><th class="right">holdout</th><th class="right">n</th><th class="right">p_adj</th><th>状态</th><th>证据标的</th></tr></thead>
+            <tbody>
+              <tr><td class="ref">EV-2041</td><td>R4 惯性</td><td class="ref">B14 × zscore60</td><td class="num">0.182</td><td class="num">0.63</td><td class="num">0.57</td><td class="num">0.59</td><td class="num">812</td><td class="num">0.004</td><td><span class="pill ok">stable</span></td><td class="ref">BTC · ETH</td></tr>
+              <tr><td class="ref">EV-1988</td><td>R1 延续</td><td class="ref">B11 × ts_rank60</td><td class="num">0.171</td><td class="num">0.62</td><td class="num">0.56</td><td class="num">0.57</td><td class="num">1044</td><td class="num">0.006</td><td><span class="pill ok">stable</span></td><td class="ref">NVDA · US500</td></tr>
+              <tr><td class="ref">EV-2130</td><td>R3 周期</td><td class="ref">R02 × raw</td><td class="num">0.158</td><td class="num">0.61</td><td class="num">0.54</td><td class="num">0.58</td><td class="num">760</td><td class="num">0.011</td><td><span class="pill ok">stable</span></td><td class="ref">XAU · CL</td></tr>
+              <tr><td class="ref">EV-2207</td><td>R5 前瞻</td><td class="ref">B13 × diff</td><td class="num">0.147</td><td class="num">0.60</td><td class="num">0.52</td><td class="num">0.56</td><td class="num">688</td><td class="num">0.023</td><td><span class="pill warn">candidate</span></td><td class="ref">VIX → BTC</td></tr>
+              <tr><td class="ref">EV-2251</td><td>R2 切换</td><td class="ref">M11 × pct</td><td class="num">0.119</td><td class="num">0.58</td><td class="num">0.51</td><td class="num">0.55</td><td class="num">431</td><td class="num">0.041</td><td><span class="pill warn">candidate</span></td><td class="ref">SOL</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="footer-note">
+          卡片字段全部来自 relationship_eval（不重算）；「加入技术图表」只写前端 panel 配置，不改注册表。
+        </div>
+      </div>
+
+      <div class="grid three">
+        <div class="card">
+          <div class="card-head"><div><h2 class="card-title">关系强度演化</h2><div class="card-sub">EV-2041 · 每期 RankIC</div></div><span class="pill">series</span></div>
+          <svg viewBox="0 0 320 110" style="width:100%;height:110px;display:block" role="img" aria-label="RankIC 演化">
+            <line x1="20" y1="16" x2="20" y2="92" stroke="#1e293b" />
+            <line x1="20" y1="92" x2="306" y2="92" stroke="#1e293b" />
+            <polyline fill="none" stroke="#34d399" stroke-width="1.7" stroke-linecap="round"
+              points="26,74 54,66 82,70 110,58 138,54 166,60 194,46 222,44 250,38 278,42 300,34" />
+          </svg>
+          <div class="footer-note">连续 3 期同向且显著 → pass_streak 累积。</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h2 class="card-title">证据链</h2><div class="card-sub">series → algorithm → target</div></div><span class="pill">graph</span></div>
+          <svg viewBox="0 0 320 130" style="width:100%;height:130px;display:block" role="img" aria-label="证据链">
+            <line x1="70" y1="38" x2="150" y2="65" stroke="#475569" stroke-width="1" />
+            <line x1="70" y1="92" x2="150" y2="65" stroke="#475569" stroke-width="1" />
+            <line x1="176" y1="65" x2="252" y2="65" stroke="#818cf8" stroke-width="1.4" />
+            <rect x="16" y="26" width="56" height="24" rx="6" fill="#111c30" stroke="#1e293b" />
+            <rect x="16" y="80" width="56" height="24" rx="6" fill="#111c30" stroke="#1e293b" />
+            <rect x="150" y="52" width="52" height="26" rx="6" fill="rgba(99,102,241,.15)" stroke="rgba(129,140,248,.5)" />
+            <rect x="252" y="52" width="52" height="26" rx="6" fill="#111c30" stroke="#1e293b" />
+            <g fill="#b6c2d4" font-size="10" font-family="monospace">
+              <text x="26" y="42">BTC</text><text x="26" y="96">VIX</text>
+              <text x="158" y="69">B14</text><text x="260" y="69">h=5</text>
+            </g>
+          </svg>
+          <div class="footer-note">边权 = |RankIC|；不画方向箭头，避免被读成因果。</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h2 class="card-title">推荐分布</h2><div class="card-sub">37 条过门禁 · 按类型</div></div><span class="pill">matrix</span></div>
+          <table class="matrix">
+            <thead><tr><th class="rowhead">类型</th><th>h1</th><th>h5</th><th>h20</th></tr></thead>
+            <tbody>
+              <tr><th class="rowhead">R1</th><td><div class="mc h1">2</div></td><td><div class="mc h3">5</div></td><td><div class="mc h2">3</div></td></tr>
+              <tr><th class="rowhead">R2</th><td><div class="mc h1">1</div></td><td><div class="mc h1">2</div></td><td><div class="mc h1">1</div></td></tr>
+              <tr><th class="rowhead">R3</th><td><div class="mc h1">1</div></td><td><div class="mc h2">3</div></td><td><div class="mc h2">4</div></td></tr>
+              <tr><th class="rowhead">R4</th><td><div class="mc h2">3</div></td><td><div class="mc h3">6</div></td><td><div class="mc h1">2</div></td></tr>
+              <tr><th class="rowhead">R5</th><td><div class="mc h1">1</div></td><td><div class="mc h2">3</div></td><td><div class="mc h1">2</div></td></tr>
+            </tbody>
+          </table>
+          <div class="footer-note">空白类型不补造：R6 未启用即整行留空。</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============================================================
+       技术图表
+       ============================================================ -->
+  <div class="root" id="root-tech">
+    <div class="subtabs" data-scope="tech">
+      <button class="tab active" data-sub="t-matrix">加权信号点阵</button>
+      <button class="tab" data-sub="t-hist">点亮图影</button>
+      <button class="tab" data-sub="t-overlay">技术分析叠加</button>
+      <button class="tab" data-sub="t-fb">信号反馈</button>
+      <button class="tab" data-sub="t-cross">跨资产</button>
+      <button class="tab" data-sub="t-vol">波动与回撤</button>
+      <button class="tab" data-sub="t-cyc">周期与资金</button>
+      <button class="tab" data-sub="t-q">数据口径</button>
+    </div>
+
+    <!-- 加权信号点阵 -->
+    <section class="panel active" data-panel="t-matrix">
+      <div class="grid side">
+        <div class="card">
+          <div class="card-head">
+            <div><h2 class="card-title">加权信号点阵</h2><div class="card-sub">D-E19 · 四轴强度 × 合成强度 · 点径 = |v|/w</div></div>
+            <div class="card-actions">
+              <span class="pill ok">已标定 p70/p40</span>
+              <div class="segmented"><button class="active">全部</button><button>加密</button><button>美股</button></div>
+            </div>
+          </div>
+
+          <div class="axbar">
+            <span class="axw">trend <span class="bar"><i style="width:40%"></i></span> .40</span>
+            <span class="axw">inertia <span class="bar"><i style="width:25%"></i></span> .25</span>
+            <span class="axw">cycle <span class="bar"><i style="width:15%"></i></span> .15</span>
+            <span class="axw">foresight <span class="bar"><i style="width:20%"></i></span> .20</span>
+            <span class="axw muted">light_weights · 与交易轴 / 展示轴互不共用</span>
+          </div>
+
+          <div class="dotgrid">
+            <div class="h">标的</div><div class="h">trend</div><div class="h">inertia</div><div class="h">cycle</div><div class="h">foresight</div><div class="h">合成</div><div class="h">状态</div>
+
+            <div class="rh">NVDA</div>
+            <div class="dcell"><b class="lit" style="width:20px;height:20px"></b></div>
+            <div class="dcell"><b class="lit" style="width:17px;height:17px"></b></div>
+            <div class="dcell"><b class="dim" style="width:8px;height:8px"></b></div>
+            <div class="dcell"><b class="warm" style="width:13px;height:13px"></b></div>
+            <div class="comp"><span class="cbar"><i style="width:92%;background:rgba(52,211,153,.7)"></i></span><span class="cnum">92</span></div>
+            <div><span class="pill ok">lit</span></div>
+
+            <div class="rh">BTC</div>
+            <div class="dcell"><b class="lit" style="width:18px;height:18px"></b></div>
+            <div class="dcell"><b class="warm" style="width:14px;height:14px"></b></div>
+            <div class="dcell"><b class="warm" style="width:12px;height:12px"></b></div>
+            <div class="dcell"><b class="lit" style="width:16px;height:16px"></b></div>
+            <div class="comp"><span class="cbar"><i style="width:88%;background:rgba(52,211,153,.7)"></i></span><span class="cnum">88</span></div>
+            <div><span class="pill ok">lit</span></div>
+
+            <div class="rh">XAU</div>
+            <div class="dcell"><b class="warm" style="width:15px;height:15px"></b></div>
+            <div class="dcell"><b class="warm" style="width:12px;height:12px"></b></div>
+            <div class="dcell"><b class="lit" style="width:16px;height:16px"></b></div>
+            <div class="dcell"><b class="dim" style="width:9px;height:9px"></b></div>
+            <div class="comp"><span class="cbar"><i style="width:74%;background:rgba(251,191,36,.6)"></i></span><span class="cnum">74</span></div>
+            <div><span class="pill warn">warm</span></div>
+
+            <div class="rh">US500</div>
+            <div class="dcell"><b class="warm" style="width:14px;height:14px"></b></div>
+            <div class="dcell"><b class="dim" style="width:10px;height:10px"></b></div>
+            <div class="dcell"><b class="dim" style="width:8px;height:8px"></b></div>
+            <div class="dcell"><b class="warm" style="width:13px;height:13px"></b></div>
+            <div class="comp"><span class="cbar"><i style="width:68%;background:rgba(251,191,36,.6)"></i></span><span class="cnum">68</span></div>
+            <div><span class="pill warn">warm</span></div>
+
+            <div class="rh">ETH</div>
+            <div class="dcell"><b class="warm" style="width:13px;height:13px"></b></div>
+            <div class="dcell"><b class="lit" style="width:16px;height:16px"></b></div>
+            <div class="dcell"><b class="dim" style="width:7px;height:7px"></b></div>
+            <div class="dcell"><b class="lit" style="width:15px;height:15px"></b></div>
+            <div class="comp"><span class="cbar"><i style="width:71%;background:rgba(251,191,36,.6)"></i></span><span class="cnum">71</span></div>
+            <div><span class="pill warn">warm</span></div>
+
+            <div class="rh">CL</div>
+            <div class="dcell"><b class="dim" style="width:10px;height:10px"></b></div>
+            <div class="dcell"><b class="dim" style="width:8px;height:8px"></b></div>
+            <div class="dcell"><b class="warm" style="width:12px;height:12px"></b></div>
+            <div class="dcell"><b class="conflict" style="width:13px;height:13px"></b></div>
+            <div class="comp"><span class="cbar"><i style="width:41%;background:rgba(148,163,184,.45)"></i></span><span class="cnum">41</span></div>
+            <div><span class="pill rose">conflict</span></div>
+
+            <div class="rh">SOL</div>
+            <div class="dcell"><b class="dim" style="width:9px;height:9px"></b></div>
+            <div class="dcell"><b class="dim" style="width:8px;height:8px"></b></div>
+            <div class="dcell"><b class="dim" style="width:6px;height:6px"></b></div>
+            <div class="dcell"><b class="dim" style="width:7px;height:7px"></b></div>
+            <div class="comp"><span class="cbar"><i style="width:34%;background:rgba(148,163,184,.45)"></i></span><span class="cnum">34</span></div>
+            <div><span class="pill">dim</span></div>
+
+            <div class="rh">VIX</div>
+            <div class="dcell"><b class="na" style="width:14px;height:14px"></b></div>
+            <div class="dcell"><b class="na" style="width:14px;height:14px"></b></div>
+            <div class="dcell"><b class="na" style="width:14px;height:14px"></b></div>
+            <div class="dcell"><b class="na" style="width:14px;height:14px"></b></div>
+            <div class="comp"><span class="cbar"><i style="width:0%"></i></span><span class="cnum">—</span></div>
+            <div><span class="pill">unavailable</span></div>
+          </div>
+
+          <div class="legend">
+            <span class="legend-item"><i class="lit" style="background:rgba(52,211,153,.85)"></i>lit（≥ p70）</span>
+            <span class="legend-item"><i style="background:rgba(251,191,36,.8)"></i>warm（≥ p40）</span>
+            <span class="legend-item"><i style="background:rgba(148,163,184,.35)"></i>dim</span>
+            <span class="legend-item"><i style="border:1.5px solid #fb7185"></i>conflict（只读旗标）</span>
+            <span class="legend-item"><i style="border:1px dashed #334155"></i>unavailable（n&lt;250 / gate≠ok）</span>
+          </div>
+          <div class="footer-note">
+            点径 = 轴归一强度 |v| / w，截断 [0,1]；合成 = Σ light_weights × 轴（缺轴剔除后按剩余权重重新归一）。
+            状态词只用 lit/warm/dim/conflict/unavailable，不输出买卖方向。
+          </div>
+        </div>
+
+        <div>
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-head"><div><h2 class="card-title">点阵读数</h2><div class="card-sub">Top 1: NVDA 92</div></div><span class="pill ok">4 轴齐</span></div>
+            <table>
+              <tbody>
+                <tr><td>trend 轴</td><td class="num">0.98</td><td class="ref right">D-E15 斜率符号一致</td></tr>
+                <tr><td>inertia 轴</td><td class="num">0.86</td><td class="ref right">EMA 排列</td></tr>
+                <tr><td>cycle 轴</td><td class="num">0.31</td><td class="ref right">I39 带通相位</td></tr>
+                <tr><td>foresight 轴</td><td class="num">0.64</td><td class="ref right">D-E11 共振</td></tr>
+                <tr><td>合成</td><td class="num">0.92</td><td class="ref right">0.4/0.25/0.15/0.2</td></tr>
+                <tr><td>样本 n</td><td class="num">812</td><td class="ref right">≥ min_rows 250</td></tr>
+              </tbody>
+            </table>
+            <div class="footer-note">点阵只投影能力层已算好的强度，不重算任何统计量。</div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h2 class="card-title">阈值来源</h2><div class="card-sub">calibrate_light.py</div></div><span class="pill">45 期 · 303 行</span></div>
+            <div class="chips">
+              <span class="chip">lit_pct 0.7647</span>
+              <span class="chip">warm_pct 0.5724</span>
+              <span class="chip">calibrated_at 2026-11-15</span>
+              <span class="chip">行级合成池化</span>
+            </div>
+            <div class="footer-note">
+              未标定 → thresholds_uncalibrated=true，前端明示；权重非法 → 降级等权 + weights_degraded=true，不整图消失。
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 点亮图影 -->
+    <section class="panel" data-panel="t-hist">
+      <div class="grid side">
+        <div class="card">
+          <div class="card-head">
+            <div><h2 class="card-title">点亮图影</h2><div class="card-sub">最近 24 个交易日 · 8 标的 × 四轴合成状态</div></div>
+            <span class="pill info">light_history.py</span>
+          </div>
+          <div class="hist-grid" id="histGrid">
+            <!-- 由脚本按行填充 -->
+          </div>
+          <div class="axis-note"><span>10-24</span><span>11-03</span><span>11-16</span></div>
+          <div class="legend">
+            <span class="legend-item"><i style="border-radius:2px;background:rgba(52,211,153,.75)"></i>lit</span>
+            <span class="legend-item"><i style="border-radius:2px;background:rgba(251,191,36,.55)"></i>warm</span>
+            <span class="legend-item"><i style="border-radius:2px;background:rgba(148,163,184,.16)"></i>dim</span>
+            <span class="legend-item"><i style="border-radius:2px;background:rgba(251,113,133,.55)"></i>conflict</span>
+          </div>
+          <div class="footer-note">
+            每列 = 一个 as_of 快照（逐日切片历史后重跑 D-E15 + I39，再经 D-E19 投影），无前视。
+            影带用于看「点亮是否持续」，不用于计数胜率（胜率在「信号反馈」）。
+          </div>
+        </div>
+
+        <div>
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-head"><div><h2 class="card-title">持续性</h2><div class="card-sub">当前点亮连续天数</div></div><span class="pill ok">4 / 8</span></div>
+            <table>
+              <thead><tr><th>标的</th><th class="right">连续 lit</th><th class="right">24d lit 占比</th><th>翻转</th></tr></thead>
+              <tbody>
+                <tr><td class="ref">NVDA</td><td class="num">9</td><td class="num">75%</td><td><span class="pill ok">0</span></td></tr>
+                <tr><td class="ref">BTC</td><td class="num">6</td><td class="num">67%</td><td><span class="pill warn">1</span></td></tr>
+                <tr><td class="ref">ETH</td><td class="num">3</td><td class="num">50%</td><td><span class="pill warn">2</span></td></tr>
+                <tr><td class="ref">XAU</td><td class="num">2</td><td class="num">38%</td><td><span class="pill warn">3</span></td></tr>
+                <tr><td class="ref">CL</td><td class="num">0</td><td class="num">17%</td><td><span class="pill rose">4</span></td></tr>
+                <tr><td class="ref">VIX</td><td class="num">—</td><td class="num">—</td><td><span class="pill">unavailable</span></td></tr>
+              </tbody>
+            </table>
+            <div class="footer-note">翻转次数高 = 状态不稳，应在数据研究里查对应关系是否 decayed。</div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h2 class="card-title">图影读法</h2></div></div>
+            <div class="funnel">
+              <div class="fstep"><span>先看影带</span><div class="fbar"><i style="width:100%"></i></div><span class="fnum">形态</span></div>
+              <div class="fstep"><span>再看点阵</span><div class="fbar"><i style="width:72%"></i></div><span class="fnum">强度</span></div>
+              <div class="fstep"><span>最后看反馈</span><div class="fbar"><i style="width:46%"></i></div><span class="fnum">命中</span></div>
+            </div>
+            <div class="footer-note">三层都成立才进信号候选；任一层缺失即不生成信号。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 技术分析叠加 -->
+    <section class="panel" data-panel="t-overlay">
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-head">
+          <div><h2 class="card-title">技术分析叠加 · BTC</h2><div class="card-sub">价格 + MA20/60 + ATR 带 + 波动分位 + 拥挤标线</div></div>
+          <div class="card-actions">
+            <div class="segmented"><button class="active">日线</button><button>周线</button></div>
+            <span class="pill">D-A06 · D-A14 · D-B08</span>
+          </div>
+        </div>
+        <svg viewBox="0 0 940 260" style="width:100%;height:260px;display:block" role="img" aria-label="技术分析叠加图">
+          <line x1="46" y1="18" x2="46" y2="196" stroke="#1e293b" />
+          <line x1="46" y1="196" x2="920" y2="196" stroke="#1e293b" />
+          <path id="atrBand" d="M50,120 L120,112 L190,124 L260,104 L330,112 L400,92 L470,100 L540,84 L610,92 L680,74 L750,84 L820,66 L890,74 L890,138 L820,132 L750,148 L680,140 L610,156 L540,150 L470,162 L400,154 L330,172 L260,164 L190,180 L120,172 L50,180 Z"
+            fill="rgba(99,102,241,.10)" stroke="none" />
+          <polyline id="pricePath" fill="none" stroke="#e2e8f0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+            points="50,158 120,150 190,162 260,142 330,150 400,130 470,138 540,122 610,130 680,112 750,122 820,104 890,112" />
+          <polyline fill="none" stroke="#818cf8" stroke-width="1.3" stroke-dasharray="4 3"
+            points="50,164 120,158 190,166 260,150 330,156 400,138 470,144 540,130 610,136 680,120 750,128 820,112 890,118" />
+          <polyline fill="none" stroke="#22d3ee" stroke-width="1.2" opacity=".8"
+            points="50,172 120,168 190,174 260,162 330,166 400,150 470,154 540,142 610,146 680,132 750,138 820,124 890,128" />
+          <g fill="#34d399"><circle cx="260" cy="142" r="2.4" /><circle cx="540" cy="122" r="2.4" /><circle cx="820" cy="104" r="2.4" /></g>
+          <line x1="46" y1="212" x2="920" y2="212" stroke="#172033" />
+          <g id="volStrip"></g>
+          <g fill="#7f8ea3" font-size="9" font-family="monospace">
+            <text x="12" y="30">价</text><text x="12" y="212">波位</text>
+            <text x="468" y="250">2026-06 → 2026-11 · 示例数据</text>
+          </g>
+        </svg>
+        <div class="legend">
+          <span class="legend-item"><i style="background:#e2e8f0"></i>收盘价</span>
+          <span class="legend-item"><i style="background:#818cf8"></i>MA20</span>
+          <span class="legend-item"><i style="background:#22d3ee"></i>MA60</span>
+          <span class="legend-item"><i style="background:rgba(99,102,241,.3)"></i>ATR 带（±1.5σ）</span>
+          <span class="legend-item"><i style="background:#34d399"></i>点亮日</span>
+        </div>
+        <div class="footer-note">
+          叠加的作用是「把统计结论变成可看的数据处理」：均线定趋势状态、ATR 带定波动区间、波动分位定门控、拥挤标线定拥挤。
+          本图不给方向、不给买卖点。
+        </div>
+      </div>
+
+      <div class="grid three">
+        <div class="card">
+          <div class="card-head"><div><h2 class="card-title">斜率表</h2><div class="card-sub">D-B08 · 多窗口</div></div><span class="pill">trend 轴来源</span></div>
+          <table>
+            <thead><tr><th>窗口</th><th class="right">斜率</th><th class="right">R²</th><th>符号</th></tr></thead>
+            <tbody>
+              <tr><td>20d</td><td class="num">+0.42%</td><td class="num">0.71</td><td><span class="pill ok">正</span></td></tr>
+              <tr><td>60d</td><td class="num">+0.18%</td><td class="num">0.55</td><td><span class="pill ok">正</span></td></tr>
+              <tr><td>120d</td><td class="num">-0.04%</td><td class="num">0.31</td><td><span class="pill rose">负</span></td></tr>
+            </tbody>
+          </table>
+          <div class="footer-note">符号一致度 → trend 轴归一值；不一致即降权，不做人工修正。</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h2 class="card-title">波动与拥挤</h2><div class="card-sub">分位口径</div></div><span class="pill">D-A06 · D-A14</span></div>
+          <table>
+            <tbody>
+              <tr><td>20d 年化波动</td><td class="num">38.4%</td><td class="ref right">p62</td></tr>
+              <tr><td>ATR(14) / 价</td><td class="num">2.1%</td><td class="ref right">p48</td></tr>
+              <tr><td>拥挤度</td><td class="num">0.74</td><td class="ref right">p81</td></tr>
+              <tr><td>波动分位门控</td><td class="num">开</td><td class="ref right">p &lt; 0.85</td></tr>
+            </tbody>
+          </table>
+          <div class="footer-note">拥挤 &gt; p85 + 点亮 → conflict 旗标，只读展示，不改状态。</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h2 class="card-title">承接自数据研究</h2><div class="card-sub">本图引用的推荐卡片</div></div><span class="pill info">来源 D-K01</span></div>
+          <div class="chips" style="margin-bottom:8px">
+            <span class="chip">EV-2041 · R4 · h5</span>
+            <span class="chip">EV-1988 · R1 · h5</span>
+            <span class="chip">EV-2130 · R3 · h20</span>
+          </div>
+          <table>
+            <tbody>
+              <tr><td>关系状态</td><td class="right"><span class="pill ok">stable</span></td></tr>
+              <tr><td>最后复核</td><td class="num">11-16</td></tr>
+              <tr><td>样本版本</td><td class="ref right">data_version 2026.11.3</td></tr>
+            </tbody>
+          </table>
+          <div class="footer-note">关系 decayed → 本图整块置灰并提示「关系已失效」，不静默下线。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 信号反馈 -->
+    <section class="panel" data-panel="t-fb">
+      <div class="grid side">
+        <div class="card">
+          <div class="card-head">
+            <div><h2 class="card-title">信号 → 结果 反馈表</h2><div class="card-sub">点亮日 + 合成强度分档 → 后续 5/20 日实现收益</div></div>
+            <span class="pill warn">只回写报告</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>日期</th><th>标的</th><th class="right">合成</th><th>状态</th><th class="right">后 5d</th><th class="right">后 20d</th><th>命中</th></tr></thead>
+              <tbody>
+                <tr><td class="ref">11-16</td><td>NVDA</td><td class="num">92</td><td><span class="pill ok">lit</span></td><td class="num">+2.4%</td><td class="num">—</td><td><span class="pill ok">5d ✓</span></td></tr>
+                <tr><td class="ref">11-16</td><td>BTC</td><td class="num">88</td><td><span class="pill ok">lit</span></td><td class="num">+1.1%</td><td class="num">—</td><td><span class="pill ok">5d ✓</span></td></tr>
+                <tr><td class="ref">11-14</td><td>XAU</td><td class="num">74</td><td><span class="pill warn">warm</span></td><td class="num">-0.6%</td><td class="num">—</td><td><span class="pill rose">5d ✗</span></td></tr>
+                <tr><td class="ref">11-11</td><td>US500</td><td class="num">68</td><td><span class="pill warn">warm</span></td><td class="num">+0.9%</td><td class="num">+2.2%</td><td><span class="pill ok">20d ✓</span></td></tr>
+                <tr><td class="ref">11-07</td><td>ETH</td><td class="num">71</td><td><span class="pill warn">warm</span></td><td class="num">+1.7%</td><td class="num">+3.5%</td><td><span class="pill ok">20d ✓</span></td></tr>
+                <tr><td class="ref">11-04</td><td>CL</td><td class="num">41</td><td><span class="pill rose">conflict</span></td><td class="num">-1.3%</td><td class="num">-2.8%</td><td><span class="pill">不出信号</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="footer-note">
+            conflict / unavailable 不生成信号，因此不进命中统计分母；分母必须与前端展示的样本严格一致。
+          </div>
+        </div>
+
+        <div>
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-head"><div><h2 class="card-title">按强度分档命中率</h2><div class="card-sub">后 20 日 · 基线 50%</div></div><span class="pill">n=186</span></div>
+            <div class="bucket">
+              <div class="bucket-row"><span>lit 90+</span><div class="bucket-bar"><i style="width:68%"></i><span class="base" style="left:50%"></span></div><span class="bucket-val">68%</span></div>
+              <div class="bucket-row"><span>lit 80–90</span><div class="bucket-bar"><i style="width:62%"></i><span class="base" style="left:50%"></span></div><span class="bucket-val">62%</span></div>
+              <div class="bucket-row"><span>warm 60–80</span><div class="bucket-bar"><i style="width:55%"></i><span class="base" style="left:50%"></span></div><span class="bucket-val">55%</span></div>
+              <div class="bucket-row"><span>dim &lt;60</span><div class="bucket-bar"><i style="width:48%;background:rgba(148,163,184,.35)"></i><span class="base" style="left:50%"></span></div><span class="bucket-val">48%</span></div>
+            </div>
+            <div class="footer-note">单调性本身是证据：分档后不单调 → 合成权重需复核（回数据研究看轴权重）。</div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h2 class="card-title">反馈去哪</h2><div class="card-sub">不写注册表</div></div><span class="pill ok">只读闭环</span></div>
+            <div class="funnel">
+              <div class="fstep"><span>信号记录</span><div class="fbar"><i style="width:100%"></i></div><span class="fnum">paper</span></div>
+              <div class="fstep"><span>结果回填</span><div class="fbar"><i style="width:78%"></i></div><span class="fnum">5/20d</span></div>
+              <div class="fstep"><span>报告产出</span><div class="fbar"><i style="width:56%"></i></div><span class="fnum">json</span></div>
+              <div class="fstep"><span>反思建议</span><div class="fbar"><i style="width:34%"></i></div><span class="fnum">suggest</span></div>
+            </div>
+            <div class="footer-note">
+              反思只产 suggestions.json；状态迁移仍由 MERS 四门禁决定（P3 只读治理）。
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 沿用 v2 的四个子页（摘要） -->
+    <section class="panel" data-panel="t-cross">
+      <div class="card">
+        <div class="card-head"><div><h2 class="card-title">跨资产 · D-E17 类别看板</h2><div class="card-sub">沿用 visual-page-v2 设计（8 列类别 + 美股龙头分组）</div></div><span class="pill info">v2 §跨资产</span></div>
+        <div class="chips">
+          <span class="chip">加密 / 避险 / 大宗 / 美股 / 情绪</span>
+          <span class="chip new">美股龙头（周度）</span>
+          <span class="chip">rank / score / 动量 / 成交额</span>
+          <span class="chip">pool_version</span>
+          <span class="chip">rank_degraded</span>
+        </div>
+        <div class="footer-note">本子页只做展示；数据源 D-E17 + 美股龙头 Top3（pool_version 标注版本，rank_degraded 标注降级）。</div>
+      </div>
+    </section>
+    <section class="panel" data-panel="t-vol">
+      <div class="card">
+        <div class="card-head"><div><h2 class="card-title">波动与回撤</h2><div class="card-sub">沿用 v2：D-A06 / D-A07 / D-E10</div></div><span class="pill info">v2 §波动 / §回撤</span></div>
+        <div class="chips">
+          <span class="chip">年化波动分位</span><span class="chip">当前回撤</span><span class="chip">最大回撤 / 峰谷</span>
+          <span class="chip">回撤持续 / 收复天数</span><span class="chip">EWMA 风险</span>
+        </div>
+        <div class="footer-note">波动的门控作用在「技术分析叠加」里体现（p&lt;0.85 才允许出信号）。</div>
+      </div>
+    </section>
+    <section class="panel" data-panel="t-cyc">
+      <div class="card">
+        <div class="card-head"><div><h2 class="card-title">周期与资金</h2><div class="card-sub">沿用 v2：D-J05 / D-E03 / D-E09 / D-E18</div></div><span class="pill info">v2 §周期 / §资金</span></div>
+        <div class="chips">
+          <span class="chip">谱峰 / 主周期</span><span class="chip">相位</span><span class="chip">月度效应</span>
+          <span class="chip">资金流滚动和</span><span class="chip">稳定币供给</span><span class="chip">拥挤度</span>
+        </div>
+        <div class="footer-note">周期轴（cycle）在点阵中的取值来自 I39 带通，n≥750 才产周期事实。</div>
+      </div>
+    </section>
+    <section class="panel" data-panel="t-q">
+      <div class="card">
+        <div class="card-head"><div><h2 class="card-title">数据口径与状态诚实</h2><div class="card-sub">沿用 v2：n / gate / not_collected 三态</div></div><span class="pill info">v2 §数据口径</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>标的</th><th>n</th><th>gate</th><th>状态</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td class="ref">VIX</td><td class="num">432</td><td>partial</td><td><span class="pill">unavailable</span></td><td class="muted">n &lt; 500，只展示统计不点亮</td></tr>
+              <tr><td class="ref">CL</td><td class="num">1,204</td><td>ok</td><td><span class="pill rose">conflict</span></td><td class="muted">VIX 分位 ≥ p90 旗标</td></tr>
+              <tr><td class="ref">SOL</td><td class="num">688</td><td>ok</td><td><span class="pill">dim</span></td><td class="muted">四轴均未达 warm</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="footer-note">所有子页共享同一状态词表；前端不得自造「中性 / 观望」等新词。</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="footer-note" style="margin-top:22px">
+    设计稿 v3 · 与 SPEC-20261116（统计能力 DSH 插件化与统计算法系统）配套 · 图中数值为结构示例，不代表真实回测结果
+  </div>
+</div>
+
+<script>
+(function () {
+  // ---- 顶栏切换 ----
+  var mainTabs = document.getElementById('mainTabs');
+  mainTabs.addEventListener('click', function (e) {
+    var btn = e.target.closest('.main-tab');
+    if (!btn) return;
+    var key = btn.getAttribute('data-root');
+    mainTabs.querySelectorAll('.main-tab').forEach(function (b) { b.classList.toggle('active', b === btn); });
+    document.getElementById('root-research').classList.toggle('active', key === 'research');
+    document.getElementById('root-tech').classList.toggle('active', key === 'tech');
+  });
+
+  // ---- 二级 tab ----
+  document.querySelectorAll('.subtabs').forEach(function (bar) {
+    bar.addEventListener('click', function (e) {
+      var tab = e.target.closest('.tab');
+      if (!tab) return;
+      var scope = bar.getAttribute('data-scope');
+      var root = document.getElementById(scope === 'research' ? 'root-research' : 'root-tech');
+      bar.querySelectorAll('.tab').forEach(function (t) { t.classList.toggle('active', t === tab); });
+      var target = tab.getAttribute('data-sub');
+      root.querySelectorAll(':scope > .panel').forEach(function (p) {
+        p.classList.toggle('active', p.getAttribute('data-panel') === target);
+      });
+    });
+  });
+
+  // ---- 点亮图影：确定性伪随机填充（仅示意） ----
+  var rows = ['NVDA', 'BTC', 'ETH', 'XAU', 'US500', 'CL', 'SOL', 'VIX'];
+  var seed = 7;
+  function rnd() { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; }
+  var grid = document.getElementById('histGrid');
+  if (grid) {
+    var html = '';
+    html += '<div class="rh"></div>';
+    for (var c = 0; c < 24; c++) html += '<div class="hcell" style="background:transparent"></div>';
+    rows.forEach(function (sym) {
+      html += '<div class="rh">' + sym + '</div>';
+      var streak = 0;
+      for (var i = 0; i < 24; i++) {
+        var v = rnd();
+        var cls = 'dim';
+        if (sym === 'VIX') cls = 'dim';
+        else if (v > 0.62) cls = 'lit';
+        else if (v > 0.38) cls = 'warm';
+        if (sym === 'CL' && i > 16) cls = 'conflict';
+        if (sym === 'NVDA' && i > 8) cls = 'lit';
+        if (sym === 'BTC' && i > 12) cls = 'lit';
+        html += '<div class="hcell ' + cls + '"></div>';
+      }
+    });
+    grid.innerHTML = html;
+  }
+
+  // ---- 波动分位条（技术叠加图底部） ----
+  var strip = document.getElementById('volStrip');
+  if (strip) {
+    var dots = '';
+    for (var k = 0; k < 40; k++) {
+      var x = 50 + k * 22;
+      var h = 10 + ((k * 37) % 22);
+      var fill = k > 30 ? '#fbbf24' : '#334155';
+      dots += '<rect x="' + x + '" y="' + (232 - h) + '" width="16" height="' + h + '" rx="1" fill="' + fill + '"></rect>';
+    }
+    strip.innerHTML = dots;
+  }
+})();
+</script>
+</body>
+</html>

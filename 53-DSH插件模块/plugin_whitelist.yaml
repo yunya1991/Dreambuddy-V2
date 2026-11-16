@@ -95,6 +95,20 @@ entries:
     plugin_shell: "l1.trading.mcp"
     notes: "技术指标工具面 → 消费侧经 l1.trading.mcp"
 
+  - id: "dreambuddy-stats"
+    source: "local"
+    version: "*"
+    status: "approved"
+    owner: "dreambuddy"
+    risk_level: "low"
+    security_scanned: true
+    sandbox_verified: true
+    fail_open_verified: true
+    permitted_profiles: ["headless", "superagent", "sandbox"]
+    mcp_shell_required: true
+    plugin_shell: "l1.stats.mcp"
+    notes: "统计能力出口（stats_list/stats_run）→ 消费侧经 l1.stats.mcp；插件只透传，不计算"
+
   - id: "dreambuddy-fundamental"
     source: "local"
     version: "*"

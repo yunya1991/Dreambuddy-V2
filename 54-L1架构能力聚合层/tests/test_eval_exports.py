@@ -179,3 +179,120 @@ def test_dispatcher_routes_both_capabilities(tmp_path):
     _write_report(tmp_path / "reports", "20261115-0310", [_finding("M11", 0.05)])
     out = run_capability("D-K02", reports_dir=str(tmp_path / "reports"))
     assert out["capability"] == "D-K02" and out["intent"] == "discovery_query"
+
+
+def _enrich(path, eval_id, **fields):
+    keys = sorted(fields)
+    conn = sqlite3.connect(path)
+    try:
+        conn.execute(
+            "UPDATE relationship_eval SET "
+            + ", ".join(f"{key} = ?" for key in keys)
+            + " WHERE eval_id = ?",
+            [fields[key] for key in keys] + [eval_id],
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+_SCOPE = {
+    "time_range": ["2020-01-01", "2026-01-01"],
+    "markets": ["BTC"],
+    "params": {"transform": "pct", "horizon": 5, "hit_extreme_z": 1.0},
+    "sample": {"n": 300, "n_eff": 60, "n_hit": 96, "periods": 1},
+}
+
+
+def _gate_fields(**overrides):
+    fields = {
+        "hit_rate": 0.63,
+        "base_rate": 0.53,
+        "excess_hit": 0.10,
+        "hit_rate_lb": 0.57,
+        "n_eff": 60,
+        "holdout_hit_rate": 0.59,
+        "holdout_base_rate": 0.52,
+        "holdout_agree": 1,
+        "holdout_used_at": "2026-11-15T03:10:00Z",
+        "effect_bps": 18.4,
+        "cost_bps": 10.0,
+        "perm_p": 0.002,
+        "scope_json": json.dumps(_SCOPE),
+    }
+    fields.update(overrides)
+    return fields
+
+
+def test_recommend_card_exposes_gate_fields_and_table(tmp_path):
+    path = _make_registry(tmp_path / "r.db", [_row("e1", "B14", 0.30)])
+    _enrich(path, "e1", **_gate_fields())
+    out = recommend_relationship(db_path=path, target="BTC", horizon=5)
+    row = out["data"]["capabilities"]["D-K01"]["rows"][0]
+    assert row["relation_type"] == "R1"
+    assert row["base_rate"] == pytest.approx(0.53)
+    assert row["excess_hit"] == pytest.approx(0.10)
+    assert row["n_eff"] == 60
+    assert row["perm_p"] == pytest.approx(0.002)
+    assert row["holdout_agree"] is True
+    assert row["scope"]["time_range"] == ["2020-01-01", "2026-01-01"]
+    assert row["scope"]["sample"]["n_hit"] == 96
+    assert "超额 +10.0%" in out["answer"] and "基线 53.0%" in out["answer"]
+
+    visual = out["data"]["visual"]
+    assert visual["kind"] == "table"
+    assert visual["source_capability"] == "D-K01"
+    keys = [column["key"] for column in visual["dataset"]["columns"]]
+    assert keys[0] == "degraded_reason"  # candidate → partial，V-AC6
+    for key in (
+        "base_rate",
+        "excess_hit",
+        "hit_rate_lb",
+        "n_eff",
+        "effect_bps",
+        "cost_bps",
+        "perm_p",
+    ):
+        assert key in keys
+
+
+def test_recommend_visual_variants(tmp_path):
+    path = _make_registry(
+        tmp_path / "r.db",
+        [
+            _row("e1", "B14", 0.30, status="stable"),
+            _row("e2", "M11", 0.20, status="stable"),
+            _row("e3", "B14", 0.10, status="stable", horizon=20),
+            _row("e4", "B14", 0.24, status="stable"),
+        ],
+    )
+    for eval_id in ("e1", "e2", "e3", "e4"):
+        _enrich(path, eval_id, **_gate_fields())
+    _enrich(path, "e4", eval_at="2026-09-01T00:00:00Z")
+
+    matrix = recommend_relationship(db_path=path, target="BTC", horizon=5, viz="matrix")
+    visual = matrix["data"]["visual"]
+    assert visual["kind"] == "matrix"
+    assert "R1" in visual["dataset"]["row_labels"]
+    assert visual["dataset"]["col_labels"] == ["h5", "h20"]
+
+    series = recommend_relationship(db_path=path, target="BTC", horizon=5, viz="series", top=1)
+    visual = series["data"]["visual"]
+    assert visual["kind"] == "series"
+    assert len(visual["dataset"]["points"]) == 2
+    assert visual["dataset"]["meta"]["smoothing"]["method"] == "none"
+
+    graph = recommend_relationship(db_path=path, target="BTC", horizon=5, viz="graph")
+    visual = graph["data"]["visual"]
+    assert visual["kind"] == "graph"
+    assert visual["dataset"]["nodes"][0]["id"] == "target:BTC"
+    assert all(
+        set(edge) == {"src", "dst", "kind", "weight", "p_adj"}
+        for edge in visual["dataset"]["edges"]
+    )
+
+
+def test_recommend_rejects_unknown_viz(tmp_path):
+    path = _make_registry(tmp_path / "r.db", [_row("e1", "M11", 0.05)])
+    with pytest.raises(ValueError):
+        recommend_relationship(db_path=path, target="BTC", horizon=5, viz="pie")

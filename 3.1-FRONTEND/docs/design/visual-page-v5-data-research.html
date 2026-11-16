@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>数据研究 · 算法推荐 → 能力出口（设计稿 v5）</title>
+<style>
+  :root {
+    --bg: #070b14; --panel: #0e1626; --panel-2: #111c30; --panel-3: #16233a;
+    --border: #1e293b; --border-soft: #172033;
+    --text: #e2e8f0; --text-soft: #b6c2d4; --muted: #7f8ea3;
+    --accent: #818cf8; --accent-strong: #6366f1; --accent-soft: rgba(99,102,241,.16);
+    --green: #34d399; --green-soft: rgba(52,211,153,.14);
+    --amber: #fbbf24; --amber-soft: rgba(251,191,36,.14);
+    --rose: #fb7185; --rose-soft: rgba(251,113,133,.14);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --mono: "SFMono-Regular", "JetBrains Mono", Menlo, monospace;
+    --radius: 12px; --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .app { max-width: 1360px; margin: 0 auto; padding: 20px 24px 56px; }
+
+  .topnav { display: flex; align-items: center; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; }
+  .topnav::-webkit-scrollbar { display: none; }
+  .nav-item { appearance: none; border: 0; background: transparent; color: var(--muted); font-family: var(--font); font-size: 13px; padding: 10px 14px 11px; cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; }
+  .nav-item:hover { color: var(--text-soft); }
+  .nav-item.active { color: var(--accent); border-bottom-color: var(--accent-strong); }
+
+  .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 16px; }
+  h1 { font-size: 19px; margin: 0; font-weight: 700; letter-spacing: -.01em; }
+  .title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .subtitle { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .design-tag { font-size: 10px; color: var(--accent); background: var(--accent-soft); border: 1px solid rgba(129,140,248,.3); border-radius: 999px; padding: 2px 8px; }
+  .meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; padding: 3px 9px; border-radius: 999px; color: var(--text-soft); background: var(--panel-2); border: 1px solid var(--border); white-space: nowrap; }
+  .badge.ok { color: var(--green); background: var(--green-soft); border-color: rgba(52,211,153,.24); }
+  .badge.info { color: var(--accent); background: var(--accent-soft); border-color: rgba(129,140,248,.24); }
+  .dot-mark { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  .dot-mark.green { background: var(--green); }
+
+  .subtabs { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 18px; overflow-x: auto; scrollbar-width: none; }
+  .subtabs::-webkit-scrollbar { display: none; }
+  .tab { appearance: none; border: 0; background: transparent; color: var(--muted); font-family: var(--font); font-size: 12px; padding: 9px 12px 10px; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
+  .tab:hover { color: var(--text-soft); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent-strong); background: rgba(99,102,241,.08); }
+  .tab .cnt { font-family: var(--mono); font-size: 10px; opacity: .75; margin-left: 4px; }
+  .tab.add { color: var(--accent); font-family: var(--mono); }
+  .tab-add-wrap { margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 0 2px 6px; }
+  .limit-note { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+  .root { display: none; } .root.active { display: block; }
+  .panel { display: none; } .panel.active { display: block; animation: fade .16s ease-out; }
+  @keyframes fade { from { opacity: .35; } to { opacity: 1; } }
+
+  .grid { display: grid; gap: 14px; }
+  .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid.split { grid-template-columns: minmax(300px, .78fr) minmax(0, 1.6fr); align-items: start; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; min-width: 0; }
+  .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .card-title { font-size: 13px; font-weight: 600; margin: 0; }
+  .card-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .card-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .muted { color: var(--muted); } .mono { font-family: var(--mono); }
+  .tiny { font-size: 10px; } .right { text-align: right; }
+  .footer-note { color: var(--muted); font-size: 10px; margin-top: 8px; line-height: 1.6; }
+  .divider { height: 1px; background: var(--border-soft); margin: 12px 0; }
+
+  /* 推荐列表 */
+  .rec-list { display: flex; flex-direction: column; gap: 4px; max-height: 560px; overflow: auto; }
+  .rec {
+    display: grid; grid-template-columns: 46px 1fr auto; gap: 9px; align-items: center;
+    padding: 8px 9px; border: 1px solid transparent; border-radius: var(--radius-sm); cursor: pointer;
+  }
+  .rec:hover { background: rgba(148,163,184,.05); border-color: var(--border-soft); }
+  .rec.active { background: rgba(99,102,241,.10); border-color: rgba(129,140,248,.45); }
+  .rtag { font-family: var(--mono); font-size: 10px; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 2px 4px; text-align: center; }
+  .rec .rn { font-size: 12px; color: var(--text); }
+  .rec .rm { font-family: var(--mono); font-size: 9px; color: var(--muted); margin-top: 2px; }
+  .rec .rv { font-family: var(--mono); font-size: 11px; text-align: right; }
+
+  /* 能力出口卡 */
+  .cap-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); min-width: 0; }
+  .cap-card .cc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 14px; cursor: pointer; }
+  .cap-card .cc-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .cc-title { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cc-id { font-family: var(--mono); font-size: 10px; color: var(--muted); background: var(--panel-2); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; }
+  .cc-tools { display: flex; align-items: center; gap: 4px; }
+  .cc-body { padding: 0 14px 13px; border-top: 1px solid var(--border-soft); }
+  .cap-card.collapsed .cc-body { display: none; }
+  .chev { color: var(--muted); font-size: 11px; width: 14px; text-align: center; }
+  .icon-btn { appearance: none; border: 1px solid transparent; background: transparent; color: var(--muted); font-family: var(--font); font-size: 11px; padding: 2px 6px; border-radius: 6px; cursor: pointer; }
+  .icon-btn:hover { color: var(--text); border-color: var(--border); background: var(--panel-2); }
+  .icon-btn.danger { color: var(--muted); font-family: var(--mono); }
+  .icon-btn.danger:hover { color: var(--rose); border-color: rgba(251,113,133,.38); background: var(--rose-soft); }
+  .tab.user { display: inline-flex; align-items: center; gap: 5px; }
+  .tab-x { font-family: var(--mono); font-size: 11px; color: var(--muted); border-radius: 4px; padding: 0 3px; }
+  .tab-x:hover { color: var(--rose); background: var(--rose-soft); }
+  .add-card { border: 1px dashed #2a3b55; border-radius: var(--radius); background: rgba(99,102,241,.03); display: flex; align-items: center; justify-content: center; min-height: 96px; cursor: pointer; color: var(--accent); font-size: 12px; gap: 8px; }
+  .add-card:hover { border-color: rgba(129,140,248,.65); background: rgba(99,102,241,.07); }
+
+  /* 推荐摘要 */
+  .rec-sum { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+  .rec-sum .s { border: 1px solid var(--border-soft); border-radius: var(--radius-sm); background: var(--panel-2); padding: 8px 9px; }
+  .rec-sum .sv { font-family: var(--mono); font-size: 15px; line-height: 1.2; }
+  .rec-sum .sl { font-size: 9px; color: var(--muted); margin-top: 3px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 10px; font-weight: 500; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; letter-spacing: .03em; }
+  td { font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--border-soft); white-space: nowrap; color: var(--text-soft); }
+  tr:last-child td { border-bottom: 0; }
+  tbody tr:hover td { background: rgba(148,163,184,.04); }
+  td.num { font-family: var(--mono); text-align: right; color: var(--text); }
+  td.ref { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .pill { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 999px; font-size: 10px; border: 1px solid var(--border); color: var(--muted); background: var(--panel-2); }
+  .pill.ok { color: var(--green); border-color: rgba(52,211,153,.25); background: var(--green-soft); }
+  .pill.warn { color: var(--amber); border-color: rgba(251,191,36,.25); background: var(--amber-soft); }
+  .pill.rose { color: var(--rose); border-color: rgba(251,113,133,.25); background: var(--rose-soft); }
+  .pill.info { color: var(--accent); border-color: rgba(129,140,248,.25); background: var(--accent-soft); }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { font-size: 10px; color: var(--text-soft); background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; padding: 3px 7px; font-family: var(--mono); cursor: default; }
+  .btn { appearance: none; border: 1px solid var(--border); background: var(--panel-2); color: var(--text-soft); font-family: var(--font); font-size: 11px; padding: 4px 9px; border-radius: 7px; cursor: pointer; white-space: nowrap; }
+  .btn:hover { border-color: #334155; color: var(--text); }
+  .btn.primary { background: var(--accent-soft); border-color: rgba(129,140,248,.35); color: #c7d2fe; }
+  .btn.ghost { background: transparent; }
+  .segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; padding: 2px; background: var(--panel-2); }
+  .segmented button { appearance: none; border: 0; background: transparent; color: var(--muted); font-family: var(--font); font-size: 11px; padding: 4px 9px; border-radius: 6px; cursor: pointer; }
+  .segmented button.active { background: var(--accent-soft); color: #c7d2fe; }
+
+  .empty-note { border: 1px dashed var(--border); border-radius: 10px; padding: 16px; color: var(--muted); font-size: 11px; text-align: center; }
+
+  /* 抽屉 */
+  .overlay { position: fixed; inset: 0; background: rgba(3,7,14,.66); display: none; z-index: 20; }
+  .overlay.open { display: block; }
+  .sheet { position: absolute; right: 0; top: 0; bottom: 0; width: min(520px, 92vw); background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+  .sheet-head { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .sheet-head h3 { margin: 0; font-size: 14px; }
+  .sheet-body { padding: 12px 16px; overflow: auto; flex: 1; }
+  .sheet-foot { padding: 11px 16px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .searchbox { width: 100%; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--font); font-size: 12px; padding: 7px 10px; outline: none; }
+  .searchbox:focus { border-color: var(--accent-strong); }
+  .pick-row { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; padding: 9px 8px; border-bottom: 1px solid var(--border-soft); }
+  .pick-row .pr-name { font-size: 12px; color: var(--text-soft); }
+  .pick-row .pr-meta { font-family: var(--mono); font-size: 9px; color: var(--muted); margin-top: 2px; }
+  .pick-row:hover { background: rgba(148,163,184,.04); }
+
+  @media (max-width: 1040px) {
+    .app { padding: 16px 14px 36px; }
+    .grid.two, .grid.split, .rec-sum { grid-template-columns: 1fr; }
+    .rec-sum { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .page-head { flex-direction: column; gap: 10px; }
+    .meta { justify-content: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <nav class="topnav" id="topnav">
+    <button class="nav-item" data-page="fund">基本面</button>
+    <button class="nav-item active" data-page="research">数据研究</button>
+    <button class="nav-item" data-page="tech">技术图表</button>
+    <button class="nav-item" data-page="trade">三屏交易</button>
+  </nav>
+
+  <div class="page-head">
+    <div>
+      <div class="title-row"><h1>数据研究</h1><span class="design-tag">设计稿 v5</span></div>
+      <div class="subtitle">算法推荐 → 能力出口：左边是推荐项（关系 + 期限 + 证据强度），右边是它对应的数据卡片与图表</div>
+    </div>
+    <div class="meta">
+      <span class="badge ok"><span class="dot-mark green"></span>37 条过门禁</span>
+      <span class="badge info">12 stable · 25 candidate</span>
+      <button class="btn primary" id="openLib">＋ 能力库 93</button>
+    </div>
+  </div>
+
+  <div class="subtabs" data-scope="research">
+    <button class="tab active" data-sub="r-rec">推荐总览<span class="cnt">37</span></button>
+    <button class="tab" data-sub="r-all">全部出口<span class="cnt">13</span></button>
+    <button class="tab user" data-sub="r-macro">宏观<span class="cnt">2</span><span class="tab-x" data-del="tab" title="删除此 tab（自建 tab 可删）">×</span></button>
+    <button class="tab add" data-add="tab">＋ 新 tab</button>
+    <div class="tab-add-wrap"><span class="limit-note">tab 2 / 8 · 每 tab 卡 ≤ 12 · 折叠不请求</span></div>
+  </div>
+
+  <!-- ============ 推荐总览：master-detail ============ -->
+  <section class="panel active" data-panel="r-rec">
+    <div class="grid split">
+      <div class="card">
+        <div class="card-head">
+          <div><h2 class="card-title">算法推荐</h2><div class="card-sub">按 |RankIC| 降序 · 只列 gate_pass=1</div></div>
+          <span class="pill">Top 20</span>
+        </div>
+        <div class="chips" style="margin-bottom:10px">
+          <span class="chip">全部</span><span class="chip">R1</span><span class="chip">R3</span><span class="chip">R4</span><span class="chip">R5</span><span class="chip">h=5</span>
+        </div>
+        <div class="rec-list" id="recList">
+          <div class="rec active" data-rec="ev2041">
+            <span class="rtag">R4</span>
+            <div><div class="rn">BTC · 惯性</div><div class="rm">B14 × zscore60 · h5 · n812</div></div>
+            <div class="rv">0.182<span class="tiny muted"> hit .63</span></div>
+          </div>
+          <div class="rec" data-rec="ev1988">
+            <span class="rtag">R1</span>
+            <div><div class="rn">NVDA · 趋势延续</div><div class="rm">B11 × ts_rank60 · h5 · n1044</div></div>
+            <div class="rv">0.171<span class="tiny muted"> hit .61</span></div>
+          </div>
+          <div class="rec" data-rec="ev2130">
+            <span class="rtag">R3</span>
+            <div><div class="rn">XAU · 周期方向</div><div class="rm">R02 × raw · h20 · n760</div></div>
+            <div class="rv">0.158<span class="tiny muted"> hit .59</span></div>
+          </div>
+          <div class="rec" data-rec="ev2207">
+            <span class="rtag">R5</span>
+            <div><div class="rn">VIX → BTC · 前瞻</div><div class="rm">B13 × diff · h5 · n688</div></div>
+            <div class="rv">0.147<span class="tiny muted"> hit .60</span></div>
+          </div>
+          <div class="rec" data-rec="ev2251">
+            <span class="rtag">R2</span>
+            <div><div class="rn">SOL · 形态切换</div><div class="rm">M11 × pct · h20 · n431</div></div>
+            <div class="rv">0.119<span class="tiny muted"> hit .58</span></div>
+          </div>
+          <div class="rec" data-rec="ev2312">
+            <span class="rtag">R4</span>
+            <div><div class="rn">ETH · 反转（RankIC &lt; 0）</div><div class="rm">B14 × pct · h20 · n402 · 反向计 hit</div></div>
+            <div class="rv">-0.096<span class="tiny muted"> hit .41</span></div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="tiny muted">列表只显示推荐，不显示枚举与淘汰过程</span>
+          <button class="btn ghost">查看全部 37 →</button>
+        </div>
+      </div>
+
+      <div>
+        <!-- 推荐摘要 -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-head">
+            <div>
+              <h2 class="card-title">EV-2041 · BTC 惯性（R4）</h2>
+              <div class="card-sub">5 日前瞻收益 · 数据版本 2026.11.3 · 评估于 2026-11-16</div>
+            </div>
+            <div class="card-actions">
+              <span class="pill ok">stable</span>
+              <span class="pill">连击 3</span>
+              <button class="btn primary" data-add="card">＋ 出口卡</button>
+            </div>
+          </div>
+          <div class="rec-sum">
+            <div class="s"><div class="sv">0.182</div><div class="sl">RankIC</div></div>
+            <div class="s"><div class="sv">0.63</div><div class="sl">hit</div></div>
+            <div class="s"><div class="sv">0.57</div><div class="sl">Wilson 下界</div></div>
+            <div class="s"><div class="sv">0.59</div><div class="sl">holdout</div></div>
+            <div class="s"><div class="sv">812</div><div class="sl">样本 n</div></div>
+            <div class="s"><div class="sv">0.004</div><div class="sl">p_adj</div></div>
+          </div>
+          <div class="footer-note">
+            推荐只陈述关系与证据强度，不给买卖方向、不给仓位。方向与执行在「技术图表」完成。
+          </div>
+        </div>
+
+        <!-- 出口卡：方法口径 -->
+        <div class="cap-card" style="margin-bottom:12px">
+          <div class="cc-head" data-toggle="card">
+            <div class="cc-left"><span class="chev">▾</span><span class="cc-title">方法与口径</span><span class="cc-id">D-K01</span></div>
+            <div class="cc-tools"><span class="pill">table</span><button class="icon-btn" data-act="collapse">折叠</button><button class="icon-btn danger" data-act="remove" title="移除卡片（只删配置，不删能力）">－</button><button class="icon-btn" data-act="more">⋯</button></div>
+          </div>
+          <div class="cc-body">
+            <table>
+              <tbody>
+                <tr><td>关系类型</td><td class="ref">R4 惯性</td><td>算法包</td><td class="ref">ALG-R4-001</td></tr>
+                <tr><td>统计方法</td><td class="ref">B14 RankIC</td><td>变换</td><td class="ref">zscore60</td></tr>
+                <tr><td>目标</td><td class="ref">price_forward_return</td><td>期限</td><td class="ref">h = 5</td></tr>
+                <tr><td>数据域</td><td class="ref">价格 · 宏观（VIX）</td><td>最小样本</td><td class="num">250</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 出口卡：证据序列 -->
+        <div class="cap-card" style="margin-bottom:12px">
+          <div class="cc-head" data-toggle="card">
+            <div class="cc-left"><span class="chev">▾</span><span class="cc-title">证据序列</span><span class="cc-id">D-A01</span></div>
+            <div class="cc-tools"><span class="pill">series</span><button class="icon-btn" data-act="collapse">折叠</button><button class="icon-btn danger" data-act="remove" title="移除卡片（只删配置，不删能力）">－</button><button class="icon-btn" data-act="more">⋯</button></div>
+          </div>
+          <div class="cc-body">
+            <svg viewBox="0 0 720 120" style="width:100%;height:120px;display:block" role="img" aria-label="关系强度演化">
+              <line x1="30" y1="14" x2="30" y2="96" stroke="#1e293b" />
+              <line x1="30" y1="96" x2="700" y2="96" stroke="#1e293b" />
+              <line x1="30" y1="40" x2="700" y2="40" stroke="#2a3b55" stroke-dasharray="3 4" />
+              <polyline fill="none" stroke="#34d399" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
+                points="40,78 100,72 160,74 220,64 280,60 340,66 400,52 460,48 520,44 580,50 640,38 690,34" />
+              <g fill="#7f8ea3" font-size="9" font-family="monospace">
+                <text x="10" y="43">0.15</text><text x="10" y="99">0</text>
+                <text x="40" y="112">2026-05</text><text x="320" y="112">2026-08</text><text x="620" y="112">2026-11</text>
+              </g>
+            </svg>
+            <div class="footer-note">每期一次 MERS 复核；连续 3 期同号且显著才升 stable。</div>
+          </div>
+        </div>
+
+        <!-- 出口卡：同类归纳（折叠态） -->
+        <div class="cap-card collapsed" style="margin-bottom:12px">
+          <div class="cc-head" data-toggle="card">
+            <div class="cc-left"><span class="chev">▸</span><span class="cc-title">同类现象归纳</span><span class="cc-id">D-K02</span></div>
+            <div class="cc-tools"><span class="pill">table</span><button class="icon-btn" data-act="collapse">展开</button><button class="icon-btn danger" data-act="remove" title="移除卡片（只删配置，不删能力）">－</button><button class="icon-btn" data-act="more">⋯</button></div>
+          </div>
+          <div class="cc-body">
+            <table>
+              <thead><tr><th>pattern</th><th class="right">支持/反对</th><th class="right">同向率</th><th class="right">p_adj</th></tr></thead>
+              <tbody>
+                <tr><td class="ref">PAT-R4-mom-h5</td><td class="num">7 / 1</td><td class="num">0.88</td><td class="num">0.012</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="add-card" data-add="card">＋ 添加出口卡（从能力库按需取）</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 全部出口 ============ -->
+  <section class="panel" data-panel="r-all">
+    <div class="grid two">
+      <div class="cap-card">
+        <div class="cc-head" data-toggle="card">
+          <div class="cc-left"><span class="chev">▾</span><span class="cc-title">类别看板</span><span class="cc-id">D-E17</span></div>
+          <div class="cc-tools"><span class="pill">table</span><button class="icon-btn" data-act="collapse">折叠</button><button class="icon-btn danger" data-act="remove" title="移除卡片（只删配置，不删能力）">－</button><button class="icon-btn" data-act="more">⋯</button></div>
+        </div>
+        <div class="cc-body">
+          <table>
+            <thead><tr><th>类别</th><th class="right">动量</th><th class="right">广度</th><th>龙头</th></tr></thead>
+            <tbody>
+              <tr><td>加密</td><td class="num">+4.2%</td><td class="num">3/3</td><td class="ref">BTC</td></tr>
+              <tr><td>避险</td><td class="num">+1.1%</td><td class="num">2/2</td><td class="ref">XAU</td></tr>
+              <tr><td>大宗</td><td class="num">-0.8%</td><td class="num">1/4</td><td class="ref">CL</td></tr>
+              <tr><td>美股</td><td class="num">+2.7%</td><td class="num">4/5</td><td class="ref">NVDA</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="cap-card">
+        <div class="cc-head" data-toggle="card">
+          <div class="cc-left"><span class="chev">▾</span><span class="cc-title">美股龙头（周度）</span><span class="cc-id">D-E21</span></div>
+          <div class="cc-tools"><span class="pill">table</span><span class="pill warn">pool 1.3</span><button class="icon-btn danger" data-act="remove" title="移除卡片（只删配置，不删能力）">－</button><button class="icon-btn" data-act="more">⋯</button></div>
+        </div>
+        <div class="cc-body">
+          <table>
+            <thead><tr><th class="right">#</th><th>标的</th><th class="right">score</th><th class="right">动量</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>NVDA</td><td class="num">92</td><td class="num">+6.1%</td></tr>
+              <tr><td class="num">2</td><td>MSFT</td><td class="num">88</td><td class="num">+3.4%</td></tr>
+              <tr><td class="num">3</td><td>AAPL</td><td class="num">85</td><td class="num">+2.8%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="cap-card">
+        <div class="cc-head" data-toggle="card">
+          <div class="cc-left"><span class="chev">▾</span><span class="cc-title">多窗口趋势</span><span class="cc-id">D-E15</span></div>
+          <div class="cc-tools"><span class="pill">series</span><button class="icon-btn danger" data-act="remove" title="移除卡片（只删配置，不删能力）">－</button><button class="icon-btn" data-act="more">⋯</button></div>
+        </div>
+        <div class="cc-body">
+          <table>
+            <thead><tr><th>标的</th><th class="right">20d</th><th class="right">60d</th><th class="right">120d</th><th>一致</th></tr></thead>
+            <tbody>
+              <tr><td>BTC</td><td class="num">+0.42%</td><td class="num">+0.18%</td><td class="num">-0.04%</td><td><span class="pill warn">2/3</span></td></tr>
+              <tr><td>NVDA</td><td class="num">+0.61%</td><td class="num">+0.44%</td><td class="num">+0.22%</td><td><span class="pill ok">3/3</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="cap-card collapsed">
+        <div class="cc-head" data-toggle="card">
+          <div class="cc-left"><span class="chev">▸</span><span class="cc-title">回撤画像</span><span class="cc-id">D-A07</span></div>
+          <div class="cc-tools"><span class="pill">table</span><button class="icon-btn" data-act="collapse">展开</button><button class="icon-btn danger" data-act="remove" title="移除卡片（只删配置，不删能力）">－</button><button class="icon-btn" data-act="more">⋯</button></div>
+        </div>
+        <div class="cc-body">
+          <table>
+            <tbody>
+              <tr><td>当前回撤</td><td class="num">-8.2%</td></tr>
+              <tr><td>最大回撤</td><td class="num">-24.6%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="add-card" data-add="card">＋ 添加能力卡片</div>
+    </div>
+  </section>
+
+  <!-- ============ 自建 tab 示例（可删除） ============ -->
+  <section class="panel" data-panel="r-macro">
+    <div class="grid two">
+      <div class="cap-card">
+        <div class="cc-head" data-toggle="card">
+          <div class="cc-left"><span class="chev">▾</span><span class="cc-title">利率与通胀</span><span class="cc-id">D-A10</span></div>
+          <div class="cc-tools"><span class="pill">series</span><button class="icon-btn" data-act="collapse">折叠</button><button class="icon-btn danger" data-act="remove" title="移除卡片（只删配置，不删能力）">－</button><button class="icon-btn" data-act="more">⋯</button></div>
+        </div>
+        <div class="cc-body">
+          <div class="empty-note">自建 tab 示例：从能力库「＋」挂载 2 张卡；删 tab 时只删配置，能力本身不动。</div>
+        </div>
+      </div>
+      <div class="add-card" data-add="card">＋ 添加能力卡片</div>
+    </div>
+    <div class="footer-note">
+      删除规则：自建 tab 悬停出现「×」→ 二次确认（「删除 tab 及其 2 张卡片」）；默认 tab（推荐总览 / 全部出口）不可删。
+    </div>
+  </section>
+
+  <!-- 技术图表：指向 v3 -->
+  <div class="root" id="page-tech">
+    <div class="page-head">
+      <div>
+        <div class="title-row"><h1>技术图表</h1><span class="design-tag">= visual-page-v3</span></div>
+        <div class="subtitle">完整链路版：保留 1–5 步子页便于识别，后期不对外可隐藏；正式对外只留 6–7 步</div>
+      </div>
+      <div class="meta"><span class="badge info">8 子页 · 含 5 个链路子页</span></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div><h2 class="card-title">进入 v3 设计稿</h2><div class="card-sub">加权信号点阵 / 点亮图影 / 技术分析叠加 / 信号反馈 + 跨资产 / 波动回撤 / 周期资金 / 数据口径</div></div><span class="pill">独立页</span></div>
+      <div class="empty-note">
+        技术图表正式版见
+        <a href="visual-page-v3.html" style="color:#c7d2fe">visual-page-v3.html</a>；
+        其中「目标与覆盖 / 算法分类 / 现象归纳 / 假设验证 / 数据卡片」五个 sub-tab 作为完整链路保留，
+        对外开关默认关闭（对内可见）。
+      </div>
+    </div>
+  </div>
+
+  <!-- 能力库抽屉 -->
+  <div class="overlay" id="overlay">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h3 id="sheetTitle">添加能力</h3>
+        <div class="card-sub" id="sheetSub">来自 capability_manifest.yaml · 只列可执行能力</div>
+      </div>
+      <div class="sheet-body">
+        <input class="searchbox" placeholder="搜索能力名 / ID / 方法号（如 D-E17、B14）" />
+        <div class="chips" style="margin:10px 0">
+          <span class="chip">A 指标 16</span><span class="chip">E 关系 21</span>
+          <span class="chip">G 横截面 24</span><span class="chip">J 科研 29</span><span class="chip">K 出口 2</span>
+        </div>
+        <div class="pick-row"><div><div class="pr-name">条件收益</div><div class="pr-meta">D-E01 · table · min_n 250 · 价格</div></div><span class="pill ok">可预览</span><button class="btn primary">预览</button></div>
+        <div class="pick-row"><div><div class="pr-name">转移矩阵</div><div class="pr-meta">D-E07 · matrix · min_n 500 · 价格</div></div><span class="pill ok">可预览</span><button class="btn primary">预览</button></div>
+        <div class="pick-row"><div><div class="pr-name">变点检测</div><div class="pr-meta">D-J04 · table · min_n 250 · 价格</div></div><span class="pill ok">可预览</span><button class="btn primary">预览</button></div>
+        <div class="pick-row"><div><div class="pr-name">滚动相关</div><div class="pr-meta">D-A11 · series · min_n 250 · 价格</div></div><span class="pill ok">可预览</span><button class="btn primary">预览</button></div>
+        <div class="pick-row"><div><div class="pr-name">因子拥挤</div><div class="pr-meta">D-G24 · table · min_n 500 · 价格+资金</div></div><span class="pill warn">数据缺</span><button class="btn ghost">不可用</button></div>
+        <div class="pick-row"><div><div class="pr-name">关系出口（只读）</div><div class="pr-meta">D-K01 · table · relationship_registry</div></div><span class="pill">已挂载</span><button class="btn ghost" disabled>已添加</button></div>
+        <div class="footer-note">预览 = `stats_validate` + 一次小样本取数；不满足前置条件直接灰掉并显示缺失字段。</div>
+      </div>
+      <div class="sheet-foot">
+        <span class="tiny muted">已选 0 · 本 tab 卡 4 / 12</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn" id="sheetCancel">取消</button>
+          <button class="btn primary" id="sheetOk">添加</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note" style="margin-top:22px">
+    设计稿 v5 · 数据研究按「算法推荐 → 能力出口」组织 · 技术图表以 v3 为准（含完整链路子页）· 数值为结构示例
+  </div>
+</div>
+
+<script>
+(function () {
+  var topnav = document.getElementById('topnav');
+  topnav.addEventListener('click', function (e) {
+    var btn = e.target.closest('.nav-item');
+    if (!btn) return;
+    var key = btn.getAttribute('data-page');
+    topnav.querySelectorAll('.nav-item').forEach(function (b) { b.classList.toggle('active', b === btn); });
+    var isTech = key === 'tech';
+    document.querySelector('#page-tech').classList.toggle('active', isTech);
+    // 数据研究区块（非 .root 包裹的标题/子 tab/面板）整体显隐
+    document.querySelectorAll('.page-head, .subtabs, .panel').forEach(function (n) {
+      if (n.closest('#page-tech')) return;
+      n.style.display = isTech ? 'none' : '';
+    });
+  });
+
+  // 二级 tab
+  document.querySelector('.subtabs').addEventListener('click', function (e) {
+    var del = e.target.closest('[data-del="tab"]');
+    if (del) {
+      e.stopPropagation();
+      var tab = del.closest('.tab');
+      if (window.confirm('删除该 tab 及其卡片？（只删配置，不删能力）')) {
+        tab.remove();
+        var active = document.querySelector('.subtabs .tab.active');
+        if (!active) document.querySelector('.subtabs .tab').click();
+      }
+      return;
+    }
+    var tab = e.target.closest('.tab');
+    if (!tab) return;
+    if (tab.getAttribute('data-add') === 'tab') { openSheet('tab'); return; }
+    document.querySelectorAll('.subtabs .tab').forEach(function (t) { t.classList.toggle('active', t === tab); });
+    var target = tab.getAttribute('data-sub');
+    document.querySelectorAll('.panel').forEach(function (p) {
+      p.classList.toggle('active', p.getAttribute('data-panel') === target);
+    });
+  });
+
+  // 推荐列表切换
+  var recList = document.getElementById('recList');
+  recList.addEventListener('click', function (e) {
+    var row = e.target.closest('.rec');
+    if (!row) return;
+    recList.querySelectorAll('.rec').forEach(function (r) { r.classList.toggle('active', r === row); });
+  });
+
+  // 折叠
+  document.addEventListener('click', function (e) {
+    var act = e.target.closest('[data-act]');
+    if (act) {
+      e.stopPropagation();
+      var card = act.closest('.cap-card');
+      if (act.getAttribute('data-act') === 'collapse') {
+        card.classList.toggle('collapsed');
+        var open = !card.classList.contains('collapsed');
+        card.querySelector('.chev').textContent = open ? '▾' : '▸';
+        act.textContent = open ? '折叠' : '展开';
+      } else if (act.getAttribute('data-act') === 'remove') {
+        if (window.confirm('移除这张卡片？（只删看板配置，能力仍可用）')) card.remove();
+      } else { openSheet('card'); }
+      return;
+    }
+    var head = e.target.closest('[data-toggle="card"]');
+    if (head) {
+      var c = head.closest('.cap-card');
+      c.classList.toggle('collapsed');
+      var op = !c.classList.contains('collapsed');
+      c.querySelector('.chev').textContent = op ? '▾' : '▸';
+      var cb = c.querySelector('[data-act="collapse"]');
+      if (cb) cb.textContent = op ? '折叠' : '展开';
+      return;
+    }
+    var add = e.target.closest('[data-add="card"]');
+    if (add) { openSheet('card'); return; }
+  });
+
+  var overlay = document.getElementById('overlay');
+  var sheetTitle = document.getElementById('sheetTitle');
+  var sheetSub = document.getElementById('sheetSub');
+  function openSheet(mode) {
+    sheetTitle.textContent = mode === 'tab' ? '新建 tab（从能力库选择）' : '添加能力卡片';
+    sheetSub.textContent = '来自 capability_manifest.yaml · 只列可执行能力';
+    overlay.classList.add('open');
+  }
+  document.getElementById('openLib').addEventListener('click', function () { openSheet('card'); });
+  document.getElementById('sheetCancel').addEventListener('click', function () { overlay.classList.remove('open'); });
+  document.getElementById('sheetOk').addEventListener('click', function () { overlay.classList.remove('open'); });
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.classList.remove('open'); });
+})();
+</script>
+</body>
+</html>

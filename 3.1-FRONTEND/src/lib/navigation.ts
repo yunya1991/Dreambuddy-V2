@@ -29,6 +29,9 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { id: 'fundamental', label: '基本面', href: '/dashboard/fundamental', icon: '📈', section: 'platform' },
   { id: 'news', label: '新闻', href: '/dashboard/news', icon: '📰', section: 'platform' },
   { id: 'visual', label: '数据与图表', href: '/dashboard/visual', icon: '📉', section: 'platform' },
+  // SPEC-20261116 §11：数据研究 / 技术图表 与「基本面」同级主导航（能力库 vs 读图工作台）
+  { id: 'research', label: '数据研究', href: '/dashboard/visual/research', icon: '🔬', section: 'platform' },
+  { id: 'technical', label: '技术图表', href: '/dashboard/visual/technical', icon: '📈', section: 'platform' },
   { id: 'ranking', label: '今日热门资产', href: '/dashboard/ranking', icon: '🔥', section: 'platform' },
   // 三屏系统：2026-11-15 暂不在前端展示（代码/路由保留），恢复时把 hidden 改为 false
   { id: 'three-screens', label: '三屏系统', href: '/dashboard/three-screens', icon: '🖥', section: 'platform', hidden: true },

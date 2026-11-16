@@ -469,7 +469,7 @@ capabilities:
     methods: [M01, M02, M11, B11, B13, B14, R01, R03, R04, F19]
     min_n: 250
     method_binding: display
-    notes: 评估层只读出口（SPEC §14.7）；只读 relationship_registry.db（`file:...?mode=ro`），按 |RankIC| DESC, n DESC 取 Top3，仅 status∈(stable,candidate) 且 gate_pass=1；不重算方法、不写库；Top1 为 candidate 时 status=partial + degraded_reason=candidate_only；明确不做买卖方向与仓位
+    notes: 评估层只读出口（SPEC §14.7）；只读 relationship_registry.db（`file:...?mode=ro`），按 |RankIC| DESC, n DESC 取 Top3，仅 status∈(stable,candidate) 且 gate_pass=1；不重算方法、不写库；Top1 为 candidate 时 status=partial + degraded_reason=candidate_only；卡片字段含 base_rate/excess_hit/hit_rate_lb/n_eff/holdout_*/effect_bps/cost_bps/scope（SPEC §5.6）；`viz` 可选 table/matrix/series/graph，同一信封只出一图；明确不做买卖方向与仓位
 
   - id: D-K02
     intent: discovery_query
@@ -480,6 +480,16 @@ capabilities:
     min_n: 250
     method_binding: display
     notes: 评估层只读出口（SPEC §15.6）；只读最近一期 reports/discovery/<YYYYMMDD-HHMM>/（manifest.json + findings.jsonl），按 |RankIC| 排序截断，输出恒标 status=candidate；不扫描、不重算、不写库；无候选 → status=partial + degraded_reason=no_findings；禁止因果与预测措辞
+
+  - id: D-K03
+    intent: signal_query
+    mode: deterministic
+    data_scope: [registry.relationship_eval]
+    executor: capabilities.signal_exports.signal_query
+    methods: [B14, M23]
+    min_n: 250
+    method_binding: display
+    notes: 信号只读出口（SPEC §5.7 / T6-3）；只读 relationship_eval 的 gate_pass=1 行，每 target×期限取 |RankIC| Top3，复用 signal.synthesize_signals + apply_gating；只出 signals/blocked/conflicts/ablation/gating，明令禁止 order/position/仓位/买卖指令字段；不写库、不下单、零 LLM；context 缺失 fail-closed 为 blocked=missing_context
 
   - id: D-G01
     intent: cross_section_query

@@ -62,6 +62,7 @@ def _parse_args(argv):
     parser.add_argument("--symbols", default="")
     parser.add_argument("--base", default="")
     parser.add_argument("--days", type=int, default=1200)
+    parser.add_argument("--history", type=int, default=0)
     args, _ = parser.parse_known_args(argv)
     symbols = [s.strip().upper() for s in args.symbols.split(",") if s.strip()]
     if not symbols:
@@ -76,7 +77,7 @@ def _parse_args(argv):
     base = args.base.strip().upper() or deduped[0]
     if base not in deduped:
         deduped.insert(0, base)
-    return deduped[:16], base, max(int(args.days), 120)
+    return deduped[:16], base, max(int(args.days), 120), max(0, int(args.history))
 
 
 def _load_series(symbols, days):
@@ -523,7 +524,78 @@ def _core_assets():
     return out
 
 
-def _extra_panels(raw, aligned, base, blocks, envelopes, days, as_of=None):
+def _lights_history_cache_path():
+    """离线制品路径：54 侧 artifacts，按 base/upto/periods/step 命中即复用。"""
+    import l1agg
+
+    root = os.path.dirname(os.path.dirname(os.path.abspath(l1agg.__file__)))
+    return os.path.join(root, "artifacts", "visual", "lights_history.json")
+
+
+def _lights_history(
+    raw,
+    pool,
+    *,
+    base,
+    upto,
+    periods,
+    step=5,
+):
+    """逐期回放 D-E19 点亮（T9-2 影带）：同一进程内按 as_of 截断历史，每 `step` 个交易日采一期。
+
+    不重算任何统计口径——每期都走与最新一期完全相同的 `_lights_entries → lights` 链路；
+    只保留后端判定出的 state/strength/summary，前端零重算。期数不足时不补造。
+    """
+    from l1agg.capabilities.lights import lights
+
+    cache_path = _lights_history_cache_path()
+    signature = {"base": base, "upto": upto or "", "periods": int(periods), "step": int(step)}
+    try:
+        if os.path.isfile(cache_path):
+            with open(cache_path, "r", encoding="utf-8") as fh:
+                cached = json.load(fh)
+            if all(cached.get(key) == value for key, value in signature.items()) and cached.get(
+                "history"
+            ):
+                return cached["history"]
+    except (OSError, ValueError):
+        pass
+
+    calendar = sorted(
+        {day for history in raw.values() for day in history if not upto or day <= upto}
+    )
+    if not calendar or periods <= 0:
+        return []
+    picks = calendar[::-1][:: max(1, int(step))][: int(periods)]
+    out = []
+    for day in sorted(picks):
+        entries = _lights_entries(raw, pool, as_of=day, base=base)
+        env = lights(entries) if entries else {}
+        block = ((env.get("data") or {}).get("capabilities") or {}).get("D-E19") or {}
+        rows = list(block.get("lights") or [])
+        if not rows:
+            continue
+        out.append({"as_of": day, "rows": rows})
+
+    if out:
+        try:
+            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+            with open(cache_path, "w", encoding="utf-8") as fh:
+                json.dump(
+                    {
+                        **signature,
+                        "generated_at": datetime.now(timezone.utc).isoformat(),
+                        "history": out,
+                    },
+                    fh,
+                    ensure_ascii=False,
+                )
+        except OSError:
+            pass
+    return out
+
+
+def _extra_panels(raw, aligned, base, blocks, envelopes, days, as_of=None, history_periods=0):
     """一次进程产出 B 链路四面板：D-E19 点亮 → D-E16 聚合 → D-E17 看板 → D-E18 导图。
 
     `as_of` 必须贯穿：点亮行与聚合曲线都按面板数据截止日截断，避免行日期/曲线尾部
@@ -563,6 +635,16 @@ def _extra_panels(raw, aligned, base, blocks, envelopes, days, as_of=None):
     if lights_env:
         envelopes["D-E19"] = lights_env
         _collect(blocks, lights_env, only={"D-E19"})
+
+    # 1.0) 多期点亮影带（T9-2）：仅在显式请求 `--history N` 时回放，默认 0 保持旧 payload
+    if history_periods > 0:
+        try:
+            lights_payload["history"] = _lights_history(
+                raw, pool, base=base, upto=as_of, periods=history_periods
+            )
+        except Exception as exc:  # FAIL-OPEN：影带回放失败不影响当期点亮
+            lights_payload["history"] = []
+            lights_payload["history_error"] = f"{type(exc).__name__}: {exc}"
 
     # 1.1) 主览图右：加权信号点阵（资产 × 四轴，状态/强度/轴值符号零重算）
     labels = {}
@@ -700,7 +782,7 @@ def _recommend(visuals, blocks, assets, base, unavailable):
 
 
 def main():
-    symbols, base, days = _parse_args(sys.argv[1:])
+    symbols, base, days, history_periods = _parse_args(sys.argv[1:])
     if not os.path.isfile(DB_PATH):
         raise FileNotFoundError(f"db not found: {DB_PATH}")
 
@@ -775,10 +857,18 @@ def main():
         envelopes["D-A14"] = crowding
         _collect(blocks, crowding)
 
+    # 技术叠加的分位条（T9-3）：D-A04 末值历史分位；不进 blocks，避免污染树/网络构建
+    percentile_env = _run("D-A04", values=prices, dates=base_dates, symbol=base)
+    percentile_block = ((percentile_env.get("data") or {}).get("capabilities") or {}).get(
+        "D-A04"
+    ) or {}
+
     series_inputs = _load_l0_flow_series(base, days)
     visuals = _build_visuals(blocks, envelopes, base, as_of, series_inputs)
     # B 链路四面板：同一进程内直调能力层（避免每图一次 python spawn）
-    extra_visuals, lights_payload = _extra_panels(raw, series, base, blocks, envelopes, days)
+    extra_visuals, lights_payload = _extra_panels(
+        raw, series, base, blocks, envelopes, days, history_periods=history_periods
+    )
     visuals.extend(extra_visuals)
     # 主览图前置（前端按 id 取用，顺序只影响"全景观图"标签栏的阅读顺序）
     main_ids = ("matrix:signals", "series:core-assets")
@@ -793,6 +883,15 @@ def main():
         "unavailable": unavailable,
         "visuals": visuals,
         "lights": lights_payload,
+        "base_metrics": {
+            "percentile": {
+                "value": percentile_block.get("percentile"),
+                "lookback": percentile_block.get("lookback"),
+                "sample_n": percentile_block.get("sample_n"),
+                "capability": "D-A04",
+            },
+            "as_of": as_of,
+        },
         "recommended": _recommend(visuals, blocks, list(series), base, unavailable),
         "degraded": bool(unavailable)
         or any((envelope or {}).get("ok") is False for envelope in envelopes.values()),

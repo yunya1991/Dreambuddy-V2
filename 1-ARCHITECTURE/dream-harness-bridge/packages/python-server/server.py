@@ -1792,6 +1792,9 @@ def handle_request(raw_line: str, protocol_server) -> Optional[dict[str, Any]]:
             result = _handle_trade_index(params)
         elif method == "build_vector_index":
             result = _handle_build_vector_index(params)
+        elif method == "stats_capability":
+            # TASKS-20261116 T1-2: L1 统计能力出口（list / run）
+            result = _handle_stats_capability(params)
         elif method in _P0_METHOD_NAMES:
             # D3: Super-agent P0 —— 进程内调用,省去独立 bridge 子进程
             p0 = _load_p0_handlers()
@@ -1833,6 +1836,250 @@ def handle_request(raw_line: str, protocol_server) -> Optional[dict[str, Any]]:
         },
         opts={"id": req.get("id", str(uuid.uuid4()))},
     )
+
+
+_L1_AGG_ROOT = os.path.normpath(
+    os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..",
+        "..",
+        "..",
+        "..",
+        "54-L1架构能力聚合层",
+    )
+)
+
+
+def _l1_stats_api():
+    """惰性导入 L1 能力聚合层（不影响无需统计能力的启动路径）。"""
+    if _L1_AGG_ROOT not in sys.path:
+        sys.path.insert(0, _L1_AGG_ROOT)
+    from l1agg.capabilities.manifest import load as load_manifest
+    from l1agg.capabilities.stats import run_capability
+
+    return load_manifest, run_capability
+
+
+def _stats_domain_of(capability_id: str) -> str:
+    """`D-E17` → `E`；无法解析 → `OTHER`（不臆造）。"""
+    parts = str(capability_id).split("-")
+    return parts[1][:1] if len(parts) > 1 and parts[1] else "OTHER"
+
+
+def _stats_executor(cap: Any) -> Any:
+    """按 manifest 的 executor 路径解析可执行函数（`capabilities.stats.x` → `l1agg.capabilities.stats.x`）。"""
+    import importlib
+
+    module_name, _, attr = str(cap.executor).rpartition(".")
+    module = importlib.import_module(f"l1agg.{module_name}")
+    return getattr(module, attr)
+
+
+def _stats_format(cap: Any) -> dict[str, Any]:
+    return {
+        "capability_id": cap.id,
+        "intent": cap.intent,
+        "executor": cap.executor,
+        "methods": list(cap.methods),
+        "min_n": cap.min_n,
+        "min_span_days": cap.min_span_days,
+        "data_scope": list(cap.data_scope),
+        "visibility": cap.visibility,
+        "mode": cap.mode,
+        "notes": cap.notes,
+    }
+
+
+def _handle_stats_capability(params: dict[str, Any]) -> dict[str, Any]:
+    """统计能力出口（TASKS-20261116 T1-2）。
+
+    op=list → 读 manifest 目录（不执行能力）
+    op=run  → 转发 l1agg run_capability，原样回传 capability_result
+
+    只读：不写库、不落盘、不缓存；任何异常 → degraded，不抛。
+    """
+    op = str(params.get("op") or "").strip().lower()
+    try:
+        load_manifest, run_capability = _l1_stats_api()
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "ok": False,
+            "degraded": True,
+            "reason": f"l1_unavailable: {type(exc).__name__}: {exc}",
+        }
+
+    if op == "list":
+        try:
+            manifest = load_manifest()
+        except Exception as exc:  # noqa: BLE001
+            return {
+                "ok": False,
+                "degraded": True,
+                "reason": f"manifest_unavailable: {type(exc).__name__}: {exc}",
+            }
+        domain = str(params.get("domain") or "").strip().upper()
+        query = str(params.get("q") or "").strip().lower()
+        min_n_max = params.get("min_n_max")
+        try:
+            limit = int(params.get("limit") or 50)
+        except (TypeError, ValueError):
+            limit = 50
+        limit = max(1, min(limit, 200))
+
+        matched: list[dict[str, Any]] = []
+        for cap in sorted(manifest.capabilities, key=lambda c: c.id):
+            if domain and _stats_domain_of(cap.id) != domain:
+                continue
+            if min_n_max is not None:
+                try:
+                    if int(cap.min_n or 0) > int(min_n_max):
+                        continue
+                except (TypeError, ValueError):
+                    continue
+            if query:
+                haystack = " ".join(
+                    [cap.id, cap.intent, " ".join(cap.methods), " ".join(cap.data_scope)]
+                ).lower()
+                if query not in haystack:
+                    continue
+            matched.append(
+                {
+                    "capability_id": cap.id,
+                    "domain": _stats_domain_of(cap.id),
+                    "intent": cap.intent,
+                    "mode": cap.mode,
+                    "min_n": cap.min_n,
+                    "methods": list(cap.methods),
+                    "data_scope": list(cap.data_scope),
+                    "visibility": cap.visibility,
+                }
+            )
+
+        domain_counts: dict[str, int] = {}
+        for cap in manifest.capabilities:
+            key = _stats_domain_of(cap.id)
+            domain_counts[key] = domain_counts.get(key, 0) + 1
+
+        return {
+            "manifest_version": manifest.version,
+            "manifest_updated": manifest.updated,
+            "total": len(matched),
+            "returned": len(matched[:limit]),
+            "domains": [
+                {"domain": key, "count": domain_counts[key]} for key in sorted(domain_counts)
+            ],
+            "items": matched[:limit],
+        }
+
+    if op == "run":
+        capability_id = str(params.get("capability_id") or "").strip()
+        if not capability_id:
+            return {"ok": False, "degraded": True, "reason": "capability_id_required"}
+        payload = params.get("payload") or {}
+        if not isinstance(payload, dict):
+            return {"ok": False, "degraded": True, "reason": "payload_must_be_object"}
+        try:
+            envelope = run_capability(capability_id, **payload)
+        except KeyError:
+            return {
+                "ok": False,
+                "degraded": True,
+                "reason": f"unknown_capability: {capability_id}",
+            }
+        except TypeError as exc:
+            return {"ok": False, "degraded": True, "reason": f"invalid_params: {exc}"}
+        except Exception as exc:  # noqa: BLE001
+            return {
+                "ok": False,
+                "degraded": True,
+                "reason": f"capability_failed: {type(exc).__name__}: {exc}",
+            }
+        return {"ok": True, "capability_id": capability_id, "result": envelope}
+
+    if op in ("explain", "validate"):
+        capability_id = str(params.get("capability_id") or "").strip()
+        if not capability_id:
+            return {"ok": False, "degraded": True, "reason": "capability_id_required"}
+        try:
+            manifest = load_manifest()
+        except Exception as exc:  # noqa: BLE001
+            return {
+                "ok": False,
+                "degraded": True,
+                "reason": f"manifest_unavailable: {type(exc).__name__}: {exc}",
+            }
+        cap = next((item for item in manifest.capabilities if item.id == capability_id), None)
+        if cap is None:
+            return {"ok": False, "degraded": True, "reason": f"unknown_capability: {capability_id}"}
+
+        import inspect as _inspect
+
+        if op == "explain":
+            payload = _stats_format(cap)
+            try:
+                signature = _inspect.signature(_stats_executor(cap))
+                payload["accepted_params"] = [
+                    name
+                    for name, item in signature.parameters.items()
+                    if item.kind
+                    in (
+                        _inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        _inspect.Parameter.KEYWORD_ONLY,
+                    )
+                ]
+                payload["accepts_extra"] = any(
+                    item.kind == _inspect.Parameter.VAR_KEYWORD
+                    for item in signature.parameters.values()
+                )
+                payload["executable"] = True
+            except Exception as exc:  # noqa: BLE001
+                payload["executable"] = False
+                payload["degraded"] = True
+                payload["degraded_reason"] = f"executor_unresolved: {type(exc).__name__}"
+            return payload
+
+        payload = params.get("payload") or {}
+        if not isinstance(payload, dict):
+            return {"ok": False, "degraded": True, "reason": "payload_must_be_object"}
+        try:
+            signature = _inspect.signature(_stats_executor(cap))
+        except Exception as exc:  # noqa: BLE001
+            return {
+                "ok": False,
+                "degraded": True,
+                "reason": f"executor_unresolved: {type(exc).__name__}: {exc}",
+            }
+
+        parameters = signature.parameters
+        accepts_extra = any(
+            item.kind == _inspect.Parameter.VAR_KEYWORD for item in parameters.values()
+        )
+        missing = [
+            name
+            for name, item in parameters.items()
+            if item.default is _inspect.Parameter.empty
+            and item.kind
+            in (_inspect.Parameter.POSITIONAL_OR_KEYWORD, _inspect.Parameter.KEYWORD_ONLY)
+            and name not in payload
+        ]
+        unknown = [] if accepts_extra else [key for key in payload if key not in parameters]
+        warnings: list[str] = []
+        min_n = int(cap.min_n or 0)
+        for key in ("values", "series", "returns", "prices", "dates"):
+            value = payload.get(key)
+            if isinstance(value, (list, tuple)) and len(value) < min_n:
+                warnings.append(f"{key} length {len(value)} < min_n {min_n}")
+        return {
+            "ok": not missing and not unknown and not warnings,
+            "capability_id": capability_id,
+            "missing_params": missing,
+            "unknown_params": unknown,
+            "warnings": warnings,
+            "min_n": min_n,
+            "accepts_extra": accepts_extra,
+        }
+
+    return {"ok": False, "degraded": True, "reason": f"unsupported_op: {op or 'missing'}"}
 
 
 def main() -> int:

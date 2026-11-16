@@ -481,6 +481,7 @@ def test_manifest_loads_and_validates():
             "zscore",
             "recommend_relationship",
             "discovery_query",
+            "signal_query",
             "cross_section_profile",
             "group_neutralize",
             "quantile_portfolio",

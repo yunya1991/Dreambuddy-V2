@@ -75,6 +75,7 @@ from .research_stats import (
     transfer_entropy,
     trend_test,
 )
+from .signal_exports import signal_query
 from .visual import build_visual
 
 INTENT_SEASONALITY = "seasonality_query"
@@ -6330,6 +6331,7 @@ _EXECUTORS = {
     "D-G09": vol_target_scale,
     "D-K01": recommend_relationship,
     "D-K02": discovery_query,
+    "D-K03": signal_query,
     "D-G01": cross_section_profile,
     "D-G02": group_neutralize,
     "D-G03": quantile_portfolio,
@@ -6381,6 +6383,7 @@ _EXECUTOR_INTENTS = {
     "D-A07": INTENT_DRAWDOWN,
     "D-K01": "relationship_recommend",
     "D-K02": "discovery_query",
+    "D-K03": "signal_query",
     "D-G01": "cross_section_query",
     "D-G02": "cross_section_query",
     "D-G03": "cross_section_query",

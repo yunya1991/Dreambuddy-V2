@@ -53,7 +53,7 @@ def test_single_asset_capabilities_use_own_history(monkeypatch):
         seen["series_inputs"] = series_inputs
         return []
 
-    monkeypatch.setattr(vo, "_parse_args", lambda argv: (["BTC", "ETH"], "BTC", 1200))
+    monkeypatch.setattr(vo, "_parse_args", lambda argv: (["BTC", "ETH"], "BTC", 1200, 0))
     monkeypatch.setattr(
         vo,
         "_load_series",

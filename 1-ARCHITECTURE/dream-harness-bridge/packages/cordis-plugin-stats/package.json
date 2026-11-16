@@ -1,0 +1,19 @@
+{
+  "name": "dreambuddy-stats",
+  "version": "0.1.0",
+  "description": "DreamBuddy 统计能力 Cordis plugin — L1 能力出口（只透传，不计算）",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "import": "./lib/index.js"
+    }
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.2"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh-tools": "*"
+  }
+}

@@ -427,13 +427,28 @@ R_INTENT_UNKNOWN = "intent_unknown"
 _RECALL_TOP_K = 5
 
 
-def detect_intent(message: str) -> str:
-    """后端关键词识别（前端未透传 intent 时的兜底，规则与 TS 注册表对齐）。
+# 语义通道最小消息长度：短消息多为对话/寒暄/测试，跳过语义匹配避免误命中
+SEMANTIC_MIN_LEN = 5
 
-    双通道：正则优先 → 语义兜底（SPEC-41-L1 §3.3）。
-    语义命中的 data_query/data_insight 仍需 requiredPattern 校验。
-    FAIL-OPEN：语义通道任何异常退回空串（交 L2）。
+
+def required_pattern_ok(intent: str, message: str, *, strict_series: bool = True) -> bool:
+    """通用意图的 requiredPattern 校验（与正则通道同等待遇）。
+
+    strict_series=True 时 metric_series 还要求「注册表可命中的确定性序列」，
+    供路由策略（E1）与 G2 特征闸使用；detect_intent 传 False 以保持线上行为不变
+    （语义命中 metric_series 但非确定性序列时仍返回该意图，由 recall 门控裁决）。
     """
+    if intent == "data_insight":
+        return bool(_DATA_INSIGHT_PATTERN.search(message))
+    if intent == "data_query":
+        return bool(resolve_source(message) or _DATA_QUERY_PATTERN.search(message))
+    if strict_series and intent == "metric_series":
+        return _is_deterministic_series(message)
+    return True
+
+
+def detect_intent_regex(message: str) -> str:
+    """通道 A：纯正则/注册表意图识别（不含语义兜底，供 E1 策略对比复用）。"""
     if not message:
         return ""
     for intent, pattern in _FALLBACK_PATTERNS:
@@ -448,26 +463,126 @@ def detect_intent(message: str) -> str:
         return "metric_series"
     if resolve_source(message) or _DATA_QUERY_PATTERN.search(message):
         return "data_query"
+    return ""
+
+
+def regex_intent_hits(message: str) -> list:
+    """通道 A 的**全量命中集合**（E2 复合问法检测用，不参与线上判决）。
+
+    与 detect_intent_regex 的区别：不短路，返回全部命中的意图（按注册表顺序去重）。
+    data_query 为兜底类（几乎任何金融词都会命中 resolve_source），
+    复合判定时应由调用方排除或降权。
+    """
+    if not message:
+        return []
+    hits = []
+    for intent, pattern in _FALLBACK_PATTERNS:
+        if pattern.search(message) and intent not in hits:
+            hits.append(intent)
+    if _DATA_INSIGHT_PATTERN.search(message) and "data_insight" not in hits:
+        hits.append("data_insight")
+    if _is_deterministic_series(message) and "metric_series" not in hits:
+        hits.append("metric_series")
+    if (
+        resolve_source(message) or _DATA_QUERY_PATTERN.search(message)
+    ) and "data_query" not in hits:
+        hits.append("data_query")
+    return hits
+
+
+# ============================================================
+# 复合问法闸（E2-D5，SPEC v1.4 §9.3）：三信号合并，零模型、零 token
+#   D4 子句切分+逐子句意图（零误杀基线）
+#   ∪ D2 连接词+多实体（且无对比词）
+#   ∪ 多指标并列（注册表命中 ≥2）
+# ============================================================
+_COMPOUND_SPLIT = re.compile(r"[，,；;、]|以及|还有|同时|顺便|另外|并且|然后|和|与|及")
+_COMPOUND_CONNECTIVE = re.compile(r"[与和及、]|同时|还有|以及|一起|顺便|另外|再")
+_COMPOUND_COMPARE = re.compile(r"对比|比较|谁更|谁强|哪个强|差距|vs|VS")
+_COMPOUND_ANCHOR = re.compile(
+    r"BTC|ETH|SOL|比特币|以太坊|索拉纳|二饼|大饼|姨太|黄金|原油|美股|港股|A股|纳指|标普"
+    r"|CPI|PPI|GDP|非农|失业率|通胀|恐惧贪婪|恐慌贪婪|资金费率|多空比|稳定币|ETF|美元|国债|M2|M1"
+)
+R_COMPOUND_QUERY = "compound_query"
+R_CONTRACT_DIRECT = "executor_contract_ok"
+
+
+def is_compound_query(message: str) -> bool:
+    """复合问法判定（D5）：命中即交 L2，不做隐式拆解。
+
+    E2 实测（500 条）：compound 召回 78.8%、单意图误杀 2.0%。
+    子句长度 <4 视为碎片（如单独 "BTC"），避免把「BTC和ETH涨跌幅对比」误判。
+    """
+    if not message:
+        return False
+    parts = [p.strip() for p in _COMPOUND_SPLIT.split(message) if len(p.strip()) >= 4]
+    if len(parts) >= 2:
+        intents = {detect_intent_regex(p) for p in parts}
+        intents.discard("")
+        if len(intents) >= 2:
+            return True
+    # D2：连接词 + 多实体，且不是「对比」类单意图
+    if (
+        _COMPOUND_CONNECTIVE.search(message)
+        and not _COMPOUND_COMPARE.search(message)
+        and len(set(_COMPOUND_ANCHOR.findall(message))) >= 2
+    ):
+        return True
+    # 多指标并列（注册表命中 ≥2 个不同指标）
+    try:
+        return count_series_hits(message) >= 2
+    except Exception:  # noqa: BLE001 — FAIL-OPEN：指标注册表异常不影响主链路
+        return False
+
+
+def _routing_strategy() -> str:
+    """路由策略开关（默认 S0 = 现状，行为零变化）；S1 = 契约门控 + 复合闸。"""
+    return (os.environ.get("L1_ROUTING_STRATEGY", "S0") or "S0").strip().upper()
+
+
+def semantic_candidates(message: str, k: int = 3, *, validated: bool = True) -> list:
+    """通道 B：语义候选 top-K（[(intent, score), ...]）。
+
+    validated=True 时按 G2 特征闸过滤（requiredPattern / 确定性序列），
+    与 route_query 的语义准入保持同一口径；FAIL-OPEN：异常返回空列表。
+    """
+    if _semantic_matcher is None or len(message or "") < SEMANTIC_MIN_LEN:
+        return []
+    try:
+        top = _semantic_matcher.semantic_topk(message, lang="auto", k=k)
+    except Exception:  # noqa: BLE001 — FAIL-OPEN
+        return []
+    out = []
+    for intent, score in top:
+        if validated and not required_pattern_ok(intent, message, strict_series=True):
+            continue
+        out.append((intent, score))
+    return out
+
+
+def detect_intent(message: str) -> str:
+    """后端关键词识别（前端未透传 intent 时的兜底，规则与 TS 注册表对齐）。
+
+    双通道：正则优先 → 语义兜底（SPEC-41-L1 §3.3）。
+    语义命中的 data_query/data_insight 仍需 requiredPattern 校验。
+    FAIL-OPEN：语义通道任何异常退回空串（交 L2）。
+    """
+    if not message:
+        return ""
+    regex_intent = detect_intent_regex(message)
+    if regex_intent:
+        return regex_intent
 
     # ===== 通道 B：语义兜底（正则未命中时启用） =====
-    # 短消息（<5 字）多为对话/寒暄/测试，跳过语义匹配避免误命中
-    if _semantic_matcher is not None and len(message) >= 5:
+    if _semantic_matcher is not None and len(message) >= SEMANTIC_MIN_LEN:
         try:
             semantic = _semantic_matcher.semantic_match(message, lang="auto")
             if semantic:
                 intent = semantic[0]
-                # 通用意图仍需 requiredPattern 校验（与正则通道同等待遇）
-                if intent == "data_insight" and not _DATA_INSIGHT_PATTERN.search(message):
+                # 通用意图仍需 requiredPattern 校验（与正则通道同等待遇）；
+                # strict_series=False：语义 metric_series 交由 recall 门控裁决（线上行为不变）
+                if not required_pattern_ok(intent, message, strict_series=False):
                     return ""
-                if intent == "data_query" and not (
-                    resolve_source(message) or _DATA_QUERY_PATTERN.search(message)
-                ):
-                    return ""
-                # metric_series 仍需确定性序列检查（否则走正常 recall 门控）
-                if intent == "metric_series" and not _is_deterministic_series(message):
-                    # 语义命中 metric_series 但非确定性序列 → 仍返回该意图，
-                    # route_query 会走 recall 门控（语义兜底不改变门控逻辑）
-                    pass
                 return intent
         except Exception:  # noqa: BLE001 — FAIL-OPEN：语义通道异常不影响主链路
             pass
@@ -555,14 +670,27 @@ def _route_deterministic(
     }
 
 
-def route_query(message: str, intent: str = "", trace_id: str = "") -> dict:
+def _route_query_impl(message: str, intent: str = "", trace_id: str = "") -> dict:
     """门控主流程：意图 → recall → evaluate_route → L1 直答 / L2 交接（全程 FAIL-OPEN）。
 
     trace_id 由前端入口生成并透传（执行链 SPEC §6.2），L1 直答的 settle 案例落同一 trace。
     """
+    strategy = _routing_strategy()
     intent = (intent or "").strip()
     if intent not in EXECUTORS:
-        intent = detect_intent(message)
+        # S1 只走正则通道（E1 实测口径：语义通道不参与准入）
+        intent = detect_intent_regex(message) if strategy == "S1" else detect_intent(message)
+
+    # ===== S1 契约门控（E1 选定；默认 S0 不进入此分支）=====
+    if strategy == "S1":
+        if is_compound_query(message):
+            return _unknown_result(trace_id, intent or "unknown", R_COMPOUND_QUERY, degraded=False)
+        if not intent:
+            return _unknown_result(trace_id)
+        if intent not in EXECUTORS:
+            return _unknown_result(trace_id, intent, "l1_no_executor", degraded=False)
+        return _route_deterministic(intent, message, trace_id, reason=R_CONTRACT_DIRECT)
+
     if not intent:
         return _unknown_result(trace_id)
     if intent not in EXECUTORS:
@@ -644,6 +772,24 @@ def route_query(message: str, intent: str = "", trace_id: str = "") -> dict:
         pass
     # 执行链 trace 台账（G-BCL-3）：L1 直答无 task_id，由调用方按 trace 聚合
     out["settle_attempted"] = settle_attempted
+    return out
+
+
+def route_query(message: str, intent: str = "", trace_id: str = "") -> dict:
+    """对外入口：在门控结果上挂建议器影子记录（默认关闭，返回字段零变化）。"""
+    out = _route_query_impl(message, intent, trace_id)
+    try:
+        import l1_suggest_shadow as _shadow  # noqa: PLC0415 — 可选依赖，缺失不影响主链路
+
+        _shadow.record(
+            message,
+            intent=out.get("intent", ""),
+            decision=(out.get("route_signal") or {}).get("decision", ""),
+            trace_id=trace_id,
+            strategy=_routing_strategy(),
+        )
+    except Exception:  # noqa: BLE001 — 影子记录绝不影响主链路
+        pass
     return out
 
 

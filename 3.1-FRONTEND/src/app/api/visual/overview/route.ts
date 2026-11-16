@@ -18,14 +18,16 @@ function normalizeSymbols(raw: string | null): string[] {
     .slice(0, 16);
 }
 
-async function runOverview(symbols: string[]): Promise<any> {
+async function runOverview(symbols: string[], history: number): Promise<any> {
   const scriptPath = path.join(process.cwd(), 'scripts', 'visual_overview.py');
   const args = [scriptPath];
   if (symbols.length > 0) args.push('--symbols', symbols.join(','));
+  if (history > 0) args.push('--history', String(history));
   const pythonBin = process.env.COGNITIVE_PYTHON || process.env.PYTHON || 'python3';
+  // 影带回放需要逐期重跑 D-E19（约 +1.6s/期），仅显式请求时放宽超时；默认仍 25s
   const { stdout } = await execFileAsync(pythonBin, args, {
     maxBuffer: 20 * 1024 * 1024,
-    timeout: 25000,
+    timeout: history > 0 ? 60000 : 25000,
   });
   const lines = stdout.trim().split('\n').filter((l: string) => l.trim().startsWith('{'));
   return JSON.parse(lines[lines.length - 1] || '{}');
@@ -37,14 +39,16 @@ const cache = new Map<string, { at: number; data: any }>();
 
 export async function GET(request: NextRequest) {
   const symbols = normalizeSymbols(request.nextUrl.searchParams.get('symbols'));
-  const cacheKey = symbols.join(',');
+  // 点亮影带期数（T9-2）：0 = 不回溯（保持旧 payload）；上限 45 期，避免超时
+  const history = Math.min(45, Math.max(0, Number(request.nextUrl.searchParams.get('history')) || 0));
+  const cacheKey = `${symbols.join(',')}|h${history}`;
   const hit = cache.get(cacheKey);
   if (hit && Date.now() - hit.at < CACHE_TTL_MS) {
     return NextResponse.json(hit.data);
   }
 
   try {
-    const data = await runOverview(symbols);
+    const data = await runOverview(symbols, history);
     if (data?.ok) cache.set(cacheKey, { at: Date.now(), data });
     return NextResponse.json(data);
   } catch (err: any) {

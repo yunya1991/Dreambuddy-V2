@@ -134,6 +134,19 @@ export interface LightsPayload {
   meta?: LightsMeta;
   answer?: string | null;
   quality?: Record<string, unknown> | null;
+  /** T9-2 逐期回放（仅在 `?history=N` 时下发；缺期不补造） */
+  history?: { as_of: string; rows: LightRow[] }[];
+  history_error?: string;
+}
+
+export interface BaseMetrics {
+  percentile?: {
+    value: number | null;
+    lookback?: number | null;
+    sample_n?: number | null;
+    capability?: string;
+  } | null;
+  as_of?: string | null;
 }
 
 export interface VisualOverview {
@@ -144,6 +157,7 @@ export interface VisualOverview {
   unavailable?: { asset: string; reason: string }[];
   visuals?: VisualSpec[];
   lights?: LightsPayload | null;
+  base_metrics?: BaseMetrics | null;
   recommended?: RecommendItem[];
   degraded?: boolean;
   generated_at?: string;

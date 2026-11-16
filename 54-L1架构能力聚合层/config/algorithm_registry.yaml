@@ -1,0 +1,210 @@
+# 统计算法注册表（TASKS-20261116 T3-1 / T3-2 / T3-4）
+# ============================================================
+# 定位：把「数据-价格关系」拆成 6 类（R1–R6），并把可执行方法绑定成算法包。
+# 严格约束：
+#   1. 本文件只是**声明**：不含公式、不执行、不取数；
+#   2. 方法 / 变换 / 期限必须落在 config/discovery_space.yaml 的预注册空间内；
+#   3. 任何新增方法 → 先改 discovery_space（新一期预注册），再回填本表；
+#   4. R6（阻力最小方向）依赖 FNS 价尺，未落地前 enabled=false 且禁止挂包；
+#   5. `scripts/validate_algorithm_registry.py` 是唯一判定入口（CI 可跑）。
+# ============================================================
+
+version: "alg-1.0.0"
+updated: "2026-11-16"
+source:
+  space: "config/discovery_space.yaml"
+  space_version: 1
+
+# ---------------- 关系类型（判据 + 门禁引用） ----------------
+relation_types:
+  - id: R1
+    name: 趋势延续
+    question: 指标处于高位/低位后，前瞻收益是否同向延续
+    hypothesis: 有序关联（单调或秩相关）同号且显著
+    judge: [B11, B12, B13, B14, B15, SC52]
+    enabled: true
+  - id: R2
+    name: 形态切换
+    question: 指标落入不同状态/分箱后，前瞻收益分布是否显著不同
+    hypothesis: 分箱间收益差异显著（条件期望/胜率差异）
+    judge: [B01, B02, B03, B04, B05, R01, R02, R04]
+    enabled: true
+  - id: R3
+    name: 周期规律
+    question: 特定日历窗口或周期相位下的收益是否有稳定方向
+    hypothesis: 日历/相位分组的方向与幅度可重复
+    judge: [R03, SC52]
+    enabled: true
+  - id: R4
+    name: 惯性
+    question: 过去方向的持续性（自相关/长记忆）是否可转化为前瞻收益
+    hypothesis: 滞后项与前瞻收益同号且显著，Hurst 偏离 0.5
+    judge: [M01, M02, B14, SC62]
+    enabled: true
+  - id: R5
+    name: 前瞻指标
+    question: 某序列领先目标序列若干期，领先关系是否稳定
+    hypothesis: CCF 峰值滞后固定、IC 衰减曲线单调
+    judge: [M11, M12, B15]
+    enabled: true
+  - id: R6
+    name: 阻力最小方向
+    question: 价格在价值尺度（价尺）中的相对位置指向哪一侧阻力更小
+    hypothesis: 需 FNS 价尺就绪后定义（当前不存在可验证口径）
+    judge: []
+    enabled: false
+    blocked_by: "FNS 价尺（SPEC-54-金融价尺系统）未落地"
+
+# ---------------- 方法角色（T3-4：20 个方法全部有归属，无孤儿） ----------------
+method_roles:
+  M01: [R1, R4]
+  M02: [R1, R4]
+  M11: [R5]
+  M12: [R5]
+  B01: [R2]
+  B02: [R2]
+  B03: [R2]
+  B04: [R2]
+  B05: [R2]
+  B11: [R1]
+  B12: [R1]
+  B13: [R1]
+  B14: [R1, R4]
+  B15: [R5]
+  R01: [R2]
+  R02: [R2]
+  R03: [R3]
+  R04: [R2]
+  SC52: [R1, R3]
+  SC62: [R4]
+
+# ---------------- 算法包（可执行单元；一个包 = 一组方法 + 空间约束） ----------------
+packages:
+  - id: ALG-R1-001
+    relation_type: R1
+    name: 趋势延续 · 秩相关漂移
+    methods: [B14, M02]
+    transforms: [zscore60, ts_rank60]
+    horizons: [5, 20]
+    min_n: 250
+    status: enabled
+  - id: ALG-R1-002
+    relation_type: R1
+    name: 趋势延续 · 分箱单调
+    methods: [B02, B11, B12]
+    transforms: [quintile5, raw]
+    horizons: [5, 20]
+    min_n: 250
+    status: enabled
+  - id: ALG-R1-003
+    relation_type: R1
+    name: 趋势延续 · 线性相关
+    methods: [M01, B13]
+    transforms: [diff, pct]
+    horizons: [1, 5]
+    min_n: 250
+    status: enabled
+  - id: ALG-R1-004
+    relation_type: R1
+    name: 趋势延续 · 非参趋势
+    methods: [SC52]
+    transforms: [raw, diff]
+    horizons: [20]
+    min_n: 250
+    status: enabled
+  - id: ALG-R2-001
+    relation_type: R2
+    name: 形态切换 · 分位条件收益
+    methods: [B02, B05, R01]
+    transforms: [quintile5]
+    horizons: [5, 20]
+    min_n: 250
+    status: enabled
+  - id: ALG-R2-002
+    relation_type: R2
+    name: 形态切换 · 离散状态
+    methods: [B03, B04, R01]
+    transforms: [raw, quintile5]
+    horizons: [5, 20]
+    min_n: 250
+    status: enabled
+  - id: ALG-R2-003
+    relation_type: R2
+    name: 形态切换 · 事件窗
+    methods: [R04]
+    transforms: [raw]
+    horizons: [5, 20]
+    min_n: 250
+    status: enabled
+  - id: ALG-R2-004
+    relation_type: R2
+    name: 形态切换 · 等宽分箱
+    methods: [B01, B05]
+    transforms: [raw]
+    horizons: [5]
+    min_n: 250
+    status: enabled
+  - id: ALG-R2-005
+    relation_type: R2
+    name: 形态切换 · 分位收益
+    methods: [R02]
+    transforms: [quintile5]
+    horizons: [1, 5, 20]
+    min_n: 250
+    status: enabled
+  - id: ALG-R3-001
+    relation_type: R3
+    name: 周期规律 · 日历效应
+    methods: [R03]
+    transforms: [raw]
+    horizons: [1, 5]
+    min_n: 250
+    status: enabled
+  - id: ALG-R3-002
+    relation_type: R3
+    name: 周期规律 · 趋势季节
+    methods: [SC52]
+    transforms: [raw]
+    horizons: [20]
+    min_n: 250
+    status: enabled
+  - id: ALG-R4-001
+    relation_type: R4
+    name: 惯性 · 自相关持续
+    methods: [M01, M02]
+    transforms: [diff, pct]
+    horizons: [1, 5]
+    min_n: 250
+    status: enabled
+  - id: ALG-R4-002
+    relation_type: R4
+    name: 惯性 · 秩 IC 持续
+    methods: [B14]
+    transforms: [ts_rank60, zscore60]
+    horizons: [1, 5]
+    min_n: 250
+    status: enabled
+  - id: ALG-R4-003
+    relation_type: R4
+    name: 惯性 · 长记忆
+    methods: [SC62]
+    transforms: [raw, diff]
+    horizons: [20]
+    min_n: 250
+    status: enabled
+  - id: ALG-R5-001
+    relation_type: R5
+    name: 前瞻指标 · 领先滞后
+    methods: [M11, M12]
+    transforms: [diff, pct]
+    horizons: [1, 5]
+    min_n: 250
+    status: enabled
+  - id: ALG-R5-002
+    relation_type: R5
+    name: 前瞻指标 · IC 衰减
+    methods: [B15]
+    transforms: [zscore60]
+    horizons: [1, 5, 20]
+    min_n: 250
+    status: enabled

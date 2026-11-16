@@ -75,20 +75,22 @@ function renderBody(visual: VisualSpec) {
   return <V3Empty title="暂不支持的图类型" description={`kind=${visual.kind}`} />;
 }
 
-export function VisualRenderer({ visual }: { visual: VisualSpec }) {
+export function VisualRenderer({ visual, showTitle = true }: { visual: VisualSpec; showTitle?: boolean }) {
   return (
     <div className="space-y-2">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-200 truncate">{visual.title}</p>
-          <p className="text-[10px] text-slate-500">
-            {visual.source_capability} · {SCOPE_LABEL[visual.n_scope] ?? visual.n_scope} · spec{' '}
-            {visual.spec_version}
-            {visual.truncated ? ' · 已截断' : ''}
-          </p>
+      {showTitle && (
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-slate-200 truncate">{visual.title}</p>
+            <p className="text-[10px] text-slate-500">
+              {visual.source_capability} · {SCOPE_LABEL[visual.n_scope] ?? visual.n_scope} · spec{' '}
+              {visual.spec_version}
+              {visual.truncated ? ' · 已截断' : ''}
+            </p>
+          </div>
+          <V3Badge variant="default" label={visual.kind} />
         </div>
-        <V3Badge variant="default" label={visual.kind} />
-      </div>
+      )}
       {renderBody(visual)}
       <p className="text-[10px] text-amber-500/70">{visual.caveat}</p>
     </div>

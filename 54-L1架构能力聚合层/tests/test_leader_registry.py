@@ -181,7 +181,7 @@ def test_frontend_script_uses_registry_pool():
     spec = importlib.util.spec_from_file_location("_visual_overview", script)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    symbols, base, _ = mod._parse_args([])
+    symbols, base, _, _ = mod._parse_args([])
     assert symbols == R.default_pool()
     assert base == "BTC"
     assert not hasattr(mod, "DEFAULT_ASSETS")
