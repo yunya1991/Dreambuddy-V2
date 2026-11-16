@@ -5,7 +5,8 @@
 - 只在 `handled=false` 时调用，不进入 L1 直答路径；
 - `query` 必须通过 `detect_intent_regex(query) == intent` 校验，
   点击后以该文本重发即可在 S1 下必然命中（无需服务端特判）；
-- 预算 `L1_SUGGEST_BUDGET_MS`（默认 50ms），超时/异常返回 []，绝不影响主链路。
+- 预算 `L1_SUGGEST_BUDGET_MS`（默认 1500ms；云端 8099 CPU 推理单条 embed 实测
+  约 600ms，200ms 预算在云端永远超时），超时/异常返回 []，绝不影响主链路。
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ from urllib.parse import urlparse
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _UNITS_DIR = os.path.abspath(os.path.join(_HERE, "..", "..", "41-文件索引系统", "intent_units"))
-_DEFAULT_BUDGET_MS = 200
+_DEFAULT_BUDGET_MS = 1500
 _K = 3
 
 _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="l1-suggest")
