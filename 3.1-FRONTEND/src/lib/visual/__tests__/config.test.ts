@@ -2,13 +2,18 @@ import {
   CONFIG_KEY,
   DEFAULT_ACTIVE_TAB,
   DEFAULT_PANELS,
+  argToText,
   defaultArgsForSchema,
   defaultConfig,
+  hasUserArgs,
   loadConfig,
   mergeServerPanels,
   normalizeConfig,
   panelCount,
   parseConfig,
+  parseJsonArg,
+  parseLabels,
+  parseNumberSeries,
   saveConfig,
   serializeConfig,
   tabToServerRows,
@@ -273,5 +278,54 @@ describe('服务端配置同步（SPEC-54 R3b）', () => {
       { tab_id: 'all', panel_key: TAB_META_KEY, capability_id: TAB_META_KEY, args: { title: '全部', deleted: true } },
     ]);
     expect(merged.tabs.some((tab) => tab.id === 'all')).toBe(true);
+  });
+});
+
+describe('动态参数表单解析（SPEC-54b）', () => {
+  it('series 支持逗号/换行/中文逗号并拒绝脏值', () => {
+    expect(parseNumberSeries('1, 2\n3，4')).toEqual({ value: [1, 2, 3, 4] });
+    expect(parseNumberSeries('')).toEqual({ value: [] });
+    expect(parseNumberSeries('1, abc')).toHaveProperty('error');
+    expect(parseNumberSeries('NaN')).toHaveProperty('error');
+  });
+
+  it('labels 保留字符串并过滤空白', () => {
+    expect(parseLabels('A, B\nC')).toEqual({ value: ['A', 'B', 'C'] });
+  });
+
+  it('json 解析失败返回错误', () => {
+    expect(parseJsonArg('[[0,0],[1,0]]')).toEqual({ value: [[0, 0], [1, 0]] });
+    expect(parseJsonArg('[[0,0]')).toHaveProperty('error');
+  });
+
+  it('hasUserArgs 只认 source=user 且排除公共项', () => {
+    expect(
+      hasUserArgs({
+        capability_id: 'D-J25',
+        accepts_extra: false,
+        requires_symbol: true,
+        requires_benchmark: false,
+        args: [
+          { name: 'coords', type: 'json', required: true, default: null, source: 'user' },
+          { name: 'symbol', type: 'scalar', required: false, default: null, source: 'user' },
+        ],
+      }),
+    ).toBe(true);
+    expect(
+      hasUserArgs({
+        capability_id: 'D-E10',
+        accepts_extra: false,
+        requires_symbol: true,
+        requires_benchmark: false,
+        args: [{ name: 'symbol', type: 'scalar', required: false, default: null, source: 'auto' }],
+      }),
+    ).toBe(false);
+  });
+
+  it('argToText 回填已持久化参数', () => {
+    expect(argToText([1, 2, 3])).toBe('1, 2, 3');
+    expect(argToText('CPIAUCSL')).toBe('CPIAUCSL');
+    expect(argToText([[0, 0], [1, 1]])).toBe('[[0,0],[1,1]]');
+    expect(argToText(null)).toBe('');
   });
 });

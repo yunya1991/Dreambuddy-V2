@@ -199,6 +199,150 @@ USER_INPUT_ONLY: Dict[str, Tuple[List[str], str]] = {
     "D-J28": (["effects", "se"], "需要效应量与标准误（effects/se）"),
 }
 
+# SPEC-54b：用户输入型能力（前端动态表单提供数组/坐标），按 schema 校验后放行
+USER_ARG_CAPS = frozenset({"D-J25", "D-J26", "D-J27", "D-J28"})
+MIN_USER_SERIES = 30
+
+
+def _num_list(value: Any, name: str) -> List[float]:
+    """把用户入参规整为有限浮点数组；非法时抛 ValueError（由调用方转 invalid_params）。"""
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{name} 需为数值数组")
+    out: List[float] = []
+    for item in value:
+        if isinstance(item, bool):
+            raise ValueError(f"{name} 含非数值")
+        try:
+            num = float(item)
+        except (TypeError, ValueError):
+            raise ValueError(f"{name} 含非数值") from None
+        if not math.isfinite(num):
+            raise ValueError(f"{name} 含非有限值")
+        out.append(num)
+    return out
+
+
+def _resolve_user_args(
+    capability_id: str,
+    payload: Dict[str, Any],
+    base: Dict[str, Any],
+    started: float,
+) -> Dict[str, Any]:
+    """J25–J28：用户输入数组 → 校验 → 调用能力（不伪造缺失数据）。"""
+    try:
+        if capability_id == "D-J25":
+            coords_raw = payload.get("coords")
+            if coords_raw in (None, "", []):
+                return _result(
+                    "missing_args",
+                    capability_id,
+                    missing_params=["coords"],
+                    reason="需要空间坐标（coords）",
+                )
+            if not isinstance(coords_raw, (list, tuple)):
+                return _result(
+                    "invalid_params", capability_id, reason="coords 需为 [[x, y], …] 数组"
+                )
+            coords: List[List[float]] = []
+            for point in coords_raw:
+                if not isinstance(point, (list, tuple)) or len(point) != 2:
+                    return _result(
+                        "invalid_params", capability_id, reason="coords 每个元素需为 [x, y]"
+                    )
+                try:
+                    x, y = float(point[0]), float(point[1])
+                except (TypeError, ValueError):
+                    return _result("invalid_params", capability_id, reason="coords 含非数值")
+                if not (math.isfinite(x) and math.isfinite(y)):
+                    return _result("invalid_params", capability_id, reason="coords 含非有限值")
+                coords.append([x, y])
+
+            if payload.get("values") is not None:
+                values = _num_list(payload["values"], "values")
+            else:
+                # 默认用所选资产最近 N 个收盘价对齐坐标点
+                symbol = str(payload.get("symbol") or DEFAULT_SYMBOL).strip().upper()
+                days = int(payload.get("days") or DEFAULT_DAYS)
+                series = _load_symbol(symbol, max(days, len(coords)))
+                ordered = [series[day] for day in sorted(series)]
+                values = ordered[-len(coords) :]
+            if len(values) != len(coords):
+                return _result(
+                    "invalid_params", capability_id, reason="coords 与 values 长度不一致"
+                )
+            if len(coords) < MIN_USER_SERIES:
+                return _result(
+                    "sample_insufficient",
+                    capability_id,
+                    reason=f"空间样本不足 {MIN_USER_SERIES} 点",
+                )
+            envelope = _run(capability_id, {"coords": coords, "values": values})
+            return _ok(capability_id, envelope, len(coords), 0, started, base["meta"])
+
+        if capability_id == "D-J28":
+            missing = [n for n in ("effects", "se") if payload.get(n) in (None, "", [])]
+            if missing:
+                return _result(
+                    "missing_args",
+                    capability_id,
+                    missing_params=missing,
+                    reason="需要效应量与标准误（effects/se）",
+                )
+            effects = _num_list(payload["effects"], "effects")
+            se = _num_list(payload["se"], "se")
+            if len(effects) != len(se):
+                return _result("invalid_params", capability_id, reason="effects 与 se 长度不一致")
+            if len(effects) < MIN_USER_SERIES:
+                return _result(
+                    "sample_insufficient",
+                    capability_id,
+                    reason=f"Meta 样本不足 {MIN_USER_SERIES} 项",
+                )
+            envelope = _run(capability_id, {"effects": effects, "se": se})
+            return _ok(capability_id, envelope, len(effects), 0, started, base["meta"])
+
+        # D-J26 / D-J27：共享 time（J27 允许用 series 别名）
+        time_raw = payload.get("time")
+        if time_raw in (None, "", []) and capability_id == "D-J27":
+            time_raw = payload.get("series")
+        if time_raw in (None, "", []):
+            return _result(
+                "missing_args",
+                capability_id,
+                missing_params=["time"],
+                reason="需要观测时长（time）",
+            )
+        durations = _num_list(time_raw, "time")
+        if len(durations) < MIN_USER_SERIES:
+            return _result(
+                "sample_insufficient",
+                capability_id,
+                reason=f"观测样本不足 {MIN_USER_SERIES} 条",
+            )
+        args: Dict[str, Any] = {"time": durations}
+        if payload.get("event") is not None:
+            event = _num_list(payload["event"], "event")
+            if len(event) != len(durations):
+                return _result("invalid_params", capability_id, reason="event 与 time 长度不一致")
+            args["event"] = event
+        if capability_id == "D-J26" and payload.get("covariate") is not None:
+            covariate = _num_list(payload["covariate"], "covariate")
+            if len(covariate) != len(durations):
+                return _result(
+                    "invalid_params", capability_id, reason="covariate 与 time 长度不一致"
+                )
+            args["covariate"] = covariate
+        if capability_id == "D-J26" and payload.get("group") is not None:
+            group = payload["group"]
+            if not isinstance(group, (list, tuple)) or len(group) != len(durations):
+                return _result("invalid_params", capability_id, reason="group 与 time 长度不一致")
+            args["group"] = [str(item) for item in group]
+        envelope = _run(capability_id, args)
+        return _ok(capability_id, envelope, len(durations), 0, started, base["meta"])
+    except ValueError as exc:
+        return _result("invalid_params", capability_id, reason=str(exc))
+
+
 _PANEL_LIST_CACHE: Dict[int, Tuple[List[str], Dict[str, List[float]]]] = {}
 
 # ------------------------------------------------------------------ 观测/缓存（R6）
@@ -536,6 +680,10 @@ def _resolve_impl(capability_id: str, payload: Optional[Dict[str, Any]] = None) 
             envelope = _run(capability_id, args)
             return _ok(capability_id, envelope, len(common), trimmed, started, base["meta"])
 
+        # ---- 用户输入型：J25–J28（SPEC-54b）----
+        if capability_id in USER_ARG_CAPS:
+            return _resolve_user_args(capability_id, payload, base, started)
+
         series = _load_symbol(symbol, days)
         if not series:
             return _result("sample_insufficient", capability_id, reason=f"{symbol} 无可用序列")
@@ -590,8 +738,46 @@ def _resolve_impl(capability_id: str, payload: Optional[Dict[str, Any]] = None) 
         # ---- 外部指标：D-J30 ----
         if capability_id == "D-J30":
             indicator = payload.get("indicator")
-            if not indicator:
+            if indicator in (None, "", []):
                 return _result("missing_args", capability_id, missing_params=["indicator"])
+
+            if isinstance(indicator, (list, tuple)):
+                # 自定义指标序列（SPEC-54b AC5）：与 prices 等长，prices 可自动取所选资产
+                try:
+                    indicator_values = _num_list(indicator, "indicator")
+                    if payload.get("prices") is not None:
+                        price_values = _num_list(payload["prices"], "prices")
+                    else:
+                        ordered = [series[day] for day in sorted(series)]
+                        price_values = ordered[-len(indicator_values) :]
+                except ValueError as exc:
+                    return _result("invalid_params", capability_id, reason=str(exc))
+                if len(price_values) != len(indicator_values):
+                    return _result(
+                        "invalid_params", capability_id, reason="indicator 与 prices 长度不一致"
+                    )
+                if len(indicator_values) < MIN_USER_SERIES:
+                    return _result(
+                        "sample_insufficient",
+                        capability_id,
+                        reason=f"PIT 样本不足 {MIN_USER_SERIES} 条",
+                    )
+                envelope = _run(
+                    capability_id, {"indicator": indicator_values, "prices": price_values}
+                )
+                quality = _quality(envelope)
+                if payload.get("release_ts") is None and not quality.get("degraded_reason"):
+                    quality["degraded_reason"] = "release_ts_absent"
+                return _ok(
+                    capability_id,
+                    envelope,
+                    len(indicator_values),
+                    0,
+                    started,
+                    base["meta"],
+                    quality=quality,
+                )
+
             series_ind = _load_metric(str(indicator), "value")
             if not series_ind:
                 return _result("product_missing", capability_id, reason=f"指标 {indicator} 无数据")

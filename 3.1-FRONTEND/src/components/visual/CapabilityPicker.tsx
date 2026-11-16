@@ -14,7 +14,7 @@ import {
   validateCapability,
   type CapabilityItem,
 } from '@/lib/visual/api';
-import { defaultArgsForSchema } from '@/lib/visual/config';
+import { defaultArgsForSchema, hasUserArgs } from '@/lib/visual/config';
 import type { PanelSpec, VisualKind } from '@/lib/visual/panelKey';
 import type { CapabilitySchema } from './types';
 
@@ -42,9 +42,11 @@ interface CapabilityPickerProps {
 interface PreviewState {
   id: string;
   ok: boolean;
+  canAdd: boolean;
   missing: string[];
   warnings: string[];
   reason?: string;
+  code?: string;
   kind?: VisualKind;
   schema?: CapabilitySchema;
 }
@@ -119,11 +121,15 @@ export function CapabilityPicker({
         const explained = await explainCapability(item.capability_id);
         const schema = explained.schema;
         const resolved = await resolveCapability(item.capability_id, {});
+        // SPEC-54b：缺参但 schema 有用户输入位 → 允许先添加，卡片内再填
+        const needsInput = resolved.code === 'missing_args' && hasUserArgs(schema);
         setPreview({
           id: item.capability_id,
           ok: Boolean(resolved.ok),
+          canAdd: Boolean(resolved.ok) || needsInput,
           missing: resolved.missing_params ?? [],
           warnings: [],
+          code: resolved.code,
           reason: resolved.ok
             ? undefined
             : `${CODE_HINT[resolved.code] ?? resolved.code}${resolved.reason ? `：${resolved.reason}` : ''}`,
@@ -143,6 +149,7 @@ export function CapabilityPicker({
         setPreview({
           id: item.capability_id,
           ok: false,
+          canAdd: false,
           missing: validated.missing_params ?? [],
           warnings: validated.warnings ?? [],
           reason: validated.reason,
@@ -153,6 +160,7 @@ export function CapabilityPicker({
       setPreview({
         id: item.capability_id,
         ok: Boolean(run.ok),
+        canAdd: Boolean(run.ok),
         missing: [],
         warnings: validated.warnings ?? [],
         reason: run.ok ? undefined : run.reason || '运行缺参',
@@ -162,6 +170,7 @@ export function CapabilityPicker({
       setPreview({
         id: item.capability_id,
         ok: false,
+        canAdd: false,
         missing: [],
         warnings: [],
         reason: err instanceof Error ? err.message : 'preview_failed',
@@ -269,7 +278,7 @@ export function CapabilityPicker({
                     <button
                       type="button"
                       onClick={() => handleAdd(item)}
-                      disabled={isMounted || !isPreview || !preview?.ok}
+                      disabled={isMounted || !isPreview || !preview?.canAdd}
                       className="rounded-md border border-indigo-500/40 bg-indigo-500/15 px-2 py-0.5 text-[10px] text-indigo-200 disabled:border-slate-800 disabled:bg-transparent disabled:text-slate-600"
                     >
                       添加
@@ -280,6 +289,11 @@ export function CapabilityPicker({
                   <div className="mt-1.5 rounded-md border border-slate-800 bg-slate-950/50 px-2 py-1.5 text-[10px]">
                     {preview.ok ? (
                       <span className="text-emerald-400">可执行（预览取数成功）</span>
+                    ) : preview.canAdd ? (
+                      <span className="text-sky-400">
+                        需填参数（添加后在卡片「参数」面板填写）
+                        {preview.missing.length > 0 && ` · 缺 ${preview.missing.join(', ')}`}
+                      </span>
                     ) : (
                       <span className="text-amber-400">
                         不可执行
@@ -296,7 +310,7 @@ export function CapabilityPicker({
         </div>
 
         <footer className="border-t border-slate-800 px-4 py-2.5 text-[10px] text-slate-500">
-          已挂载 {mounted.length} 张卡 · 不看预览不能添加（避免挂上永远为空的卡）
+          已挂载 {mounted.length} 张卡 · 缺参能力可先添加，在卡片参数面板填写后重跑
         </footer>
       </aside>
     </div>

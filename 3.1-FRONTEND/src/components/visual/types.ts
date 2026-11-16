@@ -62,6 +62,7 @@ export type CapabilityArgType =
   | 'pair'
   | 'macro_pair'
   | 'events'
+  | 'labels'
   | 'json';
 
 export type CapabilityArgSource = 'auto' | 'user' | 'derived' | 'unsupported';

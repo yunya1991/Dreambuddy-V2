@@ -202,6 +202,59 @@ export function defaultArgsForSchema(schema: CapabilitySchema): Record<string, u
   return args;
 }
 
+// ---------------------------------------------------------------- 动态参数表单（SPEC-54b）
+// 用户输入型参数在卡片里以文本编辑，提交前按 type 解析成数组/JSON；解析失败不发送。
+export interface ParsedArg {
+  value?: unknown;
+  error?: string;
+}
+
+export function parseNumberSeries(text: string): ParsedArg {
+  const parts = text.split(/[\s,;，；]+/).filter(Boolean);
+  const values: number[] = [];
+  for (const part of parts) {
+    const num = Number(part);
+    if (!Number.isFinite(num)) return { error: `「${part}」不是数值` };
+    values.push(num);
+  }
+  return { value: values };
+}
+
+export function parseLabels(text: string): ParsedArg {
+  const labels = text
+    .split(/[\s,;，；]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return { value: labels };
+}
+
+export function parseJsonArg(text: string): ParsedArg {
+  try {
+    return { value: JSON.parse(text) };
+  } catch {
+    return { error: 'JSON 解析失败' };
+  }
+}
+
+/** schema 是否含需要用户填写的参数（不含资产/基准这类公共项） */
+export function hasUserArgs(schema: CapabilitySchema | null | undefined): boolean {
+  return Boolean(
+    schema?.args?.some(
+      (arg) => arg.source === 'user' && arg.name !== 'symbol' && arg.name !== 'benchmark',
+    ),
+  );
+}
+
+/** 把已持久化的参数值转回表单文本（数组逗号分隔，对象 JSON） */
+export function argToText(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (Array.isArray(value)) {
+    return value.every((item) => typeof item === 'number') ? value.join(', ') : JSON.stringify(value);
+  }
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
+
 // ---------------------------------------------------------------- 服务端同步（SPEC-54 R3b）
 // 存储层只有「面板行」，tab 标题与删除态用一条元数据行承载：
 // panel_key = __tab__，args = {title, deleted?}。

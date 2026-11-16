@@ -8,9 +8,20 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { V3Badge } from '@/components/V3Badge';
-import { resolveCapability, type CapabilityEnvelope, type ResolveResponse } from '@/lib/visual/api';
+import {
+  explainCapability,
+  resolveCapability,
+  type CapabilityEnvelope,
+  type ResolveResponse,
+} from '@/lib/visual/api';
+import {
+  argToText,
+  parseJsonArg,
+  parseLabels,
+  parseNumberSeries,
+} from '@/lib/visual/config';
 import type { PanelSpec } from '@/lib/visual/panelKey';
-import type { VisualSpec } from './types';
+import type { CapabilityArgSchema, CapabilitySchema, VisualSpec } from './types';
 import { VisualRenderer } from './VisualRenderer';
 
 interface CapabilityCardProps {
@@ -52,6 +63,10 @@ export function CapabilityCard({
   const [symbol, setSymbol] = useState(String(panel.args?.symbol ?? DEFAULT_SYMBOL));
   const [benchmark, setBenchmark] = useState(String(panel.args?.benchmark ?? DEFAULT_BENCHMARK));
   const [days, setDays] = useState(String(panel.args?.days ?? DEFAULT_DAYS));
+  // SPEC-54b：schema 驱动的用户参数（J25–J28/J30），编辑面板首次打开时拉一次
+  const [schema, setSchema] = useState<CapabilitySchema | null>(null);
+  const [argText, setArgText] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
 
   const argsKey = useMemo(() => JSON.stringify(panel.args ?? {}), [panel.args]);
   const effectiveArgs = useMemo(
@@ -101,8 +116,96 @@ export function CapabilityCard({
     null;
   const kind = visual?.kind ?? panel.kind;
 
+  const userArgs = useMemo<CapabilityArgSchema[]>(
+    () =>
+      (schema?.args ?? []).filter(
+        (arg) =>
+          arg.source === 'user' &&
+          arg.name !== 'symbol' &&
+          arg.name !== 'benchmark' &&
+          arg.name !== 'days',
+      ),
+    [schema],
+  );
+
+  useEffect(() => {
+    if (!editing || schema) return;
+    let alive = true;
+    explainCapability(panel.capability_id)
+      .then((response) => {
+        if (alive && response.schema) setSchema(response.schema);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [editing, schema, panel.capability_id]);
+
+  // 已持久化的参数回填表单；schema 或参数变化时重置
+  useEffect(() => {
+    if (!schema) return;
+    const next: Record<string, string> = {};
+    for (const arg of schema.args) {
+      if (
+        arg.source !== 'user' ||
+        arg.name === 'symbol' ||
+        arg.name === 'benchmark' ||
+        arg.name === 'days'
+      ) {
+        continue;
+      }
+      next[arg.name] = argToText(panel.args?.[arg.name]);
+    }
+    setArgText(next);
+  }, [schema, argsKey, panel.args]);
+
   const rerun = () => {
-    onArgsChange?.(panel, effectiveArgs);
+    const next: Record<string, unknown> = {};
+    for (const arg of userArgs) {
+      const text = (argText[arg.name] ?? '').trim();
+      if (!text) {
+        if (arg.required) {
+          setFormError(`请填写 ${arg.name}`);
+          return;
+        }
+        continue;
+      }
+      const parsed =
+        arg.type === 'json'
+          ? parseJsonArg(text)
+          : arg.type === 'labels'
+            ? parseLabels(text)
+            : arg.type === 'series'
+              ? parseNumberSeries(text)
+              : { value: text };
+      if (parsed.error) {
+        setFormError(`${arg.name}：${parsed.error}`);
+        return;
+      }
+      next[arg.name] = parsed.value;
+    }
+    // 等长约束（服务端仍会再校验；coords/values、indicator/prices 由服务端装配）
+    for (const [left, right] of [
+      ['effects', 'se'],
+      ['event', 'time'],
+      ['covariate', 'time'],
+      ['group', 'time'],
+    ]) {
+      const first = next[left];
+      const second = next[right];
+      if (Array.isArray(first) && Array.isArray(second) && first.length !== second.length) {
+        setFormError(`${left} 与 ${right} 长度需一致`);
+        return;
+      }
+    }
+    setFormError(null);
+    onArgsChange?.(panel, {
+      ...(panel.args ?? {}),
+      ...next,
+      symbol,
+      benchmark,
+      days: Number(days) || DEFAULT_DAYS,
+    });
     setEditing(false);
     setNonce((value) => value + 1);
   };
@@ -177,6 +280,40 @@ export function CapabilityCard({
               className="w-20 rounded border border-slate-700 bg-slate-950/60 px-2 py-1 text-slate-200"
             />
           </label>
+          {userArgs.map((arg) => (
+            <label key={arg.name} className="flex min-w-[240px] flex-1 flex-col gap-1">
+              <span className="text-[10px] text-slate-500">
+                {arg.name}
+                {arg.required ? ' *' : '（可选）'}
+                {arg.type === 'json'
+                  ? ' · JSON，如 [[0,0],[1,0]]'
+                  : arg.type === 'labels'
+                    ? ' · 逗号分隔标签'
+                    : arg.type === 'scalar'
+                      ? ''
+                      : ' · 逗号或换行分隔'}
+              </span>
+              {arg.type === 'scalar' ? (
+                <input
+                  value={argText[arg.name] ?? ''}
+                  onChange={(event) =>
+                    setArgText((prev) => ({ ...prev, [arg.name]: event.target.value }))
+                  }
+                  placeholder={arg.name === 'indicator' ? '指标名，如 CPIAUCSL / DGS10' : undefined}
+                  className="rounded border border-slate-700 bg-slate-950/60 px-2 py-1 text-slate-200"
+                />
+              ) : (
+                <textarea
+                  rows={2}
+                  value={argText[arg.name] ?? ''}
+                  onChange={(event) =>
+                    setArgText((prev) => ({ ...prev, [arg.name]: event.target.value }))
+                  }
+                  className="rounded border border-slate-700 bg-slate-950/60 px-2 py-1 font-mono text-[11px] text-slate-200"
+                />
+              )}
+            </label>
+          ))}
           <button
             type="button"
             onClick={rerun}
@@ -184,6 +321,7 @@ export function CapabilityCard({
           >
             重跑
           </button>
+          {formError && <p className="w-full text-[10px] text-rose-400">{formError}</p>}
         </div>
       )}
 

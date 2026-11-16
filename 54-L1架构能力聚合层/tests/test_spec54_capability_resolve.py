@@ -114,8 +114,8 @@ def test_requires_user_params():
     assert j30["missing_params"] == ["indicator"]
     for capability_id, expected in (
         ("D-J25", ["coords"]),
-        ("D-J26", ["time", "event"]),
-        ("D-J27", ["time", "event"]),
+        ("D-J26", ["time"]),
+        ("D-J27", ["time"]),
         ("D-J28", ["effects", "se"]),
     ):
         result = cr.resolve(capability_id)

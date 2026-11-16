@@ -32,6 +32,33 @@ DERIVED: Dict[str, Dict[str, str]] = {
 # 必须由用户显式指定（无默认）
 REQUIRES_USER = frozenset({"D-J30"})
 
+# SPEC-54b：用户输入型参数的语义覆盖（签名反射无法区分数组/坐标/标签形态）
+ARG_OVERRIDES: Dict[str, Dict[str, Dict[str, Any]]] = {
+    "D-J25": {
+        "coords": {"type": "json", "source": "user", "required": True},
+    },
+    "D-J26": {
+        "time": {"type": "series", "source": "user", "required": True},
+        "event": {"type": "series", "source": "user"},
+        "group": {"type": "labels", "source": "user"},
+        "covariate": {"type": "series", "source": "user"},
+    },
+    "D-J27": {
+        "time": {"type": "series", "source": "user", "required": True},
+        "series": {"type": "series", "source": "user"},
+        "event": {"type": "series", "source": "user"},
+    },
+    "D-J28": {
+        "effects": {"type": "series", "source": "user", "required": True},
+        "se": {"type": "series", "source": "user", "required": True},
+    },
+    "D-J30": {
+        # 双形态：指标名（CPIAUCSL/DGS10）或自定义数值序列
+        "indicator": {"type": "scalar", "source": "user", "required": True},
+        "prices": {"type": "series", "source": "auto", "required": False},
+    },
+}
+
 # 需要基准资产（默认 US500）
 BENCHMARK_CAPS = frozenset({"D-A11", "D-A12", "D-E14"})
 
@@ -158,6 +185,11 @@ def for_capability(capability_id: str, manifest: Any = None) -> Optional[Dict[st
                 item.kind == inspect.Parameter.VAR_KEYWORD for item in signature.parameters.values()
             )
         )
+
+    for arg in args:
+        override = ARG_OVERRIDES.get(capability_id, {}).get(arg["name"])
+        if override:
+            arg.update(override)
 
     return {
         "capability_id": capability_id,
