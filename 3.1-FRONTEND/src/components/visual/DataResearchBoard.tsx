@@ -101,7 +101,16 @@ export function DataResearchBoard() {
 
   const rows = useMemo<Record<string, unknown>[]>(() => {
     const data = (rec?.result?.data ?? {}) as Record<string, unknown>;
-    const raw = data.rows ?? data.items ?? data.recommendations ?? data.relations;
+    // 能力信封把行数据放在 data.capabilities.<id> 下（顶层 rows/items 为兼容旧出口保留）
+    const caps = (data.capabilities ?? {}) as Record<string, Record<string, unknown>>;
+    const own = caps['D-K01'] ?? Object.values(caps)[0] ?? {};
+    const raw =
+      data.rows ??
+      data.items ??
+      data.recommendations ??
+      own.rows ??
+      own.items ??
+      own.relations;
     return Array.isArray(raw) ? (raw as Record<string, unknown>[]) : [];
   }, [rec]);
 

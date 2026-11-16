@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { V3Badge } from '@/components/V3Badge';
 import { runCapability, type CapabilityEnvelope } from '@/lib/visual/api';
 import type { PanelSpec } from '@/lib/visual/panelKey';
+import type { VisualSpec } from './types';
 import { VisualRenderer } from './VisualRenderer';
 
 interface CapabilityCardProps {
@@ -73,7 +74,12 @@ export function CapabilityCard({
 
   const qualityStatus = envelope?.quality?.status;
   const degradedReason = envelope?.quality?.degraded_reason;
-  const kind = envelope?.visual?.kind ?? panel.kind;
+  // 信封把图规格放在 data.visual（部分旧出口放顶层 visual），两处都认
+  const visual: VisualSpec | null =
+    (envelope?.visual as VisualSpec | undefined) ??
+    ((envelope?.data as Record<string, unknown> | undefined)?.visual as VisualSpec | undefined) ??
+    null;
+  const kind = visual?.kind ?? panel.kind;
 
   return (
     <section className="rounded-xl border border-slate-800 bg-slate-900/40 min-w-0">
@@ -128,8 +134,8 @@ export function CapabilityCard({
 
           {!loading && !failure && envelope && (
             <div className="space-y-2">
-              {envelope.visual ? (
-                <VisualRenderer visual={envelope.visual} showTitle={false} />
+              {visual ? (
+                <VisualRenderer visual={visual} showTitle={false} />
               ) : (
                 <p className="text-[11px] text-slate-400">{envelope.answer || '无图输出'}</p>
               )}
