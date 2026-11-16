@@ -32,7 +32,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlencode
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 POOL_FILE = Path(__file__).parent / "scheduler_data" / "ranking_asset_pool.json"
 POOL_VERSION = 1
@@ -192,8 +192,13 @@ class OkxFeed:
 
     def _rest_candles(self, inst_id: str) -> List[List[Any]]:
         query = urlencode({"instId": inst_id, "bar": "1D", "limit": CANDLE_LIMIT})
+        # OKX 对无 UA 的数据中心请求返回 403，必须显式带 User-Agent
+        request = Request(
+            f"https://www.okx.com/api/v5/market/candles?{query}",
+            headers={"User-Agent": "Mozilla/5.0 (compatible; dreambuddy-ranking/1.0)"},
+        )
         try:
-            with urlopen(f"https://www.okx.com/api/v5/market/candles?{query}", timeout=20) as resp:
+            with urlopen(request, timeout=20) as resp:
                 payload = json.loads(resp.read().decode("utf-8"))
         except Exception:
             return []
