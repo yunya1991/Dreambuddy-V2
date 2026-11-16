@@ -1264,7 +1264,10 @@ class L0Foundation:
             return _degraded(
                 "cognitive-loop-entry", "cognitive_unavailable", f"{type(e).__name__}: {e}", data=[]
             )
-        return _envelope(list(memories or []), "cognitive-loop-entry")
+        # 空命中显式标注 no_hit：route_confidence 的 recall_empty 只说明"没有记忆"，
+        # 带上 reason 才能在链路 trace 里区分"检索不可用"与"确实无相关记忆"。
+        meta = None if memories else {"reason": "no_hit"}
+        return _envelope(list(memories or []), "cognitive-loop-entry", meta=meta)
 
     # -------- settle 分流（从 L1 执行器上收，行为保持一致，FAIL-OPEN） --------
 

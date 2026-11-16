@@ -174,3 +174,38 @@ def test_legacy_executor_marked(monkeypatch):
     monkeypatch.setattr(dqe.dc_pg, "fetch_records", lambda *a, **k: [])
     r = dqe.exec_event_listing("最近有什么新闻")
     assert r["legacy"] is True
+
+
+class _EmptyRecallL0:
+    """recall 恒空：模拟云端「认知库无新闻问法」。"""
+
+    def fetch_context(self, scope, params=None):
+        return {
+            "ok": True,
+            "data": [],
+            "source": "fake",
+            "timestamp": "",
+            "degraded": False,
+            "meta": {"reason": "no_hit"},
+        }
+
+
+def test_event_listing_bypasses_recall_gate(wire, monkeypatch):
+    """A 方案回归：recall_empty 时新闻检索仍须 L1 直答（不再交 L2 静默丢弃）。"""
+    wire(
+        _digest([_digest_item("以太坊突破 4000 美元", "2026-11-15T02:00:00Z", topic="crypto_reg")])
+    )
+    monkeypatch.setattr(lrs, "get_l0", lambda: _EmptyRecallL0())
+
+    out = lrs.route_query("以太坊 最近新闻")
+
+    assert out["handled"] is True
+    assert out["route_signal"]["decision"] == "L1_DIRECT"
+    assert out["route_signal"]["reasons"] == [lrs.R_EXECUTOR_AVAILABILITY]
+    assert out["data"]["matched"] == 1
+
+
+def test_event_listing_is_not_deterministic_registry():
+    """锁住分类边界：产物检索型 ≠ 确定性单维输出（DETERMINISTIC_INTENTS 不得混入）。"""
+    assert "event_listing" in lrs.EXECUTOR_AVAILABILITY_INTENTS
+    assert "event_listing" not in lrs.DETERMINISTIC_INTENTS

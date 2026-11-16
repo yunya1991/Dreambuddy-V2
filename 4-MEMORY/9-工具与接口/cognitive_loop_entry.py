@@ -529,8 +529,16 @@ class CognitiveLoopEntry:
                     if (r.get("metadata") or {}).get("quality_level")
                     != QuarantineManager.QUARANTINED
                 ]
-        except Exception:
+        except Exception as exc:  # noqa: BLE001 — FAIL-OPEN：异常按空结果降级，但必须留痕
+            # 静默吞异常会让「检索不可用」与「确实没有相关记忆」不可区分：
+            # 上层 route_confidence 只能看到 recall_empty，无法定位。
             archival_results = []
+            logger.warning(
+                "archival recall 失败，本次按空结果降级（context=%s）: %s: %s",
+                str(context)[:80],
+                type(exc).__name__,
+                exc,
+            )
 
         # ---------- 合并 + 去重（archival 优先，cache 补充） ----------
         seen_ids = set()

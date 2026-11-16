@@ -583,6 +583,20 @@ class TestCognitiveRecall:
         assert env["data"] == []
         assert env["meta"]["reason"] == "cognitive_unavailable"
 
+    def test_empty_recall_marks_no_hit(self, tmp_path, monkeypatch):
+        """C 方案：空命中必须带 reason，区分「检索不可用」与「确实无相关记忆」。"""
+        l0 = _make_l0(tmp_path)
+
+        class _EmptyCle:
+            def recall(self, context, top_k=5, min_quality="C"):
+                return []
+
+        monkeypatch.setattr(l0, "_load_cle", lambda: _EmptyCle())
+        env = l0.fetch_context("cognitive.recall", {"context": "x"})
+        assert env["degraded"] is False
+        assert env["data"] == []
+        assert env["meta"]["reason"] == "no_hit"
+
 
 # ============================================================
 # 13. settle 分流（已落地能力挂到 L0，行为不变，FAIL-OPEN）

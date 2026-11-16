@@ -177,7 +177,16 @@
 
 1. `_FALLBACK_PATTERNS` 新增 `event_listing`，与 TS 注册表对齐并补足选条信号；
 2. `EXECUTORS` 注册 `event_listing → exec_news_search`；
-3. `DETERMINISTIC_INTENTS` **不加入** `event_listing`（它需要检索，不是确定性单维输出）。
+3. `DETERMINISTIC_INTENTS` **不加入** `event_listing`（它需要检索，不是确定性单维输出）；
+4. **（2026-11-16 修订）新增 `EXECUTOR_AVAILABILITY_INTENTS = {"event_listing"}`**：执行器直接读
+   `news_digest.json` / `hot_news.json` 本地产物，产物缺失时 `exec_news_search` 自带
+   `degraded` FAIL-OPEN，不存在语义猜错风险，因此**不参与认知 recall 密度门控**，直接走
+   `_route_deterministic(reason="executor_artifact_available")` 零 token 直答。
+
+> **修订原因（云端实测）**：原设计让 `event_listing` 走 `route_confidence ≥ 0.65` 的认知召回门控，
+> 但该门控衡量的是「认知记忆里有没有相似案例」，而检索对象是**新闻产物**，两者不是一回事。
+> 云端认知库没有新闻问法 → `recall_empty` → `L2_HANDOFF` → 前端 `NewsSearchBar` 只消费 L1 直答，
+> 结果是「搜了没反应」。同一现象也出现在 `price_query` 等非确定性意图上（见 §13 遗留项 4）。
 
 ### 5.2 槽位（纯规则抽取，零 token）
 

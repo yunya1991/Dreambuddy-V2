@@ -33,6 +33,10 @@ interface QueryResponse {
     degraded?: boolean;
     answer?: string;
     data?: NewsSearchData;
+    route_signal?: {
+      decision?: string;
+      reasons?: string[];
+    } | null;
   } | null;
   error?: string;
 }
@@ -125,6 +129,8 @@ export function NewsSearchBar() {
   const [window, setWindow] = useState<WindowKey>('7d');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // handled=false（L1 未直答、已交上级链路）时的显式提示：此前静默丢弃会表现为"搜了没反应"
+  const [notice, setNotice] = useState<string | null>(null);
   const [result, setResult] = useState<NewsSearchData | null>(null);
   const [answer, setAnswer] = useState<string | null>(null);
   // 用于中断进行中的检索请求（“x” 按钮）
@@ -153,6 +159,7 @@ export function NewsSearchBar() {
 
     setLoading(true);
     setError(null);
+    setNotice(null);
     setResult(null);
     setAnswer(null);
 
@@ -167,6 +174,16 @@ export function NewsSearchBar() {
       if (controller.signal.aborted) return;
       if (!json.ok || !json.data) {
         setError(json.error || '检索失败，请稍后重试');
+        return;
+      }
+      if (json.data.handled === false) {
+        // L1 未直答（门控/无执行器）：必须显式告知，不能静默丢弃
+        const reasons = (json.data.route_signal?.reasons ?? []).filter(Boolean).join('、');
+        setNotice(
+          reasons
+            ? `本次未走 L1 检索直答（${reasons}），已交由上级链路处理`
+            : '本次未走 L1 检索直答，已交由上级链路处理',
+        );
         return;
       }
       setAnswer(json.data.answer ?? null);
@@ -192,12 +209,14 @@ export function NewsSearchBar() {
     setResult(null);
     setAnswer(null);
     setError(null);
+    setNotice(null);
     setLoading(false);
   }
 
   const items = result?.items ?? [];
   const matched = result?.matched ?? 0;
-  const showCancel = loading || keyword.length > 0 || result !== null || error !== null;
+  const showCancel =
+    loading || keyword.length > 0 || result !== null || error !== null || notice !== null;
 
   return (
     <V3Card padding="md" className="space-y-3">
@@ -264,6 +283,13 @@ export function NewsSearchBar() {
       {error && (
         <div className="rounded-lg bg-rose-900/10 border border-rose-500/20 px-3 py-2">
           <p className="text-xs text-rose-400">检索失败：{error}</p>
+        </div>
+      )}
+
+      {/* L1 未直答提示（handled=false） */}
+      {notice && (
+        <div className="rounded-lg bg-amber-900/10 border border-amber-500/20 px-3 py-2">
+          <p className="text-xs text-amber-400">{notice}</p>
         </div>
       )}
 
@@ -343,7 +369,7 @@ export function NewsSearchBar() {
       )}
 
       {/* 空态提示 */}
-      {!result && !error && !loading && (
+      {!result && !error && !notice && !loading && (
         <p className="text-[10px] text-slate-600">输入关键词并选择时间窗口后点击搜索</p>
       )}
     </V3Card>

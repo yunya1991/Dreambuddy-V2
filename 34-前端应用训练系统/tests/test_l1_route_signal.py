@@ -191,6 +191,32 @@ class TestRouteQueryL1Direct:
         assert captured["intent_via_dispatch"] == "risk_control"
 
 
+class TestRouteQueryExecutorAvailability:
+    """A 方案：产物检索型意图不参与 recall 密度门控（SPEC-41-L1 §5.1 修订）。
+
+    新闻检索对象是本地 news_digest/hot_news 产物，不是认知记忆；
+    云端 recall_empty 时也必须直答，否则前端表现为"搜了没反应"。
+    """
+
+    def test_event_listing_direct_on_empty_recall(self, monkeypatch):
+        fake_l0 = FakeL0(memories=[])
+        monkeypatch.setattr(lrs, "get_l0", lambda: fake_l0)
+        monkeypatch.setitem(
+            lrs.EXECUTORS,
+            "event_listing",
+            lambda message: {"success": True, "answer": "ok", "data": {"matched": 2}},
+        )
+
+        out = lrs.route_query("以太坊 最近新闻", intent="event_listing")
+
+        assert out["handled"] is True
+        assert out["route_signal"]["decision"] == "L1_DIRECT"
+        assert out["route_signal"]["reasons"] == [lrs.R_EXECUTOR_AVAILABILITY]
+        assert out["data"]["matched"] == 2
+        # 完全不查认知召回（产物可用性 !== 记忆密度）
+        assert fake_l0.recalls == []
+
+
 class TestRouteQueryL2Handoff:
     def test_empty_recall_forces_l2(self, monkeypatch):
         fake_l0 = FakeL0(memories=[])

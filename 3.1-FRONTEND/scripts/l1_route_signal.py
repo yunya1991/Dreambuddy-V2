@@ -168,6 +168,14 @@ DETERMINISTIC_INTENTS = frozenset(
 )
 R_DETERMINISTIC_REGISTRY = "deterministic_keyword_registry"
 
+# 产物检索型意图（SPEC-41-L1 §5.1 修订）：执行器直接读本地产物（news_digest/hot_news），
+# 自带"产物缺失 → degraded FAIL-OPEN"，不存在语义猜错风险，因此不参与认知 recall 密度门控。
+# 与 DETERMINISTIC_INTENTS 的区别：这类意图不是单维数值输出，而是"检索 + 选条"；
+# 但检索的对象是新闻产物，不是认知记忆——拿认知召回当门槛会让检索永远空转
+# （云端实测：认知库无新闻问法 → recall_empty → 全部交 L2，前端表现为无响应）。
+EXECUTOR_AVAILABILITY_INTENTS = frozenset({"event_listing"})
+R_EXECUTOR_AVAILABILITY = "executor_artifact_available"
+
 # 查询类判定：命中其一即「要数值/序列」，交给 metric_series 做索引输出
 _SERIES_QUERY_CUE = re.compile(
     r"多少|几|查询|查一下|查下|查查|帮我查|看看|看一下|是多少|现在|当前|最新|今天|本周"
@@ -506,11 +514,14 @@ def _unknown_result(
     }
 
 
-def _route_deterministic(intent: str, message: str, trace_id: str = "") -> dict:
+def _route_deterministic(
+    intent: str, message: str, trace_id: str = "", reason: str = R_DETERMINISTIC_REGISTRY
+) -> dict:
     """确定性关键词注册表命中：跳过 recall 门控，直接执行单维检索并直答。
 
-    route_signal 显式标注 L1_DIRECT + reason=deterministic_keyword_registry，
-    与语义意图的 0.65 门控区分（阈值本身不变，仍由 route_confidence 单一事实源维护）。
+    route_signal 显式标注 L1_DIRECT + reason，与语义意图的 0.65 门控区分
+    （阈值本身不变，仍由 route_confidence 单一事实源维护）。
+    reason 由调用方指定：确定性注册表 / 产物可用性（EXECUTOR_AVAILABILITY_INTENTS）。
     """
     try:
         result = EXECUTORS[intent](message)
@@ -538,7 +549,7 @@ def _route_deterministic(intent: str, message: str, trace_id: str = "") -> dict:
             prediction_error=None,
             fast_path=False,
             degraded=False,
-            reasons=[R_DETERMINISTIC_REGISTRY],
+            reasons=[reason],
         ).to_dict(),
         "settle_attempted": settle_attempted,
     }
@@ -561,6 +572,10 @@ def route_query(message: str, intent: str = "", trace_id: str = "") -> dict:
     # 确定性关键词注册表：不依赖认知召回，直接单维检索直答（无 LLM、无猜测）
     if intent in DETERMINISTIC_INTENTS:
         return _route_deterministic(intent, message, trace_id)
+    # 产物检索型意图：执行器可自行判定产物是否可用（缺失 → degraded FAIL-OPEN），
+    # 不依赖认知记忆召回（SPEC-41-L1 §5.1 修订）。
+    if intent in EXECUTOR_AVAILABILITY_INTENTS:
+        return _route_deterministic(intent, message, trace_id, reason=R_EXECUTOR_AVAILABILITY)
     # 查询类单维序列：注册表可命中的指标查询同样跳过 recall 门控
     if intent == "metric_series" and _is_deterministic_series(message):
         return _route_deterministic(intent, message, trace_id)

@@ -206,6 +206,7 @@ def detect_intent(message: str) -> str:
 - 语义通道是**与正则同级的兜底**，不改变 `route_confidence` 的值，也不绕过其门控
 - 语义命中的**非确定性意图**（data_insight / path_insight / event_analysis 等）→ 仍走 `route_query` 主流程的 recall + `evaluate_route`，需 `route_confidence ≥ 0.65` 才 L1_DIRECT
 - 语义命中的**确定性意图**（whale_flow / calendar_event / stat_query 等 DETERMINISTIC_INTENTS）→ 走 `_route_deterministic` 跳过 recall 直答（与正则命中同等待遇）
+- 语义命中的**产物检索型意图**（`EXECUTOR_AVAILABILITY_INTENTS`，当前为 event_listing）→ 同样跳过 recall 直答：门控衡量的是认知记忆密度，与「本地新闻产物是否可读」无关（2026-11-16 修订，见 SPEC-41-L1 §5.1）
 - 语义命中的 **metric_series** → 仍需检查 `_is_deterministic_series(message)`，为 true 才跳过 recall，否则走正常门控
 - 语义命中的 **doc_search** → `route_query` 返回 `l1_no_executor` 交 L2（doc_search 无 L1 执行器）
 - DETERMINISTIC_INTENTS 不主动走语义通道（实体词正则更可靠），但若正则漏了、语义命中了，按上述规则处理
