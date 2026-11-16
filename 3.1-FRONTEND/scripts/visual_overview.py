@@ -34,6 +34,17 @@ DB_PATH = os.environ.get("DREAMBUDDY_CORE_DB") or os.path.join(
 
 # 默认资产池来自后端龙头注册表（前端/脚本零硬编码，口径见 leader_registry.DEFAULT_POOL）
 MIN_PAIR_OBS = 60
+# D-E19 `conflict` 只读旗标的输入序列与阈值（SPEC §5.3；T10Y2Y 未入池时 `curve_inverted` 不可达）
+VIX_SYMBOL = "VIX"
+CURVE_SYMBOL = "T10Y2Y"
+VIX_PCT_THRESHOLD = 0.90
+FLAG_WINDOW = 20
+
+# I36 前瞻分布（SPEC §4.0 第 5 条 / §5.1 `foresight`）：`q90−q10` 宽度只作**证据与旗标**，
+# 不进轴（`foresight.strength` 仍取 `coherence` 归一，保持 LT-AC3 一致性契约）
+FORESIGHT_HORIZON = 20
+FORESIGHT_MIN_PAIRS = 500
+FORESIGHT_DISPERSION_REF = 2.5632  # 2×Φ⁻¹(0.9)：正态 90% 区间宽度的 σ 倍数
 # `etf_flow` 中的聚合/元信息行，不是单只 ETF 的净流入，不产 flow 边
 _FLOW_AGGREGATE_KEYS = frozenset(
     {"total_flow", "total_net_flow", "latest_total_flow_btc", "record_count", "Total"}
@@ -228,18 +239,168 @@ def _min_rows(pool, symbol):
         return 0
 
 
-def _lights_entries(raw, pool):
-    """逐标的 D-E15 → `direction_rule.score` 轴值 → D-E19 输入（不重算、不补造）。"""
+def _foresight_reference(raw, symbol, base=None):
+    """前瞻共振参考标的：`base` 优先（龙头 vs 成员，SPEC §5.1）；`base` 缺席或自比时取首个其他标的。"""
+    candidates = [name for name in raw if name != symbol]
+    if not candidates:
+        return None
+    if base and base != symbol and base in raw:
+        return base
+    return candidates[0]
+
+
+def _daily_returns(history, dates):
+    """价格序列 → `{日期: 简单收益}`（首日无前值不产收益，不伪造）。"""
+    out = {}
+    prev = None
+    for day in dates:
+        price = float(history[day])
+        if prev is not None and prev > 0.0:
+            out[day] = price / prev - 1.0
+        prev = price
+    return out
+
+
+def _percentile_rank(values, value):
+    """经验 CDF：`values` 中 ≤ `value` 的占比（[0,1]）；空序列 → None。"""
+    if not values:
+        return None
+    return sum(1 for item in values if item <= value) / float(len(values))
+
+
+def _conflict_flags(raw, symbol, as_of=None):
+    """D-E19 `conflict` 只读旗标（SPEC §5.3）：只读已加载序列，不改 `foresight` 强度。
+
+    - `vix_pct_ge_0.90`：VIX 在截至 `as_of` 的全历史经验分位 ≥ 0.90；
+    - `vix_divergence`：标的自 20 日与 VIX 同向上行（价格涨、波动率也涨）；
+    - `curve_inverted`：`T10Y2Y` 最新值 < 0（该序列未入池时不可达，不伪造）。
+    """
+    flags = []
+    history = raw.get(symbol) or {}
+    dates = sorted(day for day in history if not as_of or day <= as_of)
+    vix = raw.get(VIX_SYMBOL) or {}
+    if dates and vix:
+        vix_dates = sorted(day for day in vix if not as_of or day <= as_of)
+        if vix_dates:
+            now = float(vix[vix_dates[-1]])
+            rank = _percentile_rank([float(vix[day]) for day in vix_dates], now)
+            if rank is not None and rank >= VIX_PCT_THRESHOLD:
+                flags.append("vix_pct_ge_0.90")
+        if symbol != VIX_SYMBOL:
+            common = [day for day in dates if day in vix]
+            if len(common) > FLAG_WINDOW:
+                start, end = common[-FLAG_WINDOW - 1], common[-1]
+                if float(history[end]) > float(history[start]) and float(vix[end]) > float(
+                    vix[start]
+                ):
+                    flags.append("vix_divergence")
+    curve = raw.get(CURVE_SYMBOL) or {}
+    if curve:
+        curve_dates = sorted(day for day in curve if not as_of or day <= as_of)
+        if curve_dates and float(curve[curve_dates[-1]]) < 0.0:
+            flags.append("curve_inverted")
+    return flags
+
+
+def _forward_distribution(returns, dates, *, horizon=None, min_pairs=None):
+    """I36 前瞻分布（`q10/q50/q90/dispersion`）：不重算，只调方法层。
+
+    `x` = 过去 `horizon` 日累计收益、`y` = 未来 `horizon` 日**已实现**累计收益
+    （构造只用 `t+horizon` 之前的数据，不改写 `as_of` 截断后的样本）；
+    有效对 `< min_pairs` 或方法层 `gate != ok` → 返回 None（不补造、不降级伪造）。
+    """
+    from l1agg.methods import run as run_method
+
+    horizon = FORESIGHT_HORIZON if horizon is None else int(horizon)
+    min_pairs = FORESIGHT_MIN_PAIRS if min_pairs is None else int(min_pairs)
+    series = [float(returns[day]) for day in dates if day in returns]
+    if len(series) < min_pairs + 2 * horizon:
+        return None
+    xs, ys = [], []
+    for index in range(horizon, len(series) - horizon):
+        xs.append(sum(series[index - horizon + 1 : index + 1]))
+        ys.append(sum(series[index + 1 : index + horizon + 1]))
+    if len(xs) < min_pairs:
+        return None
+    outcome = run_method("I36", {"x": xs, "y": ys}) or {}
+    if str(outcome.get("gate")) != "ok":
+        return None
+    result = outcome.get("result") or {}
+    dispersion = result.get("dispersion")
+    if dispersion is None:
+        return None
+    recent = series[-horizon:]
+    mean = sum(recent) / float(len(recent))
+    scale = (sum((value - mean) ** 2 for value in recent) / float(len(recent))) ** 0.5
+    scale *= horizon**0.5
+    return {
+        "capability": "I36",
+        "horizon": horizon,
+        "n": len(xs),
+        "q10": result.get("q10"),
+        "q50": result.get("q50"),
+        "q90": result.get("q90"),
+        "dispersion": float(dispersion),
+        "scale": round(scale, 6) if scale > 0.0 else None,
+        "dispersion_ref": FORESIGHT_DISPERSION_REF,
+    }
+
+
+def _forward_dispersion_flag(forward):
+    """I36 宽度 ≥ 正态校准宽度（`2×1.2816σ`）→ `forward_dispersion_wide`（尾部风险扩张）。
+
+    只做轴级旗标披露，不在 `CONFLICT_FLAGS` 内，因此不改变 `lights.state`。
+    """
+    scale = (forward or {}).get("scale")
+    dispersion = (forward or {}).get("dispersion")
+    if not scale or dispersion is None:
+        return None
+    if float(dispersion) >= FORESIGHT_DISPERSION_REF * float(scale):
+        return "forward_dispersion_wide"
+    return None
+
+
+def _lights_entries(raw, pool, *, as_of=None, base=None):
+    """逐标的 D-E15 → `direction_rule.score` 轴值（+ I39 cycle / D-E11 共振）→ D-E19 输入（不重算、不补造）。"""
+    from l1agg.capabilities.lights import I39_MIN_N, cycle_from_bandpass
     from l1agg.direction_rule import score
     from l1agg.leader_registry import class_of, view_of
+    from l1agg.methods import run as run_method
     from l1agg.trading import rule_inputs
+
+    returns = {}
+    for symbol, history in raw.items():
+        days = sorted(day for day in history if not as_of or day <= as_of)
+        returns[symbol] = _daily_returns(history, days)
 
     entries = []
     for symbol, history in raw.items():
-        dates = sorted(history)
+        dates = sorted(day for day in history if not as_of or day <= as_of)
+        if not dates:
+            continue
         prices = [float(history[day]) for day in dates]
         trend = _run("D-E15", prices=prices, dates=dates, symbol=symbol) or {}
-        caps = ((trend.get("data") or {}).get("capabilities")) or {}
+        caps = dict(((trend.get("data") or {}).get("capabilities")) or {})
+        # 前瞻共振（D-E11/C18）：与参考标的的自然月同向率。C18 契约吃**收益**序列
+        # （`_monthly_returns` 按日收益复利），传价格会让每月乘积恒正 → ratio 恒 1.0；
+        # 缺参考/对齐点不足时该块缺席，由 direction_rule 打 `coherence_missing`（不补零）
+        reference = _foresight_reference(raw, symbol, base)
+        if reference:
+            other = returns.get(reference) or {}
+            common = [day for day in dates if day in returns[symbol] and day in other]
+            if common:
+                pair = (
+                    _run(
+                        "D-E11",
+                        x=[returns[symbol][day] for day in common],
+                        y=[other[day] for day in common],
+                        dates=common,
+                    )
+                    or {}
+                )
+                pair_caps = (pair.get("data") or {}).get("capabilities") or {}
+                if "D-E11" in pair_caps:
+                    caps["D-E11"] = pair_caps["D-E11"]
         entry = {
             "symbol": symbol,
             "class": view_of(symbol) or class_of(symbol) or "未分类",
@@ -247,14 +408,35 @@ def _lights_entries(raw, pool):
             "n": len(prices),
             "status": str((trend.get("quality") or {}).get("status") or "available"),
             "gate": "ok",
-            # 外部风险旗标（VIX 分位/背离/曲线倒挂）未接 D-E19，留空不伪造 conflict
-            "foresight_flags": [],
+            # 外部风险旗标（VIX 分位/背离/曲线倒挂）：只读已加载序列，未接线项不伪造
+            "foresight_flags": _conflict_flags(raw, symbol, as_of),
         }
         threshold = _min_rows(pool, symbol)
         if threshold:
             entry["min_rows"] = threshold
+        # foresight 的统计事实（I36 前瞻分布宽度）：只披露 + 轴级旗标，不改轴强度
+        forward = _forward_distribution(returns.get(symbol) or {}, dates)
+        if forward:
+            entry["forward_distribution"] = forward
+            flag = _forward_dispersion_flag(forward)
+            if flag:
+                entry["foresight_flags"].append(flag)
+            entry["foresight_evidence"] = {
+                "method": "I36",
+                "horizon": forward["horizon"],
+                "q10": forward["q10"],
+                "q50": forward["q50"],
+                "q90": forward["q90"],
+                "dispersion": forward["dispersion"],
+                "pairs": forward["n"],
+            }
         if "D-E15" in caps:
             entry["scored"] = score(rule_inputs.build_inputs(caps))
+        # cycle 轴：I39 带通（min_n=750；样本不足由方法层返回非 ok，不产周期事实）
+        if len(prices) >= I39_MIN_N:
+            outcome = run_method("I39", {"series": prices}) or {}
+            if str(outcome.get("gate")) == "ok":
+                entry["cycle"] = cycle_from_bandpass(outcome.get("result") or {})
         entries.append(entry)
     return entries
 
@@ -295,7 +477,7 @@ def _extra_panels(raw, aligned, base, blocks, envelopes, days):
     visuals = []
 
     # 1) D-E19 点亮（先算：D-E17 只消费 lit_n/warm_n 计数）
-    entries = _lights_entries(raw, pool)
+    entries = _lights_entries(raw, pool, base=base)
     lights_env = lights(entries) if entries else {}
     lights_block = ((lights_env.get("data") or {}).get("capabilities") or {}).get("D-E19") or {}
     light_rows = list(lights_block.get("lights") or [])
@@ -503,6 +685,13 @@ def main():
         or any((envelope or {}).get("ok") is False for envelope in envelopes.values()),
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
+    try:
+        # ADR-V12 / L1S-04：T1–T3 制品按 capability + as_of 幂等落盘（制品内不含时钟字段）
+        from l1agg.persistence.artifacts import persist_visuals
+
+        payload["artifacts"] = persist_visuals(visuals, as_of, extra={"base": base})
+    except Exception as exc:  # FAIL-OPEN：制品失败不影响图输出
+        payload["artifacts"] = {"enabled": False, "error": f"{type(exc).__name__}: {exc}"}
     sys.stdout.write(json.dumps(payload, ensure_ascii=False, default=str) + "\n")
 
 

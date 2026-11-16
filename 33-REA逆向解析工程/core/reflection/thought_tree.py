@@ -15,6 +15,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import sys
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -23,6 +25,37 @@ from .dreaming import DreamingLoop, generate_candidates
 logger = logging.getLogger(__name__)
 
 THOUGHT_TREE_VERSION = "thought_tree.v0.1"
+
+# L1 制品消费（SPEC-54-统计图表化能力 L1S-05 / ADR-V12）：只读 54 模块落盘的
+# `artifacts/visual/<capability>/<as_of>.json`，不在本层重算任何统计量
+L1_MODULE_DIR = os.path.normpath(
+    os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "54-L1架构能力聚合层"
+    )
+)
+
+
+def load_l1_visual_artifacts(root: Optional[str] = None) -> Dict[str, Any]:
+    """读 L1 最新图制品摘要并回显 capability 列表（T4 消费侧，只读 + FAIL-OPEN）。
+
+    `root` 为制品根目录（默认 `54-L1.../artifacts/visual`）；读取失败返回
+    `{"ok": False, "capabilities": [], ...}`，不中断反思流程。
+    """
+    try:
+        if L1_MODULE_DIR not in sys.path:
+            sys.path.insert(0, L1_MODULE_DIR)
+        from l1agg.persistence.artifacts import consume_latest
+
+        return consume_latest(root=root)
+    except Exception as exc:  # FAIL-OPEN：制品不可读不阻断反思树
+        logger.warning("L1 图制品不可读：%s", exc)
+        return {
+            "ok": False,
+            "error": f"{type(exc).__name__}: {exc}",
+            "as_of": None,
+            "capabilities": [],
+            "items": [],
+        }
 
 
 def strategy_signature(strategy: Dict[str, Any]) -> Tuple:
