@@ -43,17 +43,46 @@ DEFAULT_DISCOVERY_TOP = 20
 VIZ_KINDS = ("table", "matrix", "series", "graph")
 _REPORT_DIR = re.compile(r"^\d{8}-\d{4}$")
 
-_RECOMMEND_SQL = """
-SELECT eval_id, method, transform, target, horizon, n, n_eff, rank_ic, icir,
-       hit_rate, base_rate, excess_hit, hit_rate_lb, p_adj, stability,
-       holdout_hit_rate, holdout_base_rate, holdout_agree, holdout_used_at,
-       effect_bps, cost_bps, scope_json, perm_p, status, eval_at, data_version
-  FROM relationship_eval
- WHERE target IN (?, ?) AND horizon = ? AND gate_pass = 1
-   AND status IN ('stable', 'candidate')
- ORDER BY ABS(rank_ic) DESC, n DESC
- LIMIT ?
-"""
+_RECOMMEND_COLUMNS = (
+    "eval_id",
+    "method",
+    "transform",
+    "target",
+    "horizon",
+    "n",
+    "n_eff",
+    "rank_ic",
+    "icir",
+    "hit_rate",
+    "base_rate",
+    "excess_hit",
+    "hit_rate_lb",
+    "p_adj",
+    "stability",
+    "holdout_hit_rate",
+    "holdout_base_rate",
+    "holdout_agree",
+    "holdout_used_at",
+    "effect_bps",
+    "cost_bps",
+    "scope_json",
+    "perm_p",
+    "status",
+    "eval_at",
+    "data_version",
+)
+
+
+def _recommend_sql(conn: sqlite3.Connection) -> str:
+    """按注册表实际列裁剪 SELECT：MERS 产物缺失的指标列留空（None），避免整条查询失败。"""
+    present = {row[1] for row in conn.execute("PRAGMA table_info(relationship_eval)")}
+    columns = [column for column in _RECOMMEND_COLUMNS if column in present]
+    return (
+        f"SELECT {', '.join(columns)} FROM relationship_eval "
+        "WHERE target IN (?, ?) AND horizon = ? AND gate_pass = 1 "
+        "AND status IN ('stable', 'candidate') "
+        "ORDER BY ABS(rank_ic) DESC, n DESC LIMIT ?"
+    )
 
 
 def _target_aliases(target: str) -> tuple:
@@ -384,12 +413,13 @@ def recommend_relationship(
 
     try:
         with _readonly_connect(path) as conn:
-            rows = [
-                dict(row)
-                for row in conn.execute(
-                    _RECOMMEND_SQL, (*_target_aliases(target), int(horizon), limit)
-                )
-            ]
+            rows = []
+            for raw in conn.execute(
+                _recommend_sql(conn), (*_target_aliases(target), int(horizon), limit)
+            ):
+                item = dict.fromkeys(_RECOMMEND_COLUMNS)
+                item.update(dict(raw))
+                rows.append(item)
     except sqlite3.Error as exc:
         return unavailable(
             capability=capability_id,
