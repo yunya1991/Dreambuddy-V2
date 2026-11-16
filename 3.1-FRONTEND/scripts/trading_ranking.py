@@ -133,6 +133,27 @@ def _normalize_take_profit(raw) -> list:
     return normalized
 
 
+def _align_card_to_direction(decision: dict, desired: str, card_direction: str | None) -> None:
+    """卡片方向与榜单方向冲突时，围绕入场价镜像止损止盈。
+
+    BCRM2 可能给出与动量榜单相反的判断（如 AMZN 榜单多头、卡片空头），
+    若不处理会出现「买入候选的止损在入场价上方」，一键入场会带入非法参数。
+    """
+    if card_direction not in ("long", "short") or card_direction == desired:
+        return
+    base = (decision.get("entry") or {}).get("price")
+    if not isinstance(base, (int, float)) or base <= 0:
+        return
+    if decision.get("stopLoss") is not None:
+        decision["stopLoss"] = round(base * 2 - decision["stopLoss"], 6)
+    if decision.get("takeProfit"):
+        decision["takeProfit"] = [
+            round(base * 2 - tp, 6) if isinstance(tp, (int, float)) else tp
+            for tp in decision["takeProfit"]
+        ]
+    decision["directionConflict"] = True
+
+
 _FALLBACK_COMMODITY = {"XAU", "XAG", "XPT", "XPD", "XCU", "CL", "BZ", "NG", "USO"}
 _FALLBACK_INDEX = {
     "US500",
@@ -645,6 +666,12 @@ def _orchestrator_to_items(orch_data: dict, decision_cards: dict | None = None) 
                 decision["stopLoss"] = pre["stopLoss"]
             if pre.get("takeProfit"):
                 decision["takeProfit"] = _normalize_take_profit(pre["takeProfit"])
+            # 方向对齐：卡片方向与榜单方向冲突时镜像 SL/TP
+            _align_card_to_direction(
+                decision,
+                "short" if direction == "SELL" else "long",
+                pre.get("direction"),
+            )
             # 风险分级
             decision["riskLevel"] = pre.get("riskLevel", decision["riskLevel"])
             # 历史类比

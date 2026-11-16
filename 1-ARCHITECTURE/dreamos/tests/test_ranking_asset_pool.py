@@ -113,6 +113,25 @@ def test_normalize_take_profit_supports_dict_and_number(ranking):
     assert ranking._normalize_take_profit(raw) == [81.5631, 87.4939]
 
 
+def test_align_card_mirrors_levels_on_direction_conflict(ranking):
+    decision = {"entry": {"price": 100.0}, "stopLoss": 110.0, "takeProfit": [88.0, 82.0]}
+
+    ranking._align_card_to_direction(decision, "long", "short")
+
+    assert decision["stopLoss"] == 90.0
+    assert decision["takeProfit"] == [112.0, 118.0]
+    assert decision["directionConflict"] is True
+
+
+def test_align_card_keeps_levels_when_direction_matches(ranking):
+    decision = {"entry": {"price": 100.0}, "stopLoss": 90.0, "takeProfit": [112.0]}
+
+    ranking._align_card_to_direction(decision, "long", "long")
+
+    assert decision["stopLoss"] == 90.0
+    assert "directionConflict" not in decision
+
+
 def test_resolve_direction_falls_back_to_long(decision_card):
     # BCRM2 不可用时不能生成与榜单多头相反的卡片
     assert decision_card._resolve_direction("neutral") == "long"
