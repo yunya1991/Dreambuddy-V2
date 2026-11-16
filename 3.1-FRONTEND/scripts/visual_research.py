@@ -192,7 +192,8 @@ def _domain_status(conn: Optional[sqlite3.Connection]) -> Dict[str, Dict[str, An
     return out
 
 
-def _load_eval_rows(path: str) -> List[Dict[str, Any]]:
+def _load_eval_rows(path: str) -> Tuple[List[Dict[str, Any]], set]:
+    """读取注册表；字段兼容新旧两版 schema（holdout_agree / holdout_same）。"""
     columns = (
         "eval_id",
         "target",
@@ -221,18 +222,23 @@ def _load_eval_rows(path: str) -> List[Dict[str, Any]]:
         conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
         conn.row_factory = sqlite3.Row
     except sqlite3.Error:
-        return []
+        return [], set()
     try:
         present = {row[1] for row in conn.execute("PRAGMA table_info(relationship_eval)")}
-        picked = [column for column in columns if column in present]
+        picked = []
+        for column in columns:
+            if column in present:
+                picked.append(column)
+            elif column == "holdout_agree" and "holdout_same" in present:
+                picked.append("holdout_same AS holdout_agree")
         rows = [
             dict(row) for row in conn.execute(f"SELECT {', '.join(picked)} FROM relationship_eval")
         ]
     except sqlite3.Error:
-        return []
+        return [], set()
     finally:
         conn.close()
-    return rows
+    return rows, present
 
 
 def _latest_report() -> Optional[Dict[str, Any]]:
@@ -457,12 +463,11 @@ def _patterns(
     }
 
 
-def _funnel(
-    rows: List[Dict[str, Any]], space: Dict[str, Any], latest: Dict[str, int]
-) -> List[Dict[str, Any]]:
-    base = _int(space.get("max_units")) or max(len(rows), 1)
+def _funnel(rows: List[Dict[str, Any]], latest: Dict[str, int]) -> List[Dict[str, Any]]:
+    """逐层**条件**计数，保证单调递减；base = 注册表已评估行数。"""
+    base = max(len(rows), 1)
     steps = [
-        ("预注册单元", base),
+        ("已评估单元", len(rows)),
         ("n ≥ 250", latest["evaluable"]),
         ("p_adj < 0.05", latest["significant"]),
         ("样本外同号", latest["holdout_agree"]),
@@ -473,33 +478,39 @@ def _funnel(
         {
             "step": name,
             "count": int(count),
-            "ratio": round(count / base, 6) if base else None,
+            "ratio": round(count / base, 6) if latest["evaluable"] else None,
         }
         for name, count in steps
     ]
 
 
-def _gates(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    g1 = sum(
-        1
-        for row in rows
-        if (_num(row.get("hit_rate")) or 0.0) >= 0.60
-        and (_num(row.get("hit_rate_lb")) or 0.0) > 0.50
+def _gates(rows: List[Dict[str, Any]], present: set) -> List[Dict[str, Any]]:
+    total = len(rows)
+    has_lb = "hit_rate_lb" in present
+    has_holdout = "holdout_agree" in present or "holdout_same" in present
+    g1 = (
+        sum(
+            1
+            for row in rows
+            if (_num(row.get("hit_rate")) or 0.0) >= 0.60
+            and (_num(row.get("hit_rate_lb")) or 0.0) > 0.50
+        )
+        if has_lb
+        else None
     )
-    g2 = sum(1 for row in rows if _int(row.get("holdout_agree")) == 1)
+    g2 = sum(1 for row in rows if _int(row.get("holdout_agree")) == 1) if has_holdout else None
     g3 = sum(
         1
         for row in rows
         if (_num(row.get("p_adj")) is not None and (_num(row.get("p_adj")) or 1.0) < 0.05)
     )
     g4 = sum(1 for row in rows if _int(row.get("pass_streak")) >= 3)
-    total = len(rows)
     return [
         {
             "id": "G1",
             "name": "方向命中率",
             "rule": "hit ≥ 0.60 且 Wilson 95% 下界 > 0.50",
-            "status": "已实现",
+            "status": "已实现" if has_lb else "该期未记录",
             "pass": g1,
             "total": total,
         },
@@ -507,7 +518,7 @@ def _gates(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             "id": "G2",
             "name": "样本外同号",
             "rule": "70/30 · holdout hit ≥ 0.55 且与 screen 同号",
-            "status": "已实现",
+            "status": "已实现" if has_holdout else "该期未记录",
             "pass": g2,
             "total": total,
         },
@@ -652,21 +663,27 @@ def build(top: int = 12) -> Dict[str, Any]:
             "evidence": {"available": False, "nodes": [], "edges": []},
         }
 
-    rows = _load_eval_rows(path)
+    rows, present = _load_eval_rows(path)
+    has_holdout = "holdout_agree" in present or "holdout_same" in present
     evaluable = [row for row in rows if _int(row.get("n")) >= MIN_N]
     significant = [
         row
         for row in evaluable
         if (_num(row.get("p_adj")) is not None and (_num(row.get("p_adj")) or 1.0) < 0.05)
     ]
-    holdout_agree = [row for row in significant if _int(row.get("holdout_agree")) == 1]
-    gate_pass = [row for row in evaluable if _int(row.get("gate_pass")) == 1]
-    stable = [row for row in rows if str(row.get("status")) == "stable"]
+    holdout_agree = (
+        [row for row in significant if _int(row.get("holdout_agree")) == 1]
+        if has_holdout
+        else significant
+    )
+    gate_pass = [row for row in holdout_agree if _int(row.get("gate_pass")) == 1]
+    stable = [row for row in gate_pass if str(row.get("status")) == "stable"]
     latest_counts = {
         "registry_rows": len(rows),
         "evaluable": len(evaluable),
         "significant": len(significant),
         "holdout_agree": len(holdout_agree),
+        "holdout_recorded": has_holdout,
         "gate_pass": len(gate_pass),
         "stable": len(stable),
     }
@@ -682,8 +699,8 @@ def build(top: int = 12) -> Dict[str, Any]:
     )
     classes = _classes(rows, relation_defs, roles_of)
     patterns = _patterns(rows, relation_of, report)
-    funnel = _funnel(rows, space, latest_counts)
-    gates = _gates(evaluable)
+    funnel = _funnel(rows, latest_counts)
+    gates = _gates(evaluable, present)
 
     return {
         "ok": True,

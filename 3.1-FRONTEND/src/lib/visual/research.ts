@@ -75,7 +75,7 @@ export interface GateRow {
   name: string;
   rule: string;
   status: string;
-  pass: number;
+  pass: number | null;
   total: number;
 }
 
@@ -148,6 +148,7 @@ export interface ResearchPayload {
     evaluable?: number;
     significant?: number;
     holdout_agree?: number;
+    holdout_recorded?: boolean;
     gate_pass?: number;
     stable?: number;
     reason?: string;

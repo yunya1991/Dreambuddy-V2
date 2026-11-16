@@ -150,7 +150,7 @@ function RelationCard({ item }: { item: RelationClass }) {
 }
 
 function GateItem({ item }: { item: GateRow }) {
-  const ratio = item.total > 0 ? item.pass / item.total : 0;
+  const ratio = item.pass !== null && item.total > 0 ? item.pass / item.total : 0;
   return (
     <div className="flex items-start gap-2.5 border-b border-slate-800/60 py-2 last:border-0">
       <span className="mt-0.5 rounded bg-indigo-500/15 px-1.5 py-0.5 font-mono text-[10px] text-indigo-300">
@@ -167,11 +167,11 @@ function GateItem({ item }: { item: GateRow }) {
             />
           </span>
           <span className="font-mono text-[9px] text-slate-500">
-            {item.pass}/{item.total}
+            {item.pass === null ? '该期未记录' : `${item.pass}/${item.total}`}
           </span>
         </div>
       </div>
-      <Pill tone="stable">{item.status}</Pill>
+      <Pill tone={item.pass === null ? 'default' : 'stable'}>{item.status}</Pill>
     </div>
   );
 }
@@ -426,14 +426,14 @@ export function DataResearchBoard() {
                       ['枚举单元', space?.max_units ?? 0, latest.report ? '报告 manifest' : '预注册预算'],
                       ['可评估（n ≥ 250）', latest.evaluable ?? 0, `${payload.source.registry_rows ?? 0} 行中`],
                       ['显著（p_adj < 0.05）', latest.significant ?? 0, 'BH-FDR'],
-                      ['样本外同号', latest.holdout_agree ?? 0, 'holdout 30%'],
+                      ['样本外同号', latest.holdout_recorded === false ? '未记录' : (latest.holdout_agree ?? 0), 'holdout 30%'],
                       ['过四门禁', latest.gate_pass ?? 0, 'candidate'],
                       ['升 stable', latest.stable ?? 0, '连击 ≥ 3'],
                     ].map(([label, value, ref]) => (
                       <tr key={String(label)} className="border-b border-slate-800/50 last:border-0">
                         <td className="py-1.5 text-[11px] text-slate-400">{label}</td>
                         <td className="py-1.5 text-right font-mono text-[12px] text-slate-100">
-                          {Number(value).toLocaleString()}
+                          {typeof value === 'number' ? value.toLocaleString() : value}
                         </td>
                         <td className="py-1.5 pl-2 text-right font-mono text-[9px] text-slate-600">{ref}</td>
                       </tr>
@@ -693,12 +693,12 @@ export function DataResearchBoard() {
           <div className="space-y-3">
             <Card
               title="验证漏斗"
-              sub={`${payload.as_of ?? '—'} 期 · ${space?.max_units ?? 0} → ${latest?.gate_pass ?? 0}`}
+              sub={`${payload.as_of ?? '—'} 期 · ${payload.source.registry_rows ?? 0} → ${latest?.gate_pass ?? 0}`}
               right={
                 <Pill tone="stable">
                   通过率{' '}
-                  {space?.max_units
-                    ? `${(((latest?.gate_pass ?? 0) / space.max_units) * 100).toFixed(2)}%`
+                  {payload.source.registry_rows
+                    ? `${(((latest?.gate_pass ?? 0) / payload.source.registry_rows) * 100).toFixed(2)}%`
                     : '—'}
                 </Pill>
               }

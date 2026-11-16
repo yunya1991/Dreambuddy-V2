@@ -9,13 +9,13 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const CACHE_TTL_MS = 60_000;
-let cache: { at: number; data: any } | null = null;
+let cache: { at: number; top: number; data: any } | null = null;
 
 // 「数据研究」五子页只读聚合：注册表 / 预注册空间 / 算法分类 / 关联图案。
 // 前端零重算，数值全部来自脚本投影；脚本 FAIL-OPEN，这里只做超时与缓存。
 export async function GET(request: NextRequest) {
   const top = Math.max(1, Math.min(Number(request.nextUrl.searchParams.get('top')) || 12, 50));
-  if (cache && Date.now() - cache.at < CACHE_TTL_MS) {
+  if (cache && cache.top === top && Date.now() - cache.at < CACHE_TTL_MS) {
     return NextResponse.json(cache.data);
   }
 
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       .split('\n')
       .filter((line: string) => line.trim().startsWith('{'));
     const data = JSON.parse(lines[lines.length - 1] || '{"ok":false,"degraded":true}');
-    if (data?.ok) cache = { at: Date.now(), data };
+    if (data?.ok) cache = { at: Date.now(), top, data };
     return NextResponse.json(data);
   } catch (err: any) {
     return NextResponse.json(
