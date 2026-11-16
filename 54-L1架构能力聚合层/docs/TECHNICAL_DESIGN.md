@@ -455,7 +455,7 @@ L1 意图（TS/Python 双端注册表）
 | `yijing.bdsm` / `yijing.bcrm2` | ✅ 既有 | D-C01/02 | 快照 JSON |
 | `event.state` / `riskcontrol.trailing` | ✅ 既有 | D-C03/04 | 快照/日志 |
 | `evolution.contradiction` / `evolution.snapshot` | ✅ 既有 | D-C05/06 | 演化产物 |
-| `registry.relationship_eval` | ✅ 已声明（D-K01 已落地） | D-K01 | `data/relationship_registry.db`（`file:...?mode=ro` 只读） |
+| `registry.relationship_eval` | ✅ 已声明（D-K01 已落地） | D-K01 | `data/mers/registry.db`（`file:...?mode=ro` 只读） |
 | `reports.discovery` | ✅ 已声明（D-K02 已落地） | D-K02 | `reports/discovery/<YYYYMMDD-HHMM>/`（manifest.json + findings.jsonl，只读） |
 
 ---
@@ -589,7 +589,7 @@ L1 意图（TS/Python 双端注册表）
 | 变更 | 代码 / 本文位置 | 结论 |
 |---|---|---|
 | Discovery 搜索空间 | `config/discovery_space.yaml`、`l1agg/discovery.py::load_space` | 预注册冻结项全部机器校验：`seed=42`、6 变换、20 方法（须在 `REGISTRY` 登记且不越出预注册子集）、价格前瞻收益 h∈{1,5,20}、序列池 ≤40 且资产序列必须能解析到 `asset_pool.yaml` 的 `anchors[].storage.sub_category`、双序列 ≤300 对、预算 ≤5,000 单元/≤10 分钟/≤50 发现、BH-FDR 强制开（alpha=0.05）、去重阈值 0.95、分段固定 70/30 且 holdout 一致率 ≥0.6；输出 `space_hash` 供 manifest 复现；全量空间超预算属预注册常态，发现器按固定枚举顺序确定性截断 |
-| D-K01 方法推荐 | `capabilities/eval_exports.py::recommend_relationship`、`capability_manifest.yaml`（D-K01 / `registry.relationship_eval`）、§2.7、§3 | 只读 `data/relationship_registry.db`（`file:...?mode=ro`），`WHERE target=? AND horizon=? AND gate_pass=1 AND status IN ('stable','candidate') ORDER BY abs(rank_ic) DESC, n DESC LIMIT 3`；Top1 `stable` → `good`，`candidate` → `partial` + `candidate_only`；注册表缺失/不可读 → `empty`；不重算、不写库 |
+| D-K01 方法推荐 | `capabilities/eval_exports.py::recommend_relationship`、`capability_manifest.yaml`（D-K01 / `registry.relationship_eval`）、§2.7、§3 | 只读 `data/mers/registry.db`（`file:...?mode=ro`），`WHERE target=? AND horizon=? AND gate_pass=1 AND status IN ('stable','candidate') ORDER BY abs(rank_ic) DESC, n DESC LIMIT 3`；Top1 `stable` → `good`，`candidate` → `partial` + `candidate_only`；注册表缺失/不可读 → `empty`；不重算、不写库 |
 | D-K02 发现查询 | `capabilities/eval_exports.py::discovery_query`、`capability_manifest.yaml`（D-K02 / `reports.discovery`）、§2.7、§3 | 只读最近一期 `reports/discovery/<YYYYMMDD-HHMM>/`（取同时有 `manifest.json` + `findings.jsonl` 的最大目录名），按 RankIC 绝对值排序截断，输出恒标 `status=candidate`；本期 0 候选 → `partial` + `no_findings`（统计事实，非数据缺失）；报告目录缺失 → `empty` |
 | 计数同步 | 本文头部 + §2.5 三处 + §2.7 + §3、母 SPEC | 可执行出口 52 → **54 个**，manifest **54 条**；§2.5 新增 `eval_exports.py` 行并补 K 组边界段 |
 | 测试 | `tests/test_discovery_space.py`（13 passed）、`tests/test_eval_exports.py`（9 passed）、`tests/test_capabilities.py` | 空间：哈希确定性 / 方法登记 / 资产可解析 / 9 类篡改拒绝（seed、变换、方法、资产、重复、预算、FDR、分段、配对上限）；出口：缺表空态、无匹配空态、candidate 降级、stable 提级、gate_pass=0 排除、最新报告优先、无候选降级、批量调度器路由；54-L1 全量 **1244 passed** |

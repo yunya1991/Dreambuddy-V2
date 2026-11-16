@@ -26,7 +26,9 @@ from .envelope import (
 from .visual import CAVEAT, SPEC_VERSION
 
 MODULE_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-REGISTRY_FILE = os.path.join(MODULE_ROOT, "data", "relationship_registry.db")
+# 与 MERS 写入侧同源（`scripts/mers_eval.py` 的 DEFAULT_REGISTRY = data/mers/registry.db）；
+# 早期文档写作 data/relationship_registry.db，实际产物落在 data/mers/ 下。
+REGISTRY_FILE = os.path.join(MODULE_ROOT, "data", "mers", "registry.db")
 REPORTS_DIR = os.path.join(MODULE_ROOT, "reports", "discovery")
 ALGORITHM_REGISTRY_FILE = os.path.join(MODULE_ROOT, "config", "algorithm_registry.yaml")
 
@@ -47,11 +49,21 @@ SELECT eval_id, method, transform, target, horizon, n, n_eff, rank_ic, icir,
        holdout_hit_rate, holdout_base_rate, holdout_agree, holdout_used_at,
        effect_bps, cost_bps, scope_json, perm_p, status, eval_at, data_version
   FROM relationship_eval
- WHERE target = ? AND horizon = ? AND gate_pass = 1
+ WHERE target IN (?, ?) AND horizon = ? AND gate_pass = 1
    AND status IN ('stable', 'candidate')
  ORDER BY ABS(rank_ic) DESC, n DESC
  LIMIT ?
 """
+
+
+def _target_aliases(target: str) -> tuple:
+    """注册表 target 形如 `BTC/USDT`；入口允许只传标的 `BTC`，补一条计价货币别名。"""
+    symbol = str(target).strip()
+    if not symbol:
+        return ("", "")
+    if "/" in symbol:
+        return (symbol, symbol)
+    return (symbol, f"{symbol}/USDT")
 
 
 def _readonly_connect(path: str) -> sqlite3.Connection:
@@ -373,7 +385,10 @@ def recommend_relationship(
     try:
         with _readonly_connect(path) as conn:
             rows = [
-                dict(row) for row in conn.execute(_RECOMMEND_SQL, (target, int(horizon), limit))
+                dict(row)
+                for row in conn.execute(
+                    _RECOMMEND_SQL, (*_target_aliases(target), int(horizon), limit)
+                )
             ]
     except sqlite3.Error as exc:
         return unavailable(
