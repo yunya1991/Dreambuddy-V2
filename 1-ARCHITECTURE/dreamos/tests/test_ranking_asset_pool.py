@@ -159,6 +159,32 @@ def test_match_symbol_aliases(ranking_news):
     assert ranking_news.match_symbol_aliases("metadata 字段更新") == []
 
 
+def test_build_news_snapshot_ignores_ambiguous_commodity_ticker(ranking_news):
+    from datetime import datetime, timedelta, timezone
+    from types import SimpleNamespace
+
+    now = datetime(2026, 11, 16, 12, 0, tzinfo=timezone.utc)
+    recent = int((now - timedelta(hours=1)).timestamp() * 1000)
+
+    def record(title, tickers):
+        return SimpleNamespace(
+            raw={"title": title, "publishTimestamp": recent, "tickers_hit": tickers},
+            metrics={"od_source_id": 9, "od_is_important": "false"},
+        )
+
+    # CL 同时是高露洁的美股代码，不能仅凭 TICKER 命中就挂到大宗商品
+    assert (
+        "CL"
+        not in ranking_news.build_snapshot([record("Colgate CL 宣布派息", ["CL"])], now=now)[
+            "by_symbol"
+        ]
+    )
+    # 通过中文品种别名命中才允许
+    assert (
+        "CL" in ranking_news.build_snapshot([record("WTI 原油价格上涨", [])], now=now)["by_symbol"]
+    )
+
+
 def test_build_news_snapshot_groups_filters_and_dedupes(ranking_news):
     from datetime import datetime, timedelta, timezone
     from types import SimpleNamespace

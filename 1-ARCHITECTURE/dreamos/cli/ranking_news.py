@@ -48,6 +48,10 @@ _SYMBOL_ALIASES = {
 # 快讯汇总类条目信息密度低，且会把大量 TICKER 硬塞进同一条，直接丢弃
 _NOISE_KEYWORDS = ("午讯", "早讯", "晚报", "早报", "日报", "周报", "一览", "汇总")
 
+# 这几个 symbol 与美股代码/英文缩写冲突（CL=高露洁、BZ=Kanzhun），
+# 只接受品种别名命中，避免把股票新闻误挂到大宗商品上
+_ALIAS_ONLY_SYMBOLS = {"CL", "BZ"}
+
 
 def _repo_root() -> Path:
     here = Path(__file__).resolve().parent
@@ -151,6 +155,9 @@ def build_snapshot(
 
         tickers = raw.get("tickers_hit") or [
             ticker for ticker in str(metrics.get("od_tickers_hit_csl") or "").split(",") if ticker
+        ]
+        tickers = [
+            ticker for ticker in tickers if str(ticker).strip().upper() not in _ALIAS_ONLY_SYMBOLS
         ]
         description = str(raw.get("description") or "")
         tickers = list(dict.fromkeys([*tickers, *match_symbol_aliases(f"{title} {description}")]))
