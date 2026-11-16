@@ -188,7 +188,7 @@ if capability in USER_INPUT_ONLY:
 | AC4 | J27 `time` / `series` 别名 → `ok`；J28 等长 → `ok`，不等长 → `invalid_params`，缺 `se` → `missing_args` |
 | AC5 | J30 300 点 indicator+prices → `ok`，`degraded_reason=release_ts_absent` |
 | AC6 | Jest 新增 5 例（解析/脏值/等长/回填），`src/lib/visual` 33 passed |
-| AC7 | 待部署后浏览器补证（J25/J28/J30 三卡） |
+| AC7 | 已部署云端并取证：D-J28 加卡→填 effects/se 各 40 个→出结论（合并 0.1256，95% CI 0.1087~0.1424，n=40）；D-J25/D-J30 预览显示「需填参数 · 缺 coords/indicator」且添加可用；测试卡已删除 |
 | AC8 | 94 项空参矩阵不变：`ok 80 / unsupported 3 / sample_insufficient 2 / missing_args 5 / product_missing 4`（本地库口径） |
 
 **测试**
