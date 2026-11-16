@@ -1,6 +1,6 @@
 # 全项目文档索引 — INDEX
 
-> **版本**: v2.22 | **更新日期**: 2026-11-15
+> **版本**: v2.23 | **更新日期**: 2026-11-16
 > **定位（视角 B）**: **文档导航中枢，不是架构内容本身**。由 0-系统文档管理 维护，告诉你「到哪里找什么文档」。
 > **架构唯一事实源（SSoT）**: 所有架构争议以 [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v4.2** 为准（L0/L1/L2 三层 + L2 内部新 SACG + 认知 C1-C4 + 置信度门控）。被取代的旧架构文档已加「已归档」横幅，禁止作为实现依据。
 > **维护**: 每次新增/删除文档时同步更新；由 `4-工具与自动化/doc_coverage.py` 自动校验（已建成）
@@ -260,6 +260,7 @@
 | 34-前端应用训练系统 | [34-前端应用训练系统/README.md](../34-前端应用训练系统/README.md) | ✅ README+SPEC（P0-P4全部完成） | 前端应用独立学习训练模块：主动训练(多源采集+统计训练)+被动训练(Trae在线辅导) |
 | 35-广义认知系统协作模块 | [35-广义认知系统协作模块/README.md](../35-广义认知系统协作模块/README.md) · [INDEX.md](../35-广义认知系统协作模块/INDEX.md) | ✅ 文档齐全（认知进化SPEC v0.2+统一PoE框架v2.0+协作契约v1.6） | 跨系统协作设计SSoT：SPEC收敛+协作接口契约+PoE统一框架（纯文档统筹层） |
 | 41-文件索引系统 · 新闻意图检索 | [41-文件索引系统/SPEC-41-L1-新闻意图检索-v1.0.md](../41-文件索引系统/SPEC-41-L1-新闻意图检索-v1.0.md) **v1.0** | ✅ **P0–P5 全部完成并云端验收**（T1–T7 全绿，逐项证据见 §13） | L1 `event_listing` 升级方案 A：标签契约（39 的 11 topic/13 event_type 为 canonical，`od_event_type` 单向降级）、罗列 vs 演变划界规则、窗口三级（默认 168h / 上限 720h）、`exec_news_search` + 39 侧 `news_digest.json`、30 条 golden 探针 |
+| **55-AI大模型研究报告** | [55-AI大模型研究报告/认知系统研究/01-主论文-残差记忆与按需重建-开题报告.md](../55-AI大模型研究报告/认知系统研究/01-主论文-残差记忆与按需重建-开题报告.md) | 🟡 4 篇开题报告（v0.1） | AI 大模型方向的**研究文档域**（非代码模块）：认知记忆系统四篇论文开题——残差记忆与按需重建（主论文）/ 使用驱动的记忆巩固与分级遗忘 / 任务—成本联合基准 / 从记忆失败到能力获取；研究对象为 DreamBuddy 认知记忆系统，配套口径见 [35-广义认知系统协作模块/SPEC-ResidualMemory-Admission.md](../35-广义认知系统协作模块/SPEC-ResidualMemory-Admission.md) |
 | 1-ARCHITECTURE/dreamos | [1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md](../1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md) | ⚠️ 部分完整 | DreamOS CLI |
 | **0-系统文档管理/4-工具与自动化** | [4-工具与自动化/README.md](./4-工具与自动化/README.md) | ✅ 已建成 4 脚本 | doc_lint/doc_coverage/index_generator/link_checker |
 | **0-系统文档管理/3-文档治理/audits** | [audits/2026-08_月度审计报告.md](./3-文档治理/audits/2026-08_月度审计报告.md) | ✅ 首份报告 | 月度审计报告归档 |
