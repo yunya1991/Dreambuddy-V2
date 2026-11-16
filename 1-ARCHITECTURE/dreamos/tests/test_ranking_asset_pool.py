@@ -211,7 +211,7 @@ def test_build_news_snapshot_groups_filters_and_dedupes(ranking_news):
 
     assert sorted(snapshot["by_symbol"]) == ["BTC", "SOL"]
     assert len(snapshot["by_symbol"]["BTC"]) == 1
-    assert snapshot["by_symbol"]["BTC"][0]["date"] == "11-16 10:00"
+    assert snapshot["by_symbol"]["BTC"][0]["date"] == "11-16 18:00"
     assert snapshot["by_symbol"]["BTC"][0]["impact"] == "中"
     assert snapshot["by_symbol"]["SOL"][0]["impact"] == "高"
 

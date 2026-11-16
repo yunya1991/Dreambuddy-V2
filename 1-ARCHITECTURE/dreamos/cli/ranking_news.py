@@ -22,6 +22,8 @@ MAX_PER_SYMBOL = 5
 LOOKBACK_HOURS = 72
 FETCH_PAGES = 4
 TITLE_MAX_LEN = 80
+# 事件时间按北京时间展示（页面直接渲染字符串，不做二次时区转换）
+DISPLAY_TZ = timezone(timedelta(hours=8))
 
 # Odaily 以加密快讯为主，美股/大宗常以公司名或中文品种出现，补一层别名匹配
 _SYMBOL_ALIASES = {
@@ -165,7 +167,7 @@ def build_snapshot(
             continue
 
         published_at = (
-            datetime.fromtimestamp(published_ms / 1000, timezone.utc) if published_ms else now
+            datetime.fromtimestamp(published_ms / 1000, DISPLAY_TZ) if published_ms else now
         )
         is_important = str(metrics.get("od_is_important", "false")).lower() == "true"
         event = {
