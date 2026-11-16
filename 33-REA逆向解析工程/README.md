@@ -67,6 +67,22 @@ for e in result.evidence:
 | Agent 信用评分（任务难度加权 + slash 机制） | 设计完成（待后续迭代） |
 | 创新性快速通道（experimental 标记） | 设计完成（待后续迭代） |
 
+## Trae 逆向采集层（试点，2026-11-17）
+
+针对压缩 bundle / 加密数据 / 交互摘要的采集前置层，REA 仍负责证据分级与结构化推断：
+
+| 模块 | 作用 | 产物 |
+|---|---|---|
+| `trae/bundle_miner.py` | 压缩 JS 字符串级取证（toolId/mode/stop 关键词） | `reports/trae-20261117/bundle.json` |
+| `trae/manifest_miner.py` | agent/model/skill/plugin/MCP 能力清单 | `reports/trae-20261117/manifest.json` |
+| `trae/interaction_miner.py` | 会话摘要 + 命令信封 + git 快照 | `reports/trae-20261117/interaction_cases.jsonl` |
+| `trae/run_pilot.py` | R1/R2 试点编排 | 机制卡 + 试点报告 |
+| `trae/gap_mapper.py` | R3 差距映射（M1–M5 → 56 GAP/门禁） | `reports/trae-20261117/gap_candidates.json` + `gap_mapping.md` |
+
+运行：`PYTHONPATH=. python3 -m trae.run_pilot --out reports/trae-20261117 --sessions 50`
+R3：`PYTHONPATH=. python3 -m trae.gap_mapper --pilot reports/trae-20261117 --out reports/trae-20261117`
+约束：本地只读；不执行目标程序；不读取凭据；不破解加密数据。
+
 ## 目录结构
 
 ```
@@ -80,6 +96,7 @@ for e in result.evidence:
 ├── TASKS-工程实践复现器.md           # PoE 实施任务清单 v1.0
 ├── core/                            # 核心分析层（含 reflection/ 反思层）
 ├── adapters/                        # 外部适配器（REA MCP / GitHub API）
+├── trae/                            # Trae 采集前置层（bundle/manifest/interaction miners）
 ├── prompts/                         # 逆向调查 prompt
 ├── reflection_data/                 # 反思层数据（回放池 replay_pool / 训练案例库 training_cases.jsonl）
 └── tests/

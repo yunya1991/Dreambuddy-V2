@@ -1,0 +1,664 @@
+{
+  "manifest": [
+    {
+      "result": {
+        "global_skills": 8,
+        "agent_types": [
+          "trae",
+          "code",
+          "design",
+          "work"
+        ]
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "manifests",
+        "path": "/Users/zhangjiangtao/.trae-cn/builtin/baseline/manifests"
+      },
+      "confidence": 1.0,
+      "known_gaps": []
+    },
+    {
+      "result": {
+        "trae": {
+          "models": 6,
+          "skill_count_min": 1,
+          "skill_count_max": 7,
+          "profiles": [
+            {
+              "model": "buse",
+              "skill_count": 3,
+              "skills": [
+                "TRAE-browseruse",
+                "TRAE-browseruse-external",
+                "TRAE-product-knowledge"
+              ]
+            },
+            {
+              "model": "default",
+              "skill_count": 4,
+              "skills": [
+                "TRAE-product-knowledge",
+                "dynamic-ui",
+                "schedule",
+                "skill-creator"
+              ]
+            },
+            {
+              "model": "doutops",
+              "skill_count": 7,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-plan-mode",
+                "TRAE-spec-mode",
+                "dynamic-ui",
+                "gp-agent-handoff",
+                "schedule",
+                "skill-creator"
+              ]
+            },
+            {
+              "model": "gpt",
+              "skill_count": 1,
+              "skills": [
+                "TRAE-computer-use-ptc"
+              ]
+            },
+            {
+              "model": "non_multimodal",
+              "skill_count": 4,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "dynamic-ui",
+                "schedule",
+                "skill-creator"
+              ]
+            },
+            {
+              "model": "seed",
+              "skill_count": 1,
+              "skills": [
+                "TRAE-computer-use-ptc"
+              ]
+            }
+          ]
+        },
+        "code": {
+          "models": 6,
+          "skill_count_min": 1,
+          "skill_count_max": 6,
+          "profiles": [
+            {
+              "model": "buse",
+              "skill_count": 5,
+              "skills": [
+                "TRAE-browseruse",
+                "TRAE-browseruse-external",
+                "TRAE-product-knowledge",
+                "feedback",
+                "skill-creator"
+              ]
+            },
+            {
+              "model": "default",
+              "skill_count": 5,
+              "skills": [
+                "TRAE-product-knowledge",
+                "dynamic-ui",
+                "feedback",
+                "schedule",
+                "skill-creator"
+              ]
+            },
+            {
+              "model": "doutops",
+              "skill_count": 6,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-plan-mode",
+                "TRAE-spec-mode",
+                "dynamic-ui",
+                "schedule",
+                "skill-creator"
+              ]
+            },
+            {
+              "model": "gpt",
+              "skill_count": 1,
+              "skills": [
+                "TRAE-computer-use-ptc"
+              ]
+            },
+            {
+              "model": "hebe",
+              "skill_count": 6,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-product-knowledge",
+                "dynamic-ui",
+                "feedback",
+                "schedule",
+                "skill-creator"
+              ]
+            },
+            {
+              "model": "non_multimodal",
+              "skill_count": 6,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-product-knowledge",
+                "dynamic-ui",
+                "feedback",
+                "schedule",
+                "skill-creator"
+              ]
+            }
+          ]
+        },
+        "design": {
+          "models": 4,
+          "skill_count_min": 1,
+          "skill_count_max": 6,
+          "profiles": [
+            {
+              "model": "default",
+              "skill_count": 6,
+              "skills": [
+                "design-library-creator",
+                "feedback",
+                "skill-creator",
+                "solo-design",
+                "solo-graphic-generation",
+                "solo-image-edit"
+              ]
+            },
+            {
+              "model": "gpt",
+              "skill_count": 1,
+              "skills": [
+                "TRAE-computer-use-ptc"
+              ]
+            },
+            {
+              "model": "non_multimodal",
+              "skill_count": 1,
+              "skills": [
+                "TRAE-computer-use-ptc"
+              ]
+            },
+            {
+              "model": "seed",
+              "skill_count": 1,
+              "skills": [
+                "TRAE-computer-use-ptc"
+              ]
+            }
+          ]
+        },
+        "work": {
+          "models": 10,
+          "skill_count_min": 1,
+          "skill_count_max": 14,
+          "profiles": [
+            {
+              "model": "buse",
+              "skill_count": 14,
+              "skills": [
+                "TRAE-browseruse",
+                "TRAE-browseruse-external",
+                "TRAE-computer-use-ptc",
+                "TRAE-product-knowledge",
+                "doc-writing-guide",
+                "docx",
+                "feedback",
+                "html-deck",
+                "html-report",
+                "pdf",
+                "pptx",
+                "research-guide",
+                "skill-creator",
+                "xlsx"
+              ]
+            },
+            {
+              "model": "default",
+              "skill_count": 11,
+              "skills": [
+                "TRAE-product-knowledge",
+                "doc-writing-guide",
+                "docx",
+                "feedback",
+                "html-deck",
+                "html-report",
+                "pdf",
+                "pptx",
+                "research-guide",
+                "skill-creator",
+                "xlsx"
+              ]
+            },
+            {
+              "model": "deidamia",
+              "skill_count": 12,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-product-knowledge",
+                "doc-writing-guide",
+                "docx",
+                "feedback",
+                "html-deck",
+                "html-report",
+                "pdf",
+                "pptx",
+                "research-guide",
+                "skill-creator",
+                "xlsx"
+              ]
+            },
+            {
+              "model": "gpt",
+              "skill_count": 1,
+              "skills": [
+                "TRAE-computer-use-ptc"
+              ]
+            },
+            {
+              "model": "hebe",
+              "skill_count": 12,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-product-knowledge",
+                "doc-writing-guide",
+                "docx",
+                "feedback",
+                "html-deck",
+                "html-report",
+                "pdf",
+                "pptx",
+                "research-guide",
+                "skill-creator",
+                "xlsx"
+              ]
+            },
+            {
+              "model": "iphigenia",
+              "skill_count": 12,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-product-knowledge",
+                "doc-writing-guide",
+                "docx",
+                "feedback",
+                "html-deck",
+                "html-report",
+                "pdf",
+                "pptx",
+                "research-guide",
+                "skill-creator",
+                "xlsx"
+              ]
+            },
+            {
+              "model": "iris",
+              "skill_count": 11,
+              "skills": [
+                "TRAE-product-knowledge",
+                "doc-writing-guide",
+                "docx",
+                "feedback",
+                "html-deck",
+                "html-report",
+                "pdf",
+                "pptx",
+                "research-guide",
+                "skill-creator",
+                "xlsx"
+              ]
+            },
+            {
+              "model": "non_multimodal",
+              "skill_count": 12,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-product-knowledge",
+                "doc-writing-guide",
+                "docx",
+                "feedback",
+                "html-deck",
+                "html-report",
+                "pdf",
+                "pptx",
+                "research-guide",
+                "skill-creator",
+                "xlsx"
+              ]
+            },
+            {
+              "model": "seed",
+              "skill_count": 1,
+              "skills": [
+                "TRAE-computer-use-ptc"
+              ]
+            },
+            {
+              "model": "thetis",
+              "skill_count": 12,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-product-knowledge",
+                "doc-writing-guide",
+                "docx",
+                "feedback",
+                "html-deck",
+                "html-report",
+                "pdf",
+                "pptx",
+                "research-guide",
+                "skill-creator",
+                "xlsx"
+              ]
+            }
+          ]
+        }
+      },
+      "level": "derivation",
+      "provenance": {
+        "source": "manifests",
+        "rule": "agent_type × model → skills"
+      },
+      "confidence": 0.9,
+      "known_gaps": [
+        "manifest 是声明，运行时会话可能因模型能力/权限被裁剪",
+        "同一 model 在不同 agent_type 下的 skills 可能不同，未做交叉去重"
+      ]
+    },
+    {
+      "result": {
+        "user_skills": 82,
+        "plugins": 9
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "filesystem",
+        "paths": [
+          "/Users/zhangjiangtao/.trae-cn/skills",
+          "/Users/zhangjiangtao/.trae-cn/plugins"
+        ]
+      },
+      "confidence": 1.0,
+      "known_gaps": []
+    },
+    {
+      "result": {
+        "Explore": 16,
+        "Plan": 16,
+        "browser_use": 32,
+        "computer_use": 17,
+        "general_purpose_task": 20,
+        "search": 31,
+        "solo_agent": 32,
+        "solo_agent_lite": 37,
+        "solo_design_lite": 20,
+        "solo_work_lite": 37
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "mcps",
+        "path": "/Users/zhangjiangtao/.trae-cn/mcps",
+        "sessions": 25
+      },
+      "confidence": 1.0,
+      "known_gaps": [
+        "工具面按会话+mode 物化，不同会话可能不同；此处是历史并集",
+        "原生 chat 工具不物化，未计入"
+      ]
+    },
+    {
+      "result": {
+        "active_profile": "manual_approval",
+        "fs_read_write": 5,
+        "fs_read_only": 0,
+        "sandbox_fs_read_write": 2,
+        "sandbox_network_default": "allow"
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "permission/sandbox",
+        "path": "/Users/zhangjiangtao/.trae-cn"
+      },
+      "confidence": 1.0,
+      "known_gaps": []
+    }
+  ],
+  "bundle": [
+    {
+      "result": {
+        "file": "/Applications/Trae CN.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js",
+        "bytes": 16499954,
+        "tool_keyword_hits": 1577,
+        "tool_id_candidates": 2
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "bundle-string-scan",
+        "path": "/Applications/Trae CN.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js"
+      },
+      "confidence": 1.0,
+      "known_gaps": [
+        "压缩 bundle 无法建立模块/调用图；关键词命中只说明字符串出现",
+        "toolId 提取依赖正则，可能漏掉压缩后的别名"
+      ]
+    },
+    {
+      "result": {
+        "file": "/Applications/Trae CN.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.solo-lite-slim.js",
+        "bytes": 11940440,
+        "tool_keyword_hits": 1183,
+        "tool_id_candidates": 2
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "bundle-string-scan",
+        "path": "/Applications/Trae CN.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.solo-lite-slim.js"
+      },
+      "confidence": 1.0,
+      "known_gaps": [
+        "压缩 bundle 无法建立模块/调用图；关键词命中只说明字符串出现",
+        "toolId 提取依赖正则，可能漏掉压缩后的别名"
+      ]
+    },
+    {
+      "result": {
+        "file": "/Applications/Trae CN.app/Contents/Resources/app/extensions/ai-completion/dist/extension.js",
+        "bytes": 3793772,
+        "tool_keyword_hits": 275,
+        "tool_id_candidates": 0
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "bundle-string-scan",
+        "path": "/Applications/Trae CN.app/Contents/Resources/app/extensions/ai-completion/dist/extension.js"
+      },
+      "confidence": 1.0,
+      "known_gaps": [
+        "压缩 bundle 无法建立模块/调用图；关键词命中只说明字符串出现",
+        "toolId 提取依赖正则，可能漏掉压缩后的别名"
+      ]
+    },
+    {
+      "result": "扫描 3 个 bundle；toolId 候选 2 个；仅字符串级 observation，不可作为架构结论",
+      "level": "derivation",
+      "provenance": {
+        "source": "bundle-miner",
+        "files": 3
+      },
+      "confidence": 0.6,
+      "known_gaps": [
+        "未覆盖原生/远端 Agent 运行时",
+        "未解析 WASM / native 模块"
+      ]
+    }
+  ],
+  "interaction": [
+    {
+      "result": {
+        "sessions": 50,
+        "records": 627,
+        "project": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690"
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "session_memory",
+        "path": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690"
+      },
+      "confidence": 1.0,
+      "known_gaps": [
+        "只统计有摘要的会话",
+        "未包含原始 DB（加密）"
+      ]
+    },
+    {
+      "result": {
+        "avg_actions": 4.85,
+        "avg_learned": 3.9,
+        "outcome_rate": 1.0
+      },
+      "level": "derivation",
+      "provenance": {
+        "source": "interaction-miner",
+        "records": 627
+      },
+      "confidence": 0.7,
+      "known_gaps": [
+        "摘要是模型压缩结果，存在遗漏与自我合理化"
+      ]
+    },
+    {
+      "result": {
+        "count": 1006,
+        "status": {
+          "exited": 998,
+          "stopped": 6,
+          "running": 2
+        },
+        "target": {
+          "sandbox": 1006
+        },
+        "terminal_reason": {
+          "process_exited": 998,
+          "user_stop": 6,
+          "null": 2
+        },
+        "top_cwd": [
+          [
+            "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2",
+            685
+          ],
+          [
+            "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND",
+            91
+          ],
+          [
+            "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE",
+            67
+          ],
+          [
+            "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/54-L1架构能力聚合层",
+            65
+          ],
+          [
+            "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/56-L2架构能力聚合层",
+            32
+          ]
+        ],
+        "duration_ms": {
+          "median": 4944,
+          "p90": 27384,
+          "max": 1148503
+        }
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "command-execution",
+        "path": "/Users/zhangjiangtao/Library/Application Support/Trae CN/ModularData/ai-agent/command-execution"
+      },
+      "confidence": 1.0,
+      "known_gaps": []
+    },
+    {
+      "result": {
+        "count": 19,
+        "repos": 19,
+        "sample": [
+          {
+            "session": "6af9607357a31fc1690fc1cc",
+            "last_commit": "c1c053b",
+            "last_ts": "1794728051",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6af9cbac57a31fc1690ffd91",
+            "last_commit": "5c01119",
+            "last_ts": "1794755500",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6af80dce57a31fc1690f6f85",
+            "last_commit": "2553935",
+            "last_ts": "1794641358",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6afb3968e7261943c9239a0a",
+            "last_commit": "53014bb",
+            "last_ts": "1794849128",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6afae936e7261943c9237931",
+            "last_commit": "788010b",
+            "last_ts": "1794828599",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6afa809fda7b5a368e9d0bb0",
+            "last_commit": "c8d7702",
+            "last_ts": "1794801824",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6af84fec57a31fc1690f8328",
+            "last_commit": "7eb15a0",
+            "last_ts": "1794658284",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6afa867fda7b5a368e9d0e0a",
+            "last_commit": "706b995",
+            "last_ts": "1794803327",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6afa7ce4da7b5a368e9d0934",
+            "last_commit": "95a6173",
+            "last_ts": "1794800868",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6afabe2de7261943c9236cd7",
+            "last_commit": "39cd96e",
+            "last_ts": "1794817581",
+            "subject": "init empty branch"
+          }
+        ]
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "snapshot",
+        "path": "/Users/zhangjiangtao/Library/Application Support/Trae CN/ModularData/ai-agent/snapshot"
+      },
+      "confidence": 1.0,
+      "known_gaps": []
+    }
+  ]
+}

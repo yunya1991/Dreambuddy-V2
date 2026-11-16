@@ -1,0 +1,378 @@
+{
+  "summary": "扫描 3 个 bundle；toolId 候选 2 个；仅字符串级 observation，不可作为架构结论",
+  "files": [
+    {
+      "file": "/Applications/Trae CN.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js",
+      "bytes": 16499954,
+      "lines": 8897,
+      "tool_keyword_hits": {
+        "runSubagent": 8,
+        "readFile": 260,
+        "writeFile": 202,
+        "runCommand": 61,
+        "Exec": 631,
+        "create_file": 1,
+        "delete_file": 3,
+        "view_file": 1,
+        "file_search": 2,
+        "browser_navigate": 6,
+        "browser_snapshot": 22,
+        "browser_click": 7,
+        "browser_take_screenshot": 1,
+        "Schedule": 76,
+        "record": 229,
+        "verify": 67
+      },
+      "mode_keyword_hits": {
+        "solo_agent": 8,
+        "Explore": 223,
+        "Plan": 85,
+        "browser_use": 1,
+        "computer_use": 4
+      },
+      "stop_keyword_hits": {
+        "interrupted": 8
+      },
+      "tool_id_candidates": [
+        "runSubagent",
+        "ReplyUser"
+      ],
+      "samples": {
+        "runSubagent": [
+          "cute=\"execute\",i.edit=\"edit\",i.search=\"search\",i.agent=\"agent\",i.read=\"read\",i.web=\"web\",i.todo=\"todo\"})(rI||(rI={}));var Y7;(function(i){i.runSubagent=\"runSubagent\",i.vscode=\"vscode\"})(Y7||(Y7={}));var qkn=/^@([\\w_\\-\\.]+)(?=(\\s|$|\\b))/i,Gkn=/^#([\\w_\\-]+)(:\\d+)?(?=(\\s|$|\\b))/i,Kkn=/^\\/([\\p{",
+          "\",i.edit=\"edit\",i.search=\"search\",i.agent=\"agent\",i.read=\"read\",i.web=\"web\",i.todo=\"todo\"})(rI||(rI={}));var Y7;(function(i){i.runSubagent=\"runSubagent\",i.vscode=\"vscode\"})(Y7||(Y7={}));var qkn=/^@([\\w_\\-\\.]+)(?=(\\s|$|\\b))/i,Gkn=/^#([\\w_\\-]+)(:\\d+)?(?=(\\s|$|\\b))/i,Kkn=/^\\/([\\p{L}\\d_\\-\\.:]+)",
+          "if(t&&this.b.get(t))return{tool:t,variable:`#tool:${this.j.getFullReferenceName(t)}`}}async q(e,t,s){const n=this.p(\"readFile\"),r=this.p(Y7.runSubagent),o=[];if(n){const u=this.e.getValue(Ap.USE_NESTED_AGENT_MD)?this.c.findAgentMDsInWorkspace(s):Promise.resolve([]);o.push(\"<instructions>\"),"
+        ],
+        "readFile": [
+          "Found);const t=[];for await(const[s,n]of e)t.push([s,wD.isFileSystemFileHandle(n)?Bc.File:Bc.Directory]);return t}catch(e){throw this.u(e)}}readFileStream(i,e,t){const s=EA(n=>gt.concat(n.map(r=>gt.wrap(r))).buffer,{highWaterMark:10});return(async()=>{try{const n=await this.r(i);if(!n)th",
+          "ap(r=>gt.wrap(r))).buffer,{highWaterMark:10});return(async()=>{try{const n=await this.r(i);if(!n)throw this.w(i,\"No such file or directory, readFile\",zs.FileNotFound);const r=await n.getFile();if(typeof e.length==\"number\"||typeof e.position==\"number\"){let o=new Uint8Array(await r.arrayBu",
+          "sted||(await s.write(a.value),t.isCancellationRequested));)a=await o.read();s.end(void 0)}}catch(n){s.error(this.u(n)),s.end()}})(),s}async readFile(i){try{const e=await this.r(i);if(!e)throw this.w(i,\"No such file or directory, readFile\",zs.FileNotFound);const t=await e.getFile();return"
+        ],
+        "writeFile": [
+          "irectory, readFile\",zs.FileNotFound);const t=await e.getFile();return new Uint8Array(await t.arrayBuffer())}catch(e){throw this.u(e)}}async writeFile(i,e,t){try{let s=await this.r(i);if(!t.create||!t.overwrite){if(s){if(!t.overwrite)throw this.w(i,\"File already exists, writeFile\",zs.FileE",
+          "e)}}async writeFile(i,e,t){try{let s=await this.r(i);if(!t.create||!t.overwrite){if(s){if(!t.overwrite)throw this.w(i,\"File already exists, writeFile\",zs.FileExists)}else if(!t.create)throw this.w(i,\"No such file, writeFile\",zs.FileNotFound)}if(!s){const r=await this.s(this.a.dirname(i));",
+          "write){if(s){if(!t.overwrite)throw this.w(i,\"File already exists, writeFile\",zs.FileExists)}else if(!t.create)throw this.w(i,\"No such file, writeFile\",zs.FileNotFound)}if(!s){const r=await this.s(this.a.dirname(i));if(!r)throw this.w(i,\"No such parent directory, writeFile\",zs.FileNotFound"
+        ],
+        "runCommand": [
+          "y,secondary:e.secondary,win:e.win,linux:e.linux,mac:e.mac};Wt.registerKeybindingRule(s)}}Ee.registerCommand({id:this.id,handler:(i,e)=>this.runCommand(i,e),metadata:this.metadata}),this.canTriggerInlineEdits&&swi.registerCommand(this.id)}k(i){Le.appendMenuItem(i.menuId,{group:i.group,comma",
+          "t((n,r)=>r.priority-n.priority),{dispose:()=>{for(let n=0;n<this.d.length;n++)if(this.d[n].implementation===t){this.d.splice(n,1);return}}}}runCommand(i,e){const t=i.get(me),s=i.get(de);t.trace(`Executing Command '${this.id}' which has ${this.d.length} bound.`);for(const n of this.d){if(n.",
+          "d 0:r}t.trace(`The Command '${this.id}' was not handled by any implementation.`)}},rwi=class extends RTe{constructor(i,e){super(e),this.d=i}runCommand(i,e){return this.d.runCommand(i,e)}},Sd=class Ohi extends RTe{static bindToContribution(e){return class extends Ohi{constructor(s){super(s)"
+        ],
+        "Exec": [
+          "activeCellTitle=new Vt(\"InteractiveCellTitle\")}static{this.InteractiveCellDelete=new Vt(\"InteractiveCellDelete\")}static{this.InteractiveCellExecute=new Vt(\"InteractiveCellExecute\")}static{this.InteractiveInputExecute=new Vt(\"InteractiveInputExecute\")}static{this.InteractiveInputConfi",
+          "tiveCellTitle\")}static{this.InteractiveCellDelete=new Vt(\"InteractiveCellDelete\")}static{this.InteractiveCellExecute=new Vt(\"InteractiveCellExecute\")}static{this.InteractiveInputExecute=new Vt(\"InteractiveInputExecute\")}static{this.InteractiveInputConfig=new Vt(\"InteractiveInputConfi",
+          "eCellDelete=new Vt(\"InteractiveCellDelete\")}static{this.InteractiveCellExecute=new Vt(\"InteractiveCellExecute\")}static{this.InteractiveInputExecute=new Vt(\"InteractiveInputExecute\")}static{this.InteractiveInputConfig=new Vt(\"InteractiveInputConfig\")}static{this.ReplInputExecute=new V"
+        ],
+        "create_file": [
+          "Set,this.R=new Set([\"AskUserQuestion\",\"NotifyUser\",\"run_command\",\"RunCommand\",\"ExitPlanMode\",\"DeleteFile\",\"delete_file\"]),this.fb=new Set([\"create_file\",\"write_to_file\",\"edit_file_search_replace\",\"show_diff\",\"show_diff_fc\",\"Write\",\"Edit\",\"MultiEdit\",\"NotebookEdit\",\"SearchReplace\",\"write_to_"
+        ],
+        "delete_file": [
+          "=!1,this.g=0,this.q=0,this.r=new Set,this.R=new Set([\"AskUserQuestion\",\"NotifyUser\",\"run_command\",\"RunCommand\",\"ExitPlanMode\",\"DeleteFile\",\"delete_file\"]),this.fb=new Set([\"create_file\",\"write_to_file\",\"edit_file_search_replace\",\"show_diff\",\"show_diff_fc\",\"Write\",\"Edit\",\"MultiEdit\",\"Noteboo",
+          "rams?.cwd}else n===\"ExitPlanMode\"?(r.plan=e.params?.plan,r.filePaths=e.params?.filePath?[e.params.filePath]:void 0):(n===\"DeleteFile\"||n===\"delete_file\")&&(r.filePaths=e.params?.file_path?[e.params.file_path]:e.params?.file_paths||void 0);return r}ab(e,t){return`${t||\"\"}_${e.toolCallId||e.p",
+          "eb(e){return e===\"AskUserQuestion\"?\"AskUserQuestion\":e===\"NotifyUser\"?\"NotifyUser\":e===\"ExitPlanMode\"?\"ExitPlanMode\":e===\"DeleteFile\"||e===\"delete_file\"?\"DeleteFile\":\"RunCommand\"}async respondToInteraction(e){const s=(await this.P()).getTaskService?.()||this.u,n=e.type===\"AskUserQuestion\"?e"
+        ],
+        "view_file": [
+          "ry{const r=await this.sb.stat(s);if(this.nb!==n||t!==this.eb||this.B.isDisposed)return;if(r.size>this.pb){this.wb.report(\"icube_markdown_preview_file_too_large\",{file_size:r.size,threshold:this.pb}),this.Kb(r.size,e);return}}catch{}await this.Nb(e,t)}}async Nb(e,t){const s=e.getOriginalUr"
+        ],
+        "file_search": [
+          "session\",i.ChatRequest=\"icube_ai_chat_request\",i.AIMentionCodeSearch=\"icube_ai_mention_code_search\",i.AIMentionFileSearch=\"icube_ai_mention_file_search\",i.AIMentionFolderSearch=\"icube_ai_mention_folder_search\",i.CKGExit=\"icube_ai_ckg_exit\",i.FrontResponse=\"icube_ai_front_response\",i.Command",
+          "n\",\"NotifyUser\",\"run_command\",\"RunCommand\",\"ExitPlanMode\",\"DeleteFile\",\"delete_file\"]),this.fb=new Set([\"create_file\",\"write_to_file\",\"edit_file_search_replace\",\"show_diff\",\"show_diff_fc\",\"Write\",\"Edit\",\"MultiEdit\",\"NotebookEdit\",\"SearchReplace\",\"write_to_product_document\",\"edit_product_doc"
+        ],
+        "browser_navigate": [
+          "igin context\",suggestion:\"Direct interaction with iframe content may be limited. Consider navigating to the iframe URL directly.\",recovery:\"browser_navigate to iframe URL, or browser_snapshot\"},{patterns:[\"offscreen\",\"out of viewport\",\"not in viewport\"],getMessage:i=>`Element is offscreen${i?.re",
+          "before interacting with this page.`}]}}}switch(r){case\"browser_sdk_operation\":await this.Mb(e,c,s),m={content:[]};break;case\"navigate\":case\"browser_navigate\":m=await this.dc(o,c,n);break;case\"snapshot\":case\"browser_snapshot\":m=await this.ec(o,c,!1,!0,n);break;case\"click\":case\"browser_click\":m=aw",
+          "s.Ec(o,c,n);break;case\"take_screenshot\":case\"browser_take_screenshot\":m=await this.Fc(o,c,t,n);break;case\"go_back\":case\"navigate_back\":case\"browser_navigate_back\":m=await this.Jc(o,c,n);break;case\"go_forward\":case\"navigate_forward\":case\"browser_navigate_forward\":m=await this.Kc(o,c,n);break;case"
+        ],
+        "browser_snapshot": [
+          "{i?.ref?` (ref: ${i.ref})`:\"\"}`,suggestion:\"The element reference may be stale. Take a new snapshot to get current element refs.\",recovery:\"browser_snapshot\"},{patterns:[\"timeout\",\"timed out\"],getMessage:i=>`Operation timed out${i?.action?` during ${i.action}`:\"\"}`,suggestion:\"The page may be lo",
+          "n?` during ${i.action}`:\"\"}`,suggestion:\"The page may be loading slowly or the element is not yet available. Wait and try again.\",recovery:\"browser_snapshot\"},{patterns:[\"not visible\",\"hidden\",\"display: none\"],getMessage:i=>`Element is not visible${i?.ref?` (ref: ${i.ref})`:\"\"}`,suggestion:\"The ",
+          "i.ref})`:\"\"}`,suggestion:\"The element exists but is hidden. It may need to be revealed by scrolling or clicking another element.\",recovery:\"browser_snapshot to see current visibility state\"},{patterns:[\"disabled\"],getMessage:i=>`Element is disabled${i?.ref?` (ref: ${i.ref})`:\"\"}`,suggestion:\"The"
+        ],
+        "browser_click": [
+          " \t\t\t\t\t\tsuccess: false, \t\t\t\t\t\terror: 'Element ' + ref + actualDescription + ' is not a text input, textarea, or contenteditable element. Use browser_click instead if you want to interact with this element.', \t\t\t\t\t\tsuggestion: 'Use browser_click instead if you want to interact with this element",
+          " input, textarea, or contenteditable element. Use browser_click instead if you want to interact with this element.', \t\t\t\t\t\tsuggestion: 'Use browser_click instead if you want to interact with this element.' \t\t\t\t\t}; \t\t\t\t} \t\t\t\tif (isReadonly && !isContentEditable) { \t\t\t\t\treturn { \t\t\t\t\t\tsuccess: ",
+          "h native <select> elements.', \t\t\t\t\t\t\t\tsuggestion: 'For custom dropdown/combobox components, try: 1) Click the element to open the dropdown (browser_click), 2) Then click the desired option. Custom dropdowns require interaction like regular buttons.' \t\t\t\t\t\t\t}; \t\t\t\t\t\t} \t\t\t\t\t\treturn { \t\t\t\t\t\t\tsuc"
+        ],
+        "browser_take_screenshot": [
+          "=await this.Dc(o,c,s,n);break;case\"network_requests\":case\"browser_network_requests\":m=await this.Ec(o,c,n);break;case\"take_screenshot\":case\"browser_take_screenshot\":m=await this.Fc(o,c,t,n);break;case\"go_back\":case\"navigate_back\":case\"browser_navigate_back\":m=await this.Jc(o,c,n);break;case\"go_forward\""
+        ],
+        "Schedule": [
+          "=typeof i_.postMessage==\"function\"&&!i_.importScripts,dA=(()=>{if(zgi){const i=[];i_.addEventListener(\"message\",t=>{if(t.data&&t.data.vscodeScheduleAsyncWork)for(let s=0,n=i.length;s<n;s++){const r=i[s];if(r.id===t.data.vscodeScheduleAsyncWork){i.splice(s,1),r.callback();return}}});let e",
+          "ddEventListener(\"message\",t=>{if(t.data&&t.data.vscodeScheduleAsyncWork)for(let s=0,n=i.length;s<n;s++){const r=i[s];if(r.id===t.data.vscodeScheduleAsyncWork){i.splice(s,1),r.callback();return}}});let e=0;return t=>{const s=++e;i.push({id:s,callback:t}),i_.postMessage({vscodeScheduleAsyn",
+          "codeScheduleAsyncWork){i.splice(s,1),r.callback();return}}});let e=0;return t=>{const s=++e;i.push({id:s,callback:t}),i_.postMessage({vscodeScheduleAsyncWork:s},\"*\")}}return i=>setTimeout(i)})(),function(i){i[i.Windows=1]=\"Windows\",i[i.Macintosh=2]=\"Macintosh\",i[i.Linux=3]=\"Linux\"}(qgi||"
+        ],
+        "record": [
+          "poForked:le(\"repo-forked\",60003),gitPullRequest:le(\"git-pull-request\",60004),gitPullRequestAbandoned:le(\"git-pull-request-abandoned\",60004),recordKeys:le(\"record-keys\",60005),keyboard:le(\"keyboard\",60005),tag:le(\"tag\",60006),gitPullRequestLabel:le(\"git-pull-request-label\",60006),tagAdd",
+          "po-forked\",60003),gitPullRequest:le(\"git-pull-request\",60004),gitPullRequestAbandoned:le(\"git-pull-request-abandoned\",60004),recordKeys:le(\"record-keys\",60005),keyboard:le(\"keyboard\",60005),tag:le(\"tag\",60006),gitPullRequestLabel:le(\"git-pull-request-label\",60006),tagAdd:le(\"tag-add\",6",
+          "nt\",60323),pass:le(\"pass\",60324),issueClosed:le(\"issue-closed\",60324),stopCircle:le(\"stop-circle\",60325),playCircle:le(\"play-circle\",60326),record:le(\"record\",60327),debugAltSmall:le(\"debug-alt-small\",60328),vmConnect:le(\"vm-connect\",60329),cloud:le(\"cloud\",60330),merge:le(\"merge\",6033"
+        ],
+        "verify": [
+          "esource,e)))).reduce((n,r)=>n+r,0):t.size??0}var lg=M(2132,\"Extensions\"),rOi=M(2133,\"Preferences\"),ype=\"extensions.allowed\",Amt=\"extensions.verifySignature\",oOi=\"extensions.requestTimeout\";ge.as(us.Configuration).registerConfiguration({id:\"extensions\",order:30,title:d(2115,null),type:\"",
+          ")}h(){return this.c.slice(0)}j(i){return this.c.find(e=>e.id===i)}};Ki(),pe(),K(),Ke(),ne(),Ke(),Ke();var $me=class{constructor(i){this.a=i}verify(i){return this.b(i)?i:this.a}},gg=class extends $me{b(i){return typeof i==\"boolean\"}},Fwt=class extends $me{b(i){return typeof i==\"number\"}",
+          "ss extends $me{constructor(i,e){super(i),this.c=e}b(i){return this.c.includes(i)}},HVi=class extends $me{constructor(i,e){super(i),this.c=e}verify(i){return this.b(i)?UVi(this.c,i):this.a}b(i){return Xs(i)}};function UVi(i,e){const t=Object.create(null);for(const s in i)if(Object.hasOw"
+        ]
+      }
+    },
+    {
+      "file": "/Applications/Trae CN.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.solo-lite-slim.js",
+      "bytes": 11940440,
+      "lines": 7787,
+      "tool_keyword_hits": {
+        "runSubagent": 4,
+        "readFile": 201,
+        "writeFile": 169,
+        "runCommand": 48,
+        "Exec": 404,
+        "create_file": 1,
+        "delete_file": 3,
+        "file_search": 2,
+        "browser_navigate": 6,
+        "browser_snapshot": 22,
+        "browser_click": 7,
+        "browser_take_screenshot": 1,
+        "Schedule": 53,
+        "record": 196,
+        "verify": 66
+      },
+      "mode_keyword_hits": {
+        "solo_agent": 8,
+        "Explore": 167,
+        "Plan": 59,
+        "browser_use": 1,
+        "computer_use": 4
+      },
+      "stop_keyword_hits": {
+        "interrupted": 8
+      },
+      "tool_id_candidates": [
+        "runSubagent",
+        "ReplyUser"
+      ],
+      "samples": {
+        "runSubagent": [
+          "e=\"execute\",i.edit=\"edit\",i.search=\"search\",i.agent=\"agent\",i.read=\"read\",i.web=\"web\",i.todo=\"todo\"})(p9t||(p9t={}));var MUe;(function(i){i.runSubagent=\"runSubagent\",i.vscode=\"vscode\"})(MUe||(MUe={})),_t(),Ke(),L(),gt(),xt(),Wt(),Ut(),Re(),O(),F(),$e(),O(),F(),O(),Ke();var _Cs=\"workbench.vi",
+          ".edit=\"edit\",i.search=\"search\",i.agent=\"agent\",i.read=\"read\",i.web=\"web\",i.todo=\"todo\"})(p9t||(p9t={}));var MUe;(function(i){i.runSubagent=\"runSubagent\",i.vscode=\"vscode\"})(MUe||(MUe={})),_t(),Ke(),L(),gt(),xt(),Wt(),Ut(),Re(),O(),F(),$e(),O(),F(),O(),Ke();var _Cs=\"workbench.view.agentSessi",
+          "f(t&&this.b.get(t))return{tool:t,variable:`#tool:${this.j.getFullReferenceName(t)}`}}async q(e,t,s){const n=this.p(\"readFile\"),r=this.p(MUe.runSubagent),o=[];if(n){const u=this.e.getValue(Qy.USE_NESTED_AGENT_MD)?this.c.findAgentMDsInWorkspace(s):Promise.resolve([]);o.push(\"<instructions>\"),"
+        ],
+        "readFile": [
+          "Found);const t=[];for await(const[s,n]of e)t.push([s,L1.isFileSystemFileHandle(n)?Ga.File:Ga.Directory]);return t}catch(e){throw this.u(e)}}readFileStream(i,e,t){const s=TT(n=>dt.concat(n.map(r=>dt.wrap(r))).buffer,{highWaterMark:10});return(async()=>{try{const n=await this.r(i);if(!n)th",
+          "ap(r=>dt.wrap(r))).buffer,{highWaterMark:10});return(async()=>{try{const n=await this.r(i);if(!n)throw this.w(i,\"No such file or directory, readFile\",Vn.FileNotFound);const r=await n.getFile();if(typeof e.length==\"number\"||typeof e.position==\"number\"){let o=new Uint8Array(await r.arrayBu",
+          "sted||(await s.write(a.value),t.isCancellationRequested));)a=await o.read();s.end(void 0)}}catch(n){s.error(this.u(n)),s.end()}})(),s}async readFile(i){try{const e=await this.r(i);if(!e)throw this.w(i,\"No such file or directory, readFile\",Vn.FileNotFound);const t=await e.getFile();return"
+        ],
+        "writeFile": [
+          "irectory, readFile\",Vn.FileNotFound);const t=await e.getFile();return new Uint8Array(await t.arrayBuffer())}catch(e){throw this.u(e)}}async writeFile(i,e,t){try{let s=await this.r(i);if(!t.create||!t.overwrite){if(s){if(!t.overwrite)throw this.w(i,\"File already exists, writeFile\",Vn.FileE",
+          "e)}}async writeFile(i,e,t){try{let s=await this.r(i);if(!t.create||!t.overwrite){if(s){if(!t.overwrite)throw this.w(i,\"File already exists, writeFile\",Vn.FileExists)}else if(!t.create)throw this.w(i,\"No such file, writeFile\",Vn.FileNotFound)}if(!s){const r=await this.s(this.a.dirname(i));",
+          "write){if(s){if(!t.overwrite)throw this.w(i,\"File already exists, writeFile\",Vn.FileExists)}else if(!t.create)throw this.w(i,\"No such file, writeFile\",Vn.FileNotFound)}if(!s){const r=await this.s(this.a.dirname(i));if(!r)throw this.w(i,\"No such parent directory, writeFile\",Vn.FileNotFound"
+        ],
+        "runCommand": [
+          "y,secondary:e.secondary,win:e.win,linux:e.linux,mac:e.mac};gn.registerKeybindingRule(s)}}Fe.registerCommand({id:this.id,handler:(i,e)=>this.runCommand(i,e),metadata:this.metadata}),this.canTriggerInlineEdits&&ibt.registerCommand(this.id)}k(i){zt.appendMenuItem(i.menuId,{group:i.group,comma",
+          "t((n,r)=>r.priority-n.priority),{dispose:()=>{for(let n=0;n<this.d.length;n++)if(this.d[n].implementation===t){this.d.splice(n,1);return}}}}runCommand(i,e){const t=i.get(Pe),s=i.get(Me);t.trace(`Executing Command '${this.id}' which has ${this.d.length} bound.`);for(const n of this.d){if(n.",
+          "d 0:r}t.trace(`The Command '${this.id}' was not handled by any implementation.`)}},nbt=class extends Nse{constructor(i,e){super(e),this.d=i}runCommand(i,e){return this.d.runCommand(i,e)}},Wh=class nlt extends Nse{static bindToContribution(e){return class extends nlt{constructor(s){super(s)"
+        ],
+        "Exec": [
+          "activeCellTitle=new ut(\"InteractiveCellTitle\")}static{this.InteractiveCellDelete=new ut(\"InteractiveCellDelete\")}static{this.InteractiveCellExecute=new ut(\"InteractiveCellExecute\")}static{this.InteractiveInputExecute=new ut(\"InteractiveInputExecute\")}static{this.InteractiveInputConfi",
+          "tiveCellTitle\")}static{this.InteractiveCellDelete=new ut(\"InteractiveCellDelete\")}static{this.InteractiveCellExecute=new ut(\"InteractiveCellExecute\")}static{this.InteractiveInputExecute=new ut(\"InteractiveInputExecute\")}static{this.InteractiveInputConfig=new ut(\"InteractiveInputConfi",
+          "eCellDelete=new ut(\"InteractiveCellDelete\")}static{this.InteractiveCellExecute=new ut(\"InteractiveCellExecute\")}static{this.InteractiveInputExecute=new ut(\"InteractiveInputExecute\")}static{this.InteractiveInputConfig=new ut(\"InteractiveInputConfig\")}static{this.ReplInputExecute=new u"
+        ],
+        "create_file": [
+          "Set,this.R=new Set([\"AskUserQuestion\",\"NotifyUser\",\"run_command\",\"RunCommand\",\"ExitPlanMode\",\"DeleteFile\",\"delete_file\"]),this.fb=new Set([\"create_file\",\"write_to_file\",\"edit_file_search_replace\",\"show_diff\",\"show_diff_fc\",\"Write\",\"Edit\",\"MultiEdit\",\"NotebookEdit\",\"SearchReplace\",\"write_to_"
+        ],
+        "delete_file": [
+          "=!1,this.g=0,this.q=0,this.r=new Set,this.R=new Set([\"AskUserQuestion\",\"NotifyUser\",\"run_command\",\"RunCommand\",\"ExitPlanMode\",\"DeleteFile\",\"delete_file\"]),this.fb=new Set([\"create_file\",\"write_to_file\",\"edit_file_search_replace\",\"show_diff\",\"show_diff_fc\",\"Write\",\"Edit\",\"MultiEdit\",\"Noteboo",
+          "rams?.cwd}else n===\"ExitPlanMode\"?(r.plan=e.params?.plan,r.filePaths=e.params?.filePath?[e.params.filePath]:void 0):(n===\"DeleteFile\"||n===\"delete_file\")&&(r.filePaths=e.params?.file_path?[e.params.file_path]:e.params?.file_paths||void 0);return r}ab(e,t){return`${t||\"\"}_${e.toolCallId||e.p",
+          "eb(e){return e===\"AskUserQuestion\"?\"AskUserQuestion\":e===\"NotifyUser\"?\"NotifyUser\":e===\"ExitPlanMode\"?\"ExitPlanMode\":e===\"DeleteFile\"||e===\"delete_file\"?\"DeleteFile\":\"RunCommand\"}async respondToInteraction(e){const s=(await this.P()).getTaskService?.()||this.u,n=e.type===\"AskUserQuestion\"?e"
+        ],
+        "file_search": [
+          "session\",i.ChatRequest=\"icube_ai_chat_request\",i.AIMentionCodeSearch=\"icube_ai_mention_code_search\",i.AIMentionFileSearch=\"icube_ai_mention_file_search\",i.AIMentionFolderSearch=\"icube_ai_mention_folder_search\",i.CKGExit=\"icube_ai_ckg_exit\",i.FrontResponse=\"icube_ai_front_response\",i.Command",
+          "n\",\"NotifyUser\",\"run_command\",\"RunCommand\",\"ExitPlanMode\",\"DeleteFile\",\"delete_file\"]),this.fb=new Set([\"create_file\",\"write_to_file\",\"edit_file_search_replace\",\"show_diff\",\"show_diff_fc\",\"Write\",\"Edit\",\"MultiEdit\",\"NotebookEdit\",\"SearchReplace\",\"write_to_product_document\",\"edit_product_doc"
+        ],
+        "browser_navigate": [
+          "igin context\",suggestion:\"Direct interaction with iframe content may be limited. Consider navigating to the iframe URL directly.\",recovery:\"browser_navigate to iframe URL, or browser_snapshot\"},{patterns:[\"offscreen\",\"out of viewport\",\"not in viewport\"],getMessage:i=>`Element is offscreen${i?.re",
+          "before interacting with this page.`}]}}}switch(r){case\"browser_sdk_operation\":await this.Mb(e,c,s),m={content:[]};break;case\"navigate\":case\"browser_navigate\":m=await this.dc(o,c,n);break;case\"snapshot\":case\"browser_snapshot\":m=await this.ec(o,c,!1,!0,n);break;case\"click\":case\"browser_click\":m=aw",
+          "s.Ec(o,c,n);break;case\"take_screenshot\":case\"browser_take_screenshot\":m=await this.Fc(o,c,t,n);break;case\"go_back\":case\"navigate_back\":case\"browser_navigate_back\":m=await this.Jc(o,c,n);break;case\"go_forward\":case\"navigate_forward\":case\"browser_navigate_forward\":m=await this.Kc(o,c,n);break;case"
+        ],
+        "browser_snapshot": [
+          "{i?.ref?` (ref: ${i.ref})`:\"\"}`,suggestion:\"The element reference may be stale. Take a new snapshot to get current element refs.\",recovery:\"browser_snapshot\"},{patterns:[\"timeout\",\"timed out\"],getMessage:i=>`Operation timed out${i?.action?` during ${i.action}`:\"\"}`,suggestion:\"The page may be lo",
+          "n?` during ${i.action}`:\"\"}`,suggestion:\"The page may be loading slowly or the element is not yet available. Wait and try again.\",recovery:\"browser_snapshot\"},{patterns:[\"not visible\",\"hidden\",\"display: none\"],getMessage:i=>`Element is not visible${i?.ref?` (ref: ${i.ref})`:\"\"}`,suggestion:\"The ",
+          "i.ref})`:\"\"}`,suggestion:\"The element exists but is hidden. It may need to be revealed by scrolling or clicking another element.\",recovery:\"browser_snapshot to see current visibility state\"},{patterns:[\"disabled\"],getMessage:i=>`Element is disabled${i?.ref?` (ref: ${i.ref})`:\"\"}`,suggestion:\"The"
+        ],
+        "browser_click": [
+          " \t\t\t\t\t\tsuccess: false, \t\t\t\t\t\terror: 'Element ' + ref + actualDescription + ' is not a text input, textarea, or contenteditable element. Use browser_click instead if you want to interact with this element.', \t\t\t\t\t\tsuggestion: 'Use browser_click instead if you want to interact with this element",
+          " input, textarea, or contenteditable element. Use browser_click instead if you want to interact with this element.', \t\t\t\t\t\tsuggestion: 'Use browser_click instead if you want to interact with this element.' \t\t\t\t\t}; \t\t\t\t} \t\t\t\tif (isReadonly && !isContentEditable) { \t\t\t\t\treturn { \t\t\t\t\t\tsuccess: ",
+          "h native <select> elements.', \t\t\t\t\t\t\t\tsuggestion: 'For custom dropdown/combobox components, try: 1) Click the element to open the dropdown (browser_click), 2) Then click the desired option. Custom dropdowns require interaction like regular buttons.' \t\t\t\t\t\t\t}; \t\t\t\t\t\t} \t\t\t\t\t\treturn { \t\t\t\t\t\t\tsuc"
+        ],
+        "browser_take_screenshot": [
+          "=await this.Dc(o,c,s,n);break;case\"network_requests\":case\"browser_network_requests\":m=await this.Ec(o,c,n);break;case\"take_screenshot\":case\"browser_take_screenshot\":m=await this.Fc(o,c,t,n);break;case\"go_back\":case\"navigate_back\":case\"browser_navigate_back\":m=await this.Jc(o,c,n);break;case\"go_forward\""
+        ],
+        "Schedule": [
+          "=typeof XI.postMessage==\"function\"&&!XI.importScripts,US=(()=>{if(Cdt){const i=[];XI.addEventListener(\"message\",t=>{if(t.data&&t.data.vscodeScheduleAsyncWork)for(let s=0,n=i.length;s<n;s++){const r=i[s];if(r.id===t.data.vscodeScheduleAsyncWork){i.splice(s,1),r.callback();return}}});let e",
+          "ddEventListener(\"message\",t=>{if(t.data&&t.data.vscodeScheduleAsyncWork)for(let s=0,n=i.length;s<n;s++){const r=i[s];if(r.id===t.data.vscodeScheduleAsyncWork){i.splice(s,1),r.callback();return}}});let e=0;return t=>{const s=++e;i.push({id:s,callback:t}),XI.postMessage({vscodeScheduleAsyn",
+          "codeScheduleAsyncWork){i.splice(s,1),r.callback();return}}});let e=0;return t=>{const s=++e;i.push({id:s,callback:t}),XI.postMessage({vscodeScheduleAsyncWork:s},\"*\")}}return i=>setTimeout(i)})(),function(i){i[i.Windows=1]=\"Windows\",i[i.Macintosh=2]=\"Macintosh\",i[i.Linux=3]=\"Linux\"}(Sdt||"
+        ],
+        "record": [
+          ",repoForked:Y(\"repo-forked\",60003),gitPullRequest:Y(\"git-pull-request\",60004),gitPullRequestAbandoned:Y(\"git-pull-request-abandoned\",60004),recordKeys:Y(\"record-keys\",60005),keyboard:Y(\"keyboard\",60005),tag:Y(\"tag\",60006),gitPullRequestLabel:Y(\"git-pull-request-label\",60006),tagAdd:Y(\"",
+          "\"repo-forked\",60003),gitPullRequest:Y(\"git-pull-request\",60004),gitPullRequestAbandoned:Y(\"git-pull-request-abandoned\",60004),recordKeys:Y(\"record-keys\",60005),keyboard:Y(\"keyboard\",60005),tag:Y(\"tag\",60006),gitPullRequestLabel:Y(\"git-pull-request-label\",60006),tagAdd:Y(\"tag-add\",60006",
+          "onment\",60323),pass:Y(\"pass\",60324),issueClosed:Y(\"issue-closed\",60324),stopCircle:Y(\"stop-circle\",60325),playCircle:Y(\"play-circle\",60326),record:Y(\"record\",60327),debugAltSmall:Y(\"debug-alt-small\",60328),vmConnect:Y(\"vm-connect\",60329),cloud:Y(\"cloud\",60330),merge:Y(\"merge\",60331),ex"
+        ],
+        "verify": [
+          "TipsService\"),xg=fe(\"IAllowedExtensionsService\"),Xpn=U(2132,\"Extensions\"),Qpn=U(2133,\"Preferences\"),U8=\"extensions.allowed\",lXi=\"extensions.verifySignature\",hXi=\"extensions.requestTimeout\";Je.as(Zs.Configuration).registerConfiguration({id:\"extensions\",order:30,title:d(2115,null),type:\"",
+          ")(rOt||(rOt={}));var UP;(function(i){i[i.SOLO=1]=\"SOLO\",i[i.DEV=0]=\"DEV\"})(UP||(UP={})),ae(),ze(),ze();var iK=class{constructor(i){this.a=i}verify(i){return this.b(i)?i:this.a}},Dh=class extends iK{b(i){return typeof i==\"boolean\"}},nBe=class extends iK{b(i){return typeof i==\"number\"}},",
+          "lass extends iK{constructor(i,e){super(i),this.c=e}b(i){return this.c.includes(i)}},oOt=class extends iK{constructor(i,e){super(i),this.c=e}verify(i){return this.b(i)?aOt(this.c,i):this.a}b(i){return rn(i)}};function aOt(i,e){const t=Object.create(null);for(const s in i)if(Object.hasOw"
+        ]
+      }
+    },
+    {
+      "file": "/Applications/Trae CN.app/Contents/Resources/app/extensions/ai-completion/dist/extension.js",
+      "bytes": 3793772,
+      "lines": 3,
+      "tool_keyword_hits": {
+        "readFile": 54,
+        "writeFile": 18,
+        "runCommand": 6,
+        "Exec": 135,
+        "create_file": 2,
+        "delete_file": 2,
+        "view_file": 2,
+        "file_search": 3,
+        "Schedule": 11,
+        "record": 21,
+        "verify": 21
+      },
+      "mode_keyword_hits": {
+        "Plan": 7
+      },
+      "stop_keyword_hits": {
+        "finishReason": 26,
+        "interrupted": 2
+      },
+      "tool_id_candidates": [],
+      "samples": {
+        "readFile": [
+          "n(`configString mkdirSync error. dir=${e}, e=${t.message}`)}const r=o.default.join(e,\"deviceInfo.json\");try{return await a.default.promises.readFile(r,{encoding:\"utf-8\"})}catch(e){const t=await(0,s.getMachineId)(e=>{n(\"getMachineId error\")}),i=JSON.stringify({deviceId:t},null,2);try{a.de",
+          "ch(e){c.logger.error(`configString mkdirSync error. dir=${t}, e=${e.message}`)}const n=a.default.join(t,\"config.json\");try{return i.default.readFileSync(n,{encoding:\"utf-8\"})}catch(t){if(l.container.get(u.BuildConfig).isToB()){const t=a.default.join(o.default.homedir(),e,\"config.json\");i",
+          "()){const t=a.default.join(o.default.homedir(),e,\"config.json\");if(i.default.existsSync(t))try{return i.default.copyFileSync(t,n),i.default.readFileSync(t,{encoding:\"utf-8\"})}catch(e){c.logger.error(`configString with internalConfigPath error = ${e.message}`)}}const r=JSON.stringify(d(),"
+        ],
+        "writeFile": [
+          "coding:\"utf-8\"})}catch(e){const t=await(0,s.getMachineId)(e=>{n(\"getMachineId error\")}),i=JSON.stringify({deviceId:t},null,2);try{a.default.writeFileSync(r,i)}catch(e){n(`configString writeFileSync error = ${e.message}`)}return i}}};t.DeviceIdManager=l,t.DeviceIdManager=l=r([(0,c.injectab",
+          "getMachineId)(e=>{n(\"getMachineId error\")}),i=JSON.stringify({deviceId:t},null,2);try{a.default.writeFileSync(r,i)}catch(e){n(`configString writeFileSync error = ${e.message}`)}return i}}};t.DeviceIdManager=l,t.DeviceIdManager=l=r([(0,c.injectable)()],l)},99948(e,t){\"use strict\";Object.de",
+          "8\"})}catch(e){c.logger.error(`configString with internalConfigPath error = ${e.message}`)}}const r=JSON.stringify(d(),null,2);try{i.default.writeFileSync(n,r),c.logger.debug(\"configString writeFileSync done\")}catch(e){c.logger.error(`configString writeFileSync error = ${e.message}`)}retur"
+        ],
+        "runCommand": [
+          " failed: searchQuery is empty\"),t&&(t.error_code=h.SearchParamsInvalid),void o([]);const l=this.buildRgCommand(e);c.logger.debug(`[Keyword] runCommand: rgCmd: ${l.join(\" \")}`);const u=a.default.parse(process.cwd()).root,p=(0,i.spawn)(this.rgPath,l,{cwd:u});let m=[],f=\"\";const _=setTimeout(",
+          "(t){return e.terminal.shellIntegration?\"done\":(p.logger.logDebug(\"[TerminalManager] awaitShellIntegration failed\"),\"no_shell_integration\")}}runCommandFallback(e,t,n,r=[],i=4e3){e.busy=!0;const o=new l.TerminalProcess;o.once(\"completed\",t=>{p.logger.logDebug(\"[TerminalManager] fallback comp",
+          "nalManager] Error in terminal ${terminalInfo.id}:\",e),t(e)})});return o.runWithNoShellIntegration(e.terminal,t,n,r),(0,l.mergePromise)(o,a)}runCommand(e,t,n=[],r=4e3){e.busy=!0;const i=new l.TerminalProcess;this.processes.set(e.id,i),i.once(\"completed\",t=>{p.logger.logDebug(\"[TerminalManag"
+        ],
+        "Exec": [
+          "pFusionTrigger\",e.CompFusionShownEvent=\"ReportEvent.CompFusionShown\",e.CompFusionCanceledEvent=\"ReportEvent.CompFusionCanceled\",e.CompFusionExecuteTimeoutEvent=\"ReportEvent.CompFusionExecuteTimeout\",e.newMaintainLoginStateFailEvent=(t,n,r)=>({name:e.MaintainLoginStateFailEvent,catego",
+          "ortEvent.CompFusionShown\",e.CompFusionCanceledEvent=\"ReportEvent.CompFusionCanceled\",e.CompFusionExecuteTimeoutEvent=\"ReportEvent.CompFusionExecuteTimeout\",e.newMaintainLoginStateFailEvent=(t,n,r)=>({name:e.MaintainLoginStateFailEvent,categories:{pluginSessionID:t,region:n,message:r}",
+          ".n}}),e.newCompFusionCanceledEvent=(t,n,r)=>({name:e.CompFusionCanceledEvent,metrics:r,categories:{pluginSessionID:t,...n}}),e.newCompFusionExecuteTimeoutEvent=(t,n,r)=>({name:e.CompFusionExecuteTimeoutEvent,metrics:r,categories:{pluginSessionID:t,...n}})}(n||(t.ReportEvent=n={}))},4"
+        ],
+        "create_file": [
+          ".defineProperty(t,\"__esModule\",{value:!0}),t.ChatSnapshotCreateFileRequest=void 0;const r=n(255);var i;!function(e){e.method=\"chat/snapshot_create_file\",e.messageDirection=r.MessageDirection.serverToClient,e.type=new r.ProtocolRequestType(e.method)}(i||(t.ChatSnapshotCreateFileRequest=i={})",
+          "mmand\",e.OpenPreview=\"open_preview\",e.OpenPreviewAndWaitForError=\"open_preview_and_wait_for_error\",e.OpenFolder=\"open_folder\",e.CreateFile=\"create_file\",e.ViewFile=\"view_file\",e.ViewFiles=\"view_files\",e.ViewFolder=\"view_folder\",e.EditFileSearchReplace=\"edit_file_search_replace\",e.WriteToFil"
+        ],
+        "delete_file": [
+          "defineProperty(t,\"__esModule\",{value:!0}),t.ChatSnapshotDeleteFilesRequest=void 0;const r=n(255);var i;!function(e){e.method=\"chat/snapshot_delete_files\",e.messageDirection=r.MessageDirection.serverToClient,e.type=new r.ProtocolRequestType(e.method)}(i||(t.ChatSnapshotDeleteFilesRequest=i={",
+          "earch_by_definition\",e.SearchByRegex=\"search_by_regex\",e.FileSearch=\"file_search\",e.CheckCommandStatus=\"check_command_status\",e.DeleteFile=\"delete_file\",e.UpdateShallowMemento=\"update_shallow_memento\",e.CondenseShallowMemento=\"condense_shallow_memento\",e.MCPCall=\"run_mcp\",e.Finish=\"finish\","
+        ],
+        "view_file": [
+          "n_preview\",e.OpenPreviewAndWaitForError=\"open_preview_and_wait_for_error\",e.OpenFolder=\"open_folder\",e.CreateFile=\"create_file\",e.ViewFile=\"view_file\",e.ViewFiles=\"view_files\",e.ViewFolder=\"view_folder\",e.EditFileSearchReplace=\"edit_file_search_replace\",e.WriteToFile=\"write_to_file\",e.Sho",
+          "AndWaitForError=\"open_preview_and_wait_for_error\",e.OpenFolder=\"open_folder\",e.CreateFile=\"create_file\",e.ViewFile=\"view_file\",e.ViewFiles=\"view_files\",e.ViewFolder=\"view_folder\",e.EditFileSearchReplace=\"edit_file_search_replace\",e.WriteToFile=\"write_to_file\",e.ShowDiff=\"show_diff\",e.Sear"
+        ],
+        "file_search": [
+          "folder\",e.CreateFile=\"create_file\",e.ViewFile=\"view_file\",e.ViewFiles=\"view_files\",e.ViewFolder=\"view_folder\",e.EditFileSearchReplace=\"edit_file_search_replace\",e.WriteToFile=\"write_to_file\",e.ShowDiff=\"show_diff\",e.SearchByReference=\"search_by_reference\",e.SearchByDefinition=\"search_by_def",
+          "diff\",e.SearchByReference=\"search_by_reference\",e.SearchByDefinition=\"search_by_definition\",e.SearchByRegex=\"search_by_regex\",e.FileSearch=\"file_search\",e.CheckCommandStatus=\"check_command_status\",e.DeleteFile=\"delete_file\",e.UpdateShallowMemento=\"update_shallow_memento\",e.CondenseShallowMe",
+          "be_ai_start_ckg_server\",e.InitSession=\"icube_ai_init_session\",e.ChatRequest=\"icube_ai_chat_request\",e.AIMentionFileSearch=\"icube_ai_mention_file_search\",e.AIMentionFolderSearch=\"icube_ai_mention_folder_search\",e.CKGExit=\"icube_ai_ckg_exit\",e.FrontResponse=\"icube_ai_front_response\",e.Command"
+        ],
+        "Schedule": [
+          ",t.TY=\"function\"==typeof y.postMessage&&!y.importScripts,(()=>{if(t.TY){const e=[];y.addEventListener(\"message\",t=>{if(t.data&&t.data.vscodeScheduleAsyncWork)for(let n=0,r=e.length;n<r;n++){const r=e[n];if(r.id===t.data.vscodeScheduleAsyncWork)return e.splice(n,1),void r.callback()}});le",
+          "ddEventListener(\"message\",t=>{if(t.data&&t.data.vscodeScheduleAsyncWork)for(let n=0,r=e.length;n<r;n++){const r=e[n];if(r.id===t.data.vscodeScheduleAsyncWork)return e.splice(n,1),void r.callback()}});let t=0}})();t.H8=!!(t.N1&&t.N1.indexOf(\"Chrome\")>=0),t.N1&&t.N1.indexOf(\"Firefox\"),!t.H",
+          "n.intent??\"\",range:e.edit_suggestion.range},isMaskedByCSP:e.isMaskedByCSP}}class l{constructor(){this._activePatterns=[],this._patternsFlushScheduled=!1}get activeConversationId(){return this._activeConversationId}get activePatterns(){return this._activePatterns}isCueIntentSessionActive("
+        ],
+        "record": [
+          "mandPrefix();l.logger.logDebug(`AI Client activate: region:${r}， clientInfo:${JSON.stringify(i)}`);const D=this.getBrand();m.startupMetrics.recordAIServerCreateConnection(),this.client=new s.AIClient(D,D,D,y,_,{documentSelector:b.documentSelector,clientInfo:i,workspaceFolders:Array.fro",
+          ",g,F),\"cue-flow-pattern\"===s){const e=k||L?.recommend?.edit_id;E.cueFlowTaskServiceProxy.handleRecommendAccepted(e)}y.lspCompletionProvider.recordAcceptInfo(t.document.uri.toString(),s,new f.Range(g,0,F+1,0),{edit_before:T,edit_after:i,edit_area_range:{start:g,end:F},uri:t.document.uri",
+          "endsWith(t)))return!1;const n=v.InlineCompFusionCustomClientManager.client();return n?n.enableRename(t):d.MultiEdit.getEnableRenameConfig()}recordAcceptInfo(e,t,n,r){this.lastAcceptInfo={uri:e,range:n,edit:r,model:t}}findPythonInsertLine(e){let t=0;for(;t<e.lineCount;){const n=e.lineAt"
+        ],
+        "verify": [
+          "ingapore-Central\",e.CN=\"China-North\"}(h||(h={}));const f=m?.appId??e;this.teaClient=(0,o.createTeaClient)({app_id:f,channel:t,retry:5,event_verify_url:c,abServiceOrigin:m?.libraDomain??n,transport:m?.sdkTransport,channel_domain:m?.channelDomain}),i&&(this.teaClient=(0,o.createTeaClient",
+          "n??n,transport:m?.sdkTransport,channel_domain:m?.channelDomain}),i&&(this.teaClient=(0,o.createTeaClient)({app_id:f,channel:t,retry:5,event_verify_url:c,abServiceOrigin:n,channel_domain:a.DomainConfig.tea.verifyUrlCN,transport:m?.sdkTransport})),this.originUserId=r,this.teaClient.confi",
+          "i&&(this.teaClient=(0,o.createTeaClient)({app_id:f,channel:t,retry:5,event_verify_url:c,abServiceOrigin:n,channel_domain:a.DomainConfig.tea.verifyUrlCN,transport:m?.sdkTransport})),this.originUserId=r,this.teaClient.config({user:{user_unique_id:r,...p},header:{app_id:f,region:function("
+        ]
+      }
+    }
+  ],
+  "all_tool_id_candidates": [
+    "ReplyUser",
+    "runSubagent"
+  ],
+  "evidence": [
+    {
+      "result": {
+        "file": "/Applications/Trae CN.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js",
+        "bytes": 16499954,
+        "tool_keyword_hits": 1577,
+        "tool_id_candidates": 2
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "bundle-string-scan",
+        "path": "/Applications/Trae CN.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js"
+      },
+      "confidence": 1.0,
+      "known_gaps": [
+        "压缩 bundle 无法建立模块/调用图；关键词命中只说明字符串出现",
+        "toolId 提取依赖正则，可能漏掉压缩后的别名"
+      ]
+    },
+    {
+      "result": {
+        "file": "/Applications/Trae CN.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.solo-lite-slim.js",
+        "bytes": 11940440,
+        "tool_keyword_hits": 1183,
+        "tool_id_candidates": 2
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "bundle-string-scan",
+        "path": "/Applications/Trae CN.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.solo-lite-slim.js"
+      },
+      "confidence": 1.0,
+      "known_gaps": [
+        "压缩 bundle 无法建立模块/调用图；关键词命中只说明字符串出现",
+        "toolId 提取依赖正则，可能漏掉压缩后的别名"
+      ]
+    },
+    {
+      "result": {
+        "file": "/Applications/Trae CN.app/Contents/Resources/app/extensions/ai-completion/dist/extension.js",
+        "bytes": 3793772,
+        "tool_keyword_hits": 275,
+        "tool_id_candidates": 0
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "bundle-string-scan",
+        "path": "/Applications/Trae CN.app/Contents/Resources/app/extensions/ai-completion/dist/extension.js"
+      },
+      "confidence": 1.0,
+      "known_gaps": [
+        "压缩 bundle 无法建立模块/调用图；关键词命中只说明字符串出现",
+        "toolId 提取依赖正则，可能漏掉压缩后的别名"
+      ]
+    },
+    {
+      "result": "扫描 3 个 bundle；toolId 候选 2 个；仅字符串级 observation，不可作为架构结论",
+      "level": "derivation",
+      "provenance": {
+        "source": "bundle-miner",
+        "files": 3
+      },
+      "confidence": 0.6,
+      "known_gaps": [
+        "未覆盖原生/远端 Agent 运行时",
+        "未解析 WASM / native 模块"
+      ]
+    }
+  ]
+}

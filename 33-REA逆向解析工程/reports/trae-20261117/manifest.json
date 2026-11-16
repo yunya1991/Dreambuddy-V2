@@ -1,0 +1,2106 @@
+{
+  "summary": "agent_types=['trae', 'code', 'design', 'work']；user_skills=82；plugins=9；mcp_sessions=25；modes=10",
+  "manifests": {
+    "global_skills": [
+      "TRAE-browseruse",
+      "TRAE-browseruse-external",
+      "TRAE-code-mode-orchestrator",
+      "TRAE-computer-use-ptc",
+      "TRAE-doctor",
+      "digital-avatar-creator",
+      "dynamic-ui",
+      "skill-creator"
+    ],
+    "agent_types": {
+      "trae": [
+        {
+          "model": "buse",
+          "skill_count": 3,
+          "skills": [
+            "TRAE-browseruse",
+            "TRAE-browseruse-external",
+            "TRAE-product-knowledge"
+          ]
+        },
+        {
+          "model": "default",
+          "skill_count": 4,
+          "skills": [
+            "TRAE-product-knowledge",
+            "dynamic-ui",
+            "schedule",
+            "skill-creator"
+          ]
+        },
+        {
+          "model": "doutops",
+          "skill_count": 7,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-plan-mode",
+            "TRAE-spec-mode",
+            "dynamic-ui",
+            "gp-agent-handoff",
+            "schedule",
+            "skill-creator"
+          ]
+        },
+        {
+          "model": "gpt",
+          "skill_count": 1,
+          "skills": [
+            "TRAE-computer-use-ptc"
+          ]
+        },
+        {
+          "model": "non_multimodal",
+          "skill_count": 4,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "dynamic-ui",
+            "schedule",
+            "skill-creator"
+          ]
+        },
+        {
+          "model": "seed",
+          "skill_count": 1,
+          "skills": [
+            "TRAE-computer-use-ptc"
+          ]
+        }
+      ],
+      "code": [
+        {
+          "model": "buse",
+          "skill_count": 5,
+          "skills": [
+            "TRAE-browseruse",
+            "TRAE-browseruse-external",
+            "TRAE-product-knowledge",
+            "feedback",
+            "skill-creator"
+          ]
+        },
+        {
+          "model": "default",
+          "skill_count": 5,
+          "skills": [
+            "TRAE-product-knowledge",
+            "dynamic-ui",
+            "feedback",
+            "schedule",
+            "skill-creator"
+          ]
+        },
+        {
+          "model": "doutops",
+          "skill_count": 6,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-plan-mode",
+            "TRAE-spec-mode",
+            "dynamic-ui",
+            "schedule",
+            "skill-creator"
+          ]
+        },
+        {
+          "model": "gpt",
+          "skill_count": 1,
+          "skills": [
+            "TRAE-computer-use-ptc"
+          ]
+        },
+        {
+          "model": "hebe",
+          "skill_count": 6,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-product-knowledge",
+            "dynamic-ui",
+            "feedback",
+            "schedule",
+            "skill-creator"
+          ]
+        },
+        {
+          "model": "non_multimodal",
+          "skill_count": 6,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-product-knowledge",
+            "dynamic-ui",
+            "feedback",
+            "schedule",
+            "skill-creator"
+          ]
+        }
+      ],
+      "design": [
+        {
+          "model": "default",
+          "skill_count": 6,
+          "skills": [
+            "design-library-creator",
+            "feedback",
+            "skill-creator",
+            "solo-design",
+            "solo-graphic-generation",
+            "solo-image-edit"
+          ]
+        },
+        {
+          "model": "gpt",
+          "skill_count": 1,
+          "skills": [
+            "TRAE-computer-use-ptc"
+          ]
+        },
+        {
+          "model": "non_multimodal",
+          "skill_count": 1,
+          "skills": [
+            "TRAE-computer-use-ptc"
+          ]
+        },
+        {
+          "model": "seed",
+          "skill_count": 1,
+          "skills": [
+            "TRAE-computer-use-ptc"
+          ]
+        }
+      ],
+      "work": [
+        {
+          "model": "buse",
+          "skill_count": 14,
+          "skills": [
+            "TRAE-browseruse",
+            "TRAE-browseruse-external",
+            "TRAE-computer-use-ptc",
+            "TRAE-product-knowledge",
+            "doc-writing-guide",
+            "docx",
+            "feedback",
+            "html-deck",
+            "html-report",
+            "pdf",
+            "pptx",
+            "research-guide",
+            "skill-creator",
+            "xlsx"
+          ]
+        },
+        {
+          "model": "default",
+          "skill_count": 11,
+          "skills": [
+            "TRAE-product-knowledge",
+            "doc-writing-guide",
+            "docx",
+            "feedback",
+            "html-deck",
+            "html-report",
+            "pdf",
+            "pptx",
+            "research-guide",
+            "skill-creator",
+            "xlsx"
+          ]
+        },
+        {
+          "model": "deidamia",
+          "skill_count": 12,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-product-knowledge",
+            "doc-writing-guide",
+            "docx",
+            "feedback",
+            "html-deck",
+            "html-report",
+            "pdf",
+            "pptx",
+            "research-guide",
+            "skill-creator",
+            "xlsx"
+          ]
+        },
+        {
+          "model": "gpt",
+          "skill_count": 1,
+          "skills": [
+            "TRAE-computer-use-ptc"
+          ]
+        },
+        {
+          "model": "hebe",
+          "skill_count": 12,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-product-knowledge",
+            "doc-writing-guide",
+            "docx",
+            "feedback",
+            "html-deck",
+            "html-report",
+            "pdf",
+            "pptx",
+            "research-guide",
+            "skill-creator",
+            "xlsx"
+          ]
+        },
+        {
+          "model": "iphigenia",
+          "skill_count": 12,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-product-knowledge",
+            "doc-writing-guide",
+            "docx",
+            "feedback",
+            "html-deck",
+            "html-report",
+            "pdf",
+            "pptx",
+            "research-guide",
+            "skill-creator",
+            "xlsx"
+          ]
+        },
+        {
+          "model": "iris",
+          "skill_count": 11,
+          "skills": [
+            "TRAE-product-knowledge",
+            "doc-writing-guide",
+            "docx",
+            "feedback",
+            "html-deck",
+            "html-report",
+            "pdf",
+            "pptx",
+            "research-guide",
+            "skill-creator",
+            "xlsx"
+          ]
+        },
+        {
+          "model": "non_multimodal",
+          "skill_count": 12,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-product-knowledge",
+            "doc-writing-guide",
+            "docx",
+            "feedback",
+            "html-deck",
+            "html-report",
+            "pdf",
+            "pptx",
+            "research-guide",
+            "skill-creator",
+            "xlsx"
+          ]
+        },
+        {
+          "model": "seed",
+          "skill_count": 1,
+          "skills": [
+            "TRAE-computer-use-ptc"
+          ]
+        },
+        {
+          "model": "thetis",
+          "skill_count": 12,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-product-knowledge",
+            "doc-writing-guide",
+            "docx",
+            "feedback",
+            "html-deck",
+            "html-report",
+            "pdf",
+            "pptx",
+            "research-guide",
+            "skill-creator",
+            "xlsx"
+          ]
+        }
+      ]
+    }
+  },
+  "agent_summary": {
+    "trae": {
+      "models": 6,
+      "skill_count_min": 1,
+      "skill_count_max": 7,
+      "profiles": [
+        {
+          "model": "buse",
+          "skill_count": 3,
+          "skills": [
+            "TRAE-browseruse",
+            "TRAE-browseruse-external",
+            "TRAE-product-knowledge"
+          ]
+        },
+        {
+          "model": "default",
+          "skill_count": 4,
+          "skills": [
+            "TRAE-product-knowledge",
+            "dynamic-ui",
+            "schedule",
+            "skill-creator"
+          ]
+        },
+        {
+          "model": "doutops",
+          "skill_count": 7,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-plan-mode",
+            "TRAE-spec-mode",
+            "dynamic-ui",
+            "gp-agent-handoff",
+            "schedule",
+            "skill-creator"
+          ]
+        },
+        {
+          "model": "gpt",
+          "skill_count": 1,
+          "skills": [
+            "TRAE-computer-use-ptc"
+          ]
+        },
+        {
+          "model": "non_multimodal",
+          "skill_count": 4,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "dynamic-ui",
+            "schedule",
+            "skill-creator"
+          ]
+        },
+        {
+          "model": "seed",
+          "skill_count": 1,
+          "skills": [
+            "TRAE-computer-use-ptc"
+          ]
+        }
+      ]
+    },
+    "code": {
+      "models": 6,
+      "skill_count_min": 1,
+      "skill_count_max": 6,
+      "profiles": [
+        {
+          "model": "buse",
+          "skill_count": 5,
+          "skills": [
+            "TRAE-browseruse",
+            "TRAE-browseruse-external",
+            "TRAE-product-knowledge",
+            "feedback",
+            "skill-creator"
+          ]
+        },
+        {
+          "model": "default",
+          "skill_count": 5,
+          "skills": [
+            "TRAE-product-knowledge",
+            "dynamic-ui",
+            "feedback",
+            "schedule",
+            "skill-creator"
+          ]
+        },
+        {
+          "model": "doutops",
+          "skill_count": 6,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-plan-mode",
+            "TRAE-spec-mode",
+            "dynamic-ui",
+            "schedule",
+            "skill-creator"
+          ]
+        },
+        {
+          "model": "gpt",
+          "skill_count": 1,
+          "skills": [
+            "TRAE-computer-use-ptc"
+          ]
+        },
+        {
+          "model": "hebe",
+          "skill_count": 6,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-product-knowledge",
+            "dynamic-ui",
+            "feedback",
+            "schedule",
+            "skill-creator"
+          ]
+        },
+        {
+          "model": "non_multimodal",
+          "skill_count": 6,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-product-knowledge",
+            "dynamic-ui",
+            "feedback",
+            "schedule",
+            "skill-creator"
+          ]
+        }
+      ]
+    },
+    "design": {
+      "models": 4,
+      "skill_count_min": 1,
+      "skill_count_max": 6,
+      "profiles": [
+        {
+          "model": "default",
+          "skill_count": 6,
+          "skills": [
+            "design-library-creator",
+            "feedback",
+            "skill-creator",
+            "solo-design",
+            "solo-graphic-generation",
+            "solo-image-edit"
+          ]
+        },
+        {
+          "model": "gpt",
+          "skill_count": 1,
+          "skills": [
+            "TRAE-computer-use-ptc"
+          ]
+        },
+        {
+          "model": "non_multimodal",
+          "skill_count": 1,
+          "skills": [
+            "TRAE-computer-use-ptc"
+          ]
+        },
+        {
+          "model": "seed",
+          "skill_count": 1,
+          "skills": [
+            "TRAE-computer-use-ptc"
+          ]
+        }
+      ]
+    },
+    "work": {
+      "models": 10,
+      "skill_count_min": 1,
+      "skill_count_max": 14,
+      "profiles": [
+        {
+          "model": "buse",
+          "skill_count": 14,
+          "skills": [
+            "TRAE-browseruse",
+            "TRAE-browseruse-external",
+            "TRAE-computer-use-ptc",
+            "TRAE-product-knowledge",
+            "doc-writing-guide",
+            "docx",
+            "feedback",
+            "html-deck",
+            "html-report",
+            "pdf",
+            "pptx",
+            "research-guide",
+            "skill-creator",
+            "xlsx"
+          ]
+        },
+        {
+          "model": "default",
+          "skill_count": 11,
+          "skills": [
+            "TRAE-product-knowledge",
+            "doc-writing-guide",
+            "docx",
+            "feedback",
+            "html-deck",
+            "html-report",
+            "pdf",
+            "pptx",
+            "research-guide",
+            "skill-creator",
+            "xlsx"
+          ]
+        },
+        {
+          "model": "deidamia",
+          "skill_count": 12,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-product-knowledge",
+            "doc-writing-guide",
+            "docx",
+            "feedback",
+            "html-deck",
+            "html-report",
+            "pdf",
+            "pptx",
+            "research-guide",
+            "skill-creator",
+            "xlsx"
+          ]
+        },
+        {
+          "model": "gpt",
+          "skill_count": 1,
+          "skills": [
+            "TRAE-computer-use-ptc"
+          ]
+        },
+        {
+          "model": "hebe",
+          "skill_count": 12,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-product-knowledge",
+            "doc-writing-guide",
+            "docx",
+            "feedback",
+            "html-deck",
+            "html-report",
+            "pdf",
+            "pptx",
+            "research-guide",
+            "skill-creator",
+            "xlsx"
+          ]
+        },
+        {
+          "model": "iphigenia",
+          "skill_count": 12,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-product-knowledge",
+            "doc-writing-guide",
+            "docx",
+            "feedback",
+            "html-deck",
+            "html-report",
+            "pdf",
+            "pptx",
+            "research-guide",
+            "skill-creator",
+            "xlsx"
+          ]
+        },
+        {
+          "model": "iris",
+          "skill_count": 11,
+          "skills": [
+            "TRAE-product-knowledge",
+            "doc-writing-guide",
+            "docx",
+            "feedback",
+            "html-deck",
+            "html-report",
+            "pdf",
+            "pptx",
+            "research-guide",
+            "skill-creator",
+            "xlsx"
+          ]
+        },
+        {
+          "model": "non_multimodal",
+          "skill_count": 12,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-product-knowledge",
+            "doc-writing-guide",
+            "docx",
+            "feedback",
+            "html-deck",
+            "html-report",
+            "pdf",
+            "pptx",
+            "research-guide",
+            "skill-creator",
+            "xlsx"
+          ]
+        },
+        {
+          "model": "seed",
+          "skill_count": 1,
+          "skills": [
+            "TRAE-computer-use-ptc"
+          ]
+        },
+        {
+          "model": "thetis",
+          "skill_count": 12,
+          "skills": [
+            "TRAE-computer-use-ptc",
+            "TRAE-product-knowledge",
+            "doc-writing-guide",
+            "docx",
+            "feedback",
+            "html-deck",
+            "html-report",
+            "pdf",
+            "pptx",
+            "research-guide",
+            "skill-creator",
+            "xlsx"
+          ]
+        }
+      ]
+    }
+  },
+  "user_skills": [
+    {
+      "name": "agent-browser",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/agent-browser/SKILL.md",
+      "frontmatter_name": "agent-browser",
+      "description": "Browser automation CLI for AI agents. Use when the user needs to interact with websites, including navigating pages, filling forms, clicking buttons, taking screenshots, extracting data, testing web a"
+    },
+    {
+      "name": "brainstorming",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/brainstorming/SKILL.md",
+      "frontmatter_name": "brainstorming",
+      "description": "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation."
+    },
+    {
+      "name": "cms-content-upload",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/cms-content-upload/SKILL.md",
+      "frontmatter_name": "cms-content-upload",
+      "description": "Automates uploading articles to the company CMS content platform via browser automation. Invoke when user wants to upload content/articles to the content platform, create course collections, or manage"
+    },
+    {
+      "name": "daily-market-briefing",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/daily-market-briefing/SKILL.md",
+      "frontmatter_name": "daily-market-briefing",
+      "description": "生成每日市场快报：今日重要经济事件日历（CPI/FOMC/财报等）+ 市场情绪概览（恐贪指数/VIX/板块表现）+ 1条重点交易机会预告。Invoke when user asks for daily market briefing, event calendar, sentiment overview, or trading opportunity preview."
+    },
+    {
+      "name": "data-troubleshoot",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/data-troubleshoot/SKILL.md",
+      "frontmatter_name": "data-troubleshoot",
+      "description": "排查基本面数据链路问题：前端显示异常值（0.000、错误标签、量级不对）时，系统化追踪 18-DB→backfill→19-DAL→API→前端 全链路。Invoke when frontend shows suspicious values (0.000, wrong sentiment labels, magnitude errors) or user reports incorrect fu"
+    },
+    {
+      "name": "drawio",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/drawio/SKILL.md",
+      "frontmatter_name": "drawio",
+      "description": "Generate draw.io diagrams (architecture, flow, data flow) as editable .drawio files with optional PNG/SVG/PDF export"
+    },
+    {
+      "name": "dream-acceptance-verify",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-acceptance-verify/SKILL.md",
+      "frontmatter_name": "dream-acceptance-verify",
+      "description": "Bug修复/功能完成后的强制证据验收门禁：症状复测+日志证据+回归+影响面+边界五维验证，产出四文件验收包。AI宣称'完成/修复/通过'前必须调用，禁止靠感觉验收。"
+    },
+    {
+      "name": "dream-arch-collaboration-workflow",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-arch-collaboration-workflow/SKILL.md",
+      "frontmatter_name": "dream-arch-collaboration-workflow",
+      "description": "三层架构能力协同调用规范+认知系统协作流程。Invoke for 主骨架调用链编排、跨子系统协同、LLM四阶段协作、认知recall命中架构记忆、或需调用DreamOS/DSH/子域能力时。"
+    },
+    {
+      "name": "dream-arch-research-orchestrator",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-arch-research-orchestrator/SKILL.md",
+      "frontmatter_name": "dream-arch-research-orchestrator",
+      "description": "开工SKILL(默认名，方便记忆) — 架构调研编排元 SKILL: 自动编排「问题定义→调研→SPEC→评审→Plan」五阶段闭环，对应调研→SPEC→评审→PLAN流程。每步调度子 SKILL 输出结果，用户确认后推进。Invoke for architecture questions, spec formation, peer review planning, or structured r"
+    },
+    {
+      "name": "dream-backtest-verify",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-backtest-verify/SKILL.md",
+      "frontmatter_name": "dream-backtest-verify",
+      "description": "Orchestrates 5-step post-hoc backtest verification: load trades → fetch klines → run detector gate → rebound attribution → value report. Invoke for backtest verification of trading subsystems (BDSM/BC"
+    },
+    {
+      "name": "dream-bugfix-workflow",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-bugfix-workflow/SKILL.md",
+      "frontmatter_name": "dream-bugfix-workflow",
+      "description": "Orchestrates bugfix: symptom collect → reproduce → root cause (5why) → fix proposal → TDD verify → hermes reflection. Invoke for bug fix, root cause analysis."
+    },
+    {
+      "name": "dream-classic-pipeline-tdd-migration",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-classic-pipeline-tdd-migration/SKILL.md",
+      "frontmatter_name": "dream-classic-pipeline-tdd-migration",
+      "description": "Orchestrates Classic Pipeline C0-C8 nine-node TDD migration: RED test (assert real business logic) → GREEN impl (simplified extraction from ml_trade_service.py) → REFACTOR (full suite no regression) →"
+    },
+    {
+      "name": "dream-code-commit-sync-workflow",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-code-commit-sync-workflow/SKILL.md",
+      "frontmatter_name": "dream-code-commit-sync-workflow",
+      "description": "Orchestrates code-change auto-commit: change parse → precise stage → validate (tsc/tests) → conventional commit message → commit → orphan-scan → cognitive record. Invoke when code changes are complete"
+    },
+    {
+      "name": "dream-code-deploy-pipeline",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-code-deploy-pipeline/SKILL.md",
+      "frontmatter_name": "dream-code-deploy-pipeline",
+      "description": "Orchestrates full code delivery pipeline: local commit → GitHub CI (Actions) → server deploy (webhook/update.sh) → healthcheck → rollback. Invoke when user wants to sync code to cloud, deploy to serve"
+    },
+    {
+      "name": "dream-code-sync-orphan-scan-workflow",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-code-sync-orphan-scan-workflow/SKILL.md",
+      "frontmatter_name": "dream-code-sync-orphan-scan-workflow",
+      "description": "Orchestrates 6-step post-commit orphan-component scan + integration + commit lock for frontend src/. Invoke when git commit/push completes, to detect untracked/modified files and orphan .tsx component"
+    },
+    {
+      "name": "dream-completion-evolution-workflow",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-completion-evolution-workflow/SKILL.md",
+      "frontmatter_name": "dream-completion-evolution-workflow",
+      "description": "收尾SKILL(默认名，方便记忆) — SPEC任务完成后的自动收尾编排器: 验收门禁→代码提交→文档同步→SKILL治理→认知闭环→最终报告。智能路由按变更类型决定执行哪些步骤，验收是硬门禁其余FAIL-OPEN。与开工SKILL对称：开工负责启动闭环(调研→SPEC→评审→PLAN)，收尾负责完成闭环(验收→commit→文档→治理→认知→报告)。Invoke when a SPEC task"
+    },
+    {
+      "name": "dream-doc-sync-workflow",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-doc-sync-workflow/SKILL.md",
+      "frontmatter_name": "dream-doc-sync-workflow",
+      "description": "Orchestrates 7-step doc index sync: change parse → 0-系统文档管理/INDEX update → 2-KNOWLEDGE index update → doc_lint+link_checker validate → doc_coverage → feishu base sync → cognitive record. Invoke when d"
+    },
+    {
+      "name": "dream-eng-mgmt-workflow",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-eng-mgmt-workflow/SKILL.md",
+      "frontmatter_name": "dream-eng-mgmt-workflow",
+      "description": "Orchestrates eng mgmt: requirement breakdown → milestone planning → dependency graph → scheduling → risk plan → hermes reflection. Invoke for eng mgmt, scheduling, milestone."
+    },
+    {
+      "name": "dream-feature-landing-workflow",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-feature-landing-workflow/SKILL.md",
+      "frontmatter_name": "dream-feature-landing-workflow",
+      "description": "Orchestrates DreamOS feature landing: backend contract/hook changes → 3.1-FRONTEND API+component+store adaptation → FAIL-OPEN validation (tsc+tests+HTTP200). Invoke when implementing SPEC tasks (D/F/O"
+    },
+    {
+      "name": "dream-genome-factor-workflow",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-genome-factor-workflow/SKILL.md",
+      "frontmatter_name": "dream-genome-factor-workflow",
+      "description": "Orchestrates genome factor development: recall → RED (3 test files) → GREEN (3 impl files) → wire-up → backtest → regression → cognitive closure. Invoke for genome factor, washout reversal, pump-dump "
+    },
+    {
+      "name": "dream-qwen-eval-collab",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-qwen-eval-collab/SKILL.md",
+      "frontmatter_name": "dream-qwen-eval-collab",
+      "description": "Orchestrates 5-step Qwen collab: user need → trae analysis → bsk calls Qwen research → trae evaluates & generates spec → user review. Invoke for Qwen/second-round eval, or complex 4-dim research (fina"
+    },
+    {
+      "name": "dream-rea-architecture-query",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-rea-architecture-query/SKILL.md",
+      "frontmatter_name": "dream-rea-architecture-query",
+      "description": "决定何时/如何调用 33-REA 逆向解析（l0.rea.mcp）获取架构事实：必调/可选/禁调矩阵 + token 纪律 + Evidence 使用纪律 + 认知回写闭环。Invoke when 架构摸底、进入陌生模块、影响面分析、工程对比、依赖环排查、或任何需要结构化代码事实而非模型印象的场景。"
+    },
+    {
+      "name": "dream-research-workflow",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-research-workflow/SKILL.md",
+      "frontmatter_name": "dream-research-workflow",
+      "description": "Orchestrates 5-step research: need analysis → multi-source research (finance+github+modular+code) → cross-validation → report → hermes reflection. Invoke for deep research, market research, or tech re"
+    },
+    {
+      "name": "dream-scattered-file-cleanup",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-scattered-file-cleanup/SKILL.md",
+      "frontmatter_name": "dream-scattered-file-cleanup",
+      "description": "散落文件治理工作流（金融级+盆景式）：双维度分类→状态机判断→索引登记→三态决策→认知闭环5步流程。Invoke when 处理散落文件、隐藏目录排查、标号目录根层文件清理、或需统一文档管理时。"
+    },
+    {
+      "name": "dream-science-cross-disciplinary",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-science-cross-disciplinary/SKILL.md",
+      "frontmatter_name": "dream-science-cross-disciplinary",
+      "description": "跨学科调研SKILL，建立金融交易与复杂系统/统计物理/信息论/博弈论/网络科学的映射关系"
+    },
+    {
+      "name": "dream-science-experiment-design",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-science-experiment-design/SKILL.md",
+      "frontmatter_name": "dream-science-experiment-design",
+      "description": "科研实验设计。设计回测/对照实验的具体方案，确保实验可复现、可验证。触发词：实验设计、回测设计、对照实验、experiment design"
+    },
+    {
+      "name": "dream-science-framework-research",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-science-framework-research/SKILL.md",
+      "frontmatter_name": "dream-science-framework-research",
+      "description": "整体框架研究SKILL，多Agent辩论模式研究交易系统顶层架构"
+    },
+    {
+      "name": "dream-science-hypothesis-verification",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-science-hypothesis-verification/SKILL.md",
+      "frontmatter_name": "dream-science-hypothesis-verification",
+      "description": "交易假设科研级验证SKILL，含可证伪性检验、对照实验、统计显著性、消融实验"
+    },
+    {
+      "name": "dream-science-literature-review",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-science-literature-review/SKILL.md",
+      "frontmatter_name": "dream-science-literature-review",
+      "description": "专业领域文献综述SKILL，PRISMA系统综述+Socratic引导，聚焦金融/量化/交易文献"
+    },
+    {
+      "name": "dream-science-orchestrator",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-science-orchestrator/SKILL.md",
+      "frontmatter_name": "dream-science-orchestrator",
+      "description": "科研引擎统一入口。根据任务类型路由到具体科研 SKILL，复用 dream-research-workflow 的 5 维交叉验证和 hermes 反思，输出可执行开发任务打通调研→开发衔接。触发词：科研编排、研究引擎、调研开发、科研任务"
+    },
+    {
+      "name": "dream-science-paper-writing",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-science-paper-writing/SKILL.md",
+      "frontmatter_name": "dream-science-paper-writing",
+      "description": "科研论文写作。将策略研究成果撰写为结构化研究报告，借鉴 Style Calibration 方法平衡学术严谨性与工程可落地性。触发词：论文写作、研究报告、科研写作、paper writing"
+    },
+    {
+      "name": "dream-science-peer-review",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-science-peer-review/SKILL.md",
+      "frontmatter_name": "dream-science-peer-review",
+      "description": "同行评审SKILL，Devil's Advocate让步阈值协议+7模式阻断清单，多视角评审策略逻辑"
+    },
+    {
+      "name": "dream-science-statistics-check",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-science-statistics-check/SKILL.md",
+      "frontmatter_name": "dream-science-statistics-check",
+      "description": "回测统计审查SKILL，检查p值/效应量/置信区间/多重比较/数值一致性"
+    },
+    {
+      "name": "dream-science-uncertainty-reasoning",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-science-uncertainty-reasoning/SKILL.md",
+      "frontmatter_name": "dream-science-uncertainty-reasoning",
+      "description": "不确定性推理SKILL，量化策略不确定性：市场状态/参数敏感性/过拟合风险"
+    },
+    {
+      "name": "dream-self-iteration-workflow",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-self-iteration-workflow/SKILL.md",
+      "frontmatter_name": "dream-self-iteration-workflow",
+      "description": "Orchestrates L4 self-iteration: hermes reflection (trace analysis → skill-creator) + param optimization (Bayesian + walk-forward) + case ingest gate (4-dim value assessment) + doc sync (checksum → dre"
+    },
+    {
+      "name": "dream-skill-index-governance",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-skill-index-governance/SKILL.md",
+      "frontmatter_name": "dream-skill-index-governance",
+      "description": "Meta-SKILL: governs SKILL index/version/dependency/lifecycle/conflict/drift. Invoke for SKILL registry build, lifecycle transition, conflict detection, or drift monitoring."
+    },
+    {
+      "name": "dream-subagent-tdd-workflow",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-subagent-tdd-workflow/SKILL.md",
+      "frontmatter_name": "dream-subagent-tdd-workflow",
+      "description": "Orchestrates DSH subagent TDD: RED test (ModuleNotFoundError) → GREEN impl (subagent_types.py shared contract) → IPC handler registration → cognitive closure. Invoke for subagent dev, macro/flow/oncha"
+    },
+    {
+      "name": "dream-tdd-dev-workflow",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-tdd-dev-workflow/SKILL.md",
+      "frontmatter_name": "dream-tdd-dev-workflow",
+      "description": "Orchestrates TDD cycle: need analysis → RED (failing test) → GREEN (minimal impl) → REFACTOR → hermes reflection. Invoke for TDD dev, red-green-refactor."
+    },
+    {
+      "name": "dream-three-tier-collab",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dream-three-tier-collab/SKILL.md",
+      "frontmatter_name": "dream-three-tier-collab",
+      "description": "三端协同编排（本地评审中枢 / GitHub 存证 / 云端运行）：云端八维评审 D1-D8、RACI 职责速查、门禁链 G1-G7+、排查 SLA、双轨模型生命周期、模块租约与角色分离（G3.5）、技术文档双向同步、意图路由与红线。Invoke when 评审云端、排查云端故障、判断部署窗口、模型 promote 决策、双端并行开发、领租约、判断谁开发谁测试、文档同步、或需要明确三端职责边界时。"
+    },
+    {
+      "name": "dreambuddy-cloud-ops",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dreambuddy-cloud-ops/SKILL.md",
+      "frontmatter_name": "dreambuddy-cloud-ops",
+      "description": "Connect to and operate the DreamBuddy cloud host 43.160.201.117 over SSH — deploy frontend builds, restart systemd services, verify health endpoints, and diagnose degraded APIs. Use when syncing code "
+    },
+    {
+      "name": "dreambuddy-os",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dreambuddy-os/SKILL.md",
+      "frontmatter_name": "dreambuddy-os",
+      "description": "Dreambuddy V2 AI 驱动操作系统 — 系统级 SKILL 内核"
+    },
+    {
+      "name": "dreamos-dev",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/dreamos-dev/SKILL.md",
+      "frontmatter_name": "dreamos-dev",
+      "description": "DREAM 架构落地的元 SKILL（唯一入口）：以 run 绑定 + G0-G5 机器可判定门禁驱动工程开发流程，只做路由与门禁，不内联实现。当需要按 SACG 口径开工、给开发挂 run_id/model_id/phase、跑 G0 绑定检查或 G3 越界检查、判断阶段是否可推进时调用。"
+    },
+    {
+      "name": "evolution-case-ingest",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/evolution-case-ingest/SKILL.md",
+      "frontmatter_name": "evolution-case-ingest",
+      "description": "为自进化系统案例库（washout/washout_reversal/pump_dump_reversal）新增闭环训练案例。Invoke when 用户要求为自进化系统增加训练案例、入库市场行情样本、或补充 CBR/KNN 案例库。"
+    },
+    {
+      "name": "figma",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/figma/SKILL.md",
+      "frontmatter_name": "figma",
+      "description": "Use the Figma MCP server to fetch design context, screenshots, variables, and assets from Figma, and to translate Figma nodes into production code. Trigger when a task involves Figma URLs, node IDs, d"
+    },
+    {
+      "name": "gh-cli",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/gh-cli/SKILL.md",
+      "frontmatter_name": "gh-cli",
+      "description": "GitHub CLI (gh) comprehensive reference for repositories, issues, pull requests, Actions, projects, releases, gists, codespaces, organizations, extensions, and all GitHub operations from the command l"
+    },
+    {
+      "name": "hot-value-extraction",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/hot-value-extraction/SKILL.md",
+      "frontmatter_name": "hot-value-extraction",
+      "description": "从24h热门加密/金融文章中系统提取交易机会：价值标的、投资逻辑、风险、核心观点，结合传统卖方研究与事件驱动框架输出结构化投资观点。Invoke when user provides hot article URLs or asks to extract trading opportunities from news/articles, or when user wants to identify"
+    },
+    {
+      "name": "knowledge-ingest",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/knowledge-ingest/SKILL.md",
+      "frontmatter_name": "knowledge-ingest",
+      "description": "知识沉淀 SKILL: SKILL 执行完成后将产出的知识/案例分类入库 + RAG 向量化 + 认知记录 + 索引更新。Invoke when research-type SKILLs complete, cognitive record tags contain 'knowledge-ingest', or explicit knowledge ingestion needed."
+    },
+    {
+      "name": "lark-approval",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-approval/SKILL.md",
+      "frontmatter_name": "lark-approval",
+      "description": "飞书审批：查询和处理审批待办/已办/实例，搜索可发起审批定义、查看定义详情并发起原生审批实例。当用户要处理审批任务、查看审批实例、搜索或发起审批时使用。审批待办不是飞书任务；非审批类待办走 lark-task。不负责创建审批定义；三方审批定义不走原生提单。"
+    },
+    {
+      "name": "lark-apps",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-apps/SKILL.md",
+      "frontmatter_name": "lark-apps",
+      "description": "妙搭（Spark/Miaoda）应用开发与托管：应用创建、HTML静态站点发布、本地全栈开发、云端生成迭代、AI相关能力和飞书平台能力或者其他外部能力集成、日志/Trace/监控指标/PV/UV 查询、环境变量管理。当用户要开发/新建一个系统·工具·平台·应用，或要本地开发 / 云端开发 / 修改 / 部署 / 发布 / 上线 / 拿可分享链接，或用 HTML 做页面·网站·部署到妙搭，或提到妙搭"
+    },
+    {
+      "name": "lark-attendance",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-attendance/SKILL.md",
+      "frontmatter_name": "lark-attendance",
+      "description": "飞书考勤打卡：查询自己的考勤打卡记录"
+    },
+    {
+      "name": "lark-base",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-base/SKILL.md",
+      "frontmatter_name": "lark-base",
+      "description": "飞书多维表格（Base）操作：建表、字段、记录、视图、统计、公式/lookup、表单、仪表盘、workflow、角色权限；遇到 Base/多维表格/bitable 或 /base/ 链接时使用。文件导入转 lark-drive，认证/授权转 lark-shared。"
+    },
+    {
+      "name": "lark-calendar",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-calendar/SKILL.md",
+      "frontmatter_name": "lark-calendar",
+      "description": "飞书日历：管理日历日程和会议室。查看/搜索日程、创建/更新日程、管理参会人、查询忙闲和推荐时段、预定会议室。当用户需要查看日程安排、创建/修改会议、查询/预定会议室时使用。不负责：查询过去的视频会议记录（走 lark-vc）、待办任务（走 lark-task）。"
+    },
+    {
+      "name": "lark-contact",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-contact/SKILL.md",
+      "frontmatter_name": "lark-contact",
+      "description": "飞书 / Lark 通讯录:按姓名 / 邮箱解析成 open_id,或按 open_id 反查姓名 / 部门 / 邮箱 / 联系方式 / 个人状态 / 签名。当用户提到某人姓名要下一步发消息 / 排日程,或拿到 open_id 想查具体信息时使用。不负责部门树遍历、按部门列员工、组织架构图,这类需求走原生 OpenAPI。"
+    },
+    {
+      "name": "lark-doc",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-doc/SKILL.md",
+      "frontmatter_name": "lark-doc",
+      "description": "飞书云文档（Docx / Wiki 文档）：读取和编辑飞书文档内容。当用户给出文档 URL 或 token，或需要查看、创建、编辑文档、插入或下载文档图片附件时使用。文档中嵌入的电子表格、多维表格、画板，先用本 skill 提取 token 再切到对应 skill。当用户给出 doubao.com 的 /docx/ 或 /wiki/ URL/token 时，也应直接使用本 skill；路由依据是 "
+    },
+    {
+      "name": "lark-drive",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-drive/SKILL.md",
+      "frontmatter_name": "lark-drive",
+      "description": "飞书云空间（云盘/云存储）：管理 Drive 文件和文件夹，包含上传/下载、创建文件夹、复制/移动/删除、查看元数据、评论/权限/订阅、标题、版本和本地文件导入。用户需要整理云盘目录、处理云空间资源 URL/token，或导入 Word/Markdown/Excel/CSV/PPTX/.base 为 docx/sheet/bitable/slides 时使用；doubao.com 云空间 URL/"
+    },
+    {
+      "name": "lark-event",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-event/SKILL.md",
+      "frontmatter_name": "lark-event",
+      "description": "Lark/Feishu real-time event listening / subscribing / consuming: stream events as NDJSON via `lark-cli event consume <EventKey>` (covers IM messages/reactions/chat changes, Task updates, VC meeting st"
+    },
+    {
+      "name": "lark-im",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-im/SKILL.md",
+      "frontmatter_name": "lark-im",
+      "description": "飞书即时通讯：收发消息和管理群聊。发送和回复消息、搜索聊天记录、管理群聊成员、上传下载图片和文件（支持大文件分片下载）、管理表情回复、发送应用内/短信/电话加急、发送和处理交互卡片（Interactive Card）、监听卡片按钮回调（card.action.trigger）。当用户需要发消息、查看或搜索聊天记录、下载聊天中的文件、查看群成员、搜索群、创建群聊或话题群、管理标记数据、管理 Feed"
+    },
+    {
+      "name": "lark-mail",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-mail/SKILL.md",
+      "frontmatter_name": "lark-mail",
+      "description": "飞书邮箱：Use when user mentions 起草邮件、写邮件、草稿、发送/回复/转发邮件、查阅邮件、看邮件、搜索邮件、邮件文件夹、邮件标签、邮件联系人、监听新邮件、邮件收信规则等；use for mail/email intent only. Do not use for docs/sheets/calendar/auth setup/pure contact lookup/IM ch"
+    },
+    {
+      "name": "lark-markdown",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-markdown/SKILL.md",
+      "frontmatter_name": "lark-markdown",
+      "description": "飞书 Markdown：查看、创建、上传、编辑和比较 Markdown 文件。当用户需要创建或编辑 Markdown 文件、读取、修改、局部 patch 或比较差异时使用。不负责将 Markdown 导入为飞书在线文档，也不负责文件搜索、权限、评论、移动、删除等云空间管理操作。"
+    },
+    {
+      "name": "lark-minutes",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-minutes/SKILL.md",
+      "frontmatter_name": "lark-minutes",
+      "description": "飞书妙记：搜索妙记、查看妙记基础信息、下载/上传音视频、读取或编辑妙记的产物内容、改标题、替换说话人/关键词。当给出minute_token、本地音视频文件，要查/改/转妙记产物时使用；本地音视频转纪要/逐字稿优先走本 skill，不要用 ffmpeg/whisper 本地转写。不负责：获取会议关联妙记，或仅按自然语言标题定位纪要"
+    },
+    {
+      "name": "lark-note",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-note/SKILL.md",
+      "frontmatter_name": "lark-note",
+      "description": "飞书会议纪要（Note）直查：已知 note_id 时查询纪要详情、展示类型、关联文档 token，并读取 unified 原始逐字记录。当用户已持有 note_id，或从文档显式 vc-node-id 获得 note_id 时使用。不负责会议/日程/妙记定位、文档标题搜索或 Docx 正文读取。"
+    },
+    {
+      "name": "lark-okr",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-okr/SKILL.md",
+      "frontmatter_name": "lark-okr",
+      "description": "飞书 OKR：管理目标与关键结果。查看和编辑 OKR 周期、目标、关键结果、对齐关系、量化指标和进展记录。当用户需要查看或创建 OKR、管理目标和关键结果、查看对齐关系时使用。不负责：待办任务管理（lark-task）、日程/会议安排（lark-calendar）、绩效评估"
+    },
+    {
+      "name": "lark-openapi-explorer",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-openapi-explorer/SKILL.md",
+      "frontmatter_name": "lark-openapi-explorer",
+      "description": "飞书/Lark 原生 OpenAPI 探索：从官方文档库中挖掘未经 CLI 封装的原生 OpenAPI 接口。当用户的需求无法被现有 lark-* skill 或 lark-cli 已注册命令满足，需要查找并调用原生飞书 OpenAPI 时使用。"
+    },
+    {
+      "name": "lark-shared",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-shared/SKILL.md",
+      "frontmatter_name": "lark-shared",
+      "description": "Use for lark-cli setup/auth tasks: auth login/status/logout, user vs bot identity, business-domain permissions (--domain, including all/docs/drive), missing scopes, revoking authorization, or handling"
+    },
+    {
+      "name": "lark-sheets",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-sheets/SKILL.md",
+      "frontmatter_name": "lark-sheets",
+      "description": "飞书电子表格：创建和操作电子表格。支持创建表格、管理工作表与行列结构（增删/合并/调整尺寸/隐藏/冻结）、读写单元格（值/公式/样式/批注/单元格图片）、查找替换、多操作原子批量更新，以及图表、透视表、条件格式、筛选器、迷你图、浮动图片等对象的创建与维护。当用户需要创建电子表格、管理工作表、批量读写或编辑数据、统计汇总与可视化、表格美化、公式计算（含 Excel 公式迁移）、金融/财务建模（DCF"
+    },
+    {
+      "name": "lark-skill-maker",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-skill-maker/SKILL.md",
+      "frontmatter_name": "lark-skill-maker",
+      "description": "创建 lark-cli 的自定义 Skill。当用户需要把飞书 API 操作封装成可复用的 Skill（包装原子 API 或编排多步流程）时使用。"
+    },
+    {
+      "name": "lark-slides",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-slides/SKILL.md",
+      "frontmatter_name": "lark-slides",
+      "description": "飞书幻灯片：创建和编辑幻灯片。创建演示文稿、读取幻灯片内容、管理幻灯片页面（创建、删除、读取、局部替换）。当用户需要创建或编辑幻灯片、读取或修改单个页面时使用。当用户给出 doubao.com 的 /slides/ URL/token 时，也应直接使用本 skill，不要因为域名不是飞书而回退到 WebFetch；路由依据是 URL 路径模式和 token，而不是域名。不负责：云文档内容编辑（走 "
+    },
+    {
+      "name": "lark-task",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-task/SKILL.md",
+      "frontmatter_name": "lark-task",
+      "description": "飞书任务：管理任务、清单和任务智能体。创建待办任务、查看和更新任务状态、拆分子任务、组织任务清单、分配协作成员、上传任务附件、注册或注销任务智能体、更新任务智能体的主页数据、写入智能体任务记录。当用户需要创建待办事项、查看任务列表、跟踪任务进度、管理项目清单或给他人分配任务、为任务上传附件文件、注册注销任务智能体、更新智能体主页数据、写入任务记录时使用。"
+    },
+    {
+      "name": "lark-vc",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-vc/SKILL.md",
+      "frontmatter_name": "lark-vc",
+      "description": "飞书视频会议：搜索历史会议记录、查询会议纪要（总结/待办/章节/逐字稿）、查询参会人快照。当用户查询已结束的会议、获取会议产物（纪要/妙记）、查看参会人时使用；查询未来日程走 lark-calendar。不负责：Agent 真实入会/离会、会中实时事件（走 lark-vc-agent）。"
+    },
+    {
+      "name": "lark-vc-agent",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-vc-agent/SKILL.md",
+      "frontmatter_name": "lark-vc-agent",
+      "description": "飞书视频会议会中能力：用于让应用机器人真实加入或离开正在进行的会议，并读取当前身份可见的会中事件、发送会中文本消息或会中表情。适用于用户询问正在开的会议发生了什么、谁在发言、是否共享内容，或需要发现当前可读的进行中会议 ID。不负责已结束会议搜索、参会人快照、纪要、逐字稿或录制查询，这些使用 lark-vc 技能。"
+    },
+    {
+      "name": "lark-whiteboard",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-whiteboard/SKILL.md",
+      "frontmatter_name": "lark-whiteboard",
+      "description": ">"
+    },
+    {
+      "name": "lark-wiki",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-wiki/SKILL.md",
+      "frontmatter_name": "lark-wiki",
+      "description": "飞书知识库：管理知识空间、空间成员和文档节点。创建和查询知识空间、查看和管理空间成员、管理节点层级结构、在知识库中组织文档和快捷方式。当用户需要在知识库中查找或创建文档、浏览知识空间结构、查看或管理空间成员、移动或复制节点时使用。当用户给出 doubao.com 的 /wiki/ URL/token 时，也应直接使用本 skill，不要因为域名不是飞书而回退到 WebFetch；路由依据是 URL"
+    },
+    {
+      "name": "lark-workflow-meeting-summary",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-workflow-meeting-summary/SKILL.md",
+      "frontmatter_name": "lark-workflow-meeting-summary",
+      "description": "会议纪要整理工作流：汇总指定时间范围内的会议纪要并生成结构化报告。当用户需要整理会议纪要、生成会议周报、回顾一段时间内的会议内容时使用。"
+    },
+    {
+      "name": "lark-workflow-standup-report",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/lark-workflow-standup-report/SKILL.md",
+      "frontmatter_name": "lark-workflow-standup-report",
+      "description": "日程待办摘要：编排 calendar +agenda 和 task +get-my-tasks，生成指定日期的日程与未完成任务摘要。适用于了解今天/明天/本周的安排。"
+    },
+    {
+      "name": "mcp-builder",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/mcp-builder/SKILL.md",
+      "frontmatter_name": "mcp-builder",
+      "description": "Guide for creating high-quality MCP (Model Context Protocol) servers that enable LLMs to interact with external services through well-designed tools. Use when building MCP servers to integrate externa"
+    },
+    {
+      "name": "nature-figure",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/nature-figure/SKILL.md",
+      "frontmatter_name": "nature-figure",
+      "description": "Nature/高影响力期刊投稿级科研图工作流，含多面板证据架构、子图对齐门、PDF碰撞审计"
+    },
+    {
+      "name": "nature-shared",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/nature-shared/SKILL.md",
+      "frontmatter_name": "nature-shared",
+      "description": "nature-skills 共享内容目录，提供通用样式模板和工具函数"
+    },
+    {
+      "name": "polling-trader-reload",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/polling-trader-reload/SKILL.md",
+      "frontmatter_name": "polling-trader-reload",
+      "description": "Reload polling_trader after code changes: kill old → wait flock release → start new with same config → verify pidfile + main loop. Invoke when polling_trader.py modified or user says '重启/reload pollin"
+    },
+    {
+      "name": "safe-service-restart",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/safe-service-restart/SKILL.md",
+      "frontmatter_name": "safe-service-restart",
+      "description": "服务重启硬门禁流程：commit → 验证工作区干净 → 重启 → 验证前后代码一致。Invoke whenever a backend/frontend service needs to be restarted after code changes, to prevent regression from uncommitted changes."
+    },
+    {
+      "name": "security-best-practices",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/security-best-practices/SKILL.md",
+      "frontmatter_name": "security-best-practices",
+      "description": "Perform language and framework specific security best-practice reviews and suggest improvements. Trigger only when the user explicitly requests security best practices guidance, a security review/repo"
+    },
+    {
+      "name": "tee-red-green-progress",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/tee-red-green-progress/SKILL.md",
+      "frontmatter_name": "tee-red-green-progress",
+      "description": "Standard TDD workflow for TEE Tasks N→N+1 in dreambuddy-v2: (1) recall before any coding (hard constraint), (2) write RED spec tests asserting ModuleNotFoundError for new module, (3) run to confirm re"
+    },
+    {
+      "name": "test-driven-development",
+      "path": "/Users/zhangjiangtao/.trae-cn/skills/test-driven-development/SKILL.md",
+      "frontmatter_name": "test-driven-development",
+      "description": "Use when implementing any feature or bugfix, before writing implementation code"
+    }
+  ],
+  "plugins": [
+    {
+      "plugin_id": "trae-remote-official:office-plugin-mac",
+      "version": "0.1.0",
+      "source_path": "/Users/zhangjiangtao/.trae-cn/plugins/trae-remote-official/office-plugin-mac/0.1.0",
+      "skills_declared": 0,
+      "skills_on_disk": 4,
+      "mcp_servers": 0,
+      "connector": ""
+    },
+    {
+      "plugin_id": "trae-remote-official:wind-aifin",
+      "version": "0.0.2",
+      "source_path": "/Users/zhangjiangtao/.trae-cn/plugins/trae-remote-official/wind-aifin/0.0.2",
+      "skills_declared": 0,
+      "skills_on_disk": 78,
+      "mcp_servers": 0,
+      "connector": "{\n  \"connectors\": {\n    \"wind-aifin\": {\n      \"type\": \"manual_token\",\n      \"auth_policy\": \"ON_INVOKE\"\n    }\n  }\n}\n"
+    },
+    {
+      "plugin_id": "trae-remote-official:lark",
+      "version": "1.0.7",
+      "source_path": "/Users/zhangjiangtao/.trae-cn/plugins/trae-remote-official/lark/1.0.7",
+      "skills_declared": 0,
+      "skills_on_disk": 28,
+      "mcp_servers": 0,
+      "connector": "{\n  \"connectors\": {\n    \"feishu\": {\n      \"type\": \"oauth\",\n      \"auth_policy\": \"ON_INVOKE\"\n    },\n    \"lark\": {\n      \"type\": \"oauth\", \n      \"auth_policy\": \"ON_INVOKE\"\n    }\n  }\n}\n"
+    },
+    {
+      "plugin_id": "trae-remote-official:trae-capabilities",
+      "version": "0.2.13",
+      "source_path": "/Users/zhangjiangtao/.trae-cn/plugins/trae-remote-official/trae-capabilities/0.2.13",
+      "skills_declared": 0,
+      "skills_on_disk": 1,
+      "mcp_servers": 0,
+      "connector": ""
+    },
+    {
+      "plugin_id": "trae-remote-official:prd-authoring",
+      "version": "0.1.0",
+      "source_path": "/Users/zhangjiangtao/.trae-cn/plugins/trae-remote-official/prd-authoring/0.1.0",
+      "skills_declared": 0,
+      "skills_on_disk": 1,
+      "mcp_servers": 0,
+      "connector": ""
+    },
+    {
+      "plugin_id": "trae-remote-official:deployment",
+      "version": "0.0.41",
+      "source_path": "/Users/zhangjiangtao/.trae-cn/plugins/trae-remote-official/deployment/0.0.41",
+      "skills_declared": 0,
+      "skills_on_disk": 1,
+      "mcp_servers": 0,
+      "connector": ""
+    },
+    {
+      "plugin_id": "trae-remote-official:html-report-presentation",
+      "version": "0.1.0",
+      "source_path": "/Users/zhangjiangtao/.trae-cn/plugins/trae-remote-official/html-report-presentation/0.1.0",
+      "skills_declared": 0,
+      "skills_on_disk": 2,
+      "mcp_servers": 0,
+      "connector": ""
+    },
+    {
+      "plugin_id": "trae-remote-official:computer-use",
+      "version": "0.0.5",
+      "source_path": "/Users/zhangjiangtao/.trae-cn/plugins/trae-remote-official/computer-use/0.0.5",
+      "skills_declared": 0,
+      "skills_on_disk": 0,
+      "mcp_servers": 0,
+      "connector": ""
+    },
+    {
+      "plugin_id": "trae-remote-official:deep-research-assistant",
+      "version": "0.1.0",
+      "source_path": "/Users/zhangjiangtao/.trae-cn/plugins/trae-remote-official/deep-research-assistant/0.1.0",
+      "skills_declared": 0,
+      "skills_on_disk": 1,
+      "mcp_servers": 0,
+      "connector": ""
+    }
+  ],
+  "mcp_surface": {
+    "sessions": 25,
+    "modes": {
+      "Explore": {
+        "tool_count": 16,
+        "tools": [
+          "check_permissions",
+          "click",
+          "drag",
+          "get_app_state",
+          "health",
+          "list_apps",
+          "perform_action",
+          "press_key",
+          "recall",
+          "record",
+          "scroll",
+          "select_text",
+          "set_value",
+          "stats",
+          "type_text",
+          "verify"
+        ]
+      },
+      "Plan": {
+        "tool_count": 16,
+        "tools": [
+          "check_permissions",
+          "click",
+          "drag",
+          "get_app_state",
+          "health",
+          "list_apps",
+          "perform_action",
+          "press_key",
+          "recall",
+          "record",
+          "scroll",
+          "select_text",
+          "set_value",
+          "stats",
+          "type_text",
+          "verify"
+        ]
+      },
+      "browser_use": {
+        "tool_count": 32,
+        "tools": [
+          "Exec",
+          "check_permissions",
+          "click",
+          "drag",
+          "get_app_state",
+          "get_rea_methodology",
+          "get_rea_snapshot",
+          "grounding",
+          "health",
+          "l4_status",
+          "list_apps",
+          "perform_action",
+          "poll_rea_analyze",
+          "poll_rea_compare",
+          "poll_rea_trace",
+          "press_key",
+          "rea_audit",
+          "recall",
+          "record",
+          "scroll",
+          "search_plugins",
+          "select_text",
+          "set_value",
+          "show_deployment_card",
+          "stats",
+          "submit_rea_analyze",
+          "submit_rea_compare",
+          "submit_rea_trace",
+          "suggest_plugins",
+          "type_text",
+          "unified_search",
+          "verify"
+        ]
+      },
+      "computer_use": {
+        "tool_count": 17,
+        "tools": [
+          "Exec",
+          "check_permissions",
+          "click",
+          "drag",
+          "get_app_state",
+          "health",
+          "list_apps",
+          "perform_action",
+          "press_key",
+          "recall",
+          "record",
+          "scroll",
+          "select_text",
+          "set_value",
+          "stats",
+          "type_text",
+          "verify"
+        ]
+      },
+      "general_purpose_task": {
+        "tool_count": 20,
+        "tools": [
+          "GenerateImage",
+          "GenerateVideo",
+          "RequestAuthorization",
+          "Schedule",
+          "check_permissions",
+          "click",
+          "drag",
+          "get_app_state",
+          "health",
+          "list_apps",
+          "perform_action",
+          "press_key",
+          "recall",
+          "record",
+          "scroll",
+          "select_text",
+          "set_value",
+          "stats",
+          "type_text",
+          "verify"
+        ]
+      },
+      "search": {
+        "tool_count": 31,
+        "tools": [
+          "check_permissions",
+          "click",
+          "drag",
+          "get_app_state",
+          "get_rea_methodology",
+          "get_rea_snapshot",
+          "grounding",
+          "health",
+          "l4_status",
+          "list_apps",
+          "perform_action",
+          "poll_rea_analyze",
+          "poll_rea_compare",
+          "poll_rea_trace",
+          "press_key",
+          "rea_audit",
+          "recall",
+          "record",
+          "scroll",
+          "search_plugins",
+          "select_text",
+          "set_value",
+          "show_deployment_card",
+          "stats",
+          "submit_rea_analyze",
+          "submit_rea_compare",
+          "submit_rea_trace",
+          "suggest_plugins",
+          "type_text",
+          "unified_search",
+          "verify"
+        ]
+      },
+      "solo_agent": {
+        "tool_count": 32,
+        "tools": [
+          "Exec",
+          "GenerateImage",
+          "GenerateVideo",
+          "RequestAuthorization",
+          "Schedule",
+          "check_permissions",
+          "click",
+          "drag",
+          "get_app_state",
+          "get_rea_methodology",
+          "get_rea_snapshot",
+          "health",
+          "l4_status",
+          "list_apps",
+          "perform_action",
+          "poll_rea_analyze",
+          "poll_rea_compare",
+          "poll_rea_trace",
+          "press_key",
+          "rea_audit",
+          "recall",
+          "record",
+          "scroll",
+          "select_text",
+          "set_value",
+          "stats",
+          "submit_rea_analyze",
+          "submit_rea_compare",
+          "submit_rea_trace",
+          "type_text",
+          "unified_search",
+          "verify"
+        ]
+      },
+      "solo_agent_lite": {
+        "tool_count": 37,
+        "tools": [
+          "Exec",
+          "browser_click",
+          "browser_console_messages",
+          "browser_evaluate",
+          "browser_get_attribute",
+          "browser_handle_dialog",
+          "browser_hover",
+          "browser_lock",
+          "browser_navigate",
+          "browser_navigate_back",
+          "browser_network_requests",
+          "browser_press_key",
+          "browser_scroll",
+          "browser_select_option",
+          "browser_snapshot",
+          "browser_tabs",
+          "browser_take_screenshot",
+          "browser_type",
+          "browser_unlock",
+          "browser_wait_for",
+          "browser_waiting_for_user_interaction",
+          "check_permissions",
+          "click",
+          "drag",
+          "get_app_state",
+          "health",
+          "list_apps",
+          "perform_action",
+          "press_key",
+          "recall",
+          "record",
+          "scroll",
+          "select_text",
+          "set_value",
+          "stats",
+          "type_text",
+          "verify"
+        ]
+      },
+      "solo_design_lite": {
+        "tool_count": 20,
+        "tools": [
+          "browser_click",
+          "browser_console_messages",
+          "browser_evaluate",
+          "browser_get_attribute",
+          "browser_handle_dialog",
+          "browser_hover",
+          "browser_lock",
+          "browser_navigate",
+          "browser_navigate_back",
+          "browser_network_requests",
+          "browser_press_key",
+          "browser_scroll",
+          "browser_select_option",
+          "browser_snapshot",
+          "browser_tabs",
+          "browser_take_screenshot",
+          "browser_type",
+          "browser_unlock",
+          "browser_wait_for",
+          "browser_waiting_for_user_interaction"
+        ]
+      },
+      "solo_work_lite": {
+        "tool_count": 37,
+        "tools": [
+          "Exec",
+          "browser_click",
+          "browser_console_messages",
+          "browser_evaluate",
+          "browser_get_attribute",
+          "browser_handle_dialog",
+          "browser_hover",
+          "browser_lock",
+          "browser_navigate",
+          "browser_navigate_back",
+          "browser_network_requests",
+          "browser_press_key",
+          "browser_scroll",
+          "browser_select_option",
+          "browser_snapshot",
+          "browser_tabs",
+          "browser_take_screenshot",
+          "browser_type",
+          "browser_unlock",
+          "browser_wait_for",
+          "browser_waiting_for_user_interaction",
+          "check_permissions",
+          "click",
+          "drag",
+          "get_app_state",
+          "health",
+          "list_apps",
+          "perform_action",
+          "press_key",
+          "recall",
+          "record",
+          "scroll",
+          "select_text",
+          "set_value",
+          "stats",
+          "type_text",
+          "verify"
+        ]
+      }
+    },
+    "servers": {
+      "integrated_browser": {
+        "tool_count": 20,
+        "tools": [
+          "browser_click",
+          "browser_console_messages",
+          "browser_evaluate",
+          "browser_get_attribute",
+          "browser_handle_dialog",
+          "browser_hover",
+          "browser_lock",
+          "browser_navigate",
+          "browser_navigate_back",
+          "browser_network_requests",
+          "browser_press_key",
+          "browser_scroll",
+          "browser_select_option",
+          "browser_snapshot",
+          "browser_tabs",
+          "browser_take_screenshot",
+          "browser_type",
+          "browser_unlock",
+          "browser_wait_for",
+          "browser_waiting_for_user_interaction"
+        ]
+      },
+      "integrated_code_mode": {
+        "tool_count": 1,
+        "tools": [
+          "Exec"
+        ]
+      },
+      "integrated_default": {
+        "tool_count": 4,
+        "tools": [
+          "GenerateImage",
+          "GenerateVideo",
+          "RequestAuthorization",
+          "Schedule"
+        ]
+      },
+      "mcp_Computer_Use": {
+        "tool_count": 12,
+        "tools": [
+          "check_permissions",
+          "click",
+          "drag",
+          "get_app_state",
+          "grounding",
+          "list_apps",
+          "perform_action",
+          "press_key",
+          "scroll",
+          "select_text",
+          "set_value",
+          "type_text"
+        ]
+      },
+      "mcp_cognitive": {
+        "tool_count": 7,
+        "tools": [
+          "health",
+          "l4_status",
+          "recall",
+          "record",
+          "stats",
+          "unified_search",
+          "verify"
+        ]
+      },
+      "mcp_plugin_deployment_deployment": {
+        "tool_count": 1,
+        "tools": [
+          "show_deployment_card"
+        ]
+      },
+      "mcp_plugin_trae-capabilities_trae-capabilities": {
+        "tool_count": 2,
+        "tools": [
+          "search_plugins",
+          "suggest_plugins"
+        ]
+      },
+      "mcp_rea": {
+        "tool_count": 10,
+        "tools": [
+          "get_rea_methodology",
+          "get_rea_snapshot",
+          "poll_rea_analyze",
+          "poll_rea_compare",
+          "poll_rea_trace",
+          "rea_audit",
+          "recall",
+          "submit_rea_analyze",
+          "submit_rea_compare",
+          "submit_rea_trace"
+        ]
+      }
+    }
+  },
+  "permissions": {
+    "active_profile": "manual_approval",
+    "fs_read_write": 5,
+    "fs_read_only": 0,
+    "sandbox_fs_read_write": 2,
+    "sandbox_network_default": "allow"
+  },
+  "evidence": [
+    {
+      "result": {
+        "global_skills": 8,
+        "agent_types": [
+          "trae",
+          "code",
+          "design",
+          "work"
+        ]
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "manifests",
+        "path": "/Users/zhangjiangtao/.trae-cn/builtin/baseline/manifests"
+      },
+      "confidence": 1.0,
+      "known_gaps": []
+    },
+    {
+      "result": {
+        "trae": {
+          "models": 6,
+          "skill_count_min": 1,
+          "skill_count_max": 7,
+          "profiles": [
+            {
+              "model": "buse",
+              "skill_count": 3,
+              "skills": [
+                "TRAE-browseruse",
+                "TRAE-browseruse-external",
+                "TRAE-product-knowledge"
+              ]
+            },
+            {
+              "model": "default",
+              "skill_count": 4,
+              "skills": [
+                "TRAE-product-knowledge",
+                "dynamic-ui",
+                "schedule",
+                "skill-creator"
+              ]
+            },
+            {
+              "model": "doutops",
+              "skill_count": 7,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-plan-mode",
+                "TRAE-spec-mode",
+                "dynamic-ui",
+                "gp-agent-handoff",
+                "schedule",
+                "skill-creator"
+              ]
+            },
+            {
+              "model": "gpt",
+              "skill_count": 1,
+              "skills": [
+                "TRAE-computer-use-ptc"
+              ]
+            },
+            {
+              "model": "non_multimodal",
+              "skill_count": 4,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "dynamic-ui",
+                "schedule",
+                "skill-creator"
+              ]
+            },
+            {
+              "model": "seed",
+              "skill_count": 1,
+              "skills": [
+                "TRAE-computer-use-ptc"
+              ]
+            }
+          ]
+        },
+        "code": {
+          "models": 6,
+          "skill_count_min": 1,
+          "skill_count_max": 6,
+          "profiles": [
+            {
+              "model": "buse",
+              "skill_count": 5,
+              "skills": [
+                "TRAE-browseruse",
+                "TRAE-browseruse-external",
+                "TRAE-product-knowledge",
+                "feedback",
+                "skill-creator"
+              ]
+            },
+            {
+              "model": "default",
+              "skill_count": 5,
+              "skills": [
+                "TRAE-product-knowledge",
+                "dynamic-ui",
+                "feedback",
+                "schedule",
+                "skill-creator"
+              ]
+            },
+            {
+              "model": "doutops",
+              "skill_count": 6,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-plan-mode",
+                "TRAE-spec-mode",
+                "dynamic-ui",
+                "schedule",
+                "skill-creator"
+              ]
+            },
+            {
+              "model": "gpt",
+              "skill_count": 1,
+              "skills": [
+                "TRAE-computer-use-ptc"
+              ]
+            },
+            {
+              "model": "hebe",
+              "skill_count": 6,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-product-knowledge",
+                "dynamic-ui",
+                "feedback",
+                "schedule",
+                "skill-creator"
+              ]
+            },
+            {
+              "model": "non_multimodal",
+              "skill_count": 6,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-product-knowledge",
+                "dynamic-ui",
+                "feedback",
+                "schedule",
+                "skill-creator"
+              ]
+            }
+          ]
+        },
+        "design": {
+          "models": 4,
+          "skill_count_min": 1,
+          "skill_count_max": 6,
+          "profiles": [
+            {
+              "model": "default",
+              "skill_count": 6,
+              "skills": [
+                "design-library-creator",
+                "feedback",
+                "skill-creator",
+                "solo-design",
+                "solo-graphic-generation",
+                "solo-image-edit"
+              ]
+            },
+            {
+              "model": "gpt",
+              "skill_count": 1,
+              "skills": [
+                "TRAE-computer-use-ptc"
+              ]
+            },
+            {
+              "model": "non_multimodal",
+              "skill_count": 1,
+              "skills": [
+                "TRAE-computer-use-ptc"
+              ]
+            },
+            {
+              "model": "seed",
+              "skill_count": 1,
+              "skills": [
+                "TRAE-computer-use-ptc"
+              ]
+            }
+          ]
+        },
+        "work": {
+          "models": 10,
+          "skill_count_min": 1,
+          "skill_count_max": 14,
+          "profiles": [
+            {
+              "model": "buse",
+              "skill_count": 14,
+              "skills": [
+                "TRAE-browseruse",
+                "TRAE-browseruse-external",
+                "TRAE-computer-use-ptc",
+                "TRAE-product-knowledge",
+                "doc-writing-guide",
+                "docx",
+                "feedback",
+                "html-deck",
+                "html-report",
+                "pdf",
+                "pptx",
+                "research-guide",
+                "skill-creator",
+                "xlsx"
+              ]
+            },
+            {
+              "model": "default",
+              "skill_count": 11,
+              "skills": [
+                "TRAE-product-knowledge",
+                "doc-writing-guide",
+                "docx",
+                "feedback",
+                "html-deck",
+                "html-report",
+                "pdf",
+                "pptx",
+                "research-guide",
+                "skill-creator",
+                "xlsx"
+              ]
+            },
+            {
+              "model": "deidamia",
+              "skill_count": 12,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-product-knowledge",
+                "doc-writing-guide",
+                "docx",
+                "feedback",
+                "html-deck",
+                "html-report",
+                "pdf",
+                "pptx",
+                "research-guide",
+                "skill-creator",
+                "xlsx"
+              ]
+            },
+            {
+              "model": "gpt",
+              "skill_count": 1,
+              "skills": [
+                "TRAE-computer-use-ptc"
+              ]
+            },
+            {
+              "model": "hebe",
+              "skill_count": 12,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-product-knowledge",
+                "doc-writing-guide",
+                "docx",
+                "feedback",
+                "html-deck",
+                "html-report",
+                "pdf",
+                "pptx",
+                "research-guide",
+                "skill-creator",
+                "xlsx"
+              ]
+            },
+            {
+              "model": "iphigenia",
+              "skill_count": 12,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-product-knowledge",
+                "doc-writing-guide",
+                "docx",
+                "feedback",
+                "html-deck",
+                "html-report",
+                "pdf",
+                "pptx",
+                "research-guide",
+                "skill-creator",
+                "xlsx"
+              ]
+            },
+            {
+              "model": "iris",
+              "skill_count": 11,
+              "skills": [
+                "TRAE-product-knowledge",
+                "doc-writing-guide",
+                "docx",
+                "feedback",
+                "html-deck",
+                "html-report",
+                "pdf",
+                "pptx",
+                "research-guide",
+                "skill-creator",
+                "xlsx"
+              ]
+            },
+            {
+              "model": "non_multimodal",
+              "skill_count": 12,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-product-knowledge",
+                "doc-writing-guide",
+                "docx",
+                "feedback",
+                "html-deck",
+                "html-report",
+                "pdf",
+                "pptx",
+                "research-guide",
+                "skill-creator",
+                "xlsx"
+              ]
+            },
+            {
+              "model": "seed",
+              "skill_count": 1,
+              "skills": [
+                "TRAE-computer-use-ptc"
+              ]
+            },
+            {
+              "model": "thetis",
+              "skill_count": 12,
+              "skills": [
+                "TRAE-computer-use-ptc",
+                "TRAE-product-knowledge",
+                "doc-writing-guide",
+                "docx",
+                "feedback",
+                "html-deck",
+                "html-report",
+                "pdf",
+                "pptx",
+                "research-guide",
+                "skill-creator",
+                "xlsx"
+              ]
+            }
+          ]
+        }
+      },
+      "level": "derivation",
+      "provenance": {
+        "source": "manifests",
+        "rule": "agent_type × model → skills"
+      },
+      "confidence": 0.9,
+      "known_gaps": [
+        "manifest 是声明，运行时会话可能因模型能力/权限被裁剪",
+        "同一 model 在不同 agent_type 下的 skills 可能不同，未做交叉去重"
+      ]
+    },
+    {
+      "result": {
+        "user_skills": 82,
+        "plugins": 9
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "filesystem",
+        "paths": [
+          "/Users/zhangjiangtao/.trae-cn/skills",
+          "/Users/zhangjiangtao/.trae-cn/plugins"
+        ]
+      },
+      "confidence": 1.0,
+      "known_gaps": []
+    },
+    {
+      "result": {
+        "Explore": 16,
+        "Plan": 16,
+        "browser_use": 32,
+        "computer_use": 17,
+        "general_purpose_task": 20,
+        "search": 31,
+        "solo_agent": 32,
+        "solo_agent_lite": 37,
+        "solo_design_lite": 20,
+        "solo_work_lite": 37
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "mcps",
+        "path": "/Users/zhangjiangtao/.trae-cn/mcps",
+        "sessions": 25
+      },
+      "confidence": 1.0,
+      "known_gaps": [
+        "工具面按会话+mode 物化，不同会话可能不同；此处是历史并集",
+        "原生 chat 工具不物化，未计入"
+      ]
+    },
+    {
+      "result": {
+        "active_profile": "manual_approval",
+        "fs_read_write": 5,
+        "fs_read_only": 0,
+        "sandbox_fs_read_write": 2,
+        "sandbox_network_default": "allow"
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "permission/sandbox",
+        "path": "/Users/zhangjiangtao/.trae-cn"
+      },
+      "confidence": 1.0,
+      "known_gaps": []
+    }
+  ]
+}

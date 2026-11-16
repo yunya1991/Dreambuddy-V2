@@ -1,0 +1,330 @@
+{
+  "summary": "映射 5 个机制，产出 5 个候选缺口",
+  "mechanism_map": [
+    {
+      "mechanism": "M1",
+      "name": "agent_type × model → skill bundle",
+      "observed": "manifest 按 agent_type/model 两层装配 skills；L2 无等价的模型感知装配。",
+      "existing": [
+        "GAP-02",
+        "GAP-13",
+        "GAP-19"
+      ],
+      "gates": [
+        "G-L2-1",
+        "G-L2-6"
+      ],
+      "contracts": [
+        "IF-1",
+        "IF-7"
+      ],
+      "verdict": "部分覆盖（缺模型维度与 bundle 标识）",
+      "candidate": "GAP-T1"
+    },
+    {
+      "mechanism": "M2",
+      "name": "session × mode → tool_set 快照",
+      "observed": "工具按会话+mode 物化；L2 有单一快照（A1-2），缺会话级版本/差异审计。",
+      "existing": [
+        "GAP-19",
+        "GAP-23",
+        "GAP-25"
+      ],
+      "gates": [
+        "G-L2-11"
+      ],
+      "contracts": [
+        "IF-7"
+      ],
+      "verdict": "部分覆盖（契约已有，版本/审计缺）",
+      "candidate": "GAP-T2"
+    },
+    {
+      "mechanism": "M3",
+      "name": "command → sandbox envelope",
+      "observed": "命令信封有 ownerHash/退出码/受限路径，但无 trace_id/session_id。",
+      "existing": [
+        "GAP-01",
+        "GAP-24",
+        "GAP-30"
+      ],
+      "gates": [
+        "G-L2-8"
+      ],
+      "contracts": [
+        "IF-3",
+        "IF-7"
+      ],
+      "verdict": "契约覆盖，归因字段缺失（阻塞 R2 门禁）",
+      "candidate": "GAP-T3"
+    },
+    {
+      "mechanism": "M4",
+      "name": "session → checkpoint",
+      "observed": "19 个 git 快照；L2 Ticket 有 paused，但无 checkpoint 契约与恢复验证。",
+      "existing": [
+        "GAP-20",
+        "GAP-24"
+      ],
+      "gates": [
+        "G-L2-10"
+      ],
+      "contracts": [
+        "IF-4",
+        "ADR-10"
+      ],
+      "verdict": "未覆盖（缺 checkpoint 契约）",
+      "candidate": "GAP-T4"
+    },
+    {
+      "mechanism": "M5",
+      "name": "session → summary memory",
+      "observed": "627 条摘要案例；learned 为 inference，未接入训练/台账，缺证据门控。",
+      "existing": [
+        "GAP-15",
+        "GAP-29"
+      ],
+      "gates": [
+        "G-L2-5",
+        "G-L2-7"
+      ],
+      "contracts": [
+        "IF-5",
+        "ADR-06"
+      ],
+      "verdict": "部分覆盖（缺证据门控与训练接线）",
+      "candidate": "GAP-T5"
+    }
+  ],
+  "candidates": [
+    {
+      "gap_id": "GAP-T1",
+      "title": "能力装配缺少「模型感知的 skill/tool bundle」标识",
+      "layer": "L2",
+      "severity": "P1",
+      "mechanism": "M1",
+      "existing_gaps": [
+        "GAP-02",
+        "GAP-13",
+        "GAP-19"
+      ],
+      "contract_ref": [
+        "IF-1 route_signal",
+        "IF-7 tool_set",
+        "ADR-09"
+      ],
+      "proposed_check": [
+        "route_signal 必须含 capability_bundle_id 与 model_profile",
+        "tool_set 快照必须引用 skill_bundle_id",
+        "无 bundle 时不得静默降级，必须回 L1 或标 needs_review"
+      ],
+      "promotion_note": "先核对 GAP-02/GAP-13 的 l2_route 实现，避免与裁决层重复开缺口。",
+      "facts": {
+        "agent_types": {
+          "trae": 6,
+          "code": 6,
+          "design": 4,
+          "work": 10
+        },
+        "skill_range": {
+          "trae": [
+            1,
+            7
+          ],
+          "code": [
+            1,
+            6
+          ],
+          "design": [
+            1,
+            6
+          ],
+          "work": [
+            1,
+            14
+          ]
+        }
+      },
+      "evidence_refs": [
+        "manifest.json",
+        "interaction_summary.json",
+        "mechanism_cards.md",
+        "pilot_report.md",
+        "interaction_cases.jsonl"
+      ],
+      "confidence": 0.7,
+      "status": "candidate"
+    },
+    {
+      "gap_id": "GAP-T2",
+      "title": "tool_set 只有单快照，无会话级版本/差异审计",
+      "layer": "L2",
+      "severity": "P1",
+      "mechanism": "M2",
+      "existing_gaps": [
+        "GAP-19",
+        "GAP-23",
+        "GAP-25"
+      ],
+      "contract_ref": [
+        "IF-7 tool_set.schema.json",
+        "G-L2-11"
+      ],
+      "proposed_check": [
+        "每个 L2 会话产出 tool_set_hash",
+        "工具面变更产出 diff 事件（added/removed/changed）",
+        "审计可对比「LLM 可见工具」与「审批工具」是否同源"
+      ],
+      "promotion_note": "A1-2 已生成唯一快照；先确认是否已有 hash/版本字段，再决定是否新增。",
+      "facts": {
+        "mcp_sessions": 25,
+        "modes": {
+          "Explore": 16,
+          "Plan": 16,
+          "browser_use": 32,
+          "computer_use": 17,
+          "general_purpose_task": 20,
+          "search": 31,
+          "solo_agent": 32,
+          "solo_agent_lite": 37,
+          "solo_design_lite": 20,
+          "solo_work_lite": 37
+        }
+      },
+      "evidence_refs": [
+        "manifest.json",
+        "interaction_summary.json",
+        "mechanism_cards.md",
+        "pilot_report.md",
+        "interaction_cases.jsonl"
+      ],
+      "confidence": 0.7,
+      "status": "candidate"
+    },
+    {
+      "gap_id": "GAP-T3",
+      "title": "执行信封缺 trace_id/session_id，命令与交互不可归因",
+      "layer": "L2",
+      "severity": "P1",
+      "mechanism": "M3",
+      "existing_gaps": [
+        "GAP-01",
+        "GAP-24",
+        "GAP-30"
+      ],
+      "contract_ref": [
+        "IF-3 L2Envelope.trace",
+        "IF-7 span.schema.json",
+        "G-L2-8"
+      ],
+      "proposed_check": [
+        "每条命令/工具执行 span 必含 trace_id、run_id、session_id",
+        "交互记录与执行信封的 join_rate ≥95%",
+        "无 ID 的信封不得作为回归/验收证据"
+      ],
+      "promotion_note": "这是 R2 门禁失败的直接原因；建议优先修，且只改我方执行链，不改 Trae。",
+      "facts": {
+        "executions": 1006,
+        "records": 627,
+        "cross_evidence_rate": 0.0
+      },
+      "evidence_refs": [
+        "manifest.json",
+        "interaction_summary.json",
+        "mechanism_cards.md",
+        "pilot_report.md",
+        "interaction_cases.jsonl"
+      ],
+      "confidence": 0.9,
+      "status": "candidate"
+    },
+    {
+      "gap_id": "GAP-T4",
+      "title": "无会话检查点契约（checkpoint → resume）",
+      "layer": "L2",
+      "severity": "P2",
+      "mechanism": "M4",
+      "existing_gaps": [
+        "GAP-20",
+        "GAP-24"
+      ],
+      "contract_ref": [
+        "IF-4 Ticket",
+        "ADR-10",
+        "G-L2-10"
+      ],
+      "proposed_check": [
+        "paused ticket 必须引用 checkpoint_id + content hash",
+        "resume 必须从 checkpoint 恢复并复跑验证",
+        "无 checkpoint 时不得声明 resumable=true"
+      ],
+      "promotion_note": "先验证 Ticket paused 是否已有等价物；若已有，改为补字段而非新建机制。",
+      "facts": {
+        "snapshots": 19,
+        "repos": 19
+      },
+      "evidence_refs": [
+        "manifest.json",
+        "interaction_summary.json",
+        "mechanism_cards.md",
+        "pilot_report.md",
+        "interaction_cases.jsonl"
+      ],
+      "confidence": 0.7,
+      "status": "candidate"
+    },
+    {
+      "gap_id": "GAP-T5",
+      "title": "交互摘要未进入训练/台账，且缺证据门控",
+      "layer": "L2",
+      "severity": "P1",
+      "mechanism": "M5",
+      "existing_gaps": [
+        "GAP-15",
+        "GAP-29"
+      ],
+      "contract_ref": [
+        "IF-5 RepairLedger",
+        "ADR-06",
+        "G-L2-5",
+        "G-L2-7"
+      ],
+      "proposed_check": [
+        "只有 ≥1 条 observation 级交叉证据的案例可入 training_cases",
+        "纯 inference 案例标 inference，不用于优化结论",
+        "settled 台账必须引用 case_ref"
+      ],
+      "promotion_note": "与 GAP-29 的 L1 发现门禁联动；摘要缺口主题不能直接当 L1 finding。",
+      "facts": {
+        "records": 627,
+        "sessions": 50,
+        "gap_themes": {
+          "数据/检索": 34,
+          "部署/云端": 26,
+          "前端/接口": 15,
+          "路由/分层": 14,
+          "门禁/验收": 13,
+          "文档/规范": 11,
+          "MCP/工具": 10,
+          "trace/观测": 5
+        }
+      },
+      "evidence_refs": [
+        "manifest.json",
+        "interaction_summary.json",
+        "mechanism_cards.md",
+        "pilot_report.md",
+        "interaction_cases.jsonl"
+      ],
+      "confidence": 0.7,
+      "status": "candidate"
+    }
+  ],
+  "priority_order": [
+    "GAP-T3",
+    "GAP-T5",
+    "GAP-T1",
+    "GAP-T2",
+    "GAP-T4"
+  ]
+}

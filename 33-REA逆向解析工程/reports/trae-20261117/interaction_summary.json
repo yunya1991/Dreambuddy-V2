@@ -1,0 +1,493 @@
+{
+  "summary": "最近 50 个会话 / 627 条交互记录；命令 1006 条；快照 19 个",
+  "project": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690",
+  "sessions": [
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af681fd57a31fc1690f2863.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af3f02dbb8f53bc3124e14b.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af5f56d57a31fc1690f0ea9.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af6ba9c57a31fc1690f382f.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af716cd57a31fc1690f4263.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af72fbc57a31fc1690f4a6f.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af71ab857a31fc1690f4378.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af71d6257a31fc1690f4484.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261114/session_memory_6af72fbc57a31fc1690f4a6f.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261114/session_memory_6af7de4b57a31fc1690f5a75.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261114/session_memory_6af7476b57a31fc1690f52cb.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261114/session_memory_6af71d6257a31fc1690f4484.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261114/session_memory_6af71ab857a31fc1690f4378.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261114/session_memory_6af757b557a31fc1690f5792.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261114/session_memory_6af80dce57a31fc1690f6f85.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261114/session_memory_6af849cb57a31fc1690f80ec.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261114/session_memory_6af84fec57a31fc1690f8328.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261114/session_memory_6af872cc57a31fc1690f8c86.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261114/session_memory_6af8812557a31fc1690f9108.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261114/session_memory_6af716cd57a31fc1690f4263.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261115/session_memory_6af9259e57a31fc1690faec6.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261115/session_memory_6af92c0457a31fc1690fb1ab.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261115/session_memory_6af94eb157a31fc1690fba82.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261115/session_memory_6af9705d57a31fc1690fcd91.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261115/session_memory_6af9877757a31fc1690fe0bf.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261115/session_memory_6af8a30f57a31fc1690f9c57.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261115/session_memory_6af9607357a31fc1690fc1cc.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261115/session_memory_6af716cd57a31fc1690f4263.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261115/session_memory_6af9b6e557a31fc1690ff3f1.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261115/session_memory_6af9cbac57a31fc1690ffd91.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261115/session_memory_6af8812557a31fc1690f9108.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261115/session_memory_6af9d23157a31fc1690fff3e.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261116/session_memory_6af9fb2c57a31fc1691006cb.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261116/session_memory_6af9d23157a31fc1690fff3e.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261116/session_memory_6af8812557a31fc1690f9108.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261116/session_memory_6afa659857a31fc169100b66.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261116/session_memory_6afa7898da7b5a368e9d08b4.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261116/session_memory_6afa7bc8da7b5a368e9d08fc.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261116/session_memory_6afa809fda7b5a368e9d0bb0.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261116/session_memory_6afad967e7261943c923730a.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261116/session_memory_6afaef94e7261943c9237bda.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261116/session_memory_6afad548e7261943c92370b4.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261116/session_memory_6afa867fda7b5a368e9d0e0a.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261116/session_memory_6afabe2de7261943c9236cd7.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261116/session_memory_6afae936e7261943c9237931.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261116/session_memory_6afa7ce4da7b5a368e9d0934.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261117/session_memory_6afae936e7261943c9237931.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261117/session_memory_6afb3968e7261943c9239a0a.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261117/session_memory_6afb3563e7261943c92396f4.jsonl",
+    "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261117/session_memory_6afa7ce4da7b5a368e9d0934.jsonl"
+  ],
+  "metrics": {
+    "session_count": 50,
+    "record_count": 627,
+    "outcome_rate": 1.0,
+    "action_categories": {
+      "read_analyze": 322,
+      "other": 621,
+      "test_verify": 598,
+      "coordinate": 155,
+      "doc_config": 248,
+      "edit_write": 816,
+      "run_deploy": 279
+    },
+    "gap_themes": {
+      "数据/检索": 34,
+      "部署/云端": 26,
+      "前端/接口": 15,
+      "路由/分层": 14,
+      "门禁/验收": 13,
+      "文档/规范": 11,
+      "MCP/工具": 10,
+      "trace/观测": 5
+    },
+    "top_gaps": [
+      {
+        "text": "待补核心gap为多MCP接入、会话服务端化、工具审批UI三项",
+        "count": 1,
+        "session_id": "6af681fd57a31fc1690f2863",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af681fd57a31fc1690f2863.jsonl",
+        "line_no": 1
+      },
+      {
+        "text": "项目缺少 eslint 配置，lint 命令无法执行属于改造前的既有状态",
+        "count": 1,
+        "session_id": "6af681fd57a31fc1690f2863",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af681fd57a31fc1690f2863.jsonl",
+        "line_no": 6
+      },
+      {
+        "text": "SPEC-52功能分为P1/P2/P3不同优先级，当前P2算力计量、P3插件tab尚未实现",
+        "count": 1,
+        "session_id": "6af681fd57a31fc1690f2863",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af681fd57a31fc1690f2863.jsonl",
+        "line_no": 8
+      },
+      {
+        "text": "当前前端因缺少相关API配置走IPC回退，会影响前后端业务联通验证",
+        "count": 1,
+        "session_id": "6af3f02dbb8f53bc3124e14b",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af3f02dbb8f53bc3124e14b.jsonl",
+        "line_no": 13
+      },
+      {
+        "text": "当前仍存在多处跨工作区缺口，包括 /api/trade/orders 路由缺失、云端 DSH_API_BASE 未配置、知识索引为空等问题",
+        "count": 1,
+        "session_id": "6af3f02dbb8f53bc3124e14b",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af3f02dbb8f53bc3124e14b.jsonl",
+        "line_no": 17
+      },
+      {
+        "text": "data/目录被gitignore规则误忽略导致CI缺少必要文件",
+        "count": 1,
+        "session_id": "6af5f56d57a31fc1690f0ea9",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af5f56d57a31fc1690f0ea9.jsonl",
+        "line_no": 13
+      },
+      {
+        "text": "当前registry缺少layer字段，网关仅覆盖L0，无L1/L2配置",
+        "count": 1,
+        "session_id": "6af6ba9c57a31fc1690f382f",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af6ba9c57a31fc1690f382f.jsonl",
+        "line_no": 1
+      },
+      {
+        "text": "交易链当前快环贯通、观测环落盘，但慢环和live灰度尚未形成完整闭环",
+        "count": 1,
+        "session_id": "6af6ba9c57a31fc1690f382f",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af6ba9c57a31fc1690f382f.jsonl",
+        "line_no": 10
+      },
+      {
+        "text": "涌现链当前仅存在部分候选证据，尚未形成完整的三维联合涌现闭环",
+        "count": 1,
+        "session_id": "6af6ba9c57a31fc1690f382f",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af6ba9c57a31fc1690f382f.jsonl",
+        "line_no": 10
+      },
+      {
+        "text": "47 registry的schema缺少必要字段导致approved状态不可达",
+        "count": 1,
+        "session_id": "6af6ba9c57a31fc1690f382f",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af6ba9c57a31fc1690f382f.jsonl",
+        "line_no": 12
+      },
+      {
+        "text": "现有门禁规则缺少可机器判定的标准，可能成为装饰性配置",
+        "count": 1,
+        "session_id": "6af6ba9c57a31fc1690f382f",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af6ba9c57a31fc1690f382f.jsonl",
+        "line_no": 12
+      },
+      {
+        "text": "门禁条件改为明确判定式，关联脚本bcl_gate_check.py尚未建成",
+        "count": 1,
+        "session_id": "6af6ba9c57a31fc1690f382f",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af6ba9c57a31fc1690f382f.jsonl",
+        "line_no": 13
+      },
+      {
+        "text": "P1项存在未完成依赖，开工前需先完成判定脚本等组件",
+        "count": 1,
+        "session_id": "6af6ba9c57a31fc1690f382f",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af6ba9c57a31fc1690f382f.jsonl",
+        "line_no": 13
+      },
+      {
+        "text": "trace透传层已存在于api-client.ts和dsh-execution-engine.ts，缺口在task-manager.ts的trace_id字段和L1转L2的trace复用",
+        "count": 1,
+        "session_id": "6af6ba9c57a31fc1690f382f",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af6ba9c57a31fc1690f382f.jsonl",
+        "line_no": 14
+      },
+      {
+        "text": "现有门禁脚本存在校验缺失，未覆盖degraded_reason非空率、跨task的trace唯一性校验",
+        "count": 1,
+        "session_id": "6af716cd57a31fc1690f4263",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af716cd57a31fc1690f4263.jsonl",
+        "line_no": 1
+      },
+      {
+        "text": "当前L1直答仅在库内知识命中场景生效，尚未实现普遍的L1优先效果",
+        "count": 1,
+        "session_id": "6af716cd57a31fc1690f4263",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af716cd57a31fc1690f4263.jsonl",
+        "line_no": 3
+      },
+      {
+        "text": "本地环境因缺少sqlite_vec模块导致检索走numpy全量扫描，云端venv-trading环境已预装sqlite_vec",
+        "count": 1,
+        "session_id": "6af716cd57a31fc1690f4263",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af716cd57a31fc1690f4263.jsonl",
+        "line_no": 4
+      },
+      {
+        "text": "本地代码比云端main分支超前6个commit，云端缺少trace贯穿和G-BCL-3/L1台账相关提交",
+        "count": 1,
+        "session_id": "6af716cd57a31fc1690f4263",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af716cd57a31fc1690f4263.jsonl",
+        "line_no": 4
+      },
+      {
+        "text": "当前日内亏损硬止损尚未在22侧实现，依赖11原有风控与SL/TP机制",
+        "count": 1,
+        "session_id": "6af71ab857a31fc1690f4378",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261113/session_memory_6af71ab857a31fc1690f4378.jsonl",
+        "line_no": 3
+      },
+      {
+        "text": "G13为新增缺口，对应48→40反馈网关产物无调度问题，属于代码接线工作，不在本次文档修订范围内",
+        "count": 1,
+        "session_id": "6af7476b57a31fc1690f52cb",
+        "file": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/20261114/session_memory_6af7476b57a31fc1690f52cb.jsonl",
+        "line_no": 2
+      }
+    ]
+  },
+  "execution": {
+    "count": 1006,
+    "status": {
+      "exited": 998,
+      "stopped": 6,
+      "running": 2
+    },
+    "target": {
+      "sandbox": 1006
+    },
+    "terminal_reason": {
+      "process_exited": 998,
+      "user_stop": 6,
+      "null": 2
+    },
+    "top_cwd": [
+      [
+        "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2",
+        685
+      ],
+      [
+        "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND",
+        91
+      ],
+      [
+        "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE",
+        67
+      ],
+      [
+        "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/54-L1架构能力聚合层",
+        65
+      ],
+      [
+        "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/56-L2架构能力聚合层",
+        32
+      ]
+    ],
+    "duration_ms": {
+      "median": 4944,
+      "p90": 27384,
+      "max": 1148503
+    }
+  },
+  "snapshots": {
+    "count": 19,
+    "repos": 19,
+    "sample": [
+      {
+        "session": "6af9607357a31fc1690fc1cc",
+        "last_commit": "c1c053b",
+        "last_ts": "1794728051",
+        "subject": "init empty branch"
+      },
+      {
+        "session": "6af9cbac57a31fc1690ffd91",
+        "last_commit": "5c01119",
+        "last_ts": "1794755500",
+        "subject": "init empty branch"
+      },
+      {
+        "session": "6af80dce57a31fc1690f6f85",
+        "last_commit": "2553935",
+        "last_ts": "1794641358",
+        "subject": "init empty branch"
+      },
+      {
+        "session": "6afb3968e7261943c9239a0a",
+        "last_commit": "53014bb",
+        "last_ts": "1794849128",
+        "subject": "init empty branch"
+      },
+      {
+        "session": "6afae936e7261943c9237931",
+        "last_commit": "788010b",
+        "last_ts": "1794828599",
+        "subject": "init empty branch"
+      },
+      {
+        "session": "6afa809fda7b5a368e9d0bb0",
+        "last_commit": "c8d7702",
+        "last_ts": "1794801824",
+        "subject": "init empty branch"
+      },
+      {
+        "session": "6af84fec57a31fc1690f8328",
+        "last_commit": "7eb15a0",
+        "last_ts": "1794658284",
+        "subject": "init empty branch"
+      },
+      {
+        "session": "6afa867fda7b5a368e9d0e0a",
+        "last_commit": "706b995",
+        "last_ts": "1794803327",
+        "subject": "init empty branch"
+      },
+      {
+        "session": "6afa7ce4da7b5a368e9d0934",
+        "last_commit": "95a6173",
+        "last_ts": "1794800868",
+        "subject": "init empty branch"
+      },
+      {
+        "session": "6afabe2de7261943c9236cd7",
+        "last_commit": "39cd96e",
+        "last_ts": "1794817581",
+        "subject": "init empty branch"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "result": {
+        "sessions": 50,
+        "records": 627,
+        "project": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690"
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "session_memory",
+        "path": "/Users/zhangjiangtao/.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690"
+      },
+      "confidence": 1.0,
+      "known_gaps": [
+        "只统计有摘要的会话",
+        "未包含原始 DB（加密）"
+      ]
+    },
+    {
+      "result": {
+        "avg_actions": 4.85,
+        "avg_learned": 3.9,
+        "outcome_rate": 1.0
+      },
+      "level": "derivation",
+      "provenance": {
+        "source": "interaction-miner",
+        "records": 627
+      },
+      "confidence": 0.7,
+      "known_gaps": [
+        "摘要是模型压缩结果，存在遗漏与自我合理化"
+      ]
+    },
+    {
+      "result": {
+        "count": 1006,
+        "status": {
+          "exited": 998,
+          "stopped": 6,
+          "running": 2
+        },
+        "target": {
+          "sandbox": 1006
+        },
+        "terminal_reason": {
+          "process_exited": 998,
+          "user_stop": 6,
+          "null": 2
+        },
+        "top_cwd": [
+          [
+            "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2",
+            685
+          ],
+          [
+            "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND",
+            91
+          ],
+          [
+            "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE",
+            67
+          ],
+          [
+            "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/54-L1架构能力聚合层",
+            65
+          ],
+          [
+            "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/56-L2架构能力聚合层",
+            32
+          ]
+        ],
+        "duration_ms": {
+          "median": 4944,
+          "p90": 27384,
+          "max": 1148503
+        }
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "command-execution",
+        "path": "/Users/zhangjiangtao/Library/Application Support/Trae CN/ModularData/ai-agent/command-execution"
+      },
+      "confidence": 1.0,
+      "known_gaps": []
+    },
+    {
+      "result": {
+        "count": 19,
+        "repos": 19,
+        "sample": [
+          {
+            "session": "6af9607357a31fc1690fc1cc",
+            "last_commit": "c1c053b",
+            "last_ts": "1794728051",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6af9cbac57a31fc1690ffd91",
+            "last_commit": "5c01119",
+            "last_ts": "1794755500",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6af80dce57a31fc1690f6f85",
+            "last_commit": "2553935",
+            "last_ts": "1794641358",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6afb3968e7261943c9239a0a",
+            "last_commit": "53014bb",
+            "last_ts": "1794849128",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6afae936e7261943c9237931",
+            "last_commit": "788010b",
+            "last_ts": "1794828599",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6afa809fda7b5a368e9d0bb0",
+            "last_commit": "c8d7702",
+            "last_ts": "1794801824",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6af84fec57a31fc1690f8328",
+            "last_commit": "7eb15a0",
+            "last_ts": "1794658284",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6afa867fda7b5a368e9d0e0a",
+            "last_commit": "706b995",
+            "last_ts": "1794803327",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6afa7ce4da7b5a368e9d0934",
+            "last_commit": "95a6173",
+            "last_ts": "1794800868",
+            "subject": "init empty branch"
+          },
+          {
+            "session": "6afabe2de7261943c9236cd7",
+            "last_commit": "39cd96e",
+            "last_ts": "1794817581",
+            "subject": "init empty branch"
+          }
+        ]
+      },
+      "level": "observation",
+      "provenance": {
+        "source": "snapshot",
+        "path": "/Users/zhangjiangtao/Library/Application Support/Trae CN/ModularData/ai-agent/snapshot"
+      },
+      "confidence": 1.0,
+      "known_gaps": []
+    }
+  ]
+}
