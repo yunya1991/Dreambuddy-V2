@@ -702,16 +702,19 @@ def _routing_strategy() -> str:
     return (os.environ.get("L1_ROUTING_STRATEGY", "S0") or "S0").strip().upper()
 
 
-def semantic_candidates(message: str, k: int = 3, *, validated: bool = True) -> list:
+def semantic_candidates(
+    message: str, k: int = 3, *, validated: bool = True, admission: bool = True
+) -> list:
     """通道 B：语义候选 top-K（[(intent, score), ...]）。
 
     validated=True 时按 G2 特征闸过滤（requiredPattern / 确定性序列），
     与 route_query 的语义准入保持同一口径；FAIL-OPEN：异常返回空列表。
+    admission=False 供建议器使用：S1 下语义不参与路由准入，但仍需生成建议。
     入口先做别称归一（大饼→BTC 等），提升口语/黑话的召回。
     """
     message = normalize_aliases(message)
-    if validated and not _L1_SEMANTIC_ADMISSION:
-        # 语义通道不参与准入（仅建议器使用 l1_suggest 的独立路径）
+    if admission and not _L1_SEMANTIC_ADMISSION:
+        # 语义通道不参与准入；建议器显式传 admission=False 走同一检索
         return []
     if _semantic_matcher is None or len(message or "") < SEMANTIC_MIN_LEN:
         return []

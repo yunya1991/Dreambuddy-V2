@@ -4,6 +4,7 @@
 import os
 import sys
 import time
+import types
 
 import pytest
 
@@ -22,7 +23,9 @@ def examples(monkeypatch):
     monkeypatch.setattr(sug, "_embed_server_ready", lambda: True)
     monkeypatch.setattr(sug, "_load_examples", lambda intent: ["BTC现在什么价格", "ETH最新价"])
     monkeypatch.setattr(
-        lrs, "semantic_candidates", lambda m, k=3: [("price_query", 0.82), ("data_query", 0.71)]
+        lrs,
+        "semantic_candidates",
+        lambda m, k=3, **kw: [("price_query", 0.82), ("data_query", 0.71)],
     )
 
 
@@ -47,13 +50,28 @@ def test_excludes_current_message(monkeypatch, examples):
 def test_timeout_degrades_to_empty(monkeypatch, examples):
     monkeypatch.setenv("L1_SUGGEST_BUDGET_MS", "5")
 
-    def _slow(m, k=3):
+    def _slow(m, k=3, **kw):
         time.sleep(0.2)
         return [("price_query", 0.9)]
 
     monkeypatch.setattr(lrs, "semantic_candidates", _slow)
     assert sug.build_suggestions("慢查询") == []
     time.sleep(0.25)  # 等后台任务结束，避免污染后续用例的单线程池
+
+
+def test_s1_admission_off_still_builds_suggestions(monkeypatch):
+    """S1 下语义不参与准入，但建议器必须仍能产出候选（云端曾因此恒为空）。"""
+    monkeypatch.setattr(sug, "_embed_server_ready", lambda: True)
+    monkeypatch.setattr(sug, "_load_examples", lambda intent: ["BTC现在什么价格"])
+    monkeypatch.setattr(lrs, "_L1_SEMANTIC_ADMISSION", False)
+    monkeypatch.setattr(lrs, "required_pattern_ok", lambda *a, **k: True)
+    monkeypatch.setattr(
+        lrs,
+        "_semantic_matcher",
+        types.SimpleNamespace(semantic_topk=lambda m, lang="auto", k=3: [("price_query", 0.88)]),
+    )
+    out = sug.build_suggestions("这币还能不能拿")
+    assert [s["intent"] for s in out] == ["price_query"]
 
 
 def test_route_query_l2_has_suggestions(monkeypatch, examples):

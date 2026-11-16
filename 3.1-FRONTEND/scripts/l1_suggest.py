@@ -101,17 +101,20 @@ def _embed_server_ready() -> bool:
 def build_suggestions(message: str, k: int = _K) -> list[dict]:
     if not enabled() or not message or not _embed_server_ready():
         return []
-    from l1_route_signal import semantic_candidates  # noqa: PLC0415
+    from l1_route_signal import EXECUTORS, semantic_candidates  # noqa: PLC0415
 
     try:
-        top = _executor.submit(semantic_candidates, message, k).result(timeout=_budget_s())
+        # admission=False：S1 下语义不参与路由准入，但建议器仍需要语义候选
+        top = _executor.submit(semantic_candidates, message, k, admission=False).result(
+            timeout=_budget_s()
+        )
     except Exception:  # noqa: BLE001 — 超时/模型不可用一律降级为空
         return []
     out: list[dict] = []
     seen: set[str] = set()
     for item in top:
         intent, score = item[0], item[1]
-        if not intent or intent in seen:
+        if not intent or intent in seen or intent not in EXECUTORS:
             continue
         query = _canonical_query(intent, message)
         if not query:
