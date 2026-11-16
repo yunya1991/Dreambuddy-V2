@@ -1,1051 +1,1051 @@
 {
-"D-A01": {
-"args": [
-"values:series:1:auto",
-"dates:series:1:auto",
-"freq:scalar:0:auto",
-"unit:scalar:0:auto",
-"name:scalar:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-A02": {
-"args": [
-"values:series:1:auto",
-"window:scalar:0:auto",
-"dates:series:0:auto",
-"unit:scalar:0:auto",
-"name:scalar:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-A03": {
-"args": [
-"values:series:1:auto",
-"dates:series:0:auto",
-"name:scalar:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-A04": {
-"args": [
-"values:series:1:auto",
-"lookback:scalar:0:auto",
-"dates:series:0:auto",
-"unit:scalar:0:auto",
-"name:scalar:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-A05": {
-"args": [
-"values:series:1:auto",
-"lookback:scalar:0:auto",
-"dates:series:0:auto",
-"unit:scalar:0:auto",
-"name:scalar:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-A06": {
-"args": [
-"values:series:1:auto",
-"window:scalar:0:auto",
-"dates:series:0:auto",
-"unit:scalar:0:auto",
-"name:scalar:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-A07": {
-"args": [
-"prices:series:1:auto",
-"symbol:scalar:0:auto",
-"dates:series:0:auto",
-"now_ts:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-A08": {
-"args": [
-"values:series:1:auto",
-"period:scalar:0:auto",
-"dates:series:0:auto",
-"unit:scalar:0:auto",
-"name:scalar:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-A09": {
-"args": [
-"values:series:1:auto",
-"dates:series:0:auto",
-"unit:scalar:0:auto",
-"name:scalar:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-A10": {
-"args": [
-"nominal:series:1:auto",
-"cpi:series:1:auto",
-"period:scalar:0:auto",
-"dates:series:0:auto",
-"unit:scalar:0:auto",
-"name:scalar:0:auto"
-],
-"bm": false,
-"sym": false
-},
-"D-A11": {
-"args": [
-"x:series:1:auto",
-"y:series:1:auto",
-"window:scalar:0:auto",
-"dates:series:0:auto",
-"name:scalar:0:auto"
-],
-"bm": true,
-"sym": true
-},
-"D-A12": {
-"args": [
-"x:series:1:auto",
-"y:series:1:auto",
-"max_lag:scalar:0:auto",
-"dates:series:0:auto",
-"x_name:scalar:0:auto",
-"y_name:scalar:0:auto"
-],
-"bm": true,
-"sym": true
-},
-"D-A13": {
-"args": [
-"values:series:1:auto",
-"threshold:scalar:0:auto",
-"side:scalar:0:auto",
-"quantile:scalar:0:auto",
-"dates:series:0:auto",
-"name:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-A14": {
-"args": [
-"series:series:1:unsupported",
-"dates:series:0:unsupported",
-"symbol:scalar:0:unsupported"
-],
-"bm": false,
-"sym": true
-},
-"D-A15": {
-"args": [
-"values:series:1:auto",
-"windows:scalar:0:auto",
-"dates:series:0:auto",
-"unit:scalar:0:auto",
-"name:scalar:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-A16": {
-"args": [
-"values:series:1:unsupported",
-"windows:scalar:0:unsupported",
-"dates:series:0:unsupported",
-"name:scalar:0:unsupported",
-"symbol:scalar:0:unsupported"
-],
-"bm": false,
-"sym": true
-},
-"D-B08": {
-"args": [
-"prices:series:1:auto",
-"window:scalar:0:auto",
-"dates:series:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-B09": {
-"args": [
-"prices:series:1:auto",
-"symbol:scalar:0:auto",
-"dates:series:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-E01": {
-"args": [
-"factor:series:1:derived",
-"prices:series:1:auto",
-"k:scalar:0:auto",
-"name:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-E02": {
-"args": [
-"prices:series:1:auto",
-"dates:series:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-E03": {
-"args": [
-"prices:series:1:auto",
-"dates:series:0:auto",
-"symbol:scalar:0:auto",
-"is_returns:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-E04": {
-"args": [
-"prices:series:1:auto",
-"events:events:0:auto",
-"dates:series:0:auto",
-"k:scalar:0:auto",
-"event_type:scalar:0:auto",
-"symbol:scalar:0:auto",
-"holidays:scalar:0:auto",
-"pre_holiday:scalar:0:auto",
-"lookback:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-E05": {
-"args": [
-"x:series:0:auto",
-"y:series:0:auto",
-"series:series:0:auto",
-"dates:series:0:auto",
-"k:scalar:0:auto",
-"base:scalar:0:auto",
-"x_name:scalar:0:auto",
-"y_name:scalar:0:auto",
-"window:scalar:0:auto",
-"max_lag:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-E06": {
-"args": [
-"x:series:0:auto",
-"y:series:0:auto",
-"series:series:0:auto",
-"dates:series:0:auto",
-"k:scalar:0:auto",
-"base:scalar:0:auto",
-"x_name:scalar:0:auto",
-"y_name:scalar:0:auto",
-"window:scalar:0:auto",
-"max_lag:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-E07": {
-"args": [
-"prices:series:1:auto",
-"k:scalar:0:auto",
-"symbol:scalar:0:auto",
-"dates:series:0:auto",
-"is_returns:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-E08": {
-"args": [
-"factor:series:1:derived",
-"forward:series:1:derived",
-"k:scalar:0:auto",
-"name:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-E09": {
-"args": [
-"values:series:0:auto",
-"pairs:scalar:0:auto",
-"label:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-E10": {
-"args": [
-"prices:series:1:auto",
-"symbol:scalar:0:auto",
-"dates:series:0:auto",
-"now_ts:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-E11": {
-"args": [
-"x:series:0:auto",
-"y:series:0:auto",
-"series:series:0:auto",
-"dates:series:0:auto",
-"k:scalar:0:auto",
-"base:scalar:0:auto",
-"x_name:scalar:0:auto",
-"y_name:scalar:0:auto",
-"window:scalar:0:auto",
-"max_lag:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-E12": {
-"args": [
-"series:series_map:1:auto",
-"dates:series:0:auto",
-"start:scalar:0:auto",
-"end:scalar:0:auto",
-"window:scalar:0:auto",
-"max_stale_days:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-E14": {
-"args": [
-"factor:series:1:derived",
-"prices:series:1:auto",
-"dates:series:0:auto",
-"release_ts:scalar:0:auto",
-"as_of:scalar:0:auto",
-"horizons:scalar:0:auto",
-"buckets:scalar:0:auto",
-"window:scalar:0:auto",
-"min_bucket_n:scalar:0:auto",
-"name:scalar:0:auto",
-"factor2:scalar:0:auto",
-"name2:scalar:0:auto",
-"buckets_per_axis:scalar:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": true,
-"sym": true
-},
-"D-E15": {
-"args": [
-"prices:series:1:auto",
-"dates:series:0:auto",
-"highs:scalar:0:auto",
-"lows:scalar:0:auto",
-"symbol:scalar:0:auto",
-"windows:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-E16": {
-"args": [
-"series:series_map:1:auto"
-],
-"bm": false,
-"sym": false
-},
-"D-E17": {
-"args": [
-"assets:asset_list:1:auto"
-],
-"bm": false,
-"sym": false
-},
-"D-E18": {
-"args": [
-"flows:json:1:auto"
-],
-"bm": false,
-"sym": false
-},
-"D-E19": {
-"args": [
-"block:json:1:auto"
-],
-"bm": false,
-"sym": false
-},
-"D-E20": {
-"args": [
-"db_path:scalar:0:auto",
-"as_of:scalar:0:auto",
-"days:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G01": {
-"args": [
-"panel:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G02": {
-"args": [
-"panel:scalar:0:auto",
-"groups:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G03": {
-"args": [
-"panel:scalar:0:auto",
-"k:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G04": {
-"args": [
-"panel:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G05": {
-"args": [
-"panel:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G06": {
-"args": [
-"panel:scalar:0:auto",
-"factor:series:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G07": {
-"args": [
-"series:series:0:auto",
-"d:scalar:0:auto",
-"other:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G08": {
-"args": [
-"prices:series:1:auto",
-"lookback:scalar:0:auto",
-"skip:scalar:0:auto",
-"dates:series:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G09": {
-"args": [
-"prices:series:1:auto",
-"target_vol:scalar:0:auto",
-"window:scalar:0:auto",
-"periods:scalar:0:auto",
-"dates:series:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G10": {
-"args": [
-"panel:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G11": {
-"args": [
-"panel:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G12": {
-"args": [
-"panel:scalar:0:auto",
-"weights:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G13": {
-"args": [
-"panel:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G14": {
-"args": [
-"series:series_map:1:auto",
-"lam:scalar:0:auto",
-"init_window:scalar:0:auto",
-"periods:scalar:0:auto",
-"dates:series:0:auto",
-"name:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G15": {
-"args": [
-"panel:scalar:0:auto",
-"k:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G16": {
-"args": [
-"series:series_map:1:auto",
-"weights:scalar:0:auto",
-"quantile:scalar:0:auto",
-"z:scalar:0:auto",
-"dates:series:0:auto",
-"name:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G18": {
-"args": [
-"panel:scalar:0:auto",
-"weights:scalar:0:auto",
-"benchmark_weights:scalar:0:auto",
-"sector:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G19": {
-"args": [
-"factor:series:1:derived",
-"forward:series:1:derived",
-"prices:series:0:auto",
-"window:scalar:0:auto",
-"horizons:scalar:0:auto",
-"lookback:scalar:0:auto",
-"dates:series:0:auto",
-"name:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G20": {
-"args": [
-"factor:series:1:derived",
-"forward:series:1:derived",
-"k:scalar:0:auto",
-"dates:series:0:auto",
-"name:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G21": {
-"args": [
-"factor:series:0:auto",
-"target:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G22": {
-"args": [
-"series:series:1:auto",
-"n_trials:scalar:0:auto",
-"name:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G23": {
-"args": [
-"prices:series:1:unsupported",
-"events:events:0:unsupported",
-"dates:series:0:unsupported",
-"est_window:scalar:0:unsupported",
-"event_window:scalar:0:unsupported",
-"event_type:scalar:0:unsupported",
-"symbol:scalar:0:unsupported"
-],
-"bm": false,
-"sym": true
-},
-"D-G24": {
-"args": [
-"panel:scalar:0:auto",
-"q:scalar:0:auto",
-"valuation_spread:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-G25": {
-"args": [
-"series:series_map:1:auto",
-"q:scalar:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J01": {
-"args": [
-"series:series:0:auto",
-"alpha:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J02": {
-"args": [
-"series:series:1:auto",
-"dates:series:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J03": {
-"args": [
-"series:series:0:auto",
-"k:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J04": {
-"args": [
-"series:series:1:auto",
-"dates:series:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J05": {
-"args": [
-"series:series:1:auto",
-"dates:series:0:auto",
-"symbol:scalar:0:auto",
-"reference_days:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J06": {
-"args": [
-"series:series:0:auto",
-"window:scalar:0:auto",
-"polyorder:scalar:0:auto",
-"levels:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J07": {
-"args": [
-"series:series:0:auto",
-"levels:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J08": {
-"args": [
-"series:series:0:auto",
-"process_var:scalar:0:auto",
-"obs_var:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J09": {
-"args": [
-"x:series:0:auto",
-"y:series:0:auto",
-"nperseg:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J10": {
-"args": [
-"series:series:0:auto",
-"other:scalar:0:auto",
-"bins:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J11": {
-"args": [
-"x:series:0:auto",
-"y:series:0:auto",
-"bins:scalar:0:auto",
-"lag:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J12": {
-"args": [
-"series:series:0:auto",
-"m:scalar:0:auto",
-"tau:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J13": {
-"args": [
-"series:series:0:auto",
-"n_scales:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J14": {
-"args": [
-"series:series:0:auto",
-"block_size:scalar:0:auto",
-"q:scalar:0:auto",
-"return_period:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J15": {
-"args": [
-"series:series:0:auto",
-"components:scalar:0:auto",
-"k:scalar:0:auto",
-"coverage:scalar:0:auto",
-"confidence:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J16": {
-"args": [
-"x:series:0:auto",
-"y:series:0:auto",
-"alpha:scalar:0:auto",
-"x0:scalar:0:auto",
-"coverage:scalar:0:auto",
-"confidence:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J17": {
-"args": [
-"series:series:0:auto",
-"effect_size:scalar:0:auto",
-"alpha:scalar:0:auto",
-"power_target:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J18": {
-"args": [
-"x:series:0:auto",
-"y:series:0:auto",
-"bound:scalar:0:auto",
-"alpha:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J19": {
-"args": [
-"values:series:0:auto",
-"groups:scalar:0:auto",
-"alpha:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J20": {
-"args": [
-"X:scalar:0:auto",
-"y:series:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J21": {
-"args": [
-"X:scalar:0:auto",
-"y:series:0:auto",
-"taus:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J22": {
-"args": [
-"series:series_map:1:auto",
-"k:scalar:0:auto",
-"dates:series:0:auto",
-"name:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J23": {
-"args": [
-"X:scalar:0:auto",
-"k:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J24": {
-"args": [
-"series:series_map:1:auto",
-"k:scalar:0:auto",
-"threshold:scalar:0:auto",
-"dates:series:0:auto",
-"name:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J25": {
-"args": [
-"coords:json:1:user",
-"values:series:0:auto",
-"k:scalar:0:auto",
-"n_bins:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J26": {
-"args": [
-"time:series:1:user",
-"event:series:0:user",
-"group:labels:0:user",
-"covariate:series:0:user",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J27": {
-"args": [
-"time:series:1:user",
-"event:series:0:user",
-"series:series:0:user",
-"lam:scalar:0:auto",
-"L:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J28": {
-"args": [
-"effects:series:1:user",
-"se:series:1:user",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J29": {
-"args": [
-"X:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-J30": {
-"args": [
-"indicator:scalar:1:user",
-"prices:series:0:auto",
-"dates:series:0:auto",
-"release_ts:scalar:0:auto",
-"used_ts:scalar:0:auto",
-"as_of:scalar:0:auto",
-"buckets:scalar:0:auto",
-"horizons:scalar:0:auto",
-"window:scalar:0:auto",
-"name:scalar:0:auto",
-"symbol:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-K01": {
-"args": [
-"db_path:scalar:0:auto",
-"target:scalar:0:auto",
-"horizon:scalar:0:auto",
-"top:scalar:0:auto",
-"viz:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-K02": {
-"args": [
-"reports_dir:scalar:0:auto",
-"top:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-},
-"D-K03": {
-"args": [
-"db_path:scalar:0:auto",
-"target:scalar:0:auto",
-"as_of:scalar:0:auto",
-"context:scalar:0:auto",
-"gate:scalar:0:auto",
-"thresholds:scalar:0:auto",
-"limits:scalar:0:auto",
-"top:scalar:0:auto",
-"capability_id:scalar:0:auto",
-"intent:scalar:0:auto"
-],
-"bm": false,
-"sym": true
-}
+  "D-A01": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "values:series:1:auto",
+      "dates:series:1:auto",
+      "freq:scalar:0:auto",
+      "unit:scalar:0:auto",
+      "name:scalar:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-A02": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "values:series:1:auto",
+      "window:scalar:0:auto",
+      "dates:series:0:auto",
+      "unit:scalar:0:auto",
+      "name:scalar:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-A03": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "values:series:1:auto",
+      "dates:series:0:auto",
+      "name:scalar:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-A04": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "values:series:1:auto",
+      "lookback:scalar:0:auto",
+      "dates:series:0:auto",
+      "unit:scalar:0:auto",
+      "name:scalar:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-A05": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "values:series:1:auto",
+      "lookback:scalar:0:auto",
+      "dates:series:0:auto",
+      "unit:scalar:0:auto",
+      "name:scalar:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-A06": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "values:series:1:auto",
+      "window:scalar:0:auto",
+      "dates:series:0:auto",
+      "unit:scalar:0:auto",
+      "name:scalar:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-A07": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "prices:series:1:auto",
+      "symbol:scalar:0:auto",
+      "dates:series:0:auto",
+      "now_ts:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-A08": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "values:series:1:auto",
+      "period:scalar:0:auto",
+      "dates:series:0:auto",
+      "unit:scalar:0:auto",
+      "name:scalar:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-A09": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "values:series:1:auto",
+      "dates:series:0:auto",
+      "unit:scalar:0:auto",
+      "name:scalar:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-A10": {
+    "sym": false,
+    "bm": false,
+    "args": [
+      "nominal:series:1:auto",
+      "cpi:series:1:auto",
+      "period:scalar:0:auto",
+      "dates:series:0:auto",
+      "unit:scalar:0:auto",
+      "name:scalar:0:auto"
+    ]
+  },
+  "D-A11": {
+    "sym": true,
+    "bm": true,
+    "args": [
+      "x:series:1:auto",
+      "y:series:1:auto",
+      "window:scalar:0:auto",
+      "dates:series:0:auto",
+      "name:scalar:0:auto"
+    ]
+  },
+  "D-A12": {
+    "sym": true,
+    "bm": true,
+    "args": [
+      "x:series:1:auto",
+      "y:series:1:auto",
+      "max_lag:scalar:0:auto",
+      "dates:series:0:auto",
+      "x_name:scalar:0:auto",
+      "y_name:scalar:0:auto"
+    ]
+  },
+  "D-A13": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "values:series:1:auto",
+      "threshold:scalar:0:auto",
+      "side:scalar:0:auto",
+      "quantile:scalar:0:auto",
+      "dates:series:0:auto",
+      "name:scalar:0:auto"
+    ]
+  },
+  "D-A15": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "values:series:1:auto",
+      "windows:scalar:0:auto",
+      "dates:series:0:auto",
+      "unit:scalar:0:auto",
+      "name:scalar:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-A16": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "values:series:1:auto",
+      "windows:scalar:0:auto",
+      "dates:series:0:auto",
+      "name:scalar:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-A14": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series:1:auto",
+      "dates:series:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-E01": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "factor:series:1:derived",
+      "prices:series:1:auto",
+      "k:scalar:0:auto",
+      "name:scalar:0:auto"
+    ]
+  },
+  "D-E02": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "prices:series:1:auto",
+      "dates:series:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-E03": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "prices:series:1:auto",
+      "dates:series:0:auto",
+      "symbol:scalar:0:auto",
+      "is_returns:scalar:0:auto"
+    ]
+  },
+  "D-E04": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "prices:series:1:auto",
+      "events:events:0:auto",
+      "dates:series:0:auto",
+      "k:scalar:0:auto",
+      "event_type:scalar:0:auto",
+      "symbol:scalar:0:auto",
+      "holidays:scalar:0:auto",
+      "pre_holiday:scalar:0:auto",
+      "lookback:scalar:0:auto"
+    ]
+  },
+  "D-E05": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "x:series:0:auto",
+      "y:series:0:auto",
+      "series:series:0:auto",
+      "dates:series:0:auto",
+      "k:scalar:0:auto",
+      "base:scalar:0:auto",
+      "x_name:scalar:0:auto",
+      "y_name:scalar:0:auto",
+      "window:scalar:0:auto",
+      "max_lag:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-E06": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "x:series:0:auto",
+      "y:series:0:auto",
+      "series:series:0:auto",
+      "dates:series:0:auto",
+      "k:scalar:0:auto",
+      "base:scalar:0:auto",
+      "x_name:scalar:0:auto",
+      "y_name:scalar:0:auto",
+      "window:scalar:0:auto",
+      "max_lag:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-E07": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "prices:series:1:auto",
+      "k:scalar:0:auto",
+      "symbol:scalar:0:auto",
+      "dates:series:0:auto",
+      "is_returns:scalar:0:auto"
+    ]
+  },
+  "D-E08": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "factor:series:1:derived",
+      "forward:series:1:derived",
+      "k:scalar:0:auto",
+      "name:scalar:0:auto"
+    ]
+  },
+  "D-E09": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "values:series:0:auto",
+      "pairs:scalar:0:auto",
+      "label:scalar:0:auto"
+    ]
+  },
+  "D-E10": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "prices:series:1:auto",
+      "symbol:scalar:0:auto",
+      "dates:series:0:auto",
+      "now_ts:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-E11": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "x:series:0:auto",
+      "y:series:0:auto",
+      "series:series:0:auto",
+      "dates:series:0:auto",
+      "k:scalar:0:auto",
+      "base:scalar:0:auto",
+      "x_name:scalar:0:auto",
+      "y_name:scalar:0:auto",
+      "window:scalar:0:auto",
+      "max_lag:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-E12": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series_map:1:auto",
+      "dates:series:0:auto",
+      "start:scalar:0:auto",
+      "end:scalar:0:auto",
+      "window:scalar:0:auto",
+      "max_stale_days:scalar:0:auto"
+    ]
+  },
+  "D-E14": {
+    "sym": true,
+    "bm": true,
+    "args": [
+      "factor:series:1:derived",
+      "prices:series:1:auto",
+      "dates:series:0:auto",
+      "release_ts:scalar:0:auto",
+      "as_of:scalar:0:auto",
+      "horizons:scalar:0:auto",
+      "buckets:scalar:0:auto",
+      "window:scalar:0:auto",
+      "min_bucket_n:scalar:0:auto",
+      "name:scalar:0:auto",
+      "factor2:scalar:0:auto",
+      "name2:scalar:0:auto",
+      "buckets_per_axis:scalar:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-G14": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series_map:1:auto",
+      "lam:scalar:0:auto",
+      "init_window:scalar:0:auto",
+      "periods:scalar:0:auto",
+      "dates:series:0:auto",
+      "name:scalar:0:auto"
+    ]
+  },
+  "D-J30": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "indicator:scalar:1:user",
+      "prices:series:0:auto",
+      "dates:series:0:auto",
+      "release_ts:scalar:0:auto",
+      "used_ts:scalar:0:auto",
+      "as_of:scalar:0:auto",
+      "buckets:scalar:0:auto",
+      "horizons:scalar:0:auto",
+      "window:scalar:0:auto",
+      "name:scalar:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-G16": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series_map:1:auto",
+      "weights:scalar:0:auto",
+      "quantile:scalar:0:auto",
+      "z:scalar:0:auto",
+      "dates:series:0:auto",
+      "name:scalar:0:auto"
+    ]
+  },
+  "D-G19": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "factor:series:1:derived",
+      "forward:series:1:derived",
+      "prices:series:0:auto",
+      "window:scalar:0:auto",
+      "horizons:scalar:0:auto",
+      "lookback:scalar:0:auto",
+      "dates:series:0:auto",
+      "name:scalar:0:auto"
+    ]
+  },
+  "D-G20": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "factor:series:1:derived",
+      "forward:series:1:derived",
+      "k:scalar:0:auto",
+      "dates:series:0:auto",
+      "name:scalar:0:auto"
+    ]
+  },
+  "D-G22": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series:1:auto",
+      "n_trials:scalar:0:auto",
+      "name:scalar:0:auto"
+    ]
+  },
+  "D-G23": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "prices:series:1:auto",
+      "events:events:0:auto",
+      "dates:series:0:auto",
+      "est_window:scalar:0:auto",
+      "event_window:scalar:0:auto",
+      "event_type:scalar:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-G25": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series_map:1:auto",
+      "q:scalar:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-J02": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series:1:auto",
+      "dates:series:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-J04": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series:1:auto",
+      "dates:series:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-J05": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series:1:auto",
+      "dates:series:0:auto",
+      "symbol:scalar:0:auto",
+      "reference_days:scalar:0:auto"
+    ]
+  },
+  "D-J22": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series_map:1:auto",
+      "k:scalar:0:auto",
+      "dates:series:0:auto",
+      "name:scalar:0:auto"
+    ]
+  },
+  "D-J24": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series_map:1:auto",
+      "k:scalar:0:auto",
+      "threshold:scalar:0:auto",
+      "dates:series:0:auto",
+      "name:scalar:0:auto"
+    ]
+  },
+  "D-B08": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "prices:series:1:auto",
+      "window:scalar:0:auto",
+      "dates:series:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-B09": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "prices:series:1:auto",
+      "symbol:scalar:0:auto",
+      "dates:series:0:auto"
+    ]
+  },
+  "D-G08": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "prices:series:1:auto",
+      "lookback:scalar:0:auto",
+      "skip:scalar:0:auto",
+      "dates:series:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-G09": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "prices:series:1:auto",
+      "target_vol:scalar:0:auto",
+      "window:scalar:0:auto",
+      "periods:scalar:0:auto",
+      "dates:series:0:auto",
+      "symbol:scalar:0:auto"
+    ]
+  },
+  "D-E15": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "prices:series:1:auto",
+      "dates:series:0:auto",
+      "highs:scalar:0:auto",
+      "lows:scalar:0:auto",
+      "symbol:scalar:0:auto",
+      "windows:scalar:0:auto"
+    ]
+  },
+  "D-E16": {
+    "sym": false,
+    "bm": false,
+    "args": [
+      "series:series_map:1:auto"
+    ]
+  },
+  "D-E17": {
+    "sym": false,
+    "bm": false,
+    "args": [
+      "assets:asset_list:1:auto"
+    ]
+  },
+  "D-E18": {
+    "sym": false,
+    "bm": false,
+    "args": [
+      "flows:json:1:auto"
+    ]
+  },
+  "D-E19": {
+    "sym": false,
+    "bm": false,
+    "args": [
+      "entries:json:1:auto"
+    ]
+  },
+  "D-E20": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "db_path:scalar:0:auto",
+      "as_of:scalar:0:auto",
+      "days:scalar:0:auto"
+    ]
+  },
+  "D-K01": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "db_path:scalar:0:auto",
+      "target:scalar:0:auto",
+      "horizon:scalar:0:auto",
+      "top:scalar:0:auto",
+      "viz:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-K02": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "reports_dir:scalar:0:auto",
+      "top:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-K03": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "db_path:scalar:0:auto",
+      "target:scalar:0:auto",
+      "as_of:scalar:0:auto",
+      "context:scalar:0:auto",
+      "gate:scalar:0:auto",
+      "thresholds:scalar:0:auto",
+      "limits:scalar:0:auto",
+      "top:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-G01": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "panel:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-G02": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "panel:scalar:0:auto",
+      "groups:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-G03": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "panel:scalar:0:auto",
+      "k:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-G04": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "panel:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-G05": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "panel:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-G06": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "panel:scalar:0:auto",
+      "factor:series:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-G07": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series:0:auto",
+      "d:scalar:0:auto",
+      "other:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-G10": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "panel:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-G11": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "panel:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-G12": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "panel:scalar:0:auto",
+      "weights:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-G13": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "panel:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-G15": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "panel:scalar:0:auto",
+      "k:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-G18": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "panel:scalar:0:auto",
+      "weights:scalar:0:auto",
+      "benchmark_weights:scalar:0:auto",
+      "sector:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-G21": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "factor:series:0:auto",
+      "target:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-G24": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "panel:scalar:0:auto",
+      "q:scalar:0:auto",
+      "valuation_spread:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J01": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series:0:auto",
+      "alpha:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J03": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series:0:auto",
+      "k:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J06": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series:0:auto",
+      "window:scalar:0:auto",
+      "polyorder:scalar:0:auto",
+      "levels:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J07": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series:0:auto",
+      "levels:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J08": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series:0:auto",
+      "process_var:scalar:0:auto",
+      "obs_var:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J09": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "x:series:0:auto",
+      "y:series:0:auto",
+      "nperseg:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J10": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series:0:auto",
+      "other:scalar:0:auto",
+      "bins:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J11": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "x:series:0:auto",
+      "y:series:0:auto",
+      "bins:scalar:0:auto",
+      "lag:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J12": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series:0:auto",
+      "m:scalar:0:auto",
+      "tau:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J13": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series:0:auto",
+      "n_scales:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J14": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series:0:auto",
+      "block_size:scalar:0:auto",
+      "q:scalar:0:auto",
+      "return_period:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J15": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series:0:auto",
+      "components:scalar:0:auto",
+      "k:scalar:0:auto",
+      "coverage:scalar:0:auto",
+      "confidence:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J16": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "x:series:0:auto",
+      "y:series:0:auto",
+      "alpha:scalar:0:auto",
+      "x0:scalar:0:auto",
+      "coverage:scalar:0:auto",
+      "confidence:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J17": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "series:series:0:auto",
+      "effect_size:scalar:0:auto",
+      "alpha:scalar:0:auto",
+      "power_target:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J18": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "x:series:0:auto",
+      "y:series:0:auto",
+      "bound:scalar:0:auto",
+      "alpha:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J19": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "values:series:0:auto",
+      "groups:scalar:0:auto",
+      "alpha:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J20": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "X:scalar:0:auto",
+      "y:series:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J21": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "X:scalar:0:auto",
+      "y:series:0:auto",
+      "taus:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J23": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "X:scalar:0:auto",
+      "k:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J25": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "coords:json:1:user",
+      "values:series:0:auto",
+      "k:scalar:0:auto",
+      "n_bins:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J26": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "time:series:1:user",
+      "event:series:0:user",
+      "group:labels:0:user",
+      "covariate:series:0:user",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J27": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "time:series:1:user",
+      "event:series:0:user",
+      "series:series:0:user",
+      "lam:scalar:0:auto",
+      "L:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J28": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "effects:series:1:user",
+      "se:series:1:user",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  },
+  "D-J29": {
+    "sym": true,
+    "bm": false,
+    "args": [
+      "X:scalar:0:auto",
+      "capability_id:scalar:0:auto",
+      "intent:scalar:0:auto"
+    ]
+  }
 }

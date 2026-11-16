@@ -1343,7 +1343,7 @@ def conditional_distribution(
             degraded_reason = "insufficient_2d"
         elif tier != requested_tier:
             degraded_tier = tier
-            degraded_reason = "bucket_nonoverlap_lt_250"
+            degraded_reason = f"bucket_nonoverlap_lt_{min_bucket_n}"
 
     if dim == 1:
         chosen = evaluate(requested_buckets)
@@ -1373,7 +1373,7 @@ def conditional_distribution(
             chosen = fallback
             bucket_downgraded_from = requested_buckets
             if degraded_reason is None:
-                degraded_reason = "bucket_nonoverlap_lt_250"
+                degraded_reason = f"bucket_nonoverlap_lt_{min_bucket_n}"
 
     result = chosen["result"]
     states = result.get("states")
@@ -1446,7 +1446,7 @@ def conditional_distribution(
         )
 
     if weak_horizons and degraded_reason is None:
-        degraded_reason = "bucket_nonoverlap_lt_250"
+        degraded_reason = f"bucket_nonoverlap_lt_{min_bucket_n}"
     q = quality_for(
         visible_n,
         min_n=MIN_CONDITIONAL,

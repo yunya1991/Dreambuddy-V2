@@ -449,7 +449,7 @@ capabilities:
     methods: [I37, I36]
     min_n: 500
     method_binding: display
-    notes: 四轴（趋势/惯性/周期/前瞻）五态点亮投影；轴强度 = |轴值|/轴权重（零重算），cycle 取 I39 外部归一值不自行估计；lit/warm 阈值默认 p70/p40 且未标定时显式打标；样本门按 asset_pool per-anchor（代币化标的 250 硬门）独立控制，展示层不重算统计量
+    notes: 四轴（趋势/惯性/周期/前瞻）五态点亮投影；轴强度 = |轴值|/轴权重（零重算），cycle 取 I39 外部归一值不自行估计；lit/warm 阈值默认 p70/p40 且未标定时显式打标；样本门按 asset_pool per-anchor（代币化标的 250 硬门）独立控制，展示层不重算统计量；上游点亮输入由主览图落盘 `artifacts/visual/lights_latest.json`（含 entries，SPEC-54c），卡片未传 entries 时只读该产物、不重建
 
   - id: D-E20
     intent: trend_query
@@ -479,7 +479,7 @@ capabilities:
     methods: [M01, M02, M11, M12, B01, B02, B03, B04, B05, B11, B12, B13, B14, B15, R01, R02, R03, R04, SC52, SC62]
     min_n: 250
     method_binding: display
-    notes: 评估层只读出口（SPEC §15.6）；只读最近一期 reports/discovery/<YYYYMMDD-HHMM>/（manifest.json + findings.jsonl），按 |RankIC| 排序截断，输出恒标 status=candidate；不扫描、不重算、不写库；无候选 → status=partial + degraded_reason=no_findings；禁止因果与预测措辞
+    notes: 评估层只读出口（SPEC §15.6）；只读最近一期 reports/discovery/<YYYYMMDD-HHMM>/（manifest.json + findings.jsonl），按 |RankIC| 排序截断，输出恒标 status=candidate；不扫描、不重算、不写库；无候选 → status=partial + degraded_reason=no_findings；禁止因果与预测措辞；报告由 `scripts/discovery_scan.py`（预注册空间 + BH-FDR + 70/30 holdout + 去重）产出（SPEC-54c）
 
   - id: D-K03
     intent: signal_query

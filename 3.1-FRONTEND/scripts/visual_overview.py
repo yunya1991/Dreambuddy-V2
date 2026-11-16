@@ -532,6 +532,74 @@ def _lights_history_cache_path():
     return os.path.join(root, "artifacts", "visual", "lights_history.json")
 
 
+def _lights_artifact_dir():
+    """D-E19 上游产物目录（与 capability_resolve 的回退读取同源）。"""
+    import l1agg
+
+    root = os.path.dirname(os.path.dirname(os.path.abspath(l1agg.__file__)))
+    return os.path.join(root, "artifacts", "visual")
+
+
+def _persist_lights(lights_payload, lights_block, as_of, entries=None):
+    """D-E19 落盘：最新快照 + 按 as_of 幂等追加日累积（FAIL-OPEN，不影响响应）。
+
+    产物契约（capability_resolve 回退读取）：
+      - `lights_latest.json`：{as_of, generated_at, entries, block, rows, meta, summary}
+      - `lights_daily.jsonl`：每行 {as_of, generated_at, rows, summary}，同日只写一次
+    `entries` 是 D-E19 的输入（轴级事实），能力卡片据此只做投影、不重算统计。
+    """
+    rows = list(lights_payload.get("rows") or [])
+    if not rows:
+        return
+    directory = _lights_artifact_dir()
+    stamp = datetime.now(timezone.utc).isoformat()
+    day = str(as_of or rows[0].get("as_of") or "")
+    latest = {
+        "as_of": day,
+        "generated_at": stamp,
+        "entries": list(entries or []),
+        "block": lights_block,
+        "rows": rows,
+        "meta": lights_payload.get("meta") or {},
+        "summary": (lights_block or {}).get("summary"),
+    }
+    try:
+        os.makedirs(directory, exist_ok=True)
+        latest_path = os.path.join(directory, "lights_latest.json")
+        tmp_path = latest_path + ".tmp"
+        with open(tmp_path, "w", encoding="utf-8") as fh:
+            json.dump(latest, fh, ensure_ascii=False)
+        os.replace(tmp_path, latest_path)
+        # 日累积：同一 as_of 只追加一次，保证「累积已开始」可被外部验证
+        daily_path = os.path.join(directory, "lights_daily.jsonl")
+        seen = set()
+        if os.path.isfile(daily_path):
+            with open(daily_path, "r", encoding="utf-8") as fh:
+                for line in fh:
+                    try:
+                        item = json.loads(line)
+                    except ValueError:
+                        continue
+                    if isinstance(item, dict) and item.get("as_of"):
+                        seen.add(str(item["as_of"]))
+        if day and day not in seen:
+            with open(daily_path, "a", encoding="utf-8") as fh:
+                fh.write(
+                    json.dumps(
+                        {
+                            "as_of": day,
+                            "generated_at": stamp,
+                            "rows": rows,
+                            "summary": (lights_block or {}).get("summary"),
+                        },
+                        ensure_ascii=False,
+                    )
+                    + "\n"
+                )
+    except OSError:
+        return
+
+
 def _lights_history(
     raw,
     pool,
@@ -550,6 +618,12 @@ def _lights_history(
 
     cache_path = _lights_history_cache_path()
     signature = {"base": base, "upto": upto or "", "periods": int(periods), "step": int(step)}
+    # SPEC-54c：签名加入数据水位，新交易日自动重算（原签名不含水位 → 永远命中旧缓存）
+    watermark = max(
+        (day for history in raw.values() for day in history if not upto or day <= upto),
+        default="",
+    )
+    signature["watermark"] = watermark
     try:
         if os.path.isfile(cache_path):
             with open(cache_path, "r", encoding="utf-8") as fh:
@@ -716,6 +790,11 @@ def _extra_panels(raw, aligned, base, blocks, envelopes, days, as_of=None, histo
     if lights_env:
         envelopes["D-E19"] = lights_env
         _collect(blocks, lights_env, only={"D-E19"})
+        # SPEC-54c：点亮块落盘 + 日累积（FAIL-OPEN）
+        try:
+            _persist_lights(lights_payload, lights_block, as_of, entries)
+        except Exception:  # noqa: BLE001 — 写盘失败不影响主览图
+            pass
 
     # 1.0) 多期点亮影带（T9-2）：仅在显式请求 `--history N` 时回放，默认 0 保持旧 payload
     if history_periods > 0:

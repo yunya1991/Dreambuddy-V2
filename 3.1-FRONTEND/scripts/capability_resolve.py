@@ -40,6 +40,12 @@ DEFAULT_DAYS = 750
 FREQ_PERIOD = {"1d": 252, "1w": 52, "1M": 12}
 MAX_CUSTOM_POINTS = 5000
 MAX_ASSETS = 14
+# SPEC-54c：E14 卡口头放宽（能力层默认值仍为 250，不改既有契约）
+E14_WINDOW = 120
+E14_MIN_BUCKET_N = 100
+# SPEC-54c：G21 面板覆盖率收口（剔除历史覆盖不足的资产，避免公共轴被最短资产截断）
+PANEL_MIN_COVERAGE = 0.6
+PANEL_MIN_DATES = 250
 
 PRICE_CAPS = frozenset(
     {
@@ -54,6 +60,7 @@ PRICE_CAPS = frozenset(
         "D-E15",
         "D-G08",
         "D-G09",
+        "D-G23",
     }
 )
 SERIES_SEQ_CAPS = frozenset({"D-G22", "D-J02", "D-J04", "D-J05"})
@@ -129,6 +136,59 @@ def _common_dates(series_map: Dict[str, Dict[str, float]]) -> List[str]:
     if not series_map:
         return []
     return sorted(set.intersection(*(set(s) for s in series_map.values())))
+
+
+# A14 三指标固定口径（与 data_query_executor._CROWDING_SERIES 一致，禁止按位置拼接）
+CROWDING_SERIES = (
+    ("funding_rate", "funding_rate_pct"),
+    ("open_interest", "open_interest_value_binance"),
+    ("long_short_ratio", "long_short_ratio"),
+)
+# A16 稳定币供给：优先长历史独立子类，缺失回退既有 283 行子类
+STABLECOIN_SERIES = (
+    ("stablecoin_supply", "total_circulating_usd_bln"),
+    ("stablecoins_top_10", "total_circulating_usd_bln"),
+)
+
+
+def _load_crowding_series(days: int) -> Tuple[Dict[str, List[float]], List[str]]:
+    """D-A14：读三指标日频序列并按 UTC 日期取交集（缺任一序列即返回空）。"""
+    loaded = {sub: _load_metric(sub, metric) for sub, metric in CROWDING_SERIES}
+    if any(not values for values in loaded.values()):
+        return {}, []
+    common = _common_dates(loaded)[-int(days) :]
+    if not common:
+        return {}, []
+    panel = {name: [values[day] for day in common] for name, values in loaded.items()}
+    return panel, common
+
+
+def _load_stablecoin_series(days: int) -> Tuple[List[float], List[str]]:
+    """D-A16：稳定币总供给（十亿美元），按优先级取第一条有数据的序列。"""
+    for sub, metric in STABLECOIN_SERIES:
+        values = _load_metric(sub, metric)
+        if not values:
+            continue
+        dates = sorted(values)[-int(days) :]
+        return [values[day] for day in dates], dates
+    return [], []
+
+
+def _lights_artifact_path() -> str:
+    root = os.path.normpath(os.path.join(_SCRIPT_DIR, "..", ".."))
+    return os.path.join(root, "54-L1架构能力聚合层", "artifacts", "visual", "lights_latest.json")
+
+
+def _load_lights_entries() -> List[Dict[str, Any]]:
+    """D-E19：读取主览图落盘的点亮输入 entries；产物缺失返回空（不重建）。"""
+    path = _lights_artifact_path()
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            payload = json.load(fh)
+    except (OSError, ValueError):
+        return []
+    entries = payload.get("entries") if isinstance(payload, dict) else None
+    return [item for item in entries if isinstance(item, dict)] if isinstance(entries, list) else []
 
 
 def _column(series: Dict[str, float], dates: Sequence[str]) -> List[Optional[float]]:
@@ -405,11 +465,27 @@ def _record_metric(capability_id: str, result: Dict[str, Any], cache_hit: bool) 
 
 
 def _panel_lists(days: int) -> Tuple[List[str], Dict[str, List[float]]]:
-    """{symbol: [close...]}，按公共日期轴对齐（G 组 panel 要求 list 形态）。"""
+    """{symbol: [close...]}，按覆盖收口后的公共日期轴对齐（G 组 panel 要求 list 形态）。
+
+    SPEC-54c（G21 根因）：原实现对全部资产取日期交集，会被历史最短资产
+    （XCU 255 行 / XAG 290 行）截断到 170 天，横截面期数不足 250。
+    改为先剔除覆盖率 <60% 的资产，仍不足 250 天时按覆盖率从低到高逐个剔除。
+    """
     if days not in _PANEL_LIST_CACHE:
-        panel = _panel_map(days)
-        common = _common_dates(panel)
-        _PANEL_LIST_CACHE[days] = (common, {k: _column(v, common) for k, v in panel.items()})
+        panel = {symbol: values for symbol, values in _panel_map(days).items() if values}
+        ordered = sorted(panel.items(), key=lambda item: len(item[1]), reverse=True)
+        if ordered:
+            longest = len(ordered[0][1])
+            kept = [item for item in ordered if len(item[1]) >= PANEL_MIN_COVERAGE * longest]
+            if len(kept) < 2:
+                kept = ordered[:2]
+            common = _common_dates(dict(kept))
+            while len(kept) > 2 and len(common) < PANEL_MIN_DATES:
+                kept = kept[:-1]
+                common = _common_dates(dict(kept))
+            _PANEL_LIST_CACHE[days] = (common, {k: _column(v, common) for k, v in kept})
+        else:
+            _PANEL_LIST_CACHE[days] = ([], {})
     return _PANEL_LIST_CACHE[days]
 
 
@@ -636,15 +712,18 @@ def _resolve_impl(capability_id: str, payload: Optional[Dict[str, Any]] = None) 
         # ---- 富输入出口：T6（四种形态，见 SPEC-54 R4）----
         if capability_id in ASSET_LIST_CAPS:
             if capability_id == "D-E19":
-                block = payload.get("block")
-                if not isinstance(block, dict):
+                # SPEC-54c：优先用调用方传入的 entries；否则回退读主览图落盘产物
+                entries = payload.get("entries")
+                if not isinstance(entries, (list, tuple)) or not entries:
+                    entries = _load_lights_entries()
+                if not entries:
                     return _result(
                         "product_missing",
                         capability_id,
-                        reason="需要主览图 lights 块（上游产物，卡片直连不重建）",
+                        reason="需要主览图 lights 输入（上游产物，卡片直连不重建）",
                     )
-                envelope = _run(capability_id, {"block": block})
-                return _ok(capability_id, envelope, 0, trimmed, started, base["meta"])
+                envelope = _run(capability_id, {"entries": entries})
+                return _ok(capability_id, envelope, len(entries), trimmed, started, base["meta"])
 
             if capability_id == "D-E18":
                 from visual_overview import _load_flows
@@ -684,6 +763,27 @@ def _resolve_impl(capability_id: str, payload: Optional[Dict[str, Any]] = None) 
         if capability_id in USER_ARG_CAPS:
             return _resolve_user_args(capability_id, payload, base, started)
 
+        # ---- 宏观/指标派生：D-A14 拥挤度 / D-A16 稳定币供给 ----
+        if capability_id == "D-A14":
+            panel, panel_dates = _load_crowding_series(days)
+            if not panel:
+                return _result(
+                    "product_missing",
+                    capability_id,
+                    reason="资金费率/持仓量/多空比三序列存在缺失或无可对齐交易日",
+                )
+            args = {"series": panel, "dates": panel_dates, "symbol": symbol}
+            envelope = _run(capability_id, args)
+            return _ok(capability_id, envelope, len(panel_dates), trimmed, started, base["meta"])
+
+        if capability_id == "D-A16":
+            values, value_dates = _load_stablecoin_series(days)
+            if not values:
+                return _result("product_missing", capability_id, reason="稳定币供给序列尚未采集")
+            args = {"values": values, "dates": value_dates, "name": "稳定币总供给"}
+            envelope = _run(capability_id, args)
+            return _ok(capability_id, envelope, len(values), trimmed, started, base["meta"])
+
         series = _load_symbol(symbol, days)
         if not series:
             return _result("sample_insufficient", capability_id, reason=f"{symbol} 无可用序列")
@@ -706,6 +806,9 @@ def _resolve_impl(capability_id: str, payload: Optional[Dict[str, Any]] = None) 
                     return _result("sample_insufficient", capability_id, reason="滚动相关窗口不足")
                 trimmed += more
                 args = {"factor": cols[0], "prices": cols[1]}
+                # SPEC-54c：E14 卡口头放宽（能力层默认门槛不动，阈值随结果披露）
+                args["window"] = E14_WINDOW
+                args["min_bucket_n"] = E14_MIN_BUCKET_N
             n_points = len(args["x"] if "x" in args else args["prices"])
             envelope = _run(capability_id, args)
             return _ok(capability_id, envelope, n_points, trimmed, started, base["meta"])
@@ -799,11 +902,11 @@ def _resolve_impl(capability_id: str, payload: Optional[Dict[str, Any]] = None) 
             args = {"values": close, "dates": dates}
         elif capability_id in PRICE_CAPS:
             args = {"prices": close}
-            if capability_id in {"D-E03", "D-E04"}:
-                # 日历/事件能力必须带日期轴；E04 另需 mm_events 事件日
+            if capability_id in {"D-E03", "D-E04", "D-G23"}:
+                # 日历/事件能力必须带日期轴；E04/G23 另需 mm_events 事件日
                 args["dates"] = dates
                 args["symbol"] = symbol
-                if capability_id == "D-E04":
+                if capability_id in {"D-E04", "D-G23"}:
                     events = _load_events(symbol, days)
                     if not events:
                         return _result(

@@ -81,7 +81,8 @@ def main(argv: List[str] | None = None) -> int:
     unsupported = {
         item["capability_id"] for item in report["items"] if item["code"] == "unsupported"
     }
-    expected = {"D-G23", "D-A14", "D-A16"}
+    # SPEC-54c：G23/A14/A16 已放开，禁用清单应为空
+    expected = set()
     if unsupported != expected:
         print(f"WARN unsupported={sorted(unsupported)} expected={sorted(expected)}")
     if (report["by_code"].get("error") or 0) > 0:

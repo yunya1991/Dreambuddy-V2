@@ -11,11 +11,9 @@ import inspect
 from typing import Any, Dict, List, Optional
 
 # 无数据源：装配层直接返回 unsupported（SPEC-54 §3 禁用清单）
-UNSUPPORTED: Dict[str, str] = {
-    "D-G23": "缺少事件日期序列（events）数据源",
-    "D-A14": "缺少拥挤度分项序列（资金费率/持仓量/波动率）",
-    "D-A16": "缺少稳定币规模序列",
-}
+# SPEC-54c：G23（mm_events 已有事件）、A14（mm_metrics 三指标日频）、
+# A16（稳定币供给序列）均已具备可披露数据源，移出禁用清单。
+UNSUPPORTED: Dict[str, str] = {}
 
 # `series` 参数为多资产映射（Mapping[str, Sequence]）
 SERIES_MAPPING = frozenset({"D-E12", "D-G14", "D-G16", "D-G25", "D-J22", "D-J24"})
@@ -70,7 +68,7 @@ ASSET_LIST_CAPS = {
     "D-E16": ("series", "series_map"),  # Mapping[str, Mapping[date, float]]
     "D-E17": ("assets", "asset_list"),  # Mapping[str, {prices, dates}]
     "D-E18": ("flows", "json"),  # Sequence[flow edge]
-    "D-E19": ("block", "json"),  # lights 块（信号点阵输入）
+    "D-E19": ("entries", "json"),  # 主览图落盘的点亮输入（轴级事实）
 }
 
 _SERIES_NAMES = frozenset(

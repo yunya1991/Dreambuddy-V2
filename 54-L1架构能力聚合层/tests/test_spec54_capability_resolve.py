@@ -27,8 +27,9 @@ _needs_db = pytest.mark.skipif(not _DB_READY, reason="dreambuddy_core.db 不存�
 def test_schema_total_and_unsupported():
     schemas = param_schema.all_schemas()
     assert len(schemas) == 94
+    # SPEC-54c：G23/A14/A16 数据源已具备，禁用清单清空
     unsupported = {cid for cid, schema in schemas.items() if schema["unsupported"]}
-    assert unsupported == {"D-G23", "D-A14", "D-A16"}
+    assert unsupported == set()
 
 
 def test_schema_snapshot_stable():
@@ -57,7 +58,7 @@ def test_schema_t6_has_four_shapes():
     assert [a["name"] for a in schemas["D-E16"]["args"]] == ["series"]
     assert [a["name"] for a in schemas["D-E17"]["args"]] == ["assets"]
     assert [a["name"] for a in schemas["D-E18"]["args"]] == ["flows"]
-    assert [a["name"] for a in schemas["D-E19"]["args"]] == ["block"]
+    assert [a["name"] for a in schemas["D-E19"]["args"]] == ["entries"]
 
 
 def test_schema_derived_forward():
@@ -100,10 +101,12 @@ def test_custom_series_rejects_bad_input():
     assert cr.resolve("D-A04", {"custom_series": nan_case})["code"] == "invalid_params"
 
 
-def test_unsupported_and_missing():
-    assert cr.resolve("D-A16")["code"] == "unsupported"
-    assert cr.resolve("D-G23")["code"] == "unsupported"
-    # E19 依赖主览图 lights 块（上游产物），卡片直连时按 product_missing 明示
+def test_unsupported_and_missing(tmp_path, monkeypatch):
+    # SPEC-54c：G23/A14/A16 已放开，不再返回 unsupported
+    assert cr.resolve("D-A16")["code"] != "unsupported"
+    assert cr.resolve("D-G23")["code"] != "unsupported"
+    # E19 依赖主览图落盘产物；产物缺失时按 product_missing 明示（不重建）
+    monkeypatch.setattr(cr, "_lights_artifact_path", lambda: str(tmp_path / "missing.json"))
     assert cr.resolve("D-E19")["code"] == "product_missing"
     assert cr.resolve("D-UNKNOWN")["code"] == "not_found"
 

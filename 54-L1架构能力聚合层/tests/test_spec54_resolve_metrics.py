@@ -148,7 +148,9 @@ def test_result_cache_key_is_payload_sensitive():
     assert other["meta"]["cache"] == "miss"
 
 
-def test_failed_resolution_is_not_cached():
+def test_failed_resolution_is_not_cached(tmp_path, monkeypatch):
+    # SPEC-54c：E19 会回退读取主览图落盘产物；此处固定指向缺失路径以验证失败不缓存
+    monkeypatch.setattr(cr, "_lights_artifact_path", lambda: str(tmp_path / "missing.json"))
     first = cr.resolve("D-E19", {})
     second = cr.resolve("D-E19", {})
     assert first["code"] == "product_missing"
