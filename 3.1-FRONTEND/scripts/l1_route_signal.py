@@ -42,6 +42,11 @@ _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
+# 脚本直跑（execFile）时模块名为 __main__，而 l1_suggest / l1_suggest_shadow 会
+# `from l1_route_signal import ...`；若不登记别名，会二次导入产生两个模块实例。
+if __name__ == "__main__":
+    sys.modules.setdefault("l1_route_signal", sys.modules.get("__main__"))
+
 # 54 模块指标注册表（S1 唯一事实源）：判断「注册表可命中的查询类问法」
 _L1AGG_ROOT = os.path.join(_SCRIPTS_DIR, "..", "..", "54-L1架构能力聚合层")
 if _L1AGG_ROOT not in sys.path:
@@ -59,6 +64,12 @@ if _INDEX_ROOT not in sys.path:
 # 注意：34 的 core 是正规包（有 __init__.py），会遮蔽 41 的 core，
 # 因此用 importlib 以独立包名 _l1_semantic_core 加载 41 模块。
 # FAIL-OPEN：导入失败或环境变量关闭时，_semantic_matcher 为 None，退回纯正则
+# 语义通道是否参与「准入」（SPEC v1.6 §3.7 终裁：长期仅做建议器）
+# S1 策略下强制关闭；S0 保持历史行为以兼容存量 golden 基线（S0 退役即彻底移除）
+_L1_STRATEGY = os.environ.get("L1_ROUTING_STRATEGY", "S0").upper()
+_L1_SEMANTIC_ADMISSION = (
+    os.environ.get("L1_SEMANTIC_ADMISSION", "1") == "1" and _L1_STRATEGY != "S1"
+)
 _L1_SEMANTIC_ENABLED = os.environ.get("L1_SEMANTIC_MATCH", "1") != "0"
 _semantic_matcher = None
 
@@ -431,19 +442,146 @@ _RECALL_TOP_K = 5
 SEMANTIC_MIN_LEN = 5
 
 
+_UNIT_KEYWORDS: dict[str, list[str]] = {}
+_UNIT_CATEGORY: dict[str, str] = {}
+_ALIASES: dict[str, str] = {}
+_ALIASES_LOADED = False
+
+
+def _aliases() -> dict[str, str]:
+    global _ALIASES_LOADED
+    if not _ALIASES_LOADED:
+        path = os.path.join(_INDEX_ROOT, "intent_units", "aliases.json")
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    _ALIASES.update({str(k): str(v) for k, v in data.items()})
+        except (OSError, json.JSONDecodeError):
+            pass
+        _ALIASES_LOADED = True
+    return _ALIASES
+
+
+def normalize_aliases(text: str) -> str:
+    """别称/黑话归一（SPEC v1.6 §4.5）：大饼→BTC、姨太→ETH、银子→白银…"""
+    if not text:
+        return text or ""
+    out = text
+    for alias in sorted(_aliases(), key=len, reverse=True):
+        if alias in out:
+            out = out.replace(alias, _aliases()[alias])
+    return out
+
+
+# 语义通道 G2：领域实体/术语 + 查询或分析线索，排除定义型问法
+_DOMAIN_TERM = re.compile(
+    r"BTC|ETH|SOL|比特币|以太坊|索拉纳|加密|币圈|黄金|原油|白银|美元|美股|港股|A股|纳指|标普"
+    r"|美联储|议息|CPI|PCE|非农|GDP|通胀|利率|国债|ETF|巨鲸|链上|资金|行情|价格|现价|新闻|快讯|消息"
+    r"|支撑|阻力|均线|MACD|RSI|布林|K线|估值|基本面|财报|风控|止损|仓位|龙头|板块"
+    r"|大饼|二饼|以太|姨太|狗币|山寨币|主流币|银子|金子|杠杆|合约|多空|盘面"
+    r"|就业|物价|市值|稳定币|稳顶币|关联度|相关性|势头|涨势|黏性|人气|新鲜事|资金面|宏观面",
+    re.IGNORECASE,
+)
+_QUERY_OR_ANALYSIS_CUE = re.compile(
+    r"多少|几|查|看看|看一下|情况|走势|趋势|数据|最近|现在|当前|今天|本周|如何|怎么样|哪些|有没有"
+    r"|动静|动态|变化|分析|解读|判断|建议|该不该|能不能|要不要|值不值|贵不贵|对比|比较|强不强|流入|流出"
+    r"|大事|要闻|热点|资讯|头条|值得关注|坐等|咋样|怎样|啥样|近况|拉出来|代表啥|说明啥|闹哪样|往哪去"
+    r"|哪天|啥时候|何时|多久|撑多久|延续|拆台|拧着|压哪|哪一头|哪边旺"
+)
+_DEFINITION_CUE = re.compile(
+    r"是什么|是谁|什么意思|为什么|怎么用|有什么用|介绍一下|讲讲|讲个|写一?[篇个段]|翻译|天气|笑话"
+    r"|快递|职业发展|心情|旅游|菜谱|写代码|编程|星座|电影|音乐|游戏"
+    r"|哪个公司|谁做|哪家公司|有关系吗|几点|在线人数"
+)
+# 指令/个人建议类：L1 不承接（下单、梭哈、写计划书、人生/健身规划等）
+_ACTION_CUE = re.compile(
+    r"梭哈|下单|帮我买|帮我卖|直接买|清掉|全部卖|计划书|教我做|会不会|怎么办|拿吗"
+    r"|理财|健身|帮我预测|预测下"
+)
+
+
+def _unit_keywords(intent: str) -> list[str]:
+    """读取 intent_units/<intent>/intent.yaml 的 keywords（无 yaml 依赖）。"""
+    if intent in _UNIT_KEYWORDS:
+        return _UNIT_KEYWORDS[intent]
+    kws: list[str] = []
+    path = os.path.join(_INDEX_ROOT, "intent_units", intent, "intent.yaml")
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                if line.strip().startswith("keywords:"):
+                    raw = line.split(":", 1)[1]
+                    kws = [k.strip() for k in re.split(r"[,，、]", raw) if k.strip()]
+                    break
+    except OSError:
+        kws = []
+    _UNIT_KEYWORDS[intent] = kws
+    return kws
+
+
+def _unit_category(intent: str) -> str:
+    if intent in _UNIT_CATEGORY:
+        return _UNIT_CATEGORY[intent]
+    cat = ""
+    path = os.path.join(_INDEX_ROOT, "intent_units", intent, "intent.yaml")
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                if line.strip().startswith("category:"):
+                    cat = line.split(":", 1)[1].strip()
+                    break
+    except OSError:
+        cat = ""
+    _UNIT_CATEGORY[intent] = cat
+    return cat
+
+
 def required_pattern_ok(intent: str, message: str, *, strict_series: bool = True) -> bool:
     """通用意图的 requiredPattern 校验（与正则通道同等待遇）。
 
     strict_series=True 时 metric_series 还要求「注册表可命中的确定性序列」，
-    供路由策略（E1）与 G2 特征闸使用；detect_intent 传 False 以保持线上行为不变
-    （语义命中 metric_series 但非确定性序列时仍返回该意图，由 recall 门控裁决）。
+    供路由策略（E1）与 G2 特征闸使用；detect_intent 传 False 以保持线上行为不变。
+
+    其余意图按 intent.yaml 的 category 分两类：
+    - data：必须有领域实体/术语 + 查询线索，且不是定义型问法；
+    - analysis：有查询/分析线索，或命中该意图关键词；
+    未配置关键词且无类别的意图保持 permissive（兼容旧行为）。
     """
+    msg = normalize_aliases(message or "")
+    # 定义型 / 指令型问法优先拦截（先于 data_query / data_insight 特例）
+    if _DEFINITION_CUE.search(msg) or _ACTION_CUE.search(msg):
+        return False
     if intent == "data_insight":
-        return bool(_DATA_INSIGHT_PATTERN.search(message))
+        msg_n = normalize_aliases(message or "")
+        return bool(
+            _DATA_INSIGHT_PATTERN.search(msg_n)
+            or _QUERY_OR_ANALYSIS_CUE.search(msg_n)
+            or _DOMAIN_TERM.search(msg_n)
+        )
     if intent == "data_query":
-        return bool(resolve_source(message) or _DATA_QUERY_PATTERN.search(message))
+        msg_n = normalize_aliases(message or "")
+        return bool(
+            resolve_source(msg_n) or _DATA_QUERY_PATTERN.search(msg_n) or _DOMAIN_TERM.search(msg_n)
+        )
     if strict_series and intent == "metric_series":
         return _is_deterministic_series(message)
+
+    msg = normalize_aliases(message or "")
+    if _DEFINITION_CUE.search(msg):
+        return False
+    cue = bool(_QUERY_OR_ANALYSIS_CUE.search(msg))
+    kws = _unit_keywords(intent)
+    hit_kw = any(k.lower() in msg.lower() for k in kws) if kws else False
+    cat = _unit_category(intent)
+    if cat in ("data", "deterministic"):
+        # 数据/确定性类：领域实体 / 意图关键词 / 查询线索，任一即可
+        return bool(_DOMAIN_TERM.search(msg) or hit_kw or cue)
+    if cat in ("analysis", "insight"):
+        # 分析/洞察类：已排除定义型问法，其余放行（语义层负责意图判别）
+        return True
+    if kws:
+        return hit_kw
     return True
 
 
@@ -502,6 +640,14 @@ _COMPOUND_COMPARE = re.compile(r"对比|比较|谁更|谁强|哪个强|差距|vs
 _COMPOUND_ANCHOR = re.compile(
     r"BTC|ETH|SOL|比特币|以太坊|索拉纳|二饼|大饼|姨太|黄金|原油|美股|港股|A股|纳指|标普"
     r"|CPI|PPI|GDP|非农|失业率|通胀|恐惧贪婪|恐慌贪婪|资金费率|多空比|稳定币|ETF|美元|国债|M2|M1"
+    r"|巨鲸|鲸鱼|波动率|VIX|利率|链上|支撑位|阻力位|均线|MACD|RSI|布林|K线",
+    re.IGNORECASE,
+)
+# 追加型连接词（不含「和/与/及」：它们是单意图内部结构，如「BTC和ETH相关性对比」）
+_ADDITIVE_CONNECTIVE = re.compile(r"以及|同时|还有|顺便|另外|然后|再说|再帮|，|；|;|、")
+# 成对比较/相关性语义：属于单一意图（leader_compare / top_correlation / contradiction_insight）
+_SINGLE_PAIR = re.compile(
+    r"相关|相关性|同步|对比|比较|哪个|谁更|谁强|涨得多|跌得多|占主导|共振|冲突"
 )
 R_COMPOUND_QUERY = "compound_query"
 R_CONTRACT_DIRECT = "executor_contract_ok"
@@ -515,24 +661,40 @@ def is_compound_query(message: str) -> bool:
     """
     if not message:
         return False
-    parts = [p.strip() for p in _COMPOUND_SPLIT.split(message) if len(p.strip()) >= 4]
+    msg = normalize_aliases(message)
+    compare = bool(_COMPOUND_COMPARE.search(msg))
+    parts = [p.strip() for p in _COMPOUND_SPLIT.split(msg) if len(p.strip()) >= 3]
     if len(parts) >= 2:
         intents = {detect_intent_regex(p) for p in parts}
         intents.discard("")
         if len(intents) >= 2:
             return True
-    # D2：连接词 + 多实体，且不是「对比」类单意图
+    anchors = {a.lower() for a in _COMPOUND_ANCHOR.findall(msg)}
+    try:
+        metrics = count_series_hits(msg)
+    except Exception:  # noqa: BLE001 — FAIL-OPEN：指标注册表异常不影响主链路
+        metrics = 0
+
+    # D2：连接词 + 多实体（对比/相关性类单意图除外）
     if (
-        _COMPOUND_CONNECTIVE.search(message)
-        and not _COMPOUND_COMPARE.search(message)
-        and len(set(_COMPOUND_ANCHOR.findall(message))) >= 2
+        _COMPOUND_CONNECTIVE.search(msg)
+        and not compare
+        and not _SINGLE_PAIR.search(msg)
+        and len(anchors) >= 2
     ):
         return True
-    # 多指标并列（注册表命中 ≥2 个不同指标）
-    try:
-        return count_series_hits(message) >= 2
-    except Exception:  # noqa: BLE001 — FAIL-OPEN：指标注册表异常不影响主链路
-        return False
+    # D6：追加型连接词 + 多实体/多指标（对比句也适用：「…对比以及CPI」）
+    if _ADDITIVE_CONNECTIVE.search(msg) and (len(anchors) >= 2 or metrics >= 2):
+        return True
+    # D7：多指标并列（成对比较/共振类单一意图除外）
+    if metrics >= 2 and not _SINGLE_PAIR.search(msg):
+        return True
+    # D8：多子句各自带不同实体（「支撑位在哪，阻力位呢」「CPI出了多少，非农呢」）
+    if not compare and not _SINGLE_PAIR.search(msg) and len(parts) >= 2 and len(anchors) >= 2:
+        hit_parts = sum(1 for p in parts if _COMPOUND_ANCHOR.search(p))
+        if hit_parts >= 2:
+            return True
+    return False
 
 
 def _routing_strategy() -> str:
@@ -545,7 +707,12 @@ def semantic_candidates(message: str, k: int = 3, *, validated: bool = True) -> 
 
     validated=True 时按 G2 特征闸过滤（requiredPattern / 确定性序列），
     与 route_query 的语义准入保持同一口径；FAIL-OPEN：异常返回空列表。
+    入口先做别称归一（大饼→BTC 等），提升口语/黑话的召回。
     """
+    message = normalize_aliases(message)
+    if validated and not _L1_SEMANTIC_ADMISSION:
+        # 语义通道不参与准入（仅建议器使用 l1_suggest 的独立路径）
+        return []
     if _semantic_matcher is None or len(message or "") < SEMANTIC_MIN_LEN:
         return []
     try:
@@ -574,9 +741,13 @@ def detect_intent(message: str) -> str:
         return regex_intent
 
     # ===== 通道 B：语义兜底（正则未命中时启用） =====
-    if _semantic_matcher is not None and len(message) >= SEMANTIC_MIN_LEN:
+    if (
+        _semantic_matcher is not None
+        and _L1_SEMANTIC_ADMISSION
+        and len(message) >= SEMANTIC_MIN_LEN
+    ):
         try:
-            semantic = _semantic_matcher.semantic_match(message, lang="auto")
+            semantic = _semantic_matcher.semantic_match(normalize_aliases(message), lang="auto")
             if semantic:
                 intent = semantic[0]
                 # 通用意图仍需 requiredPattern 校验（与正则通道同等待遇）；
@@ -776,8 +947,15 @@ def _route_query_impl(message: str, intent: str = "", trace_id: str = "") -> dic
 
 
 def route_query(message: str, intent: str = "", trace_id: str = "") -> dict:
-    """对外入口：在门控结果上挂建议器影子记录（默认关闭，返回字段零变化）。"""
+    """对外入口：L2 交接挂建议器实盘建议 + 建议器影子记录（均可关闭）。"""
     out = _route_query_impl(message, intent, trace_id)
+    if not out.get("handled"):
+        try:
+            import l1_suggest as _suggest  # noqa: PLC0415 — 可选依赖
+
+            out["suggestions"] = _suggest.build_suggestions(message)
+        except Exception:  # noqa: BLE001 — 建议器失败不影响主链路
+            out["suggestions"] = []
     try:
         import l1_suggest_shadow as _shadow  # noqa: PLC0415 — 可选依赖，缺失不影响主链路
 

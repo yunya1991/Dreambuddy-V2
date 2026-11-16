@@ -35,12 +35,14 @@ class IntentVectorStore:
     def __init__(self, units_dir: Optional[Path] = None):
         self.units_dir = Path(units_dir) if units_dir else UNITS_DIR
         self._vectors: Dict[str, Dict[str, Optional[List[float]]]] = {}  # intent → {zh, en}
+        self._examples: Dict[str, List[List[float]]] = {}  # intent → 多样例向量（zh）
         self._loaded = False
 
     # ---- 加载 ----
     def load(self) -> None:
         """加载所有意图的向量文件。"""
         self._vectors.clear()
+        self._examples.clear()
         if not self.units_dir.exists():
             logger.warning("intent_units 目录不存在: %s", self.units_dir)
             self._loaded = True
@@ -49,16 +51,24 @@ class IntentVectorStore:
             if not intent_dir.is_dir():
                 continue
             vec_file = intent_dir / "vector.json"
-            if not vec_file.exists():
-                continue
-            try:
-                data = json.loads(vec_file.read_text(encoding="utf-8"))
-                self._vectors[intent_dir.name] = {
-                    "zh": data.get("zh"),
-                    "en": data.get("en"),
-                }
-            except Exception as e:
-                logger.warning("加载 %s 失败: %s", vec_file, e)
+            if vec_file.exists():
+                try:
+                    data = json.loads(vec_file.read_text(encoding="utf-8"))
+                    self._vectors[intent_dir.name] = {
+                        "zh": data.get("zh"),
+                        "en": data.get("en"),
+                    }
+                except Exception as e:
+                    logger.warning("加载 %s 失败: %s", vec_file, e)
+            ex_file = intent_dir / "example_vectors.json"
+            if ex_file.exists():
+                try:
+                    ex = json.loads(ex_file.read_text(encoding="utf-8"))
+                    zh = ex.get("zh") if isinstance(ex, dict) else None
+                    if isinstance(zh, list) and zh:
+                        self._examples[intent_dir.name] = zh
+                except Exception as e:
+                    logger.warning("加载 %s 失败: %s", ex_file, e)
         self._loaded = True
         logger.info("已加载 %d 个意图向量", len(self._vectors))
 
@@ -85,6 +95,13 @@ class IntentVectorStore:
         for intent_id, vecs in self._vectors.items():
             if intent_id in excluded:
                 continue
+            # 优先多样例索引：取该意图所有样例的最大相似度（保留口语变体）
+            examples = self._examples.get(intent_id) if lang == "zh" else None
+            if examples:
+                sims = [_cosine(query_vector, e) for e in examples if len(e) == len(query_vector)]
+                if sims:
+                    results.append((intent_id, max(sims)))
+                    continue
             vec = vecs.get(lang)
             # 维度守卫：换向量模型后旧 512 维向量与新 768 维查询不可比，
             # 直接跳过（否则 zip 截断会静默算出无意义余弦）

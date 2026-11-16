@@ -1,0 +1,82 @@
+{
+  "sources": {
+    "e1": 500,
+    "units": 2045,
+    "shadow": 0,
+    "gen_neg": 1050
+  },
+  "raw_total": 3595,
+  "kept": 1885,
+  "dropped_duplicates": 1710,
+  "split_counts": {
+    "in_dist": 1527,
+    "ood_spoken": 228,
+    "holdout": 130,
+    "unlabeled": 0
+  },
+  "leaks": [],
+  "quotas": {
+    "per_intent_positive": {
+      "asset_class_trend": 30,
+      "calendar_event": 10,
+      "contradiction_insight": 30,
+      "data_insight": 34,
+      "data_query": 20,
+      "doc_search": 21,
+      "event_analysis": 31,
+      "event_line_query": 14,
+      "event_listing": 30,
+      "fundamental_valuation": 31,
+      "leader_compare": 18,
+      "metric_series": 60,
+      "path_insight": 31,
+      "persistence_strength": 8,
+      "price_query": 55,
+      "risk_control": 31,
+      "stat_query": 17,
+      "technical_analysis": 29,
+      "technical_indicator": 20,
+      "top_correlation": 8,
+      "whale_flow": 14
+    },
+    "intents_below_20": [
+      "calendar_event",
+      "event_line_query",
+      "leader_compare",
+      "persistence_strength",
+      "stat_query",
+      "top_correlation",
+      "whale_flow"
+    ],
+    "ood_total": 358,
+    "ood_min_required": 300,
+    "negative_total": 1153,
+    "negative_min_required": 1050,
+    "negative_by_intent": {
+      "asset_class_trend": 93,
+      "calendar_event": 50,
+      "contradiction_insight": 50,
+      "data_insight": 50,
+      "data_query": 50,
+      "doc_search": 50,
+      "event_analysis": 50,
+      "event_line_query": 50,
+      "event_listing": 50,
+      "fundamental_valuation": 50,
+      "leader_compare": 50,
+      "metric_series": 50,
+      "path_insight": 50,
+      "persistence_strength": 50,
+      "price_query": 50,
+      "risk_control": 50,
+      "stat_query": 50,
+      "technical_analysis": 50,
+      "technical_indicator": 50,
+      "top_correlation": 50,
+      "whale_flow": 50
+    },
+    "intents_below_50_negative": []
+  },
+  "near_dup_clusters": 849,
+  "near_dup_threshold": 0.85
+}

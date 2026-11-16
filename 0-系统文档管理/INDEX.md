@@ -71,7 +71,8 @@
 | ★ **SPEC-C 契约与传输治理** | [3.1-FRONTEND/docs/SPEC-20261111-C-契约与传输治理.md](../3.1-FRONTEND/docs/SPEC-20261111-C-契约与传输治理.md) **v0.1.0** | 信封/错误码/SSE v1/PlanCard 漂移/Query/鉴权/认知-DSH 代理/边界门禁，G-C1~G-C8 | 📝 待评审 |
 | ★ **SPEC 新闻模块独立与头条外链** | [3.1-FRONTEND/docs/SPEC-20261115-新闻模块独立与头条外链.md](../3.1-FRONTEND/docs/SPEC-20261115-新闻模块独立与头条外链.md) **v0.2.0** | 新闻 tab 提升为与基本面同级的 `/dashboard/news` 一级入口 + Top3 头条 `source_url` 外链（含 http(s) 守卫），G1~G6；零后端/零契约变更 | ✅ 已实施 |
 | ★ **L0 接口规范（含 As-Of 回放）** | [34-前端应用训练系统/L0-接口规范-fetchContext.md](../34-前端应用训练系统/L0-接口规范-fetchContext.md) **v0.3** | 10 scope 收敛 + `datacenter.series` 登记 + §6 As-Of vintage 语义（`observed_at <= as_of`、fail-closed、回填限制） | ✅ 已实施 |
-| ★ **L0/L1/L2 路由边界与认知裁决** | [34-前端应用训练系统/SPEC-v1.4-L0L1L2-路由边界与认知裁决.md](../34-前端应用训练系统/SPEC-v1.4-L0L1L2-路由边界与认知裁决.md) **v1.4-r3** | L1 四闸能力边界 + 数据类/语义类双通道（`channel` 字段）+ 认知裁决下移 + 10 条判定表 + A1-A11 门禁 + §7.1 E1 策略对比实验（**已执行：0/54 通过硬门 → 不切换策略，§9.2 已回填**，报告 [E1-REPORT.md](../34-前端应用训练系统/eval-results/20261116/E1-REPORT.md)） | 📝 待复审 |
+| ★ **L0/L1/L2 路由边界与认知裁决** | [34-前端应用训练系统/SPEC-v1.4-L0L1L2-路由边界与认知裁决.md](../34-前端应用训练系统/SPEC-v1.4-L0L1L2-路由边界与认知裁决.md) **v1.4-r4** | L1 四闸能力边界 + 数据类/语义类双通道（`channel` 字段）+ 认知裁决下移 + 10 条判定表 + A1-A11 门禁 + §7.1 E1 策略对比实验（**已执行：0/54 通过硬门 → 不切换策略**）+ §9.3 E2 复合检测（D5 规则 78.8%/2.0%）与建议器实盘（报告 [E1-REPORT.md](../34-前端应用训练系统/eval-results/20261116/E1-REPORT.md) / [E2-REPORT.md](../34-前端应用训练系统/eval-results/20261116/E2-REPORT.md)） | 📝 待复审 |
+| ★ **L1 意图训练模式** | [34-前端应用训练系统/SPEC-v1.6-L1意图训练模式.md](../34-前端应用训练系统/SPEC-v1.6-L1意图训练模式.md) **v1.0** | T0 四源数据+状态机+防泄漏 / T1 阈值·margin·uplift 校准 / T2 三层评测（in-dist·OOD·holdout，bootstrap+McNemar）/ T3 G1–G8 发布门禁+快照回滚；以 OOD 替代 378/378 自证 | 📝 待评审 |
 | ★ **SKILL 编排主 SPEC** | [1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md](../1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md) | HC-1~HC-9 硬约束 + 三路径编排 + M2五组件 + 8.1 F1-F20 | ✅ 落地中 |
 | ★ **SKILL 模仿进化 SPEC** | [1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md](../1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md) **v0.3** | 路径B模仿+路径C联网兜底+ImitationCounter+token埋点 | ✅ 172/172 GREEN |
 | ★ **广义认知系统协作** | [35-广义认知系统协作模块/README.md](../35-广义认知系统协作模块/README.md) · [INDEX.md](../35-广义认知系统协作模块/INDEX.md) | 跨系统协作设计 SSoT：SPEC 收敛 + 协作接口契约 + PoE 统一框架（纯文档统筹层，不含代码） | ✅ v1.6（契约治理已落地） |
@@ -227,6 +228,20 @@
 | L1 批量回放与复盘表 | [54-L1架构能力聚合层/l1agg/trading/batch.py](../54-L1架构能力聚合层/l1agg/trading/batch.py) | `batch_replay` 多标的回放汇总（不合并组合信号）+ `review_table` 按类复盘 6 列（内部视图） |
 | L1 交易层评审报告 | [54-L1架构能力聚合层/SPEC评审报告-L1交易层-v0.1.md](../54-L1架构能力聚合层/SPEC评审报告-L1交易层-v0.1.md) | 2026-11-15（有条件通过 3.30/5；P0 阻断 B-LT1…B-LT5） |
 | L1 交易层代码 | [54-L1架构能力聚合层/l1agg/trading/](../54-L1架构能力聚合层/l1agg/trading/) | `direction_rule` / `exit_rule` / `paper_replay` / `sizing` / `risk` / `cluster` / `weights` / `comparison` / `outbox`（只产信号，执行交 22） |
+
+### 56-L2架构能力聚合层
+
+| 文档 | 路径 | 版本 |
+|------|------|------|
+| 母 SPEC（L2 架构能力聚合层） | [56-L2架构能力聚合层/SPEC-56-L2架构能力聚合层.md](../56-L2架构能力聚合层/SPEC-56-L2架构能力聚合层.md) | v0.6（ADR-01~10 / IF-1~IF-6 / G-L2-1~9 / 路线 P0–P5；IF-5/IF-6 已可执行） |
+| 总技术文档 + 能力登记 | [56-L2架构能力聚合层/docs/TECHNICAL_DESIGN.md](../56-L2架构能力聚合层/docs/TECHNICAL_DESIGN.md) | v0.9（五子层能力地图，50 项能力登记，30 项缺口，A0 四契约已冻结） |
+| 协议层逆向解析（REA） | [56-L2架构能力聚合层/docs/REA-lobehub协议逆向解析-v0.1.md](../56-L2架构能力聚合层/docs/REA-lobehub协议逆向解析-v0.1.md) | v0.1（LobeHub 协议事实 + L2 聚合调度缺失 GAP-17~23 + 对照实验设计） |
+| 总装线对标（三源） | [56-L2架构能力聚合层/docs/总装线对标-三源与DreamOS逐模块优化-v0.1.md](../56-L2架构能力聚合层/docs/总装线对标-三源与DreamOS逐模块优化-v0.1.md) | v0.1（LobeHub/OpenAI/Claude 七段契约 + DreamOS 逐模块改造 + GAP-24~30） |
+| L2 可执行契约 | [56-L2架构能力聚合层/contracts/](../56-L2架构能力聚合层/contracts/) | 台账 schema / 插件契约 schema / 状态机 yaml；校验器 `scripts/validate_contracts.py` |
+| 评审报告（只读档案） | [56-L2架构能力聚合层/SPEC评审报告-L2能力聚合层-v0.1.md](../56-L2架构能力聚合层/SPEC评审报告-L2能力聚合层-v0.1.md) | v0.1（有条件通过 3.6/5；4 个 P0 + 5 个 P1；复审清单 R1–R7） |
+| 复审记录 | [56-L2架构能力聚合层/SPEC复审记录-L2能力聚合层-v0.2.md](../56-L2架构能力聚合层/SPEC复审记录-L2能力聚合层-v0.2.md) | v0.2（R1–R6 全部关闭；综合 3.6→4.0；§六 补记 GAP-11/14 已关闭） |
+| 评审报告（v0.5 可判定性） | [56-L2架构能力聚合层/SPEC评审报告-L2能力聚合层-v0.5.md](../56-L2架构能力聚合层/SPEC评审报告-L2能力聚合层-v0.5.md) | v0.5（不通过 2.4/5；6 个 P0：状态机无迁移表、IF-5 枚举冲突、IF-6 无 schema；复审门槛=6 件产物） |
+| 层级 MCP 现状（实测） | [47-MCP管理系统/registry/mcp_capabilities.yaml](../47-MCP管理系统/registry/mcp_capabilities.yaml) | `1.2-mcp`：17 壳 / 78 active / L2 14 active / 配额 L0:60·L1:30·L2:30 |
 
 ---
 

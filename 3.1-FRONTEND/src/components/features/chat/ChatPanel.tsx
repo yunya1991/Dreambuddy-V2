@@ -32,6 +32,9 @@ import { ExecutionReviewHooks, type ExecutionReviewHook } from './ExecutionRevie
 import { MonitorHooks, type MonitorHook } from './MonitorHooks';
 import { formatBrainstormMessage } from './brainstorm-format';
 
+/** L1 建议器返回的可点击问法（SPEC v1.4 §9.3） */
+type L1Suggestion = { intent: string; label: string; query: string; score?: number };
+
 /**
  * ChatPanel — 聊天主面板 (DREAM OS 核心交互入口)
  *
@@ -61,6 +64,8 @@ export function ChatPanel() {
   // Phase 4.6：择优脑暴入口（开启后发送走 /api/agent/brainstorm 意图路由 + 双链脑暴）
   const [brainstormMode, setBrainstormMode] = useState(false);
   const [brainstormBusy, setBrainstormBusy] = useState(false);
+  // L2 交接时后端返回的建议问法；点击后按普通消息重发，从而重新走 L1 门控（S1 下必中）
+  const [l1Suggestions, setL1Suggestions] = useState<L1Suggestion[]>([]);
 
   // 消息列表底部锚点
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -100,10 +105,11 @@ export function ChatPanel() {
     });
   }, [resetChain]);
 
-  // 发送消息
-  const handleSend = useCallback(() => {
-    const content = inputValue.trim();
+  // 发送消息（输入框与建议卡片共用）
+  const submitContent = useCallback((raw: string) => {
+    const content = raw.trim();
     if (!content || isStreaming || brainstormBusy) return;
+    setL1Suggestions([]);
 
     // 从 store 读取最新的 activeSessionId，避免闭包竞态
     const storeState = useSessionStore.getState();
@@ -182,6 +188,10 @@ export function ChatPanel() {
           // 门控消费：合法 route_signal 以信号 decision/置信度为准，非法/缺失退回静态门控
           const routeSignal: RouteConfidenceSignal | null = d?.route_signal ?? null;
           const canL1 = !!l1Intent && canHandleL1WithSignal(l1Intent, content, routeSignal);
+          // L2 交接：展示后端建议问法（仅提示，不参与判决；点击重发即重新走 L1 门控）
+          if (!(canL1 && d?.handled)) {
+            setL1Suggestions(Array.isArray(d?.suggestions) ? (d.suggestions as L1Suggestion[]) : []);
+          }
           if (canL1 && d?.handled && d.answer) {
             // L1 命中: 直接显示结果（零 token 秒回），消息附带门控信号元数据
             useSessionStore.getState().addMessage(sessionId, {
@@ -207,7 +217,11 @@ export function ChatPanel() {
       useSessionStore.getState().setStreaming(true, '');
       sendToTaskStream(content, sessionId, l1Intent, traceId);
     })();
-  }, [inputValue, isStreaming, brainstormBusy, brainstormMode, sendToTaskStream]);
+  }, [isStreaming, brainstormBusy, brainstormMode, sendToTaskStream]);
+
+  const handleSend = useCallback(() => {
+    submitContent(inputValue);
+  }, [inputValue, submitContent]);
 
   // 取消流式请求
   const handleCancel = useCallback(() => {
@@ -510,6 +524,24 @@ export function ChatPanel() {
 
       {/* 输入区 — ChatInput */}
       <div className="px-4 py-3 border-t border-slate-700/30">
+        {/* L1 建议器：L2 交接时的可点击问法 */}
+        {l1Suggestions.length > 0 && !isStreaming && (
+          <div className="mb-2">
+            <div className="text-[10px] text-slate-500 mb-1">你可以这样问</div>
+            <div className="flex flex-wrap gap-2">
+              {l1Suggestions.map((s, i) => (
+                <button
+                  key={`${s.intent}-${i}`}
+                  type="button"
+                  onClick={() => submitContent(s.query)}
+                  className="px-2.5 py-1 text-xs rounded-md bg-slate-800/50 text-slate-300 border border-slate-700/30 hover:bg-slate-700/50 transition-colors"
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {/* Phase 4.6：择优脑暴开关（复用现有按钮样式；开启后发送走 /api/agent/brainstorm） */}
         <div className="flex items-center gap-2 mb-2">
           <button
