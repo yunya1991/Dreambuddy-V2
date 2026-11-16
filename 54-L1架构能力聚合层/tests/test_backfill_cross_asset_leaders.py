@@ -5,6 +5,7 @@ import datetime
 import os
 import sqlite3
 import sys
+import urllib.error
 
 import pytest
 
@@ -17,6 +18,7 @@ for _p in (_MODULE_ROOT, _SCRIPTS_DIR, _DAL_ROOT):
 
 from backfill_cross_asset_leaders import (  # noqa: E402
     TARGETS,
+    _get,
     fetch_fred,
     fetch_nasdaq,
     run,
@@ -73,6 +75,31 @@ def test_run_dry_run_writes_nothing():
     assert stats["targets"][0]["written"] == 3
 
 
+def test_run_writes_volume_and_amount_for_nasdaq():
+    """美股有成交量时额外落 volume / amount_usd；OKX/FRED 不应产生这两个指标。"""
+
+    def nasdaq_rows(target, start):
+        return [
+            {
+                "date": _TODAY - datetime.timedelta(days=1),
+                "close": 100.0,
+                "volume": 1_000.0,
+                "amount": 100_000.0,
+            },
+        ]
+
+    rec = Recorder()
+    stats = run({"nasdaq": nasdaq_rows}, rec, only=["NVDA"], today=_TODAY)
+    keys = {(c[0], c[1], c[2]) for c in rec.calls}
+    assert keys == {
+        ("nasdaq", "NVDA", "close_usd"),
+        ("nasdaq", "NVDA", "volume"),
+        ("nasdaq", "NVDA", "amount_usd"),
+    }
+    assert stats["targets"][0]["volume_written"] == 1
+    assert stats["total_volume_written"] == 1
+
+
 def test_run_records_fetch_error_and_continues():
     calls = {"n": 0}
 
@@ -94,13 +121,29 @@ def test_run_records_fetch_error_and_continues():
     assert by_symbol["AAPL"]["written"] == 2
 
 
+def test_get_falls_back_to_curl_on_403(monkeypatch):
+    """Nasdaq 对 Python urllib 返回 403 时回退 curl（本机 2026-11-16 实测）。"""
+
+    def boom(req, timeout=25.0):
+        raise urllib.error.HTTPError(req.full_url, 403, "Forbidden", None, None)
+
+    monkeypatch.setattr("backfill_cross_asset_leaders.urllib.request.urlopen", boom)
+    seen = {}
+    monkeypatch.setattr(
+        "backfill_cross_asset_leaders._curl_json",
+        lambda url, timeout=40.0: seen.setdefault("url", url) and '{"ok": 1}',
+    )
+    assert _get("https://api.nasdaq.com/x") == '{"ok": 1}'
+    assert "nasdaq" in seen["url"]
+
+
 def test_fetch_nasdaq_parses_and_filters(monkeypatch):
     body = {
         "data": {
             "tradesTable": {
                 "rows": [
-                    {"date": "11/13/2026", "close": "$162.85"},
-                    {"date": "11/12/2026", "close": "$1,166.19"},
+                    {"date": "11/13/2026", "close": "$162.85", "volume": "365,796,600"},
+                    {"date": "11/12/2026", "close": "$1,166.19", "volume": "N/A"},
                     {"date": "bad-date", "close": "$1.00"},
                     {"date": "11/11/2026", "close": "N/A"},
                 ]
@@ -114,6 +157,10 @@ def test_fetch_nasdaq_parses_and_filters(monkeypatch):
     rows = fetch_nasdaq("NVDA", "stocks", datetime.date(2026, 1, 1), _TODAY)
     assert [r["close"] for r in rows] == [1166.19, 162.85]
     assert rows[0]["date"] == datetime.date(2026, 11, 12)
+    # 成交量缺失记为 0；成交额 = close × volume
+    assert rows[0]["volume"] == 0.0
+    assert rows[1]["volume"] == 365796600.0
+    assert round(rows[1]["amount"], 2) == round(162.85 * 365796600, 2)
 
 
 def test_fetch_fred_skips_missing_and_window(monkeypatch):

@@ -35,6 +35,7 @@ import os
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 
 _MODULE_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
@@ -79,9 +80,41 @@ TARGETS = (
 
 
 def _get(url: str, timeout: float = 25.0) -> str:
+    """urllib 优先；被 TLS 指纹拦截（403/406/429）时回退 curl。
+
+    2026-11-16 本机实测：Nasdaq 对 Python urllib 直接 403，而 curl + 浏览器 UA 为 200，
+    与 FRED 的 Akamai 拦截同类，故此处统一做一层回退。
+    """
     req = urllib.request.Request(url, headers={"User-Agent": _UA, "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return resp.read().decode("utf-8", "ignore")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.read().decode("utf-8", "ignore")
+    except urllib.error.HTTPError as exc:
+        if exc.code not in (403, 406, 429):
+            raise
+    return _curl_json(url, timeout)
+
+
+def _curl_json(url: str, timeout: float = 40.0) -> str:
+    proc = subprocess.run(
+        [
+            "curl",
+            "-s",
+            "--http1.1",
+            "-m",
+            str(int(timeout)),
+            "-H",
+            f"User-Agent: {_UA}",
+            "-H",
+            "Accept: application/json",
+            url,
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"curl exit={proc.returncode}: {(proc.stderr or '')[:120]}")
+    return proc.stdout
 
 
 def _curl(url: str, timeout: float = 60.0) -> str:
@@ -118,8 +151,23 @@ def _to_float(text) -> float:
     return float(str(text).replace("$", "").replace(",", "").strip())
 
 
+def _to_volume(text) -> float:
+    """Nasdaq 成交量形如 "365,796,600"；空值/N/A 归 0（不落库）。"""
+    raw = str(text or "").replace(",", "").strip()
+    if not raw or raw.upper() in {"N/A", "--", "NA"}:
+        return 0.0
+    try:
+        return float(raw)
+    except ValueError:
+        return 0.0
+
+
 def fetch_nasdaq(symbol: str, assetclass: str, start: datetime.date, end: datetime.date) -> list:
-    """返回 [{date: date, close: float}]，升序。"""
+    """返回 [{date: date, close: float, volume: float, amount: float}]，升序。
+
+    amount = close × volume（成交额，美元），供美股龙头动态排名
+    `z(20日均成交额)+z(20日动量)` 使用（SPEC-54-L1 §2.5）。
+    """
     url = (
         f"{_NASDAQ_URL.format(symbol=symbol)}?assetclass={assetclass}"
         f"&fromdate={start:%Y-%m-%d}&todate={end:%Y-%m-%d}&limit=1200"
@@ -134,7 +182,8 @@ def fetch_nasdaq(symbol: str, assetclass: str, start: datetime.date, end: dateti
         except (KeyError, TypeError, ValueError):
             continue
         if close > 0:
-            out.append({"date": d, "close": close})
+            volume = _to_volume(row.get("volume"))
+            out.append({"date": d, "close": close, "volume": volume, "amount": close * volume})
     out.sort(key=lambda r: r["date"])
     return out
 
@@ -246,6 +295,7 @@ def run(
             "proxy": bool(target.get("proxy")),
             "fetched": 0,
             "written": 0,
+            "volume_written": 0,
             "first": "",
             "last": "",
             "errors": [],
@@ -274,15 +324,16 @@ def run(
                 "close_usd",
             )
         for row in rows:
+            ts = datetime.datetime.combine(row["date"], datetime.time(), datetime.UTC)
             if not dry_run:
-                writer(
-                    source,
-                    sub,
-                    metric,
-                    row["close"],
-                    datetime.datetime.combine(row["date"], datetime.time(), datetime.UTC),
-                )
+                writer(source, sub, metric, row["close"], ts)
             rec["written"] += 1
+            # 美股额外落成交量与成交额（amount = close × volume），供 §2.5 动态排名
+            if venue == "nasdaq" and float(row.get("volume") or 0) > 0:
+                if not dry_run:
+                    writer(source, sub, "volume", row["volume"], ts)
+                    writer(source, sub, "amount_usd", row["amount"], ts)
+                rec["volume_written"] += 1
         results.append(rec)
     return {
         "ok": all(not r["errors"] for r in results),
@@ -291,6 +342,7 @@ def run(
         "start": start.isoformat(),
         "targets": results,
         "total_written": sum(r["written"] for r in results),
+        "total_volume_written": sum(r["volume_written"] for r in results),
     }
 
 
