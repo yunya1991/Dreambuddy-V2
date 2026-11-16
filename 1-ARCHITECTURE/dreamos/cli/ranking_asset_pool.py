@@ -37,7 +37,7 @@ from urllib.request import Request, urlopen
 POOL_FILE = Path(__file__).parent / "scheduler_data" / "ranking_asset_pool.json"
 POOL_VERSION = 1
 PER_CATEGORY_KEEP = 4  # 榜单只用 2 条，多留 2 条作为消费端降级缓冲
-CANDLE_LIMIT = 220  # 覆盖 MA200
+CANDLE_LIMIT = 300  # 覆盖 MA200 + 回撤画像 n≥250 门禁（统计洞察层复用）
 CONTEXT_MAX_AGE_DAYS = 5
 
 # 40 资产注册表不可用时的兜底宇宙（与 40/asset_classes.py 对齐）

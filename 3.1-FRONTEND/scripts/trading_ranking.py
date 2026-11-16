@@ -59,6 +59,17 @@ _RANKING_NEWS_FILE = os.path.join(
 _RANKING_NEWS_MAX_AGE_HOURS = 24  # 生产者每小时刷新，24h 内仍可降级展示
 _RANKING_EVENTS_PER_SYMBOL = 3
 
+# 统计洞察（风险分级 / 历史类比 + 图表数据），由 ranking_insight.py 每日产出
+_RANKING_INSIGHTS_FILE = os.path.join(
+    _resolve_repo_root(),
+    "1-ARCHITECTURE",
+    "dreamos",
+    "cli",
+    "scheduler_data",
+    "ranking_insights.json",
+)
+_RANKING_INSIGHTS_MAX_AGE_HOURS = 36  # 1 天 + 缓冲（与决策卡预计算同口径）
+
 # 品类配额（对齐 TOP10_RANKING_RECOMMENDATION_SPEC §3.1 / §4.4：6+2+2）
 _CATEGORY_QUOTA = (("crypto", 6), ("commodity", 2), ("index", 2))
 _TOP_N = 10
@@ -323,6 +334,55 @@ def _load_ranking_news() -> dict:
         return by_symbol if isinstance(by_symbol, dict) else {}
     except Exception:
         return {}
+
+
+def _load_ranking_insights() -> dict:
+    """读取统计洞察快照（SYMBOL → {risk, analogy, charts}）；缺失/过期/损坏返回 {}。"""
+    try:
+        if not os.path.isfile(_RANKING_INSIGHTS_FILE):
+            return {}
+        with open(_RANKING_INSIGHTS_FILE, encoding="utf-8") as fh:
+            data = json.load(fh)
+        generated_at = data.get("generated_at")
+        if not generated_at:
+            return {}
+        generated = datetime.fromisoformat(str(generated_at).replace("Z", "+00:00"))
+        age = datetime.now(timezone.utc) - generated
+        if age > timedelta(hours=_RANKING_INSIGHTS_MAX_AGE_HOURS):
+            return {}
+        items = data.get("items")
+        return items if isinstance(items, dict) else {}
+    except Exception:
+        return {}
+
+
+def _attach_insights(items: list, insights: dict) -> None:
+    """统计洞察并入决策卡：覆盖 riskLevel / historicalAnalogy，并挂 insight 供前端图表渲染。
+
+    覆盖顺序：BCRM2/CBR 预计算 → 统计洞察。统计结果始终可用（不依赖 BCRM2/CBR），
+    所以风险分级与历史类比以统计口径为准；洞察缺失时保留原有降级值（FAIL-OPEN）。
+    """
+    if not insights:
+        return
+    for item in items:
+        insight = insights.get(_normalize_symbol(item.get("symbol") or ""))
+        if not isinstance(insight, dict):
+            continue
+        risk = insight.get("risk")
+        analogy = insight.get("analogy")
+        path = (insight.get("charts") or {}).get("drawdownPath") or []
+        if not isinstance(risk, dict) and not isinstance(analogy, dict) and not path:
+            continue
+        card = item.setdefault("decisionCard", {})
+        if isinstance(risk, dict) and risk.get("level"):
+            card["riskLevel"] = risk["level"]
+        if isinstance(analogy, dict) and analogy.get("text"):
+            card["historicalAnalogy"] = analogy["text"]
+        card["insight"] = {
+            "risk": risk if isinstance(risk, dict) else None,
+            "analogy": analogy if isinstance(analogy, dict) else None,
+            "charts": {"drawdownPath": path},
+        }
 
 
 def _attach_news_events(items: list, news: dict) -> None:
@@ -770,7 +830,12 @@ def _load_frontend_cache() -> dict | None:
             return None
         # 决策卡/资产池重新生成后，旧缓存里的空白决策卡必须一并失效
         cache_mtime = os.path.getmtime(_FRONTEND_CACHE_FILE)
-        for dependency in (_DECISION_CARD_FILE, _RANKING_POOL_FILE, _RANKING_NEWS_FILE):
+        for dependency in (
+            _DECISION_CARD_FILE,
+            _RANKING_POOL_FILE,
+            _RANKING_NEWS_FILE,
+            _RANKING_INSIGHTS_FILE,
+        ):
             if os.path.isfile(dependency) and os.path.getmtime(dependency) > cache_mtime:
                 return None
         return cache.get("result")
@@ -869,6 +934,9 @@ def main():
 
     # 新闻事件：Odaily 快讯按 TICKER 匹配到每个标的的决策卡「事件」Tab
     _attach_news_events(items, _load_ranking_news())
+
+    # 统计洞察：风险分级 / 历史类比用 L1 统计层真实计算覆盖，并附带图表数据
+    _attach_insights(items, _load_ranking_insights())
 
     # 子系统分榜输出：每条含 subsystem tag
     subsystem_rankings = {}

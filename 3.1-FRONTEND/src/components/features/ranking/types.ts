@@ -7,6 +7,67 @@ export type SignalType = 'STRONG_BUY' | 'BUY' | 'WEAK_BUY' | 'NEUTRAL' | 'WEAK_S
 export type CategoryType = 'crypto' | 'commodity' | 'index';
 export type RiskLevel = 'novice' | 'intermediate' | 'expert';
 
+// ---- 统计洞察（ranking_insight.py 产出，L1 统计层真实计算） ----
+
+export interface DrawdownPoint {
+  date: string | null;
+  /** 回撤百分比（负数，0 为前高） */
+  value: number;
+}
+
+export interface RiskComponent {
+  name: string;
+  /** 原始指标值（百分比口径，如最大回撤 29.03） */
+  value: number;
+  /** 归一化危险度 0-1（条形图长度） */
+  score: number;
+  weight: number;
+}
+
+export interface RiskInsight {
+  score: number;
+  level: RiskLevel;
+  label: string;
+  detail: string;
+  metrics: {
+    mdd: number;
+    currentDrawdown: number;
+    var95: number | null;
+    cvar95: number | null;
+    dailyVol: number | null;
+    durationDays: number | null;
+    sampleSize: number;
+  };
+  breakdown: RiskComponent[];
+  quality: string;
+}
+
+export interface ForwardBucket {
+  bucket: string;
+  meanReturn: number;
+  winRate: number;
+  sampleSize: number;
+  current: boolean;
+}
+
+export interface AnalogyInsight {
+  winRate: number;
+  avgReturn: number;
+  medianReturn: number;
+  sampleSize: number;
+  horizon: number;
+  currentPercentile: number | null;
+  buckets: ForwardBucket[];
+  text: string;
+  quality: string;
+}
+
+export interface DecisionInsight {
+  risk: RiskInsight | null;
+  analogy: AnalogyInsight | null;
+  charts: { drawdownPath: DrawdownPoint[] };
+}
+
 export interface DecisionCardData {
   entry: {
     // 行情未接入时后端返回 null，组件需按"待定"展示
@@ -19,6 +80,8 @@ export interface DecisionCardData {
   events: { date: string; name: string; impact: string }[];
   riskLevel: RiskLevel;
   historicalAnalogy: string;
+  /** 统计洞察（风险分解 / 回撤路径 / 前瞻收益分布），缺失时模块退化为纯文本 */
+  insight?: DecisionInsight | null;
   logic: {
     bullish: string[];
     bearish: string[];

@@ -7,8 +7,19 @@
 // ============================================
 
 import React, { useState } from 'react';
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { V3Card, V3Badge } from '@/components';
-import { DecisionCardData, riskConfig } from './types';
+import { AnalogyInsight, DecisionCardData, DecisionInsight, RiskInsight, riskConfig } from './types';
 
 // 后端在行情/ATR 数据缺失时会返回 null，渲染必须空值安全（否则整页崩溃）
 const fmtPrice = (v: number | null | undefined) =>
@@ -61,8 +72,8 @@ export function DecisionCard({ data, symbol }: DecisionCardProps) {
         {activeTab === 'sl-tp' && <SlTpModule data={data} />}
         {activeTab === 'events' && <EventsModule data={data} />}
         {activeTab === 'chart' && <ChartModule data={data} symbol={symbol} />}
-        {activeTab === 'risk' && <RiskModule risk={risk} />}
-        {activeTab === 'history' && <HistoryModule text={data.historicalAnalogy} />}
+        {activeTab === 'risk' && <RiskModule risk={risk} insight={data.insight} />}
+        {activeTab === 'history' && <HistoryModule text={data.historicalAnalogy} analogy={data.insight?.analogy} />}
         {activeTab === 'logic' && <LogicModule data={data} />}
       </div>
     </div>
@@ -227,30 +238,197 @@ function PriceLine({ pct, color, label }: { pct: number; color: string; label: s
   );
 }
 
-// ---- 模块 5: 风险分级 ----
-function RiskModule({ risk }: { risk: { label: string; variant: 'info' | 'warning' | 'danger'; position: string } }) {
+// ---- 模块 5: 风险分级（统计分 + 回撤路径 + 风险分解） ----
+function RiskModule({
+  risk,
+  insight,
+}: {
+  risk: { label: string; variant: 'info' | 'warning' | 'danger'; position: string };
+  insight?: DecisionInsight | null;
+}) {
+  const stat: RiskInsight | null | undefined = insight?.risk;
+  const path = insight?.charts?.drawdownPath ?? [];
+  const pct = (v: number | null | undefined) =>
+    typeof v === 'number' && isFinite(v) ? `${v.toFixed(2)}%` : '—';
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-[10px] text-slate-500">风险分级</span>
-        <V3Badge variant={risk.variant} dot>{risk.label}</V3Badge>
+        <div className="flex items-center gap-2">
+          {stat && <span className="text-[10px] font-mono text-slate-400">统计分 {stat.score.toFixed(0)}</span>}
+          <V3Badge variant={risk.variant} dot>{risk.label}</V3Badge>
+        </div>
       </div>
-      <div className="bg-slate-800/40 rounded p-2">
-        <p className="text-[10px] text-slate-400">{risk.position}</p>
-      </div>
-      <p className="text-[10px] text-slate-500 italic">
-        分级依据：波动率 + 流动性 + 市场复杂度
-      </p>
+
+      {!stat && (
+        <div className="bg-slate-800/40 rounded p-2">
+          <p className="text-[10px] text-slate-400">{risk.position}</p>
+        </div>
+      )}
+
+      {stat && (
+        <>
+          <p className="text-[10px] text-slate-400">
+            主要风险：<span className="text-slate-200">{stat.detail}</span>
+          </p>
+
+          {path.length > 1 && (
+            <div>
+              <p className="text-[10px] text-slate-500 mb-1">回撤路径 · 近 {path.length} 个交易日</p>
+              <div className="h-20 bg-slate-800/30 rounded">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={path} margin={{ top: 4, right: 4, left: -30, bottom: 0 }}>
+                    <XAxis dataKey="date" hide />
+                    <YAxis
+                      tick={{ fontSize: 8, fill: '#64748b' }}
+                      tickFormatter={(v: number) => `${v.toFixed(0)}%`}
+                      domain={['dataMin', 0]}
+                    />
+                    <Tooltip
+                      contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 8, fontSize: 11 }}
+                      labelStyle={{ color: '#94a3b8' }}
+                      formatter={((value: number) => [`${Number(value).toFixed(2)}%`, '回撤']) as never}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#f87171"
+                      strokeWidth={1.2}
+                      fill="#f87171"
+                      fillOpacity={0.18}
+                      isAnimationActive={false}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {stat.breakdown.length > 0 && (
+            <div>
+              <p className="text-[10px] text-slate-500 mb-1">风险分解 · 归一化危险度</p>
+              <div className="h-20 bg-slate-800/30 rounded">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stat.breakdown} layout="vertical" margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                    <XAxis type="number" domain={[0, 1]} hide />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={58}
+                      tick={{ fontSize: 8, fill: '#64748b' }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 8, fontSize: 11 }}
+                      labelStyle={{ color: '#94a3b8' }}
+                      formatter={((value: number, _name: string, item: { payload?: { value?: number } }) => [
+                        `${(Number(value) * 100).toFixed(0)} 分 · 实测 ${item?.payload?.value ?? '—'}%`,
+                        '危险度',
+                      ]) as never}
+                    />
+                    <Bar dataKey="score" radius={[0, 3, 3, 0]} isAnimationActive={false}>
+                      {stat.breakdown.map((item, index) => (
+                        <Cell
+                          key={index}
+                          fill={item.score >= 0.66 ? '#ef4444' : item.score >= 0.33 ? '#f59e0b' : '#10b981'}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-1.5">
+            <Metric label="最大回撤" value={pct(stat.metrics.mdd)} />
+            <Metric label="当前回撤" value={pct(stat.metrics.currentDrawdown)} />
+            <Metric label="VaR 95%" value={pct(stat.metrics.var95)} />
+            <Metric label="CVaR 95%" value={pct(stat.metrics.cvar95)} />
+            <Metric label="日波动率" value={pct(stat.metrics.dailyVol)} />
+            <Metric label="回撤持续" value={
+              typeof stat.metrics.durationDays === 'number' ? `${stat.metrics.durationDays} 天` : '—'
+            } />
+          </div>
+
+          <p className="text-[10px] text-slate-500 italic">
+            分级依据：回撤 + VaR/CVaR + 日波动率（L1 统计层，n={stat.metrics.sampleSize}
+            {stat.quality && stat.quality !== 'good' ? `，样本降级 ${stat.quality}` : ''}）
+          </p>
+        </>
+      )}
     </div>
   );
 }
 
-// ---- 模块 6: 历史类比 ----
-function HistoryModule({ text }: { text: string }) {
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-slate-800/40 rounded px-2 py-1 flex items-center justify-between">
+      <span className="text-[9px] text-slate-500">{label}</span>
+      <span className="text-[10px] font-mono text-slate-200">{value}</span>
+    </div>
+  );
+}
+
+// ---- 模块 6: 历史类比（同波动状态前瞻收益分布） ----
+function HistoryModule({ text, analogy }: { text: string; analogy?: AnalogyInsight | null }) {
+  const buckets = analogy?.buckets ?? [];
   return (
     <div className="space-y-2">
-      <p className="text-[10px] text-slate-500">相似历史行情</p>
-      <p className="text-xs text-slate-300 leading-relaxed">{text}</p>
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] text-slate-500">相似历史行情</span>
+        {analogy && (
+          <span className="text-[10px] text-slate-400">
+            上涨概率 <span className="text-emerald-400 font-mono">{analogy.winRate.toFixed(1)}%</span>
+          </span>
+        )}
+      </div>
+
+      {analogy && (
+        <div className="grid grid-cols-3 gap-1.5">
+          <Metric label="次日均值" value={`${analogy.avgReturn >= 0 ? '+' : ''}${analogy.avgReturn.toFixed(2)}%`} />
+          <Metric label="中位" value={`${analogy.medianReturn >= 0 ? '+' : ''}${analogy.medianReturn.toFixed(2)}%`} />
+          <Metric label="样本" value={`${analogy.sampleSize}`} />
+        </div>
+      )}
+
+      {buckets.length > 0 && (
+        <div>
+          <p className="text-[10px] text-slate-500 mb-1">
+            波动分位 × 前瞻 1 日均值（红=当前分位{analogy?.currentPercentile != null ? ` ${analogy.currentPercentile.toFixed(0)}%` : ''}）
+          </p>
+          <div className="h-24 bg-slate-800/30 rounded">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={buckets} margin={{ top: 4, right: 4, left: -30, bottom: 0 }}>
+                <XAxis dataKey="bucket" tick={{ fontSize: 8, fill: '#64748b' }} tickLine={false} axisLine={false} />
+                <YAxis
+                  tick={{ fontSize: 8, fill: '#64748b' }}
+                  tickFormatter={(v: number) => `${v.toFixed(1)}%`}
+                />
+                <Tooltip
+                  contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 8, fontSize: 11 }}
+                  labelStyle={{ color: '#94a3b8' }}
+                  formatter={((value: number, _name: string, item: { payload?: { winRate?: number; sampleSize?: number } }) => [
+                    `${Number(value).toFixed(2)}% · 胜率 ${item?.payload?.winRate ?? '—'}% · n=${item?.payload?.sampleSize ?? '—'}`,
+                    '次日均值',
+                  ]) as never}
+                />
+                <Bar dataKey="meanReturn" radius={[3, 3, 0, 0]} isAnimationActive={false}>
+                  {buckets.map((bucket, index) => (
+                    <Cell key={index} fill={bucket.current ? '#ef4444' : bucket.meanReturn >= 0 ? '#34d399' : '#f87171'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      <p className="text-xs text-slate-300 leading-relaxed">
+        {analogy?.text || text || '历史相似行情样本不足'}
+      </p>
     </div>
   );
 }

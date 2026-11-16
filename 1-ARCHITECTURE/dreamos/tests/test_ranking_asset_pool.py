@@ -1,6 +1,8 @@
 """榜单多资产接入单测：品类映射 / 6+2+2 配额 / 多资产评分。"""
 
 import importlib.util
+import random
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -35,6 +37,11 @@ def decision_card():
 @pytest.fixture(scope="module")
 def ranking_news():
     return _load("1-ARCHITECTURE/dreamos/cli/ranking_news.py", "ranking_news_for_test")
+
+
+@pytest.fixture(scope="module")
+def ranking_insight():
+    return _load("1-ARCHITECTURE/dreamos/cli/ranking_insight.py", "ranking_insight_for_test")
 
 
 def test_symbol_category_mapping(ranking):
@@ -254,3 +261,97 @@ def test_crypto_filter_fail_open_when_degraded(ranking):
 
     assert ranking._filter_crypto_candidates(candidates, {"degraded": True}) == candidates
     assert ranking._filter_crypto_candidates(candidates, {"markets": {}}) == candidates
+
+
+# ── 统计洞察（risk / analogy） ──────────────────────────────────────
+
+
+def test_risk_level_bands(ranking_insight):
+    assert ranking_insight.risk_level(10)[0] == "novice"
+    assert ranking_insight.risk_level(34.9)[0] == "novice"
+    assert ranking_insight.risk_level(50)[0] == "intermediate"
+    assert ranking_insight.risk_level(65)[0] == "expert"
+    assert ranking_insight.risk_level(80)[0] == "expert"
+
+
+def test_parse_candles_sorts_dedupes_and_formats(ranking_insight):
+    raw = [
+        ["1729000000000", "0", "0", "0", "2"],
+        ["1729000000000", "0", "0", "0", "3"],
+        ["1728000000000", "0", "0", "0", "1"],
+    ]
+
+    prices, dates = ranking_insight._parse_candles(raw)
+
+    assert prices == [1.0, 3.0]
+    assert dates[0] < dates[1]
+    assert len(dates[0]) == 10
+
+
+def test_compute_insight_uses_real_statistics(ranking_insight):
+    if not ranking_insight.stats_available():
+        pytest.skip("l1agg 统计层不可用")
+
+    random.seed(7)
+    prices = [100.0]
+    for _ in range(320):
+        prices.append(max(1.0, prices[-1] * (1 + random.gauss(0.0003, 0.02))))
+    dates = [date(2025, 1, 1) + timedelta(days=i) for i in range(len(prices))]
+
+    out = ranking_insight.compute_insight("TEST", prices, dates)
+
+    assert out["risk"] is not None
+    assert 0 <= out["risk"]["score"] <= 100
+    assert out["risk"]["level"] in {"novice", "intermediate", "expert"}
+    assert len(out["risk"]["breakdown"]) == 4
+    assert out["analogy"] is not None
+    assert out["analogy"]["sampleSize"] > 0
+    assert len(out["analogy"]["buckets"]) >= 2
+    assert sum(1 for bucket in out["analogy"]["buckets"] if bucket["current"]) == 1
+    assert out["charts"]["drawdownPath"]
+    assert all(point["value"] <= 0 for point in out["charts"]["drawdownPath"])
+
+
+def test_compute_insight_fail_open_on_short_history(ranking_insight):
+    out = ranking_insight.compute_insight("TEST", [100.0, 101.0], ["2025-01-01", "2025-01-02"])
+
+    assert out["risk"] is None
+    assert out["analogy"] is None
+    assert out["charts"]["drawdownPath"] == []
+    assert out["warnings"]
+
+
+def test_attach_insights_overrides_risk_and_analogy(ranking):
+    items = [
+        {
+            "symbol": "BTC-USDT-SWAP",
+            "decisionCard": {"riskLevel": "intermediate", "historicalAnalogy": ""},
+        }
+    ]
+    insights = {
+        "BTC": {
+            "risk": {"level": "expert", "score": 73.0},
+            "analogy": {"text": "统计类比"},
+            "charts": {"drawdownPath": [{"date": "2025-01-01", "value": -3.2}]},
+        }
+    }
+
+    ranking._attach_insights(items, insights)
+
+    card = items[0]["decisionCard"]
+    assert card["riskLevel"] == "expert"
+    assert card["historicalAnalogy"] == "统计类比"
+    assert card["insight"]["risk"]["score"] == 73.0
+    assert card["insight"]["charts"]["drawdownPath"][0]["value"] == -3.2
+
+
+def test_attach_insights_fail_open_without_snapshot(ranking):
+    items = [
+        {"symbol": "BTC", "decisionCard": {"riskLevel": "novice", "historicalAnalogy": "旧值"}}
+    ]
+
+    ranking._attach_insights(items, {})
+
+    assert items[0]["decisionCard"]["riskLevel"] == "novice"
+    assert items[0]["decisionCard"]["historicalAnalogy"] == "旧值"
+    assert "insight" not in items[0]["decisionCard"]
