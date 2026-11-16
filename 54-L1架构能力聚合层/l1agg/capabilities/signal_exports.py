@@ -22,14 +22,36 @@ CAPABILITY_SIGNAL = "D-K03"
 INTENT_SIGNAL = "signal_query"
 DEFAULT_TOP_PER_HORIZON = 3
 
-_SIGNAL_SQL = """
-SELECT eval_id, method, transform, target, horizon, n, n_eff, rank_ic,
-       excess_hit, base_rate, hit_rate_lb, effect_bps, cost_bps, p_adj,
-       status, eval_at, data_version
-  FROM relationship_eval
- WHERE gate_pass = 1 AND status IN ('stable', 'candidate')
- ORDER BY target, horizon, ABS(rank_ic) DESC, n DESC
-"""
+_SIGNAL_COLUMNS = (
+    "eval_id",
+    "method",
+    "transform",
+    "target",
+    "horizon",
+    "n",
+    "n_eff",
+    "rank_ic",
+    "excess_hit",
+    "base_rate",
+    "hit_rate_lb",
+    "effect_bps",
+    "cost_bps",
+    "p_adj",
+    "status",
+    "eval_at",
+    "data_version",
+)
+
+
+def _signal_sql(conn: sqlite3.Connection) -> str:
+    """按注册表实际列裁剪 SELECT：MERS 产物缺失的指标列留空，避免整条查询失败。"""
+    present = {row[1] for row in conn.execute("PRAGMA table_info(relationship_eval)")}
+    columns = [column for column in _SIGNAL_COLUMNS if column in present]
+    return (
+        f"SELECT {', '.join(columns)} FROM relationship_eval "
+        "WHERE gate_pass = 1 AND status IN ('stable', 'candidate') "
+        "ORDER BY target, horizon, ABS(rank_ic) DESC, n DESC"
+    )
 
 
 def _top_per_horizon(rows: List[Dict[str, Any]], top: int) -> List[Dict[str, Any]]:
@@ -68,7 +90,11 @@ def signal_query(
         )
     try:
         with _readonly_connect(path) as conn:
-            rows = [dict(row) for row in conn.execute(_SIGNAL_SQL)]
+            rows = []
+            for raw in conn.execute(_signal_sql(conn)):
+                item = dict.fromkeys(_SIGNAL_COLUMNS)
+                item.update(dict(raw))
+                rows.append(item)
     except sqlite3.Error as exc:
         return unavailable(
             capability=capability_id,
