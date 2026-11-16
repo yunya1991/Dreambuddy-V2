@@ -171,15 +171,37 @@ class BCRM2RealVerifier:
                 logger.warning(f"[{symbol}] 推理失败(idx={idx}): {e}")
                 continue
 
+            # BCRM2 真实返回：方向/置信度在 next_state 内（M2 修复字段读取 bug）
+            _next_state = result.get("next_state") or {}
+            _direction = str(
+                _next_state.get("direction") or result.get("direction") or "FLAT"
+            ).upper()
+            _confidence = float(
+                _next_state.get(
+                    "confidence",
+                    result.get("confidence", result.get("final_confidence", 0.0)),
+                )
+                or 0.0
+            )
+            _fail_closed_fn = result.get("is_fail_closed")
+            try:
+                _fail_closed = (
+                    bool(_fail_closed_fn())
+                    if callable(_fail_closed_fn)
+                    else bool(result.get("fail_closed", False))
+                )
+            except Exception:
+                _fail_closed = True
+
             record = RealInferenceRecord(
                 timestamp=str(df.index[idx]),
                 bar_index=idx,
-                bcrm2_direction=result.get("direction", "FLAT"),
-                bcrm2_confidence=result.get("confidence", 0.0),
-                triangle_result=result.get("triangle_verification", {}),
-                final_confidence=result.get("confidence", 0.0),
-                final_direction=result.get("direction", "FLAT"),
-                fail_closed=result.get("fail_closed", False),
+                bcrm2_direction=_direction,
+                bcrm2_confidence=_confidence,
+                triangle_result=result.get("triangle_verification") or {},
+                final_confidence=_confidence,
+                final_direction=_direction,
+                fail_closed=_fail_closed,
                 future_return_5=future_5,
                 future_return_10=future_10,
                 actual_direction=actual_dir,
