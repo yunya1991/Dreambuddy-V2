@@ -2,7 +2,7 @@
 
 > **版本**: v1.4（P0-P4 全部实施：fail-loud 索引 + 记忆树 + 分级 TTL 两阶段 + 指纹去重 + 近义合并双门 + M1 指针索引 + 缺口适配 + M1-T 路由表 + D0-D4 级联编排 + 分级 grace + `verify(supersedes)` + 记忆漂移检测）
 > **日期**: 2026-11-16
-> **状态**: P0 / P0.5 / P0b / P1 / P2 / P2b 已实施；P3 第 1、2、3 条已实施（第 2 条云端 systemd timer 已挂，2026-11-16，连续 7 天验收中）；P4 已实施（`verify(supersedes=)` + `memory_drift_detector`，7 项单测）
+> **状态**: P0 / P0.5 / P0b / P1 / P2 / P2b 已实施；P3 第 1、2、3 条已实施（第 2 条云端 systemd timer 已挂，2026-11-16，连续 7 天验收中）；P4 已实施（`verify(supersedes=)` + `memory_drift_detector`，7 项单测）；P4 漂移批量 apply 已完成（586 → 0，2026-11-16，`apply_errors=[]`）
 > **归属**: 35-广义认知系统协作模块（协作设计 SSoT，不含实现）
 > **硬约束源**: [CLAUDE.md §记忆准入标准](../CLAUDE.md) · 认知库 `VM-1794758596238-7af17f8c`
 > **实现落点**: `4-MEMORY/9-工具与接口/` · `2-KNOWLEDGE/9-RAG-INFRA/`
@@ -368,6 +368,7 @@ REA 逆向解析已封装 MCP，是**默认求解器**；记忆只负责**指路
    - `anchor_missing`（文件已不存在）/ `file_changed_after_memory`（文件 mtime 晚于记忆创建）；
    - 默认 dry-run 只读（`file:...?mode=ro`）；`--apply` 对命中项调用 `verify(success=False, drift_detected=True)` 走既有 Beta 先验重置链路，不新建平行状态。
    - 单测：supersedes 5 项 + 漂移 7 项。
+   - **生产首跑（2026-11-16，云端）**：命中 586 条（含 `anchor_missing` 452 条 / 仅文件变更 134 条），全部执行 `verify(success=False, drift_detected=True)`，`apply_errors=[]`；质量分布 B −567 / A −16 / S −3；复测 `drifted=0`（`scanned` 2282 → 1696）。写前已 `sqlite3 .backup` 至 `19-数据访问层/data/backups/cognitive_memory.pre-drift-apply.20261116.db`（1.9 GB / 315,880 行）。
 
 ---
 
@@ -474,7 +475,7 @@ G1-G3 为**存量止血**，必须先于 G4-G5（否则遗忘只是在给漏水�
 | 修改 `rebuild_vector_index.py` | 增 `--source/--ids/--where` 排除参数；`BEGIN IMMEDIATE` 包住 DROP→CREATE→INSERT（现 `:147-155` 非事务，崩溃即 recall 全盲） | **P0** |
 | 新增 `tools/rea_routing_table.yaml` + `tools/rea_routing.py` | M1-T 问题类别 → 工具链路由表，计入 150 上限 | **P2 ✅ 2026-11-16**（12 类；`load_table` 结构校验 + `route` 确定性路由 + budget 硬门；7 项单测） |
 | 修改 `cognitive_loop_entry.py`（`verify`） | 增 `supersedes=<旧 id>`：预校验 fail-loud + 双时序图 `invalidated_by` 标记 + CLI `--supersedes` | **P4 ✅ 2026-11-16**（5 项单测） |
-| 新增 `memory_drift_detector.py` | 记忆内容漂移（锚点缺失 / 文件晚于记忆），默认只读，`--apply` 走 `verify(drift_detected=True)` | **P4 ✅ 2026-11-16**（7 项单测；与 TB1 `drift_detector.py` 的 PSI 数值漂移区分） |
+| 新增 `memory_drift_detector.py` | 记忆内容漂移（锚点缺失 / 文件晚于记忆），默认只读，`--apply` 走 `verify(drift_detected=True)` | **P4 ✅ 2026-11-16**（7 项单测；与 TB1 `drift_detector.py` 的 PSI 数值漂移区分；生产批量 apply 586 → 0，`apply_errors=[]`） |
 | 新增 `memory_tree.py` | 三级树（项目/目录/章节）+ D1 查询 / D2 遍历 / D3-D4 回写；节点只存关键词与锚点 | **P0b ✅ 2026-11-16**：893 节点（58/344/491），树文件 670 KB |
 | 新增 `tests/test_memory_tree.py` | 记忆树 7 项单测（分词 / 构建 / 命中 / 遍历 / 回写 / 容量门 / 标题提取） | **P0b ✅** |
 | 调度：`com.dreambuddy.cognitive-daemon.plist` / 云端 systemd timer | 新增每日维护周期 | P3 |
