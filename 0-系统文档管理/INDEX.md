@@ -215,6 +215,7 @@
 | 母 SPEC（L1 能力聚合层） | [54-L1架构能力聚合层/SPEC-54-L1架构能力聚合层.md](../54-L1架构能力聚合层/SPEC-54-L1架构能力聚合层.md) | v1.46（S1–S3 已落地；能力登记表扩至 D-G 组；MERS/Discovery 与二维 T2 待开） |
 | 统计图表化 SPEC（T1–T4 图 + L1 三层） | [54-L1架构能力聚合层/SPEC-54-统计图表化能力.md](../54-L1架构能力聚合层/SPEC-54-统计图表化能力.md) | v0.22（P0 六项 + L1D-03…09 + L1X-01…04 + DOC-01/02 全部验收；L1S-03…06 四项待办：新闻出口/制品落盘/T4 消费/状态刷新） |
 | 能力卡片全景接入 SPEC（消费侧） | [54-L1架构能力聚合层/SPEC-54-能力卡片全景接入.md](../54-L1架构能力聚合层/SPEC-54-能力卡片全景接入.md) | v1.0（94 项 schema + `op=resolve` 装配器 + R3b 持久化 + R6 60s 缓存/日聚合分档 P95 报表/5 分钟告警 + AC1–AC10 全绿；常驻 resolve worker 热请求 0.05s；AC2 六型取证归档 `acceptance_bundles/20261116_spec54_ac2/`） |
+| 剩余能力放开与产物落盘 SPEC | [54-L1架构能力聚合层/SPEC-54c-剩余能力放开与产物落盘.md](../54-L1架构能力聚合层/SPEC-54c-剩余能力放开与产物落盘.md) | v0.1（E14/G21/G23/A14/A16 全部 `code=ok`；E19 `lights_latest.json`+`lights_daily.jsonl`、K02 `reports/discovery/20261117-0150/` 已落盘；矩阵 ok 82→87；云端双实例取证） |
 | 延续性统计分析 SPEC（T0） | [54-L1架构能力聚合层/SPEC-54-延续性统计分析模块.md](../54-L1架构能力聚合层/SPEC-54-延续性统计分析模块.md) | v1.6（T0 已实现，T2/D-E14 一维首版） |
 | 技术设计 | [54-L1架构能力聚合层/docs/TECHNICAL_DESIGN.md](../54-L1架构能力聚合层/docs/TECHNICAL_DESIGN.md) | 门禁/信封/能力层分工 |
 | 方法库 SSoT | [54-L1架构能力聚合层/docs/METHOD_LIBRARY.md](../54-L1架构能力聚合层/docs/METHOD_LIBRARY.md) | 方法编号 I35–I39 冲突已修正 |
@@ -235,9 +236,10 @@
 | 文档 | 路径 | 版本 |
 |------|------|------|
 | 母 SPEC（L2 架构能力聚合层） | [56-L2架构能力聚合层/SPEC-56-L2架构能力聚合层.md](../56-L2架构能力聚合层/SPEC-56-L2架构能力聚合层.md) | v0.6（ADR-01~10 / IF-1~IF-6 / G-L2-1~9 / 路线 P0–P5；IF-5/IF-6 已可执行） |
+| Harness 能力增强（HCP） | [56-L2架构能力聚合层/SPEC-56-Harness能力增强-v0.1.md](../56-L2架构能力聚合层/SPEC-56-Harness能力增强-v0.1.md) | v0.1（设计稿：Trae M1–M5 → H1–H5 + G-L2-12~16 + P0–P2） |
 | 总技术文档 + 能力登记 | [56-L2架构能力聚合层/docs/TECHNICAL_DESIGN.md](../56-L2架构能力聚合层/docs/TECHNICAL_DESIGN.md) | v1.16（五子层能力地图，50 项能力登记，30 项缺口；A0–A3 全链路 + preset 导出/加载 + 四类 probe + Cordis loader 探针 + sandbox profile 实装挂载） |
 | 协议层逆向解析（REA） | [56-L2架构能力聚合层/docs/REA-lobehub协议逆向解析-v0.1.md](../56-L2架构能力聚合层/docs/REA-lobehub协议逆向解析-v0.1.md) | v0.1（LobeHub 协议事实 + L2 聚合调度缺失 GAP-17~23 + 对照实验设计） |
-| Trae 逆向解析与交互学习（研究） | [56-L2架构能力聚合层/docs/RESEARCH-20261117-Trae逆向解析与交互学习-v0.1.md](../56-L2架构能力聚合层/docs/RESEARCH-20261117-Trae逆向解析与交互学习-v0.1.md) | v0.1.2（三层结构 + 五装配机制 + REA 适配度；R1/R2：3 miner + 5 机制卡 + 627 交互案例；R3：5 个 GAP-T* 候选，T3 为硬证据阻塞项） |
+| Trae 逆向解析与交互学习（研究） | [56-L2架构能力聚合层/docs/RESEARCH-20261117-Trae逆向解析与交互学习-v0.1.md](../56-L2架构能力聚合层/docs/RESEARCH-20261117-Trae逆向解析与交互学习-v0.1.md) | v0.1.4（三层结构 + 五装配机制；R1/R2：3 miner + 5 机制卡 + 627 交互案例；R3：5 个 GAP-T*；已固化 SKILL 并产出 HCP 优化 SPEC） |
 | 总装线对标（三源） | [56-L2架构能力聚合层/docs/总装线对标-三源与DreamOS逐模块优化-v0.1.md](../56-L2架构能力聚合层/docs/总装线对标-三源与DreamOS逐模块优化-v0.1.md) | v0.1（LobeHub/OpenAI/Claude 七段契约 + DreamOS 逐模块改造 + GAP-24~30） |
 | A0 契约评审记录 | [56-L2架构能力聚合层/docs/REVIEW-20261116-A0契约与总装线对标评审.md](../56-L2架构能力聚合层/docs/REVIEW-20261116-A0契约与总装线对标评审.md) | v1.2（✅ 通过/A0 关闭：4 阻断已修，28/28 自检 PASSED） |
 | L2 可执行契约 | [56-L2架构能力聚合层/contracts/](../56-L2架构能力聚合层/contracts/) | 台账 schema / 插件契约 schema / 状态机 yaml；校验器 `scripts/validate_contracts.py` |
@@ -279,7 +281,7 @@
 | 34-前端应用训练系统 | [34-前端应用训练系统/README.md](../34-前端应用训练系统/README.md) | ✅ README+SPEC（P0-P4全部完成） | 前端应用独立学习训练模块：主动训练(多源采集+统计训练)+被动训练(Trae在线辅导) |
 | 35-广义认知系统协作模块 | [35-广义认知系统协作模块/README.md](../35-广义认知系统协作模块/README.md) · [INDEX.md](../35-广义认知系统协作模块/INDEX.md) | ✅ 文档齐全（认知进化SPEC v0.2+统一PoE框架v2.0+协作契约v1.6） | 跨系统协作设计SSoT：SPEC收敛+协作接口契约+PoE统一框架（纯文档统筹层） |
 | 41-文件索引系统 · 新闻意图检索 | [41-文件索引系统/SPEC-41-L1-新闻意图检索-v1.0.md](../41-文件索引系统/SPEC-41-L1-新闻意图检索-v1.0.md) **v1.0** | ✅ **P0–P5 全部完成并云端验收**（T1–T7 全绿，逐项证据见 §13） | L1 `event_listing` 升级方案 A：标签契约（39 的 11 topic/13 event_type 为 canonical，`od_event_type` 单向降级）、罗列 vs 演变划界规则、窗口三级（默认 168h / 上限 720h）、`exec_news_search` + 39 侧 `news_digest.json`、30 条 golden 探针 |
-| **55-AI大模型研究报告** | [55-AI大模型研究报告/认知系统研究/01-主论文-残差记忆与按需重建-开题报告.md](../55-AI大模型研究报告/认知系统研究/01-主论文-残差记忆与按需重建-开题报告.md) | 🟡 4 篇开题报告（v0.1） | AI 大模型方向的**研究文档域**（非代码模块）：认知记忆系统四篇论文开题——残差记忆与按需重建（主论文）/ 使用驱动的记忆巩固与分级遗忘 / 任务—成本联合基准 / 从记忆失败到能力获取；研究对象为 DreamBuddy 认知记忆系统，配套口径见 [35-广义认知系统协作模块/SPEC-ResidualMemory-Admission.md](../35-广义认知系统协作模块/SPEC-ResidualMemory-Admission.md) |
+| **55-AI大模型研究报告** | [55-AI大模型研究报告/认知系统研究/01-主论文-残差记忆与按需重建-开题报告.md](../55-AI大模型研究报告/认知系统研究/01-主论文-残差记忆与按需重建-开题报告.md) | 🟡 4 篇开题报告（v0.1；04 增补 Trae 工程案例 v0.2） | AI 大模型方向的**研究文档域**（非代码模块）：认知记忆系统四篇论文开题——残差记忆与按需重建（主论文）/ 使用驱动的记忆巩固与分级遗忘 / 任务—成本联合基准 / 从记忆失败到能力获取；04 §1.4 增补「REA 从记忆转向能力」Trae 工程案例；研究对象为 DreamBuddy 认知记忆系统，配套口径见 [35-广义认知系统协作模块/SPEC-ResidualMemory-Admission.md](../35-广义认知系统协作模块/SPEC-ResidualMemory-Admission.md) |
 | 1-ARCHITECTURE/dreamos | [1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md](../1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md) | ⚠️ 部分完整 | DreamOS CLI |
 | **0-系统文档管理/4-工具与自动化** | [4-工具与自动化/README.md](./4-工具与自动化/README.md) | ✅ 已建成 4 脚本 | doc_lint/doc_coverage/index_generator/link_checker |
 | **0-系统文档管理/3-文档治理/audits** | [audits/2026-08_月度审计报告.md](./3-文档治理/audits/2026-08_月度审计报告.md) | ✅ 首份报告 | 月度审计报告归档 |

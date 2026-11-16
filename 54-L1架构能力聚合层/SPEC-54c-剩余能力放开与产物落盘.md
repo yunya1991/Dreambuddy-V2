@@ -80,6 +80,25 @@
 | AC7 | 94 项能力矩阵 `code=ok` 数 ≥ 88（原 82 + 本次 6 项），无新增 `unsupported` |
 | AC8 | 全量 pytest（54 模块）通过，前端 3001/3002 双实例 health 200 |
 
+### 3.1 云端验收记录（2026-11-17 01:55 CST，BUILD_ID `30TfHB7beHZd__Fkap-D9`）
+
+| 能力 | code | 关键返回 |
+| --- | --- | --- |
+| D-E14 | ok | 453 对齐点；2 桶，有效/非重叠 n=161；`min_bucket_nonoverlap_n=100`、`window=120` |
+| D-G21 | ok | 492 期 × 12 标的；λ=-0.0379，t=-0.86 |
+| D-G23 | ok | 58 次事件；CAR=0.0209，Patell z=1.59，BMP z=1.65，p=0.112 |
+| D-A14 | ok | score=0.5239，历史 53.9% 分位，等级「低」，n=180 |
+| D-A16 | ok | 7 日 -1.43%、30 日 -5.18%（长历史 2023-08-05 起 1200 天） |
+| D-E19 | ok | 14 标的 lit 23 / warm 3 / conflict 0 / unavailable 3 |
+| D-K02 | ok | 最近一期 `20261117-0150`，50 条 candidate，4608 单元评估 |
+
+- 产物：`artifacts/visual/lights_latest.json`、`lights_daily.jsonl`（1 行，首日）；
+  `reports/discovery/20261117-0150/{manifest.json,findings.jsonl,patterns.json}`。
+- 矩阵：94 项 `ok=89`、`missing_args=5`（J25–J30 用户输入型，按设计）；
+  无 `unsupported`（期望清单已清空）。
+- 双实例：3001/3002 均 `active/running`，7 项 POST resolve 全部 `ok`。
+  （处置：3001 原被孤儿 next-server 占用端口导致 455 次重启，已清理并恢复正常托管。）
+
 ## 4. 风险与回滚
 
 | 风险 | 处置 |
