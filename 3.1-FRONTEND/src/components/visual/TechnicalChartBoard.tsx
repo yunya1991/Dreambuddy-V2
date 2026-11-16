@@ -349,7 +349,7 @@ export function TechnicalChartBoard() {
 
       {loading && !overview && <div className="h-24 animate-pulse rounded-lg bg-slate-800/40" />}
 
-      {active === 'signals' && (
+      {overview && active === 'signals' && (
         <div className="grid gap-3 xl:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.85fr)]">
           <Panel
             title="加权信号点阵"
@@ -484,7 +484,7 @@ export function TechnicalChartBoard() {
         </div>
       )}
 
-      {active === 'lights' && (
+      {overview && active === 'lights' && (
         <div className="grid gap-3 xl:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.85fr)]">
           <Panel
             title="点亮图影"
@@ -582,7 +582,7 @@ export function TechnicalChartBoard() {
         </div>
       )}
 
-      {active === 'overlay' && (
+      {overview && active === 'overlay' && (
         <div className="space-y-3">
           <Panel
             title={`技术分析叠加 · ${overview?.base ?? '—'}`}
@@ -734,7 +734,7 @@ export function TechnicalChartBoard() {
         </div>
       )}
 
-      {active === 'feedback' && (
+      {overview && active === 'feedback' && (
         <div className="grid gap-3 xl:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.85fr)]">
           <Panel
             title="信号 → 结果 反馈表"
@@ -780,7 +780,7 @@ export function TechnicalChartBoard() {
         </div>
       )}
 
-      {active === 'cross' && (
+      {overview && active === 'cross' && (
         <div className="space-y-3">
           <Panel
             title="跨资产 · D-E17 类别看板"
@@ -801,7 +801,7 @@ export function TechnicalChartBoard() {
         </div>
       )}
 
-      {active === 'risk' && (
+      {overview && active === 'risk' && (
         <div className="space-y-3">
           <Panel
             title="回撤路径（D-E10）"
@@ -847,7 +847,7 @@ export function TechnicalChartBoard() {
         </div>
       )}
 
-      {active === 'cycle' && (
+      {overview && active === 'cycle' && (
         <div className="grid gap-3 xl:grid-cols-2">
           <Panel title="周期轴（I39 带通）" sub="n ≥ 750 才产周期事实" right={<V3Badge variant="default" label="D-E19 cycle" />}>
             {cycleEvidence.length > 0 ? (
@@ -902,7 +902,7 @@ export function TechnicalChartBoard() {
         </div>
       )}
 
-      {active === 'quality' && (
+      {overview && active === 'quality' && (
         <div className="space-y-3">
           <Panel
             title="数据口径与状态诚实"

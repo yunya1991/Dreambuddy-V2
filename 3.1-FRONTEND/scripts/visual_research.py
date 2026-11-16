@@ -58,6 +58,8 @@ DOMAIN_SERIES: Dict[str, Tuple[str, ...]] = {
 }
 MIN_N = 250
 RELATION_ORDER = ("R1", "R2", "R3", "R4", "R5", "R6")
+# 覆盖矩阵优先展示核心资产，其余按评估行数降序（不改变口径，只改展示顺序）
+CORE_TARGETS = ("BTC", "ETH", "SOL", "NVDA", "XAU")
 
 
 def _registry_path() -> Optional[str]:
@@ -272,7 +274,13 @@ def _coverage(
         bucket["rows"] += 1
         bucket["n"] = max(bucket["n"], _int(row.get("n")))
         bucket["gate_pass"] += 1 if _int(row.get("gate_pass")) == 1 else 0
-    ordered = sorted(grouped.values(), key=lambda item: (-item["rows"], item["target"]))[:limit]
+
+    def _order(item: Dict[str, Any]) -> Tuple[int, int, str]:
+        label = _short_target(item["target"])
+        rank = CORE_TARGETS.index(label) if label in CORE_TARGETS else len(CORE_TARGETS)
+        return (rank, -item["rows"], item["target"])
+
+    ordered = sorted(grouped.values(), key=_order)[:limit]
     out_rows = []
     for item in ordered:
         n = item["n"]
