@@ -623,6 +623,19 @@ def _pending_exclusion(con) -> str:
     return " AND id NOT IN (SELECT id FROM memory_ttl_pending)"
 
 
+def _deletion_gate_ok(max_age_days: int = 30) -> bool:
+    """SPEC §4′ P5：只有删除测试集评测通过（且报告未过期）才允许物理删除。"""
+    report = _MEMORY_DIR / "9-工具与接口" / "data" / "deletion_eval_report.json"
+    try:
+        data = json.loads(report.read_text(encoding="utf-8"))
+        if not data.get("passed"):
+            return False
+        age = datetime.now(timezone.utc).timestamp() - report.stat().st_mtime
+        return age <= max_age_days * 86400
+    except Exception:  # noqa: BLE001 - 报告缺失/损坏一律视为未通过
+        return False
+
+
 def _has_column(con, table: str, column: str) -> bool:
     """列存在性检查：旧库尚未迁移残差字段时，治理按最保守口径处理。"""
     try:
@@ -1061,7 +1074,11 @@ def run_db_ttl_cycle(
         if stage in ("1", "both"):
             report["stage1"] = _stage1(con, candidates, now, dry_run)
         if stage in ("2", "both"):
-            report["stage2"] = _stage2(con, tree, now, dry_run, db_path)
+            # SPEC §4′ P5 硬门禁：删除测试集未通过时，禁止阶段二物理删除
+            if not dry_run and not _deletion_gate_ok():
+                report["stage2"] = {"blocked": "deletion_test_not_passed"}
+            else:
+                report["stage2"] = _stage2(con, tree, now, dry_run, db_path)
         report["trace_total"] = (
             con.execute("SELECT count(*) FROM memory_traces").fetchone()[0]
             if _has_table(con, "memory_traces")

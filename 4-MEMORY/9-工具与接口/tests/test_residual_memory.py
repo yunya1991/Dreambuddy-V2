@@ -10,6 +10,7 @@
 6. TTL 候选：受保护子类不进入候选
 """
 
+import json
 import sqlite3
 import sys
 from datetime import datetime, timedelta, timezone
@@ -28,6 +29,7 @@ from residual_memory import (  # noqa: E402
     gate,
     governance_decision,
     reclassify_invalid_anchors,
+    verify_deletion_set,
 )
 
 # ============================================================
@@ -219,6 +221,40 @@ def test_reclassify_invalid_anchors(tmp_path):
         "SELECT subclass, form, source_anchor FROM memories WHERE id='bad'"
     ).fetchone()
     assert row[0] in {"D-tech", "D-policy"} and row[1] == "M2" and row[2] == ""
+
+
+def test_verify_deletion_set_passes_and_blocks_policy_delete(tmp_path):
+    old = (datetime.now(timezone.utc) - timedelta(days=60)).isoformat()
+    cases = [
+        {"id": "d1", "label": "delete", "subclass": "runtime", "created_at": old},
+        {"id": "d2", "label": "delete", "subclass": "runtime", "created_at": old},
+        {
+            "id": "k1",
+            "label": "keep",
+            "subclass": "D-policy",
+            "verify_state": "degraded",
+            "created_at": old,
+        },
+        {
+            "id": "k2",
+            "label": "keep",
+            "subclass": "code",
+            "source_anchor": "a.py:f",
+            "created_at": old,
+        },
+        {"id": "a1", "label": "ambiguous", "subclass": "D-tech", "created_at": old},
+    ]
+    path = tmp_path / "set.jsonl"
+    path.write_text("\n".join(json.dumps(c) for c in cases), encoding="utf-8")
+    report = verify_deletion_set(path)
+    assert report["passed"] is True
+    assert report["tp"] == 2 and report["fp"] == 0 and report["tn"] == 2
+
+    bad = [dict(c) for c in cases]
+    bad[2]["label"] = "delete"  # 把 D-policy 标成应删 → 必须失败
+    path2 = tmp_path / "bad.jsonl"
+    path2.write_text("\n".join(json.dumps(c) for c in bad), encoding="utf-8")
+    assert verify_deletion_set(path2)["passed"] is False
 
 
 def test_backfill_classifies_and_is_idempotent():

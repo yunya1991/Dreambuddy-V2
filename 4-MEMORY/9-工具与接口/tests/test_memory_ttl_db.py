@@ -19,6 +19,12 @@ NOW = datetime(2026, 11, 16, 12, 0, tzinfo=timezone.utc)
 SCOPE = ("rag-bridge", "l0.scheduler", "l1_router")
 
 
+@pytest.fixture(autouse=True)
+def _allow_stage2_by_default(monkeypatch):
+    """阶段二机制测试默认放行 P5 门禁；门禁本身由单独用例覆盖。"""
+    monkeypatch.setattr(ttl, "_deletion_gate_ok", lambda: True)
+
+
 def _iso(days_ago: float) -> str:
     return (NOW - timedelta(days=days_ago)).strftime("%Y-%m-%dT%H:%M:%S.000000+00:00")
 
@@ -173,6 +179,16 @@ def _tree() -> MemoryTree:
         },
     }
     return MemoryTree(nodes)
+
+
+def test_stage2_blocked_without_deletion_report(tmp_path, fake_vm, monkeypatch):
+    db = _mkdb(tmp_path, _rows())
+    ttl.run_db_ttl_cycle(db_path=db, dry_run=False, scope=SCOPE, now=NOW, stage="1")
+    later = NOW + timedelta(days=ttl.TTL_GRACE_DAYS + 1)
+    monkeypatch.setattr(ttl, "_deletion_gate_ok", lambda: False)
+    report = ttl.run_db_ttl_cycle(db_path=db, dry_run=False, scope=SCOPE, now=later, stage="2")
+    assert report["stage2"]["blocked"] == "deletion_test_not_passed"
+    assert _count(db, "SELECT count(*) FROM memories") == 7
 
 
 def test_stage2_after_grace_purges_without_trace_for_trajectory(tmp_path, fake_vm):

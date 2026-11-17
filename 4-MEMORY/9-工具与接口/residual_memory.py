@@ -581,6 +581,203 @@ def reclassify_invalid_anchors(
     return stats
 
 
+def verify_deletion_set(
+    path: str | Path, *, min_precision: float = 0.95, min_recall: float = 0.95
+) -> Dict[str, Any]:
+    """用标注好的删除测试集评测治理决策（SPEC §3.3 删除测试 / §4′ P5 门禁）。
+
+    只统计 label ∈ {delete, keep}；ambiguous 留给人工，不参与打分。
+    「预测删除」的唯一定义是 governance_decision == ttl_candidate（物理删除候选）。
+    """
+    p = Path(path)
+    cases = []
+    for line in p.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line:
+            cases.append(json.loads(line))
+
+    tp = fp = tn = fn = 0
+    false_deletes: list[str] = []
+    missed: list[str] = []
+    for c in cases:
+        label = c.get("label")
+        if label not in ("delete", "keep"):
+            continue
+        decision = governance_decision(c)
+        pred_delete = decision["action"] == "ttl_candidate"
+        if label == "delete":
+            if pred_delete:
+                tp += 1
+            else:
+                fn += 1
+                missed.append(c.get("id", ""))
+        elif pred_delete:
+            fp += 1
+            false_deletes.append(c.get("id", ""))
+        else:
+            tn += 1
+
+    precision = tp / (tp + fp) if tp + fp else 0.0
+    recall = tp / (tp + fn) if tp + fn else 0.0
+    passed = precision >= min_precision and recall >= min_recall and tp > 0
+    return {
+        "file": str(p),
+        "cases": len(cases),
+        "scored": tp + fp + tn + fn,
+        "tp": tp,
+        "fp": fp,
+        "tn": tn,
+        "fn": fn,
+        "precision": round(precision, 4),
+        "recall": round(recall, 4),
+        "false_deletes": false_deletes[:20],
+        "missed": missed[:20],
+        "thresholds": {"precision": min_precision, "recall": min_recall},
+        "passed": passed,
+    }
+
+
+def export_blind_sample(
+    con: sqlite3.Connection,
+    out_dir: str | Path,
+    *,
+    base: int = 400,
+    ratio: float = 0.2,
+    seed: int = 42,
+) -> Dict[str, Any]:
+    """导出 20% 人工盲评样本（SPEC §4′ P1 验收）。
+
+    产出两个文件：
+      blind_sheet_*.csv    人工填写用（不含预测子类）
+      blind_answers_*.jsonl 预测答案（评分时用，评审期间不要打开）
+    """
+    import csv
+    import math
+    import random
+
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    per_class = max(1, math.ceil(base / len(SUBCLASSES)))
+    picked: list[Dict[str, Any]] = []
+    for sc in SUBCLASSES:
+        rows = con.execute(
+            "SELECT id, content, source, memory_type, subclass, form, source_anchor, verify_state "
+            "FROM memories WHERE subclass=? AND length(content)>0 "
+            "ORDER BY random() LIMIT ?",
+            [sc, per_class],
+        ).fetchall()
+        for r in rows:
+            picked.append(
+                dict(r)
+                if hasattr(r, "keys")
+                else {
+                    "id": r[0],
+                    "content": r[1],
+                    "source": r[2],
+                    "memory_type": r[3],
+                    "subclass": r[4],
+                    "form": r[5],
+                    "source_anchor": r[6],
+                    "verify_state": r[7],
+                }
+            )
+    random.Random(seed).shuffle(picked)
+    picked = picked[:base]
+    blind_n = max(1, int(len(picked) * ratio))
+    blind_ids = {r["id"] for r in picked[:blind_n]}
+
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
+    sheet = out / f"blind_sheet_{stamp}.csv"
+    answers = out / f"blind_answers_{stamp}.jsonl"
+    with sheet.open("w", encoding="utf-8", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["id", "sample", "source", "memory_type", "content", "human_subclass"])
+        for r in picked:
+            w.writerow(
+                [
+                    r["id"],
+                    1 if r["id"] in blind_ids else 0,
+                    r["source"] or "",
+                    r["memory_type"] or "",
+                    (r["content"] or "")[:200].replace("\n", " "),
+                    "",
+                ]
+            )
+    with answers.open("w", encoding="utf-8") as f:
+        for r in picked:
+            f.write(
+                json.dumps(
+                    {
+                        "id": r["id"],
+                        "subclass": r["subclass"],
+                        "form": r["form"],
+                        "source_anchor": r["source_anchor"] or "",
+                        "verify_state": r["verify_state"],
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+    return {
+        "dir": str(out),
+        "sheet": str(sheet),
+        "answers": str(answers),
+        "sampled": len(picked),
+        "blind": blind_n,
+        "by_subclass": {sc: sum(1 for r in picked if r["subclass"] == sc) for sc in SUBCLASSES},
+    }
+
+
+def score_blind_sample(sheet_path: str | Path, answers_path: str | Path) -> Dict[str, Any]:
+    """按人工填写结果计算一致率与 Cohen's κ（只看 sample=1 且已填写的行）。"""
+    import csv
+
+    preds = {}
+    for line in Path(answers_path).read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            row = json.loads(line)
+            preds[row["id"]] = row["subclass"]
+
+    pairs = []
+    skipped = 0
+    with Path(sheet_path).open(encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            if str(row.get("sample", "0")) != "1":
+                continue
+            human = (row.get("human_subclass") or "").strip()
+            if human not in SUBCLASSES:
+                skipped += 1
+                continue
+            pairs.append((preds.get(row["id"]), human))
+
+    if not pairs:
+        return {
+            "scored": 0,
+            "agreement": 0.0,
+            "kappa": 0.0,
+            "passed": False,
+            "degraded_reason": "no_filled_rows",
+            "skipped": skipped,
+        }
+
+    correct = sum(1 for p, h in pairs if p == h)
+    po = correct / len(pairs)
+    pred_counts = dict.fromkeys(SUBCLASSES, 0)
+    human_counts = dict.fromkeys(SUBCLASSES, 0)
+    for p, h in pairs:
+        pred_counts[p] = pred_counts.get(p, 0) + 1
+        human_counts[h] += 1
+    pe = sum(pred_counts[sc] / len(pairs) * human_counts[sc] / len(pairs) for sc in SUBCLASSES)
+    kappa = (po - pe) / (1 - pe) if pe < 1 else 0.0
+    return {
+        "scored": len(pairs),
+        "skipped": skipped,
+        "agreement": round(po, 4),
+        "kappa": round(kappa, 4),
+        "passed": po >= 0.90 and kappa >= 0.60,
+    }
+
+
 # ============================================================
 # CLI
 # ============================================================
@@ -599,20 +796,53 @@ def main(argv: Optional[list] = None) -> int:
         "--reclassify", action="store_true", help="锚点不可解析的 code/config 降为内容型"
     )
     parser.add_argument("--repo-root", default="", help="锚点解析根目录（默认自动推断）")
+    parser.add_argument("--verify-deletion", default="", help="删除测试集 JSONL 路径")
+    parser.add_argument("--write-report", default="", help="删除评测报告落盘路径")
+    parser.add_argument("--export-blind", default="", help="导出盲评样本目录")
+    parser.add_argument("--score-blind", default="", help="盲评 sheet CSV 路径")
+    parser.add_argument("--answers", default="", help="盲评答案 JSONL 路径")
     parser.add_argument("--db", default=str(_default_db()), help="cognitive_memory.db 路径")
     parser.add_argument("--apply", action="store_true", help="实际写入（缺省 dry-run）")
     parser.add_argument("--limit", type=int, default=0, help="单轮最多处理条数（0=不限）")
     args = parser.parse_args(argv)
 
-    if not args.backfill and not args.reclassify:
+    if args.score_blind:
+        if not args.answers:
+            print("缺少 --answers")
+            return 1
+        report = score_blind_sample(args.score_blind, args.answers)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 0 if report.get("passed") else 2
+
+    if not any(
+        [args.backfill, args.reclassify, args.verify_deletion, args.export_blind, args.score_blind]
+    ):
         parser.print_help()
         return 1
 
     con = sqlite3.connect(f"file:{args.db}?mode=ro" if not args.apply else args.db, uri=True)
     con.row_factory = sqlite3.Row
+
+    if args.export_blind:
+        try:
+            report = export_blind_sample(con, args.export_blind)
+        finally:
+            con.close()
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 0
+
     try:
         if args.apply:
             ensure_residual_columns(con)
+        if args.verify_deletion:
+            report = verify_deletion_set(args.verify_deletion)
+            if args.write_report:
+                Path(args.write_report).parent.mkdir(parents=True, exist_ok=True)
+                Path(args.write_report).write_text(
+                    json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+                )
+            print(json.dumps(report, ensure_ascii=False, indent=2))
+            return 0 if report["passed"] else 2
         if args.reclassify:
             report = reclassify_invalid_anchors(
                 con,
