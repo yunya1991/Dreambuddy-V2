@@ -43,3 +43,64 @@ def test_select_optimal_path_returns_cv_result():
 
     src = inspect.getsource(EvolutionPipeline._select_optimal_path)
     assert "cross_validation" in src
+
+
+def test_cv_gate_instance_reused_across_cycles(monkeypatch, tmp_path):
+    """CrossValidationGate 实例应跨周期复用，divergence_count 才能累积到质变阈值."""
+    import dreambuddy_evolution.core.cross_validation_gate as cvg
+
+    created = {"n": 0}
+    real_gate = cvg.CrossValidationGate
+
+    class _CountingGate(real_gate):
+        def __init__(self, *args, **kwargs):
+            created["n"] += 1
+            super().__init__(*args, **kwargs)
+
+    monkeypatch.setattr(cvg, "CrossValidationGate", _CountingGate)
+    monkeypatch.setenv("ENABLE_DIMENSION_FORCE_V2", "0")
+
+    from dreambuddy_evolution.core.contradiction_identifier import (
+        PrimaryContradictionIdentifier,
+    )
+    from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
+
+    monkeypatch.setattr(
+        PrimaryContradictionIdentifier,
+        "identify",
+        lambda self, *a, **k: {
+            "dimension": "C8",
+            "direction": "long",
+            "strength": 0.30,
+            "timeframe": "medium",
+        },
+    )
+
+    pipe = EvolutionPipeline(gene_root=tmp_path)
+    paths = [
+        {
+            "path_id": "p1",
+            "source": "test",
+            "direction": "long",
+            "expected_return": 0.02,
+            "confidence": 0.60,
+            "resistance": 0.20,
+        }
+    ]
+    r_out = {
+        "R_up": 0.40,
+        "R_down": 0.60,
+        "R_smooth": 0.50,
+        "R_flow": 0.50,
+        "R_reflexivity": 0.50,
+        "quality_score": 0.90,
+    }
+
+    pipe._select_optimal_path(paths, r_out, {})
+    first = getattr(pipe, "_cross_validation_gate", None)
+    pipe._select_optimal_path(paths, r_out, {})
+    second = getattr(pipe, "_cross_validation_gate", None)
+
+    assert first is not None, "开关开启且主矛盾存在时应建立门禁实例"
+    assert second is first, "第二次寻优必须复用同一门禁实例（状态累积）"
+    assert created["n"] == 1, f"门禁只应构造一次，实际 {created['n']} 次"

@@ -26,10 +26,18 @@
 
 | 链路 | 作用 | 实现 | 输出 |
 |---|---|---|---|
-| 矛盾论链路 | 识别当前主要矛盾 | `core/primary_contradiction_detector.py` | `primary_contradiction{dimension,direction,strength,timeframe}` |
+| 矛盾论链路 | 识别当前主要矛盾 | `core/contradiction_identifier.py`（生产主矛盾）；`engines/primary_contradiction_detector.py`（事件 4 类矛盾，默认关） | `primary_contradiction{dimension,direction,strength,timeframe}` |
 | 矛盾 Transformer 交叉验证 | 过去维度 × 现在维度互相校验 | `core/cross_validation_gate.py` + Granger/Attention 适配器 | `cross_validation{confidence_mult,shift_signal,divergence_count,degraded_mode,quality_change,...}` |
 
-约束：交叉验证只调制置信度与头部权重，不替代 `d_star`；门禁异常按 FAIL-OPEN 处理并记录降级状态。
+约束：
+
+1. 交叉验证只调制路径评分、开仓阈值与 NeuralSDE head 权重，不替代 `d_star`，也不进入 `position_mult` 乘数链；门禁异常按 FAIL-OPEN 处理并记录降级状态。
+2. 门禁实例挂在 `EvolutionPipeline` 上跨周期复用，`divergence_count / SPRT / 冷却期` 才能累积并触达 `persistence_threshold`（质变判定）；禁止按周期重建实例，否则质变永不触发。
+3. 矛盾链路对 L1 阻力场的调制使用上一轮 `primary_contradiction`（1 根 K 线延迟）；当轮仅作用于路径评分、HJB、成对支配与弹性约束。
+4. `strength` 语义是"多空对立度"：单边共识时趋于 0，低于调制门槛（0.01）即不产生任何调制，属预期行为而非链路故障。
+5. head 权重的落点是 `_last_head_multipliers` → `DeepReasoningEngine.reason(head_multipliers=)` → `NeuralSDE.forecast`，在**下一轮**路径生成时生效（跨轮），而不是当轮。
+6. 输入口径统一为 `market_data["close"]`；外部驱动传入的 `closes` / `kline_close` 在 `run_symbol` 与 `_select_optimal_path` 入口一次性归一，否则 L1 阻力维度回退 0.5 且 G_dim 恒为 None。
+7. G 侧供给状态写入 `cross_validation.g_dim_status` ∈ `{ok, short_history, no_significant_granger, no_price_series, switch_off, error}`，并附 `g_min_p`；`no_significant_granger` 属统计降级，不是链路故障。实测：1H 序列几乎不显著，1D 且 ≥200 根才稳定给出 G_dim。
 
 ### 1.3 执行权内收
 

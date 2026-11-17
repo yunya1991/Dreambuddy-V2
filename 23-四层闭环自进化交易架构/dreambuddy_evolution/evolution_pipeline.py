@@ -37,6 +37,21 @@ _logging_ctx = PipelineLoggingContext()
 _logging_ctx.configure()
 
 
+def _normalize_close_key(market_data: dict | None) -> None:
+    """统一收盘价键名：外部驱动可能传 closes/kline_close，内部统一按 close 读取.
+
+    口径缺失会导致 L1 阻力维度全部回退 0.5、G_dim 恒为 None（Granger 无法取到序列），
+    因此入口处一次性归一，不在各消费点分别兼容别名。
+    """
+    if not isinstance(market_data, dict) or market_data.get("close"):
+        return
+    for _alias in ("closes", "kline_close"):
+        _series = market_data.get(_alias)
+        if _series:
+            market_data["close"] = _series
+            return
+
+
 class EvolutionPipeline:
     """
     四层闭环 pipeline.
@@ -1068,6 +1083,9 @@ class EvolutionPipeline:
                 "elastic_result": None,
             }
 
+        # 入口口径归一：直接调用方（如 PathLayer 之外的工具）可能只给 closes
+        _normalize_close_key(market_data)
+
         # 调试日志：打印所有发现的路径
         try:
             _sources = [f"{p.get('source','?')}:{p.get('direction','?')}" for p in paths]
@@ -1330,6 +1348,10 @@ class EvolutionPipeline:
                 # G_dim (过去主矛盾): Granger 因果检验, 从价格序列派生 3 维度因子
                 _g_dim = None
                 _g_conf = 0.0
+                # 观测：G 侧供给状态（no_price_series / short_history /
+                # no_significant_granger / ok），用于区分"降级"与"链路故障"
+                _g_status = "switch_off"
+                _g_min_p = None
                 try:
                     if _gs_cv("enable_granger_pipeline", False):
                         from dreambuddy_evolution.core.granger_pipeline_adapter import (
@@ -1344,6 +1366,7 @@ class EvolutionPipeline:
                             and isinstance(_closes, (list, np.ndarray))
                             and len(_closes) >= 30
                         ):
+                            _g_status = "short_history" if len(_closes) < 120 else "ok"
                             import numpy as _np_cv
 
                             _price = _np_cv.asarray(_closes, dtype=float)
@@ -1373,17 +1396,35 @@ class EvolutionPipeline:
                             _gr = _gpa.evaluate(_factors_by_dim, _log_ret)
                             _g_dim = _gr.get("G_dim")
                             _g_conf = _gr.get("G_confidence", 0.0)
+                            _pvals = _gr.get("p_values") or {}
+                            if _pvals:
+                                _g_min_p = round(float(min(_pvals.values())), 6)
+                            if _g_dim is None:
+                                _g_status = "no_significant_granger"
+                            else:
+                                _g_status = "ok"
+                        else:
+                            _g_status = "no_price_series"
                 except Exception as e:
+                    _g_status = "error"
                     logger.debug("[FO] Granger 降级 fail: %s", e)  # FAIL-OPEN: 失败则降级
 
                 # structural_break: 复用 Phase 2 结果
                 _sb = getattr(self, "_last_structural_break", None)
 
-                _gate = CrossValidationGate(
-                    persistence_threshold=getattr(self, "_cv_persistence_threshold", 5),
-                    structural_break_threshold=getattr(self, "_cv_structural_break_threshold", 1.0),
-                    enable_head_multipliers_mean_reversion=True,
-                )
+                # 状态持久化：门禁实例缓存到 self。此前每周期新建实例，
+                # divergence_count / SPRT / 冷却期全部归零，导致 persistence_threshold
+                # 永不达成、质变判定与 head_multipliers 累积失效。
+                _gate = getattr(self, "_cross_validation_gate", None)
+                if _gate is None:
+                    _gate = CrossValidationGate(
+                        persistence_threshold=getattr(self, "_cv_persistence_threshold", 5),
+                        structural_break_threshold=getattr(
+                            self, "_cv_structural_break_threshold", 1.0
+                        ),
+                        enable_head_multipliers_mean_reversion=True,
+                    )
+                    self._cross_validation_gate = _gate
                 cv_result = _gate.compare(
                     G_dim=_g_dim,
                     G_conf=_g_conf,
@@ -1391,6 +1432,9 @@ class EvolutionPipeline:
                     A_strength=_a_strength,
                     structural_break=_sb,
                 )
+                # 供给诊断：G 侧状态（区分正常降级与数据/统计不足）
+                cv_result["g_dim_status"] = _g_status
+                cv_result["g_min_p"] = _g_min_p
 
                 # B-03: A_dim 双链路 shadow 诊断（不改变 gate 结果）
                 if _attention_shadow is not None:
@@ -1441,12 +1485,14 @@ class EvolutionPipeline:
                     self._cv_heartbeat_count = getattr(self, "_cv_heartbeat_count", 0) + 1
                     if self._cv_heartbeat_count % 50 == 0:
                         logger.info(
-                            "[CrossValidation] heartbeat #%d G_dim=%s A_dim=%s conf_mult=%.2f shift=%s",
+                            "[CrossValidation] heartbeat #%d G_dim=%s A_dim=%s conf_mult=%.2f shift=%s div=%d g=%s",
                             self._cv_heartbeat_count,
                             _g_dim,
                             _a_dim,
                             float(cv_result.get("confidence_mult", 1.0)),
                             bool(cv_result.get("shift_signal", False)),
+                            int(cv_result.get("divergence_count", 0) or 0),
+                            _g_status,
                         )
                 except Exception as _hb_e:
                     logger.debug("[FO-Phase2.5][CV heartbeat] fail: %s", _hb_e)
@@ -1876,6 +1922,9 @@ class EvolutionPipeline:
         from dreambuddy_evolution.core import strategy_gene as sgs
         from dreambuddy_evolution.core.level0_path_cost import compute_d_star
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
+
+        # 入口口径归一：closes/kline_close → close（否则 L1 与 G_dim 全链路拿不到序列）
+        _normalize_close_key(market_data)
 
         # ============ L1: 状态空间层 ============
         if rv is None:
