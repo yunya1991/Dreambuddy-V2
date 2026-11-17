@@ -160,8 +160,16 @@ export async function runCapability(
   }
 
   if (cap.entry.kind === "l1_query") {
-    const question =
-      String(params.question ?? params.query ?? "").trim() || cap.when;
+    // 模型常把"分析类原问题"直接塞进 question，会被 L1 分析闸门交回 L2；
+    // 取数能力优先用 symbol 组装确定性取数问法，保证拿到事实数据。
+    const symbol = String(params.symbol ?? "").trim();
+    let question = String(params.question ?? params.query ?? "").trim();
+    if (id === "market.price" && symbol) {
+      question = `查询${symbol}价格`;
+    } else if (symbol && question && !question.includes(symbol)) {
+      question = `${symbol} ${question}`;
+    }
+    if (!question) question = cap.when;
     const res = await runL1Query(question, cap.latency_ms);
     return {
       ok: res.ok,
