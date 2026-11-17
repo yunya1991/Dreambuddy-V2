@@ -958,7 +958,7 @@ SLO 建议：信号 schema 一致率 ≥99%；信号→网关 p95 ≤2s；成交
 | 22 校验 v1.1 契约 | 22 仅做 `decision_id` + `expires_at` 前置（L40、L751-756），无 JSON Schema | ❌ 未落地 |
 | 42 总线校验 v1.1 | `42/signal_bus.py` L28-39 要求 `horizon/risk_exposure_hint`；23 不经过 42，直连 22 | 🟡 通路不同，契约不一致 |
 | 成交必须回带 decision_id | 22 dataclass 保留 `decision_id`（L55-57）；但 23 审计只写 `stage=submit`（L206-218） | 🟡 部分 |
-| 云端 23 实盘运行 | 2026-11-17 12:30 已切换：unit 去掉 `--dry-run`、`EVOLUTION_ENTRY23_ENABLED=on`；凭据库 `simulated=false/dry_run=false`；切换前权益 2118 USDT、可用 919 USDT、持仓 0 | ✅ **live（前 2 周仅告警）** |
+| 云端 23 实盘运行 | 2026-11-17 12:18 已切换：unit 去掉 `--dry-run`、`EVOLUTION_ENTRY23_ENABLED=on`；凭据库 `simulated=false/dry_run=false`；切换前权益 2118 USDT、可用 919 USDT、持仓 0 | ✅ **live（前 2 周仅告警）** |
 | 23 运行时活跃 | 云端 `runtime/execution_decisions.jsonl` 252KB，mtime 2026-11-17 12:06 | ✅ 活跃 |
 | 50 决策符合 v1.1 | `50/runtime/decisions.jsonl` 最新 `symbol=BTC-FLAP-PAYLOAD`，缺 `risk_exposure_hint` | ❌ 测试数据 + 契约漂移 |
 

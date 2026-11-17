@@ -162,7 +162,7 @@ signals:
   expected_mode: live
   enforcement: alert_only
   alert_only_until: "2026-12-01"
-  live_since: "2026-11-17T12:30:00+08:00"
+  live_since: "2026-11-17T12:18:37+08:00"
   max_signal_to_gateway_ms: 2000
   max_reject_rate: 0.05
   max_duplicate_rate: 0.01
