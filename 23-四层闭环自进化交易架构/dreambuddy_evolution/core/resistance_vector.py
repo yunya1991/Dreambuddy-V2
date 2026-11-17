@@ -544,7 +544,9 @@ class ResistanceVector:
                 quality = max(0.0, min(1.0, quality * 0.40))  # clamp 0.4 倍率；max 0.34 当 5 flag
                 fallback_flags["FO_2_MULTIDIM_DROP"] = True
                 self._fallback_6stack(
-                    f"FO-2 triggered n_fb={n_fb}≥3 → quality×0.4={quality:.3f}", 5
+                    f"FO-2 triggered n_fb={n_fb}≥3 flags={sorted(fallback_flags)} "
+                    f"→ quality×0.4={quality:.3f}",
+                    5,
                 )
                 # Lark WARN：同 symbol 1h 窗口 ≥2 次 → 发 1 次（简化实现：直接 rate_limit 内部 'warn' 暂无限流，按 MVP Spec 仅记录 ERROR 栈即可）
 

@@ -235,6 +235,7 @@ class EvolutionExitLoop:
             elif _status == "executed":
                 report["executed"].append(_res)
             else:
+                _res.setdefault("symbol", pos.get("inst_id") or pos.get("coin") or "?")
                 report["failed"].append(_res)
 
         return report

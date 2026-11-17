@@ -31,7 +31,15 @@ from dreambuddy_evolution.execution.exit_loop import EvolutionExitLoop  # noqa: 
 
 logger = logging.getLogger("exit23")
 
-DEFAULT_TAGS = ("evolution", "23-evolution", "23", "bcrm", "strategy", "event_arbitrage")
+DEFAULT_TAGS = (
+    "evolution",
+    "23-evolution",
+    "23",
+    "bcrm",
+    "strategy",
+    "event_arbitrage",
+    "22-reconciled",
+)
 _STOP = False
 
 
@@ -290,6 +298,13 @@ def run_once(loop: EvolutionExitLoop, gateway: Any, okx: Any, args) -> Dict[str,
         len(report.get("executed") or []),
         len(report.get("failed") or []),
     )
+    for _f in report.get("failed") or []:
+        logger.warning(
+            "巡检失败 %s: %s%s",
+            _f.get("symbol") or "?",
+            _f.get("reason"),
+            f"({_f.get('reason_code')})" if _f.get("reason_code") else "",
+        )
     return report
 
 
