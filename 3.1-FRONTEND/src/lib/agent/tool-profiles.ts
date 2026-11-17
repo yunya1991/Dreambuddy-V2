@@ -47,7 +47,7 @@ export const TOOL_PROFILES: Record<ToolProfileId, ToolProfileSpec> = {
     allowedTools: [...COGNITION_READ],
     canProposeOrders: false,
     boundary:
-      '当前 profile=platform：仅通用金融只读与认知检索；无交易、策略、风控写能力，不得声称可以下单。',
+      '当前 profile=platform：具备只读分析能力（L1 取数、DSH 多维分析与 C-Drive 矛盾裁决、6-TRADING 回测）；无下单、写库、改配置权限。',
   },
   trading_read: {
     id: 'trading_read',
@@ -55,7 +55,7 @@ export const TOOL_PROFILES: Record<ToolProfileId, ToolProfileSpec> = {
     allowedTools: [...COGNITION_READ, ...TRADING_READ],
     canProposeOrders: false,
     boundary:
-      '当前 profile=trading_read：可读行情/信号/持仓/参数/决策解释；禁止任何写入或下单。',
+      '当前 profile=trading_read：可读行情/信号/持仓/参数/决策解释，并可使用只读分析工具；禁止任何写入或下单。',
   },
   trading_proposal: {
     id: 'trading_proposal',

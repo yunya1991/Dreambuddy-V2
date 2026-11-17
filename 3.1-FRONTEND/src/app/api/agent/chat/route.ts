@@ -28,6 +28,10 @@ import type { Tool, UIMessage } from "ai";
 import { resolveAgentModel } from "@/lib/agent/providers";
 import { getAgentMcpTools } from "@/lib/agent/mcp-multi-shell";
 import {
+  CAPABILITY_PROMPT,
+  createCapabilityTools,
+} from "@/lib/agent/capability-tools";
+import {
   filterToolsByProfile,
   profileSystemPrompt,
   resolveToolProfile,
@@ -62,8 +66,9 @@ const L1_GATE_FAIL_HINT = "L1 无法可靠回答该问题，请开启 AI Agent �
 
 const SYSTEM_PROMPT = [
   "你是 DreamBuddy 内置协议层的对话助手。",
-  "你只可使用已注册的 MCP 工具回答；工具结果须如实引用，不得编造。",
-  "你没有交易、策略、风控或记忆写能力；认知查询仅通过 cognition 工具完成。",
+  "你只可使用已注册的工具回答；工具结果须如实引用，不得编造数字或行情。",
+  "你具备只读分析能力（取数、多维度分析、矛盾裁决、历史回测），但没有下单、写库、改配置权限。",
+  CAPABILITY_PROMPT,
 ].join("\n");
 
 function degraded(reason: string) {
@@ -385,17 +390,17 @@ export async function POST(request: NextRequest) {
       entitled: isEntitled(),
     });
 
-    // MCP tools 获取失败不致命：退化为无工具对话
-    let tools: Record<string, Tool> | undefined;
+    // 系统能力工具（只读分析）始终可用；MCP tools 失败不致命，退化为仅能力工具
+    const capabilityTools = createCapabilityTools();
+    let tools: Record<string, Tool> = { ...capabilityTools };
     try {
       const allTools = await getAgentMcpTools();
-      tools = filterToolsByProfile(allTools, profile);
+      tools = { ...capabilityTools, ...filterToolsByProfile(allTools, profile) };
     } catch (e) {
       console.warn(
         "[AgentChat] MCP tools 降级:",
         e instanceof Error ? e.message : e,
       );
-      tools = undefined;
     }
 
     // SPEC-52 F4：预扣 → 结算（账本只追加；未产生 usage 时预扣自动释放）
