@@ -58,6 +58,7 @@
 | 治理系统 | [2-GOVERNANCE/GOVERNANCE_SYSTEM.md](../2-GOVERNANCE/GOVERNANCE_SYSTEM.md) | 六部门 + 双中台 + 四层合规体系设计 | 🟡 部分 |
 | 合规规则 | [2-GOVERNANCE/COMPLIANCE_RULES.md](../2-GOVERNANCE/COMPLIANCE_RULES.md) | 合规检查清单 | 🟡 部分 |
 | 审计日志 | [2-GOVERNANCE/AUDIT_LOGS.md](../2-GOVERNANCE/AUDIT_LOGS.md) | 审计记录 | ⚠️ |
+| ★ **环境变量与密码登记表** | [0-系统文档管理/ENV_REGISTRY.md](./ENV_REGISTRY.md) **v1.2** | **全系统密钥唯一查询入口**：云端 16 处 env/凭据位置 + 变量总表 + 现存问题；只登记路径不存明文 | ✅ 实测 |
 | 知识库入口 | [2-KNOWLEDGE/INDEX.md](../2-KNOWLEDGE/INDEX.md) | 交易/技术/理论领域知识库 | ✅ |
 | 记忆系统架构 | [4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md](../4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md) v5.0 · [4-MEMORY/6-应用记忆索引/MEMORY_INTERFACE_SPEC.md](../4-MEMORY/6-应用记忆索引/MEMORY_INTERFACE_SPEC.md) | 双层架构（总记忆+应用记忆）+ 7+2 接口契约 + 贝叶斯进化 v5 | 🟡 参考 SSoT v4.2 第7章（认知 C1-C4） |
 | 业务管理 | [5-BUSINESS/BUSINESS_SYSTEM.md](../5-BUSINESS/BUSINESS_SYSTEM.md) | 业务运营系统设计 | ⚠️ |

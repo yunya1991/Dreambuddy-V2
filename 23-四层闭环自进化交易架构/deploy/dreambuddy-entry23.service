@@ -10,8 +10,6 @@ WorkingDirectory=/home/luke/dreambuddy/23-四层闭环自进化交易架构
 Environment="HOME=/home/luke"
 Environment=PYTHONUNBUFFERED=1
 Environment=EVOLUTION_ENTRY23_ENABLED=on
-EnvironmentFile=-/home/luke/dreambuddy/.env
-EnvironmentFile=-/home/luke/dreambuddy/23-四层闭环自进化交易架构/.env
 ExecStart=/home/luke/venv-trading/bin/python -m dreambuddy_evolution.scripts.entry_runner --interval 300 --symbols BTC,ETH,SOL
 Restart=always
 RestartSec=10
