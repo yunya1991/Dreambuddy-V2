@@ -788,7 +788,8 @@ def review_verify_states(
 ) -> dict[str, Any]:
     """事实源复核 → 更新 verify_state（SPEC §3.7′ C 接入点）。
 
-    仅复核 code / config / runtime / D-tech；D-policy 与未分型一律跳过。
+    只复核带锚点的 code / config；D-tech 由 supersedes 驱动，
+    runtime 的时效由治理决策按 created_at 计算，D-policy 与未分型一律跳过。
     degraded 只移出向量索引，不物理删除。
     """
     stats: dict[str, Any] = {
@@ -808,7 +809,8 @@ def review_verify_states(
     sql = (
         "SELECT id, content, source, tags, created_at, subclass, source_anchor, "
         "verify_state, access_count, last_used_at FROM memories "
-        "WHERE subclass IN ('code','config','runtime','D-tech')"
+        "WHERE subclass IN ('code','config') AND source_anchor IS NOT NULL "
+        "AND source_anchor <> ''"
     )
     params: list = []
     if limit and limit > 0:
