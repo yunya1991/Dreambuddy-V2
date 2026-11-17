@@ -68,8 +68,9 @@ class PostgresMarketMacroRepository(MarketMacroRepository):
             cur = conn.cursor()
             cur.execute(
                 "SELECT sub_category, timestamp, metrics FROM records "
-                "WHERE sub_category = %s AND timestamp >= %s AND timestamp < %s "
-                "ORDER BY timestamp ASC",
+                "WHERE sub_category = %s "
+                "AND timestamp::timestamptz >= %s AND timestamp::timestamptz < %s "
+                "ORDER BY timestamp::timestamptz ASC",
                 (sub_category, start_ts, end_ts),
             )
             return cur.fetchall()
@@ -257,8 +258,9 @@ class PostgresMarketMacroRepository(MarketMacroRepository):
             cur = conn.cursor()
             cur.execute(
                 "SELECT source, timestamp, metrics FROM records "
-                "WHERE sub_category = %s AND timestamp >= %s AND timestamp < %s "
-                "ORDER BY timestamp ASC",
+                "WHERE sub_category = %s "
+                "AND timestamp::timestamptz >= %s AND timestamp::timestamptz < %s "
+                "ORDER BY timestamp::timestamptz ASC",
                 (sub_category, start_ts, end_ts),
             )
             for source, ts, metrics in cur.fetchall():
