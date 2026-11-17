@@ -15,13 +15,11 @@ services:
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=30d
       - --web.enable-lifecycle
+      - --web.listen-address=127.0.0.1:9090
     volumes:
       - ./prometheus:/etc/prometheus:ro
       - prometheus-data:/prometheus
-    ports:
-      - "127.0.0.1:9090:9090"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    network_mode: host
 
   alertmanager:
     image: prom/alertmanager:v0.27.0
@@ -29,13 +27,12 @@ services:
     command:
       - --config.file=/etc/alertmanager/alertmanager.yml
       - --storage.path=/alertmanager
+      - --web.listen-address=127.0.0.1:9093
+      - --cluster.listen-address=
     volumes:
       - ./alertmanager:/etc/alertmanager:ro
       - alertmanager-data:/alertmanager
-    ports:
-      - "127.0.0.1:9093:9093"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    network_mode: host
 
   grafana:
     image: grafana/grafana:11.2.0
@@ -71,6 +68,8 @@ services:
       - ./blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
     ports:
       - "127.0.0.1:9115:9115"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   pushgateway:
     image: prom/pushgateway:v1.9.0

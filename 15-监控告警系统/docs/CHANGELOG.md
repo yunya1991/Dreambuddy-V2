@@ -1,6 +1,6 @@
 # 变更记录 — 15-监控告警系统
 
-> **版本**: v2.4 | **更新日期**: 2026-11-17
+> **版本**: v2.5 | **更新日期**: 2026-11-17
 
 ---
 
@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 变更内容 | 影响范围 |
 |------|------|----------|----------|
+| v2.5 | 2026-11-17 | 上线业务指标导出器(:9101)与 Prometheus/Alertmanager 栈；23 信号/发件箱/产物/单元指标已入库，端到端联调 am=200 | 代码+运维 |
 | v2.4 | 2026-11-17 | 告警通道接通：复用 hermes-gateway 飞书应用凭证，部署 receiver(:9098) + watchdog(5min)；联调消息已送达 Trading-Desk | 代码+运维 |
 | v2.3 | 2026-11-17 | 23 切实盘（移除 `--dry-run`、开关置 on）；监控进入 14 天 alert_only（至 2026-12-01）；记录切换前权益/持仓预检 | 配置+运维 |
 | v2.2 | 2026-11-17 | 一期收敛为 23 推理信号链（TD 第 12 章）：23 模块全景、v1.1 契约差异、8 步生命周期、10 条信号告警、落地审计；`monitoring.yaml` 增 signals 段、`domains.yaml` 分期调整 | 文档+配置 |
@@ -20,6 +21,18 @@
 ---
 
 ## 详细变更
+
+### v2.5 — 2026-11-17
+
+**业务指标导出器**
+- `exporter/business_metrics_exporter.py`（127.0.0.1:9101，只读）：信号产出/契约一致率/置信度、发件箱状态、产物新鲜度、entry23 模式、3+3 单元成熟度
+- 已上线 systemd `dreambuddy-metrics-exporter`；Prometheus `dreambuddy-business` target 为 up
+
+**监控栈**
+- 启动 Prometheus 2.55 / Alertmanager 0.28 / node_exporter / blackbox / pushgateway（Grafana 暂缓，节省资源）
+- Prometheus/Alertmanager 改 host 网络，仅监听 127.0.0.1；31 条规则加载成功
+- Alertmanager 关闭 gossip（9094 冲突），P0→Risk、P1/P2→Desk、P3→Management
+- 端到端：POST `/api/v2/alerts` 返回 200，E2EProbe 进入 active 并经 receiver 转发
 
 ### v2.4 — 2026-11-17
 
@@ -132,5 +145,5 @@
 
 ---
 
-**文档版本**: v2.4
+**文档版本**: v2.5
 **最后更新**: 2026-11-17

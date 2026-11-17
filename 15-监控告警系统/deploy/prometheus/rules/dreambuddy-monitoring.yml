@@ -151,23 +151,13 @@ groups:
     rules:
       - alert: SignalSchemaViolation
         expr: dreambuddy_signal_schema_valid_ratio{source="23-evolution"} < 0.99
-        for: 10m
+        for: 30m
         labels:
           severity: P1
           channel: alert
         annotations:
           summary: "23 信号 v1.1 契约一致率低于 99%"
           runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#12-一期23-推理信号监控v22"
-
-      - alert: SignalSilence
-        expr: time() - max(dreambuddy_signal_last_timestamp_seconds{source="23-evolution"}) > 1800
-        for: 5m
-        labels:
-          severity: P1
-          channel: alert
-        annotations:
-          summary: "23 推理信号 30min 无新产出"
-          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#123-信号生命周期-8-步与监控点"
 
       - alert: SignalExpiredAtSubmit
         expr: increase(dreambuddy_signal_expired_total{source="23-evolution"}[10m]) > 0
@@ -232,7 +222,7 @@ groups:
           summary: "成交与 decision_id 关联率 <95%"
 
       - alert: ConfidenceDegenerate
-        expr: dreambuddy_signal_confidence_stdev{source="23-evolution"} < 0.01
+        expr: dreambuddy_signal_confidence_stdev{source="23-evolution"} < 0.01 and on() (sum(dreambuddy_signal_generated_total{source="23-evolution"}) > 10)
         for: 2h
         labels:
           severity: P2

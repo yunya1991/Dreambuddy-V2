@@ -10,12 +10,12 @@ route:
     - matchers: ['severity="P0"']
       receiver: feishu-risk
       group_wait: 10s
-      repeat_interval: 10m
+      repeat_interval: 30m
     - matchers: ['severity="P1"']
       receiver: feishu-desk
-      repeat_interval: 30m
+      repeat_interval: 2h
     - matchers: ['severity="P2"']
-      receiver: feishu-desk
+      receiver: feishu-desk-p2
       repeat_interval: 4h
     - matchers: ['severity="P3"']
       receiver: feishu-management
@@ -30,13 +30,17 @@ inhibit_rules:
 receivers:
   - name: feishu-risk
     webhook_configs:
-      - url: "http://host.docker.internal:9098/alert?level=P0"
+      - url: "http://127.0.0.1:9098/alert?level=P0"
         send_resolved: true
   - name: feishu-desk
     webhook_configs:
-      - url: "http://host.docker.internal:9098/alert?level=P1"
+      - url: "http://127.0.0.1:9098/alert?level=P1"
+        send_resolved: true
+  - name: feishu-desk-p2
+    webhook_configs:
+      - url: "http://127.0.0.1:9098/alert?level=P2"
         send_resolved: true
   - name: feishu-management
     webhook_configs:
-      - url: "http://host.docker.internal:9098/alert?level=P3"
+      - url: "http://127.0.0.1:9098/alert?level=P3"
         send_resolved: true
