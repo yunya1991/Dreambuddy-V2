@@ -1,7 +1,9 @@
 # 技术设计 — 15-监控告警系统
 
-> **版本**: v1.0 | **更新日期**: 2026-08-02
+> **版本**: v2.2 | **更新日期**: 2026-11-17
 > **定位**: 子系统技术架构设计，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.2
+> **v2.2 说明**: 一期范围收敛为「23 推理信号链」；新增第 12 章：23 模块全景、信号契约差异、8 步生命周期、信号 SLO 与落地审计。40 神经网络顺延二期。
+> **v2.0 说明**: 新增第 10 章「云端全链路监控目标架构」。第 1–9 章保留为本地 v1.0 适配器实现（仅覆盖 5 个老系统），**不再作为云端监控的权威口径**；云端架构以第 10 章为准。调研证据与选型过程见 [RESEARCH-全链路监控体系调研-v0.2.md](./RESEARCH-全链路监控体系调研-v0.2.md)。
 
 ---
 
@@ -679,13 +681,317 @@ adapter_map = {
 
 ---
 
+## 10. 云端全链路监控目标架构（v2.0，权威口径）
+
+> 本章为 2026-11-17 调研后的目标架构与决策记录。**云端是系统核心，架构以云端实测为准**；第 1–9 章描述的是本地 v1.0 适配器实现，仅覆盖 yijing/v15/screen/agent_a/agent_b 五个老系统。
+> 证据与选型细节：[RESEARCH-全链路监控体系调研-v0.2.md](./RESEARCH-全链路监控体系调研-v0.2.md)
+
+### 10.1 定位与边界
+
+| 项 | v1.0（第 1–9 章，现状） | v2.0（本章，目标） |
+|---|---|---|
+| 运行位置 | 本地 macOS | 云端 `43.160.201.117`（Linux/systemd + Docker） |
+| 监控对象 | 5 个老系统的状态文件 | 主机/容器/端口 + 40/42/43/50/23/48 全链路产物与决策 |
+| 判定方式 | 心跳/空闲时长轮询 | Prometheus 规则 + 业务新鲜度 + SLO |
+| 告警通道 | 15 内置飞书函数 | Alertmanager → feishu-receiver（复用本模块凭证） |
+| 自动动作 | 无 | 仅"冻结/收紧"，无下单权 |
+
+**职责边界**
+- 本模块负责：采集、判定、路由、留痕、演练。
+- 本模块不负责：交易决策、下单、撤单策略、风控阈值制定；自动冻结只写标记文件，由 13/22/50 既有语义消费。
+
+### 10.2 云端实测基线（2026-11-17）
+
+| 项 | 事实 |
+|---|---|
+| 主机 | `VM-0-5-ubuntu`，4 vCPU / 15.6GB（可用 10.5GB）/ 178GB（61%），load ≈ 7 |
+| 运行时 | nginx；前端 3001/3002；Docker：PG16 / Redis7 / MinIO；约 40 个 systemd 服务 |
+| 40 日更 | cron `02:00`；x0 `00:10`；x1 `00:25` |
+| 42 总线 | cron `*/15` |
+| 43 承接 | systemd timer 每 30min，`CYCLE_STATE_BRIDGE=1` |
+| 50 影子 | cron `7,22,37,52` |
+| 50 live + 22 | systemd timer 每 5min；最近一轮 `executed=0, skipped=20` |
+| 健康检查 | `dreambuddy-healthcheck.timer` 每 5min，11 项检查，连续 3 次失败回滚 |
+| 关键缺口 | 健康检查无飞书通知；Redis 恒 `SKIP`；不检查业务产物；无指标栈；15 未在云端部署 |
+
+### 10.3 目标架构
+
+```text
+已有 cron / systemd（不改调度）
+   ├─ push ──────────────> Pushgateway ─┐
+node_exporter（主机）───────────────────┤
+blackbox_exporter（HTTP/TCP 探针）──────┼─> Prometheus(9090, 15s)
+business-metrics-exporter（只读 JSON）──┘        │
+                                                 ├─ rules ─> Alertmanager(9093)
+                                                 │              │
+                                                 │              └─> feishu-receiver ─> 飞书群
+                                                 └─> Grafana(3000，只读，不做告警)
+```
+
+**组件职责**
+
+| 组件 | 职责 | 不做什么 |
+|---|---|---|
+| Prometheus | 采集、时序存储、告警规则判定（唯一判定源） | 不负责通知路由 |
+| Alertmanager | 分组、去重、抑制、静默、`repeat_interval`、升级 | 不做业务判定 |
+| Grafana | 排障面板、历史趋势 | 不配置告警规则（避免双引擎） |
+| node_exporter | CPU/内存/磁盘/负载/文件系统 | 不读业务文件 |
+| blackbox_exporter | HTTP/TCP 黑盒探针（3001/3002/8093-8099/8771/8765/PG/Redis） | 不做业务语义校验 |
+| Pushgateway | 接收 oneshot/cron 任务的成功、耗时、记录数 | 不替代长期指标 |
+| business-metrics-exporter | 只读扫描 40/42/43/50/23/48 产物，暴露 `/metrics` | 不写交易文件、不触发交易 |
+| feishu-receiver | 解析 Alertmanager webhook，复用 `feishu_alert.py` 发卡片 | 不自行判定级别 |
+
+**部署约束**：Docker Compose，镜像固定版本；除 Grafana（nginx 子路径 + 认证）外全部绑定 `127.0.0.1`；配置与规则纳入 git。
+
+### 10.4 探针分层
+
+| 层 | 探针 | 典型指标 |
+|---|---|---|
+| L0 主机/容器 | node_exporter、cAdvisor（可选） | CPU、内存、磁盘、容器重启次数 |
+| L1 端口/接口 | blackbox_exporter | `probe_success`、响应时间、证书剩余天数 |
+| L2 调度/任务 | Pushgateway | `push_time_seconds`、`job_duration_seconds`、`job_records_total` |
+| L3 业务产物 | business-metrics-exporter | `artifact_age_seconds`、`artifact_records`、`schema_violations` |
+| L4 决策/交易 | business-metrics-exporter + PG | `decision_count_24h`、`order_reject_rate`、`reconcile_break`、`notional_over_domain_cap` |
+| L5 元监控 | Watchdog 规则 + 外部心跳 | 监控自身心跳缺失、规则加载失败 |
+
+### 10.5 新鲜度 TTL 矩阵（云端节奏）
+
+| 链路 | 节奏 | TTL | 未达判定 |
+|---|---|---|---|
+| 40 日更 / x0 / x1 | 每日 00:02 / 00:10 / 00:25 | 26h | 03:00 未成功 → P1；48h → P0 |
+| 42 总线 | 15min | 45min | 连续 2 周期无推送 → P1 |
+| 43 承接 | 30min | 90min | 连续 2 周期无产物 → P1 |
+| 50 影子 | 15min | 60min | 连续 2 周期无决策 → P1 |
+| 50 live + 22 | 5min | 15min | 连续 3 轮无运行 → P0 |
+| 健康检查 | 5min | 15min | 心跳缺失 → P0 |
+| 48 指标 | 每日 06:10 | 26h | 缺更 → P2 |
+
+### 10.6 告警分级与治理
+
+| 级别 | 语义 | 路由 | 响应 | 升级 |
+|---|---|---|---|---|
+| P0 | 资金/合规/失控或监控自身死亡 | Trading-RiskControl + @all | 5min 确认 | 10min 未确认重发（≤3 次）→ 电话 |
+| P1 | 链路断点/决策受损 | Trading-Desk | 30min | 2h 未处理升级 |
+| P2 | 降级/漂移/趋势 | Trading-Desk | 当日 | 次日复盘 |
+| P3 | 摘要/周报 | Trading-Management | 无需即时 | 周会 |
+
+**治理规则**
+1. 指纹去重：30min 冷却；未恢复每 6h 复报；恢复发"已恢复"。
+2. 静默窗口：发布/维护可静默 P2/P3，**P0 永不禁默**。
+3. Runbook 强绑定：无 runbook 的规则不得进 P0/P1。
+4. 单出口：告警只能经 Alertmanager → feishu-receiver；`6-TRADING/scripts/feishu_notify.py` 仅业务通知。
+5. 元监控：每 5min 外发心跳，缺失即 P0。
+
+### 10.7 决策记录（D1–D6）
+
+| # | 决策 |
+|---|---|
+| D1 | 云端单机标准栈：Prometheus + Alertmanager + Grafana + node_exporter + blackbox_exporter + Pushgateway；不自研底座、不引入第二套调度 |
+| D2 | 自动动作只覆盖"重复下单/未授权 live/对账不平>15min/越界名义"，写冻结标记交 13/22/50 既有 kill-switch 消费；前 4 周只告警 |
+| D3 | TTL 与"没跑"判定按 §10.5，统一用 `push_time_seconds` |
+| D4 | 告警单出口；业务通知与告警以 `channel=alert|business` 区分 |
+| D5 | 23 与 50 保留分域名义上限，不强行统一；统一配置、下单前校验、越界 P0 |
+| D6 | 单人最小 on-call，不建轮值表；依靠自动冻结降低即时人工依赖 |
+
+### 10.8 实施阶段与验收
+
+| 阶段 | 内容 | 验收 |
+|---|---|---|
+| P0（Day 1–2） | Compose 起标准栈；node/blackbox 接入；基线面板 | 主机/端口异常 5min 内可见 |
+| P1（Day 3–5） | business-metrics-exporter；40/42/43/50/23 产物探针；Pushgateway 接入 cron | 停 40 流水线、停 15、伪造对账不平，三类告警均触发 |
+| P2（第 2 周） | 12 条规则 + 路由 + feishu-receiver；三次演练；调阈值 | P0 端到端 <5min；误报率 <5% |
+| P3（后续） | 模型漂移（Evidently）、TCA、对账归因 | IC/PSI 入看板；单笔可归因到 decision_id |
+
+**首批 12 条规则**：元监控心跳、NN live 未运行、40 日更失败/迟到、产物 stale、总线源缺失、metrics 不一致、50 决策静默、degraded 洪水、对账 break、名义越界、日回撤越限、模型性能衰减。
+
+### 10.9 与现有代码的关系
+
+| 变更 | 是否触碰交易代码 |
+|---|---|
+| 新增 Compose/规则/面板/feishu-receiver/exporter | 否 |
+| 各 cron/systemd 任务末尾推送一次指标 | 极小（追加一行 curl） |
+| `health-check.sh` 扩展业务产物检查、Redis 容器内探测、失败通知 | 小（本模块职责内） |
+| 自动冻结标记的消费 | 复用 50 `50_KILL_SWITCH`、13 fail-closed、22 执行器既有逻辑，不新增权限 |
+
+### 10.10 已知缺口（本章落地前）
+
+1. 云端 `15-监控告警系统` 未部署，飞书凭证与告警路由需在云端配置。
+2. `dreambuddy-healthcheck` 无通知、Redis 恒 SKIP，需先修。
+3. 50 生产账本存在测试 symbol（`BTC-FLAP-PAYLOAD`），需在 exporter 侧做 symbol 白名单与告警。
+4. 23 `1600 USDT` 名义是否为预期待确认；未确认前按 P1 观察。
+
+---
+
+## 11. 3+3 全景监控架构（分期演进，v2.1）
+
+> 口径引用：[3+3 架构模块映射](../../1-ARCHITECTURE/3+3架构模块映射.md) v1.2（L0/L1/L2 × 交易/训练/产品三链）。本模块（15）自身位于 **L1-C 确定性服务层**，同时承担全矩阵的监控平台职责。
+
+### 11.1 监控对象矩阵（3 层 × 3 链 + 横切）
+
+| | 交易框架链（49） | 模型训练链（34+48） | 产品能力链（3.1/52/6/7/8/53） |
+|---|---|---|---|
+| **L0 基础能力** | 18–21 数据、9/10/39 输入、4 记忆 | 样本/特征/PIT、48 事件流 | 7 产物中台、8 飞书、0/2 文档知识 |
+| **L1 基础智能** | 11/12/14/17/29、40/43、42、50/23、13/16/22/51、**15** | 回测/评估指标、54 L1 聚合 | 6 中台、7 产物、8 飞书、10 查询 |
+| **L2 大模型驱动** | 1 SACG→DSH、32 辩论、25 策略生成、48 涌现、23 LLM 分支 | 34 训练编排、3-EVOLUTION | 3.1 前端、52/53、30 E2E |
+
+**横切**（不占格）：0 文档、2 知识/治理、4 记忆、5 业务、47 MCP 治理。
+
+### 11.2 分期覆盖
+
+| 期 | 范围 | 判定标准 |
+|---|---|---|
+| **一期（当前，2026-11）** | **23 推理信号链**：信号生成→契约→提交→22 网关→13 风控→成交/回报；含 18 数据入口 | 信号生命周期 8 步全部可观测，交易格 ≥ M3；23 信号 schema 一致率 ≥99% |
+| **二期** | **40 主神经网络闭环**（48→40→43→42→50→执行→反馈） | 节点级新鲜度、总线契约、决策可用率；详见 §4.1 与 §10.5 |
+| 三期 | 训练链（34/48/23 进化训练与基因准入） | 样本新鲜度、训练成功率、影子一致率、晋升门禁 |
+| 四期 | 产品链（3.1/6/7/8/53） | 核心接口时延/错误率、关键用户旅程、飞书送达 |
+| 五期 | 横切治理（0/2/4/5/47） | 文档索引健康、认知服务、MCP 注册表 |
+
+一期**不覆盖 40/42/50 的深度业务监控**（只保留 L0 存活探针），避免与二期重复建设；40 的新鲜度与链路契约顺延到二期。
+
+一期**不追求全矩阵深度**：非交易格只做"存在性 + 存活 + 新鲜度"，避免监控本身膨胀。
+
+### 11.3 可管理机制（核心）
+
+1. **单一注册表**：[config/domains.yaml](../config/domains.yaml)。每个格登记 `id / chain / layer / owner / phase / criticality / maturity / modules / probes / slo / dashboards / runbook`；新增覆盖 = 改注册表 + 加探针 + 加规则，不改告警代码。
+2. **统一标签**：所有业务指标带 `chain / layer / cell / module`；与 OpenTelemetry 对齐（`service.namespace=chain`、`service.name=cell`），便于后续接 trace/log 时不改口径。
+3. **成熟度分档**（按格推进，不按整系统推进）：
+   `M0 未接入 → M1 存活 → M2 新鲜度 → M3 契约 → M4 业务 SLO → M5 模型与进化`
+4. **一格一 owner**：告警路由按 `cell` 映射到飞书群；避免后期全局覆盖时重排路由。
+5. **三张链看板 + 一张 3×3 热力图**：`dreambuddy_cell_health` 由 exporter 按 maturity 与未恢复告警计算，热力图 `max by (cell)`。
+6. **治理节奏**：月度覆盖率核对（注册表 vs 实际探针）、季度 SLO 复盘；变更写入 `CHANGELOG.md`。
+
+参考实践：服务目录与 owner 单点登记、按域汇总 SLO、告警策略版本化（[SUSE Observability Architecture](https://www.suse.com/ko-kr/blogs/2025/10/what-is-observability-architecture-and-how-do-you-build-it/)）；语义约定 `service.name/service.namespace`（[OpenTelemetry Service](https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/)）。
+
+### 11.4 与已建骨架的关系（不过度设计）
+
+- Compose、Prometheus 规则、Alertmanager 路由**不变**；一期只新增 `config/domains.yaml` 与 exporter 的 4 个标签。
+- 当前规模（单机、<50 任务）手工维护 job 与规则即可；当格数/探针数翻倍后，再由注册表生成 Prometheus `file_sd` 与规则，不提前引入服务网格或多级联邦。
+- 明确不做：多 Prometheus 联邦、自研 CMDB、第二套告警引擎、非交易域的深度业务探针。
+
+### 11.5 一期验收（在 §10.8 之上追加）
+
+1. `domains.yaml` 中 9 格 + 横切全部有 owner、phase、maturity。
+2. 交易列三格（L0/L1/L2.trade）均 ≥ M3，且对应告警可在演练中触发。
+3. 3×3 热力图能显示每格健康度与最后更新时间。
+4. 新增一个格（示例：L2.train）只需改注册表 + 加一个探针即可出现，无需改告警代码。
+
+---
+
+## 12. 一期：23 推理信号监控（v2.2）
+
+> 依据：`23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md`、`docs/ENGINEERING_INDEX.md`、`49-交易框架协议/contracts/final_decision_signal.v1.1.json`，以及 2026-11-17 代码与云端实测。
+> 定位：一期只监控 **23 的信号生命周期与执行落地**；40 主神经网络闭环顺延二期（§11.2）。
+
+### 12.1 23 模块全景（监控边界）
+
+| 层 | 模块/职责 | 关键文件 | 监控关注 |
+|---|---|---|---|
+| L1 状态空间 | 观察行情、矛盾样本、案例 | `evolution_pipeline.py`、`core/*` | 样本新鲜度、样本增长率 |
+| L2 推断/路径 | 矛盾识别、最小阻力、路径发现、WFO/配置 | `core/primary_contradiction_detector.py`、`path_discovery_service.py`、`dominance.py` | 路径数、冠军路径、降级次数 |
+| L3 实验/影子 | Shadow-RL、影子验证、自动放量门禁 | `core/shadow_rl.py`、`shadow_activation_gate.py` | 样本增量、Phase3 激活、门禁推进 |
+| L4 反思/回馈 | CS/ESS、权重调整、基因准入 | `engines/reflection_engine.py`、`auto_weight_adjuster.py`、`ftc_gene_innovation.py` | CS 分布、权重变更、基因晋升/淘汰 |
+| 执行出口 | 构造并提交 FinalDecisionSignal | `execution/decision_signal.py`、`outbox.py`、`entry_loop.py`、`exit_loop.py` | **一期核心**：信号生成、提交、状态机 |
+| 数据入口 | 18 行情 + 19 DAL 衍生数据 | `scripts/entry_runner.py`、`scripts/backfill_*.py` | 数据新鲜度、空数据、fallback |
+| 引擎族 | 趋势/网格/离场/事件驱动 | `engines/trend_following|grid_trading|exit_engine|kline_event_handler.py` | 引擎心跳、离场触发 |
+
+### 12.2 推理信号契约（v1.1）与实测差异
+
+**契约要求**（`49-交易框架协议/contracts/final_decision_signal.v1.1.json` L8-20、L78-92）：顶层必填 `signal_id/source/ts/symbol/direction/confidence/horizon/risk_exposure_hint/expires_at/mode/payload`；`source∈{23-evolution,50-nn,l1-chart}`；23/50 的 `payload` 必填 `action/position_tier/position_mult/d_star/ri/l4_v/regime/primary_contradiction/contradiction_shift/elastic_result/cross_validation/path`。
+
+**23 实际输出**（`execution/decision_signal.py` L108-133、L154-173）：
+
+| 契约字段 | 23 实际 | 结论 |
+|---|---|---|
+| `horizon` | 缺失 | ❌ 不符合 |
+| `risk_exposure_hint` | 缺失 | ❌ 不符合 |
+| `mode` | 缺失 | ❌ 不符合 |
+| `payload.position_tier/position_mult` | 用 `tier` 代替 | ❌ 命名与语义漂移 |
+| `payload.d_star/ri/l4_v/regime` | 缺失 | ❌ 不符合 |
+| `payload.primary_contradiction/contradiction_shift/elastic_result/cross_validation/path` | 缺失 | ❌ 不符合 |
+| `action/pos_side/sl_px/tp_px` | 放在顶层 | 🟡 执行扩展，未按契约进 payload |
+| `decision_id` | 顶层 + payload 双写 | ✅ 符合（22 硬前置依赖） |
+
+**结论**：23 当前是"可执行扁平信号"，不是 v1.1 契约信号。22 网关 `FinalDecisionSignal`（L43-107）也只映射核心字段，且**未做 JSON Schema 校验**，因此契约漂移不会被任何一层拦截。这是本期监控必须补的第一类"契约监控"。
+
+### 12.3 信号生命周期 8 步与监控点
+
+| # | 阶段 | 代码/产物 | 监控指标 |
+|---|---|---|---|
+| S1 | 数据就绪 | 18 `data_center.db`、19 DAL | `data_age_s`、`rows_delta`、`empty_ratio` |
+| S2 | 推理产出 | `build_entry_decision` / `build_exit_decision` | `signal_generated_total{symbol,action}`、`confidence` 分布 |
+| S3 | 契约校验 | 当前**缺失**（建议新增） | `signal_schema_valid_ratio`、`missing_fields` |
+| S4 | 审计落盘 | `runtime/execution_decisions.jsonl`（仅 `stage=submit`） | `audit_lag_s`、`audit_rows`、`audit_write_fail` |
+| S5 | 发件箱 | `runtime/execution_outbox.db`（SQLite：pending/submitting/submitted/filled/failed） | `outbox_stuck_s`、`retry_exhausted_total`、`duplicate_total` |
+| S6 | 网关提交 | `EvolutionSignalDispatcher.dispatch` → 22 `submit()` | `signal_to_gateway_latency_p95`、`precheck_reject_total` |
+| S7 | 风控与成交 | 13 `PreTradeGate` → 16 → 22 → 51 | `risk_reject_total`、`rules_evaluated=0`、`filled_ratio`、`slippage_bps` |
+| S8 | 回报与反馈 | 成交/PnL → 23/48 | `decision_fill_join_ratio`、`pnl_feedback_age_s` |
+
+**关键缺口**：S3 无校验、S4 只记录提交不记录结果、S5 状态在 SQLite 不可直接 tail。监控侧需新增只读导出（SQLite 查询 + audit 双写），不改交易逻辑。
+
+### 12.4 信号级 SLO 与告警（一期首批）
+
+| 指标/告警 | 判定 | 级别 |
+|---|---|---|
+| `SignalSchemaViolation` | 任一信号缺 v1.1 必填字段 | P1（观察期）/ 阻断待定 |
+| `SignalSilence` | 交易时段 30min 无新信号（`entry23` active 且非空仓） | P1 |
+| `SignalExpiredAtSubmit` | `expires_at < now` 仍提交 | P1 |
+| `DryRunMismatch` | 期望 live 但 `--dry-run`/`EVOLUTION_ENTRY23_ENABLED=off` | P0（若已宣称实盘） |
+| `GatewayRejectSpike` | 15min 拒绝率 >5% | P1 |
+| `RiskGateEmpty` | `rules_evaluated=0` 仍放行 | P0 |
+| `OutboxStuck` | `submitting` 超过 5min | P1 |
+| `DuplicateDecisionSpike` | 15min 重复 decision_id >1% | P2 |
+| `DecisionFillJoinLow` | 成交→decision_id join <95% | P1 |
+| `ConfidenceDegenerate` | 置信度方差≈0 或长期 <0.3 | P2 |
+| `SignalToOrderLatency` | p95 >2s（同机应 <200ms） | P2 |
+| `NotionalOverDomainCap` | 23 名义 > 配置上限 | P0 |
+
+SLO 建议：信号 schema 一致率 ≥99%；信号→网关 p95 ≤2s；成交 join ≥95%；对账 15min 清零。
+
+### 12.5 实现一致性审计（文档 vs 代码，2026-11-17）
+
+| 声明 | 代码证据 | 状态 |
+|---|---|---|
+| 18 行情 → 23 pipeline | `23/dreambuddy_evolution/scripts/entry_runner.py` L4-5、L30、L43、L85-104 引用 `18-数据获取中心/data_center.db` 与 `market_compat` | ✅ 已落地 |
+| 19 DAL 衍生数据供 23 | `scripts/backfill_funding_rate.py`、`backfill_etf_flow.py`、`backfill_stablecoin_tvl.py` 写 `19-DAL mm_metrics` | 🟡 仅回补脚本可见，运行时消费需另证 |
+| 23 产出 FinalDecisionSignal 并提交 22 | `execution/decision_signal.py` L176-238 `EvolutionSignalDispatcher.dispatch → gateway.submit` | ✅ 已落地 |
+| 全部 live 下单强制经 13 风控 | `22/trade_execution_gateway.py` L259-270、L746-756；`_CLOSE_ACTIONS` 例外仅平仓 | ✅ 已落地 |
+| 22 校验 v1.1 契约 | 22 仅做 `decision_id` + `expires_at` 前置（L40、L751-756），无 JSON Schema | ❌ 未落地 |
+| 42 总线校验 v1.1 | `42/signal_bus.py` L28-39 要求 `horizon/risk_exposure_hint`；23 不经过 42，直连 22 | 🟡 通路不同，契约不一致 |
+| 成交必须回带 decision_id | 22 dataclass 保留 `decision_id`（L55-57）；但 23 审计只写 `stage=submit`（L206-218） | 🟡 部分 |
+| 云端 23 实盘运行 | 2026-11-17 12:30 已切换：unit 去掉 `--dry-run`、`EVOLUTION_ENTRY23_ENABLED=on`；凭据库 `simulated=false/dry_run=false`；切换前权益 2118 USDT、可用 919 USDT、持仓 0 | ✅ **live（前 2 周仅告警）** |
+| 23 运行时活跃 | 云端 `runtime/execution_decisions.jsonl` 252KB，mtime 2026-11-17 12:06 | ✅ 活跃 |
+| 50 决策符合 v1.1 | `50/runtime/decisions.jsonl` 最新 `symbol=BTC-FLAP-PAYLOAD`，缺 `risk_exposure_hint` | ❌ 测试数据 + 契约漂移 |
+
+**最危险的 3 个偏差**
+1. **契约无人校验**：文档称 v1.1，23 实际是扁平信号，22 只查两个字段；一旦下游按契约取字段会拿到 `undefined`。
+2. **静默失败不可见**：23 入口过去长期 `--dry-run`，但缺少"期望模式 vs 实际模式"指标，容易被误判为"实盘在跑"（已于 2026-11-17 切换 live 并纳入 `DryRunMismatch`）。
+3. **审计链路不闭环**：只有 `submit` 阶段，没有 `rejected/filled` 结果；outbox 在 SQLite，文件监控看不到状态机。
+
+**2026-11-17 实盘切换记录**
+- 变更：`dreambuddy-entry23.service` 移除 `--dry-run`，`EVOLUTION_ENTRY23_ENABLED=off → on`；凭据库本就为真实模式（`simulated=false`、`dry_run=false`）。
+- 切换前预检：账户权益 2118.10 USDT，可用 919.05 USDT，冻结 1200.19 USDT，永续持仓 0；23 单笔名义硬顶 2000 USDT，日志近期均为 `action=WAIT`。
+- 监控策略：2026-11-17 至 2026-12-01 为 **alert_only**，不自动冻结/不阻断；到期复核误报率后再决定是否启用自动动作。
+
+### 12.6 一期验收（在 §11.5 上收敛）
+
+1. 23 信号 8 步全部有指标；`SignalSchemaViolation` 能对现有扁平信号触发。
+2. 能区分 `dry-run / paper / live`，并发出 `DryRunMismatch`。
+3. outbox 任一状态停留 >5min 可见；重复 decision_id 可见。
+4. 一笔信号可完整追溯：`decision_id → 审计 → 网关 → 13 风控 → 成交 → join`。
+5. 40 链只保留存活探针，不纳入一期告警路由。
+
+---
+
 ## 变更记录
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
 | v1.0 | 2026-08-02 | 初始版本：按 DOC_STANDARD §3.2 补建技术设计文档，覆盖概述/架构/算法/数据流/接口/状态/配置/错误处理/扩展性 9 章节 |
+| v2.0 | 2026-11-17 | 新增第 10 章「云端全链路监控目标架构」：云端实测基线、Prometheus 标准栈、TTL 矩阵、P0–P3 治理、D1–D6 决策、实施阶段；第 1–9 章降级为本地 v1.0 现状描述 |
+| v2.1 | 2026-11-17 | 新增第 11 章「3+3 全景监控架构」：三层×三链矩阵、四期覆盖、`config/domains.yaml` 注册表、M0–M5 成熟度与一格一 owner |
+| v2.2 | 2026-11-17 | 一期收敛为 23 推理信号链；新增第 12 章：23 模块全景、v1.1 契约与实测差异、8 步生命周期、12 条信号告警、落地审计（含 22 无 Schema 校验、云端 dry-run、审计不闭环） |
 
 ---
 
-**文档版本**: v1.0
-**最后更新**: 2026-08-02
+**文档版本**: v2.2
+**最后更新**: 2026-11-17

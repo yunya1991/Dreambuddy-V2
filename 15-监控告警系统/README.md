@@ -1,5 +1,10 @@
 # 15-监控告警系统
 
+> **状态（2026-11-17）**
+> - 本 README 与下方架构描述的是**本地 v1.0**：仅覆盖 yijing/v15/screen/agent_a/agent_b，最后运行日志为 2026-08-07。
+> - **云端全链路监控目标架构以 [docs/TECHNICAL_DESIGN.md 第 10 章](docs/TECHNICAL_DESIGN.md) 为准**（Prometheus 标准栈 + 业务新鲜度 + 飞书单出口）。
+> - 调研证据与 D1–D6 决策：[docs/RESEARCH-全链路监控体系调研-v0.2.md](docs/RESEARCH-全链路监控体系调研-v0.2.md)。
+
 ## 概述
 
 统一监控告警系统，为所有交易子系统提供统一的健康监控和飞书告警推送能力。

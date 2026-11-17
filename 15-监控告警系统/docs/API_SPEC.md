@@ -1,6 +1,6 @@
 # API 规范 — 15-监控告警系统
 
-> **版本**: v1.0 | **更新日期**: 2026-09-30
+> **版本**: v1.1 | **更新日期**: 2026-11-17
 > **定位**: 模块接口规范，对齐 DOC_STANDARD §3.3
 
 ---
@@ -367,10 +367,73 @@ class OpsMemoryInterface:
 | 版本 | 日期 | 说明 |
 |------|------|------|
 | v1.0 | 2026-09-30 | 初始 API 规范版本，覆盖核心层/适配器层/告警层/持仓同步层/调度层/记忆层全部公开接口 |
+| v1.1 | 2026-11-17 | 新增 §6 v2.0 监控接口草案（exporter `/metrics`、feishu-receiver `/alert`、`/healthz`），尚未实现 |
 
 > 变更以 `CHANGELOG.md` 为准。飞书 chat_id 与凭证属于运行时配置，不属于 API 版本管理范围。
 
+## 6. v2.0 监控接口（草案，尚未实现）
+
+> 仅监听 `127.0.0.1`，不对外暴露；Grafana 由 nginx 子路径 `/monitor/` 统一鉴权。
+
+### 6.1 GET `/metrics`（business-metrics-exporter，:9101）
+
+Prometheus 文本格式，`Content-Type: text/plain; version=0.0.4`。
+
+| 指标 | 类型 | 标签 | 含义 |
+|---|---|---|---|
+| `dreambuddy_job_last_run_timestamp_seconds` | gauge | `job` | 最近一次运行时间 |
+| `dreambuddy_job_last_success_timestamp_seconds` | gauge | `job` | 最近一次成功时间 |
+| `dreambuddy_job_status` | gauge | `job` | 1=成功，0=失败 |
+| `dreambuddy_job_duration_seconds` / `_records` | gauge | `job` | 耗时与记录数 |
+| `dreambuddy_artifact_age_seconds` | gauge | `artifact`, `severity` | 产物陈旧秒数 |
+| `dreambuddy_signal_generated_total` | counter | `source`,`symbol`,`action` | 23 信号产出数 |
+| `dreambuddy_signal_last_timestamp_seconds` | gauge | `source` | 最近一条信号时间 |
+| `dreambuddy_signal_schema_valid_ratio` | gauge | `source` | v1.1 必填字段完整率 |
+| `dreambuddy_signal_expired_total` | counter | `source` | 过期仍提交次数 |
+| `dreambuddy_signal_mode_mismatch` | gauge | `source` | 期望模式与实际模式不一致 0/1 |
+| `dreambuddy_signal_reject_ratio` | gauge | `source` | 网关拒绝率 |
+| `dreambuddy_signal_to_gateway_seconds` | gauge | `source` | 信号→网关 p95 秒 |
+| `dreambuddy_signal_confidence_stdev` | gauge | `source` | 置信度标准差 |
+| `dreambuddy_outbox_stuck` | gauge | `state` | 超时未推进数量 |
+| `dreambuddy_duplicate_decision_ratio` | gauge | `source` | 重复 decision_id 比例 |
+| `dreambuddy_decision_fill_join_ratio` | gauge | `domain` | 成交与 decision_id 关联率 |
+| `dreambuddy_risk_rules_evaluated_zero_total` | counter | `domain` | 0 规则放行次数 |
+| `dreambuddy_artifact_ttl_seconds` | gauge | `artifact` | 产物 TTL |
+| `dreambuddy_artifact_present` | gauge | `artifact` | 0/1 |
+| `dreambuddy_bus_active_sources` | gauge | — | 42 活跃 source 数 |
+| `dreambuddy_bus_source_present` | gauge | `source` | 单 source 0/1 |
+| `dreambuddy_bus_metrics_mismatch` | gauge | — | metrics 与 bus_state 不一致 0/1 |
+| `dreambuddy_decision_count_24h` | gauge | `domain` | 近 24h 决策数 |
+| `dreambuddy_degraded_events_total` | counter | `reason` | 降级事件累计 |
+| `dreambuddy_reconcile_breaks` | gauge | `domain` | 未清对账差异数 |
+| `dreambuddy_notional_over_cap_total` | counter | `domain` | 越界次数 |
+| `dreambuddy_forbidden_symbol_orders_total` | counter | `symbol` | 禁止 symbol 下单次数 |
+| `dreambuddy_daily_drawdown_pct` / `_limit_pct` | gauge | `domain` | 日回撤与上限 |
+| `dreambuddy_model_ic_rolling` | gauge | `model` | 滚动 IC |
+| `dreambuddy_monitor_heartbeat_timestamp_seconds` | gauge | — | 监控自身心跳 |
+
+错误：文件不可读时保留上次值并置 `dreambuddy_artifact_present=0`，不返回 5xx。
+
+### 6.2 POST `/alert`（feishu-receiver，:9098）
+
+- 入参：Alertmanager v4 webhook JSON；query `level=P0|P1|P2` 决定群路由。
+- 行为：按 `fingerprint`（alertname+labels 哈希）做 1800s 冷却；`status=resolved` 发恢复通知；P0 不静默。
+- 响应：`200 {"accepted":n,"suppressed":m}`；载荷非法 `400`；内部错误 `500`（Alertmanager 会重试）。
+- 幂等：同一 `fingerprint` + `startsAt` 只发一次。
+
+### 6.3 GET `/healthz`（两个服务）
+
+`200 {"status":"ok","uptime_s":123}`；用于 systemd/黑盒探针，不参与业务判定。
+
+### 6.4 认证与暴露
+
+| 服务 | 监听 | 认证 |
+|---|---|---|
+| exporter / receiver | `127.0.0.1` | 无（仅本机） |
+| Prometheus / Alertmanager | `127.0.0.1` | 无（仅本机） |
+| Grafana | `127.0.0.1:3000` | nginx 子路径 + 账号 |
+
 ---
 
-**文档版本**: v1.0
-**最后更新**: 2026-09-30
+**文档版本**: v1.1
+**最后更新**: 2026-11-17

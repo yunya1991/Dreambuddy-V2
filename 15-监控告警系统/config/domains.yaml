@@ -1,0 +1,173 @@
+# 监控域注册表（3+3 架构）
+# 口径：1-ARCHITECTURE/3+3架构模块映射.md（L0/L1/L2 × 交易/训练/产品三链）
+# 作用：每个监控格(cell)的唯一登记处；新增覆盖只改本文件 + 对应探针，不改告警代码。
+# 状态机：draft → active → paused → retired；成熟度：M0 未接入 / M1 存活 / M2 新鲜度 / M3 契约 / M4 业务SLO / M5 模型与进化
+version: 1
+updated_at: "2026-11-17"
+
+conventions:
+  cell_id: "<layer>.<chain>"          # 例：L1.trade
+  labels: [chain, layer, cell, module] # 所有业务指标必须带这 4 个标签
+  chains: [trade, train, product, cross]
+  layers: [L0, L1, L2]
+  naming:
+    job: "<cell>_<task>"              # 例：L1.trade_bus_42
+    alert: "<Cell><Symptom>"          # 例：L1TradeBusStale
+    dashboard_uid: "db-<chain>-<layer>"
+
+cells:
+  - id: L0.trade
+    name: 交易数据与事实层
+    chain: trade
+    layer: L0
+    phase: 1
+    owner: data-platform
+    criticality: P0
+    maturity: M2
+    modules: [18, 19, 20, 21, 9, 10, 39, 4]
+    probes:
+      - data_freshness        # 表/文件最后更新
+      - coverage              # 缺失率/条数
+      - schema                # 字段/类型
+    dashboards: [db-trade-L0]
+    runbook: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#105-新鲜度-ttl-矩阵云端节奏"
+
+  - id: L1.trade
+    name: 交易确定性能力层（一期核心：23 推理信号）
+    chain: trade
+    layer: L1
+    phase: 1
+    owner: trading-core
+    criticality: P0
+    maturity: M2
+    modules: [23, 13, 16, 22, 51, 11, 12, 14, 17, 29, 40, 43, 42, 50]
+    probes:
+      - signal_schema          # v1.1 必填字段/来源/模式
+      - signal_emission        # 信号产出与静默
+      - signal_latency         # 生成→网关→成交
+      - outbox_state           # pending/submitting/submitted/filled/failed
+      - dryrun_mode            # 期望模式 vs 实际模式
+      - artifact_freshness
+      - order_health
+      - reconcile
+    slo:
+      signal_schema_valid: 99%
+      signal_to_gateway_p95_ms: 2000
+      decision_fill_join: 95%
+      reconcile_zero_by: 15m
+    dashboards: [db-trade-L1, db-trade-overview]
+    runbook: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#12-一期23-推理信号监控v22"
+
+  - id: L2.trade
+    name: 交易生成与编排层（40 神经网络二期）
+    chain: trade
+    layer: L2
+    phase: 2
+    owner: dreamos-core
+    criticality: P1
+    maturity: M1
+    modules: [1, 32, 25, 48, 23]
+    probes:
+      - trace_completeness    # trace_id 贯通率
+      - llm_latency_cost      # 时延/token 成本
+      - debate_quality        # 辩论产出与采纳率
+      - emergence_metrics     # 48 指标新鲜度
+    dashboards: [db-trade-L2]
+    runbook: "1-ARCHITECTURE/SPEC-20260929-L1-TRACE-PILOT.md"
+
+  - id: L0.train
+    name: 训练数据与样本层
+    chain: train
+    layer: L0
+    phase: 3
+    owner: ml-platform
+    criticality: P1
+    maturity: M1
+    modules: [34, 48, 4]
+    probes: [sample_freshness, label_join_coverage, feature_drift]
+    dashboards: [db-train-L0]
+    runbook: "23-四层闭环自进化交易架构/docs/"
+
+  - id: L1.train
+    name: 训练确定性与评估层
+    chain: train
+    layer: L1
+    phase: 3
+    owner: ml-platform
+    criticality: P1
+    maturity: M1
+    modules: [34, 54]
+    probes: [backtest_job_freshness, metric_report_freshness, eval_regression]
+    dashboards: [db-train-L1]
+    runbook: "23-四层闭环自进化交易架构/docs/"
+
+  - id: L2.train
+    name: 训练编排与涌现层
+    chain: train
+    layer: L2
+    phase: 3
+    owner: ml-platform
+    criticality: P1
+    maturity: M1
+    modules: [34, 48, 3]
+    probes: [training_run_success, shadow_consistency, promotion_gate]
+    dashboards: [db-train-L2]
+    runbook: "23-四层闭环自进化交易架构/docs/"
+
+  - id: L0.product
+    name: 产品数据与内容层
+    chain: product
+    layer: L0
+    phase: 4
+    owner: product-platform
+    criticality: P2
+    maturity: M1
+    modules: [7, 8, 2, 0]
+    probes: [artifact_index_freshness, feishu_delivery, doc_link_check]
+    dashboards: [db-product-L0]
+    runbook: "7-产物中台/docs/"
+
+  - id: L1.product
+    name: 产品确定性服务层
+    chain: product
+    layer: L1
+    phase: 4
+    owner: product-platform
+    criticality: P1
+    maturity: M1
+    modules: [6, 7, 8, 10, 15]
+    probes: [api_latency_error, core_journey, notify_failure]
+    dashboards: [db-product-L1]
+    runbook: "6-TRADING/README.md"
+
+  - id: L2.product
+    name: 产品应用与协议层
+    chain: product
+    layer: L2
+    phase: 4
+    owner: frontend-core
+    criticality: P2
+    maturity: M0
+    modules: [3.1, 52, 53, 30]
+    probes: [page_availability, route_error_rate, e2e_journey]
+    dashboards: [db-product-L2]
+    runbook: "3.1-FRONTEND/README.md"
+
+  - id: cross.governance
+    name: 横切治理（文档/认知/治理/MCP）
+    chain: cross
+    layer: L1
+    phase: 5
+    owner: platform-governance
+    criticality: P2
+    maturity: M0
+    modules: [0, 2, 4, 5, 47]
+    probes: [doc_index_health, cognitive_service, mcp_registry]
+    dashboards: [db-cross]
+    runbook: "0-系统文档管理/INDEX.md"
+
+rollup:
+  health_metric: dreambuddy_cell_health
+  heatmap: "max by (cell) (dreambuddy_cell_health)"
+  review_cadence: monthly        # 每月核对覆盖率与 owner
+  slo_review_cadence: quarterly

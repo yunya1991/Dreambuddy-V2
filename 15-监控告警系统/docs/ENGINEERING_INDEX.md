@@ -301,10 +301,40 @@ python -m pytest tests/ -v
 | 目标 | 路径 |
 |------|------|
 | 用户文档 | [../README.md](../README.md) |
-| 技术设计 | [./TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) |
+| 技术设计 | [./TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md)（v2.0，云端口径见第 10 章） |
+| 全链路调研与 D1–D6 决策 | [./RESEARCH-全链路监控体系调研-v0.2.md](./RESEARCH-全链路监控体系调研-v0.2.md) |
 | 项目文档索引 | [../../../0-系统文档管理/INDEX.md](../../0-系统文档管理/INDEX.md) |
 | 文档规范 | [../../../0-系统文档管理/1-规范体系/DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) |
 | 标杆参照 | [../../../14-V15经典马丁策略/docs/ENGINEERING_INDEX.md](../../14-V15经典马丁策略/docs/ENGINEERING_INDEX.md) |
+
+---
+
+## 9. v2.0 代码骨架（2026-11-17 建，尚未实现）
+
+```text
+15-监控告警系统/
+├── exporter/                  # 业务只读指标导出器（:9101）
+│   ├── probes/                # 40/42/43/50/23/48 各一个 probe
+│   └── tests/
+├── receiver/                  # Alertmanager → 飞书（:9098）
+├── config/monitoring.yaml     # TTL / 任务节奏 / 域上限 / 告警治理
+├── config/domains.yaml        # 3+3 域注册表（owner/phase/maturity/probes/SLO）
+├── deploy/
+│   ├── docker-compose.monitoring.yml
+│   ├── prometheus/prometheus.yml + rules/dreambuddy-monitoring.yml
+│   ├── alertmanager/alertmanager.yml
+│   ├── blackbox/blackbox.yml
+│   ├── grafana/provisioning/ + dashboards/
+│   └── systemd/*.service
+├── scripts/push_job.sh        # 任务运行/成功/耗时/记录数推送
+└── tests/
+```
+
+**实现入口约定**
+- 新增代码只放 `exporter/` 与 `receiver/`；`core/`、`adapters/`、`scheduler.py` 等 v1.0 文件保持不变。
+- 新增监控覆盖只改 `config/domains.yaml` + 一个探针，不改告警代码；口径见 TECHNICAL_DESIGN 第 11 章。
+- 配置只改 `config/monitoring.yaml`；告警阈值不写死在代码里。
+- 部署物只改 `deploy/`；云端运行时数据在 `/var/lib/dreambuddy-monitoring/`，凭证在 `/etc/dreambuddy-monitoring/monitoring.env`，均不入库。
 
 ---
 

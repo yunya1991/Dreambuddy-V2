@@ -1,0 +1,90 @@
+# 15-监控告警系统 · 云端监控栈（v2.0 骨架）
+# 用法（云端 /home/luke/dreambuddy/15-监控告警系统/deploy）：
+#   cp /etc/dreambuddy-monitoring/monitoring.env .env   # 或 docker compose --env-file 指定
+#   docker compose -f docker-compose.monitoring.yml up -d
+# 约束：除 Grafana 外全部绑定 127.0.0.1；Grafana 由 nginx 子路径 /monitor/ 暴露。
+
+name: dreambuddy-monitoring
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --web.enable-lifecycle
+    volumes:
+      - ./prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    volumes:
+      - ./alertmanager:/etc/alertmanager:ro
+      - alertmanager-data:/alertmanager
+    ports:
+      - "127.0.0.1:9093:9093"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set in /etc/dreambuddy-monitoring/monitoring.env}
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-https://example.com/monitor/}
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    restart: unless-stopped
+    pid: host
+    command:
+      - --path.rootfs=/host
+    volumes:
+      - /:/host:ro,rslave
+    ports:
+      - "127.0.0.1:9100:9100"
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    restart: unless-stopped
+    volumes:
+      - ./blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    ports:
+      - "127.0.0.1:9115:9115"
+
+  pushgateway:
+    image: prom/pushgateway:v1.9.0
+    restart: unless-stopped
+    command:
+      - --persistence.file=/pushgateway/data
+      - --persistence.interval=5m
+    volumes:
+      - pushgateway-data:/pushgateway
+    ports:
+      - "127.0.0.1:9091:9091"
+
+volumes:
+  prometheus-data:
+  alertmanager-data:
+  grafana-data:
+  pushgateway-data:

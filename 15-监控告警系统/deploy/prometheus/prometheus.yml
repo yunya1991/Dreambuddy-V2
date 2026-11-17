@@ -1,0 +1,71 @@
+# Prometheus 采集配置（v2.0 骨架）
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    host: VM-0-5-ubuntu
+    stack: dreambuddy-monitoring
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: node
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  - job_name: pushgateway
+    honor_labels: true
+    static_configs:
+      - targets: ["pushgateway:9091"]
+
+  # 业务只读导出器（宿主机 systemd，不在 compose 内）
+  - job_name: dreambuddy-business
+    static_configs:
+      - targets: ["host.docker.internal:9101"]
+
+  # 黑盒探针：目标清单在 targets 中维护，模块定义见 blackbox/blackbox.yml
+  - job_name: blackbox-http
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://127.0.0.1:3001
+          - http://127.0.0.1:3002
+          - http://127.0.0.1:8765/health
+          - http://127.0.0.1:8771/health
+          - http://127.0.0.1:8093
+          - http://127.0.0.1:8099
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  - job_name: blackbox-tcp
+    metrics_path: /probe
+    params:
+      module: [tcp_connect]
+    static_configs:
+      - targets:
+          - 127.0.0.1:5432   # PostgreSQL
+          - 127.0.0.1:6379   # Redis
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

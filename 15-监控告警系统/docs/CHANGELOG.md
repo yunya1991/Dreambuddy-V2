@@ -1,6 +1,6 @@
 # 变更记录 — 15-监控告警系统
 
-> **版本**: v1.0 | **更新日期**: 2026-09-30
+> **版本**: v2.3 | **更新日期**: 2026-11-17
 
 ---
 
@@ -8,6 +8,10 @@
 
 | 版本 | 日期 | 变更内容 | 影响范围 |
 |------|------|----------|----------|
+| v2.3 | 2026-11-17 | 23 切实盘（移除 `--dry-run`、开关置 on）；监控进入 14 天 alert_only（至 2026-12-01）；记录切换前权益/持仓预检 | 配置+运维 |
+| v2.2 | 2026-11-17 | 一期收敛为 23 推理信号链（TD 第 12 章）：23 模块全景、v1.1 契约差异、8 步生命周期、10 条信号告警、落地审计；`monitoring.yaml` 增 signals 段、`domains.yaml` 分期调整 | 文档+配置 |
+| v2.1 | 2026-11-17 | 新增 3+3 全景监控架构（TD 第 11 章）与 `config/domains.yaml` 域注册表：三层×三链矩阵、四期覆盖、M0–M5 成熟度、一格一 owner | 文档+配置 |
+| v2.0 | 2026-11-17 | 新增云端全链路监控目标架构（TD 第 10 章）、调研 v0.2、API v1.1 草案；建立代码骨架 `exporter/ receiver/ deploy/ scripts/`；新增 12 条告警规则与 Pushgateway 接入模板 | 文档+骨架 |
 | v1.0 (文档补建) | 2026-09-30 | 补建 `docs/API_SPEC.md`、`docs/CHANGELOG.md`，完善模块文档体系 | 文档 |
 | v1.0 | 2026-08-02 | 补建 `docs/ENGINEERING_INDEX.md`、`docs/TECHNICAL_DESIGN.md`，对齐 DOC_STANDARD L3 模块文档建设规范 | 文档 |
 | — | 2026-07-27 | 模块运行中，产生首个故障事件记录 `INC-20260727111511.json` | 运行数据 |
@@ -15,6 +19,58 @@
 ---
 
 ## 详细变更
+
+### v2.3 — 2026-11-17
+
+**23 切实盘**
+- `23/deploy/dreambuddy-entry23.service`：移除 `--dry-run`，`EVOLUTION_ENTRY23_ENABLED=off → on`
+- 预检：权益 2118.10 USDT / 可用 919.05 / 冻结 1200.19 / 永续持仓 0；凭据库 `simulated=false,dry_run=false`
+- 切换后 `expected_mode: live`；`DryRunMismatch` 语义由"实盘未开"转为"实盘被意外关闭"
+
+**监控策略**
+- 2026-11-17 至 2026-12-01 为 `alert_only`：只告警，不自动冻结/阻断
+- 到期复核误报率与信号质量后，再启用 §10.7 D2 的自动动作
+
+### v2.2 — 2026-11-17
+
+**一期范围**
+- 一期由「交易列三层」收敛为「23 推理信号链」；40 主神经网络闭环顺延二期，只保留 L0 存活探针
+- `config/domains.yaml` 分期改为：一期 23 → 二期 40 → 三期训练链 → 四期产品链 → 五期横切
+
+**23 信号监控（TD 第 12 章）**
+- 模块全景、v1.1 契约字段与实测差异（23 缺 `horizon/risk_exposure_hint/mode` 及 payload 12 字段）
+- 8 步生命周期：数据→生成→契约→审计→发件箱→网关→风控成交→回报反馈
+- 10 条信号告警：Schema/Silence/Expired/DryRunMismatch/OutboxStuck/RejectSpike/RiskGateEmpty/Duplicate/FillJoin/ConfidenceDegenerate
+- 落地审计：22 无 JSON Schema 校验、云端 entry23 为 dry-run、23 审计仅 submit 阶段、outbox 为 SQLite
+
+**配置**
+- `config/monitoring.yaml` 新增 `signals` 段；`execution_decisions_23` TTL 24h→30min
+- `docs/API_SPEC.md` 增加 13 个信号级指标
+
+### v2.1 — 2026-11-17
+
+**架构**
+- `docs/TECHNICAL_DESIGN.md` 第 11 章：3+3 全景监控架构（L0/L1/L2 × 交易/训练/产品），四期覆盖，一期只要求交易列 ≥M3、其余 ≥M1
+- 管理机制：`config/domains.yaml` 单点注册（owner/phase/maturity/probes/slo/runbook）、统一 `chain/layer/cell/module` 标签、3×3 热力图、月度覆盖评审
+
+**配置**
+- 新增 `config/domains.yaml`：9 格 + 横切治理，含状态机 `draft→active→paused→retired` 与命名约定
+
+### v2.0 — 2026-11-17
+
+**架构与调研**
+- `docs/TECHNICAL_DESIGN.md` 升级 v2.0：新增第 10 章「云端全链路监控目标架构」，含云端实测基线、五层探针、TTL 矩阵、P0–P3 治理、D1–D6 决策、实施验收；第 1–9 章降级为本地 v1.0 现状
+- 新增 `docs/RESEARCH-全链路监控体系调研-v0.2.md`：40 链 12 节点、23 链 9 节点、SRE/金融监控框架、GitHub 选型、云端证据
+
+**代码骨架（未实现）**
+- `exporter/`：业务只读指标导出器（probes/tests 占位）
+- `receiver/`：Alertmanager→飞书 webhook 接收器（占位）
+- `config/monitoring.yaml`：TTL、任务节奏、链路阈值、域名义上限、告警治理参数
+- `deploy/`：Compose、Prometheus、12 条规则、Alertmanager、Grafana provisioning、blackbox、systemd unit
+- `scripts/push_job.sh`：cron/systemd 任务末尾推送运行/成功/耗时/记录数
+
+**文档**
+- `docs/API_SPEC.md` v1.1：新增 §6 监控接口草案（`/metrics`、`/alert`、`/healthz`）
 
 ### v1.0 (文档补建) — 2026-09-30
 
@@ -66,5 +122,5 @@
 
 ---
 
-**文档版本**: v1.0
-**最后更新**: 2026-09-30
+**文档版本**: v2.3
+**最后更新**: 2026-11-17

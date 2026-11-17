@@ -1,0 +1,19 @@
+[Unit]
+Description=Dreambuddy Alertmanager -> Feishu receiver
+Documentation=file:///home/luke/dreambuddy/15-监控告警系统/docs/TECHNICAL_DESIGN.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=luke
+Group=luke
+WorkingDirectory=/home/luke/dreambuddy/15-监控告警系统
+EnvironmentFile=/etc/dreambuddy-monitoring/monitoring.env
+ExecStart=/home/luke/venv-trading/bin/python -B receiver/feishu_receiver.py --config config/monitoring.yaml
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

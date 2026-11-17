@@ -1,0 +1,306 @@
+# DreamBuddy 全链路告警规则（v2.0 骨架）
+# 约定：severity ∈ {P0,P1,P2,P3}；channel=alert；runbook 强绑定。
+groups:
+  - name: meta
+    rules:
+      - alert: Watchdog
+        expr: vector(1)
+        labels:
+          severity: P3
+          channel: meta
+        annotations:
+          summary: "监控栈存活心跳（始终触发，用于外部死手开关）"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#106-告警分级与治理"
+
+      - alert: MonitorSelfHeartbeatMissing
+        expr: time() - max(dreambuddy_monitor_heartbeat_timestamp_seconds) > 600
+        for: 1m
+        labels:
+          severity: P0
+          channel: alert
+        annotations:
+          summary: "监控自身心跳缺失 >10min"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#106-告警分级与治理"
+
+  - name: scheduling
+    rules:
+      - alert: NnLiveChainNoRun
+        expr: time() - dreambuddy_job_last_run_timestamp_seconds{job="live_50"} > 900
+        for: 1m
+        labels:
+          severity: P0
+          channel: alert
+        annotations:
+          summary: "50 live + 22 执行链 15min 未运行"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#105-新鲜度-ttl-矩阵云端节奏"
+
+      - alert: Daily40PipelineFailedOrLate
+        expr: time() - dreambuddy_job_last_success_timestamp_seconds{job="40_daily"} > 93600
+        for: 5m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "40 日更超过 26h 未成功"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#105-新鲜度-ttl-矩阵云端节奏"
+
+      - alert: BusStale
+        expr: time() - dreambuddy_job_last_success_timestamp_seconds{job="bus_42"} > 2700
+        for: 1m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "42 总线超过 45min 未成功刷新"
+
+      - alert: Publish43Stale
+        expr: time() - dreambuddy_job_last_success_timestamp_seconds{job="publish_43"} > 5400
+        for: 1m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "43 承接超过 90min 未成功发布"
+
+      - alert: Shadow50Stale
+        expr: time() - dreambuddy_job_last_success_timestamp_seconds{job="shadow_50"} > 3600
+        for: 1m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "50 影子超过 60min 未成功运行"
+
+      - alert: JobFailed
+        expr: dreambuddy_job_status == 0
+        for: 1m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "任务 {{ $labels.job }} 最近一次执行失败"
+
+  - name: artifacts
+    rules:
+      - alert: ArtifactStale
+        expr: dreambuddy_artifact_age_seconds > dreambuddy_artifact_ttl_seconds
+        for: 5m
+        labels:
+          severity: "{{ $labels.severity }}"
+          channel: alert
+        annotations:
+          summary: "产物 {{ $labels.artifact }} 已陈旧（age={{ $value }}s）"
+
+      - alert: ArtifactMissing
+        expr: dreambuddy_artifact_present == 0
+        for: 5m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "产物 {{ $labels.artifact }} 不存在"
+
+  - name: link
+    rules:
+      - alert: BusSourceMissing
+        expr: dreambuddy_bus_active_sources < 6
+        for: 10m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "42 总线活跃 source 少于 6（当前 {{ $value }}）"
+
+      - alert: BusCriticalSourceMissing
+        expr: dreambuddy_bus_source_present{source=~"40-cycle|43-strategic|11-bcrm-tactical"} == 0
+        for: 10m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "42 关键 source {{ $labels.source }} 缺失"
+
+      - alert: BusMetricsMismatch
+        expr: dreambuddy_bus_metrics_mismatch > 0
+        for: 5m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "42 metrics 与 bus_state 不一致"
+
+      - alert: DecisionSilence
+        expr: dreambuddy_decision_count_24h{domain="50-nn"} == 0
+        for: 1h
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "50 有证据但 24h 无决策"
+
+      - alert: DegradedEventFlood
+        expr: rate(dreambuddy_degraded_events_total[5m]) * 60 > 5
+        for: 10m
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "42 降级事件 >5/min"
+
+  - name: signals
+    rules:
+      - alert: SignalSchemaViolation
+        expr: dreambuddy_signal_schema_valid_ratio{source="23-evolution"} < 0.99
+        for: 10m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "23 信号 v1.1 契约一致率低于 99%"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#12-一期23-推理信号监控v22"
+
+      - alert: SignalSilence
+        expr: time() - max(dreambuddy_signal_last_timestamp_seconds{source="23-evolution"}) > 1800
+        for: 5m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "23 推理信号 30min 无新产出"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#123-信号生命周期-8-步与监控点"
+
+      - alert: SignalExpiredAtSubmit
+        expr: increase(dreambuddy_signal_expired_total{source="23-evolution"}[10m]) > 0
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "已过期信号仍在提交"
+
+      - alert: DryRunMismatch
+        expr: dreambuddy_signal_mode_mismatch{source="23-evolution"} > 0
+        for: 5m
+        labels:
+          severity: P0
+          channel: alert
+        annotations:
+          summary: "期望实盘但 23 仍为 dry-run/关闭状态"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#125-实现一致性审计文档-vs-代码2026-11-17"
+
+      - alert: OutboxStuck
+        expr: dreambuddy_outbox_stuck > 0
+        for: 5m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "发件箱存在超 5min 未推进的信号"
+
+      - alert: GatewayRejectSpike
+        expr: dreambuddy_signal_reject_ratio{source="23-evolution"} > 0.05
+        for: 15m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "22 网关 15min 拒绝率 >5%"
+
+      - alert: RiskGateEmpty
+        expr: increase(dreambuddy_risk_rules_evaluated_zero_total[10m]) > 0
+        labels:
+          severity: P0
+          channel: alert
+        annotations:
+          summary: "13 风控 0 条规则仍放行，疑似 fail-open"
+
+      - alert: DuplicateDecisionSpike
+        expr: dreambuddy_duplicate_decision_ratio{source="23-evolution"} > 0.01
+        for: 15m
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "重复 decision_id 比例 >1%"
+
+      - alert: DecisionFillJoinLow
+        expr: dreambuddy_decision_fill_join_ratio{domain="23-evolution"} < 0.95
+        for: 1h
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "成交与 decision_id 关联率 <95%"
+
+      - alert: ConfidenceDegenerate
+        expr: dreambuddy_signal_confidence_stdev{source="23-evolution"} < 0.01
+        for: 2h
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "信号置信度方差趋零，模型可能退化"
+
+  - name: trading
+    rules:
+      - alert: ReconcileBreak
+        expr: dreambuddy_reconcile_breaks > 0
+        for: 15m
+        labels:
+          severity: P0
+          channel: alert
+        annotations:
+          summary: "持仓/成交对账不平，15min 未清零"
+
+      - alert: NotionalOverDomainCap
+        expr: increase(dreambuddy_notional_over_cap_total[5m]) > 0
+        labels:
+          severity: P0
+          channel: alert
+        annotations:
+          summary: "下单名义超过域上限（{{ $labels.domain }}）"
+
+      - alert: ForbiddenSymbolOrder
+        expr: increase(dreambuddy_forbidden_symbol_orders_total[10m]) > 0
+        labels:
+          severity: P0
+          channel: alert
+        annotations:
+          summary: "生产出现禁止/测试 symbol（{{ $labels.symbol }}）"
+
+      - alert: DailyDrawdownBreach
+        expr: dreambuddy_daily_drawdown_pct > dreambuddy_daily_drawdown_limit_pct
+        for: 1m
+        labels:
+          severity: P0
+          channel: alert
+        annotations:
+          summary: "日内回撤超过域上限（{{ $labels.domain }}）"
+
+      - alert: ModelPerformanceDecay
+        expr: avg_over_time(dreambuddy_model_ic_rolling[3h]) < 0
+        for: 1h
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "模型滚动 IC 转负"
+
+  - name: platform
+    rules:
+      - alert: TargetDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "采集目标 {{ $labels.job }} / {{ $labels.instance }} 不可达"
+
+      - alert: HostDiskWillFillIn24h
+        expr: predict_linear(node_filesystem_avail_bytes{mountpoint="/"}[6h], 86400) < 0
+        for: 10m
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "根分区预计 24h 内写满"

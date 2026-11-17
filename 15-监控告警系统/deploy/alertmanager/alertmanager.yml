@@ -1,0 +1,42 @@
+# Alertmanager 路由（v2.0 骨架）
+# 唯一出口：feishu-receiver（宿主机 127.0.0.1:9098），由它复用 15/feishu_alert.py 发卡片。
+route:
+  receiver: feishu-desk
+  group_by: ["alertname", "domain", "artifact", "job"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 6h
+  routes:
+    - matchers: ['severity="P0"']
+      receiver: feishu-risk
+      group_wait: 10s
+      repeat_interval: 10m
+    - matchers: ['severity="P1"']
+      receiver: feishu-desk
+      repeat_interval: 30m
+    - matchers: ['severity="P2"']
+      receiver: feishu-desk
+      repeat_interval: 4h
+    - matchers: ['severity="P3"']
+      receiver: feishu-management
+      repeat_interval: 24h
+
+inhibit_rules:
+  # 同一目标 TargetDown 时，抑制其衍生的探针告警
+  - source_matchers: ['alertname="TargetDown"']
+    target_matchers: ['alertname=~"ArtifactStale|BusStale|Publish43Stale|Shadow50Stale"']
+    equal: ["job"]
+
+receivers:
+  - name: feishu-risk
+    webhook_configs:
+      - url: "http://host.docker.internal:9098/alert?level=P0"
+        send_resolved: true
+  - name: feishu-desk
+    webhook_configs:
+      - url: "http://host.docker.internal:9098/alert?level=P1"
+        send_resolved: true
+  - name: feishu-management
+    webhook_configs:
+      - url: "http://host.docker.internal:9098/alert?level=P3"
+        send_resolved: true

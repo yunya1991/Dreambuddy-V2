@@ -260,7 +260,7 @@
 | 3-EVOLUTION | [3-EVOLUTION/README.md](../3-EVOLUTION/README.md) | 🟡 README v0.2 | TypeScript 进化引擎，实验状态 |
 | 24-图结构上下文压缩 | [24-图结构上下文压缩/docs/ENGINEERING_INDEX.md](../24-图结构上下文压缩/docs/ENGINEERING_INDEX.md) | ✅ 5文档齐全 | TypeScript图结构上下文压缩（原6号旧版已合并去重） |
 | 7-产物中台 | [7-产物中台/docs/ENGINEERING_INDEX.md](../7-产物中台/docs/ENGINEERING_INDEX.md) | 🟡 部分（TECHNICAL_DESIGN 已补） | 产物中台与索引体系 |
-| 15-监控告警系统 | [15-监控告警系统/docs/ENGINEERING_INDEX.md](../15-监控告警系统/docs/ENGINEERING_INDEX.md) | 🟡 部分（IDX+TD 已补） | 监控告警，待补 API_SPEC/CHANGELOG |
+| 15-监控告警系统 | [15-监控告警系统/docs/ENGINEERING_INDEX.md](../15-监控告警系统/docs/ENGINEERING_INDEX.md) | 🟡 部分（IDX+TD v2.0+调研+API v1.1 已补） | 监控告警；**云端架构以 TECHNICAL_DESIGN 第 10 章为准**，调研与 D1–D6 决策见 [RESEARCH-全链路监控体系调研-v0.2.md](../15-监控告警系统/docs/RESEARCH-全链路监控体系调研-v0.2.md)；v2.0 代码骨架已建（exporter/receiver/deploy），3+3 监控矩阵与域注册表见 `config/domains.yaml`，尚未实现 |
 | AGENT协作工具 | [AGENT协作工具/](../AGENT协作工具/) | ⚠️ 仅SKILL.md | 多Agent开发协作辅助（非主线，后期明确接口） |
 | deploy/ | [deploy/INDEX.md](../deploy/INDEX.md) | ✅ INDEX.md | 部署配置体系：一键部署+Hermes预部署包+systemd服务 |
 | experiments/ | [experiments/](../experiments/) | ❌ 无文档 | AB 交易实验 |
