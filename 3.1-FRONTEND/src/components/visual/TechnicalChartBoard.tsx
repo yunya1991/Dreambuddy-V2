@@ -1,14 +1,16 @@
 'use client';
 
-// 技术图表（设计稿 v3 · 八子页严格对齐）
-// 1 加权信号点阵 / 2 点亮图影 / 3 技术分析叠加 / 4 信号反馈
-// 5 跨资产 / 6 波动与回撤 / 7 周期与资金 / 8 数据口径。
+// 技术图表（设计稿 v3 · 十子页严格对齐）
+// 1 加权信号点阵 / 2 点亮投影 / 3 核心资产走势 / 4 关系网络
+// 5 技术分析叠加 / 6 信号反馈 / 7 跨资产 / 8 波动与回撤 / 9 周期与资金 / 10 数据口径。
+// 点亮投影与两条迁入卡片与「数据与图表」同源；影带/持续性作为点亮投影的次级证据保留。
 // 与「数据研究」单向承接：这里只读图与证据，不改推荐；无后端来源的层不画（不伪造）。
 
 import { useEffect, useMemo, useState } from 'react';
 import { V3Badge, V3Empty } from '@/components';
 import { fetchResearch, type ResearchPayload } from '@/lib/visual/research';
 import { LightsTimeline, type LightsPeriod } from './LightsTimeline';
+import { LightsView } from './LightsView';
 import { OverlayChart, type OverlaySource } from './OverlayChart';
 import { SignalFeedback, SignalFeedbackBuckets } from './SignalFeedback';
 import { SignalMatrix } from './SignalMatrix';
@@ -34,7 +36,9 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { id: 'signals', label: '加权信号点阵' },
-  { id: 'lights', label: '点亮图影' },
+  { id: 'lights', label: '点亮投影' },
+  { id: 'core', label: '核心资产走势' },
+  { id: 'relations', label: '关系网络' },
   { id: 'overlay', label: '技术分析叠加' },
   { id: 'feedback', label: '信号反馈' },
   { id: 'cross', label: '跨资产' },
@@ -307,12 +311,12 @@ export function TechnicalChartBoard({ embedded = false }: { embedded?: boolean }
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           {embedded ? (
-            <p className="text-[11px] text-slate-500">八子页 · 只读图与证据，不改推荐</p>
+            <p className="text-[11px] text-slate-500">十子页 · 只读图与证据，不改推荐</p>
           ) : (
             <>
               <h1 className="text-lg font-semibold text-slate-100">技术图表</h1>
               <p className="mt-1 text-xs text-slate-500">
-                加权信号点阵 → 点亮图影 → 技术分析叠加 → 信号反馈；承接「数据研究」的推荐锚点，不给买卖方向
+                加权信号点阵 → 点亮投影 → 核心资产走势 → 关系网络 → 技术分析叠加；承接「数据研究」的推荐锚点，不给买卖方向
               </p>
             </>
           )}
@@ -491,21 +495,43 @@ export function TechnicalChartBoard({ embedded = false }: { embedded?: boolean }
       )}
 
       {overview && active === 'lights' && (
-        <div className="grid gap-3 xl:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.85fr)]">
+        <div className="space-y-3">
           <Panel
-            title="点亮图影"
-            sub="最近 24 个交易日 · 8 标的 × 四轴合成状态"
-            right={<V3Badge variant="info" label="light_history.py" />}
-            note="每列 = 一个 as_of 快照（逐日切片历史后重跑 D-E15 + I39，再经 D-E19 投影），无前视。影带用于看「点亮是否持续」，不用于计数胜率（胜率在「信号反馈」）。"
+            title="点亮投影"
+            sub="D-E19 · 趋势 / 惯性 / 周期 / 前瞻 四轴五态 · 资产卡片网格"
+            right={
+              <>
+                <V3Badge
+                  variant={lightMeta.thresholds_uncalibrated ? 'warning' : 'success'}
+                  label={lightMeta.thresholds_uncalibrated ? '阈值未标定' : '已标定 p70/p40'}
+                />
+                <V3Badge variant="default" label={`${lightsRows.length} 标的`} />
+              </>
+            }
+            note="后端判定点亮状态与四轴强度，前端只展示不重算；轴强度 = |轴值| / 轴权重。"
           >
-            <LightsTimeline
-              periods={currentPeriods}
-              loading={historyLoading}
-              error={historyError}
-              onRequestHistory={loadHistory}
-              historyCount={24}
-            />
+            {overview.lights ? (
+              <LightsView payload={overview.lights} />
+            ) : (
+              <V3Empty title="点亮投影无数据" description="后端未产出 D-E19 点亮结果（样本不足或落库缺失）" />
+            )}
           </Panel>
+
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.85fr)]">
+            <Panel
+              title="点亮图影（24 期影带）"
+              sub="最近 24 个交易日 · 8 标的 × 四轴合成状态"
+              right={<V3Badge variant="info" label="light_history.py" />}
+              note="每列 = 一个 as_of 快照（逐日切片历史后重跑 D-E15 + I39，再经 D-E19 投影），无前视。影带用于看「点亮是否持续」，不用于计数胜率（胜率在「信号反馈」）。"
+            >
+              <LightsTimeline
+                periods={currentPeriods}
+                loading={historyLoading}
+                error={historyError}
+                onRequestHistory={loadHistory}
+                historyCount={24}
+              />
+            </Panel>
 
           <div className="space-y-3">
             <Panel
@@ -584,8 +610,31 @@ export function TechnicalChartBoard({ embedded = false }: { embedded?: boolean }
               </div>
               <p className="mt-2 text-[10px] text-slate-500">任一层缺失即不生成信号；本页不判定买卖。</p>
             </Panel>
+            </div>
           </div>
         </div>
+      )}
+
+      {overview && active === 'core' && (
+        <Panel
+          title="核心资产归一化走势"
+          sub="D-E16 · 逐标的按 as_of 截断后 rebase 加权 · 前端零统计"
+          right={<V3Badge variant="default" label={`${overview.assets?.length ?? 0} 资产`} />}
+          note="只裁剪后端已产出的成员曲线，不重算任何统计量；曲线不越过数据截止。"
+        >
+          {renderVisual('series:core-assets')}
+        </Panel>
+      )}
+
+      {overview && active === 'relations' && (
+        <Panel
+          title="关系网络"
+          sub="D-E05 · 共振网络 · 节点 = 资产，边 = 同期相关"
+          right={<V3Badge variant="info" label="D-E05" />}
+          note="线宽与透明度 = |ρ|；缺数据时由后端降级，前端不伪造边。"
+        >
+          {renderVisual('graph')}
+        </Panel>
       )}
 
       {overview && active === 'overlay' && (
@@ -796,14 +845,9 @@ export function TechnicalChartBoard({ embedded = false }: { embedded?: boolean }
           >
             {renderVisual('table:d-e17')}
           </Panel>
-          <div className="grid gap-3 xl:grid-cols-2">
-            <Panel title="共振网络（D-E05）" sub="相关性投影，不画方向箭头">
-              {renderVisual('graph')}
-            </Panel>
-            <Panel title="对齐切片（D-E12）" sub="有效观测 / 陈旧占比 / 区间收益">
-              {renderVisual('table:d-e12')}
-            </Panel>
-          </div>
+          <Panel title="对齐切片（D-E12）" sub="有效观测 / 陈旧占比 / 区间收益">
+            {renderVisual('table:d-e12')}
+          </Panel>
         </div>
       )}
 

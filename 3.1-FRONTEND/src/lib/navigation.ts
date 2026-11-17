@@ -30,7 +30,8 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { id: 'agent', label: 'Agent 工作台', href: '/dashboard/agent', icon: '🤖', section: 'platform' },
   { id: 'fundamental', label: '基本面', href: '/dashboard/fundamental', icon: '📈', section: 'platform' },
   { id: 'news', label: '新闻', href: '/dashboard/news', icon: '📰', section: 'platform' },
-  { id: 'visual', label: '数据与图表', href: '/dashboard/visual', icon: '📉', section: 'platform' },
+  // 2026-11-17：卡片已迁入「数据研究 · 技术图表」，前端隐藏入口；路由/组件保留，恢复时把 hidden 改为 false
+  { id: 'visual', label: '数据与图表', href: '/dashboard/visual', icon: '📉', section: 'platform', hidden: true },
   // SPEC-20261116 §11：数据研究 / 技术图表 合并为一个入口（主 Tab 切换），与「基本面」同级
   {
     id: 'research',
