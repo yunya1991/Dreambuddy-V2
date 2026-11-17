@@ -240,6 +240,19 @@ def run_once(loop: EvolutionExitLoop, gateway: Any, okx: Any, args) -> Dict[str,
     except Exception as exc:  # noqa: BLE001 — 补挂失败不阻塞离场
         logger.debug("SLTP 补挂巡检失败(FAIL-OPEN): %s", exc)
 
+    # 每轮用交易所持仓校正 22 账本（对账源仓位/均价漂移、幽灵仓清零）
+    try:
+        _rec = gateway.reconcile_ledger()
+        if _rec.get("inserted") or _rec.get("updated") or _rec.get("closed"):
+            logger.info(
+                "[reconcile] inserted=%s updated=%s closed=%s",
+                _rec.get("inserted"),
+                _rec.get("updated"),
+                _rec.get("closed"),
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("账本对账失败(FAIL-OPEN): %s", exc)
+
     positions = collect_positions(gateway, okx, args.symbols, args.tags)
     if not positions:
         logger.info("无归属 23 的持仓，本轮跳过")
