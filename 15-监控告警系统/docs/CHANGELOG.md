@@ -1,6 +1,6 @@
 # 变更记录 — 15-监控告警系统
 
-> **版本**: v2.9 | **更新日期**: 2026-11-17
+> **版本**: v2.10 | **更新日期**: 2026-11-18
 
 ---
 
@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 变更内容 | 影响范围 |
 |------|------|----------|----------|
+| v2.10 | 2026-11-18 | 11 交易循环退役后的监控对齐（TD §13.8）：停用 universe 三条误报规则；导出器新增 `entry23_active/exit23_active/ledger_*/sltp_*`；新增 6 条执行链告警；watchdog 增 exit23 日志与账本检查；本地 `monitor_config.json` 的 yijing 置 disabled | 代码+配置+文档 |
 | v2.9 | 2026-11-17 | 修复 blackbox 探针误报 TargetDown：探针改 `network_mode: host` + targets 统一 `127.0.0.1`（云端业务端口只绑回环，`host.docker.internal` 打不通）；新增 `deploy/DEPLOY-CHECKLIST.md` 部署检查清单 | 配置+运维 |
 | v2.8 | 2026-11-17 | 落地 §13 链路监控：chain_events 事件流；修复 G1–G7；导出器新增 chain_*/exit_* 指标；新增 ChainBroken/ChainCompletionLow/ChainWaitBroken/ExitSizeUnknown/ExitCloseFailed 规则 | 代码+配置 |
 | v2.7 | 2026-11-17 | 技术设计新增第 13 章：A/B 分类监控原则；23 交易链路 N0–N15 逐节点监控方案；`chain_event.v1` 链路汇总与复盘；确认 6 个链路缺口（无 trace_id、pc/cv 旁路、regime/ri 退化、审计仅 submit、双 decision_id） | 文档 |
@@ -25,6 +26,28 @@
 ---
 
 ## 详细变更
+
+### v2.10 — 2026-11-18
+
+**背景**：11 `polling_trader` 停用，23 `entry23/exit23` 成为唯一交易 owner；22 承接 SL/TP 补挂、账本对账、幽灵仓清零。
+
+**停用误报规则**
+- `EvolutionScanStalled` / `EvolutionScanFailed` / `EvolutionPoolShrunk`：数据源 `runtime/universe_snapshot.json` 由 11 写入，23 无写入点，11 退役后永久误报
+- `monitoring.yaml` 新增 `universe.enabled=false`，导出器 `universe_metrics()` 按开关短路
+
+**新增执行链指标（`execution_metrics()`）**
+- `entry23_active` / `exit23_active`（systemd）
+- `ledger_positions` / `ledger_last_write_age_seconds` / `ledger_reconcile_updated_1h` / `ledger_ghost_closed_24h`（22 `position_ledger.db`）
+- `sltp_reconcile_age_seconds` / `sltp_reconcile_patched_1h` / `sltp_reconcile_failed_1h`（22 `sltp_reconcile.jsonl`）
+
+**新增告警（`execution` group）**
+- `Entry23Down`(P1)、`Exit23Down`(P0)、`LedgerDriftFrequent`(P2)、`GhostPositionCleaned`(P2)、`SltpReconcileFailed`(P1)、`SltpReconcileStale`(P2)
+
+**watchdog**
+- 新增 `exit23.log` 10min 新鲜度、`position_ledger.db` 24h 写入检查
+
+**本地 v1**
+- `monitor_config.json` 的 `yijing` 置 `enabled=false`（heartbeat 随交易循环停止，避免永久 CRITICAL）；`yijing-data-server:8765` 由 Prometheus blackbox 覆盖
 
 ### v2.8 — 2026-11-17
 

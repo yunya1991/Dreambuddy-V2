@@ -1,6 +1,6 @@
 # 23-四层闭环自进化交易架构 — 工程索引
 
-> **版本**: v1.6 | **更新日期**: 2026-11-17
+> **版本**: v1.7 | **更新日期**: 2026-11-18
 > **定位**: 模块级工程索引（L2），对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
 
 ---
@@ -13,7 +13,7 @@
 | 模块名称 | 四层闭环自进化交易架构 |
 | 核心职责 | 观察→推断→实验→反思→回馈四层闭环自进化交易策略 |
 | 主入口 | `dreambuddy_evolution/evolution_pipeline.py` (EvolutionPipeline)、`dreambuddy_evolution/engines/kline_event_handler.py` (KlineEventHandler) |
-| 依赖关系 | 上游：OKX API、data_center.db、SentimentEngine、polling_trader；下游：polling_trader 建仓回调 |
+| 依赖关系 | 上游：18 数据获取中心（`data_center.compat.market_compat.fetch_candles`）、OKX 行情、SentimentEngine、43 战略层（war_state/five_scores/position_cap）；执行：22 `TradeExecutionGateway`/`PositionLedger`；反馈：22 成交结果 → 23 `TradeSettlementBridge`。已与 11 域解耦（不 import、不写 11 路径） |
 | 文档状态 | ✅完整（SPEC 4 份 + 文档四件套 + 案例库） |
 
 ---
@@ -76,7 +76,16 @@
 │   │   ├── exit_rl_policy.py           # 离场RL策略
 │   │   └── exit_reward_calculator.py   # 离场奖励计算器
 │   ├── adapters/                       # 数据适配层（20+ 文件，详见 §3.3）
+│   ├── execution/                      # 执行层（23 自持，不依赖 11）
+│   │   ├── entry_loop.py               # 开仓闸门/定容/SL/TP + 22 网关提交
+│   │   ├── exit_loop.py                # 持仓巡检/离场决策/sz 解析/幽灵仓回调
+│   │   ├── decision_signal.py          # FinalDecisionSignal 构造与分发
+│   │   ├── outbox.py                   # 发件箱幂等状态机
+│   │   ├── chain_events.py             # N/E 节点事件
+│   │   └── ledger_guards.py            # 账本一致性守卫
 │   ├── scripts/                        # 脚本
+│   │   ├── entry_runner.py             # 23 独立开仓进程入口（18 数据 → pipeline → 22）
+│   │   ├── exit_runner.py              # 23 独立离场进程入口（对账 → SL/TP 补挂 → 巡检）
 │   │   ├── shadow_backtest.py          # 影子验证回测引擎
 │   │   ├── shadow_ate_eval.py          # Shadow ATE 评估子进程入口（隔离 DML）
 │   │   ├── train_neural_sde.py         # Neural SDE 训练脚本
@@ -182,6 +191,22 @@
 | `gene_version_manager.py` | `GeneVersionManager` | 基因库版本控制（snapshot/rollback/list_versions） |
 | `gene_audit_gate.py` | `GeneAuditGate` | 三级审核门禁（Schema+统计+相对提升） |
 
+### 3.4 执行层（execution/ + scripts/ 入口）
+
+| 文件 | 类/入口 | 职责 | 关键方法/参数 |
+|------|---------|------|---------------|
+| `execution/entry_loop.py` | `EvolutionEntryLoop` | 开仓闸门、定容、SL/TP 下限、22 网关提交 | `run_symbol()`, `_check_gates()`, `_size()` |
+| `execution/exit_loop.py` | `EvolutionExitLoop` | 持仓巡检、离场决策、RL 覆盖、`sz` 解析与 lotSz 对齐 | `run()`, `_resolve_close_sz()`, `_lot_sz()` |
+| `execution/decision_signal.py` | `EvolutionSignalDispatcher` / `build_*_decision` | v1.2 信号构造、outbox 分发、审计落盘 | `dispatch()`, `build_entry_decision()`, `build_exit_decision()` |
+| `execution/outbox.py` | `default_outbox()` | `decision_id` 幂等、重试、卡单检测 | SQLite 状态机 |
+| `execution/chain_events.py` | `emit_stage()` | N/E 节点时间线 | `new_trace_id()`, `emit_stage()` |
+| `execution/ledger_guards.py` | 账本一致性守卫 | 开仓前账本/交易所一致性检查 | — |
+| `scripts/entry_runner.py` | `main()` | 独立开仓进程（`--interval 300 --symbols BTC,ETH,SOL`） | `entry23` service |
+| `scripts/exit_runner.py` | `main()` | 独立离场进程（`--interval 60`）：SL/TP 补挂 → 22 对账 → 巡检 → 结算反馈 | `exit23` service |
+
+> 部署与单一 owner 语义见 [TRADING_FRAMEWORK_AND_SIGNAL_FLOW.md §6.4](./TRADING_FRAMEWORK_AND_SIGNAL_FLOW.md#64-部署与单一-owner)；
+> 公共执行（账本/对账/SL-TP 补挂/幽灵仓）归属见 [22 TD §7](../../22-执行引擎中心/docs/TECHNICAL_DESIGN.md#7-统一持仓账本与执行兜底2026-11-18)。
+
 ---
 
 ## 4. 核心流程索引（N0–N15 / E0–E6）
@@ -215,13 +240,13 @@
 
 | 节点 | 环节 | 代码入口 | 输出（关键字段） | 关联键 |
 |---|---|---|---|---|
-| E0 | 持仓快照/交易所同步 | `exit_loop.run` → `_sync_from_exchange` | `pos{inst_id,pos_side,entry_price,upl_ratio,position_usdt,age}` | `inst_id+pos_side` |
+| E0 | 持仓同步/对账 | `exit_runner.run_once` → `gateway.reconcile_ledger()` → `exit_loop.run` | 交易所→22 账本补缺/校正/关陈旧行；`pos{inst_id,pos_side,entry_price,upl_ratio,position_usdt,age}` | `inst_id+pos_side` |
 | E1 | 离场决策 | `engines/exit_engine/exit_engine.decide` | `decision{action,reason,confidence,params}` | 平仓 `trace_id` |
 | E2 | RL 覆盖 | `_apply_rl_override` | 修正后 action | 平仓 `trace_id` |
 | E3 | 影子记录 | `_record_shadow` | shadow 样本、reward | `symbol` |
-| E4 | 平仓信号构造 | `build_exit_decision` | `decision_id`、`action=close/reduce`、`sz`、`pos_side` | 平仓 `chain_id` |
+| E4 | 平仓信号构造 | `build_exit_decision` + `_resolve_close_sz`/`_lot_sz` | `decision_id`、`action=close/reduce`、`sz`（交易所→账本→名义回退，按 lotSz 向下对齐） | 平仓 `chain_id` |
 | E5 | 提交/风控/成交 | `EvolutionSignalDispatcher.dispatch` → 22 → 13 | `executed/reason_code/order_result` | `decision_id` |
-| E6 | 部分减仓刷新/全平清理/落账 | `_refresh_partial_size`、`_cleanup_engine_state`、`on_closed` | 剩余仓位、PnL、反馈样本 | `decision_id` |
+| E6 | 部分减仓刷新/全平清理/落账 | `_refresh_partial_size`、`_cleanup_engine_state`、`on_closed`；幽灵仓 `on_ghost` → `gateway.close_ghost_position` | 剩余仓位、PnL、反馈样本、`ghost_exchange_flat` | `decision_id` |
 
 ### 4.3 紧耦合 7 步闭环（TightCouplingOrchestrator）
 
@@ -259,7 +284,10 @@ L1 状态空间 → Level0 路径代价 → L2 策略匹配 → 【交叉识别�
 | `kline_event_handler.py` | 三层仓位门槛 | `PROBE_THRESHOLD=0.40`, `STANDARD_THRESHOLD=0.55`, `TREND_THRESHOLD=0.70` |
 | `ripple_engine.py` | 涟漪检测门槛 | `vol_ratio_threshold=2.0`, `liq_change_threshold=0.30` |
 | `reflection_scanner.py` | 反思学习门槛 | `MIN_WIN_RATE=0.55`, `MAX_HISTORY_DAYS=90` |
-| `trade_index_builder.py` | 索引库配置 | `CACHE_TTL=300`, `DISCOVERY_CACHE_TTL=3600`, `MAX_SCAN_DEPTH=5` |
+| `trade_index_builder.py` | 索引库配置 | `CACHE_TTL=300`, `DISCOVERY_CACHE_TTL=3600`, `MAX_SCAN_DEPTH=5`；成交源为 22 `runtime/position_ledger.db` 的 `fills`（`close/reduce/reduce_only`） |
+| `adapters/subsystem_bridge.py` | 自产因子开关 | `EVOLUTION_INDIGENOUS_FACTORS`（默认 on） |
+| `deploy/dreambuddy-entry23.service` | 开仓进程 | `--interval 300 --symbols BTC,ETH,SOL`, `EVOLUTION_ENTRY23_ENABLED=on` |
+| `deploy/dreambuddy-exit23.service` | 平仓进程 | `--interval 60`；每轮 SL/TP 补挂 + 22 对账 |
 
 ---
 
@@ -352,6 +380,8 @@ cd 23-四层闭环自进化交易架构 && python -m pytest dreambuddy_evolution
 | Phase2.5 Neural SDE | — | ✅ NeuralSDEModel 已实现，可通过 pipeline 扩展接入 | **已解决** |
 | Phase3 策略合成 | — | ✅ StrategySynthesizer 已实现，可通过 pipeline 扩展接入 | **已解决** |
 | Phase5 元认知 | — | ✅ MetaCognitionGate/UncertaintyQuantifier 懒初始化接入 pipeline | **已解决** |
+| 23 依赖 11 域 | — | ✅ 已解耦：因子自产（`indigenous_factors.py`）、交易索引改读 22 账本、K 线路走 18；不 import 11 | **已解决**（2026-11-18） |
+| 11 `polling_trader` 内嵌 23 方法体 | 低 | `_check_evolution_kline_signal` 等已由 `YIJING_23_ENABLED` 默认关闭，方法体待云端稳定观察后物理删除 | **待清理** |
 
 详见 [DEBT_INDEX.md](../../DEBT_INDEX.md)。
 

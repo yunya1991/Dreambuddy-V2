@@ -1,6 +1,6 @@
 # 工程索引 — 15-监控告警系统
 
-> **版本**: v1.0 | **更新日期**: 2026-08-02
+> **版本**: v1.1 | **更新日期**: 2026-11-18
 > **定位**: 模块级工程索引（L3 辅助模块），对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.1 / §4
 
 ---
@@ -14,7 +14,7 @@
 | 模块层级 | **L3 辅助模块**（运行中模块，遵循 README + ENGINEERING_INDEX + TECHNICAL_DESIGN 三文档建设规划） |
 | 核心职责 | 以旁路方式对 5 个交易子系统进行健康巡检、指标采集与飞书告警推送，自身不参与交易决策 |
 | 主入口 | `scheduler.py`（常驻调度）/ `monitor_core.py`（单次手动执行） |
-| 依赖关系 | 上游：被监控子系统状态文件（11-易经推理系统 / 12-三屏趋势系统 / 14-V15经典马丁策略 / experiments/ab-trading Agent A、Agent B）；下游：飞书 OpenAPI（告警通道） |
+| 依赖关系 | 上游：23 `entry23/exit23` 运行产物与 22 账本/审计（Prometheus exporter）；12-三屏趋势系统 / 14-V15经典马丁策略 / experiments/ab-trading Agent A、Agent B 状态文件；11 交易循环已退役，仅 `yijing-data-server`(8765) 走 blackbox。下游：飞书 OpenAPI（告警通道） |
 | 外部依赖 | `requests`（飞书 OpenAPI 调用）、`schedule`（定时调度） |
 | 凭证依赖 | `FEISHU_APP_ID` / `FEISHU_APP_SECRET`（`start_monitor.sh` 注入） |
 | 运行状态 | ✅ 运行中 |
@@ -24,7 +24,8 @@
 
 | 被监控系统 | 适配器 | 读取的状态文件 | 心跳阈值 |
 |------------|--------|----------------|----------|
-| 11-易经推理系统 | `YijingAdapter` | `.workbuddy/memory_l4/guardian/heartbeat.json`、`risk/risk_state.json`、`stats/performance.json`、`data/polling_trader/*.jsonl`、`data/bcrm2_models/*` | 30 分钟 |
+| 11-易经推理系统 | `YijingAdapter` | ~~`.workbuddy/memory_l4/guardian/heartbeat.json` 等~~ | **已退役**（`enabled=false`）；11 交易循环下线，`yijing-data-server`(8765) 改由 Prometheus blackbox 监控 |
+| 23 entry23/exit23 + 22 账本 | Prometheus exporter（`exporter/business_metrics_exporter.py`） | `23/runtime/execution_decisions.jsonl`、`22/runtime/position_ledger.db`、`22/audit/sltp_reconcile.jsonl`、`systemctl is-active` | 存活 5min；账本/SLTP 见 TD §13.8 |
 | 14-V15经典马丁策略 | `V15Adapter` | `data/v15_state.json` | 240 分钟 |
 | 12-三屏趋势系统 | `ScreenAdapter` | `data/screen_trade_state.json`、`data/screen_evolution_state.json` | 240 分钟 |
 | Agent A | `AgentAAdapter` | `logs/agent_a/*.json`、`data/agent_a_memory.json` | 240 分钟 |
@@ -39,10 +40,21 @@
 ├── docs/                        # 文档目录
 │   ├── ENGINEERING_INDEX.md     # 本文件 — 工程索引
 │   └── TECHNICAL_DESIGN.md      # 技术设计
-├── adapters/                    # 适配器层
+├── adapters/                    # 适配器层（本地 v1：11/12/14/AgentA/AgentB）
 │   └── __init__.py              # 5 个系统监控适配器实现
+├── exporter/                    # 云端 v2 业务指标导出器（:9101，只读）
+│   └── business_metrics_exporter.py # 23 信号/链路、22 账本/SLTP、entry23/exit23 存活
+├── deploy/                      # 云端 v2 部署产物
+│   ├── prometheus/              # 采集与告警规则（含 execution group）
+│   ├── alertmanager/            # 告警路由
+│   ├── blackbox/                # HTTP/TCP 探针（含 yijing-data-server:8765）
+│   └── grafana/                 # 看板与数据源
+├── scripts/
+│   └── watchdog.py              # entry23/exit23 存活、日志/账本新鲜度、磁盘
 ├── config/                      # 配置文件
-│   └── monitor_config.json      # 主配置（系统/告警/调度/持仓同步/日志）
+│   ├── monitor_config.json      # 本地 v1 主配置（yijing 已 disabled）
+│   ├── monitoring.yaml          # 云端 v2 阈值（signals/execution/universe）
+│   └── domains.yaml             # 3+3 监控格注册表
 ├── memory/                      # 事件记忆模块（AM-OPS-001）
 │   ├── app_memory_interface.py  # 运维应用记忆接口
 │   ├── memory_index.json        # 记忆索引

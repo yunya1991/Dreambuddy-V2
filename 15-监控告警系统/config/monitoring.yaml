@@ -169,6 +169,21 @@ signals:
   outbox_stuck_seconds: 300
   min_fill_join_ratio: 0.95
 
+# 11 交易循环退役后的执行链监控（2026-11-18，见 TD §13.8）
+execution:
+  entry23_unit: dreambuddy-entry23
+  exit23_unit: dreambuddy-exit23
+  ledger_db: 22-执行引擎中心/runtime/position_ledger.db
+  sltp_audit: 22-执行引擎中心/audit/sltp_reconcile.jsonl
+  reconcile_drift_alert_per_hour: 3
+  sltp_stale_seconds: 600
+
+# 11 已下线，universe_snapshot 无写入方（23 未接管）；
+# 保持关闭以避免 EvolutionScanStalled/Failed/PoolShrunk 永久误报。23 接管后改 true。
+universe:
+  enabled: false
+  path: 23-四层闭环自进化交易架构/runtime/universe_snapshot.json
+
 # 告警治理
 alerting:
   dedup_cooldown_seconds: 1800

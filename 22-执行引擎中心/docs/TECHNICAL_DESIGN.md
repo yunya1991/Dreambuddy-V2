@@ -1,6 +1,6 @@
 # 执行引擎中心 — 技术设计
 
-> **版本**：v1.0 | **更新日期**：2026-10-11
+> **版本**：v1.1 | **更新日期**：2026-11-18
 
 ## 1. 架构设计
 
@@ -26,7 +26,14 @@ TEE 采用分层架构：
 | kill_switch.py | 熔断开关，异常时自动停止下单 |
 | failopen.py | FAIL-OPEN 降级策略，主路径失败时降级执行 |
 | auditor.py | 全链路审计，记录每笔订单的完整生命周期 |
-| sltp_reconcile.py | 公共执行：存量持仓 SL/TP 补挂巡检（各域共用，11 交易循环下线后仍兜底） |
+
+### 1.1.1 根目录公共执行模块
+
+| 模块 | 职责 |
+|------|------|
+| trade_execution_gateway.py | `TradeExecutionGateway`：统一下单入口（v1.2 契约、幂等、风控桥、审计、落账） |
+| position_ledger.py | `PositionLedger`：持仓数量与已实现盈亏唯一真相源（positions/fills/cooldowns） |
+| sltp_reconcile.py | 存量持仓 SL/TP 补挂巡检（各域共用，11 交易循环下线后仍兜底） |
 
 ### 1.2 适配器层 adapters/
 
@@ -128,3 +135,69 @@ TEE 采用分层架构：
 - 顺序：50 `tools/run_live.py` → 22 `x1_live_executor.py --limit 20`
 - 运维：`sudo systemctl start dreambuddy-nn-live-chain.service` 手动跑一轮；`journalctl -u` 查看日志；真实下单记录落 `audit/x1_live_fills.jsonl`
 - 回退：在 unit 的 ExecStart 加 `--dry-run` 即回到只读演练
+
+## 7. 统一持仓账本与执行兜底（2026-11-18）
+
+23 域独立运行、11 交易循环（`polling_trader`）下线后，22 承接全部「公共执行」能力：
+下单、幂等、落账、SL/TP 补挂、对账与幽灵仓清理。本节是该边界的唯一说明。
+
+### 7.1 PositionLedger（position_ledger.py）
+
+SQLite 单库 `22-执行引擎中心/runtime/position_ledger.db`，可用 `POSITION_LEDGER_PATH` 覆盖。
+
+| 表 | 语义 |
+|---|---|
+| `positions` | 当前持仓聚合（`inst_id,pos_side` 主键）：`qty/avg_entry/entry_known/realized_pnl/source` |
+| `fills` | 追加式成交流水：`action ∈ open/close/reduce/reconcile/reconcile_update` |
+| `cooldowns` | 全平冷却（替代 11 `last_close_info`），供开仓侧 `is_in_cooldown()` 查询 |
+
+- 只落账，不做风控与决策；异常由 Gateway 吞掉（FAIL-OPEN），不影响下单。
+- `source` 是持仓归属：`23-evolution`/`evolution`/`bcrm`/`strategy`/`event_arbitrage` 归 23 巡检；
+  `22-reconciled` 为对账回填；50-NN 链写自己的 source。无 source 的历史手工流水不参与自动校正。
+- `apply_partial_close()` 在剩余量为 0 时写冷却；`entry_known=0`（P2 之前的仓）不臆造已实现盈亏。
+
+### 7.2 账本对账 reconcile_ledger()
+
+`TradeExecutionGateway.reconcile_ledger(source="22-reconciled")` 每轮拉取交易所持仓并调用
+`PositionLedger.reconcile()`，返回 `{ok,inserted,updated,closed,skipped,...}`：
+
+1. **补缺**：交易所存在、账本缺失 → 插入，`source=<source>`，写 `fills.action=reconcile`。
+2. **校正数量**：仅对「受管源」——本对账源、`23-*`、`evolution`、`bcrm`、`strategy`、
+   `event_arbitrage`——以交易所数量为准；无 source 的历史手工流水保持不动（幂等测试基线）。
+3. **同步均价**：仅本对账源（`22-reconciled`）随交易所 `avg_px` 漂移更新，写
+   `fills.action=reconcile_update`；23 自己开的仓保留真实开仓成本。
+4. **关闭陈旧行**：交易所已无持仓、账本仍开 → 仅关闭 `source` 以本对账源开头的行，
+   `exit_reason=ghost_stale`，避免每轮重复报幽灵仓。
+
+调用方：23 `exit_runner` 每轮（默认 60s）先对账再巡检，因此数量/均价漂移最多滞后一个周期。
+
+### 7.3 幽灵仓清零 close_ghost_position()
+
+`TradeExecutionGateway.close_ghost_position(inst_id, pos_side, exit_px, source="23-evolution")`：
+交易所已无持仓但账本仍开着时，按传入价（缺省用账本均价）全平，`exit_reason=ghost_exchange_flat`。
+23 `exit_runner` 的 `on_ghost` 回调直接调用，保证一次告警后账本归零。
+
+### 7.4 SL/TP 补挂 reconcile_sltp()
+
+`sltp_reconcile.reconcile_sltp(okx_client, sl_pct=0.05, tp_pct=0.08,
+breakeven_upl_pct=3.0, log_fn=None, audit_path=None)`：
+
+- 逐 inst 查 `get_algo_orders`，只补**缺失的一侧**（已在的一侧传 0），避免重复/覆盖。
+- 止损方向必须安全：long 止损 < 当前价，short 止损 > 当前价，否则 OKX 会
+  `Order would immediately trigger`。
+- 浮盈超过 `breakeven_upl_pct` 时止损上移至保本。
+- 审计落 `22-执行引擎中心/audit/sltp_reconcile.jsonl`；FAIL-OPEN，任何异常只记录不抛。
+- 调用方：23 `exit_runner` 每轮入口。11 交易循环下线后这是存量持仓条件单的统一兜底。
+
+### 7.5 职责边界
+
+| 能力 | 归属 |
+|---|---|
+| 契约校验 / 幂等 / 路由 / 风控桥 / 审计 | 22 Gateway |
+| 持仓数量与已实现盈亏真相源、冷却 | 22 PositionLedger |
+| SL/TP 补挂、对账、幽灵仓清零 | 22（`sltp_reconcile` + `reconcile_ledger`/`close_ghost_position`） |
+| 开仓闸门、定容、平仓决策、sz 解析 | 23 `execution/entry_loop.py`、`execution/exit_loop.py` |
+| 最终风控与成交 | 13 `PreTradeGate` + OKX |
+
+22 不感知策略语义；23 不直接调用交易所下单接口，也不写 11 的路径或数据文件。
+

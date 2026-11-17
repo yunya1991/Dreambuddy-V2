@@ -267,33 +267,8 @@ groups:
         annotations:
           summary: "23 交叉验证处于降级模式，检查 degraded_mode 与置信度乘数"
 
-      - alert: EvolutionScanStalled
-        expr: dreambuddy_evolution_universe_snapshot_age_seconds > 900
-        for: 10m
-        labels:
-          severity: P1
-          channel: alert
-        annotations:
-          summary: "23 全市场扫描停摆超过 15 分钟（币种池退回基础池）"
-          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#13-分类监控模型与-23-交易链路逐节点监控v27"
-
-      - alert: EvolutionScanFailed
-        expr: dreambuddy_evolution_scan_failed > 0
-        for: 15m
-        labels:
-          severity: P2
-          channel: alert
-        annotations:
-          summary: "23 全市场扫描持续失败（FAIL-OPEN 已静默降级）"
-
-      - alert: EvolutionPoolShrunk
-        expr: dreambuddy_evolution_pool_size <= dreambuddy_evolution_base_count
-        for: 30m
-        labels:
-          severity: P2
-          channel: alert
-        annotations:
-          summary: "23 探索无新增：池大小未超过基础池，自动探索可能失效"
+      # 2026-11-18 下线：universe_snapshot 由 11 polling_trader 写入，11 交易循环已退役且 23 未接管，
+      # 继续保留会导致 EvolutionScanStalled/Failed/PoolShrunk 永久误报（见 15 TD §13.8.2）。
 
       - alert: ChainBroken
         expr: dreambuddy_chain_missing_stage_total > 0
@@ -341,6 +316,69 @@ groups:
         annotations:
           summary: "平仓/减仓执行失败，持仓风险持续暴露"
           runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#132-23-交易链路信号环节全景n0n15"
+
+  # 23 独立执行链 + 22 公共执行（2026-11-18，见 15 TD §13.8）
+  - name: execution
+    rules:
+      - alert: Entry23Down
+        expr: dreambuddy_entry23_active == 0
+        for: 5m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "23 开仓进程非 active，开仓链已停"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#138-11-交易循环退役后的监控对齐v210-2026-11-18"
+
+      - alert: Exit23Down
+        expr: dreambuddy_exit23_active == 0
+        for: 5m
+        labels:
+          severity: P0
+          channel: alert
+        annotations:
+          summary: "23 平仓进程非 active，平仓与账本对账同时停摆（风险未释放）"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#138-11-交易循环退役后的监控对齐v210-2026-11-18"
+
+      - alert: LedgerDriftFrequent
+        expr: dreambuddy_ledger_reconcile_updated_1h > 3
+        for: 30m
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "22 账本 1h 内被对账校正 >3 次，数量/均价持续漂移"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#138-11-交易循环退役后的监控对齐v210-2026-11-18"
+
+      - alert: GhostPositionCleaned
+        expr: dreambuddy_ledger_ghost_closed_24h > 0
+        for: 10m
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "24h 内清理过幽灵/陈旧仓（账本残留已自动清零，需复盘归属）"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#138-11-交易循环退役后的监控对齐v210-2026-11-18"
+
+      - alert: SltpReconcileFailed
+        expr: dreambuddy_sltp_reconcile_failed_1h > 0
+        for: 10m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "存量持仓 SL/TP 补挂失败，部分仓位缺少止损保护"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#138-11-交易循环退役后的监控对齐v210-2026-11-18"
+
+      - alert: SltpReconcileStale
+        expr: dreambuddy_exit23_active == 1 and dreambuddy_ledger_positions > 0 and dreambuddy_sltp_reconcile_age_seconds > 600
+        for: 15m
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "有持仓但 SL/TP 补挂巡检超过 10min 未运行"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#138-11-交易循环退役后的监控对齐v210-2026-11-18"
 
   - name: trading
     rules:

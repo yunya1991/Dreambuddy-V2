@@ -1,6 +1,6 @@
 # 23 交易框架与信号流（SSoT）
 
-> **版本**: v1.0 | **创建日期**: 2026-11-17 | **状态**: Active
+> **版本**: v1.1 | **创建日期**: 2026-11-17 | **更新日期**: 2026-11-18 | **状态**: Active
 > **定位**: 23 域交易主链唯一事实源（SSoT），覆盖分层框架、三类信号、开/平仓数据流、关联键与产物。
 > **边界**: 本文描述“交易怎么做、信号怎么传”；基因三层准入见 [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md)，接口签名见 [API_SPEC.md](./API_SPEC.md)，逐节点代码映射见 [ENGINEERING_INDEX.md §4](./ENGINEERING_INDEX.md#4-核心流程索引n0n15--e0e6)。
 > **监控口径**: 直接引用 [15-监控告警系统/TECHNICAL_DESIGN.md §13](../../15-监控告警系统/docs/TECHNICAL_DESIGN.md#13-分类监控模型与-23-交易链路逐节点监控v27)，本文不复制指标与告警定义。
@@ -43,11 +43,18 @@
 
 | 环节 | 归属 | 说明 |
 |---|---|---|
-| 开仓闸门/定容/SL/TP | 23 `execution/entry_loop.py` | 11 侧只保留薄 adapter |
+| 开仓闸门/定容/SL/TP | 23 `execution/entry_loop.py` | 11 侧不再参与 |
 | 平仓决策/减仓/清理 | 23 `execution/exit_loop.py` + `engines/exit_engine/` | 独立于开仓链 |
-| 下单网关 | 22 `TradeExecutionGateway` | v1.2 契约校验（观察期 alert-only） |
+| SL/TP 补挂、账本对账、幽灵仓清零 | 22 `sltp_reconcile.py` + `PositionLedger` | 公共执行兜底，各域共用（见 22 TD §7） |
+| 下单网关 | 22 `TradeExecutionGateway` | v1.2 契约校验（观察期 alert-only）、幂等、审计 |
 | 风控与交易所 | 13 `PreTradeGate` + OKX | 最终成交 |
 | 落账与反馈 | 22 账本 + 23 `TradeSettlementBridge` | 成交/平仓落 22 `PositionLedger`；23 消费执行结果进入反思/ESS/Bellman |
+
+**11 域边界**：11 的交易循环 `polling_trader` 已下线（`YIJING_23_ENABLED` 默认 0），
+只保留 `yijing-data-server`(8765，前端趋势面板依赖) 与 BCRM/BDSM 非交易能力。
+23 不 import 11 模块、不写 11 路径；BCRM 方向、BDSM 估值、BTC regime、方向态由
+`adapters/indigenous_factors.py` 自产（开关 `EVOLUTION_INDIGENOUS_FACTORS`，默认 on），
+43 战略层仍是 `war_state/five_scores/position_cap` 的优先事实源。
 
 ---
 
@@ -151,7 +158,7 @@ N15 成交回报 → 落账 → 反思/ESS/Bellman
 ## 4. 平仓数据流（E0–E6）
 
 ```text
-E0 持仓同步（交易所 ↔ 账本）
+E0 持仓同步（交易所 → 22 账本 → 23 巡检集合；每轮 60s）
         ▼
 E1 离场决策（SL/TP/时间/反向信号/RL）
         ▼
@@ -171,6 +178,14 @@ E6 部分减仓刷新 / 全平清理 / 落账
 1. `sz <= 0` 视为 `SIZE_UNKNOWN`，必须记录并告警，不能静默跳过。
 2. 平仓失败代表风险未释放，优先级高于开仓拦截。
 3. 全平后必须清理持仓级状态，避免同币二次开仓继承旧 peak/partial。
+4. E0 每轮先执行 22 `reconcile_ledger()`（补缺/校正受管源数量/同步对账源均价/关闭陈旧行），
+   再进行 23 巡检；交易所已无持仓的账本残留由 `close_ghost_position()` 清零，
+   不得每轮重复告警。
+5. E4 的 `sz` 解析顺序固定：交易所持仓（按 `pos_side` 精确匹配，兼容 `net`/单仓）→
+   22 账本 `position_qty/qty/sz` → `position_usdt / 当前价` 名义回退；
+   最终按合约 `lotSz` **向下对齐**，对齐后不足 1 手时升级为全平（避免 OKX 拒单）。
+   解析结果必须落日志与失败归因（`symbol/reason`），不得静默跳过。
+
 
 ---
 
@@ -210,10 +225,27 @@ trace_id（N1 生成，贯穿推理段）
 | 入场快照 | `runtime/pre_trade_snapshot` | `KlineEventHandler` | 复盘当时的市场状态 |
 | 网关审计 | `22-执行引擎中心/audit/gateway.jsonl` | 22 网关 | 下单请求/结果 |
 | 契约违规 | `22-执行引擎中心/audit/contract_violations.jsonl` | 22 网关 | v1.2 违规样本 |
+| 持仓账本 | `22-执行引擎中心/runtime/position_ledger.db` | 22 `PositionLedger` | 持仓/成交流水/冷却（唯一真相源） |
+| SL/TP 补挂审计 | `22-执行引擎中心/audit/sltp_reconcile.jsonl` | 22 `sltp_reconcile` | 补挂/跳过/失败明细 |
 
 ### 6.3 监控
 
 节点指标、告警级别、SLO 与复盘查询统一以 [15 TD §13](../../15-监控告警系统/docs/TECHNICAL_DESIGN.md#13-分类监控模型与-23-交易链路逐节点监控v27) 为准；本文只维护链路语义，不重复维护监控规则。
+
+### 6.4 部署与单一 owner
+
+| 进程 | unit | 参数 | 日志 |
+|---|---|---|---|
+| 23 开仓 | `dreambuddy-entry23` | `--interval 300 --symbols BTC,ETH,SOL`，`EVOLUTION_ENTRY23_ENABLED=on` | `/home/luke/logs/yijing/entry23.log` |
+| 23 平仓 | `dreambuddy-exit23` | `--interval 60` | `/home/luke/logs/yijing/exit23.log` |
+| 11 数据服务 | `yijing-data-server` | 8765，保留 | 前端趋势面板依赖 |
+| 11 交易循环 | `yijing-polling-trader` | **已停用并 disable** | 不再写交易 |
+
+- 单一 owner：23 的持仓只由入口 `--tags`（账本 source）与 `--symbols` 补录决定，
+  11 不再巡检或下单；`polling_trader` 内嵌的 23 调用由 `YIJING_23_ENABLED` 控制且默认 0。
+- 首次接管存量仓：`exit_runner --reconcile-ledger --reconcile-source 22-reconciled`，
+  之后每轮自动对账，无需重复回填。
+- 服务契约见 `deploy/dreambuddy-entry23.service`、`deploy/dreambuddy-exit23.service`。
 
 ---
 
@@ -222,3 +254,6 @@ trace_id（N1 生成，贯穿推理段）
 1. 新增/修改信号字段：先改 `49-交易框架协议/contracts/final_decision_signal.v1.2.json`，再同步本文与 API_SPEC。
 2. 新增链路节点：在本文登记语义，在 ENGINEERING_INDEX §4 登记代码入口与字段，在 15 TD §13 登记监控项。
 3. 任何影响 `d_star/action/ri/tier/payload` 的变更，必须同时更新 churn 测试与链路事件断言。
+4. 执行权边界（谁下单、谁落账、谁补挂 SL/TP）变更时，必须同步本文 §1.3/§6.4 与
+   [22 TD §7](../../22-执行引擎中心/docs/TECHNICAL_DESIGN.md#7-统一持仓账本与执行兜底2026-11-18)；
+   23 不得新增对 11 模块或 11 数据路径的依赖。

@@ -1,11 +1,12 @@
 {
   "systems": {
     "yijing": {
-      "enabled": true,
+      "enabled": false,
+      "retired_reason": "11 polling_trader 交易循环已退役（23 entry23/exit23 为唯一交易 owner）；yijing-data-server(8765) 由 Prometheus blackbox 监控",
       "base_dir": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统",
       "max_idle_minutes": 30,
       "adapter": "YijingAdapter",
-      "description": "易经推理系统 (BCRM 2.0)"
+      "description": "易经推理系统 (BCRM 2.0) — 交易循环已退役，保留 data_server 与 BCRM/BDSM 非交易能力"
     },
     "v15": {
       "enabled": true,

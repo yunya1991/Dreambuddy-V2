@@ -6,6 +6,7 @@
   - 发件箱状态（SQLite 只读）
   - 产物新鲜度（monitoring.yaml artifacts）
   - entry23 期望模式 vs 实际模式
+  - entry23/exit23 存活、22 账本与 SL/TP 补挂（TD §13.8）
   - 3+3 单元格成熟度（domains.yaml）
 
 不写任何业务文件，不触发交易动作。
@@ -22,7 +23,7 @@ import subprocess
 import sys
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -45,6 +46,10 @@ def _iso_to_ts(value: str) -> float:
         return datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
     except (ValueError, AttributeError):
         return 0.0
+
+
+def _iso_utc(ts: float) -> str:
+    return datetime.fromtimestamp(ts, timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def _read_json(path: Path) -> dict:
@@ -245,8 +250,13 @@ class Collector:
 
     # ---------- 23 全市场探索（币种池） ----------
     def universe_metrics(self) -> list[str]:
-        """读取 polling_trader 每周期写出的探索快照，暴露池大小与新鲜度。"""
-        path = self.repo / "23-四层闭环自进化交易架构/runtime/universe_snapshot.json"
+        """全市场探索快照指标（11 退役后默认关闭，避免永久误报）。"""
+        cfg = self.config.get("universe", {}) or {}
+        if not cfg.get("enabled", False):
+            return []
+        path = self.repo / str(
+            cfg.get("path", "23-四层闭环自进化交易架构/runtime/universe_snapshot.json")
+        )
         stale_age = 86400.0
         try:
             snap = json.loads(path.read_text(encoding="utf-8"))
@@ -264,6 +274,82 @@ class Collector:
             _metric("evolution_pool_size", int(snap.get("pool_size") or 0)),
             _metric("evolution_pool_truncated", int(snap.get("truncated") or 0)),
             _metric("evolution_scan_failed", 1 if snap.get("scan_failed") else 0),
+        ]
+
+    # ---------- 22 公共执行 / 23 进程（TD §13.8） ----------
+    def execution_metrics(self) -> list[str]:
+        ex = self.config.get("execution", {}) or {}
+        out = [
+            _metric(
+                "entry23_active",
+                1 if self._active(str(ex.get("entry23_unit", "dreambuddy-entry23"))) else 0,
+            ),
+            _metric(
+                "exit23_active",
+                1 if self._active(str(ex.get("exit23_unit", "dreambuddy-exit23"))) else 0,
+            ),
+        ]
+        out.extend(self._ledger_metrics(ex))
+        out.extend(self._sltp_metrics(ex))
+        return out
+
+    def _ledger_metrics(self, ex: dict) -> list[str]:
+        db = self.repo / str(ex.get("ledger_db", "22-执行引擎中心/runtime/position_ledger.db"))
+        if not db.exists():
+            return [
+                _metric("ledger_positions", 0),
+                _metric("ledger_last_write_age_seconds", 86400),
+                _metric("ledger_reconcile_updated_1h", 0),
+                _metric("ledger_ghost_closed_24h", 0),
+            ]
+        try:
+            conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=2)
+            cur = conn.cursor()
+            positions = cur.execute("SELECT COUNT(*) FROM positions WHERE qty > 1e-9").fetchone()[0]
+            last = cur.execute("SELECT MAX(ts) FROM fills").fetchone()[0]
+            updated = cur.execute(
+                "SELECT COUNT(*) FROM fills WHERE action='reconcile_update' AND ts >= ?",
+                (_iso_utc(_now() - 3600),),
+            ).fetchone()[0]
+            ghost = cur.execute(
+                "SELECT COUNT(*) FROM cooldowns WHERE exit_reason IN"
+                " ('ghost_stale','ghost_exchange_flat') AND close_ts >= ?",
+                (_iso_utc(_now() - 86400),),
+            ).fetchone()[0]
+            conn.close()
+        except sqlite3.Error:
+            return [_metric("ledger_error", 1)]
+        age = max(0.0, _now() - _iso_to_ts(str(last))) if last else 86400.0
+        return [
+            _metric("ledger_positions", positions),
+            _metric("ledger_last_write_age_seconds", round(age, 1)),
+            _metric("ledger_reconcile_updated_1h", updated),
+            _metric("ledger_ghost_closed_24h", ghost),
+        ]
+
+    def _sltp_metrics(self, ex: dict) -> list[str]:
+        path = self.repo / str(ex.get("sltp_audit", "22-执行引擎中心/audit/sltp_reconcile.jsonl"))
+        if not path.exists():
+            return [
+                _metric("sltp_reconcile_age_seconds", 86400),
+                _metric("sltp_reconcile_patched_1h", 0),
+                _metric("sltp_reconcile_failed_1h", 0),
+            ]
+        age = max(0.0, _now() - path.stat().st_mtime)
+        patched = failed = 0
+        cutoff = _now() - 3600
+        for rec in _tail_jsonl(path, limit=2000):
+            ts = _iso_to_ts(str(rec.get("ts") or ""))
+            if not ts or ts < cutoff:
+                continue
+            if rec.get("ok"):
+                patched += 1
+            else:
+                failed += 1
+        return [
+            _metric("sltp_reconcile_age_seconds", round(age, 1)),
+            _metric("sltp_reconcile_patched_1h", patched),
+            _metric("sltp_reconcile_failed_1h", failed),
         ]
 
     # ---------- A 类交易链路事件（TD §13.4） ----------
@@ -463,6 +549,7 @@ class Collector:
             self.contract_metrics(),
             self.semantic_metrics(),
             self.universe_metrics(),
+            self.execution_metrics(),
             self.chain_metrics(),
             self.artifact_metrics(),
             self.cell_metrics(),

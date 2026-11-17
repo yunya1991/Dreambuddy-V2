@@ -3,9 +3,10 @@
 
 检查项：
   1. dreambuddy-entry23 / dreambuddy-exit23 是否 active
-  2. entry23 日志是否 10min 内有更新
-  3. execution_decisions.jsonl 是否 6h 内有写入（仅提示）
-  4. 磁盘根分区使用率 <90%
+  2. entry23 / exit23 日志是否 10min 内有更新
+  3. 22 账本 position_ledger.db 是否 24h 内有写入（仅 exit23 active 时）
+  4. execution_decisions.jsonl 是否 24h 内有写入（仅提示）
+  5. 磁盘根分区使用率 <90%
 异常经本机 receiver 发飞书；同一检查项 30min 内只发一次。
 """
 
@@ -20,7 +21,9 @@ from pathlib import Path
 
 REPO = Path("/home/luke/dreambuddy")
 LOG = Path("/home/luke/logs/yijing/entry23.log")
+EXIT_LOG = Path("/home/luke/logs/yijing/exit23.log")
 DECISIONS = REPO / "23-四层闭环自进化交易架构/runtime/execution_decisions.jsonl"
+LEDGER = REPO / "22-执行引擎中心/runtime/position_ledger.db"
 STATE = Path.home() / ".cache/dreambuddy-watchdog.json"
 RECEIVER = "http://127.0.0.1:9098/notify"
 COOLDOWN = 1800
@@ -55,6 +58,26 @@ def check() -> list[dict]:
                 "key": "entry23_log",
                 "level": "P1",
                 "text": f"**日志静默**: `entry23.log` 已 {int(log_age/60)}min 无更新",
+            }
+        )
+
+    exit_log_age = _age(EXIT_LOG)
+    if exit_log_age > 600:
+        problems.append(
+            {
+                "key": "exit23_log",
+                "level": "P1",
+                "text": f"**日志静默**: `exit23.log` 已 {int(exit_log_age/60)}min 无更新",
+            }
+        )
+
+    # 账本 24h 无任何写入（无成交、无对账变更）才提示；稳定持仓不写账本属正常
+    if _active("dreambuddy-exit23") and _age(LEDGER) > 86400:
+        problems.append(
+            {
+                "key": "ledger_db",
+                "level": "P2",
+                "text": "**账本异常**: `position_ledger.db` 24h 无写入或缺失",
             }
         )
 

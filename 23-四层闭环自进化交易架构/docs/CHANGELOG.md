@@ -1,7 +1,36 @@
 # 23-四层闭环自进化交易架构 — 变更日志
 
-> **版本**: v1.16 | **更新日期**: 2026-11-14
+> **版本**: v1.17 | **更新日期**: 2026-11-18
 > **定位**: 模块级变更日志，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+
+---
+
+## [v1.17] - 2026-11-18 (23 与 11 解耦：公共执行下沉 22 + 单一 owner)
+
+### 架构变更
+
+- **23 不再依赖 11**：不 import 11 模块、不写 11 路径。BCRM 方向/BDSM 估值/BTC regime/方向态由
+  `adapters/indigenous_factors.py` 自产（`EVOLUTION_INDIGENOUS_FACTORS` 默认 on）；交易索引改读
+  22 `runtime/position_ledger.db` 的 `fills`；K 线走 18 `fetch_candles`；事件状态、K 线缓存、
+  回测脚本统一落 23 目录。
+- **公共执行下沉 22**：SL/TP 补挂 `sltp_reconcile.py`、账本对账 `reconcile_ledger()`、
+  幽灵仓清零 `close_ghost_position()`；23 只消费执行结果做反思/ESS。边界见
+  [22 TD §7](../../22-执行引擎中心/docs/TECHNICAL_DESIGN.md#7-统一持仓账本与执行兜底2026-11-18)。
+- **单一 owner 切换**：云端启用 `dreambuddy-entry23`（300s）与 `dreambuddy-exit23`（60s）；
+  `yijing-polling-trader` 停用并 disable；保留 `yijing-data-server`(8765) 与 BCRM/BDSM 非交易能力。
+
+### 稳定性修复
+
+- 平仓数量解析：`float` 保留小数合约，兼容 `net`/单仓，账本与名义价值回退，按 `lotSz`
+  向下对齐，不足 1 手升级全平。
+- 22 对账：受管源数量以交易所为准、对账源均价同步、关闭陈旧行；历史手工流水不覆盖（幂等）。
+- 幽灵仓：`on_ghost` 自动清零账本，不再每轮重复告警。
+- 失败归因：exit 失败逐条打印 `symbol/reason`；FO-2 降级日志补 `flags=[...]`。
+
+### 验收
+
+- `22/tests/test_position_ledger.py` 10 项通过；23 exit/ledger 相关 19 项通过。
+- 云端 exit23 连续三轮 `checked=6 hold=6 executed=0 failed=0`；交易所持仓 6 = 22 账本 6。
 
 ---
 
