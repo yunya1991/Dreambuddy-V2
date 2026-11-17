@@ -150,7 +150,7 @@ groups:
   - name: signals
     rules:
       - alert: SignalSchemaViolation
-        expr: dreambuddy_signal_schema_valid_ratio{source="23-evolution"} < 0.99
+        expr: dreambuddy_signal_schema_valid_ratio{source="23-evolution"} < 0.99 and on() dreambuddy_signal_samples_recent{source="23-evolution"} > 0
         for: 30m
         labels:
           severity: P1

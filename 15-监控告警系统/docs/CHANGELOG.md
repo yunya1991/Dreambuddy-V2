@@ -1,6 +1,6 @@
 # 变更记录 — 15-监控告警系统
 
-> **版本**: v2.5 | **更新日期**: 2026-11-17
+> **版本**: v2.6 | **更新日期**: 2026-11-17
 
 ---
 
@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 变更内容 | 影响范围 |
 |------|------|----------|----------|
+| v2.6 | 2026-11-17 | 23 契约补齐 v1.2（payload 12 字段 + 顶层执行扩展）；审计携带完整 signal；导出器按 payload 校验并消除无信号误报 | 代码+契约 |
 | v2.5 | 2026-11-17 | 上线业务指标导出器(:9101)与 Prometheus/Alertmanager 栈；23 信号/发件箱/产物/单元指标已入库，端到端联调 am=200 | 代码+运维 |
 | v2.4 | 2026-11-17 | 告警通道接通：复用 hermes-gateway 飞书应用凭证，部署 receiver(:9098) + watchdog(5min)；联调消息已送达 Trading-Desk | 代码+运维 |
 | v2.3 | 2026-11-17 | 23 切实盘（移除 `--dry-run`、开关置 on）；监控进入 14 天 alert_only（至 2026-12-01）；记录切换前权益/持仓预检 | 配置+运维 |
@@ -21,6 +22,18 @@
 ---
 
 ## 详细变更
+
+### v2.6 — 2026-11-17
+
+**契约补齐（选项 A）**
+- 新增 `final_decision_signal.v1.2.json`：登记顶层执行扩展（decision_id/action/pos_side/sz/sl_px/tp_px/reason/tier），并扩展 action 枚举（open/close/reduce/stop_loss/take_profit）
+- 23 生产器输出 `ts/horizon/risk_exposure_hint/mode` 与 payload 12 字段；缺省值显式为 unknown/0/{}，不伪造结论
+- 入口透传 `d_star/ri/l4_v/regime/primary_contradiction/...`，出口补齐同构字段
+- 审计记录新增完整 `signal`；22 `from_dict` 支持 payload 回退
+
+**监控修正**
+- 导出器改为同时校验 payload 12 字段；无样本时不再输出 `ratio=0`
+- `SignalSchemaViolation` 增加 `samples_recent > 0` 门槛
 
 ### v2.5 — 2026-11-17
 
@@ -145,5 +158,5 @@
 
 ---
 
-**文档版本**: v2.5
+**文档版本**: v2.6
 **最后更新**: 2026-11-17

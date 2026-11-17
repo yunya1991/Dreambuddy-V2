@@ -115,6 +115,7 @@ class Collector:
             out.append(_metric("signal_last_timestamp_seconds", 0, source="23-evolution"))
 
         required = self.signals.get("required_top_level") or []
+        required_payload = self.signals.get("required_payload_23") or []
         valid = 0
         missing: dict[str, int] = {}
         confidences: list[float] = []
@@ -128,6 +129,9 @@ class Collector:
                 continue
             recent += 1
             gaps = [f for f in required if f not in sig]
+            payload = sig.get("payload") if isinstance(sig.get("payload"), dict) else {}
+            if str(sig.get("source") or "") == "23-evolution":
+                gaps.extend(f"payload.{f}" for f in required_payload if f not in payload)
             if not gaps:
                 valid += 1
             for f in gaps:
@@ -137,11 +141,16 @@ class Collector:
             except (TypeError, ValueError):
                 pass
             sym = str(sig.get("symbol") or rec.get("symbol") or "?")
-            act = str(sig.get("action") or sig.get("direction") or "?")
+            act = str(payload.get("action") or sig.get("action") or "?")
             counts[(sym, act)] = counts.get((sym, act), 0) + 1
 
-        ratio = valid / recent if recent else 0.0
-        out.append(_metric("signal_schema_valid_ratio", round(ratio, 4), source="23-evolution"))
+        out.append(_metric("signal_samples_recent", recent, source="23-evolution"))
+        if recent:
+            out.append(
+                _metric(
+                    "signal_schema_valid_ratio", round(valid / recent, 4), source="23-evolution"
+                )
+            )
         out.append(
             _metric(
                 "signal_confidence_stdev",

@@ -33,6 +33,87 @@ _TIER_TP_PCT = {"probe": 0.12, "standard": 0.135, "trend": 0.15}
 _SL_FLOOR_PCT = 0.04
 _TP_FLOOR_PCT = 0.12
 
+_VALID_MODES = {"live", "paper", "shadow"}
+_VALID_HORIZONS = {"minutes", "hours", "days", "weeks"}
+_VALID_TIERS = {"trend", "standard", "probe", "none"}
+_RISK_BUDGET_USDT = max(1.0, float(os.getenv("EVOLUTION_RISK_BUDGET_USDT", "2000")))
+
+
+def _signal_mode() -> str:
+    _m = str(os.getenv("EVOLUTION_SIGNAL_MODE", "live")).strip().lower()
+    return _m if _m in _VALID_MODES else "live"
+
+
+def _risk_hint(notional_usdt: float) -> float:
+    return round(max(0.0, min(float(notional_usdt or 0.0) / _RISK_BUDGET_USDT, 1.0)), 4)
+
+
+def _contract_fields(
+    *,
+    ts: datetime,
+    action: str,
+    tier: str,
+    position_mult: float,
+    notional_usdt: float,
+    direction: str,
+    confidence: float,
+    horizon: str,
+    mode: str | None,
+    d_star: str,
+    ri: float,
+    l4_v: float,
+    regime: str,
+    primary_contradiction: dict | None,
+    contradiction_shift: dict | None,
+    elastic_result: dict | None,
+    cross_validation: dict | None,
+    path: dict | None,
+) -> dict[str, Any]:
+    """v1.2 必需字段：顶层时序/模式 + payload 决策语义。
+
+    缺省值必须显式可解释（unknown/0/{}），不得伪造趋势或矛盾结论。
+    """
+    _tier = str(tier or "standard").lower()
+    if _tier not in _VALID_TIERS:
+        _tier = "standard"
+    _horizon = str(horizon or "hours").lower()
+    if _horizon not in _VALID_HORIZONS:
+        _horizon = "hours"
+    _pc = primary_contradiction if isinstance(primary_contradiction, dict) else {}
+    if not {"dimension", "direction", "strength"}.issubset(_pc):
+        _pc = {
+            "dimension": "unknown",
+            "direction": str(direction or "neutral"),
+            "strength": float(confidence or 0.0),
+        }
+    _path = path if isinstance(path, dict) and path else {"optimal_path": d_star or "unknown"}
+    return {
+        "ts": _iso(ts),
+        "horizon": _horizon,
+        "risk_exposure_hint": _risk_hint(notional_usdt),
+        "mode": (
+            str(mode or _signal_mode()).lower()
+            if str(mode or _signal_mode()).lower() in _VALID_MODES
+            else "live"
+        ),
+        "payload": {
+            "action": str(action),
+            "position_tier": _tier,
+            "position_mult": round(float(position_mult or 0.0), 4),
+            "d_star": str(d_star or "unknown"),
+            "ri": round(float(ri or 0.0), 6),
+            "l4_v": round(float(l4_v or 0.0), 6),
+            "regime": str(regime or "unknown"),
+            "primary_contradiction": _pc,
+            "contradiction_shift": (
+                contradiction_shift if isinstance(contradiction_shift, dict) else {}
+            ),
+            "elastic_result": elastic_result if isinstance(elastic_result, dict) else {},
+            "cross_validation": cross_validation if isinstance(cross_validation, dict) else {},
+            "path": _path,
+        },
+    }
+
 
 def _utc_now(now: datetime | None = None) -> datetime:
     if now is not None:
@@ -80,6 +161,18 @@ def build_entry_decision(
     reason: str = "",
     source_tag: str = "",
     strategy: str = "",
+    d_star: str = "",
+    ri: float = 0.0,
+    l4_v: float = 0.0,
+    regime: str = "",
+    primary_contradiction: dict | None = None,
+    contradiction_shift: dict | None = None,
+    elastic_result: dict | None = None,
+    cross_validation: dict | None = None,
+    path: dict | None = None,
+    position_mult: float = 1.0,
+    mode: str | None = None,
+    horizon: str = "hours",
     now: datetime | None = None,
 ) -> dict[str, Any]:
     """构造 23 域开仓 FinalDecisionSignal。
@@ -118,6 +211,14 @@ def build_entry_decision(
         "sl_px": sl_px,
         "tp_px": tp_px,
         "reason": reason or f"23-evolution open {symbol} {_dir}",
+        "ts": _iso(_ts),
+        "horizon": horizon if horizon in _VALID_HORIZONS else "hours",
+        "risk_exposure_hint": _risk_hint(notional_usdt),
+        "mode": (
+            str(mode or _signal_mode()).lower()
+            if str(mode or _signal_mode()).lower() in _VALID_MODES
+            else "live"
+        ),
         "payload": {
             "decision_id": _did,
             "domain": "23",
@@ -129,6 +230,26 @@ def build_entry_decision(
             "atr_pct": float(atr_pct or 0.0),
             "source_tag": str(source_tag or ""),
             "strategy": str(strategy or ""),
+            **_contract_fields(
+                ts=_ts,
+                action="open",
+                tier=tier,
+                position_mult=position_mult,
+                notional_usdt=notional_usdt,
+                direction=_dir,
+                confidence=confidence,
+                horizon=horizon,
+                mode=mode,
+                d_star=d_star,
+                ri=ri,
+                l4_v=l4_v,
+                regime=regime,
+                primary_contradiction=primary_contradiction,
+                contradiction_shift=contradiction_shift,
+                elastic_result=elastic_result,
+                cross_validation=cross_validation,
+                path=path,
+            )["payload"],
         },
     }
 
@@ -140,6 +261,9 @@ def build_exit_decision(
     notional_usdt: float = 0.0,
     reduce_ratio: float = 1.0,
     reason: str = "",
+    d_star: str = "",
+    regime: str = "",
+    mode: str | None = None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
     """构造 23 域平仓/减仓 FinalDecisionSignal。
@@ -163,12 +287,44 @@ def build_exit_decision(
         "pos_side": _dir,
         "sz": sz,
         "reason": reason or f"23-evolution {_action} {symbol} {_dir}",
+        "ts": _iso(_ts),
+        "horizon": "minutes",
+        "risk_exposure_hint": 0.0,
+        "mode": (
+            str(mode or _signal_mode()).lower()
+            if str(mode or _signal_mode()).lower() in _VALID_MODES
+            else "live"
+        ),
         "payload": {
             "decision_id": _did,
             "domain": "23",
             "tag": "evo23",
             "notional_usdt": float(notional_usdt or 0.0),
             "reduce_ratio": _ratio,
+            **_contract_fields(
+                ts=_ts,
+                action=_action,
+                tier="none",
+                position_mult=0.0,
+                notional_usdt=0.0,
+                direction=_dir,
+                confidence=1.0,
+                horizon="minutes",
+                mode=mode,
+                d_star=d_star,
+                ri=0.0,
+                l4_v=0.0,
+                regime=regime,
+                primary_contradiction={
+                    "dimension": "exit",
+                    "direction": _dir,
+                    "strength": round(_ratio, 4),
+                },
+                contradiction_shift={},
+                elastic_result={},
+                cross_validation={},
+                path={"optimal_path": d_star or "exit"},
+            )["payload"],
         },
     }
 
@@ -214,6 +370,8 @@ class EvolutionSignalDispatcher:
                 "notional_usdt": (decision.get("payload") or {}).get("notional_usdt"),
                 "gateway_present": self._gateway is not None,
                 "outbox_present": self._outbox is not None,
+                # 监控契约校验用完整信号；summary 字段保留给现有消费方
+                "signal": decision,
             }
         )
 

@@ -42,10 +42,10 @@ _PRECHECK_SOURCES = ("23-evolution", "l1-chart")
 
 @dataclass
 class FinalDecisionSignal:
-    """FinalDecisionSignal v1.1 轻量 Python 表示（核心字段 + 执行扩展）。
+    """FinalDecisionSignal v1.2 轻量 Python 表示（核心字段 + 执行扩展）。
 
-    与 49-交易框架协议/contracts/final_decision_signal.v1.1.json 对齐。
-    执行扩展字段（sz/px/pos_side/action）由调用方填充，不进 49 契约。
+    与 49-交易框架协议/contracts/final_decision_signal.v1.2.json 对齐；
+    v1.2 已把 decision_id/action/pos_side/sl_px/tp_px/sz/reason 登记为顶层执行扩展。
     """
 
     signal_id: str
@@ -69,25 +69,23 @@ class FinalDecisionSignal:
 
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> "FinalDecisionSignal":
+        _payload = d.get("payload") if isinstance(d.get("payload"), dict) else {}
         return cls(
             signal_id=str(d.get("signal_id") or f"sig-{uuid.uuid4().hex[:12]}"),
             source=str(d.get("source") or "unknown"),
             symbol=str(d.get("symbol") or d.get("inst_id") or "MULTI"),
             direction=str(d.get("direction") or "neutral").lower(),
-            decision_id=(
-                str(d.get("decision_id") or (d.get("payload") or {}).get("decision_id") or "")
-                or None
-            ),
+            decision_id=(str(d.get("decision_id") or _payload.get("decision_id") or "") or None),
             confidence=float(d.get("confidence") or 0.0),
             expires_at=str(d.get("expires_at") or ""),
-            action=str(d.get("action") or (d.get("payload") or {}).get("action") or "open").lower(),
-            sz=d.get("sz"),
-            px=d.get("px"),
-            pos_side=d.get("pos_side"),
-            sl_px=d.get("sl_px"),
-            tp_px=d.get("tp_px"),
-            reason=str(d.get("reason") or ""),
-            payload=d.get("payload") if isinstance(d.get("payload"), dict) else {},
+            action=str(d.get("action") or _payload.get("action") or "open").lower(),
+            sz=d.get("sz") if d.get("sz") is not None else _payload.get("sz"),
+            px=d.get("px") if d.get("px") is not None else _payload.get("px"),
+            pos_side=d.get("pos_side") or _payload.get("pos_side"),
+            sl_px=d.get("sl_px") if d.get("sl_px") is not None else _payload.get("sl_px"),
+            tp_px=d.get("tp_px") if d.get("tp_px") is not None else _payload.get("tp_px"),
+            reason=str(d.get("reason") or _payload.get("reason") or ""),
+            payload=_payload,
         )
 
     def to_dict(self) -> Dict[str, Any]:

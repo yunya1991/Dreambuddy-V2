@@ -144,7 +144,7 @@ risk:
 # 23 推理信号（一期核心）
 signals:
   source: 23-evolution
-  contract: 49-交易框架协议/contracts/final_decision_signal.v1.1.json
+  contract: 49-交易框架协议/contracts/final_decision_signal.v1.2.json
   required_top_level:
     [signal_id, source, ts, symbol, direction, confidence, horizon,
      risk_exposure_hint, expires_at, mode, payload]

@@ -513,6 +513,8 @@ class EvolutionExitLoop:
             notional_usdt=float(ctx.get("position_usdt") or 0.0),
             reduce_ratio=ratio,
             reason=str(decision.reason or f"23 exit {inst_id}"),
+            d_star=str(ctx.get("d_star") or ""),
+            regime=str(ctx.get("regime") or ""),
         )
         _res = self._dispatcher.dispatch(_sig)
         if not _res.get("executed"):

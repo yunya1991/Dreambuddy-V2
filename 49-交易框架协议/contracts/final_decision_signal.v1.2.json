@@ -1,0 +1,290 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "final_decision_signal.v1.2.json",
+  "title": "FinalDecisionSignal v1.2",
+  "description": "双决策链最终决策出口契约（source enum：23-evolution / 50-nn / l1-chart）。l1-chart 为 54-L1 统计方向层出口（ADR-0003），payload 必填 decision_id 供 22 幂等与硬前置校验。 v1.2：action 枚举补齐执行动作（open/close/reduce/stop_loss/take_profit），供 23 开平仓共用同一契约。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "signal_id",
+    "source",
+    "ts",
+    "symbol",
+    "direction",
+    "confidence",
+    "horizon",
+    "risk_exposure_hint",
+    "expires_at",
+    "mode",
+    "payload"
+  ],
+  "properties": {
+    "signal_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "23-evolution",
+        "50-nn",
+        "l1-chart"
+      ]
+    },
+    "ts": {
+      "type": "string"
+    },
+    "symbol": {
+      "type": "string",
+      "pattern": "^([A-Z0-9]+-USDT-SWAP|MACRO)$"
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "long",
+        "short",
+        "neutral"
+      ]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "horizon": {
+      "type": "string",
+      "enum": [
+        "minutes",
+        "hours",
+        "days",
+        "weeks"
+      ]
+    },
+    "risk_exposure_hint": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "expires_at": {
+      "type": "string"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "live",
+        "paper",
+        "shadow"
+      ]
+    },
+    "shadow": {
+      "type": "boolean"
+    },
+    "constraint_id": {
+      "type": "string"
+    },
+    "constraint_applied_at": {
+      "type": "string"
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "open",
+            "close",
+            "reduce",
+            "stop_loss",
+            "take_profit",
+            "long",
+            "short",
+            "light_long",
+            "light_short",
+            "WAIT"
+          ]
+        },
+        "position_tier": {
+          "type": "string",
+          "enum": [
+            "trend",
+            "standard",
+            "probe",
+            "none"
+          ]
+        },
+        "position_mult": {
+          "type": "number"
+        },
+        "d_star": {
+          "type": "string"
+        },
+        "ri": {
+          "type": "number"
+        },
+        "l4_v": {
+          "type": "number"
+        },
+        "regime": {
+          "type": "string"
+        },
+        "primary_contradiction": {
+          "type": "object",
+          "required": [
+            "dimension",
+            "direction",
+            "strength"
+          ],
+          "properties": {
+            "dimension": {
+              "type": "string"
+            },
+            "direction": {
+              "type": "string"
+            },
+            "strength": {
+              "type": "number"
+            },
+            "confidence": {
+              "type": "number"
+            }
+          }
+        },
+        "contradiction_shift": {
+          "type": "object"
+        },
+        "elastic_result": {
+          "type": "object"
+        },
+        "cross_validation": {
+          "type": "object"
+        },
+        "path": {
+          "type": "object"
+        }
+      }
+    },
+    "decision_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "执行幂等主键（22 强制 join 用），23 顶层保留"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "open",
+        "close",
+        "reduce",
+        "stop_loss",
+        "take_profit",
+        "long",
+        "short",
+        "light_long",
+        "light_short",
+        "WAIT"
+      ],
+      "description": "执行动作扩展"
+    },
+    "pos_side": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "long",
+        "short",
+        "net",
+        null
+      ],
+      "description": "执行侧持仓方向"
+    },
+    "sz": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "平仓/减仓数量（张）"
+    },
+    "sl_px": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "tp_px": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "reason": {
+      "type": "string"
+    },
+    "tier": {
+      "type": "string"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "enum": [
+              "23-evolution",
+              "50-nn"
+            ]
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": [
+              "action",
+              "position_tier",
+              "position_mult",
+              "d_star",
+              "ri",
+              "l4_v",
+              "regime",
+              "primary_contradiction",
+              "contradiction_shift",
+              "elastic_result",
+              "cross_validation",
+              "path"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "const": "l1-chart"
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": [
+              "decision_id",
+              "action",
+              "position_tier",
+              "position_mult"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

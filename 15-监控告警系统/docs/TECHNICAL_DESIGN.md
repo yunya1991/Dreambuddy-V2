@@ -955,15 +955,16 @@ SLO 建议：信号 schema 一致率 ≥99%；信号→网关 p95 ≤2s；成交
 | 19 DAL 衍生数据供 23 | `scripts/backfill_funding_rate.py`、`backfill_etf_flow.py`、`backfill_stablecoin_tvl.py` 写 `19-DAL mm_metrics` | 🟡 仅回补脚本可见，运行时消费需另证 |
 | 23 产出 FinalDecisionSignal 并提交 22 | `execution/decision_signal.py` L176-238 `EvolutionSignalDispatcher.dispatch → gateway.submit` | ✅ 已落地 |
 | 全部 live 下单强制经 13 风控 | `22/trade_execution_gateway.py` L259-270、L746-756；`_CLOSE_ACTIONS` 例外仅平仓 | ✅ 已落地 |
-| 22 校验 v1.1 契约 | 22 仅做 `decision_id` + `expires_at` 前置（L40、L751-756），无 JSON Schema | ❌ 未落地 |
-| 42 总线校验 v1.1 | `42/signal_bus.py` L28-39 要求 `horizon/risk_exposure_hint`；23 不经过 42，直连 22 | 🟡 通路不同，契约不一致 |
-| 成交必须回带 decision_id | 22 dataclass 保留 `decision_id`（L55-57）；但 23 审计只写 `stage=submit`（L206-218） | 🟡 部分 |
+| 23 信号符合 v1.2 | `build_entry_decision/build_exit_decision` 已输出 `ts/horizon/risk_exposure_hint/mode` 与 payload 12 字段；顶层 7 个执行扩展已在 v1.2 登记；契约测试通过 | ✅ 已落地（2026-11-17） |
+| 22 校验 v1.2 契约 | 22 仍只做 `decision_id` + `expires_at` 前置，无 JSON Schema；`from_dict` 已兼容 payload 回退 | ❌ 未落地（下阶段） |
+| 42 总线校验 v1.2 | `42/signal_bus.py` 要求 `horizon/risk_exposure_hint`；23 现已具备但直连 22，不经过 42 | 🟡 键已具备，通路未接 |
+| 成交必须回带 decision_id | 22 dataclass 保留 `decision_id`（L55-57）；23 审计已携带完整 signal 与 decision_id（L206-220） | ✅ 已落地 |
 | 云端 23 实盘运行 | 2026-11-17 12:18 已切换：unit 去掉 `--dry-run`、`EVOLUTION_ENTRY23_ENABLED=on`；凭据库 `simulated=false/dry_run=false`；切换前权益 2118 USDT、可用 919 USDT、持仓 0 | ✅ **live（前 2 周仅告警）** |
 | 23 运行时活跃 | 云端 `runtime/execution_decisions.jsonl` 252KB，mtime 2026-11-17 12:06 | ✅ 活跃 |
 | 50 决策符合 v1.1 | `50/runtime/decisions.jsonl` 最新 `symbol=BTC-FLAP-PAYLOAD`，缺 `risk_exposure_hint` | ❌ 测试数据 + 契约漂移 |
 
 **最危险的 3 个偏差**
-1. **契约无人校验**：文档称 v1.1，23 实际是扁平信号，22 只查两个字段；一旦下游按契约取字段会拿到 `undefined`。
+1. **契约已补齐但无人阻断**：23 生产者已按 v1.2 输出完整字段，22 仍只查两个前置；监控可发现漂移，但执行层不会拦截。
 2. **静默失败不可见**：23 入口过去长期 `--dry-run`，但缺少"期望模式 vs 实际模式"指标，容易被误判为"实盘在跑"（已于 2026-11-17 切换 live 并纳入 `DryRunMismatch`）。
 3. **审计链路不闭环**：只有 `submit` 阶段，没有 `rejected/filled` 结果；outbox 在 SQLite，文件监控看不到状态机。
 
@@ -987,6 +988,7 @@ SLO 建议：信号 schema 一致率 ≥99%；信号→网关 p95 ≤2s；成交
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
 | v1.0 | 2026-08-02 | 初始版本：按 DOC_STANDARD §3.2 补建技术设计文档，覆盖概述/架构/算法/数据流/接口/状态/配置/错误处理/扩展性 9 章节 |
+| v2.6 | 2026-11-17 | 23 契约补齐 v1.2：ts/horizon/risk_exposure_hint/mode + payload 12 字段；v1.2 登记顶层执行扩展并扩展 action 枚举；审计携带完整 signal；导出器按 payload 校验并消除无信号误报 |
 | v2.0 | 2026-11-17 | 新增第 10 章「云端全链路监控目标架构」：云端实测基线、Prometheus 标准栈、TTL 矩阵、P0–P3 治理、D1–D6 决策、实施阶段；第 1–9 章降级为本地 v1.0 现状描述 |
 | v2.1 | 2026-11-17 | 新增第 11 章「3+3 全景监控架构」：三层×三链矩阵、四期覆盖、`config/domains.yaml` 注册表、M0–M5 成熟度与一格一 owner |
 | v2.2 | 2026-11-17 | 一期收敛为 23 推理信号链；新增第 12 章：23 模块全景、v1.1 契约与实测差异、8 步生命周期、12 条信号告警、落地审计（含 22 无 Schema 校验、云端 dry-run、审计不闭环） |
