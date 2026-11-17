@@ -224,6 +224,14 @@ def _age_sec(entry_time: Any) -> float:
 
 # ── 主流程 ────────────────────────────────────────────────────────────
 def run_once(loop: EvolutionExitLoop, gateway: Any, okx: Any, args) -> Dict[str, Any]:
+    # 公共执行：SL/TP 补挂巡检统一走 22（11 交易循环下线后仍有人兜底）
+    try:
+        from sltp_reconcile import reconcile_sltp
+
+        reconcile_sltp(okx, log_fn=logger.info)
+    except Exception as exc:  # noqa: BLE001 — 补挂失败不阻塞离场
+        logger.debug("SLTP 补挂巡检失败(FAIL-OPEN): %s", exc)
+
     positions = collect_positions(gateway, okx, args.symbols, args.tags)
     if not positions:
         logger.info("无归属 23 的持仓，本轮跳过")
@@ -242,7 +250,32 @@ def run_once(loop: EvolutionExitLoop, gateway: Any, okx: Any, args) -> Dict[str,
             getattr(decision, "action", ""),
             getattr(decision, "reason", ""),
         )
-        # 22 账本已自动落平仓 + 冷却；23 不再触碰 11 侧持仓文件
+        # 22 账本已自动落平仓 + 冷却；23 在此消费执行结果做反思/ESS 反馈
+        try:
+            from types import SimpleNamespace
+
+            from dreambuddy_evolution.engines.trade_settlement_bridge import TradeSettlementBridge
+
+            _pnl_pct = float(ctx.get("upl_ratio") or 0.0)
+            _notional = float(ctx.get("position_usdt") or 0.0)
+            rec = SimpleNamespace(
+                inst_id=inst_id,
+                symbol=ctx.get("symbol") or inst_id,
+                direction=str(ctx.get("pos_side") or ""),
+                pnl=_pnl_pct * _notional,
+                pnl_pct=_pnl_pct,
+                entry_price=float(ctx.get("entry_price") or 0.0),
+                exit_price=float(ctx.get("current_price") or 0.0),
+                qty=float(ctx.get("position_qty") or 0.0),
+                exit_reason=str(getattr(decision, "reason", "") or ""),
+                source_tag=ctx.get("source_tag") or "23-evolution",
+            )
+            _r = TradeSettlementBridge().on_trade_settled(rec)
+            logger.info(
+                "[settle] %s cs=%s ess_delta=%s", inst_id, _r.get("cs"), _r.get("ess_delta")
+            )
+        except Exception as exc:  # noqa: BLE001 — 反思失败不影响已完成的平仓
+            logger.debug("[settle] 结算反思失败(FAIL-OPEN): %s", exc)
 
     report = loop.run(
         positions,

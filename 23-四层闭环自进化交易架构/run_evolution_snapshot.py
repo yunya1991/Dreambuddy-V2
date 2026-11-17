@@ -107,8 +107,13 @@ def _write_latest(snapshot: dict) -> None:
 
 
 def _try_klines(symbol: str, days: int = 250) -> Optional[Dict[str, List[float]]]:
-    """拉 K 线：本地缓存（多命名）→ OkxFeed CLI 兜底。"""
-    cache_dir = _REPO / "11-易经推理系统" / "scripts" / "data" / "klines"
+    """拉 K 线：23 本地缓存（多命名）→ OkxFeed CLI 兜底。"""
+    cache_dir = Path(
+        os.getenv(
+            "EVOLUTION_KLINE_CACHE_DIR",
+            str(_REPO / "23-四层闭环自进化交易架构" / "data" / "klines"),
+        )
+    )
 
     # 候选命名
     for name in [

@@ -117,36 +117,8 @@ class RegimeGateSwitch:
                 hs = detector.detect_head_shoulders(klines or [])
                 conf = hs.get("confidence", 0.5)
 
-                # P2: CBR 检索历史形态案例（FAIL-OPEN）
-                cbr_context = {}
-                try:
-                    import sys as _sys
-
-                    _repo = __import__("pathlib").Path(__file__).resolve().parents[2]
-                    if str(_repo) not in _sys.path:
-                        _sys.path.insert(0, str(_repo))
-                    _yj = _repo / "11-易经推理系统"
-                    if str(_yj) not in _sys.path:
-                        _sys.path.insert(0, str(_yj))
-                    from scripts.memory_l4.cbr_engine import CBREngine, CBRQuery
-
-                    query = CBRQuery(
-                        regime="TOP_DROP",
-                        decision="short",
-                        confidence=conf,
-                        pattern="head_shoulders_top",
-                    )
-                    engine = CBREngine(top_k=3, similarity_threshold=0.1)
-                    engine.load(use_index=True)
-                    retrieved = engine.retrieve(query)
-                    if retrieved:
-                        cbr_context = {
-                            "similar_cases": len(retrieved),
-                            "top_similarity": round(retrieved[0].similarity, 4),
-                            "avg_pnl": sum(r.case.pnl_pct or 0 for r in retrieved) / len(retrieved),
-                        }
-                except Exception as e:
-                    logger.debug("[FO] CBR retrieve fail: %s", e)
+                # 23 不依赖 11 CBR 引擎；形态案例检索交由 23 自有案例库（当前未接入）
+                cbr_context: dict = {}
 
                 return {
                     "engine": "pattern_short",

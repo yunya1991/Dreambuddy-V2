@@ -22,7 +22,7 @@ import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT / "23-四层闭环自进化交易架构"))
-sys.path.insert(0, str(PROJECT_ROOT / "11-易经推理系统"))
+sys.path.insert(0, str(PROJECT_ROOT / "18-数据获取中心"))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -102,7 +102,19 @@ SCAN_COINS = [
     "RDNT",
 ]
 
-from scripts.memory_l4.bcrm2.data_fetcher import get_klines  # noqa: E402
+from data_center.compat.market_compat import fetch_candles  # noqa: E402
+
+
+def get_klines(coin: str, bar: str, max_bars: int) -> pd.DataFrame | None:
+    """从 18 数据获取中心拉 K 线（按 ts 升序），替代 11 memory_l4 依赖。"""
+    rows = fetch_candles(f"{coin}/USDT:USDT", bar, int(max_bars))
+    if not rows:
+        return None
+    rows = sorted(rows, key=lambda r: r["ts"])
+    return pd.DataFrame(rows).rename(
+        columns={"o": "open", "h": "high", "l": "low", "c": "close", "vol": "volume"}
+    )
+
 
 from dreambuddy_evolution.engines.backtest_trade_adapter import (  # noqa: E402
     trade_to_index_record,

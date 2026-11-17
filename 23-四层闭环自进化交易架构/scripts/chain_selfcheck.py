@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from dataclasses import dataclass, field
@@ -22,9 +23,9 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_LOG_CANDIDATES = [
-    REPO_ROOT / "11-易经推理系统" / "logs" / "trader.log",
-    REPO_ROOT / "logs" / "yijing" / "trader.log",
-    Path("/home/luke/logs/yijing/trader.log"),
+    Path(os.getenv("ENTRY23_LOG", "/home/luke/logs/yijing/entry23.log")),
+    Path(os.getenv("EXIT23_LOG", "/home/luke/logs/yijing/exit23.log")),
+    REPO_ROOT / "23-四层闭环自进化交易架构" / "runtime" / "entry23.log",
 ]
 DEFAULT_AUDIT = REPO_ROOT / "22-执行引擎中心" / "audit" / "gateway.jsonl"
 

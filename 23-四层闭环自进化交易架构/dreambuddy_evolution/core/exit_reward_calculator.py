@@ -32,16 +32,18 @@ logger = logging.getLogger(__name__)
 
 
 def _get_sltp_floor_defaults() -> dict:
-    """从集中配置获取 SL/TP 下限作为奖励计算兜底目标（惰性导入）。
+    """从 23 执行层集中配置获取 SL/TP 下限作为奖励计算兜底目标（惰性导入）。
 
-    优先级：sl_tp_config.SLTPParams → 本地兜底（与硬约束一致）。
+    优先级：entry_loop._DEFAULT_CONFIG → 本地兜底（与硬约束一致）。
     返回 sl_floor / tp_floor，盈亏比 = tp_floor / sl_floor ≥ 2.0。
     """
     try:
-        from memory_l4.bcrm2.sl_tp_config import SLTPParams
+        from dreambuddy_evolution.execution.entry_loop import _DEFAULT_CONFIG
 
-        p = SLTPParams()
-        return {"sl_floor": p.sl_floor, "tp_floor": p.tp_floor}
+        return {
+            "sl_floor": float(_DEFAULT_CONFIG["sl_floor_pct"]),
+            "tp_floor": float(_DEFAULT_CONFIG["tp_floor_pct"]),
+        }
     except Exception as e:
         logger.debug("[FO] SLTP 配置读取 fail: %s", e)
     return {"sl_floor": 0.04, "tp_floor": 0.12}

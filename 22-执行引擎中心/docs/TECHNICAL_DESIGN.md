@@ -26,6 +26,7 @@ TEE 采用分层架构：
 | kill_switch.py | 熔断开关，异常时自动停止下单 |
 | failopen.py | FAIL-OPEN 降级策略，主路径失败时降级执行 |
 | auditor.py | 全链路审计，记录每笔订单的完整生命周期 |
+| sltp_reconcile.py | 公共执行：存量持仓 SL/TP 补挂巡检（各域共用，11 交易循环下线后仍兜底） |
 
 ### 1.2 适配器层 adapters/
 

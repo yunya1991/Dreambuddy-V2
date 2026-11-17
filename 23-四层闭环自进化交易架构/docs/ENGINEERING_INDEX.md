@@ -171,7 +171,8 @@
 | `data_center.py` | `DataCenterAdapter` | data_center.db衍生品数据 |
 | `sentiment_bridge.py` | `SentimentBridge` | SentimentEngine情绪桥接 |
 | `ess_provider.py` | `ESSDirectionProvider` | ESS方向提供器 |
-| `subsystem_bridge.py` | `SubSystemBridge` | 子交易系统信号桥接 |
+| `subsystem_bridge.py` | `SubSystemBridge` | 子交易系统信号桥接（43/42 优先） |
+| `indigenous_factors.py` | `IndigenousFactorProvider` | 23 自产因子（BCRM 方向/BDSM 估值/BTC regime/方向态），不读取 11 |
 | `coin_scanner.py` | `CoinScanner` | 50币池扫描+美股代币配额 |
 | `cognitive_bridge.py` | `CognitiveBridge` | 认知记忆系统桥接（Phase3） |
 | `capital_rotation.py` | `CapitalRotationAdapter` | 资金轮动检测 |

@@ -32,7 +32,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent  # scripts/
 BASE = SCRIPT_DIR.parent  # dreambuddy_evolution/
 ARCH_DIR = BASE.parent  # 23-四层闭环自进化交易架构/
 REPO_ROOT = ARCH_DIR.parent  # dreambuddy-v2/
-KLINE_DIR = REPO_ROOT / "11-易经推理系统" / "scripts" / "data" / "klines"
+KLINE_DIR = ARCH_DIR / "data" / "klines"
 PERSIST_PATH = BASE / "gene_data" / "soft_vote_weights.jsonl"
 REPORT_PATH = BASE / "gene_data" / "soft_vote_backtest_report.json"
 
@@ -92,33 +92,30 @@ def load_klines_from_csv(path: Path) -> List[dict]:
 
 
 def load_klines_from_okx(inst_id: str, bar: str = "1H", limit: int = 500) -> List[dict]:
-    """从OKX API获取K线数据"""
+    """从 18 数据获取中心拉取 K 线（替代 11 memory_l4.okx_client）"""
     try:
-        sys.path.insert(0, str(REPO_ROOT / "11-易经推理系统" / "scripts" / "memory_l4"))
-        from okx_client import OKXClient  # type: ignore
+        if str(REPO_ROOT / "18-数据获取中心") not in sys.path:
+            sys.path.insert(0, str(REPO_ROOT / "18-数据获取中心"))
+        from data_center.compat.market_compat import fetch_candles  # type: ignore
 
-        client = OKXClient()
-        resp = client.get_kline(inst_id, bar=bar, limit=limit)
-        if not resp or not resp.get("ok"):
-            logger.warning("OKX API 获取K线失败: %s", inst_id)
+        candles = fetch_candles(inst_id.replace("-USDT-SWAP", "/USDT:USDT"), bar, limit)
+        if not candles:
+            logger.warning("18 行情获取K线失败: %s", inst_id)
             return []
-        candles = resp.get("candles", [])
-        # OKX 返回 [ts, o, h, l, c, vol, ...] 逆序
-        rows = []
-        for c in reversed(candles):
-            rows.append(
-                {
-                    "timestamp": str(c[0]),
-                    "open": float(c[1]),
-                    "high": float(c[2]),
-                    "low": float(c[3]),
-                    "close": float(c[4]),
-                    "volume": float(c[5] or 0),
-                }
-            )
+        rows = [
+            {
+                "timestamp": str(c["ts"]),
+                "open": float(c["o"]),
+                "high": float(c["h"]),
+                "low": float(c["l"]),
+                "close": float(c["c"]),
+                "volume": float(c.get("vol") or 0),
+            }
+            for c in sorted(candles, key=lambda r: r["ts"])
+        ]
         return rows
     except Exception as e:
-        logger.warning("OKX K线加载异常: %s", e)
+        logger.warning("18 K线加载异常: %s", e)
         return []
 
 

@@ -1,7 +1,7 @@
 """AssetClassMapper — 币种精细分类映射（P1a 跨币种迁移基础设施）
 
 将币种映射到 asset_sub_class，用于 ReflectionScanner 类先验继承。
-不修改 11-易经推理系统 的 classify_asset_class()（被 BDSM 等消费），此处独立维护更细的 crypto 子类。
+不修改其他域的 classify_asset_class()（如 11 的 BDSM 消费方），此处独立维护更细的 crypto 子类。
 
 分类体系：
   crypto_major   — BTC, ETH（市值前二，市场风向标）
@@ -169,7 +169,7 @@ def get_asset_class(coin: str) -> Optional[str]:
 def get_coarse_class(coin: str) -> Optional[str]:
     """返回币种的粗分类（crypto_usdt / us_stock / precious_metal）。
 
-    委托 11-易经推理系统 的 classify_asset_class()，跨子系统导入用 try/except 包裹。
+    本域独立维护粗分类（crypto_usdt / us_stock / precious_metal），不跨域导入。
     导入失败时，从精细分类降级推导。
     """
     # 优先尝试精细分类降级

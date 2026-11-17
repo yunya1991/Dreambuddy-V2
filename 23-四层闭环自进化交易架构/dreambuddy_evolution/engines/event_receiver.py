@@ -99,16 +99,22 @@ class EventReceiver:
         kline_data: dict[str, Any],
         result: dict[str, Any],
     ) -> None:
-        """将 EventSignal 写入 JSON 状态文件（跨进程通信 · 影子模式）.
+        """将 EventSignal 写入 23 自有 JSON 状态文件（跨进程通信 · 影子模式）.
 
-        供 11-易经推理系统/data_server_fixed.py 的 GET /api/event-driven 接口读取。
+        状态文件落在 23 runtime，外部读取方通过 ``EVENT_DRIVEN_STATE_PATH`` 约定路径，
+        23 不再写入任何 11 域目录。
         影子模式：仅评估 + 写状态文件，不影响 on_kline_close 主链路的 d* 决策。
 
         FAIL-OPEN：写入失败不影响主链路。
         """
         try:
-            repo_root = Path(__file__).resolve().parents[3]
-            state_path = repo_root / "11-易经推理系统" / "data" / "event_driven_state.json"
+            _override = os.getenv("EVENT_DRIVEN_STATE_PATH", "").strip()
+            if _override:
+                state_path = Path(_override)
+            else:
+                state_path = (
+                    Path(__file__).resolve().parents[2] / "runtime" / "event_driven_state.json"
+                )
             state_path.parent.mkdir(parents=True, exist_ok=True)
 
             # 影子模式评估 EventSignal

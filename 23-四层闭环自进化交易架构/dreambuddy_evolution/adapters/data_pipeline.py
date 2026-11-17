@@ -57,7 +57,7 @@ class DataPipelineAdapter:
         self._ess = (
             ESSDirectionProvider(gene_data_root, min_sample=min_sample) if gene_data_root else None
         )
-        self._subsystem = SubSystemBridge(trader) if trader else None
+        self._subsystem = SubSystemBridge(trader)
         self._cognitive = CognitiveBridge(db_path=cognitive_db, enabled=cognitive_enabled)
         # Phase 2: odaily 叙事标签库（data_center_db 存在时启用）
         self._narrative = NarrativeAdapter(db_path=data_center_db) if data_center_db else None
@@ -219,6 +219,7 @@ class DataPipelineAdapter:
 
         if self._subsystem is not None:
             try:
+                self._subsystem.update_market(kline_data, symbol)
                 kline_data["bcrm_direction"] = self._subsystem.get_bcrm_direction()
                 kline_data["bcrm_confidence"] = self._subsystem.get_bcrm_confidence()
                 kline_data["bcrm_pattern"] = self._subsystem.get_bcrm_pattern()

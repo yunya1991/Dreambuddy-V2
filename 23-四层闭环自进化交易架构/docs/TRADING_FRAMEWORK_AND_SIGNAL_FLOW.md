@@ -47,7 +47,7 @@
 | 平仓决策/减仓/清理 | 23 `execution/exit_loop.py` + `engines/exit_engine/` | 独立于开仓链 |
 | 下单网关 | 22 `TradeExecutionGateway` | v1.2 契约校验（观察期 alert-only） |
 | 风控与交易所 | 13 `PreTradeGate` + OKX | 最终成交 |
-| 落账与反馈 | 11 + `TradeSettlementBridge` | 回报进入反思/ESS/Bellman |
+| 落账与反馈 | 22 账本 + 23 `TradeSettlementBridge` | 成交/平仓落 22 `PositionLedger`；23 消费执行结果进入反思/ESS/Bellman |
 
 ---
 

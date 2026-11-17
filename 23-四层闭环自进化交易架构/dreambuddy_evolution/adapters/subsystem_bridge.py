@@ -76,11 +76,18 @@ _BCRM_DIR_MAP: dict[str, str] = {
 
 
 class SubSystemBridge:
-    """从 polling_trader 实例提取子交易系统信号"""
+    """提取子交易系统信号（43/42 为事实源；无 trader 时用 23 自产因子兜底）"""
 
     def __init__(self, trader: Any = None, bus_state_path: str | Path | None = None) -> None:
         self._trader = trader
         self._bus_state_path = Path(bus_state_path) if bus_state_path else _42_BUS_STATE_PATH
+        from dreambuddy_evolution.adapters.indigenous_factors import IndigenousFactorProvider
+
+        self._indigenous = IndigenousFactorProvider()
+
+    def update_market(self, market_data: dict | None, symbol: str = "") -> None:
+        """刷新 23 自产因子快照（独立运行且 43/42 不可用时使用）。"""
+        self._indigenous.update(market_data, symbol)
 
     # ---------------------------------------------------------- 42 总线
     def _load_bus_state(self) -> dict:
@@ -313,6 +320,8 @@ class SubSystemBridge:
                 src = str(sig.get("source", ""))
                 if "bcrm" in src.lower():
                     return str(sig.get("direction", "")).lower()
+            # 最后回退 23 自产（趋势方向代理）
+            return self._indigenous.get_bcrm_direction()
         except Exception:
             pass
         return ""
@@ -329,6 +338,7 @@ class SubSystemBridge:
             for sig in self.get_bus_signals():
                 if "bcrm" in str(sig.get("source", "")).lower():
                     return float(sig.get("confidence", 0.0))
+            return self._indigenous.get_bcrm_confidence()
         except Exception:
             pass
         return 0.0
@@ -355,6 +365,7 @@ class SubSystemBridge:
             for sig in self.get_bus_signals():
                 if "bdsm" in str(sig.get("source", "")).lower():
                     return float(sig.get("confidence", 0.5))
+            return self._indigenous.get_bdsm_valuation()
         except Exception:
             pass
         return 0.5
@@ -427,7 +438,7 @@ class SubSystemBridge:
         """获取 BCRM2 头肩形态检测结果。FAIL-OPEN → 中性。"""
         try:
             if self._trader is None:
-                return {"hs_top": False, "hs_bottom": False, "confidence": 0.0}
+                return self._indigenous.get_bcrm_pattern()
             result = getattr(self._trader, "_last_bcrm2_result", None)
             if not result:
                 return {"hs_top": False, "hs_bottom": False, "confidence": 0.0}
@@ -445,12 +456,12 @@ class SubSystemBridge:
         """获取战略层 BTC 强弱 regime（STRONG/WEAK/NEUTRAL）。FAIL-OPEN → NEUTRAL。"""
         try:
             if self._trader is None:
-                return "NEUTRAL"
+                return self._indigenous.get_btc_regime()
             _fds = getattr(self._trader, "_five_domain_state_shadow", None) or getattr(
                 self._trader, "_five_domain_state_cache", None
             )
             if _fds is None:
-                return "NEUTRAL"
+                return self._indigenous.get_btc_regime()
             br = getattr(_fds, "btc_regime", None) if hasattr(_fds, "btc_regime") else None
             if isinstance(br, dict):
                 return br.get("crypto_usdt", "NEUTRAL")
@@ -488,12 +499,12 @@ class SubSystemBridge:
         """获取战略层方向状态（LONG_ONLY/LONG_PREFER/NEUTRAL/SHORT_PREFER/SHORT_ONLY/FREEZE）。FAIL-OPEN → NEUTRAL。"""
         try:
             if self._trader is None:
-                return "NEUTRAL"
+                return self._indigenous.get_direction_state(cls)
             _fds = getattr(self._trader, "_five_domain_state_shadow", None) or getattr(
                 self._trader, "_five_domain_state_cache", None
             )
             if _fds is None:
-                return "NEUTRAL"
+                return self._indigenous.get_direction_state(cls)
             ds = (
                 getattr(_fds, "direction_state", None) if hasattr(_fds, "direction_state") else None
             )
@@ -507,12 +518,12 @@ class SubSystemBridge:
         """获取战略层方向偏置分数（-100~+100，+看多/-看空）。FAIL-OPEN → 0.0。"""
         try:
             if self._trader is None:
-                return 0.0
+                return self._indigenous.get_direction_bias(cls)
             _fds = getattr(self._trader, "_five_domain_state_shadow", None) or getattr(
                 self._trader, "_five_domain_state_cache", None
             )
             if _fds is None:
-                return 0.0
+                return self._indigenous.get_direction_bias(cls)
             db = getattr(_fds, "direction_bias", None) if hasattr(_fds, "direction_bias") else None
             if isinstance(db, dict):
                 return float(db.get(cls, 0.0))

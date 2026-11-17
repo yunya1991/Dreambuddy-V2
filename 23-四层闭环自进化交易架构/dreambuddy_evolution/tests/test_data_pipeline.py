@@ -284,8 +284,8 @@ class TestDataPipelineAdapter:
         # 没有 gene_data_root → ess 字段不包含
         assert "ess_top_direction" not in data or data.get("ess_top_direction", "") == ""
 
-    def test_no_trader_no_subsystem(self):
-        """trader=None → 子系统字段不包含（但 scale_class 仍包含，它是静态方法）"""
+    def test_no_trader_uses_indigenous_factors(self):
+        """trader=None → 使用 23 自产因子（BCRM/BDSM/BTC regime），仍输出子系统字段"""
         client = MockOKXClient()
         adapter = DataPipelineAdapter(
             okx_client=client,
@@ -294,7 +294,9 @@ class TestDataPipelineAdapter:
             gene_data_root=None,
         )
         data = adapter.assemble("BTC", "BTC-USDT-SWAP")
-        assert "war_state" not in data
-        assert "bcrm_direction" not in data
+        assert data["bcrm_direction"] in ("long", "short", "")
+        assert 0.0 <= data["bcrm_confidence"] <= 1.0
+        assert data["btc_regime"] in ("STRONG", "WEAK", "NEUTRAL")
+        assert "war_state" in data
         # scale_class 是静态方法，不需要 trader
         assert data["scale_class"] == "Classical"

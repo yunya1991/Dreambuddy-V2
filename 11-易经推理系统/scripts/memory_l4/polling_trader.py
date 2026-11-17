@@ -18969,7 +18969,8 @@ class PollingTrader:
         #   每轮调用 _check_evolution_kline_signal → KlineEventHandler →
         #   auto_execute=True 时经 23 EvolutionEntryLoop → 22 网关开仓（25U硬上限）
         try:
-            self._check_evolution_kline_signal()
+            if str(os.environ.get("YIJING_23_ENABLED", "0")).lower() in ("1", "true", "on", "yes"):
+                self._check_evolution_kline_signal()
         except Exception as _evo_e:
             self._log(f"[P2-S4b] K线触发异常(FAIL-OPEN): {_evo_e}", "WARN")
 
@@ -18978,7 +18979,8 @@ class PollingTrader:
         #   仅处理 source_tag="evolution" 持仓，与 BCRM/BDSM 子池隔离
         # ★ 规则 2b 前置：为 evolution 持仓补 BCRM2.0 推理，确保离场决策有最新反向信号
         try:
-            self._ensure_bcrm2_for_evolution_positions()
+            if str(os.environ.get("YIJING_23_ENABLED", "0")).lower() in ("1", "true", "on", "yes"):
+                self._ensure_bcrm2_for_evolution_positions()
         except Exception as _bcrm_pre_e:
             self._log(
                 f"[EvolutionExitEngine] BCRM2.0 预推理异常(FAIL-OPEN): {_bcrm_pre_e}", "DEBUG"
@@ -18986,9 +18988,9 @@ class PollingTrader:
         # ══ P2-S4b+: 自进化系统独立离场巡检（23 EvolutionExitLoop 全权驱动）════
         #   开仓由 _check_evolution_kline_signal 负责；离场编排/决策/执行均在 23，
         #   11 只提供持仓数据、本地上下文补充与落账/反思回调。
-        #   P3 切流开关：23 独立 runner（dreambuddy-exit23.service）上线后
-        #   置 YIJING_23_EXIT_ENABLED=0，11 不再巡检 23 持仓。
-        _evo_exit_enabled = str(os.environ.get("YIJING_23_EXIT_ENABLED", "1")).lower() in (
+        #   P3 切流完成：23 由 dreambuddy-entry23/exit23 独立驱动，
+        #   11 侧 23 链路统一由 YIJING_23_ENABLED 控制，默认关闭（0）。
+        _evo_exit_enabled = str(os.environ.get("YIJING_23_ENABLED", "0")).lower() in (
             "1",
             "true",
             "on",

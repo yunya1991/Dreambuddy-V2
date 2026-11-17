@@ -69,14 +69,11 @@ class TradeIndexBuilder:
     # 已知交易记录源配置（作为保底，自动发现会补充更多）
     KNOWN_SOURCES = [
         {
-            "path": "11-易经推理系统/.workbuddy/memory_l4/stats/all_trades.jsonl",
-            "source": "bcrm",
-            "type": "closed",
-        },
-        {
-            "path": "11-易经推理系统/.workbuddy/memory_l4/stats/all_trades_archived_*.jsonl",
-            "source": "bcrm_archive",
-            "type": "closed",
+            "path": "22-执行引擎中心/runtime/position_ledger.db",
+            "source": "22-ledger",
+            "type": "sqlite",
+            "table": "fills",
+            "where": "action IN ('close','reduce','reduce_only')",
         },
         {
             "path": ".workbuddy/trade_index/backtest_trades.jsonl",
@@ -262,7 +259,7 @@ class TradeIndexBuilder:
     def _infer_source_name(self, rel_path: str) -> str:
         """从相对路径推断来源子系统名"""
         parts = Path(rel_path).parts
-        # 取第一级目录名作为来源（如 "11-易经推理系统" → "yijing"）
+        # 取第一级目录名作为来源（如 "22-执行引擎中心" → "22"）
         if len(parts) > 0:
             top = parts[0]
             # 去掉数字前缀（如 "11-" → ""）
@@ -327,14 +324,19 @@ class TradeIndexBuilder:
             logger.warning("[FO] load_closed_trades fail %s: %s", file_path, e)
         return trades
 
-    def _load_sqlite_trades(self, file_path: Path, table: str) -> list[dict[str, Any]]:
-        """加载 SQLite 交易表"""
+    def _load_sqlite_trades(
+        self, file_path: Path, table: str, where: str | None = None
+    ) -> list[dict[str, Any]]:
+        """加载 SQLite 交易表（where 为可选过滤条件，供 fills 等流水表使用）"""
         trades = []
         try:
             conn = sqlite3.connect(str(file_path))
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
-            rows = cur.execute(f"SELECT * FROM {table}").fetchall()
+            sql = f"SELECT * FROM {table}"
+            if where:
+                sql = f"{sql} WHERE {where}"
+            rows = cur.execute(sql).fetchall()
             for row in rows:
                 trades.append(dict(row))
             conn.close()
@@ -345,7 +347,8 @@ class TradeIndexBuilder:
     def _normalize_trade(self, raw: dict[str, Any], source: str) -> dict[str, Any] | None:
         """将各子系统的交易记录统一为索引库格式"""
         try:
-            coin = raw.get("coin") or raw.get("symbol") or ""
+            _inst = str(raw.get("inst_id") or "")
+            coin = raw.get("coin") or raw.get("symbol") or (_inst.split("-")[0] if _inst else "")
             if not coin:
                 return None
             # SQLite trades 表的 id 字段作为 trade_id
@@ -354,24 +357,30 @@ class TradeIndexBuilder:
                 or raw.get("id")
                 or f"{coin}_{raw.get('entry_time', raw.get('timestamp', ''))}"
             )
-            # pnl: SQLite 可能只有 pnl_pct，没有 pnl 绝对值
-            pnl = float(raw.get("pnl", 0))
+            # pnl: 22 fills 表用 realized_pnl；SQLite 可能只有 pnl_pct，没有 pnl 绝对值
+            pnl = float(raw.get("pnl", raw.get("realized_pnl") or 0))
             pnl_pct = float(raw.get("pnl_pct", 0))
             if pnl == 0 and pnl_pct != 0:
                 # 从 pnl_pct 推算 pnl（近似）
                 entry = float(raw.get("entry_price", 0))
                 pnl = entry * pnl_pct
+            _exit_px = float(raw.get("exit_price", raw.get("px") or 0))
+            _qty = float(raw.get("qty") or 0)
+            if pnl_pct == 0 and pnl != 0 and _exit_px > 0 and _qty > 0:
+                pnl_pct = pnl / (_exit_px * _qty)
             return {
                 "trade_id": trade_id,
                 "coin": coin,
-                "inst_id": raw.get("inst_id", f"{coin}-USDT-SWAP"),
-                "direction": str(raw.get("direction", "")).lower(),
+                "inst_id": _inst or raw.get("inst_id", f"{coin}-USDT-SWAP"),
+                "direction": str(raw.get("direction") or raw.get("pos_side") or "").lower(),
                 "entry_price": float(raw.get("entry_price", 0)),
-                "exit_price": float(raw.get("exit_price", 0)),
+                "exit_price": _exit_px,
                 "entry_time": str(
                     raw.get("entry_time") or raw.get("timestamp") or raw.get("created_at", "")
                 ),
-                "exit_time": str(raw.get("exit_time") or raw.get("created_at", "")),
+                "exit_time": str(
+                    raw.get("exit_time") or raw.get("ts") or raw.get("created_at", "")
+                ),
                 "pnl": pnl,
                 "pnl_pct": pnl_pct,
                 "exit_reason": raw.get("exit_reason", ""),
@@ -410,7 +419,7 @@ class TradeIndexBuilder:
                     )
             elif src["type"] == "sqlite":
                 table = src.get("table", "trades")
-                raw_trades = self._load_sqlite_trades(file_path, table)
+                raw_trades = self._load_sqlite_trades(file_path, table, src.get("where"))
                 for rt in raw_trades:
                     normalized = self._normalize_trade(rt, src["source"])
                     if normalized:

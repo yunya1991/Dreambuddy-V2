@@ -143,7 +143,7 @@ class EvolutionPipeline:
         try:
             from dreambuddy_evolution.adapters.subsystem_bridge import SubSystemBridge
 
-            self._bridge = SubSystemBridge(trader) if trader else None
+            self._bridge = SubSystemBridge(trader)
         except Exception:
             self._bridge = None
 
@@ -1925,6 +1925,9 @@ class EvolutionPipeline:
 
         # 入口口径归一：closes/kline_close → close（否则 L1 与 G_dim 全链路拿不到序列）
         _normalize_close_key(market_data)
+        # 刷新 23 自产因子（无 11 trader 时的高阶调制数据源）
+        if self._bridge is not None:
+            self._bridge.update_market(market_data, symbol)
 
         # ============ L1: 状态空间层 ============
         if rv is None:

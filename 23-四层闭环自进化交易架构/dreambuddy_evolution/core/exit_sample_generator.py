@@ -486,11 +486,9 @@ def main():
         format="[%(asctime)s] [%(levelname)s] %(message)s",
     )
 
-    # 默认路径
+    # 默认路径：22 账本 → 23 交易索引库（由 TradeIndexBuilder 生成）
     project_root = Path(__file__).resolve().parents[3]
-    default_trades = str(
-        project_root / "11-易经推理系统" / ".workbuddy" / "memory_l4" / "stats" / "all_trades.jsonl"
-    )
+    default_trades = str(project_root / ".workbuddy" / "trade_index" / "all_trades_index.jsonl")
     default_output = str(Path(__file__).resolve().parents[1] / "data" / "exit_rl_samples.jsonl")
 
     parser = argparse.ArgumentParser(description="生成 RL 离场样本")

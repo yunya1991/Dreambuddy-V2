@@ -15,7 +15,12 @@ from pathlib import Path
 
 # 路径设置
 BASE = Path(__file__).resolve().parent.parent
-KLINE_PATH = BASE.parent.parent / "11-易经推理系统/scripts/data/klines/BTC_4H.csv"
+KLINE_PATH = Path(
+    os.getenv(
+        "EVOLUTION_KLINE_PATH",
+        str(BASE.parent / "data" / "klines" / "BTC_4H.csv"),
+    )
+)
 CANDIDATES_DIR = BASE / "gene_data/candidates"
 SHADOW_DIR = BASE / "gene_data/shadow_validation"
 COND_DIR = BASE / "gene_data/strategy_genes/conditions"
