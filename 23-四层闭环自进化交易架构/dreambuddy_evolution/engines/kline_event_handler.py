@@ -335,7 +335,7 @@ class KlineEventHandler:
             r_vector = recv["r_vector"]
             agi_signature = recv["agi_signature"]
 
-            # ============ N2 阻力向量 / N3 高阶因子调制 观测 ============
+            # ============ N2 阻力向量 观测 ============
             _rv_flags = r_vector.get("fallback_flags") or {}
             _rv_n_fb = len(_rv_flags) if isinstance(_rv_flags, dict) else 0
             emit_stage(
@@ -353,15 +353,6 @@ class KlineEventHandler:
                     "quality_score": r_vector.get("quality_score"),
                     "fallback_flags": sorted(_rv_flags) if isinstance(_rv_flags, dict) else [],
                 },
-            )
-            _hif = r_vector.get("high_order_factors")
-            emit_stage(
-                "N3",
-                "pipeline.high_order_factors",
-                symbol,
-                "pass" if _hif else "skip",
-                trace_id=_trace_id,
-                data={"high_order_factors": _hif or {}},
             )
 
             # ============ AGI 增强点 B: PathIntegralEngine 蒙特卡洛路径复核 ============
@@ -464,7 +455,26 @@ class KlineEventHandler:
             except Exception as e:
                 logger.debug("[PathLayer] %s outer crash: %s", symbol, e)
 
-            # ============ 3c. N4/N5/N6/N7 语义节点事件 ============
+            # ============ 3c. N3/N4/N5/N6/N7 语义节点事件 ============
+            # N3 在 EngineRouter 内完成（开关 EVOLUTION_N3_HIGH_ORDER 默认 off，
+            # 关闭时仅影子对比 n3_compare，不参与决策）
+            _hif = path_info.get("high_order_factors")
+            _rv_mod = path_info.get("r_vector_modulated") or {}
+            if _rv_mod:
+                r_vector.update(_rv_mod)
+            _n3_on = bool(path_info.get("n3_enabled"))
+            emit_stage(
+                "N3",
+                "pipeline.high_order_factors",
+                symbol,
+                "pass" if (_n3_on and _hif) else "skip",
+                trace_id=_trace_id,
+                data={
+                    "enabled": _n3_on,
+                    "high_order_factors": _hif or {},
+                    "n3_compare": path_info.get("n3_compare") or {},
+                },
+            )
             emit_stage(
                 "N4",
                 "pipeline.path_discovery",

@@ -76,3 +76,55 @@ class TestRunPathDiscovery:
             mode="Phase2",
         )
         assert isinstance(result, dict)
+
+    def _run_with_fake_pipeline(self, monkeypatch, *, n3_on: bool):
+        from dreambuddy_evolution.engines.engine_router import EngineRouter
+
+        monkeypatch.setenv("EVOLUTION_N3_HIGH_ORDER", "on" if n3_on else "off")
+        seen: dict = {}
+
+        class _FakePipeline:
+            _bridge = None
+
+            def _apply_high_order_factors(self, r_out, symbol):
+                out = dict(r_out)
+                out["R_up"] = 0.11
+                out["R_down"] = 0.91
+                out["high_order_factors"] = {"bcrm_dir": "long", "war_state": "ALLOW"}
+                return out
+
+            def _discover_paths(self, r_vector, market_data, symbol):
+                seen.update(r_vector)
+                return []
+
+            def _select_optimal_path(self, paths, r_vector, market_data):
+                return {"optimal_path": None, "path_info": {}}
+
+        router = EngineRouter()
+        router._evolution_pipeline = _FakePipeline()
+        res = router.run_path_discovery(
+            symbol="BTC-USDT-SWAP",
+            d_star="long",
+            r_vector={"R_up": 0.5, "R_down": 0.4},
+            kline_data={"close": [100.0] * 20},
+            mode="Phase2",
+        )
+        return seen, res
+
+    def test_n3_default_off_is_shadow_only(self, monkeypatch):
+        """默认关闭：决策仍用调制前 R 向量，但影子对比必须记录 after。"""
+        seen, res = self._run_with_fake_pipeline(monkeypatch, n3_on=False)
+        assert seen["R_up"] == 0.5 and seen["R_down"] == 0.4
+        assert res["n3_enabled"] is False
+        assert res["r_vector_modulated"] is None
+        assert res["n3_compare"]["after"]["R_up"] == 0.11
+        assert res["n3_compare"]["dir_before"] == "short"
+        assert res["n3_compare"]["dir_after"] == "long"
+        assert res["n3_compare"]["direction_flip"] is True
+
+    def test_n3_enabled_applies_modulation(self, monkeypatch):
+        """开关开启：调制结果参与路径发现。"""
+        seen, res = self._run_with_fake_pipeline(monkeypatch, n3_on=True)
+        assert seen["R_up"] == 0.11 and seen["R_down"] == 0.91
+        assert res["n3_enabled"] is True
+        assert res["r_vector_modulated"]["R_down"] == 0.91

@@ -8,12 +8,36 @@
 from __future__ import annotations
 
 import logging
+import os
 import traceback
 from typing import Any
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+# N3 高阶因子调制开关：默认关闭（影子对比），确认后再开
+_N3_ENV = "EVOLUTION_N3_HIGH_ORDER"
+_RV_KEYS = ("R_up", "R_down", "R_smooth", "R_reflexivity")
+
+
+def _n3_enabled() -> bool:
+    return str(os.getenv(_N3_ENV, "off")).strip().lower() in ("1", "true", "on", "yes")
+
+
+def _rv_direction(rv: dict) -> str:
+    """Level0 简化口径：R 越小阻力越小 → 取阻力更小的方向。"""
+    try:
+        up = float(rv.get("R_up", 0.5))
+        down = float(rv.get("R_down", 0.5))
+    except (TypeError, ValueError):
+        return "unknown"
+    if up < down:
+        return "long"
+    if down < up:
+        return "short"
+    return "flat"
+
 
 # Phase 1: 事件驱动策略接入路径发现层（模块级导入支持测试 monkeypatch）
 try:
@@ -253,6 +277,8 @@ class EngineRouter:
             "cross_validation": None,
             "elastic_result": None,
             "statistical_validation": None,
+            "high_order_factors": None,
+            "r_vector_modulated": None,
         }
 
         try:
@@ -272,6 +298,39 @@ class EngineRouter:
                     closes = [float(raw_close)]
 
             market_data = {**kline_data, "close": closes}
+
+            # ============ N3：高阶基因因子阻力调制（BCRM/BDSM/战略层） ============
+            # 与 EvolutionPipeline.run_symbol 口径对齐：此前实盘开仓路径从
+            # _discover_paths 起步，漏掉调制 → R 向量不受 22/43 高阶信号影响。
+            # 开关 EVOLUTION_N3_HIGH_ORDER 默认 off：只做影子对比，不改决策；
+            # 开启后调制结果才参与 _discover_paths / Level0。
+            if hasattr(pipeline, "_apply_high_order_factors"):
+                try:
+                    _bridge = getattr(pipeline, "_bridge", None)
+                    if _bridge is not None:
+                        _bridge.update_market(market_data, symbol)
+                    _r_mod = pipeline._apply_high_order_factors(r_vector, symbol)
+                    if isinstance(_r_mod, dict):
+                        _hif = _r_mod.get("high_order_factors")
+                        _before = {_k: r_vector.get(_k) for _k in _RV_KEYS}
+                        _after = {_k: _r_mod.get(_k) for _k in _RV_KEYS}
+                        _on = _n3_enabled()
+                        path_info["n3_enabled"] = _on
+                        path_info["high_order_factors"] = _hif
+                        path_info["n3_compare"] = {
+                            "before": _before,
+                            "after": _after,
+                            "dir_before": _rv_direction(r_vector),
+                            "dir_after": _rv_direction(_r_mod),
+                            "direction_flip": _rv_direction(r_vector) != _rv_direction(_r_mod),
+                            "applied": _on,
+                        }
+                        if _on:
+                            r_vector = _r_mod
+                            path_info["r_vector_modulated"] = _after
+                except Exception as e:  # noqa: BLE001 — 调制失败保留原 R 向量
+                    logger.debug("[PathLayer] high_order_factors fail (FAIL-OPEN): %s", e)
+
             if hasattr(pipeline, "_discover_paths"):
                 paths = pipeline._discover_paths(r_vector, market_data, symbol)
                 path_info["path_count"] = len(paths) if isinstance(paths, list) else 0
