@@ -123,6 +123,9 @@ class Collector:
         cutoff = _now() - 86400
         recent = 0
         for rec in rows:
+            # 只统计携带完整信号的审计记录；旧版仅摘要的记录无法参与契约校验
+            if "signal" not in rec and "payload" not in rec:
+                continue
             sig = _signal_of(rec)
             ts = _iso_to_ts(str(sig.get("ts") or rec.get("ts") or "")) or 0.0
             if ts and ts < cutoff:
