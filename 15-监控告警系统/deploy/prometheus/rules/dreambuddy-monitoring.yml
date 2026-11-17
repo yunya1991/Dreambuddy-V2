@@ -267,6 +267,34 @@ groups:
         annotations:
           summary: "23 交叉验证处于降级模式，检查 degraded_mode 与置信度乘数"
 
+      - alert: EvolutionScanStalled
+        expr: dreambuddy_evolution_universe_snapshot_age_seconds > 900
+        for: 10m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "23 全市场扫描停摆超过 15 分钟（币种池退回基础池）"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#13-分类监控模型与-23-交易链路逐节点监控v27"
+
+      - alert: EvolutionScanFailed
+        expr: dreambuddy_evolution_scan_failed > 0
+        for: 15m
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "23 全市场扫描持续失败（FAIL-OPEN 已静默降级）"
+
+      - alert: EvolutionPoolShrunk
+        expr: dreambuddy_evolution_pool_size <= dreambuddy_evolution_base_count
+        for: 30m
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "23 探索无新增：池大小未超过基础池，自动探索可能失效"
+
       - alert: ChainBroken
         expr: dreambuddy_chain_missing_stage_total > 0
         for: 30m

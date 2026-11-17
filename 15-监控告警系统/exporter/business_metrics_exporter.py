@@ -243,6 +243,29 @@ class Collector:
             return [_metric("outbox_stuck", 0, state="error")]
         return out
 
+    # ---------- 23 全市场探索（币种池） ----------
+    def universe_metrics(self) -> list[str]:
+        """读取 polling_trader 每周期写出的探索快照，暴露池大小与新鲜度。"""
+        path = self.repo / "23-四层闭环自进化交易架构/runtime/universe_snapshot.json"
+        stale_age = 86400.0
+        try:
+            snap = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return [
+                _metric("evolution_universe_snapshot_age_seconds", stale_age),
+                _metric("evolution_scan_failed", 1),
+            ]
+        age = max(0.0, _now() - float(snap.get("ts") or 0.0))
+        return [
+            _metric("evolution_universe_snapshot_age_seconds", round(age, 1)),
+            _metric("evolution_base_count", int(snap.get("base_count") or 0)),
+            _metric("evolution_scan_candidates", int(snap.get("scan_candidates") or 0)),
+            _metric("evolution_scan_new", int(snap.get("scan_new") or 0)),
+            _metric("evolution_pool_size", int(snap.get("pool_size") or 0)),
+            _metric("evolution_pool_truncated", int(snap.get("truncated") or 0)),
+            _metric("evolution_scan_failed", 1 if snap.get("scan_failed") else 0),
+        ]
+
     # ---------- A 类交易链路事件（TD §13.4） ----------
     def chain_metrics(self) -> list[str]:
         runtime = self.repo / "23-四层闭环自进化交易架构/runtime"
@@ -439,6 +462,7 @@ class Collector:
             self.outbox_metrics(),
             self.contract_metrics(),
             self.semantic_metrics(),
+            self.universe_metrics(),
             self.chain_metrics(),
             self.artifact_metrics(),
             self.cell_metrics(),

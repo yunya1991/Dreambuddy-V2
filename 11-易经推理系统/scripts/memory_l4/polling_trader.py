@@ -12920,6 +12920,7 @@ class PollingTrader:
 
             # Phase 8: 全市场扫描（50+ OKX 币种），发现当前未跟踪的机会
             _scan_coins: list[str] = []
+            _scan_failed = False
             try:
                 if self._data_pipeline is not None:
                     _scan = self._data_pipeline.scan_market(top_n=50)
@@ -12934,18 +12935,47 @@ class PollingTrader:
                             "DEBUG",
                         )
             except Exception as _scan_e:
+                _scan_failed = True
                 self._log(f"[P2-S4b-SCAN] 扫描异常(FAIL-OPEN): {_scan_e}", "DEBUG")
 
             # 币种池：基础 22 币 + CoinScanner 扫描 Top 50（去重合并，上限 50）
+            _base_coins = list(getattr(self, "coins", []) or [])
+            _scan_new = [c for c in _scan_coins if c not in _base_coins]
             _evo_coins = self._EVOLUTION_KLINE_COINS
             if _evo_coins is None:
-                _base_coins = list(getattr(self, "coins", []) or [])
-                _evo_coins = _base_coins + [c for c in _scan_coins if c not in _base_coins]
-                _evo_coins = _evo_coins[:50]
+                _evo_coins = (_base_coins + _scan_new)[:50]
                 self._log(
-                    f"[P2-S4b-POOL] 进化币种池: 基础{len(_base_coins)} + 扫描{len([c for c in _scan_coins if c not in _base_coins])} = {len(_evo_coins)} 币",
+                    f"[P2-S4b-POOL] 进化币种池: 基础{len(_base_coins)} + 扫描{len(_scan_new)} = {len(_evo_coins)} 币",
                     "DEBUG",
                 )
+            _scan_set = set(_scan_new)
+            _pool_size = len(_evo_coins)
+            # 探索运行快照：供 exporter 产出 evolution_* 指标（FAIL-OPEN，不阻断主循环）
+            try:
+                _snap_path = (
+                    _PROJECT_ROOT
+                    / "23-四层闭环自进化交易架构"
+                    / "runtime"
+                    / "universe_snapshot.json"
+                )
+                _snap_path.parent.mkdir(parents=True, exist_ok=True)
+                _snap_path.write_text(
+                    json.dumps(
+                        {
+                            "ts": time.time(),
+                            "base_count": len(_base_coins),
+                            "scan_candidates": len(_scan_coins),
+                            "pool_size": _pool_size,
+                            "truncated": max(0, len(_base_coins) + len(_scan_new) - _pool_size),
+                            "scan_failed": bool(_scan_failed),
+                            "scan_new": len(_scan_new),
+                        },
+                        ensure_ascii=False,
+                    ),
+                    encoding="utf-8",
+                )
+            except Exception:  # noqa: BLE001 — 快照失败不影响交易
+                pass
 
             for _coin in _evo_coins:
                 try:
@@ -12968,6 +12998,11 @@ class PollingTrader:
                             "low": [c["l"] for c in _candles_asc],
                             "volume": [c["vol"] for c in _candles_asc],
                         }
+
+                    # 探索来源标记：base=基础币池，scan=CoinScanner 发现的新币
+                    if isinstance(_kline_data, dict):
+                        _kline_data["universe"] = "scan" if _coin in _scan_set else "base"
+                        _kline_data["pool_size"] = _pool_size
 
                     _result = self._kline_handler.on_kline_close(
                         _kline_data, alpha=0.1, beta=0.2, gamma=0.2

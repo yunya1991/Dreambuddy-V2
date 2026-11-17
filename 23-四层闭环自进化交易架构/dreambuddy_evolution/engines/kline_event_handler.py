@@ -318,7 +318,15 @@ class KlineEventHandler:
             symbol = str(kline_data.get("symbol", "UNKNOWN"))
             _trace_id = new_trace_id(symbol)
             emit_stage(
-                "N1", "kline_event_handler.on_kline_close", symbol, "enter", trace_id=_trace_id
+                "N1",
+                "kline_event_handler.on_kline_close",
+                symbol,
+                "enter",
+                trace_id=_trace_id,
+                data={
+                    "universe": str(kline_data.get("universe") or "unknown"),
+                    "pool_size": int(kline_data.get("pool_size") or 0),
+                },
             )
 
             # ============ 1. L1 R 向量 + AGI-A 签名 ============
