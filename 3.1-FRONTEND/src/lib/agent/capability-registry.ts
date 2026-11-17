@@ -201,6 +201,29 @@ export function buildSignals(indicators: Record<string, number>) {
   return signals;
 }
 
+/** 从自然语言推断标的（模型未显式传 symbol 时的兜底）。 */
+const SYMBOL_ALIASES: Array<[RegExp, string]> = [
+  [/比特币|\bBTC\b/i, "BTC"],
+  [/以太坊|\bETH\b/i, "ETH"],
+  [/索拉纳|\bSOL\b/i, "SOL"],
+  [/黄金|\bXAU\b|gold/i, "XAU"],
+  [/茅台|600519/i, "600519.SH"],
+  [/宁德时代|300750/i, "300750.SZ"],
+  [/比亚迪|002594/i, "002594.SZ"],
+  [/中国平安|601318/i, "601318.SH"],
+  [/招商银行|600036/i, "600036.SH"],
+  [/腾讯|00700/i, "00700.HK"],
+  [/阿里巴巴|09988/i, "09988.HK"],
+];
+
+export function inferSymbol(text: string): string {
+  if (!text) return "";
+  for (const [re, symbol] of SYMBOL_ALIASES) {
+    if (re.test(text)) return symbol;
+  }
+  return "";
+}
+
 export interface CapabilityRunResult {
   ok: boolean;
   capability: string;
@@ -233,10 +256,18 @@ export async function runCapability(
     return { ok: false, capability: id, error: `能力「${id}」不对 L2 开放（内部能力）` };
   }
 
+  // 标的解析：显式 symbol 优先，否则从问题/上下文推断（模型经常忘记传 symbol）
+  const symbol =
+    String(params.symbol ?? "").trim() ||
+    inferSymbol(
+      [params.question, params.query, params.context]
+        .filter((v) => typeof v === "string")
+        .join(" "),
+    );
+
   if (cap.entry.kind === "l1_query") {
     // 模型常把"分析类原问题"直接塞进 question，会被 L1 分析闸门交回 L2；
     // 取数能力优先用 symbol 组装确定性取数问法，保证拿到事实数据。
-    const symbol = String(params.symbol ?? "").trim();
     let question = String(params.question ?? params.query ?? "").trim();
     if (id === "market.price" && symbol) {
       question = `查询${symbol}价格`;
@@ -259,7 +290,6 @@ export async function runCapability(
 
   if (cap.entry.kind === "dsh") {
     const moduleName = cap.entry.module || id;
-    const symbol = String(params.symbol ?? "").trim();
     let nodeOutput: Record<string, unknown> = { ...params };
 
     // technical 子代理遵循 HC-1：只消费 indicators，不自行取数。
@@ -271,6 +301,7 @@ export async function runCapability(
       if (Object.keys(indicators).length > 0) {
         nodeOutput = {
           ...nodeOutput,
+          symbol,
           indicators,
           context: [nodeOutput.context, l1.answer].filter(Boolean).join("\n"),
         };
