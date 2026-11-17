@@ -12,6 +12,7 @@ FAIL-OPEN：单仓异常只跳过该仓；顶层异常由调用方兜底。
 
 from __future__ import annotations
 
+import math
 import os
 import time
 from datetime import datetime
@@ -543,9 +544,41 @@ class EvolutionExitLoop:
         if _full <= 0:
             return 0.0
         if ratio >= 0.999:
-            return round(_full, 8)
-        _sz = _full * max(0.01, min(float(ratio), 1.0))
-        return round(_sz, 8) if _sz > 0 else round(_full, 8)
+            _sz = round(_full, 8)
+        else:
+            _sz = _full * max(0.01, min(float(ratio), 1.0))
+            if _sz <= 0:
+                _sz = _full
+        # 按交易所 lotSz 向下对齐，避免 "quantity must be a multiple of lot size"
+        _lot = self._lot_sz(inst_id)
+        if _lot > 0:
+            _aligned = round(math.floor(_sz / _lot + 1e-9) * _lot, 8)
+            if _aligned <= 0 and ratio < 0.999:
+                # 减仓不足 1 手 → 全平，避免留下无法管理的碎仓
+                _aligned = round(math.floor(_full / _lot + 1e-9) * _lot, 8)
+            if _aligned > 0:
+                _sz = _aligned
+        return round(_sz, 8)
+
+    def _lot_sz(self, inst_id: str) -> float:
+        """取合约最小下单单位（带进程内缓存），失败返回 0（不做对齐）。"""
+        _cache = getattr(self, "_lot_sz_cache", None)
+        if _cache is None:
+            _cache = {}
+            self._lot_sz_cache = _cache
+        if inst_id in _cache:
+            return _cache[inst_id]
+        _lot = 0.0
+        try:
+            _fn = getattr(self._okx, "get_instrument", None) if self._okx is not None else None
+            if callable(_fn):
+                _inst = _fn(inst_id) or {}
+                if _inst.get("ok"):
+                    _lot = float(_inst.get("lot_sz") or 0)
+        except Exception as e:  # noqa: BLE001
+            self._log(f"[ExitLoop] {inst_id} 查询 lot size 失败: {e}", "DEBUG")
+        _cache[inst_id] = _lot
+        return _lot
 
     def _execute_close(self, pos, inst_id, coin, pos_side, ratio, decision, ctx, on_closed):
         _trace = str(ctx.get("trace_id") or "")
