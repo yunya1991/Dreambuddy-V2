@@ -34,25 +34,27 @@ scrape_configs:
       - targets: ["127.0.0.1:9101"]
 
   # 黑盒探针：目标清单在 targets 中维护，模块定义见 blackbox/blackbox.yml
+  # 约束：业务端口只绑 127.0.0.1，探针容器必须 network_mode: host，targets 一律写 127.0.0.1；
+  #       禁用 host.docker.internal（它指向网桥网关 172.17.0.1，无法访问回环端口）。
   - job_name: blackbox-http
     metrics_path: /probe
     params:
       module: [http_2xx]
     static_configs:
       - targets:
-          - http://host.docker.internal:3001
-          - http://host.docker.internal:3002
-          - http://host.docker.internal:8765/health
-          - http://host.docker.internal:8771/health
-          - http://host.docker.internal:8093
-          - http://host.docker.internal:8099
+          - http://127.0.0.1:3001
+          - http://127.0.0.1:3002
+          - http://127.0.0.1:8765/health
+          - http://127.0.0.1:8771/health
+          - http://127.0.0.1:8093
+          - http://127.0.0.1:8099
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
       - source_labels: [__param_target]
         target_label: instance
       - target_label: __address__
-        replacement: blackbox-exporter:9115
+        replacement: 127.0.0.1:9115
 
   - job_name: blackbox-tcp
     metrics_path: /probe
@@ -60,11 +62,11 @@ scrape_configs:
       module: [tcp_connect]
     static_configs:
       - targets:
-          - host.docker.internal:5432   # PostgreSQL
+          - 127.0.0.1:5432   # PostgreSQL（容器端口已发布到 127.0.0.1）
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
       - source_labels: [__param_target]
         target_label: instance
       - target_label: __address__
-        replacement: blackbox-exporter:9115
+        replacement: 127.0.0.1:9115

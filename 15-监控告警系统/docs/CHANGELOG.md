@@ -1,6 +1,6 @@
 # 变更记录 — 15-监控告警系统
 
-> **版本**: v2.8 | **更新日期**: 2026-11-17
+> **版本**: v2.9 | **更新日期**: 2026-11-17
 
 ---
 
@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 变更内容 | 影响范围 |
 |------|------|----------|----------|
+| v2.9 | 2026-11-17 | 修复 blackbox 探针误报 TargetDown：探针改 `network_mode: host` + targets 统一 `127.0.0.1`（云端业务端口只绑回环，`host.docker.internal` 打不通）；新增 `deploy/DEPLOY-CHECKLIST.md` 部署检查清单 | 配置+运维 |
 | v2.8 | 2026-11-17 | 落地 §13 链路监控：chain_events 事件流；修复 G1–G7；导出器新增 chain_*/exit_* 指标；新增 ChainBroken/ChainCompletionLow/ChainWaitBroken/ExitSizeUnknown/ExitCloseFailed 规则 | 代码+配置 |
 | v2.7 | 2026-11-17 | 技术设计新增第 13 章：A/B 分类监控原则；23 交易链路 N0–N15 逐节点监控方案；`chain_event.v1` 链路汇总与复盘；确认 6 个链路缺口（无 trace_id、pc/cv 旁路、regime/ri 退化、审计仅 submit、双 decision_id） | 文档 |
 | v2.6 | 2026-11-17 | 23 契约补齐 v1.2（payload 12 字段 + 顶层执行扩展）；审计携带完整 signal；导出器按 payload 校验并消除无信号误报 | 代码+契约 |

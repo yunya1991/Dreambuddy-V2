@@ -64,12 +64,13 @@ services:
   blackbox-exporter:
     image: prom/blackbox-exporter:v0.25.0
     restart: unless-stopped
+    # 必须与宿主同网络命名空间：云端业务端口（3001/8765/8770/8771/8093-8096/9094）只绑 127.0.0.1，
+    # 走容器网桥的 host.docker.internal(172.17.0.1) 打不到回环端口，会整批误报 TargetDown。
+    network_mode: host
+    command:
+      - --web.listen-address=127.0.0.1:9115
     volumes:
       - ./blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
-    ports:
-      - "127.0.0.1:9115:9115"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
   pushgateway:
     image: prom/pushgateway:v1.9.0
