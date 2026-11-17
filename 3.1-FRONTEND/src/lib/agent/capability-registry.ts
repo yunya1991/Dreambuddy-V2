@@ -172,6 +172,35 @@ export function looksPlaceholder(output: unknown): boolean {
   }
 }
 
+/** 由 L1 指标构造 C-Drive 需要的信号数组（它在顶层读 signals，不读 node_output）。 */
+export function buildSignals(indicators: Record<string, number>) {
+  const signals: Array<{
+    name: string;
+    value: number;
+    direction: "long" | "short" | "neutral";
+    confidence: number;
+  }> = [];
+  const rsi = indicators.rsi14;
+  if (rsi !== undefined) {
+    signals.push({
+      name: "RSI14",
+      value: rsi,
+      direction: rsi < 30 ? "long" : rsi > 70 ? "short" : "neutral",
+      confidence: 0.65,
+    });
+  }
+  const macd = indicators.macd;
+  if (macd !== undefined) {
+    signals.push({
+      name: "MACD",
+      value: macd,
+      direction: macd < 0 ? "short" : "long",
+      confidence: 0.6,
+    });
+  }
+  return signals;
+}
+
 export interface CapabilityRunResult {
   ok: boolean;
   capability: string;
@@ -248,9 +277,29 @@ export async function runCapability(
       }
     }
 
+    // c_drive 的 IPC 契约在顶层读 signals/confidence/direction，而不是 node_output；
+    // 没有信号时用 L1 真实指标构造，避免它在空输入下返回 null。
+    const payload: Record<string, unknown> = { node_output: nodeOutput };
+    if (moduleName === "c_drive") {
+      let signals = Array.isArray(nodeOutput.signals) ? nodeOutput.signals : [];
+      if (signals.length === 0 && symbol) {
+        const l1 = await runL1Query(`查询${symbol}技术指标`, 20_000);
+        const indicators =
+          l1.ok && l1.answer ? parseTechnicalIndicators(l1.answer) : {};
+        signals = buildSignals(indicators);
+      }
+      Object.assign(payload, {
+        node_id: "C1",
+        confidence: 0.5,
+        direction: "NEUTRAL",
+        intent_type: "analysis",
+        signals,
+      });
+    }
+
     const res = await callDshHandler(
       moduleName,
-      { node_output: nodeOutput },
+      payload,
       cap.latency_ms,
     );
     const placeholder = res.ok ? looksPlaceholder(res.output) : false;
