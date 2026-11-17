@@ -285,11 +285,23 @@ def run_once(loop: EvolutionExitLoop, gateway: Any, okx: Any, args) -> Dict[str,
         except Exception as exc:  # noqa: BLE001 — 反思失败不影响已完成的平仓
             logger.debug("[settle] 结算反思失败(FAIL-OPEN): %s", exc)
 
+    def _on_ghost(pos, px) -> None:
+        inst_id = str(pos.get("inst_id") or "")
+        pos_side = str(pos.get("pos_side") or "")
+        logger.warning("幽灵仓 %s 落账价 %.6f（交易所已无持仓，关闭账本残留）", inst_id, px)
+        try:
+            _r = gateway.close_ghost_position(inst_id, pos_side, float(px or 0))
+            logger.info(
+                "[ghost] %s 账本清零 ok=%s reason=%s", inst_id, _r.get("ok"), _r.get("reason")
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("[ghost] 账本清零失败(FAIL-OPEN): %s", exc)
+
     report = loop.run(
         positions,
         enricher=_enrich,
         on_closed=_on_closed,
-        on_ghost=lambda pos, px: logger.warning("幽灵仓 %s 落账价 %.6f", pos.get("inst_id"), px),
+        on_ghost=_on_ghost,
     )
     logger.info(
         "巡检完成 checked=%s hold=%s executed=%s failed=%s",
