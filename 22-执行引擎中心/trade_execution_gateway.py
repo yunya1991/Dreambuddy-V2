@@ -981,12 +981,36 @@ class TradeExecutionGateway:
         except Exception as _paca_exc:  # noqa: BLE001 — 16 定容 FAIL-OPEN
             logger.debug("[T13] capital_allocator sizing fail, use caller sz: %s", _paca_exc)
 
+        # sz 兜底：23 等内部出口只给 notional_usdt，若 16 定容未给出张数，
+        # 必须按合约面值换算张数，否则 OKX 直接回 "Parameter sz error"（开仓全灭）。
+        if final_sz is None and sig.action not in _CLOSE_ACTIONS:
+            final_sz = self._fallback_sz(sig)
+            if final_sz is None or final_sz <= 0:
+                result = ExecutionResult(
+                    passed=True,
+                    executed=False,
+                    reason="sz_unavailable: no allocator size and notional→contracts failed",
+                    reason_code="SZ_UNAVAILABLE",
+                )
+                self._audit(sig, result)
+                return result
+
+        # SL/TP 兜底：23 侧 price=0 时顶层 sl_px/tp_px 为空，但 payload 带 sl_pct/tp_pct。
+        _sl_px, _tp_px = (
+            self._fallback_sltp(sig)
+            if sig.action not in _CLOSE_ACTIONS
+            else (
+                sig.sl_px,
+                sig.tp_px,
+            )
+        )
+
         sig_for_exec = sig
-        if final_sz != sig.sz:
-            # 用 16 定容后的 sz 替换（不修改原 sig 对象）
+        if (final_sz != sig.sz) or (_sl_px != sig.sl_px) or (_tp_px != sig.tp_px):
+            # 用兜底后的 sz / SL-TP 替换（不修改原 sig 对象）
             import dataclasses as _dc
 
-            sig_for_exec = _dc.replace(sig, sz=final_sz)
+            sig_for_exec = _dc.replace(sig, sz=final_sz, sl_px=_sl_px, tp_px=_tp_px)
 
         order_result = self._place_order(sig_for_exec, position_modifier=position_modifier)
         executed = self._order_succeeded(order_result)
@@ -1000,9 +1024,9 @@ class TradeExecutionGateway:
             executed
             and sig.action not in ("stop_loss", "take_profit")
             and sig.action not in ("close", "reduce", "reduce_only")
-            and (sig.sl_px is not None or sig.tp_px is not None)
+            and (sig_for_exec.sl_px is not None or sig_for_exec.tp_px is not None)
         ):
-            sltp_result = self._place_attached_sltp(sig)
+            sltp_result = self._place_attached_sltp(sig_for_exec)
             if not sltp_result.get("ok", True):
                 logger.warning(
                     "[T13] attached SL/TP failed for %s %s (pos_side=%s): %s",
@@ -1241,6 +1265,64 @@ class TradeExecutionGateway:
         if contract_value <= 0:
             return None
         return (equity * pct) / contract_value
+
+    def _fallback_sz(self, sig: FinalDecisionSignal) -> Optional[float]:
+        """16 定容未给张数时，用 payload.notional_usdt 按合约面值换算张数。
+
+        换算复用 okx_client._usdt_to_sz（已按 lotSz 对齐），保证 sz 一定是交易所
+        可接受的最小单位，避免 "Parameter sz error"。
+        """
+        try:
+            notional = float((sig.payload or {}).get("notional_usdt") or 0.0)
+        except (TypeError, ValueError):
+            return None
+        if notional <= 0:
+            return None
+
+        fn = getattr(self._okx, "_usdt_to_sz", None)
+        if not callable(fn):
+            return None
+        try:
+            sz = float(fn(sig.symbol, notional) or 0.0)
+        except Exception as exc:  # noqa: BLE001 — 兜底失败不影响上层审计
+            logger.debug("[T13] fallback sz exception: %s", exc)
+            return None
+        return sz if sz > 0 else None
+
+    def _fallback_sltp(self, sig: FinalDecisionSignal) -> tuple[Optional[float], Optional[float]]:
+        """顶层缺 sl_px/tp_px 时，用 payload.sl_pct/tp_pct + 最新价补齐。"""
+        if sig.sl_px is not None and sig.tp_px is not None:
+            return sig.sl_px, sig.tp_px
+        payload = sig.payload or {}
+        try:
+            sl_pct = float(payload.get("sl_pct") or 0.0)
+            tp_pct = float(payload.get("tp_pct") or 0.0)
+        except (TypeError, ValueError):
+            return sig.sl_px, sig.tp_px
+        if sl_pct <= 0 and tp_pct <= 0:
+            return sig.sl_px, sig.tp_px
+
+        px = float(sig.px or 0.0)
+        if px <= 0:
+            ticker_fn = getattr(self._okx, "get_ticker", None)
+            if callable(ticker_fn):
+                try:
+                    ticker = ticker_fn(sig.symbol) or {}
+                    if ticker.get("ok", True):
+                        px = float(ticker.get("last") or 0.0)
+                except Exception as exc:  # noqa: BLE001
+                    logger.debug("[T13] fallback sltp ticker exception: %s", exc)
+        if px <= 0:
+            return sig.sl_px, sig.tp_px
+
+        _long = sig.direction == "long"
+        sl_px = sig.sl_px
+        if sl_px is None and sl_pct > 0:
+            sl_px = round(px * (1 - sl_pct) if _long else px * (1 + sl_pct), 8)
+        tp_px = sig.tp_px
+        if tp_px is None and tp_pct > 0:
+            tp_px = round(px * (1 + tp_pct) if _long else px * (1 - tp_pct), 8)
+        return sl_px, tp_px
 
     @staticmethod
     def _order_succeeded(order_result: Dict[str, Any]) -> bool:
