@@ -1,6 +1,6 @@
 # 23-四层闭环自进化交易架构 — 工程索引
 
-> **版本**: v1.5 | **更新日期**: 2026-10-07
+> **版本**: v1.6 | **更新日期**: 2026-11-17
 > **定位**: 模块级工程索引（L2），对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
 
 ---
@@ -183,9 +183,46 @@
 
 ---
 
-## 4. 核心流程索引
+## 4. 核心流程索引（N0–N15 / E0–E6）
 
-### 4.1 紧耦合7步闭环（TightCouplingOrchestrator）
+> 交易主链语义、三类信号与关联键见 [TRADING_FRAMEWORK_AND_SIGNAL_FLOW.md](./TRADING_FRAMEWORK_AND_SIGNAL_FLOW.md)；监控指标与告警见 [15 TD §13](../../15-监控告警系统/docs/TECHNICAL_DESIGN.md#13-分类监控模型与-23-交易链路逐节点监控v27)。
+
+链路三段：**推理段 N0–N9（trace_id）→ 信号段 N10–N13（decision_id/chain_id）→ 执行/回报段 N14–N15（order_id/fill_id）**。平仓为并行支链 E0–E6。
+
+### 4.1 开仓链路 N0–N15
+
+| 节点 | 环节 | 代码入口 | 输出（关键字段） | 关联键 |
+|---|---|---|---|---|
+| N0 | 数据就绪 | `scripts/entry_runner.py`、18 `data_center.db`、19 DAL | `market_data{kline_data,funding_rate,oi}` | `(symbol,kline_ts)` |
+| N1 | 引擎调度 | `engines/kline_event_handler.py` `on_kline_close` | `trace_id`、`action`、`d_star`、`ri` | `trace_id` |
+| N2 | L1 阻力向量 | `core/resistance_vector.py` `calculate` | `R_up/R_down/R_smooth/R_flow/R_reflexivity/quality_score` | `trace_id` |
+| N3 | 高阶因子调制 | `evolution_pipeline._apply_high_order_factors` | 调制后 R 向量 | `trace_id` |
+| N4 | 路径发现 | `_discover_paths` / `PathDiscoveryService` | `paths[]`、`path_scores`、`optimal_path` | `trace_id` |
+| N5 | 主矛盾识别 | `core/primary_contradiction_detector.py` | `primary_contradiction{dimension,direction,strength}` | `trace_id` + `path_info` 返回值 |
+| N6 | 矛盾 Transformer 交叉验证 | `core/cross_validation_gate.py` | `cross_validation{confidence_mult,shift_signal,divergence_count,degraded_mode}` | `trace_id` + `path_info` 返回值 |
+| N7 | 统计验证 | `_select_optimal_path` | `statistical_validation{validated,best_score,score_gap,low_conviction}` | `trace_id` |
+| N8 | d* 与动作决策 | `compute_d_star` + `aligned` | `d_star`、`action`、`tier`、`reason_category` | `trace_id` |
+| N9 | L3/L4 记录 | `shadow_rl.record`、`bellman.td_update` | L3 样本、`l4_v` | `(symbol,ts)` |
+| N10 | 首个信号构造 | `engines/result_aggregator.py` → `build_entry_decision` | v1.2 信号、`decision_id #1`、payload 12 字段 | `chain_id` 起点 |
+| N11 | 23 闸门/定容/配额 | `execution/entry_loop.py` `_check_gates`/`_size` | `tier`、`u_open`、`notional_usdt`、拦截原因 | `chain_id` |
+| N12 | 最终信号 + 审计 | `entry_loop._dispatch` → `build_entry_decision` | `decision_id #2`、`payload.upstream_decision_id/chain_id` | `upstream_decision_id`→`decision_id` |
+| N13 | 发件箱状态机 | `execution/outbox.py` | `pending/submitting/submitted/filled/failed`、attempts | `decision_id` |
+| N14 | 22 网关 → 13 风控 → 下单 | `22/trade_execution_gateway.submit`、13 `PreTradeGate` | `ExecutionResult{ok,executed,reason_code,order_result}` | `decision_id` |
+| N15 | 回报/对账/反馈 | 成交回报 → `TradeSettlementBridge` → L3/L4 | `filled_sz/avg_px/pnl`、反馈样本 | `decision_id`→`order_id/fill_id` |
+
+### 4.2 平仓链路 E0–E6
+
+| 节点 | 环节 | 代码入口 | 输出（关键字段） | 关联键 |
+|---|---|---|---|---|
+| E0 | 持仓快照/交易所同步 | `exit_loop.run` → `_sync_from_exchange` | `pos{inst_id,pos_side,entry_price,upl_ratio,position_usdt,age}` | `inst_id+pos_side` |
+| E1 | 离场决策 | `engines/exit_engine/exit_engine.decide` | `decision{action,reason,confidence,params}` | 平仓 `trace_id` |
+| E2 | RL 覆盖 | `_apply_rl_override` | 修正后 action | 平仓 `trace_id` |
+| E3 | 影子记录 | `_record_shadow` | shadow 样本、reward | `symbol` |
+| E4 | 平仓信号构造 | `build_exit_decision` | `decision_id`、`action=close/reduce`、`sz`、`pos_side` | 平仓 `chain_id` |
+| E5 | 提交/风控/成交 | `EvolutionSignalDispatcher.dispatch` → 22 → 13 | `executed/reason_code/order_result` | `decision_id` |
+| E6 | 部分减仓刷新/全平清理/落账 | `_refresh_partial_size`、`_cleanup_engine_state`、`on_closed` | 剩余仓位、PnL、反馈样本 | `decision_id` |
+
+### 4.3 紧耦合 7 步闭环（TightCouplingOrchestrator）
 
 ```
 ① 观察        ② 推断        ③ 实验        ④ 测量
@@ -199,21 +236,7 @@ reflect()  →  learn()    →  feedback()
 CS一致性      ESS delta      ESS→下一轮
 ```
 
-### 4.2 K线事件主流程（KlineEventHandler.on_kline_close）
-
-```
-K线收盘 → L1 R向量 → 三修饰子 → Level0 d* → RippleEngine RI
-                                                      ↓
-                        ReflectionScanner RI ← 系统级交易索引库
-                                    ↓
-                    ri = max(ripple_ri, reflection_ri)
-                                    ↓
-                    三层仓位分级(probe/standard/trend)
-                                    ↓
-                    建仓回调 + SL/TP兜底 + snapshot持久化
-```
-
-### 4.3 四层Pipeline（EvolutionPipeline.run_symbol）
+### 4.4 四层 Pipeline（EvolutionPipeline.run_symbol）
 
 ```
 L1 状态空间 → Level0 路径代价 → L2 策略匹配 → 【交叉识别：G_dim(过去) × A_dim(现在)】→ 对齐决策 → L3 Shadow-RL → L4 Bellman V(s)
@@ -223,6 +246,7 @@ L1 状态空间 → Level0 路径代价 → L2 策略匹配 → 【交叉识别�
 > - **G_dim（过去）**：`GrangerPipelineAdapter` 从价格序列派生 3 维因子 → Granger 因果检验 → 过去主矛盾维度
 > - **A_dim（现在）**：`AttentionAggregator` 从 `NeuralSDE` cross-attention 权重聚合 → 现在主矛盾维度
 > - **CrossValidationGate**：一致→`confidence_mult × 1.15`；分歧→`× 0.9` + `divergence_count++`；分歧累计+结构断裂→`quality_change.detected`（矛盾转化）→ head_multipliers 调整
+> - **返回值透传**：pc/cv/elastic/statistical_validation 写入 `path_info`，不再仅依赖 `_last_*` 私有属性
 
 ---
 

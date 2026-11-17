@@ -1,7 +1,8 @@
 # 23-四层闭环自进化交易架构 — 接口规格
 
-> **版本**: v1.1 | **更新日期**: 2026-10-07
+> **版本**: v1.2 | **更新日期**: 2026-11-17
 > **定位**: 模块级接口规格，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+> **交易主链**: 分层框架、信号分类与端到端数据流见 [TRADING_FRAMEWORK_AND_SIGNAL_FLOW.md](./TRADING_FRAMEWORK_AND_SIGNAL_FLOW.md)。
 
 ---
 
@@ -65,6 +66,7 @@ def on_kline_close(
 ```python
 {
     "symbol": str,
+    "trace_id": str,            # v1.2：N1 生成的推理段链路 id
     "r_vector": dict,           # 9字段: R_up, R_down, R_smooth, R_flow, R_reflexivity, quality_score, ...
     "d_star": str,              # "long" | "short" | "WAIT"
     "action": str,              # "long" | "short" | "WAIT"
@@ -81,6 +83,27 @@ def on_kline_close(
     "auto_execute": bool,        # Phase2 only
     "inference_formed": bool,
     "is_ripple_source": bool,
+    # v1.2 语义链路输出
+    "path_info": {
+        "primary_contradiction": dict | None,
+        "cross_validation": dict | None,
+        "elastic_result": dict | None,
+        "statistical_validation": dict | None,
+        "structural_break": dict | None,
+        "shift_result": dict | None,
+        "elastic_position_mult": float | None,
+    },
+    "l4_v": float,
+    "l3_sample_count": int,
+    # AGI 只读增强
+    "agi_signature": dict | None,
+    "agi_pattern": dict | None,
+    "agi_btc_regime": dict | None,
+    "agi_path_integral": dict | None,
+    "agi_uncertainty": dict | None,
+    "agi_gate_decision": dict | None,
+    "agi_transfer": dict | None,
+    "agi_counterfactual": dict | None,
 }
 ```
 
@@ -94,6 +117,8 @@ build_position_callback(
     d_star: str,        # Level0 方向
     confidence: float,  # = ri
     tier: str,          # "probe" | "standard" | "trend"
+    source_tag: str | None = None,   # v1.2：来源标签
+    signal: dict | None = None,      # v1.2：FinalDecisionSignal v1.2（含 payload.trace_id）
 )
 ```
 
@@ -481,7 +506,20 @@ def run_symbol(symbol: str, market_data: dict, rv=None) -> dict[str, Any]
 ```python
 {
     "symbol": str,
+    "regime": str,                       # v1.2：市场状态
     "l1_r_vector": dict,
+    "path_discovery": {                  # v1.2：路径发现与双链路语义
+        "all_paths": list,
+        "path_scores": dict,
+        "optimal_path": dict | None,
+        "path_info": dict,
+        "statistical_validation": dict,
+        "primary_contradiction": dict | None,
+        "cross_validation": dict | None,
+        "elastic_result": dict | None,
+        "n_paths": int,
+        "dimension_predictions": dict,
+    },
     "level0_d_star": str,
     "level0_confidence": float,
     "level0_costs": dict,
@@ -490,6 +528,11 @@ def run_symbol(symbol: str, market_data: dict, rv=None) -> dict[str, Any]
     "action": str,
     "l3_sample_count": int,
     "l4_v": float,
+    # AGI 阶段4 只读增强
+    "agi_deep_reasoning": dict | None,
+    "agi_strategy_synth": dict | None,
+    "agi_transfer": dict | None,
+    "agi_counterfactual": dict | None,
 }
 ```
 
@@ -608,5 +651,46 @@ def validate_relative_improvement(ess: float, baseline_ess: float) -> bool
 
 ---
 
-**文档版本**: v1.1
-**最后更新**: 2026-10-07
+## 14. FinalDecisionSignal v1.2 执行契约
+
+**权威文件**: [final_decision_signal.v1.2.json](../../49-交易框架协议/contracts/final_decision_signal.v1.2.json)
+
+### 14.1 顶层字段
+
+```text
+signal_id, source, symbol, direction, confidence, expires_at,
+decision_id, action, pos_side, sz, sl_px, tp_px, reason, tier
+```
+
+`source="23-evolution"` 时，22 网关按 v1.2 做 JSON Schema 校验；观察期 `EXECUTION_CONTRACT_MODE=alert` 只告警不拒单。
+
+### 14.2 payload 必需字段
+
+```text
+action, position_tier, position_mult, d_star, ri, l4_v, regime,
+primary_contradiction, contradiction_shift, elastic_result,
+cross_validation, path
+```
+
+`action` 枚举：
+
+```text
+open, close, reduce, stop_loss, take_profit,
+long, short, light_long, light_short, WAIT
+```
+
+### 14.3 扩展字段（当前实现写入）
+
+| 字段 | 说明 |
+|---|---|
+| `payload.trace_id` | N1 生成的推理段链路 id |
+| `payload.chain_id` | N10 首个 `decision_id`，复盘主键 |
+| `payload.upstream_decision_id` | N10 → N12 的上游 id |
+| `payload.coin` / `sl_pct` / `tp_pct` | 执行侧定价与落账辅助 |
+
+`payload` 允许扩展字段（`additionalProperties=true`）；新增扩展字段必须同步本文与 [TRADING_FRAMEWORK_AND_SIGNAL_FLOW.md](./TRADING_FRAMEWORK_AND_SIGNAL_FLOW.md)。
+
+---
+
+**文档版本**: v1.2
+**最后更新**: 2026-11-17

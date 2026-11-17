@@ -1,6 +1,6 @@
 # 文档索引
 
-> **更新日期**：2026-10-07（基因创新治理 v1.13：版本控制+三级审核门禁接入）
+> **更新日期**：2026-11-17（新增交易主链 SSoT：分层框架/三类信号/开平仓数据流）
 > **模块定位**：四层闭环自进化交易架构 — 观察→推断→实验→反思→回馈自进化策略引擎
 
 ## 标准五件套（SSoT，对齐 DOC_STANDARD L3）
@@ -8,10 +8,16 @@
 | 文档 | 说明 |
 |------|------|
 | [README.md](./README.md) | 文档索引（本文件） |
-| [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md) | 模块工程索引（文件级，42 引擎/57 核心/25 适配器） |
-| [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) | 模块技术设计（三层准入架构） |
-| [API_SPEC.md](./API_SPEC.md) | 模块接口规格 |
-| [CHANGELOG.md](./CHANGELOG.md) | 模块变更记录（v1.13 基因创新治理：版本控制+三级审核门禁） |
+| [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md) | 模块工程索引（文件级，含 N0–N15 / E0–E6 代码映射） |
+| [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) | 模块技术设计（**仅基因三层准入**） |
+| [API_SPEC.md](./API_SPEC.md) | 模块接口规格（v1.2：新增 trace_id/path_info/v1.2 契约） |
+| [CHANGELOG.md](./CHANGELOG.md) | 模块变更记录（v1.16 基因创新治理：版本控制+三级审核门禁） |
+
+## 交易主链 SSoT
+
+| 文档 | 说明 |
+|------|------|
+| [TRADING_FRAMEWORK_AND_SIGNAL_FLOW.md](./TRADING_FRAMEWORK_AND_SIGNAL_FLOW.md) | 分层交易框架、三类信号、开/平仓数据流、关联键与产物；监控口径引用 15 TD §13 |
 
 ## 专题文档
 
@@ -20,6 +26,10 @@
 | [neural_sde_design.md](./neural_sde_design.md) | NeuralSDE 路径依赖 SDE 设计（v1.0, 生产最优 MAE=269.51, 优于 GARCH 3.3x） |
 | [entry_bcrm_soft_weight_design.md](./entry_bcrm_soft_weight_design.md) | BCRM 软权重入场设计 |
 | [三维度矛盾论理论框架.md](./三维度矛盾论理论框架.md) | 矛盾论 v3.0 理论升级指南（被 6 个 core/*.py 引用） |
+| [矛盾Transformer架构.md](./矛盾Transformer架构.md) | 矛盾 Transformer 与交叉验证门禁架构 |
+| [矛盾论与Transformer架构融合方案.md](./矛盾论与Transformer架构融合方案.md) | 双链路融合方案 |
+| [SPEC-23离场平仓逐项调查与验证-20261114.md](./SPEC-23离场平仓逐项调查与验证-20261114.md) | 离场/平仓算法调查、回测与实盘验证 |
+| [REVIEW-23离场平仓算法梳理与评估-20261114.md](./REVIEW-23离场平仓算法梳理与评估-20261114.md) | 离场/平仓算法评审 |
 
 ## 子目录
 
@@ -45,5 +55,5 @@
 
 ---
 
-**文档版本**：v1.2
-**最后更新**：2026-10-07
+**文档版本**：v1.3
+**最后更新**：2026-11-17
