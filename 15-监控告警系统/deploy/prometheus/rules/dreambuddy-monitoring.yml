@@ -240,6 +240,33 @@ groups:
           summary: "22 网关契约校验发现违规（alert-only，未阻断订单）"
           runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#12-一期23-推理信号监控v22"
 
+      - alert: ContradictionMissing
+        expr: dreambuddy_contradiction_present_ratio < 1 and dreambuddy_signal_samples_recent > 0
+        for: 30m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "23 主矛盾字段缺失或为 unknown（信号已在交易但矛盾未透传）"
+
+      - alert: CrossValidationMissing
+        expr: dreambuddy_cv_present_ratio < 1 and dreambuddy_signal_samples_recent > 0
+        for: 30m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "23 矛盾 Transformer 交叉验证缺失（payload.cross_validation 为空）"
+
+      - alert: CrossValidationDegraded
+        expr: dreambuddy_cv_degraded > 0
+        for: 15m
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "23 交叉验证处于降级模式，检查 degraded_mode 与置信度乘数"
+
   - name: trading
     rules:
       - alert: ReconcileBreak

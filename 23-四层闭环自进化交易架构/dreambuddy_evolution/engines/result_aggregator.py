@@ -71,6 +71,10 @@ class ResultAggregator:
         source_tag: str | None = None,
         price: float = 0.0,
         atr_pct: float = 0.0,
+        primary_contradiction: dict | None = None,
+        cross_validation: dict | None = None,
+        elastic_result: dict | None = None,
+        regime: str = "",
     ) -> None:
         """调用建仓回调（FAIL-OPEN）。
 
@@ -93,6 +97,11 @@ class ResultAggregator:
                     price=price,
                     atr_pct=atr_pct,
                     source_tag=source_tag or "",
+                    d_star=d_star,
+                    regime=regime,
+                    primary_contradiction=primary_contradiction,
+                    cross_validation=cross_validation,
+                    elastic_result=elastic_result,
                 )
                 _signal["payload"]["position_mult"] = float(position_mult)
             except Exception as _sig_e:  # noqa: BLE001 — 信号构造失败不阻断旧链路

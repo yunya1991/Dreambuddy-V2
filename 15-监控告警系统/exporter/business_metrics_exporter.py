@@ -264,6 +264,65 @@ class Collector:
             out.append(_metric("contract_violations_1h", n, source=src))
         return out
 
+    # ---------- 矛盾 / 交叉验证语义 ----------
+    def semantic_metrics(self) -> list[str]:
+        path = self.repo / "23-四层闭环自进化交易架构/runtime/execution_decisions.jsonl"
+        latest: dict[str, dict] = {}
+        for rec in _tail_jsonl(path, limit=500):
+            sig = _signal_of(rec)
+            if isinstance(sig.get("payload"), dict):
+                latest[str(sig.get("symbol") or rec.get("symbol") or "?")] = sig
+        out: list[str] = []
+        total = len(latest)
+        pc_ok = cv_ok = degraded = 0
+        for sym, sig in latest.items():
+            payload = sig["payload"]
+            pc = payload.get("primary_contradiction") or {}
+            pc_present = bool(pc) and str(pc.get("dimension") or "unknown") != "unknown"
+            cv = payload.get("cross_validation") or {}
+            cv_present = bool(cv)
+            pc_ok += int(pc_present)
+            cv_ok += int(cv_present)
+            out.append(_metric("contradiction_present", int(pc_present), symbol=sym))
+            if pc_present:
+                out.append(
+                    _metric(
+                        "contradiction_strength",
+                        float(pc.get("strength") or 0.0),
+                        symbol=sym,
+                        dimension=str(pc.get("dimension") or "unknown"),
+                        direction=str(pc.get("direction") or "unknown"),
+                    )
+                )
+            out.append(_metric("cv_present", int(cv_present), symbol=sym))
+            if cv_present:
+                _mode = str(cv.get("degraded_mode") or "")
+                if _mode:
+                    degraded += 1
+                    out.append(_metric("cv_degraded_mode", 1, symbol=sym, mode=_mode))
+                out.append(
+                    _metric("cv_shift_signal", int(bool(cv.get("shift_signal"))), symbol=sym)
+                )
+                out.append(
+                    _metric(
+                        "cv_confidence_mult",
+                        float(cv.get("confidence_mult") or 1.0),
+                        symbol=sym,
+                    )
+                )
+                out.append(
+                    _metric(
+                        "cv_divergence_count",
+                        int(cv.get("divergence_count") or 0),
+                        symbol=sym,
+                    )
+                )
+        if total:
+            out.append(_metric("contradiction_present_ratio", round(pc_ok / total, 4)))
+            out.append(_metric("cv_present_ratio", round(cv_ok / total, 4)))
+            out.append(_metric("cv_degraded", degraded))
+        return out
+
     # ---------- 产物 / 单元 ----------
     def artifact_metrics(self) -> list[str]:
         out = []
@@ -312,6 +371,7 @@ class Collector:
             self.signal_metrics(),
             self.outbox_metrics(),
             self.contract_metrics(),
+            self.semantic_metrics(),
             self.artifact_metrics(),
             self.cell_metrics(),
         ):

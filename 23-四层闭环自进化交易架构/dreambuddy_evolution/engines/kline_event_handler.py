@@ -210,6 +210,10 @@ class KlineEventHandler:
         price: float = 0.0,
         atr_pct: float = 0.0,
     ) -> None:
+        _pipeline = self._get_evolution_pipeline()
+        _pc = getattr(_pipeline, "_last_primary_contradiction", None) if _pipeline else None
+        _cv = getattr(_pipeline, "_last_cross_validation", None) if _pipeline else None
+        _el = getattr(_pipeline, "_last_elastic_result", None) if _pipeline else None
         self._aggregator.trigger_build_position(
             symbol,
             action,
@@ -220,6 +224,9 @@ class KlineEventHandler:
             source_tag,
             price=price,
             atr_pct=atr_pct,
+            primary_contradiction=_pc,
+            cross_validation=_cv,
+            elastic_result=_el,
         )
 
     def _apply_macro_event_filter(

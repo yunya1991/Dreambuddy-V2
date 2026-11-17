@@ -605,6 +605,7 @@ class EvolutionEntryLoop:
         )
 
         _signal_meta = ctx.get("signal") or {}
+        _sig_payload = _signal_meta.get("payload") or {}
         _decision = build_entry_decision(
             symbol=_inst,
             direction=_dir,
@@ -621,14 +622,17 @@ class EvolutionEntryLoop:
             source_tag=ctx["source_tag"],
             strategy="evolution",
             d_star=str(ctx["d_star"] or ""),
-            ri=float(_signal_meta.get("ri") or 0.0),
-            l4_v=float(_signal_meta.get("l4_v") or 0.0),
-            regime=str(_signal_meta.get("regime") or ""),
-            primary_contradiction=_signal_meta.get("primary_contradiction"),
-            contradiction_shift=_signal_meta.get("contradiction_shift"),
-            elastic_result=_signal_meta.get("elastic_result"),
-            cross_validation=_signal_meta.get("cross_validation"),
-            path=_signal_meta.get("path"),
+            ri=float(_sig_payload.get("ri") or _signal_meta.get("ri") or 0.0),
+            l4_v=float(_sig_payload.get("l4_v") or _signal_meta.get("l4_v") or 0.0),
+            regime=str(_sig_payload.get("regime") or _signal_meta.get("regime") or ""),
+            primary_contradiction=_sig_payload.get("primary_contradiction")
+            or _signal_meta.get("primary_contradiction"),
+            contradiction_shift=_sig_payload.get("contradiction_shift")
+            or _signal_meta.get("contradiction_shift"),
+            elastic_result=_sig_payload.get("elastic_result") or _signal_meta.get("elastic_result"),
+            cross_validation=_sig_payload.get("cross_validation")
+            or _signal_meta.get("cross_validation"),
+            path=_sig_payload.get("path") or _signal_meta.get("path"),
             position_mult=float(ctx.get("u_open") or 1.0),
         )
         _decision["payload"]["coin"] = _sym

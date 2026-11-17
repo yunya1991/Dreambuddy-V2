@@ -1685,6 +1685,7 @@ class EvolutionPipeline:
 
         # Phase 3.5: 存储识别结果供 get_feedback() 回流使用
         self._last_primary_contradiction = primary_contradiction
+        self._last_cross_validation = cv_result
 
         return {
             "optimal_path": best if validated else None,
