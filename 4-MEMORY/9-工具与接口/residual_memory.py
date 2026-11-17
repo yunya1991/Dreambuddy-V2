@@ -415,6 +415,27 @@ def governance_decision(row: Dict[str, Any], *, now: Optional[datetime] = None) 
 # ============================================================
 
 
+_RESIDUAL_COLUMNS = (
+    ("subclass", "TEXT"),
+    ("form", "TEXT"),
+    ("source_anchor", "TEXT"),
+    ("verify_state", "TEXT DEFAULT 'fresh'"),
+)
+
+
+def ensure_residual_columns(con: sqlite3.Connection) -> Dict[str, Any]:
+    """幂等补列（生产库可能尚未初始化 VectorMemoryInterface）。"""
+    existing = {str(row[1]) for row in con.execute("PRAGMA table_info(memories)").fetchall()}
+    added = []
+    for name, ddl in _RESIDUAL_COLUMNS:
+        if name not in existing:
+            con.execute(f"ALTER TABLE memories ADD COLUMN {name} {ddl}")
+            added.append(name)
+    if added:
+        con.commit()
+    return {"added": added, "columns": [name for name, _ in _RESIDUAL_COLUMNS]}
+
+
 def backfill(
     con: sqlite3.Connection,
     *,
@@ -435,6 +456,12 @@ def backfill(
         "by_subclass": {},
         "by_form": {},
     }
+    try:
+        con.execute("SELECT subclass FROM memories LIMIT 1")
+    except sqlite3.OperationalError:
+        stats["degraded_reason"] = "residual_columns_missing"
+        stats["next"] = "先执行 ensure_residual_columns（--apply 时自动）"
+        return stats
     select_sql = (
         "SELECT id, content, source, tags, memory_type FROM memories "
         "WHERE subclass IS NULL OR subclass = '' LIMIT ?"
@@ -520,6 +547,8 @@ def main(argv: Optional[list] = None) -> int:
     con = sqlite3.connect(f"file:{args.db}?mode=ro" if not args.apply else args.db, uri=True)
     con.row_factory = sqlite3.Row
     try:
+        if args.apply:
+            ensure_residual_columns(con)
         report = backfill(con, dry_run=not args.apply, limit=args.limit)
     finally:
         con.close()

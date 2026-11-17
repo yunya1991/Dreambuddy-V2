@@ -24,6 +24,7 @@ from residual_memory import (  # noqa: E402
     backfill,
     classify,
     decode,
+    ensure_residual_columns,
     gate,
     governance_decision,
 )
@@ -178,6 +179,15 @@ def _mem_db(schema_suffix: str = "") -> sqlite3.Connection:
         "last_used_at INTEGER" + schema_suffix + ")"
     )
     return con
+
+
+def test_backfill_reports_missing_columns():
+    con = _mem_db()
+    report = backfill(con, dry_run=True)
+    assert report["degraded_reason"] == "residual_columns_missing"
+    out = ensure_residual_columns(con)
+    assert set(out["added"]) == {"subclass", "form", "source_anchor", "verify_state"}
+    assert ensure_residual_columns(con)["added"] == []
 
 
 def test_backfill_classifies_and_is_idempotent():

@@ -742,7 +742,15 @@ def inspect_index(con) -> dict[str, Any]:
         else 0
     )
     report["vec_total"] = int(vec_total)
-    report["count_gap"] = int(total) - int(vec_total)
+    report["count_gap_raw"] = int(total) - int(vec_total)
+    # TTL 阶段一合法地移出索引（行保留在 pending 宽限期），不计入异常缺口
+    pending = 0
+    if _has_table(con, "memory_ttl_pending"):
+        pending = con.execute(
+            "SELECT count(*) FROM memory_ttl_pending p JOIN memories m ON m.id=p.id"
+        ).fetchone()[0]
+    report["pending_in_memories"] = int(pending)
+    report["count_gap"] = int(report["count_gap_raw"]) - int(pending)
 
     mixed = 0
     if expected_dim is not None:
