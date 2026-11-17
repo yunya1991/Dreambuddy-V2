@@ -10,8 +10,10 @@ FAIL-OPEN: 任一适配器异常 → 该字段缺失 → R 向量该维度走 0.
 from __future__ import annotations
 
 import logging
+import os
+import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from ..core.event_window_tracker import EventWindowTracker
@@ -190,6 +192,33 @@ class DataPipelineAdapter:
                                 break
             except Exception as e:
                 logger.debug("[FO] query_coinglass_derivatives fail: %s", e)
+
+            try:
+                # 19-DAL（PG records，18 实时采集）→ funding / OI / 多空比
+                # 18 的存储后端已是 postgres；19 原只有 sqlite 实现，此处显式走 PG。
+                _dal_root = os.path.abspath(
+                    os.path.join(os.path.dirname(__file__), "..", "..", "..", "19-数据访问层")
+                )
+                if _dal_root not in sys.path:
+                    sys.path.insert(0, _dal_root)
+                from dreambuddy_dal import get_market_macro_repo
+
+                _repo = get_market_macro_repo(backend="postgres")
+                _end = datetime.now(timezone.utc)
+                _start = _end - timedelta(days=1)
+                if "funding_rate" not in kline_data:
+                    _f = _repo.query_funding_by_time(symbol, _start, _end)
+                    if _f:
+                        kline_data["funding_rate"] = float(_f[-1][1])
+                if "open_interest" not in kline_data:
+                    _oi = _repo.query_open_interest_by_time(symbol, _start, _end)
+                    if _oi:
+                        kline_data["open_interest"] = float(_oi[-1][2])
+                _ls = _repo.query_long_short_ratio_by_time(symbol, _start, _end)
+                if _ls and "long_short_ratio" not in kline_data:
+                    kline_data["long_short_ratio"] = float(_ls[-1][3])
+            except Exception as e:
+                logger.debug("[FO] 19-DAL funding/oi fail: %s", e)
 
         # 3. Sentiment (映射到 kline_event_handler 期望的 sentiment key)
         try:

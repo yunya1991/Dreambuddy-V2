@@ -494,6 +494,15 @@ def _build_market_macro(backend: str) -> MarketMacroRepository:
         return _build_legacy_mm()
     if backend == BACKEND_SQLITE_UNIFIED:
         return _build_sqlite_mm()
+    if backend == BACKEND_POSTGRES:
+        # 18 的采集结果已落 PG（data_center.records），宏观域提供只读映射
+        from dreambuddy_dal.implementations.postgres.market_macro_impl import (
+            PostgresMarketMacroRepository,
+        )
+
+        return PostgresMarketMacroRepository(
+            os.environ.get("DAL_PG_SUB_CATEGORY", "okx_derivatives")
+        )
     if backend == BACKEND_DUAL_WRITE:
         return _make_dual_write(_build_legacy_mm(), _build_sqlite_mm(), "market_macro")
     raise ValueError(backend)

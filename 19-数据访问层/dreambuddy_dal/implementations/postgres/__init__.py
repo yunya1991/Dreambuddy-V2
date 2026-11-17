@@ -10,6 +10,9 @@ from dreambuddy_dal.implementations.postgres.connection import (
     get_pg_connection,
     get_pg_dsn,
 )
+from dreambuddy_dal.implementations.postgres.market_macro_impl import (
+    PostgresMarketMacroRepository,
+)
 from dreambuddy_dal.implementations.postgres.trade_impl import (
     PostgresTradeRepository,
 )
@@ -17,5 +20,6 @@ from dreambuddy_dal.implementations.postgres.trade_impl import (
 __all__ = [
     "get_pg_connection",
     "get_pg_dsn",
+    "PostgresMarketMacroRepository",
     "PostgresTradeRepository",
 ]
