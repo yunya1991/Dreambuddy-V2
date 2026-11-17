@@ -1,6 +1,6 @@
 # 变更记录 — 15-监控告警系统
 
-> **版本**: v2.3 | **更新日期**: 2026-11-17
+> **版本**: v2.4 | **更新日期**: 2026-11-17
 
 ---
 
@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 变更内容 | 影响范围 |
 |------|------|----------|----------|
+| v2.4 | 2026-11-17 | 告警通道接通：复用 hermes-gateway 飞书应用凭证，部署 receiver(:9098) + watchdog(5min)；联调消息已送达 Trading-Desk | 代码+运维 |
 | v2.3 | 2026-11-17 | 23 切实盘（移除 `--dry-run`、开关置 on）；监控进入 14 天 alert_only（至 2026-12-01）；记录切换前权益/持仓预检 | 配置+运维 |
 | v2.2 | 2026-11-17 | 一期收敛为 23 推理信号链（TD 第 12 章）：23 模块全景、v1.1 契约差异、8 步生命周期、10 条信号告警、落地审计；`monitoring.yaml` 增 signals 段、`domains.yaml` 分期调整 | 文档+配置 |
 | v2.1 | 2026-11-17 | 新增 3+3 全景监控架构（TD 第 11 章）与 `config/domains.yaml` 域注册表：三层×三链矩阵、四期覆盖、M0–M5 成熟度、一格一 owner | 文档+配置 |
@@ -19,6 +20,15 @@
 ---
 
 ## 详细变更
+
+### v2.4 — 2026-11-17
+
+**告警通道**
+- 复用 `hermes-gateway` 使用的飞书应用凭证（`~/.hermes/.env`），写入 `/etc/dreambuddy-monitoring/monitoring.env`（600 root）
+- 新增 `receiver/feishu_receiver.py`：`/alert`（Alertmanager v4）、`/notify`（watchdog）、`/healthz`；按 P0/P1/P2/P3 路由到 RiskControl/Desk/Management，30min 去重
+- 新增 `scripts/watchdog.py` + 5min timer：entry23/exit23 存活、entry23 日志 10min 新鲜、审计文件 24h、磁盘 90%
+- 联调：`POST /notify` 返回 `{"sent": true}`，消息已送达 Trading-Desk
+- 全部为 alert_only，无任何自动冻结或阻断
 
 ### v2.3 — 2026-11-17
 
@@ -122,5 +132,5 @@
 
 ---
 
-**文档版本**: v2.3
+**文档版本**: v2.4
 **最后更新**: 2026-11-17

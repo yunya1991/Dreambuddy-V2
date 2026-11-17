@@ -316,7 +316,7 @@ python -m pytest tests/ -v
 ├── exporter/                  # 业务只读指标导出器（:9101）
 │   ├── probes/                # 40/42/43/50/23/48 各一个 probe
 │   └── tests/
-├── receiver/                  # Alertmanager → 飞书（:9098）
+├── receiver/                  # Alertmanager → 飞书（:9098，已上线）
 ├── config/monitoring.yaml     # TTL / 任务节奏 / 域上限 / 告警治理
 ├── config/domains.yaml        # 3+3 域注册表（owner/phase/maturity/probes/SLO）
 ├── deploy/
@@ -327,6 +327,7 @@ python -m pytest tests/ -v
 │   ├── grafana/provisioning/ + dashboards/
 │   └── systemd/*.service
 ├── scripts/push_job.sh        # 任务运行/成功/耗时/记录数推送
+├── scripts/watchdog.py        # 2 周 alert_only：服务/日志/磁盘，5min 一次
 └── tests/
 ```
 

@@ -1,0 +1,10 @@
+[Unit]
+Description=Dreambuddy lightweight watchdog (alert-only)
+After=network-online.target dreambuddy-feishu-receiver.service
+
+[Service]
+Type=oneshot
+User=luke
+Group=luke
+WorkingDirectory=/home/luke/dreambuddy/15-监控告警系统
+ExecStart=/home/luke/venv-trading/bin/python -B scripts/watchdog.py
