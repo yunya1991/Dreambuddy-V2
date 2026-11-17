@@ -19,6 +19,10 @@
 - **单一 owner 切换**：云端启用 `dreambuddy-entry23`（300s）与 `dreambuddy-exit23`（60s）；
   `yijing-polling-trader` 停用并 disable；保留 `yijing-data-server`(8765) 与 BCRM/BDSM 非交易能力。
 
+- **监控锚定**：节点→指标→告警→证据的一页索引见
+  [15 TD §13.9](../../15-监控告警系统/docs/TECHNICAL_DESIGN.md#139-监控点--交易链路节点锚定索引v2112026-11-18)，
+  单一维护点在 15，本文只保留节点语义，不复制映射。
+
 ### 稳定性修复
 
 - 平仓数量解析：`float` 保留小数合约，兼容 `net`/单仓，账本与名义价值回退，按 `lotSz`

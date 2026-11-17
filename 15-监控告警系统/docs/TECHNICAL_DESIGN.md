@@ -1,6 +1,6 @@
 # 技术设计 — 15-监控告警系统
 
-> **版本**: v2.10 | **更新日期**: 2026-11-18
+> **版本**: v2.11 | **更新日期**: 2026-11-18
 > **定位**: 子系统技术架构设计，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.2
 > **v2.2 说明**: 一期范围收敛为「23 推理信号链」；新增第 12 章：23 模块全景、信号契约差异、8 步生命周期、信号 SLO 与落地审计。40 神经网络顺延二期。
 > **v2.0 说明**: 新增第 10 章「云端全链路监控目标架构」。第 1–9 章保留为本地 v1.0 适配器实现（仅覆盖 5 个老系统），**不再作为云端监控的权威口径**；云端架构以第 10 章为准。调研证据与选型过程见 [RESEARCH-全链路监控体系调研-v0.2.md](./RESEARCH-全链路监控体系调研-v0.2.md)。
@@ -1060,11 +1060,11 @@ SLO 建议：信号 schema 一致率 ≥99%；信号→网关 p95 ≤2s；成交
 
 | 节点 | 环节 | 代码入口 | 输出（关键字段） | 关联键 | 静默失败模式 |
 |---|---|---|---|---|---|
-| E0 | 持仓快照/交易所同步 | `exit_loop.run` → `_sync_from_exchange` | `pos{inst_id,pos_side,entry_price,upl_ratio,position_usdt,age}` | `inst_id+pos_side` | 幽灵仓（交易所已平、账本未平）静默跳过 |
+| E0 | 持仓同步/对账 | `exit_runner.run_once` → `gateway.reconcile_ledger()` → `exit_loop.run` | `pos{inst_id,pos_side,entry_price,upl_ratio,position_usdt,age}` | `inst_id+pos_side` | 幽灵仓（交易所已平、账本未平）静默跳过 |
 | E1 | 离场决策 | `engines/exit_engine.decide` | `decision{action∈hold/force_close/partial_close/adjust_sl_tp/trailing, reason, confidence, params}` | 无 | 长期 hold / 异常 action 被吞 |
 | E2 | RL 覆盖 | `_apply_rl_override` | 修正后 action | 无 | 策略覆盖无记录，无法复盘 |
 | E3 | 影子记录 | `_record_shadow` | shadow 样本、reward | symbol | 样本不增长 |
-| E4 | 平仓信号构造 | `build_exit_decision` | `decision_id`、`action=close/reduce`、`sz`、`pos_side` | **chain_id（平仓链）** | `sz=0` 无法确定数量 → 跳过平仓 |
+| E4 | 平仓信号构造 | `build_exit_decision` + `_resolve_close_sz`/`_lot_sz` | `decision_id`、`action=close/reduce`、`sz`（交易所→账本→名义回退，按 lotSz 对齐）、`pos_side` | **chain_id（平仓链）** | `sz=0` 无法确定数量 → 跳过平仓 |
 | E5 | 提交/风控/成交 | `EvolutionSignalDispatcher.dispatch` → 22 → 13（平仓例外） | `executed/reason_code/order_result` | decision_id | 平仓失败仅日志，持仓风险继续暴露 |
 | E6 | 部分减仓刷新/全平清理/落账 | `_refresh_partial_size`、`_cleanup_engine_state`、`on_closed` | 剩余仓位、PnL、反馈样本 | decision_id | 部分减仓后数量未刷新 → 重复减仓；全平未清理 → 继承旧状态 |
 
@@ -1095,7 +1095,7 @@ SLO 建议：信号 schema 一致率 ≥99%；信号→网关 p95 ≤2s；成交
 | E1 | `exit_decide_total{action}`、`exit_hold_ratio`、`exit_decide_duration_seconds` | counter/hist | `ExitHoldAnomaly`：force/partial 连续 0 且浮亏扩大（观察项） | P3 | 决策 p95 ≤200ms |
 | E4 | `exit_signal_total{action}`、`exit_size_unknown_total`、`exit_signal_missing_dstar_ratio` | counter | `ExitSizeUnknown`：>0 且持续 10min | **P0** | size_unknown=0 |
 | E5 | `exit_close_failed_total{reason_code}`、`exit_close_latency_seconds` | counter/hist | `ExitCloseFailed`：>0 持续 10min（风险未释放） | **P0** | 平仓成功率 ≥99% |
-| E0/E6 | `ledger_positions`、`ledger_reconcile_age_seconds`、`ledger_reconcile_updated_24h`、`ledger_ghost_closed_24h`、`ledger_mismatch` | gauge/counter | `LedgerReconcileStalled`：exit23 active 且 age>300s；`GhostPositionCleaned`：24h>0（提示已清零） | P1/P2 | 账本与交易所一致；对账每轮清零 |
+| E0/E6 | `ledger_positions`、`ledger_last_write_age_seconds`、`ledger_reconcile_updated_1h`、`ledger_ghost_closed_24h` | gauge | `LedgerDriftFrequent`（1h>3）、`GhostPositionCleaned`（24h>0） | P2 | 账本与交易所一致；对账每轮清零 |
 
 **降噪约束**（继承 §10.6）：
 
@@ -1320,6 +1320,59 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 4. 账本/交易所一致时 `ledger_positions` 与交易所持仓数相同；出现幽灵仓时 `ledger_ghost_closed_24h` 增长并触发 P2。
 5. `chain_events` 的 E0/E4/E5 指标与 22 账本/审计可 join，复盘不依赖 11 日志。
 
+### 13.9 监控点 ↔ 交易链路节点锚定索引（v2.11，2026-11-18）
+
+**必要性**：链路节点编号（N0–N15 / E0–E6）由 23 SSoT 定义，指标与告警由 15 定义。此前两者只能靠人工对照
+§13.2/§13.3，且刚经历「11 交易循环退役、22 承接公共执行」的归属变更，排查时容易对错节点。
+本节是**监控视角的唯一索引**：从「哪条告警」一步跳到「哪个节点、哪份证据、哪条命令」。
+
+> 维护纪律：节点编号只认 [23 SSoT](../../23-四层闭环自进化交易架构/docs/TRADING_FRAMEWORK_AND_SIGNAL_FLOW.md#3-开仓数据流n0n15)；
+> 本表不复制节点定义，只维护「节点 → 指标 → 告警 → 证据」映射。新增/改名节点或指标时，本表与 §13.3 必须同改。
+
+#### 13.9.1 开仓链 N0–N15
+
+| 节点 | 指标 | 告警 | 证据与首查 |
+|---|---|---|---|
+| N0 数据就绪 | `data_freshness_seconds{source}`、`market_empty_ratio` | `DecisionSilence`、`ChainBroken` | `23/runtime/execution_decisions.jsonl`；`journalctl -u dreambuddy-entry23 -n 200` |
+| N1 引擎调度 | `pipeline_runs_total{symbol,result}`、`pipeline_last_success_ts` | `ChainBroken` | `23/runtime/chain_events-<date>.jsonl`（`stage=N1`） |
+| N2 L1 阻力向量 | `r_vector_quality_score`、`r_vector_degenerate_ratio` | 观察（Grafana） | `stage=N2`；`[PathDiscovery]` 日志 |
+| N3 高阶因子 | `high_order_applied_ratio` | 观察 | `stage=N3` |
+| N4 路径发现 | `paths_discovered`、`paths_valid_ratio` | `ChainBroken` | `stage=N4` |
+| N5 主矛盾 | `contradiction_present_ratio`、`contradiction_dimension` | `ContradictionMissing`(P1) | `stage=N5`；`[Contradiction]` |
+| N6 交叉验证 | `cv_present_ratio`、`cv_degraded{mode}` | `CrossValidationMissing`(P1)、`CrossValidationDegraded`(P2) | `stage=N6` |
+| N7 统计验证 | `path_validated_ratio`、`path_score_gap` | 观察 | `stage=N7` |
+| N8 d*/action | `decision_action_total{action}`、`wait_ratio` | `DecisionSilence` | `stage=N8 status=skip` |
+| N9 L3/L4 | `l3_sample_count`、`l4_v` | 观察 | `gene_data/`；`stage=N9` |
+| N10 首信号 | `signal_built_total`、`signal_build_fail_total` | `SignalSchemaViolation` | `execution_decisions.jsonl`（`chain_id` 起点） |
+| N11 闸门/定容 | `entry_gate_blocked_total{gate}`、`notional_usdt` | `GateRejectSpike`(P2) | 日志 `[P2-S4b]`；`stage=N11` |
+| N12 最终信号 | `signal_schema_valid_ratio`、`signal_expired_at_submit_total` | `SignalSchemaViolation`(P1)、`SignalExpiredAtSubmit`(P1) | `execution_decisions.jsonl`（`stage=submit`） |
+| N13 outbox | `outbox_state{state}`、`outbox_stuck_seconds` | `OutboxStuck`(P1)、`DuplicateDecisionSpike`(P2) | outbox SQLite（`default_outbox()` 路径） |
+| N14 网关/风控 | `gateway_requests_total{result}`、`gateway_reject_ratio`、`contract_violations_1h`、`risk_rules_evaluated` | `GatewayRejectSpike`(P1)、`GatewayContractViolation`(P1)、`RiskGateEmpty`(P0)、`NotionalOverDomainCap`(P0)、`ForbiddenSymbolOrder`(P0) | `22/audit/gateway.jsonl`、`contract_violations.jsonl` |
+| N15 回报落账 | `decision_fill_join_ratio`、`fill_feedback_age_seconds` | `DecisionFillJoinLow`(P1)、`ChainCompletionLow` | `22/runtime/position_ledger.db` → `fills`；按 `decision_id` join |
+
+#### 13.9.2 平仓链 E0–E6 与公共执行
+
+| 节点 | 指标 | 告警 | 证据与首查 |
+|---|---|---|---|
+| E0 对账 | `ledger_positions`、`ledger_last_write_age_seconds`、`ledger_ghost_closed_24h` | `LedgerDriftFrequent`(P2)、`GhostPositionCleaned`(P2) | `position_ledger.db`；`exit23.log` 中 `[reconcile]`/`[ghost]` |
+| E1 离场决策 | `exit_decide_total{action}`、`exit_hold_ratio` | 观察 | `exit23.log`；`stage=E1` |
+| E2 RL 覆盖 | `exit_rl_override_total` | 观察 | `exit23.log`（`EVOLUTION_EXIT_RL` 默认 off） |
+| E3 影子记录 | shadow 样本数 | 观察 | `dreambuddy_evolution/gene_data/shadow_rl_samples.jsonl` |
+| E4 平仓信号 | `exit_size_unknown_total` | `ExitSizeUnknown`(**P0**) | `exit23.log` 的 `symbol/reason`；`_resolve_close_sz`/`_lot_sz` |
+| E5 提交/成交 | `exit_close_failed_total{reason_code}` | `ExitCloseFailed`(**P0**) | `22/audit/gateway.jsonl`；`exit23.log` 逐条失败归因 |
+| E6 落账/清理 | `ledger_*` | `GhostPositionCleaned`(P2) | `position_ledger.db` → `fills`/`cooldowns` |
+| 进程存活 | `entry23_active`、`exit23_active` | `Entry23Down`(P1)、`Exit23Down`(**P0**) | `systemctl status dreambuddy-{entry23,exit23}` |
+| SL/TP 兜底（22） | `sltp_reconcile_age_seconds`、`_patched_1h`、`_failed_1h` | `SltpReconcileFailed`(P1)、`SltpReconcileStale`(P2) | `22/audit/sltp_reconcile.jsonl`（`kind=summary` 为每轮心跳） |
+
+#### 13.9.3 四步定位法
+
+1. **告警 → 节点**：按告警名在上表定位节点，不看日志先看节点。
+2. **指标 → 范围**：`symbol` 级异常优先查该 symbol 的 `chain_id`；全局异常查 `exit23_active`/`entry23_active` 与数据新鲜度。
+3. **证据 → join**：以 `chain_id`（N10 首信号）串 `execution_decisions.jsonl` + `chain_events-*.jsonl`；
+   以 `decision_id` 串 `22/audit/gateway.jsonl` + `position_ledger.db` 的 `fills`。
+4. **归属 → 边界**：执行/落账异常优先查 22（[22 TD §7](../../22-执行引擎中心/docs/TECHNICAL_DESIGN.md#7-统一持仓账本与执行兜底2026-11-18)）；
+   决策/定容异常查 23；两者都不是再查 18/13。**不要先查已退役的 11 日志。**
+
 ---
 
 ## 变更记录
@@ -1327,6 +1380,7 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
 | v1.0 | 2026-08-02 | 初始版本：按 DOC_STANDARD §3.2 补建技术设计文档，覆盖概述/架构/算法/数据流/接口/状态/配置/错误处理/扩展性 9 章节 |
+| v2.11 | 2026-11-18 | 新增 §13.9 监控点↔链路节点锚定索引（N0–N15/E0–E6 → 指标 → 告警 → 证据/命令 + 四步定位法）；修正 §13.2/§13.3 平仓链旧口径（E0 对账、E4 sz 解析、E0/E6 指标名） |
 | v2.10 | 2026-11-18 | 新增 §13.8：11 交易循环退役后的监控对齐（监控对象、停用 universe 三条规则、E0/E6+SLTP 新指标、E4 数量口径、6 条新告警、watchdog 扩展、验收） |
 | v2.8 | 2026-11-17 | 落地 §13：新增 chain_events 事件写入；修复 G1–G7（trace_id、pc/cv 返回值、regime/ri/l4_v 透传、WAIT 归因、chain_id、平仓链事件）；导出器新增 chain_*/exit_* 指标；新增 5 条告警规则 |
 | v2.7 | 2026-11-17 | 新增第 13 章：分类监控原则（A 类交易链路逐节点+汇总复盘 / B 类结果导向可粗糙）；23 链路 N0–N15 逐节点表、6 个链路缺口、节点指标/告警/SLO、`chain_event.v1` 事件模型与复盘查询、B 类清单与实施顺序 |
@@ -1337,5 +1391,5 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 
 ---
 
-**文档版本**: v2.10
+**文档版本**: v2.11
 **最后更新**: 2026-11-18

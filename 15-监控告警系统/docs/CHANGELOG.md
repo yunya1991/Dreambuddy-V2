@@ -1,6 +1,6 @@
 # 变更记录 — 15-监控告警系统
 
-> **版本**: v2.10 | **更新日期**: 2026-11-18
+> **版本**: v2.11 | **更新日期**: 2026-11-18
 
 ---
 
@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 变更内容 | 影响范围 |
 |------|------|----------|----------|
+| v2.11 | 2026-11-18 | 新增 TD §13.9 监控点↔链路节点锚定索引（告警→N/E 节点→指标→证据→命令，含四步定位法）；修正 §13.2/§13.3 平仓链旧口径 | 文档 |
 | v2.10 | 2026-11-18 | 11 交易循环退役后的监控对齐（TD §13.8）：停用 universe 三条误报规则；导出器新增 `entry23_active/exit23_active/ledger_*/sltp_*`；新增 6 条执行链告警；watchdog 增 exit23 日志与账本检查；本地 `monitor_config.json` 的 yijing 置 disabled | 代码+配置+文档 |
 | v2.9 | 2026-11-17 | 修复 blackbox 探针误报 TargetDown：探针改 `network_mode: host` + targets 统一 `127.0.0.1`（云端业务端口只绑回环，`host.docker.internal` 打不通）；新增 `deploy/DEPLOY-CHECKLIST.md` 部署检查清单 | 配置+运维 |
 | v2.8 | 2026-11-17 | 落地 §13 链路监控：chain_events 事件流；修复 G1–G7；导出器新增 chain_*/exit_* 指标；新增 ChainBroken/ChainCompletionLow/ChainWaitBroken/ExitSizeUnknown/ExitCloseFailed 规则 | 代码+配置 |
@@ -26,6 +27,14 @@
 ---
 
 ## 详细变更
+
+### v2.11 — 2026-11-18
+
+**动机**：节点编号由 23 SSoT 定义、指标/告警由 15 定义，此前只能人工对照；11 退役与 22 承接公共执行后，排查易对错节点。
+
+- TD 新增 §13.9：N0–N15 / E0–E6 / 进程 / SLTP 的「指标 → 告警 → 证据 → 首查命令」一页索引，加四步定位法
+- 23 SSoT §6.3 增加指向 §13.9 的反向链接，并声明不复制映射（单一维护点）
+- 修正 §13.2 平仓表 E0/E4 代码入口、§13.3 E0/E6 指标名与告警名（`LedgerDriftFrequent`、`ledger_last_write_age_seconds` 等）
 
 ### v2.10 — 2026-11-18
 
