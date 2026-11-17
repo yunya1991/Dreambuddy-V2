@@ -20,6 +20,7 @@ import {
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
+  generateText,
   stepCountIs,
   streamText,
 } from "ai";
@@ -40,14 +41,24 @@ import {
   type UsageInput,
 } from "@/lib/billing/meter";
 import { maybeWriteSessionSummary } from "@/lib/agent/distill-outbox";
+import {
+  buildTakeoverContext,
+  reviewL1Answer,
+  type GateInput,
+  type GateResult,
+} from "@/lib/l1-answer-guard";
+import { emitMonitorEvent } from "@/lib/monitor-bus";
 import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// 内层 L1 直答超时：必须大于 /api/data/query 的脚本上限（15s），
+// 内层 L1 直答超时：必须大于 /api/data/query 的脚本上限（30s），
 // 否则冷启动时内层先断，L1 结果永远拿不到而掉到未配置的 LLM 链路
-const L1_TIMEOUT_MS = 16_000;
+const L1_TIMEOUT_MS = 32_000;
+
+/** L1 门禁的统一提示（关闭 Agent 且 G1 fail 时使用） */
+const L1_GATE_FAIL_HINT = "L1 无法可靠回答该问题，请开启 AI Agent 后重试。";
 
 const SYSTEM_PROMPT = [
   "你是 DreamBuddy 内置协议层的对话助手。",
@@ -80,7 +91,7 @@ function extractLastUserText(messages: UIMessage[]): string {
 }
 
 /** 用 UIMessage 文本流回显一段纯文本（useChat 可直接渲染，避免 JSON 信封导致「无返回」）。 */
-function textUiResponse(text: string) {
+function textUiResponse(text: string, headers?: Record<string, string>) {
   const stream = createUIMessageStream({
     execute: ({ writer }) => {
       const id = randomUUID();
@@ -89,7 +100,14 @@ function textUiResponse(text: string) {
       writer.write({ type: "text-end", id });
     },
   });
-  return createUIMessageStreamResponse({ stream });
+  return createUIMessageStreamResponse({ stream, headers });
+}
+
+interface L1DirectResult {
+  answer: string;
+  intent: string;
+  data: unknown;
+  routeSignal: GateInput["routeSignal"];
 }
 
 /**
@@ -99,7 +117,7 @@ function textUiResponse(text: string) {
 async function tryL1Direct(
   message: string,
   traceId: string,
-): Promise<string | null> {
+): Promise<L1DirectResult | null> {
   const base =
     process.env.L1_INTERNAL_BASE_URL?.trim() || "http://127.0.0.1:3001";
   try {
@@ -114,7 +132,9 @@ async function tryL1Direct(
       data?: {
         handled?: boolean;
         answer?: string;
-        route_signal?: { decision?: string };
+        intent?: string;
+        data?: unknown;
+        route_signal?: GateInput["routeSignal"];
       };
     };
     const data = json?.data;
@@ -126,7 +146,12 @@ async function tryL1Direct(
       decision === "L1_DIRECT" &&
       answer
     ) {
-      return answer;
+      return {
+        answer,
+        intent: String(data?.intent ?? "unknown"),
+        data: data?.data,
+        routeSignal: data?.route_signal,
+      };
     }
     return null;
   } catch (e) {
@@ -135,6 +160,63 @@ async function tryL1Direct(
       e instanceof Error ? e.message : e,
     );
     return null;
+  }
+}
+
+/**
+ * L2 门禁 judge（G3 灰区轻审）：低延迟模型由 AGENT_JUDGE_MODEL 指定，
+ * 未配置时沿用 AGENT_MODEL；仍缺配置 → 抛错，由 guard 按 timeout 放行。
+ */
+async function judgeL1Answer(prompt: string): Promise<string> {
+  const model = resolveAgentModel({
+    model: process.env.AGENT_JUDGE_MODEL?.trim() || undefined,
+  });
+  if (!model) throw new Error("judge_model_unavailable");
+  const { text } = await generateText({
+    model,
+    prompt,
+    temperature: 0,
+    maxOutputTokens: 200,
+  });
+  return text;
+}
+
+function gateHeaders(gate: GateResult): Record<string, string> {
+  const headers: Record<string, string> = {
+    "x-l1-gate": gate.verdict,
+    "x-l1-gate-ms": String(gate.gateMs),
+  };
+  if (gate.reasons.length > 0) {
+    headers["x-l1-gate-reasons"] = gate.reasons.join(",").slice(0, 300);
+  }
+  return headers;
+}
+
+/** 门禁结果打点（FAIL-OPEN：监控失败绝不影响主链路） */
+function emitGateEvent(
+  traceId: string,
+  gate: GateResult,
+  agentEnabled: boolean,
+) {
+  try {
+    emitMonitorEvent({
+      trace_id: traceId,
+      uid: "anonymous",
+      layer: "router",
+      phase: "routed",
+      status: gate.verdict === "fail" ? "denied" : "completed",
+      intent: "l1_gate",
+      duration_ms: gate.gateMs,
+      message_preview: `l1_gate=${gate.verdict}${agentEnabled ? "+agent" : ""}`,
+      extra: {
+        verdict: gate.verdict,
+        reasons: gate.reasons,
+        missing: gate.missing,
+        judge_ms: gate.judgeMs,
+      },
+    });
+  } catch {
+    /* ignore */
   }
 }
 
@@ -159,12 +241,44 @@ export async function POST(request: NextRequest) {
   }
 
   const traceId = request.headers.get("x-request-id")?.trim() || randomUUID();
+  // 未传 agent_enabled 的旧客户端保持原行为（视为开启）
+  const agentEnabled = body.agent_enabled !== false;
+  /** L1 门禁失败后注入给 L2 的接管上下文（非空即表示本次由 L2 接管） */
+  let takeoverContext: string | null = null;
 
-  // L1 确定性直答优先：行情/数据/技术面等意图命中时零 token 返回，不依赖 LLM 配置
+  // L1 确定性直答优先：行情/数据/技术面等意图命中时零 token 返回，不依赖 LLM 配置。
+  // AI Agent 开启时，L1 直答必须先过 L2 门禁（G1 规则门 + G3 灰区轻审）；
+  // 判定 fail → 同一路由接管重答（agent 开）或统一提示（agent 关）。
   const userText = extractLastUserText(body.messages);
   if (userText) {
-    const l1Answer = await tryL1Direct(userText, traceId);
-    if (l1Answer) return textUiResponse(l1Answer);
+    const l1 = await tryL1Direct(userText, traceId);
+    if (l1) {
+      const gateInput: GateInput = {
+        message: userText,
+        intent: l1.intent,
+        answer: l1.answer,
+        data: l1.data,
+        routeSignal: l1.routeSignal,
+      };
+      const gate = await reviewL1Answer(gateInput, {
+        allowJudge: agentEnabled,
+        judge: agentEnabled ? judgeL1Answer : undefined,
+      });
+      const headers = gateHeaders(gate);
+      emitGateEvent(traceId, gate, agentEnabled);
+
+      if (gate.verdict !== "fail") {
+        return textUiResponse(l1.answer, headers);
+      }
+      if (!agentEnabled) {
+        return textUiResponse(L1_GATE_FAIL_HINT, headers);
+      }
+      takeoverContext = buildTakeoverContext(gateInput, gate);
+      console.info(
+        "[AgentChat] L1 门禁未通过，L2 接管:",
+        gate.reasons.join(",") || "unknown",
+      );
+    }
   }
 
   // 关闭 AI Agent：只保留 L1 规则回答，不调用大模型、不产生积分。
@@ -181,6 +295,12 @@ export async function POST(request: NextRequest) {
       model: body.model,
     });
     if (!model) {
+      if (takeoverContext) {
+        return textUiResponse(
+          "L1 回答未通过复核，但当前未配置对话模型（AGENT_API_KEY / AGENT_BASE_URL），无法由 L2 接管重答。",
+          { "x-l1-gate": "fail", "x-l2-takeover": "1" },
+        );
+      }
       // 未配置 AGENT_API_KEY / baseURL：用文本流显式告知（JSON 信封会让 useChat 静默无返回）
       return textUiResponse(
         "当前未配置对话模型（AGENT_API_KEY / AGENT_BASE_URL），只能回答 L1 确定性查询（行情、数据、技术面、风控等）。\n\n请先在服务端配置模型后再试。",
@@ -239,9 +359,17 @@ export async function POST(request: NextRequest) {
     // SPEC-52 F4：预扣 → 结算（账本只追加；未产生 usage 时预扣自动释放）
     const reservation = reserveCu(traceId, estimateChatCu(0));
 
+    const system = [
+      SYSTEM_PROMPT,
+      profileSystemPrompt(profile),
+      takeoverContext ?? "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
     const result = streamText({
       model,
-      system: `${SYSTEM_PROMPT}\n${profileSystemPrompt(profile)}`,
+      system,
       messages: convertToModelMessages(body.messages),
       tools,
       stopWhen: stepCountIs(5),
@@ -299,7 +427,9 @@ export async function POST(request: NextRequest) {
         }
       },
     });
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({
+      headers: takeoverContext ? { "x-l2-takeover": "1" } : undefined,
+    });
   } catch (e) {
     // FAIL-OPEN：模型调用/网络异常不阻塞主链路
     console.warn("[AgentChat] degraded:", e instanceof Error ? e.message : e);

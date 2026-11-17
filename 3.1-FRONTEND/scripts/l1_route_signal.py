@@ -25,7 +25,10 @@
 import json
 import os
 import re
+import subprocess
 import sys
+import tempfile
+import time
 
 # 接入 34 系统 core（与 data_query_executor 同构：脚本目录 → 34 系统根）
 _TRAINING_SYS_DIR = os.path.join(
@@ -113,54 +116,87 @@ from core.route_confidence import (  # noqa: E402
     RouteConfidenceResult,
     evaluate_route,
 )
-from data_query_executor import (  # noqa: E402
-    exec_asset_class_trend,
-    exec_calendar_event,
-    exec_contradiction_insight,
-    exec_data_insight,
-    exec_data_query,
-    exec_event_analysis,
-    exec_fundamental_valuation,
-    exec_leader_compare,
-    exec_metric_series,
-    exec_news_search,
-    exec_path_insight,
-    exec_persistence_strength,
-    exec_price_query,
-    exec_risk_control,
-    exec_stat_query,
-    exec_technical_analysis,
-    exec_technical_indicator,
-    exec_top_correlation,
-    exec_whale_flow,
-    resolve_source,
-    settle_to_cognitive,
-)
-from l1agg.series_catalog import count_series_hits, resolve_metric  # noqa: E402
 
-# 十意图执行器（与 data_query_executor.main 分发一一对应；S1 新增 metric_series）
-EXECUTORS = {
-    "data_query": exec_data_query,
-    "data_insight": exec_data_insight,
-    "contradiction_insight": exec_contradiction_insight,
-    "path_insight": exec_path_insight,
-    "technical_analysis": exec_technical_analysis,
-    "technical_indicator": exec_technical_indicator,
-    "stat_query": exec_stat_query,
-    "fundamental_valuation": exec_fundamental_valuation,
-    "asset_class_trend": exec_asset_class_trend,
-    "event_analysis": exec_event_analysis,
-    "risk_control": exec_risk_control,
-    "price_query": exec_price_query,
-    "metric_series": exec_metric_series,
-    "whale_flow": exec_whale_flow,
-    "calendar_event": exec_calendar_event,
-    "leader_compare": exec_leader_compare,
-    "top_correlation": exec_top_correlation,
-    "persistence_strength": exec_persistence_strength,
+# ============================================================
+# 懒加载：data_query_executor 会连带导入 l1agg → sklearn（冷启动 ~20s），
+# 只在真正命中执行器时付出；价格/巨鲸等纯正则直答不必付这笔钱。
+# ============================================================
+_dq_module = None
+
+
+def _dq():
+    """返回 data_query_executor 模块（首次调用才导入）。"""
+    global _dq_module
+    if _dq_module is None:
+        import data_query_executor as _mod  # noqa: PLC0415 — 冷启动懒加载
+
+        _dq_module = _mod
+    return _dq_module
+
+
+_catalog_module = None
+
+
+def _catalog():
+    """返回 l1agg.series_catalog（首次调用才导入）。"""
+    global _catalog_module
+    if _catalog_module is None:
+        import importlib
+
+        _catalog_module = importlib.import_module("l1agg.series_catalog")
+    return _catalog_module
+
+
+# 意图 → data_query_executor 里的执行器函数名（与 main 分发一一对应）
+_EXECUTOR_ATTRS = {
+    "data_query": "exec_data_query",
+    "data_insight": "exec_data_insight",
+    "contradiction_insight": "exec_contradiction_insight",
+    "path_insight": "exec_path_insight",
+    "technical_analysis": "exec_technical_analysis",
+    "technical_indicator": "exec_technical_indicator",
+    "stat_query": "exec_stat_query",
+    "fundamental_valuation": "exec_fundamental_valuation",
+    "asset_class_trend": "exec_asset_class_trend",
+    "event_analysis": "exec_event_analysis",
+    "risk_control": "exec_risk_control",
+    "price_query": "exec_price_query",
+    "metric_series": "exec_metric_series",
+    "whale_flow": "exec_whale_flow",
+    "calendar_event": "exec_calendar_event",
+    "leader_compare": "exec_leader_compare",
+    "top_correlation": "exec_top_correlation",
+    "persistence_strength": "exec_persistence_strength",
     # SPEC-41-L1-新闻意图检索 §7：新闻检索走 news_digest/hot_news，不再推 L2
-    "event_listing": exec_news_search,
+    "event_listing": "exec_news_search",
 }
+
+
+class _LazyExecutors(dict):
+    """保持 dict 语义的执行器表：未显式赋值时按需从 data_query_executor 解析。
+
+    测试可照旧 `EXECUTORS[k] = fake` 覆盖（已写入的键优先命中）。
+    """
+
+    def __missing__(self, key):
+        attr = _EXECUTOR_ATTRS.get(key)
+        if not attr:
+            raise KeyError(key)
+        fn = getattr(_dq(), attr)
+        dict.__setitem__(self, key, fn)
+        return fn
+
+    def __contains__(self, key):
+        return dict.__contains__(self, key) or key in _EXECUTOR_ATTRS
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+
+EXECUTORS = _LazyExecutors()
 
 # 确定性关键词注册表意图（S1）：关键词命中即确定要走哪个单维数据，
 # 执行器直连真实数据（mm_metrics / mm_events），不存在“语义猜错”风险，
@@ -175,6 +211,9 @@ DETERMINISTIC_INTENTS = frozenset(
         "persistence_strength",
         "technical_indicator",
         "stat_query",
+        # 实时价格是单一数值取数（OKX ticker），不存在语义猜错风险；
+        # 放入确定性通道可绕过认知 recall（实测省 4.8s 冷启动延迟）
+        "price_query",
     }
 )
 R_DETERMINISTIC_REGISTRY = "deterministic_keyword_registry"
@@ -186,6 +225,21 @@ R_DETERMINISTIC_REGISTRY = "deterministic_keyword_registry"
 # （云端实测：认知库无新闻问法 → recall_empty → 全部交 L2，前端表现为无响应）。
 EXECUTOR_AVAILABILITY_INTENTS = frozenset({"event_listing"})
 R_EXECUTOR_AVAILABILITY = "executor_artifact_available"
+R_ANALYSIS_REQUIRES_L2 = "analysis_requires_l2"
+
+# D-12 分析闸门：分析/预测/研判类问法必须交 L2 语义层。
+# 只拦"分析动作"，不拦"取数"——裸「走势」仍可由 metric_series/price_query 直答，
+# 只有与预判词组合（如「走势会怎么走」）才视为分析。
+_ANALYSIS_QUERY_PATTERN = re.compile(
+    r"分析|预测|研判|复盘|诊断|建议|策略|概率|会怎么|怎么看|如何看|未来|后市|前景"
+    r"|该不该|要不要|值不值|能不能买|能不能卖"
+    r"|走势.{0,8}(预测|判断|分析|如何|怎么|会)"
+)
+
+
+def _is_analysis_query(message: str) -> bool:
+    return bool(message) and bool(_ANALYSIS_QUERY_PATTERN.search(message))
+
 
 # 查询类判定：命中其一即「要数值/序列」，交给 metric_series 做索引输出
 _SERIES_QUERY_CUE = re.compile(
@@ -212,9 +266,11 @@ def _is_deterministic_series(message: str) -> bool:
         return False
     try:
         # 多维并列（如「链上数据与资金费率」）交回 data_query 组合口径，不做单维截断
-        if count_series_hits(message) and re.search(r"[与和及、]|同时|以及|还有", message):
+        if _catalog().count_series_hits(message) and re.search(
+            r"[与和及、]|同时|以及|还有", message
+        ):
             return False
-        return bool(resolve_metric(message))
+        return bool(_catalog().resolve_metric(message))
     except Exception:
         return False
 
@@ -562,7 +618,9 @@ def required_pattern_ok(intent: str, message: str, *, strict_series: bool = True
     if intent == "data_query":
         msg_n = normalize_aliases(message or "")
         return bool(
-            resolve_source(msg_n) or _DATA_QUERY_PATTERN.search(msg_n) or _DOMAIN_TERM.search(msg_n)
+            _dq().resolve_source(msg_n)
+            or _DATA_QUERY_PATTERN.search(msg_n)
+            or _DOMAIN_TERM.search(msg_n)
         )
     if strict_series and intent == "metric_series":
         return _is_deterministic_series(message)
@@ -599,7 +657,7 @@ def detect_intent_regex(message: str) -> str:
     # （data_query 走源级 latest 记录，多字段原始 JSON；单维指标应走序列索引输出）
     if _is_deterministic_series(message):
         return "metric_series"
-    if resolve_source(message) or _DATA_QUERY_PATTERN.search(message):
+    if _dq().resolve_source(message) or _DATA_QUERY_PATTERN.search(message):
         return "data_query"
     return ""
 
@@ -622,7 +680,7 @@ def regex_intent_hits(message: str) -> list:
     if _is_deterministic_series(message) and "metric_series" not in hits:
         hits.append("metric_series")
     if (
-        resolve_source(message) or _DATA_QUERY_PATTERN.search(message)
+        _dq().resolve_source(message) or _DATA_QUERY_PATTERN.search(message)
     ) and "data_query" not in hits:
         hits.append("data_query")
     return hits
@@ -671,7 +729,7 @@ def is_compound_query(message: str) -> bool:
             return True
     anchors = {a.lower() for a in _COMPOUND_ANCHOR.findall(msg)}
     try:
-        metrics = count_series_hits(msg)
+        metrics = _catalog().count_series_hits(msg)
     except Exception:  # noqa: BLE001 — FAIL-OPEN：指标注册表异常不影响主链路
         metrics = 0
 
@@ -803,6 +861,71 @@ def _unknown_result(
     }
 
 
+# ============================================================
+# 案例沉淀：默认异步（独立进程 + 30s 同意图 debounce），不阻塞 L1 返回。
+# 同步 settle 会与主进程抢 CPU（实测曾把 L1 拖到 27s），故默认走子进程。
+# ============================================================
+_SETTLE_DEBOUNCE_SECONDS = 30
+_settle_recent = {}
+
+
+# 子进程沉淀：只加载 data_query_executor（不加载本模块的语义模型，省内存与 CPU）
+_SETTLE_WORKER_CODE = (
+    "import json,sys;"
+    "sys.path.insert(0,sys.argv[1]);"
+    "from data_query_executor import settle_to_cognitive;"
+    "p=json.load(open(sys.argv[2],encoding='utf-8'));"
+    "settle_to_cognitive(p.get('intent',''),p.get('message',''),p.get('result') or {},"
+    "trace_id=p.get('trace_id',''))"
+)
+
+
+def _settle(intent: str, message: str, result: dict, trace_id: str = "") -> bool:
+    """案例沉淀（FAIL-OPEN）。返回是否发起了沉淀。
+
+    L1_SETTLE_MODE=sync → 同步写；默认 async → 同意图 30s 内只落一次，
+    以独立进程执行，不占用主进程的响应时间。
+    """
+    mode = (os.environ.get("L1_SETTLE_MODE") or "async").strip().lower()
+    if mode == "sync":
+        _dq().settle_to_cognitive(intent, message, result, trace_id=trace_id)
+        return True
+
+    now = time.time()
+    if now - _settle_recent.get(intent, 0.0) < _SETTLE_DEBOUNCE_SECONDS:
+        return False
+    _settle_recent[intent] = now
+
+    path = ""
+    try:
+        fd, path = tempfile.mkstemp(prefix="l1_settle_", suffix=".json")
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(
+                {
+                    "intent": intent,
+                    "message": message,
+                    "result": result,
+                    "trace_id": trace_id,
+                },
+                fh,
+                ensure_ascii=False,
+            )
+        subprocess.Popen(
+            [sys.executable, "-c", _SETTLE_WORKER_CODE, _SCRIPTS_DIR, path],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+        return True
+    except Exception:
+        if path:
+            try:
+                os.unlink(path)
+            except Exception:
+                pass
+        return False
+
+
 def _route_deterministic(
     intent: str, message: str, trace_id: str = "", reason: str = R_DETERMINISTIC_REGISTRY
 ) -> dict:
@@ -818,8 +941,7 @@ def _route_deterministic(
         result = {"success": True, "degraded": True, "answer": f"执行异常: {e}", "data": None}
     settle_attempted = False
     try:
-        settle_to_cognitive(intent, message, result, trace_id=trace_id)
-        settle_attempted = True
+        settle_attempted = _settle(intent, message, result, trace_id=trace_id)
     except Exception:
         pass
     return {
@@ -854,6 +976,11 @@ def _route_query_impl(message: str, intent: str = "", trace_id: str = "") -> dic
     if intent not in EXECUTORS:
         # S1 只走正则通道（E1 实测口径：语义通道不参与准入）
         intent = detect_intent_regex(message) if strategy == "S1" else detect_intent(message)
+
+    # D-12 分析闸门：分析/预测类问法必须交 L2（L1 只做确定性数据直答）。
+    # 放在所有直答分发之前，避免「分析 BTC 走势」被 price_query 用一条行情快照糊弄。
+    if intent in EXECUTORS and _is_analysis_query(message):
+        return _unknown_result(trace_id, intent, R_ANALYSIS_REQUIRES_L2, degraded=False)
 
     # ===== S1 契约门控（E1 选定；默认 S0 不进入此分支）=====
     if strategy == "S1":
@@ -940,8 +1067,7 @@ def _route_query_impl(message: str, intent: str = "", trace_id: str = "") -> dic
     # settle 沉淀（FAIL-OPEN，不阻塞返回）；trace_id 随案例落盘，供跨链关联
     settle_attempted = False
     try:
-        settle_to_cognitive(intent, message, result, trace_id=trace_id)
-        settle_attempted = True
+        settle_attempted = _settle(intent, message, result, trace_id=trace_id)
     except Exception:
         pass
     # 执行链 trace 台账（G-BCL-3）：L1 直答无 task_id，由调用方按 trace 聚合

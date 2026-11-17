@@ -129,7 +129,57 @@ const SKILL_KEYWORD_MAP: Array<{ keywords: string[]; module: string }> = [
  * @param timeoutMs - 超时毫秒
  * @returns IpcResult，失败时 degraded=true（FAIL-OPEN）
  */
+/**
+ * 并发闸门：S1/S2 会并发拉起多个 DSH 子进程，不设上限会把 CPU 打满
+ * （实测并发 >4 时单个 handler 超时率显著上升）。默认 4，可用 DSH_MAX_CONCURRENCY 覆盖。
+ */
+class Semaphore {
+  private available: number;
+  private waiters: Array<() => void> = [];
+
+  constructor(limit: number) {
+    this.available = Math.max(1, limit);
+  }
+
+  async acquire(): Promise<void> {
+    if (this.available > 0) {
+      this.available -= 1;
+      return;
+    }
+    await new Promise<void>((resolve) => this.waiters.push(resolve));
+  }
+
+  release(): void {
+    const next = this.waiters.shift();
+    if (next) {
+      next();
+      return;
+    }
+    this.available += 1;
+  }
+}
+
+const DSH_MAX_CONCURRENCY = (() => {
+  const parsed = Number.parseInt(process.env.DSH_MAX_CONCURRENCY ?? '', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 4;
+})();
+
+const dshSemaphore = new Semaphore(DSH_MAX_CONCURRENCY);
+
 export async function callDshHandler(
+  module: string,
+  params: Record<string, any>,
+  timeoutMs: number = ENGINE_CONFIG.timeout_ms,
+): Promise<IpcResult> {
+  await dshSemaphore.acquire();
+  try {
+    return await callDshHandlerInner(module, params, timeoutMs);
+  } finally {
+    dshSemaphore.release();
+  }
+}
+
+async function callDshHandlerInner(
   module: string,
   params: Record<string, any>,
   timeoutMs: number = ENGINE_CONFIG.timeout_ms,

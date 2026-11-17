@@ -83,10 +83,20 @@ function AgentChatPanelInner({
     [sessionId],
   ); // eslint-disable-line react-hooks/exhaustive-deps
   const [input, setInput] = useState("");
+  const [l2Reviewed, setL2Reviewed] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   const transport = useMemo(
-    () => new DefaultChatTransport({ api: "/api/agent/chat" }),
+    () =>
+      new DefaultChatTransport({
+        api: "/api/agent/chat",
+        // 读取服务端接管标记：本轮回答由 L2 复核/接管时在头部展示
+        fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
+          const res = await fetch(input, init);
+          setL2Reviewed(res.headers.get("x-l2-takeover") === "1");
+          return res;
+        },
+      }),
     [],
   );
   const { messages, sendMessage, status, error, stop, regenerate } = useChat({
@@ -176,6 +186,7 @@ function AgentChatPanelInner({
         ? `${text}\n\n[附件] ${attachments.join(", ")}`
         : text;
     setInput("");
+    setL2Reviewed(false);
     interruptedRef.current = false;
     retriedRef.current = false;
     autoRetriedRef.current = false;
@@ -189,6 +200,14 @@ function AgentChatPanelInner({
         <span className="ml-2 text-[10px] text-slate-600">
           {agentEnabled ? "AI Agent · 按 token 计费" : "默认模式 · 不扣积分"}
         </span>
+        {l2Reviewed && (
+          <span
+            data-testid="l2-reviewed-badge"
+            className="ml-2 rounded border border-indigo-700/50 bg-indigo-950/40 px-1.5 py-0.5 text-[10px] text-indigo-300"
+          >
+            已由 L2 复核
+          </span>
+        )}
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">

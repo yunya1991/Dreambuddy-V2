@@ -20,6 +20,7 @@ import {
 import type { SkillCategory } from './skill-types.ts';
 import { SkillsRegistry, getSkillsRegistry } from './skills-registry.ts';
 import { getAllFSkills } from './chains-registry.ts';
+import { executeTradingBinding } from '../trading-capability';
 
 // ============================================================
 // 技能工厂函数 - 统一创建 SkillCapability 的工具
@@ -102,23 +103,57 @@ function createSkill(options: SkillFactoryOptions): SkillCapability {
     ],
 
     async execute(inputs: Record<string, unknown>, context: ExecutionContext): Promise<SkillResult> {
+      const symbol =
+        (inputs.symbol as string) || context.symbol || 'BTC';
+      const payload = {
+        ...inputs,
+        symbol,
+        context: (inputs.context as string) ?? '',
+        user_request: (inputs.user_request as string) ?? context.intent ?? '',
+      };
+
       try {
-        // 使用自定义执行逻辑或默认逻辑
-        if (options.execute) {
-          return await options.execute(inputs, context);
+        // 唯一执行路径：6-TRADING 真实能力（脚本 / 辅助大模型 / DSH SubAgent）
+        const binding = await executeTradingBinding(metadata.id, payload);
+        if (!binding.ok) {
+          return createFailureResult(
+            metadata.id,
+            binding.error || `6-TRADING 暂无「${metadata.id}」可用能力`,
+          );
         }
 
-        // 默认执行: 返回基于元信息的合理结果
-        const symbol = (inputs.symbol as string) || context.symbol || 'UNKNOWN';
-        const confidence = metadata.confidenceRange[0] +
-          Math.floor(Math.random() * (metadata.confidenceRange[1] - metadata.confidenceRange[0]));
+        const output = (binding.output && typeof binding.output === 'object'
+          ? binding.output
+          : { value: binding.output }) as Record<string, unknown>;
+
+        const rawDirection = String(
+          output.direction ?? output.signal ?? 'neutral',
+        ).toLowerCase();
+        const direction = (['long', 'short', 'neutral', 'wait'].includes(rawDirection)
+          ? rawDirection
+          : 'neutral') as 'long' | 'short' | 'neutral' | 'wait';
+
+        // 绑定输出可能是 0-1 概率或 0-100 评分 → 统一归一化到 0-100
+        const rawConfidence = Number(
+          output.confidence ?? output.score ?? Number.NaN,
+        );
+        const confidence = Number.isFinite(rawConfidence)
+          ? Math.max(0, Math.min(100, rawConfidence <= 1 ? rawConfidence * 100 : rawConfidence))
+          : metadata.confidenceRange[0];
+
+        const analysis =
+          (typeof output.analysis === 'string' && output.analysis) ||
+          (typeof output.summary === 'string' && output.summary) ||
+          (typeof output.reason === 'string' && output.reason) ||
+          JSON.stringify(output).slice(0, 500);
 
         return createSuccessResult(metadata.id, {
-          direction: 'neutral',
+          direction,
           confidence,
-          analysis: `${metadata.name} 完成对 ${symbol} 的分析，置信度: ${confidence}%`,
+          analysis,
           symbol,
-          timestamp: Date.now(),
+          source: binding.source,
+          raw: output,
         }, confidence);
       } catch (error) {
         return createFailureResult(

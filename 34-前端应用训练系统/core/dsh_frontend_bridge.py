@@ -1669,6 +1669,9 @@ def call_handler(handler_name: str, args: Optional[Dict[str, Any]] = None) -> Di
     # 提取 data/output 字段 (handler 原始返回结构)
     if envelope.get("ok"):
         data = envelope.get("data")
+        # 部分 SubAgent 信封把业务体放在 output（而非 data），只读 data 会丢结果
+        if data is None and "output" in envelope:
+            return {"ok": True, "output": envelope.get("output")}
         # SubAgent/Orchestrator handler 原返回 {ok:true, output:{...}}
         if isinstance(data, dict):
             if "output" in data:

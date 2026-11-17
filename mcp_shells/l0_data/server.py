@@ -68,9 +68,36 @@ def _get_market_macro_repo():
 
 
 def _get_l0():
+    """L0 数据入口：优先 34 系统的 L0Foundation（14 个真实 scope）。
+
+    dreambuddy_l0.facade 在本机是空壳（list_scopes() == []），直接使用会让
+    data_fetch 对所有 scope 返回 unknown_scope。这里先试 34 系统实现，
+    只有 list_scopes 为空时才回退 facade（保留旧行为，FAIL-OPEN）。
+    """
+    try:
+        training_root = str(_REPO_ROOT / "34-前端应用训练系统")
+        if training_root not in sys.path:
+            sys.path.insert(0, training_root)
+        from core.l0_foundation import get_l0 as _get_l0_training
+
+        l0 = _get_l0_training()
+        if l0.list_scopes():
+            return l0
+    except Exception:
+        pass
+
     from dreambuddy_l0.facade import get_l0
 
     return get_l0()
+
+
+def _emit_l0_result(result: Any) -> str:
+    """L0 返回体已是信封时直接透传（避免二次嵌套），并补齐 source。"""
+    if isinstance(result, dict) and "ok" in result and "data" in result:
+        payload = dict(result)
+        payload["source"] = payload.get("source") or SHELL_SOURCE
+        return json.dumps(payload, ensure_ascii=False)
+    return json.dumps(wrap(result, SHELL_SOURCE), ensure_ascii=False)
 
 
 def _handle_data_fetch(args: Dict[str, Any]) -> str:
@@ -90,7 +117,7 @@ def _handle_data_fetch(args: Dict[str, Any]) -> str:
     params = args.get("params") or None
     try:
         result = _get_l0().fetch_context(scope, params)
-        return json.dumps(wrap(result, SHELL_SOURCE), ensure_ascii=False)
+        return _emit_l0_result(result)
     except KeyError:
         return json.dumps(
             wrap(

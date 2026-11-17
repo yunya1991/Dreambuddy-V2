@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import { systemDir } from "./runtime-paths";
 
 /**
  * 40-周期神经网络系统 产出物只读数据层
@@ -10,7 +11,7 @@ import * as path from "path";
  * - 消费 effective_confidence 而非原始置信度
  */
 
-export const CYCLE_SYSTEM_DIR = "/home/luke/dreambuddy/40-周期神经网络系统";
+export const CYCLE_SYSTEM_DIR = systemDir("40-周期神经网络系统");
 
 export const CYCLE_DISCLAIMER =
   "研究建议，非交易信号；仓位为建议区间，交易决策归 23 系统三步门禁";

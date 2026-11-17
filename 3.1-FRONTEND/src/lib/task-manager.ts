@@ -16,6 +16,8 @@ import * as path from 'path';
 import * as child_process from 'child_process';
 import { emitMonitorEvent } from './monitor-bus';
 import { newTraceId } from './trace-id';
+import { PYTHON_BIN, trainingFile, trainingScript } from './runtime-paths';
+import { callDshHandler } from './dsh-execution-engine';
 import {
   recognizeIntent,
   evaluateShadowRules,
@@ -543,8 +545,8 @@ export function generateTaskId(): string {
  * 将新的 IntentRecognitionResult 转换为 TaskFile 格式 (兼容旧格式)
  */
 // ============ E2 灰度机制：自动回滚触发器（spec §4.2/4.3，FAIL-OPEN） ============
-const CANARY_ROUTING_LOG = process.env.CANARY_ROUTING_LOG || '/home/luke/dreambuddy/34-前端应用训练系统/canary_routing.jsonl';
-const ADR_RECORDS_LOG = process.env.ADR_RECORDS_LOG || '/home/luke/dreambuddy/34-前端应用训练系统/adr_records.jsonl';
+const CANARY_ROUTING_LOG = process.env.CANARY_ROUTING_LOG || trainingFile('canary_routing.jsonl');
+const ADR_RECORDS_LOG = process.env.ADR_RECORDS_LOG || trainingFile('adr_records.jsonl');
 const CANARY_MIN_SAMPLES = 20; // 每观察窗口最小样本量，不足不评估
 interface CanarySample {
   ts: string;
@@ -678,7 +680,7 @@ export async function createTask(params: {
         diverged,
         diverged_type: diverged ? (intentResult.method === 'llm' ? 'llm_override' : 'intent_mismatch') : 'agree',
       };
-      const divPath = '/home/luke/dreambuddy/34-前端应用训练系统/shadow_divergence.jsonl';
+      const divPath = trainingFile('shadow_divergence.jsonl');
       fs.appendFileSync(divPath, JSON.stringify(record) + '\n');
     }
   } catch {
@@ -2441,6 +2443,93 @@ Start with \`## Actionable Advice & Risk Warnings\`
  * 直接在Node.js进程中执行，无需调用外部脚本
  * 支持 D/Z/E 步进确认机制
  */
+/**
+ * simple_qa 内联执行：直接调 LLM 回答，不跑 S 链。
+ * 之前 simple_qa 走 S 链只会输出「分析中…」「执行计划跟踪」占位，
+ * 用户拿不到答案；这里用真实模型回答。FAIL-OPEN：模型不可用则明确告知。
+ */
+async function executeSimpleQaInline(
+  task: TaskFile,
+  lang: 'zh' | 'en',
+  startTime: number,
+): Promise<ResultFile> {
+  const now = new Date().toISOString();
+  let content: string;
+  try {
+    const res = await callLLM(
+      {
+        systemPrompt:
+          lang === 'zh'
+            ? '你是 DreamBuddy 金融助手，只回答金融/加密市场相关问题。不确定就说明不确定，禁止编造数据。'
+            : 'You are DreamBuddy, a finance/crypto assistant. Never fabricate data.',
+        prompt: task.message,
+        temperature: 0.3,
+        maxTokens: 800,
+        timeoutMs: 30_000,
+      },
+      task.session_id,
+    );
+    content = res.content;
+  } catch (e) {
+    content =
+      lang === 'zh'
+        ? `暂时无法回答：对话模型不可用（${e instanceof Error ? e.message : 'unknown'}）。`
+        : 'Unable to answer: LLM unavailable.';
+  }
+
+  const elapsed = Date.now() - startTime;
+  const result: ResultFile = {
+    task_id: task.task_id,
+    session_id: task.session_id,
+    status: 'completed',
+    created_at: now,
+    execution_time_ms: elapsed,
+    content,
+    content_type: 'markdown',
+    intent: {
+      type: 'simple_qa',
+      method: 'inline_llm',
+      entities: task.intent.entities || {},
+    },
+    artifacts_produced: [],
+    execution_summary: {
+      chain_executed: ['simple_qa_inline'],
+      total_steps: 1,
+      skipped_steps: [],
+      intent_recognized: 'simple_qa',
+      total_time_ms: elapsed,
+    },
+    persisted: false,
+  };
+
+  ensureDir(RESULTS_DIR);
+  fs.writeFileSync(
+    path.join(RESULTS_DIR, `result_${task.task_id}.json`),
+    JSON.stringify(result, null, 2),
+    'utf-8',
+  );
+  task.status = 'completed';
+  task.updated_at = now;
+  fs.writeFileSync(
+    path.join(TASKS_DIR, `${task.task_id}.json`),
+    JSON.stringify(task, null, 2),
+    'utf-8',
+  );
+
+  emitMonitorEvent({
+    trace_id: task.trace_id,
+    uid: task.session_id,
+    layer: 'gateway',
+    phase: 'inline_exec_done',
+    status: 'completed',
+    intent: 'simple_qa',
+    duration_ms: elapsed,
+    chain: ['simple_qa_inline'],
+  });
+
+  return result;
+}
+
 export async function executeConversationTaskInline(
   task: TaskFile,
   lang: 'zh' | 'en' = 'zh',
@@ -2548,6 +2637,27 @@ export async function executeConversationTaskInline(
   }
 
   // ============================================================
+  // 简单问答：直接内联 LLM 回答（不跑 S 链，避免占位模板冒充答案）
+  // ============================================================
+  if (intentType === 'simple_qa') {
+    return executeSimpleQaInline(task, lang, startTime);
+  }
+
+  // ============================================================
+  // 分析问法纠正：规则把「分析/预测 BTC 走势」误判为 market_query 时，
+  // 快速路径只会返回一条行情快照（用户实测错答），这里强制升级为深度分析。
+  // ============================================================
+  const ANALYSIS_CUE =
+    /分析|预测|研判|复盘|评估|建议|策略|概率|未来|后市|前景|会怎么|怎么看|如何看/;
+  if (intentType === 'market_query' && ANALYSIS_CUE.test(message)) {
+    intentType = 'deep_analysis';
+    if (thinkingMode === 'quick') thinkingMode = 'deep';
+    console.log(
+      `[TaskManager] 分析问法纠正: market_query → deep_analysis (${message.slice(0, 40)})`,
+    );
+  }
+
+  // ============================================================
   // market_query 快速路径：直接返回价格卡片，跳过 ExecutionPlanner / S 链
   // 经验 (VM-1789576537236): market_query 走完整 S 链会调 LLM 生成调研内容（10-30s），
   //   而用户问"查询比特币价格"只需即时行情，无需深度分析。
@@ -2629,7 +2739,7 @@ export async function executeConversationTaskInline(
   // 对所有非 simple_qa/command 意图优先尝试，成功直接返回，失败降级
   // 注: developer 已在上方 (line 1495) 早返回处理，此处无需重复判断
   // ============================================================
-  if (intentType !== 'simple_qa' && intentType !== 'command') {
+  if (intentType !== 'command') {
     const plannerResult = await executeWithPlanner(
       task, intentType, thinkingMode, rawSymbol, displayName, category, instId, message, lang, startTime, onProgress
     );
@@ -2686,11 +2796,8 @@ export async function executeConversationTaskInline(
   const artifactsProduced: ResultFile['artifacts_produced'] = [];
   const skippedSteps: string[] = [];
 
-  // 强制路由：如果检测到宏观金融实体，但 LLM 误判为 simple_qa，则升级为 market_query
-  if (category === 'macro' && intentType === 'simple_qa') {
-    intentType = 'market_query';
-    console.log(`[task-manager] Macro query detected → forcing market_query for: ${message.slice(0, 50)}`);
-  }
+  // 强制路由：如果检测到宏观金融实体，但意图被误判为简单问答，则升级为 market_query
+  // （simple_qa 已在入口内联处理，这里只处理升级后的口径，保留兼容）
 
   // 如果需要步进确认（S3/S4/S5 高风险步骤），使用步进执行逻辑
   if (needsStepConfirmation) {
@@ -2736,7 +2843,7 @@ export async function executeConversationTaskInline(
   const hasMarketSteps = effectiveChain.some(s =>
     s.startsWith('S')  // S 系列都需要市场数据
   );
-  if (hasMarketSteps && intentType !== 'simple_qa' && intentType !== 'command') {
+  if (hasMarketSteps && intentType !== 'command') {
     marketData = await fetchMarketData(
       rawSymbol, instId, category, displayName, symbolDef?.tavilyQuery, lang,
     );
@@ -2782,8 +2889,8 @@ export async function executeConversationTaskInline(
         data: { status: 'running', stepName: step },
       });
 
-      // 生成步骤内容
-      const stepContent = generateNonDZEStepContent(
+      // 生成步骤内容（S1-S5 走真实 DSH SubAgent，其余走本地渲染）
+      const stepContent = await generateStepContent(
         step, intentType, message, symbol, thinkingMode, lang, marketData
       );
 
@@ -2988,13 +3095,7 @@ export async function executeConversationTaskInline(
   content = stepResults.join('\n\n---\n\n') + summaryText;
 
   // 生成产物文件信息
-  if (intentType === 'market_query') {
-    artifactsProduced.push({
-      file: `s1_market_intel_${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)}.md`,
-      type: 'intelligence_brief',
-      chain_phase: 'S1_RESEARCH',
-    });
-  } else if (intentType === 'deep_analysis' && marketData) {
+  if (intentType === 'deep_analysis' && marketData) {
     artifactsProduced.push({
       file: `s2_first_principles_${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)}.md`,
       type: 'first_principles',
@@ -3932,8 +4033,8 @@ export async function createAndExecuteTask(params: {
     try {
       const libLookup = await new Promise<string>((resolve, reject) => {
         const child = child_process.spawn(
-          '/home/luke/venv-trading/bin/python',
-          ['/home/luke/dreambuddy/34-前端应用训练系统/scripts/intent_chain_executor.py'],
+          PYTHON_BIN,
+          [trainingScript('intent_chain_executor.py')],
           { stdio: ['pipe', 'pipe', 'ignore'] },
         );
         let out = '';
@@ -3957,8 +4058,8 @@ export async function createAndExecuteTask(params: {
         // 直接驱动完整链路执行（无 LLM）
         const execOut = await new Promise<string>((resolve, reject) => {
           const child = child_process.spawn(
-            '/home/luke/venv-trading/bin/python',
-            ['/home/luke/dreambuddy/34-前端应用训练系统/scripts/intent_chain_executor.py'],
+            PYTHON_BIN,
+            [trainingScript('intent_chain_executor.py')],
             { stdio: ['pipe', 'pipe', 'ignore'] },
           );
           let out = '';
@@ -4110,6 +4211,111 @@ function normalizeChainName(step: string): string {
     'knowledge_base': 'S1_RESEARCH',
   };
   return aliasMap[step] || step;
+}
+
+/**
+ * S1-S5 → DSH SubAgent 映射（真实分析能力，替代「分析中…」占位模板）。
+ * S1 调研 = 宏观 + 资金；S2 分析 = 技术 + 情绪 + 估值；
+ * S3 设计 = 综合研判；S4 验证 = 风险；S5 执行 = 执行指令。
+ */
+const STEP_DSH_PLAN: Record<string, Array<{ module: string; label: string }>> = {
+  S1_RESEARCH: [
+    { module: 'macro', label: '宏观面' },
+    { module: 'flow', label: '资金面' },
+  ],
+  S2_ANALYSIS: [
+    { module: 'technical', label: '技术面' },
+    { module: 'sentiment', label: '情绪面' },
+    { module: 'valuation', label: '估值面' },
+  ],
+  S3_DESIGN: [{ module: 'synthesizer', label: '综合研判' }],
+  S4_VALIDATE: [{ module: 'risk', label: '风险校验' }],
+  S5_EXECUTE: [{ module: 'c_drive', label: '执行指令' }],
+};
+
+const STEP_TITLES: Record<string, string> = {
+  S1_RESEARCH: '🔍 S1 调研（DSH 真实子代理）',
+  S2_ANALYSIS: '🧠 S2 分析（DSH 真实子代理）',
+  S3_DESIGN: '📐 S3 设计（DSH 综合研判）',
+  S4_VALIDATE: '✅ S4 验证（DSH 风险校验）',
+  S5_EXECUTE: '⚡ S5 执行（DSH 执行指令）',
+};
+
+/** 把 DSH handler 输出压成可读文本（优先 analysis/summary，绝不编造） */
+function formatDshOutput(output: unknown): string {
+  if (output == null) return '> 暂无数据';
+  if (typeof output === 'string') return output.slice(0, 2000);
+  if (typeof output === 'object') {
+    const obj = output as Record<string, unknown>;
+    for (const key of ['analysis', 'summary', 'report', 'text', 'reason']) {
+      const value = obj[key];
+      if (typeof value === 'string' && value.trim()) return value.slice(0, 2000);
+    }
+    try {
+      return '```json\n' + JSON.stringify(output, null, 2).slice(0, 2000) + '\n```';
+    } catch {
+      return '> 输出无法序列化';
+    }
+  }
+  return String(output);
+}
+
+/**
+ * 步骤内容生成：S 系列调用真实 DSH handler；非 S 系列沿用本地渲染。
+ * FAIL-OPEN：单个 handler 失败只影响该维度，明确标注「暂无数据」。
+ */
+async function generateStepContent(
+  step: string,
+  intentType: string,
+  message: string,
+  symbol: string,
+  thinkingMode: 'quick' | 'deep',
+  lang: 'zh' | 'en',
+  marketData: MarketData | null,
+): Promise<string | null> {
+  const normalized = normalizeChainName(step);
+  const plan = STEP_DSH_PLAN[normalized];
+  if (!plan) {
+    return generateNonDZEStepContent(
+      step, intentType, message, symbol, thinkingMode, lang, marketData,
+    );
+  }
+
+  const settled = await Promise.all(
+    plan.map(async (item) => {
+      try {
+        const res = await callDshHandler(
+          item.module,
+          {
+            node_query: message,
+            symbol,
+            intent: intentType,
+            thinking_mode: thinkingMode,
+            market_data: marketData ?? undefined,
+          },
+          25_000,
+        );
+        return { ...item, ok: res.ok, output: res.output, error: res.error };
+      } catch (e) {
+        return {
+          ...item,
+          ok: false,
+          output: undefined,
+          error: e instanceof Error ? e.message : 'dsh_failed',
+        };
+      }
+    }),
+  );
+
+  const blocks = settled.map((item) => {
+    const head = `**${item.label}（${item.module}）**`;
+    if (!item.ok) {
+      return `${head}\n\n> 暂无数据：${item.error || 'DSH 未返回结果'}`;
+    }
+    return `${head}\n\n${formatDshOutput(item.output)}`;
+  });
+
+  return `${STEP_TITLES[normalized] ?? normalized}\n\n${blocks.join('\n\n')}`;
 }
 
 /**

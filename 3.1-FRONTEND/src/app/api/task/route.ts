@@ -20,13 +20,14 @@ import { collectStrategyTaskOrderFeedItems } from '@/lib/strategy-artifacts';
 import * as fs from 'fs';
 import * as path from 'path';
 import { spawn } from 'child_process';
+import { PYTHON_BIN, trainingScript } from '@/lib/runtime-paths';
 
 /** 主链路案例沉淀（34 训练系统，FAIL-OPEN：不阻塞响应） */
 function settleCaseAsync(intent: string, message: string, success: boolean, answer: string): void {
   try {
     const child = spawn(
-      '/home/luke/venv-trading/bin/python',
-      ['/home/luke/dreambuddy/34-前端应用训练系统/scripts/settle_case_cli.py'],
+      PYTHON_BIN,
+      [trainingScript('settle_case_cli.py')],
       { stdio: ['pipe', 'ignore', 'ignore'], detached: true },
     );
     child.stdin.write(JSON.stringify({ intent, message, success, answer }));
@@ -41,8 +42,8 @@ function settleCaseAsync(intent: string, message: string, success: boolean, answ
 function settleDomainCaseAsync(caseType: string, payload: Record<string, unknown>): void {
   try {
     const child = spawn(
-      '/home/luke/venv-trading/bin/python',
-      ['/home/luke/dreambuddy/34-前端应用训练系统/scripts/settle_domain_case_cli.py'],
+      PYTHON_BIN,
+      [trainingScript('settle_domain_case_cli.py')],
       { stdio: ['pipe', 'ignore', 'ignore'], detached: true },
     );
     child.stdin.write(JSON.stringify({ case_type: caseType, payload }));
