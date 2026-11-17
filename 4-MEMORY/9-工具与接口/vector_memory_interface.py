@@ -198,6 +198,10 @@ class MemoryRecord:
     created_at: str = ""
     updated_at: str = ""
     verify_count: int = 0
+    subclass: str = ""
+    form: str = ""
+    source_anchor: str = ""
+    verify_state: str = "fresh"
 
     def to_dict(self) -> dict:
         return {
@@ -211,6 +215,10 @@ class MemoryRecord:
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "verify_count": self.verify_count,
+            "subclass": self.subclass,
+            "form": self.form,
+            "source_anchor": self.source_anchor,
+            "verify_state": self.verify_state,
         }
 
 
@@ -567,7 +575,11 @@ class VectorMemoryInterface:
                     level TEXT DEFAULT 'observation',
                     known_gaps TEXT DEFAULT '[]',
                     observations TEXT DEFAULT '[]',
-                    external_id TEXT
+                    external_id TEXT,
+                    subclass TEXT,
+                    form TEXT,
+                    source_anchor TEXT,
+                    verify_state TEXT DEFAULT 'fresh'
                 )
             """)
 
@@ -575,10 +587,14 @@ class VectorMemoryInterface:
             self._migrate_evidence_columns()
             # --- 数据库迁移：为旧表补充使用频次字段（R1 升级路径可达性）---
             self._migrate_usage_columns()
+            # --- 数据库迁移：残差记忆四字段（SPEC §3.7′/§4′）---
+            self._migrate_residual_columns()
 
             # 索引
             self.db.execute("CREATE INDEX IF NOT EXISTS idx_quality ON memories(quality_level)")
             self.db.execute("CREATE INDEX IF NOT EXISTS idx_type ON memories(memory_type)")
+            self.db.execute("CREATE INDEX IF NOT EXISTS idx_subclass ON memories(subclass)")
+            self.db.execute("CREATE INDEX IF NOT EXISTS idx_verify_state ON memories(verify_state)")
             # 索引自描述（embed_model 等），供多进程共享同一 embedding 模型
             self.db.execute("CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT)")
             # G0-8：external_id 幂等唯一索引（部分索引，存量 NULL 不受约束）
@@ -688,6 +704,26 @@ class VectorMemoryInterface:
         except sqlite3.Error:
             logger.exception("CREATE INDEX idx_last_used_at 失败（FAIL-OPEN）")
 
+    def _migrate_residual_columns(self) -> None:
+        """幂等迁移：残差记忆四字段（SPEC §3.7′/§4′）。
+
+        subclass / form / source_anchor / verify_state。存量保持 NULL，
+        由 `residual_memory.py backfill` 按保守规则回填（未分型按 D-policy 冻结）。
+        """
+        for col_name, col_def in [
+            ("subclass", "TEXT"),
+            ("form", "TEXT"),
+            ("source_anchor", "TEXT"),
+            ("verify_state", "TEXT DEFAULT 'fresh'"),
+        ]:
+            try:
+                self.db.execute(
+                    f"ALTER TABLE memories ADD COLUMN {col_name} {col_def}"
+                )
+            except sqlite3.Error:
+                pass  # 列已存在，FAIL-OPEN
+        self.db.commit()
+
     # ============================================================
     # 添加记忆
     # ============================================================
@@ -706,6 +742,10 @@ class VectorMemoryInterface:
         known_gaps: Optional[List[str]] = None,
         observations: Optional[List[Dict[str, Any]]] = None,
         external_id: Optional[str] = None,
+        subclass: Optional[str] = None,
+        form: Optional[str] = None,
+        source_anchor: Optional[str] = None,
+        verify_state: str = "fresh",
     ) -> str:
         """
         添加一条记忆。
@@ -735,6 +775,25 @@ class VectorMemoryInterface:
         known_gaps = known_gaps or []
         observations = observations or []
 
+        # SPEC §3.7′：落库前补齐残差字段（缺失时按保守规则分型，禁止留空导致治理失效）
+        try:
+            from residual_memory import classify, extract_anchor, form_for
+
+            source_anchor = source_anchor if source_anchor is not None else extract_anchor(content)
+            subclass = subclass or classify(
+                content,
+                source=source,
+                tags=tags,
+                memory_type=memory_type,
+                source_anchor=source_anchor or "",
+            )
+            form = form or form_for(subclass, source_anchor or "")
+        except Exception:  # noqa: BLE001 - FAIL-OPEN：分型不可用时按 D-policy 冻结
+            source_anchor = source_anchor or ""
+            subclass = subclass or "D-policy"
+            form = form or ("M1" if source_anchor else "M2")
+        verify_state = verify_state if verify_state in ("fresh", "stale", "degraded") else "fresh"
+
         now = datetime.now(timezone.utc).isoformat()
         # G0-8：external_id 幂等——已存在时复用原行，不产生重复记忆
         if external_id:
@@ -758,8 +817,8 @@ class VectorMemoryInterface:
             try:
                 self.db.execute("""
                     INSERT OR REPLACE INTO memories
-                        (id, content, vector, quality_level, confidence, tags, memory_type, source, created_at, updated_at, verify_count, level, known_gaps, observations, external_id)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (id, content, vector, quality_level, confidence, tags, memory_type, source, created_at, updated_at, verify_count, level, known_gaps, observations, external_id, subclass, form, source_anchor, verify_state)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, [
                     mem_id, content, vector_bytes,
                     quality_level, confidence,
@@ -769,6 +828,7 @@ class VectorMemoryInterface:
                     json.dumps(known_gaps, ensure_ascii=False),
                     json.dumps(observations, ensure_ascii=False),
                     external_id,
+                    subclass, form, source_anchor, verify_state,
                 ])
 
                 # 插入 sqlite-vec 虚拟表
@@ -845,7 +905,8 @@ class VectorMemoryInterface:
         # 构建SQL (sqlite-vec 要求 KNN 查询必须带 LIMIT 或 k=? 约束)
         sql = """
             SELECT m.id, m.content, m.quality_level, m.tags, m.confidence,
-                   m.memory_type, m.source, m.verify_count, m.level, m.known_gaps, m.observations, v.distance
+                   m.memory_type, m.source, m.verify_count, m.level, m.known_gaps, m.observations,
+                   m.subclass, m.form, m.source_anchor, m.verify_state, v.distance
             FROM vec_memories v
             JOIN memories m ON m.id = v.memory_id
             WHERE v.embedding MATCH ? AND k = ?
@@ -898,6 +959,10 @@ class VectorMemoryInterface:
                     "level": row["level"],
                     "known_gaps": json.loads(row["known_gaps"]) if row["known_gaps"] else [],
                     "observations": json.loads(row["observations"]) if row["observations"] else [],
+                    "subclass": row["subclass"] or "",
+                    "form": row["form"] or "",
+                    "source_anchor": row["source_anchor"] or "",
+                    "verify_state": row["verify_state"] or "fresh",
                 }
             ))
 
@@ -917,7 +982,7 @@ class VectorMemoryInterface:
         """numpy 引擎搜索（纯 Python 计算）"""
 
         # 构建查询
-        sql = "SELECT id, content, vector, quality_level, tags, confidence, memory_type, source, verify_count, level, known_gaps, observations FROM memories"
+        sql = "SELECT id, content, vector, quality_level, tags, confidence, memory_type, source, verify_count, level, known_gaps, observations, subclass, form, source_anchor, verify_state FROM memories"
         conditions = []
         params: list = []
 
@@ -993,6 +1058,10 @@ class VectorMemoryInterface:
                     "level": row["level"],
                     "known_gaps": json.loads(row["known_gaps"]) if row["known_gaps"] else [],
                     "observations": json.loads(row["observations"]) if row["observations"] else [],
+                    "subclass": row["subclass"] or "",
+                    "form": row["form"] or "",
+                    "source_anchor": row["source_anchor"] or "",
+                    "verify_state": row["verify_state"] or "fresh",
                 }
             ))
 

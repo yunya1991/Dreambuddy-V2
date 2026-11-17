@@ -1,7 +1,7 @@
 # SPEC — 残差记忆准入与遗忘治理（Residual Memory Admission）
 
-> **版本**: v1.4（P0-P4 全部实施：fail-loud 索引 + 记忆树 + 分级 TTL 两阶段 + 指纹去重 + 近义合并双门 + M1 指针索引 + 缺口适配 + M1-T 路由表 + D0-D4 级联编排 + 分级 grace + `verify(supersedes)` + 记忆漂移检测）
-> **日期**: 2026-11-16
+> **版本**: v1.5（2026-11-18 增补 §3.7′ 复核式治理 / §4′ 三接入点映射；§3.7 时间 TTL 判据作废，原文保留）
+> **日期**: 2026-11-16（v1.5 修订 2026-11-18）
 > **状态**: P0 / P0.5 / P0b / P1 / P2 / P2b 已实施；P3 第 1、2、3 条已实施（第 2 条云端 systemd timer 已挂，2026-11-16，连续 7 天验收中）；P4 已实施（`verify(supersedes=)` + `memory_drift_detector`，7 项单测）；P4 漂移批量 apply 已完成（586 → 0，2026-11-16，`apply_errors=[]`）
 > **归属**: 35-广义认知系统协作模块（协作设计 SSoT，不含实现）
 > **硬约束源**: [CLAUDE.md §记忆准入标准](../CLAUDE.md) · 认知库 `VM-1794758596238-7af17f8c`
@@ -245,6 +245,56 @@ REA 逆向解析已封装 MCP，是**默认求解器**；记忆只负责**指路
 
 **反模式**：把"长期不用但当初很难得到"的记忆当资产保留——它的存储与检索成本已高于重算成本。
 
+### 3.7′ 复核式治理：按子类复核事实源（2026-11-18 用户裁定，取代 §3.7 判据）
+
+> **§3.7 正文保留作历史记录，其「按时间 + 自报质量降级/删除」的判据自本版起作废。**
+> 作废旧判据的直接证据：E5-F1 实测代码位置事实的失效率 λ ≤ 1.4e-4/天（SQLAlchemy 240 样本 0 事件），30 天 TTL 会把 99.9% 仍成立的事实降级；而 D-tech 类 8 条中 5 条在同日被推翻——**失效是事件驱动，不是时间驱动**。本条修订本身又是一次 D-tech 被新证据推翻的实例。
+
+治理判据改为：**`subclass` + `source_anchor` 事实源复核 + 可重建性**。`created_at` 保留，但**不单独参与降级/删除决策**。
+
+#### 3.7.1 子类与处理规则
+
+| `subclass` | 含义 | 复核方式 | 自动降级 | 自动删除 |
+|---|---|---|---|---|
+| `code` | 代码位置 / 实现事实 | 锚点 `file:symbol` 精确复核（文件在、符号在） | 锚点失效 → `stale`；连续 2 轮失配 → `degraded` | **否** |
+| `config` | 配置键 / 端口 / 开关 | 键存在 + 取值比对 | 同上 | **否** |
+| `runtime` | 运行期状态 / 短期经验 | 时效 + 事实源复核 | 过期 → `stale` | 仅 `stale` 超宽限期且非 D-policy |
+| `D-tech` | 技术决策 / 取舍 / 踩坑 | 新证据冲突复核（`supersedes` / 复核失败） | 被推翻 → `degraded` | **否** |
+| `D-policy` | 用户裁定 / 约定 / 红线 | **仅人工复核** | **永不自动** | **永不自动** |
+
+#### 3.7.2 分型保守规则（拿不准就归 policy）
+
+1. 无 `source_anchor` 的条目**不得**判为 `code` / `config`，最低降为 `D-tech`；仍无法判定 → **`D-policy`**。
+2. `source ∈ {rag-bridge, l0.scheduler, l1_router}` → `runtime`（N3 轨迹本不应入库，按脏数据清退，不适用「保守归 policy」）。
+3. 存量 `subclass IS NULL` 且非轨迹来源 → 治理时按 **`D-policy`** 处理（只读、不自动降级/删除），直到回填完成。
+4. D-policy 优先：分型冲突时宁可错判为 policy，也不可错判为 code 而被自动处理。
+
+#### 3.7.3 `verify_state` 三态
+
+| 状态 | 含义 | 检索行为 | 治理行为 |
+|---|---|---|---|
+| `fresh` | 事实源复核通过 | 正常召回 | 不动 |
+| `stale` | 锚点变更 / 过期，但未被推翻 | 可召回，结果带 `verify_state=stale` | 继续观察；`runtime` 超宽限期才降级 |
+| `degraded` | 已被推翻 / 连续复核失败 | 移出检索索引（保留行，可逆） | **不物理删除**（`runtime` 除外） |
+
+#### 3.7.4 复核触发与执行纪律
+
+1. **事件驱动优先**：按 `source_anchor` 建反向索引，文件变更只复核受影响条目，不做全量扫描。
+2. **时间兜底仅限 `runtime`**；`code` / `config` / `D-tech` / `D-policy` 不设时间阈值。
+3. 每轮复核先 **dry-run**，与人工判定一致率 ≥ 90% 才允许 `--apply`。
+4. 删除（物理）仍须先通过**删除测试集**（尚未建立）；未建立前只降级、不删除。
+5. 任何批量变更前 `sqlite3 .backup`；本地只写代码与测试，生产写入口仅云端。
+
+#### 3.7.5 与 §3.7 的差异
+
+| 项 | §3.7（作废判据） | §3.7′ |
+|---|---|---|
+| 降级依据 | `created_at` + `quality_level` + `verify_count` | `subclass` + `source_anchor` 复核结果 |
+| 代码/配置类 | 30 天未验证即降 D | 取消时间判据，改事件驱动复核 |
+| 质量来源 | 写入方自报 `quality_level` | 子类 + 复核证据快照 |
+| 删除 | C/B 到期删除 | 默认只降级；删除须过删除测试集，D-policy 永不自动 |
+| 未分型存量 | 直接套 TTL | 按 D-policy 冻结，等待回填 |
+
 ---
 
 ## 4. 机制落地映射
@@ -261,6 +311,64 @@ REA 逆向解析已封装 MCP，是**默认求解器**；记忆只负责**指路
 | L4 再巩固 | 命中过时证据时允许改写内容 | `drift_detector` + `evidence_ledger` | 接线 |
 
 **ACT-R 前置条件（必须）**：`base_level = ln(Σ t_j^-d)` 对出现次数求和，重复会**放大**激活。当前最高重复 1,412 次，若不去重先上 ACT-R，会把最差记忆捧到第一位。→ **L2 巩固（去重）必须先于 L3 激活排序生效**。
+
+---
+
+## 4′ 三接入点落地映射（2026-11-18）
+
+> **边界**：契约增补只写在本文件；实现代码只改 `4-MEMORY/9-工具与接口/`，**不移动、不新建平行存储**。
+
+### 4′.1 三个接入点
+
+| # | 接入点 | 位置 | 改什么 | 失败语义 |
+|---|---|---|---|---|
+| **A 写入裁决** | `cognitive_loop_entry.py` `record()`（L1192 起） | 落库前调用 `residual_memory.gate()`：S0 敏感 → S1 分型 → S2 轨迹拒入 → S3 冗余探测 → S4 残差测试；`verdict` 映射 M1/M2/M3 | `enforce` 模式下拒入；`shadow` 模式只记日志 |
+| **B 召回解码** | `cognitive_loop_entry.py` `recall()`（L453 起）、`cognitive_mcp_server.py` `recall` | 命中 `form=M1` 时按 `source_anchor` 现场重建；重建失败回退为条目内容并标 `degraded_reason` | 解码失败不影响召回，必须带 `verify_state` |
+| **C 定期治理** | `memory_ttl_manager.py` `run_db_ttl_cycle()` / `_iter_expired()` | 判据从 `age + quality` 改为 `subclass + source_anchor 复核 + verify_state`；D-policy 与未分型存量不进入候选 | 复核不可用 → 本轮跳过该类，不降级 |
+
+三者关系：**A 决定形态，B 消费形态，C 维护形态**。缺任一环，另两环失真。
+
+### 4′.2 数据模型增补（`memories` 表，幂等迁移）
+
+| 字段 | 取值 | 必需性 | 缺失后果 |
+|---|---|---|---|
+| `subclass` | `code` / `config` / `runtime` / `D-tech` / `D-policy` | 必需 | 只能退回 D-policy 冻结，治理不生效 |
+| `form` | `M1` / `M2` / `M3` | 必需 | 召回无法判断是否解码 |
+| `source_anchor` | `file:symbol` / 配置键 / 记录 id | M1 必需 | 无法复核「是否仍成立」；M1 不得入库 |
+| `verify_state` | `fresh` / `stale` / `degraded` | 必需 | 「已失效但保留」无法表达 |
+
+`created_at` / `access_count` / `last_used_at` 保留：只作检索排序与观测，**不作删除判据**。
+
+### 4′.3 A 接入点的判定流水线
+
+```text
+S0 敏感扫描（密钥/凭据/个人隐私）      → 命中即拒（sensitive）
+S1 子类分型（classify，保守归 D-policy）→ 产出 subclass
+S2 N3 轨迹拒入（source/内容形态）      → 命中即拒（trajectory）
+S3 冗余探测（指纹 + 近义双门）          → 命中转 M2 关联，不新增正文
+S4 残差测试（R1-R4 + 删除/重推/现拆）   → 不通过转 M3，零写入
+```
+
+`verdict → form` 映射：有 `source_anchor` → **M1**（只存指针/摘要 ≤120 字）；命中既有条目 → **M2**（只存关联 id）；其余不通过 → **M3**（零记忆，落能力缺口工单或返回 `rejected(reason)`）。
+
+### 4′.4 落地顺序与验收
+
+| 阶段 | 动作 | 验收 |
+|---|---|---|
+| **P0（前置）** | fail-loud 索引 / 双路径同源过滤 / 级联删除 | 同一 query 两条检索路径结果集一致；混维 = 0 |
+| **P1** | 四字段迁移 + 存量回填（规则 + 20% 人工盲评） | 存量 100% 可分类；人工核对一致率 ≥90%（κ 报告） |
+| **P2** | A 接入点 `gate()`（默认 `enforce_n3`，可切 `shadow` / `enforce`） | 复测：误存 0/120、漏存 0/120、敏感 60/60 |
+| **P3** | B 接入点 M1 解码（仅 top-3） | 召回准确率不低于内容基线 −5pp；p95 延迟不劣化 |
+| **P4** | C 接入点判据替换（先 dry-run） | dry-run 与人工判定一致率 ≥90%；D-policy 变更数 = 0 |
+| **P5** | 物理删除 | 删除测试集通过率 ≥95%（未建则不开） |
+
+### 4′.5 不变式（违反即视为回归）
+
+1. **D-policy 永不自动降级/删除**；分型冲突一律归 policy。
+2. **M1 无 `source_anchor` 不得入库**（L2 的 5 个失败全是「命中但定位不唯一」）。
+3. **删除前必有删除测试集**；未通过只降级。
+4. **治理先 dry-run**，一致率未达 90% 不 apply。
+5. **治理失败必须显式降级**（`degraded_reason` + `next`），禁止伪装成「没有候选」。
 
 ---
 
@@ -421,6 +529,8 @@ REA 逆向解析已封装 MCP，是**默认求解器**；记忆只负责**指路
 
 G1-G3 为**存量止血**，必须先于 G4-G5（否则遗忘只是在给漏水的池子加净水器）。
 
+> **G0 复测（2026-11-18，本地副本只读）**：`--inspect-index` 实测 512 维 315,561 / 256 维 1,027，`count_gap=2,624`。混维来源：rag-bridge 894 / l0.scheduler 64（轨迹，按 TTL 清退）、**mcp 68 + trae-independent-review 1（非轨迹真实记忆，需云端重嵌）**。因此 G0 仍判 🟡：代码侧 fail-loud 与巡检已就绪，数据侧须在云端执行重嵌，本地禁止写生产表。
+
 ---
 
 ## 8. 风险与回滚
@@ -480,6 +590,13 @@ G1-G3 为**存量止血**，必须先于 G4-G5（否则遗忘只是在给漏水�
 | 新增 `tests/test_memory_tree.py` | 记忆树 7 项单测（分词 / 构建 / 命中 / 遍历 / 回写 / 容量门 / 标题提取） | **P0b ✅** |
 | 调度：`com.dreambuddy.cognitive-daemon.plist` / 云端 systemd timer | 新增每日维护周期 | P3 |
 | 测试：`test_p5_mcp_governance.py` 或新 `test_p6_admission_gate.py` | G5 用例族 | P0 |
+| 新增 `4-MEMORY/9-工具与接口/residual_memory.py` | 契约 §3.7′/§4′ 的唯一实现入口：`classify` / `gate`（S0-S4）/ `decode` / `review` / `governance_decision` / `backfill` CLI | **P1-P4** |
+| `vector_memory_interface.py`（schema 迁移） | `memories` 增 `subclass` / `form` / `source_anchor` / `verify_state`（幂等 `PRAGMA table_info`）；`add()` 接收四字段；两条检索路径返回四字段 | **P1** |
+| `cognitive_loop_entry.py`（`record`） | 落库前调 `gate()`；`COGNITIVE_ADMISSION_MODE=shadow\|enforce_n3\|enforce`，默认 `enforce_n3`；拒入返回 `rejected(reason)` | **P2** |
+| `cognitive_loop_entry.py`（`recall`） | 仅对 top-3 且 `form=M1` 的命中做 `decode()`；失败回退内容 + `degraded_reason=pointer_decode_failed` | **P3** |
+| `memory_ttl_manager.py`（`_iter_expired` / `run_db_ttl_cycle`） | 候选判据替换为 `subclass + verify_state`；`D-policy` 与 `subclass IS NULL` 非轨迹行一律排除；`runtime` 才受时效约束 | **P4** |
+| 新增 `4-MEMORY/9-工具与接口/tests/test_residual_memory.py` | 分型保守性 / S0 敏感 / N3 拒入 / M1 无锚点拒入 / D-policy 治理免疫 / 解码失败降级 / 回填幂等 / 索引混维巡检 | **P1-P4** |
+| `memory_ttl_manager.py`（`--inspect-index`） | G0 巡检落地：`meta.embed_dim` vs vector 长度直方图 + 混维来源 + count 差，异常置 `degraded` | **P0** |
 
 ---
 

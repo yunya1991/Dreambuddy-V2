@@ -558,6 +558,8 @@ TTL_SCOPE_DEFAULT = ("rag-bridge", "l0.scheduler", "l1_router")
 # 轨迹类来源不留痕（SPEC §3.7 第 6 条 / G11「rag-bridge 零痕迹」）：
 # 它们本不该入库，删除属脏数据修复，不是「遗忘」。
 NO_TRACE_SOURCES = frozenset(TTL_SCOPE_DEFAULT)
+# SPEC §3.7′：这些子类只降级、永不自动删除（D-policy 连降级也不做）
+PROTECTED_SUBCLASSES = frozenset({"code", "config", "D-tech", "D-policy"})
 ORPHAN_NODE = "_orphan"  # 无法归属项目时的兜底树节点
 
 
@@ -621,20 +623,50 @@ def _pending_exclusion(con) -> str:
     return " AND id NOT IN (SELECT id FROM memory_ttl_pending)"
 
 
+def _has_column(con, table: str, column: str) -> bool:
+    """列存在性检查：旧库尚未迁移残差字段时，治理按最保守口径处理。"""
+    try:
+        return any(
+            str(row[1]) == column for row in con.execute(f"PRAGMA table_info({table})").fetchall()
+        )
+    except sqlite3.Error:
+        return False
+
+
 def _iter_expired(con, scope: tuple[str, ...], now: datetime) -> list[dict[str, Any]]:
-    """按 quality_level 分级取候选：C=7 天、B=14 天，且从未被使用过。"""
+    """按 quality_level 分级取候选：C=7 天、B=14 天，且从未被使用过。
+
+    SPEC §3.7′：只有 `runtime`（或未分型的轨迹存量）受时效约束；
+    code / config / D-tech / D-policy 及未分型非轨迹存量一律不进入候选。
+    """
     marks = ",".join("?" * len(scope))
     exclude = _pending_exclusion(con)
+    traj = tuple(TTL_SCOPE_DEFAULT)
+    traj_marks = ",".join("?" * len(traj))
+    # 未分型（NULL）仅允许轨迹来源按脏数据清退，其余按 D-policy 冻结；
+    # 注意：这里的来源必须是轨迹常量，不能用调用方 scope（scope 可包含非轨迹来源）。
+    residual_sql = (
+        " AND (subclass='runtime' OR (subclass IS NULL AND source IN (" + traj_marks + ")))"
+        " AND COALESCE(verify_state,'fresh') <> 'degraded'"
+    )
     out: list[dict[str, Any]] = []
     for level, days in TTL_DAYS.items():
-        rows = con.execute(
+        base_sql = (
             "SELECT id, quality_level, source, created_at, substr(content,1,400) AS snippet, tags "
             "FROM memories WHERE quality_level=? AND source IN (" + marks + ") "
             "AND COALESCE(access_count,0)=0 AND last_used_at IS NULL AND created_at < ?"
-            + exclude
-            + " ORDER BY created_at ASC",
-            [level, *scope, _cutoff(now, days)],
-        ).fetchall()
+        )
+        base_params = [level, *scope, _cutoff(now, days)]
+        try:
+            rows = con.execute(
+                base_sql + residual_sql + exclude + " ORDER BY created_at ASC",
+                [*base_params, *traj],
+            ).fetchall()
+        except sqlite3.OperationalError:
+            # 旧库尚无 subclass / verify_state 列：回退到 scope 口径（默认仅轨迹来源）
+            rows = con.execute(
+                base_sql + exclude + " ORDER BY created_at ASC", base_params
+            ).fetchall()
         out.extend(dict(r) for r in rows)
     return out
 
@@ -643,25 +675,178 @@ def _iter_a_overflow(con, scope: tuple[str, ...], now: datetime) -> list[dict[st
     """A 级按存量上限控制：量满删最旧 / 最低频（S 永不淘汰）。
 
     生效范围同样受白名单约束，避免 TTL 未验证前误删真实教训。
+    SPEC §3.7′：仅 `runtime` 参与存量上限；未分型/其余子类一律冻结。
+    旧库无 subclass 列时保持原有 scope 口径（默认 scope 仅轨迹来源）。
     """
     marks = ",".join("?" * len(scope))
+    residual = " AND subclass='runtime'"
     exclude = _pending_exclusion(con)
-    total = con.execute(
+    count_sql = (
         "SELECT count(*) FROM memories WHERE quality_level IN ('A','S') AND source IN ("
         + marks
-        + ")",
-        list(scope),
-    ).fetchone()[0]
+        + ")"
+    )
+    try:
+        total = con.execute(count_sql + residual, list(scope)).fetchone()[0]
+    except sqlite3.OperationalError:
+        total = con.execute(count_sql, list(scope)).fetchone()[0]
     excess = int(total) - A_CAP
     if excess <= 0:
         return []
-    rows = con.execute(
+    base_sql = (
         "SELECT id, quality_level, source, created_at, substr(content,1,400) AS snippet, tags "
-        "FROM memories WHERE quality_level='A' AND source IN (" + marks + ")" + exclude + " "
-        "ORDER BY COALESCE(last_used_at,0) ASC, created_at ASC LIMIT ?",
-        [*scope, excess],
-    ).fetchall()
+        "FROM memories WHERE quality_level='A' AND source IN (" + marks + ")"
+    )
+    try:
+        rows = con.execute(
+            base_sql + residual + exclude + " "
+            "ORDER BY COALESCE(last_used_at,0) ASC, created_at ASC LIMIT ?",
+            [*scope, excess],
+        ).fetchall()
+    except sqlite3.OperationalError:
+        rows = con.execute(
+            base_sql + exclude + " "
+            "ORDER BY COALESCE(last_used_at,0) ASC, created_at ASC LIMIT ?",
+            [*scope, excess],
+        ).fetchall()
     return [dict(r) for r in rows]
+
+
+def inspect_index(con) -> dict[str, Any]:
+    """向量索引一致性巡检（SPEC G0 / P0）。
+
+    检查三件事：meta.embed_dim 与 vector 长度直方图是否一致、混维条数、
+    memories 与 vec_memories 的条数差。任一异常都必须显式暴露（degraded）。
+    """
+    report: dict[str, Any] = {"degraded": False, "reasons": []}
+    expected_dim = None
+    if _has_table(con, "meta"):
+        row = con.execute("SELECT value FROM meta WHERE key='embed_dim'").fetchone()
+        if row and str(row[0]).isdigit():
+            expected_dim = int(row[0])
+    report["expected_dim"] = expected_dim
+
+    hist: dict[str, int] = {}
+    for row in con.execute(
+        "SELECT length(vector)/4 AS dim, count(*) AS c FROM memories "
+        "WHERE vector IS NOT NULL GROUP BY dim ORDER BY c DESC"
+    ).fetchall():
+        hist[str(row[0])] = int(row[1])
+    report["vector_dim_histogram"] = hist
+
+    total = con.execute("SELECT count(*) FROM memories").fetchone()[0]
+    report["memories_total"] = int(total)
+    vec_total = (
+        con.execute("SELECT count(*) FROM vec_memories").fetchone()[0]
+        if _has_table(con, "vec_memories")
+        else 0
+    )
+    report["vec_total"] = int(vec_total)
+    report["count_gap"] = int(total) - int(vec_total)
+
+    mixed = 0
+    if expected_dim is not None:
+        mixed = sum(c for dim, c in hist.items() if dim.isdigit() and int(dim) != expected_dim)
+        if mixed and _has_column(con, "memories", "source"):
+            report["mixed_by_source"] = {
+                str(r[0] or ""): int(r[1])
+                for r in con.execute(
+                    "SELECT source, count(*) AS c FROM memories "
+                    "WHERE vector IS NOT NULL AND length(vector)/4 != ? GROUP BY source",
+                    [expected_dim],
+                ).fetchall()
+            }
+    report["mixed_dim"] = int(mixed)
+    if expected_dim is not None and mixed == 0 and report["count_gap"] == 0:
+        report["note"] = "维度与条数均一致"
+    if expected_dim is None:
+        report["degraded"] = True
+        report["reasons"].append("meta_embed_dim_missing")
+    if mixed > 0:
+        report["degraded"] = True
+        report["reasons"].append("mixed_dim")
+    if report["count_gap"] != 0:
+        report["degraded"] = True
+        report["reasons"].append("count_gap")
+    return report
+
+
+def review_verify_states(
+    con,
+    *,
+    dry_run: bool = True,
+    limit: int = 0,
+    repo_root: str | Path | None = None,
+) -> dict[str, Any]:
+    """事实源复核 → 更新 verify_state（SPEC §3.7′ C 接入点）。
+
+    仅复核 code / config / runtime / D-tech；D-policy 与未分型一律跳过。
+    degraded 只移出向量索引，不物理删除。
+    """
+    stats: dict[str, Any] = {
+        "dry_run": dry_run,
+        "checked": 0,
+        "changed": 0,
+        "degraded": 0,
+        "stale": 0,
+        "fresh": 0,
+        "index_removed": 0,
+        "errors": 0,
+    }
+    if not _has_column(con, "memories", "subclass"):
+        stats["degraded_reason"] = "subclass_column_missing"
+        return stats
+
+    sql = (
+        "SELECT id, content, source, tags, created_at, subclass, source_anchor, "
+        "verify_state, access_count, last_used_at FROM memories "
+        "WHERE subclass IN ('code','config','runtime','D-tech')"
+    )
+    params: list = []
+    if limit and limit > 0:
+        sql += " LIMIT ?"
+        params.append(limit)
+    rows = con.execute(sql, params).fetchall()
+
+    from residual_memory import review as _review
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    has_vec = _has_table(con, "vec_memories")
+    updates: list[tuple[str, str, str]] = []
+    remove_index: list[str] = []
+    for raw in rows:
+        row = dict(raw)
+        try:
+            new_state = _review(row, repo_root=Path(repo_root) if repo_root else None)
+        except Exception as exc:  # noqa: BLE001 - 单条复核失败不阻断整批
+            stats["errors"] += 1
+            stats["last_error"] = f"{row.get('id')}: {type(exc).__name__}: {exc}"
+            continue
+        stats["checked"] += 1
+        old_state = row.get("verify_state") or "fresh"
+        if new_state == old_state:
+            continue
+        stats["changed"] += 1
+        stats[new_state] = stats.get(new_state, 0) + 1
+        updates.append((new_state, now_iso, row["id"]))
+        if new_state == "degraded":
+            remove_index.append(row["id"])
+
+    if dry_run or not updates:
+        return stats
+
+    con.executemany("UPDATE memories SET verify_state=?, updated_at=? WHERE id=?", updates)
+    if has_vec:
+        for mid in remove_index:
+            rowid = int(hashlib.md5(mid.encode()).hexdigest()[:12], 16)
+            for column, value in (("rowid", rowid), ("memory_id", mid)):
+                try:
+                    con.execute(f"DELETE FROM vec_memories WHERE {column}=?", [value])
+                    stats["index_removed"] += 1
+                except sqlite3.Error:
+                    pass  # vec0 未加载时跳过：行仍在 memories
+    con.commit()
+    return stats
 
 
 def _resolve_trace_node(tree, text: str) -> tuple[str, str]:
@@ -746,16 +931,31 @@ def _stage2(
         "eligible": 0,
         "traces": 0,
         "trace_skipped_trajectory": 0,
+        "skipped_protected": 0,
         "purged": 0,
         "errors": 0,
     }
     if not _has_table(con, "memory_ttl_pending"):
         return stats
-    rows = con.execute(
-        "SELECT p.id, p.source, p.quality_level, m.content, m.tags, m.created_at "
-        "FROM memory_ttl_pending p JOIN memories m ON m.id=p.id WHERE p.stage1_at <= ?",
-        [int(now.timestamp()) - TTL_GRACE_DAYS * 86400],
-    ).fetchall()
+    select_base = "SELECT p.id, p.source, p.quality_level, m.content, m.tags, m.created_at"
+    select_where = " FROM memory_ttl_pending p JOIN memories m ON m.id=p.id WHERE p.stage1_at <= ?"
+    since = [int(now.timestamp()) - TTL_GRACE_DAYS * 86400]
+    try:
+        rows = con.execute(select_base + ", m.subclass" + select_where, since).fetchall()
+        has_sub = True
+    except sqlite3.OperationalError:
+        rows = con.execute(select_base + ", NULL AS subclass" + select_where, since).fetchall()
+        has_sub = False
+
+    # SPEC §3.7′：code / config / D-tech / D-policy 永不自动删除（防御性兜底）
+    if has_sub:
+        protected = [r["id"] for r in rows if r["subclass"] in PROTECTED_SUBCLASSES]
+        rows = [r for r in rows if r["subclass"] not in PROTECTED_SUBCLASSES]
+        if protected and not dry_run:
+            con.executemany("DELETE FROM memory_ttl_pending WHERE id=?", [(i,) for i in protected])
+            con.commit()
+        stats["skipped_protected"] = len(protected)
+
     stats["eligible"] = len(rows)
     if dry_run or not rows:
         return stats
@@ -879,6 +1079,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--audit-only", action="store_true", help="仅运行审计")
     parser.add_argument("--cleanup", action="store_true", help="仅运行 P1+P2 清理")
     parser.add_argument("--db-cycle", action="store_true", help="DB 级分级 TTL（默认 dry-run）")
+    parser.add_argument(
+        "--inspect-index",
+        action="store_true",
+        help="向量索引一致性巡检（混维 / count 差，SPEC G0）",
+    )
+    parser.add_argument(
+        "--review-residual",
+        action="store_true",
+        help="事实源复核 verify_state（SPEC §3.7′，默认 dry-run）",
+    )
+    parser.add_argument("--repo-root", default="", help="复核锚点的仓库根目录（默认自动推断）")
     parser.add_argument("--db", default=str(_DB_DEFAULT), help="cognitive_memory.db 路径")
     parser.add_argument("--scope", default="", help="source 白名单，逗号分隔")
     parser.add_argument("--stage", choices=["1", "2", "both"], default="both")
@@ -886,6 +1097,29 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--with-tree", action="store_true", help="痕迹按记忆树归位到树梢")
     parser.add_argument("--limit", type=int, default=0, help="单轮阶段一最多处理条数（0=不限）")
     args = parser.parse_args(argv)
+
+    if args.inspect_index:
+        con = _open_db(args.db)
+        try:
+            report = inspect_index(con)
+        finally:
+            con.close()
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 0
+
+    if args.review_residual:
+        con = _open_db(args.db)
+        try:
+            report = review_verify_states(
+                con,
+                dry_run=not args.apply,
+                limit=args.limit,
+                repo_root=args.repo_root or None,
+            )
+        finally:
+            con.close()
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 0
 
     if args.db_cycle:
         scope = tuple(s.strip() for s in args.scope.split(",") if s.strip()) or None

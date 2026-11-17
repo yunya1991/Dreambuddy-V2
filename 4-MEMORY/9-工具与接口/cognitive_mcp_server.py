@@ -278,6 +278,10 @@ TOOL_DEFINITIONS = [
                     "type": "string",
                     "description": "external_id 的同义字段（C3）",
                 },
+                "source_anchor": {
+                    "type": "string",
+                    "description": "事实源锚点（file:symbol / 配置键）；M1 指针型记忆必需（SPEC §3.7′）",
+                },
                 "principal": {
                     "type": "string",
                     "enum": list(PRINCIPAL_ROLES),
@@ -714,6 +718,7 @@ def _handle_record(args: Dict[str, Any]) -> str:
         expected_outcome=expected_outcome,
         actual_outcome=actual_outcome,
         external_id=external_id,
+        source_anchor=args.get("source_anchor") or None,
     )
 
     # TAG_HOOKS：查询 tags → triggered_skills（FAIL-OPEN）

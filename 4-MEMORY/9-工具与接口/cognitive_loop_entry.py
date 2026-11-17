@@ -743,6 +743,33 @@ class CognitiveLoopEntry:
             pass  # FAIL-OPEN：41 文档通道失败不影响记忆通道返回
         # ---------- END D6 ----------
 
+        # ---------- B 接入点：M1 指针现场解码（仅 top-3，FAIL-OPEN） ----------
+        # 只对 form=M1 且带 source_anchor 的命中重建细节；失败回退条目内容并标记原因。
+        try:
+            from residual_memory import decode as _decode_pointer
+
+            _decoded = 0
+            for _r in dicts:
+                if _decoded >= 3:
+                    break
+                if _r.get("channel") == "doc":
+                    continue
+                _meta = _r.get("metadata") or {}
+                _form = _r.get("form") or (_meta.get("form") if isinstance(_meta, dict) else "")
+                _anchor = _r.get("source_anchor") or (
+                    _meta.get("source_anchor") if isinstance(_meta, dict) else ""
+                )
+                if _form != "M1" or not _anchor:
+                    continue
+                _out = _decode_pointer(_anchor)
+                _r["decoded"] = _out
+                if not _out.get("ok"):
+                    _r["degraded_reason"] = _out.get("degraded_reason", "pointer_decode_failed")
+                _decoded += 1
+        except Exception:
+            pass  # FAIL-OPEN：解码失败不影响按内容返回
+        # ---------- END B 接入点 ----------
+
         # ---------- R1: recall 命中回写（access_count / last_used_at，FAIL-OPEN） ----------
         # TTL/升级链路依赖「被使用」信号；回写失败不得影响召回返回
         self._writeback_recall_hits(dicts)
@@ -1210,6 +1237,9 @@ class CognitiveLoopEntry:
         actual_outcome: Optional[float] = None,
         external_id: Optional[str] = None,
         idempotency_key: Optional[str] = None,
+        # 残差记忆（SPEC §3.7′/§4′）：锚点可显式给，缺省从内容提取
+        source_anchor: Optional[str] = None,
+        admission_mode: Optional[str] = None,
     ) -> str:
         """
         记录新经验到记忆系统（Phase1 扩展 VOYAGER 5 维评分 + Evidence-First）。
@@ -1234,6 +1264,37 @@ class CognitiveLoopEntry:
         # G0-8：SPEC 契约 record(idempotency_key=) 与 external_id 同义（同一 key 只写 1 条）
         external_id = external_id or idempotency_key
         tags_list = list(tags or [])
+
+        # ---------- A 接入点：写入裁决（SPEC §3.7′ / §4′.3） ----------
+        # S0 敏感 → S2 轨迹 → S3 冗余 → S4 残差；verdict 决定 form(M1/M2/M3)。
+        # FAIL-OPEN：分型器不可用时放行并按 D-policy 冻结（治理侧不会自动处理）。
+        verdict = None
+        try:
+            from residual_memory import gate as _admission_gate
+
+            verdict = _admission_gate(
+                content,
+                source=source,
+                tags=tags_list,
+                memory_type=memory_type,
+                source_anchor=source_anchor or "",
+                mode=admission_mode,
+            )
+            if not verdict.accepted and verdict.enforced:
+                logger.warning(
+                    "record 被准入拒绝: reason=%s stage=%s source=%s content=%s",
+                    verdict.reason,
+                    verdict.stage,
+                    source,
+                    str(content)[:80],
+                )
+                raise ValueError(f"admission_rejected:{verdict.reason}")
+        except ValueError:
+            raise
+        except Exception as _e:  # noqa: BLE001 - 准入器故障不阻塞既有写入路径
+            logger.debug("admission gate 不可用，按 D-policy 放行: %s", _e)
+            verdict = None
+
         memory_id = self._vm.add(
             content=content,
             quality_level=quality_level,
@@ -1245,6 +1306,10 @@ class CognitiveLoopEntry:
             known_gaps=known_gaps,
             observations=observations,
             external_id=external_id,
+            subclass=(verdict.subclass if verdict else "D-policy"),
+            form=(verdict.form if verdict else None),
+            source_anchor=(verdict.source_anchor if verdict else source_anchor),
+            verify_state=(verdict.verify_state if verdict else "fresh"),
         )
 
         # Phase1：VOYAGER 评分持久化 + 写入 bayesian 扩展字段（FAIL-OPEN 包裹）
