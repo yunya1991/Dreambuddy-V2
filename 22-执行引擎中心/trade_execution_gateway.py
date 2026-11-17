@@ -532,6 +532,102 @@ class TradeExecutionGateway:
             audit_path = REPO_ROOT / "22-执行引擎中心" / "audit" / "gateway.jsonl"
         self._audit_path = Path(audit_path)
         self._audit_path.parent.mkdir(parents=True, exist_ok=True)
+        self._contract_mode = str(os.getenv("EXECUTION_CONTRACT_MODE", "alert")).lower()
+        self._contract_audit = self._audit_path.parent / "contract_violations.jsonl"
+        self._contract_schema: dict | None = None
+
+    # ── v1.2 契约校验（alert-only，默认不阻断） ──────────────────────
+    _CONTRACT_CORE = ("signal_id", "source", "symbol", "direction", "confidence", "expires_at")
+    _CONTRACT_V12_TOP = (
+        "signal_id",
+        "source",
+        "ts",
+        "symbol",
+        "direction",
+        "confidence",
+        "horizon",
+        "risk_exposure_hint",
+        "expires_at",
+        "mode",
+        "payload",
+    )
+    _CONTRACT_V12_PAYLOAD = (
+        "action",
+        "position_tier",
+        "position_mult",
+        "d_star",
+        "ri",
+        "l4_v",
+        "regime",
+        "primary_contradiction",
+        "contradiction_shift",
+        "elastic_result",
+        "cross_validation",
+        "path",
+    )
+
+    def _load_contract_schema(self) -> dict | None:
+        if self._contract_schema is not None:
+            return self._contract_schema
+        try:
+            path = REPO_ROOT / "49-交易框架协议" / "contracts" / "final_decision_signal.v1.2.json"
+            self._contract_schema = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            logger.warning("[Gateway] 契约 schema 加载失败(FAIL-OPEN): %s", exc)
+            self._contract_schema = None
+        return self._contract_schema
+
+    def _contract_errors(self, raw: dict) -> list[str]:
+        source = str(raw.get("source") or "")
+        if source != "23-evolution":
+            return [f"missing:{f}" for f in self._CONTRACT_CORE if f not in raw]
+        schema = self._load_contract_schema()
+        if schema is not None:
+            try:
+                import jsonschema
+            except ImportError:
+                jsonschema = None
+            if jsonschema is not None:
+                try:
+                    jsonschema.validate(instance=raw, schema=schema)
+                    return []
+                except jsonschema.ValidationError as exc:
+                    where = ".".join(str(p) for p in exc.absolute_path) or "$"
+                    return [f"{where}: {str(exc.message)[:160]}"]
+        errors = [f"missing:{f}" for f in self._CONTRACT_V12_TOP if f not in raw]
+        payload = raw.get("payload") if isinstance(raw.get("payload"), dict) else {}
+        errors.extend(
+            f"missing:payload.{f}" for f in self._CONTRACT_V12_PAYLOAD if f not in payload
+        )
+        return errors
+
+    def _check_contract(self, raw: dict) -> None:
+        """alert-only：记录/告警，永不改变订单结果；block 模式保留。"""
+        errors = self._contract_errors(raw)
+        if not errors:
+            return
+        record = {
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "mode": self._contract_mode,
+            "source": str(raw.get("source") or "unknown"),
+            "decision_id": raw.get("decision_id") or (raw.get("payload") or {}).get("decision_id"),
+            "symbol": raw.get("symbol"),
+            "errors": errors[:10],
+            "shadow_only": self._shadow_only,
+        }
+        logger.warning(
+            "[Gateway] 契约校验未通过(%s) source=%s decision_id=%s errors=%s",
+            self._contract_mode,
+            record["source"],
+            record["decision_id"],
+            errors[:3],
+        )
+        try:
+            self._contract_audit.parent.mkdir(parents=True, exist_ok=True)
+            with self._contract_audit.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(record, ensure_ascii=False) + "\n")
+        except OSError as exc:
+            logger.warning("[Gateway] 契约违规落盘失败(FAIL-OPEN): %s", exc)
 
     # ── public API ────────────────────────────────────────────────────
     def submit(self, decision: Dict[str, Any] | FinalDecisionSignal) -> ExecutionResult:
@@ -540,6 +636,8 @@ class TradeExecutionGateway:
         Returns:
             ExecutionResult: passed=13是否通过, executed=是否实际下单。
         """
+        if isinstance(decision, dict):
+            self._check_contract(decision)
         sig = (
             decision
             if isinstance(decision, FinalDecisionSignal)

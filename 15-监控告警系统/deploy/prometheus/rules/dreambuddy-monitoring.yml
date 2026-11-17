@@ -230,6 +230,16 @@ groups:
         annotations:
           summary: "信号置信度方差趋零，模型可能退化"
 
+      - alert: GatewayContractViolation
+        expr: dreambuddy_contract_violations_1h > 0
+        for: 10m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "22 网关契约校验发现违规（alert-only，未阻断订单）"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#12-一期23-推理信号监控v22"
+
   - name: trading
     rules:
       - alert: ReconcileBreak

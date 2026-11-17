@@ -243,6 +243,27 @@ class Collector:
             return [_metric("outbox_stuck", 0, state="error")]
         return out
 
+    # ---------- 22 契约告警 ----------
+    def contract_metrics(self) -> list[str]:
+        path = self.repo / "22-执行引擎中心/audit/contract_violations.jsonl"
+        cutoff = _now() - 3600
+        counts: dict[str, int] = {}
+        if path.exists():
+            for rec in _tail_jsonl(path, limit=2000):
+                ts = _iso_to_ts(str(rec.get("ts") or ""))
+                if ts and ts >= cutoff:
+                    src = str(rec.get("source") or "unknown")
+                    counts[src] = counts.get(src, 0) + 1
+        out = [
+            _metric(
+                "contract_mode_alert_only",
+                1 if os.getenv("EXECUTION_CONTRACT_MODE", "alert") == "alert" else 0,
+            )
+        ]
+        for src, n in sorted(counts.items()):
+            out.append(_metric("contract_violations_1h", n, source=src))
+        return out
+
     # ---------- 产物 / 单元 ----------
     def artifact_metrics(self) -> list[str]:
         out = []
@@ -290,6 +311,7 @@ class Collector:
         for group in (
             self.signal_metrics(),
             self.outbox_metrics(),
+            self.contract_metrics(),
             self.artifact_metrics(),
             self.cell_metrics(),
         ):
