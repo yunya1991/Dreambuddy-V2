@@ -286,11 +286,15 @@ class PositionLedger:
                             "event_arbitrage",
                         )
                     )
-                    if abs(_old_qty - qty) <= _EPS or not _is_managed:
+                    _old_avg = float(row["avg_entry"] or 0)
+                    _avg_drift = _is_reconciled and avg > _EPS and abs(_old_avg - avg) > _EPS
+                    if abs(_old_qty - qty) <= _EPS and not _avg_drift:
                         skipped.append(f"{inst_id}:{pos_side}")
                         continue
-                    # 数量与交易所不一致 → 校正；对账源同步均价，真实流水保留原成本
-                    _old_avg = float(row["avg_entry"] or 0)
+                    if not _is_managed:
+                        skipped.append(f"{inst_id}:{pos_side}")
+                        continue
+                    # 数量/均价与交易所不一致 → 校正；真实流水保留原成本
                     _new_avg = avg if _is_reconciled and avg > _EPS else _old_avg
                     if _new_avg <= _EPS:
                         _new_avg = avg
