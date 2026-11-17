@@ -242,13 +242,18 @@ class PositionLedger:
     ) -> Dict[str, Any]:
         """存量仓一次性对账回填（幂等）。
 
-        - 只补录账本缺失的持仓，绝不覆盖已有真实流水（含已知均价）；
+        - 缺失持仓 → 补录；
+        - 已存在但数量与交易所不一致 → 以交易所为准校正数量（真实流水保留原均价）；
+        - 账本有、交易所已无 → 仅关闭本对账源（source）写入的陈旧行，避免每轮重复报幽灵仓；
         - 无开仓流水时 realized_pnl 保持 0，不臆造盈亏；
-        - 每笔回填写一条 ``action=reconcile`` 的 fills 审计，重复执行不会再写。
+        - 每次校正/关闭都写一条 fills 审计，便于追溯。
         """
         _ts = ts or _utc_now()
         written: List[Dict[str, Any]] = []
+        updated: List[Dict[str, Any]] = []
+        closed: List[str] = []
         skipped: List[str] = []
+        _active: set = set()
         for p in positions or []:
             inst_id = str(p.get("inst_id") or "")
             pos_side = str(p.get("pos_side") or "").lower()
@@ -257,14 +262,49 @@ class PositionLedger:
             if not inst_id or pos_side not in ("long", "short") or qty <= _EPS:
                 skipped.append(f"{inst_id or '?'}:{pos_side or '?'}")
                 continue
+            _active.add((inst_id, pos_side))
             with self._lock, self._connect() as conn:
                 row = conn.execute(
-                    "SELECT qty, entry_known FROM positions WHERE inst_id=? AND pos_side=?",
+                    "SELECT qty, avg_entry, entry_known, source FROM positions"
+                    " WHERE inst_id=? AND pos_side=?",
                     (inst_id, pos_side),
                 ).fetchone()
-                # 已有真实持仓流水 → 以账本为准，不覆盖
                 if row is not None and float(row["qty"]) > _EPS:
-                    skipped.append(f"{inst_id}:{pos_side}")
+                    _old_qty = float(row["qty"])
+                    # 真实流水（非本对账源）一律以账本为准，不覆盖数量/成本
+                    if abs(_old_qty - qty) <= _EPS or not str(row["source"] or "").startswith(
+                        source
+                    ):
+                        skipped.append(f"{inst_id}:{pos_side}")
+                        continue
+                    # 数量与交易所不一致 → 校正；真实流水保留原均价，不覆盖成本
+                    _old_avg = float(row["avg_entry"] or 0)
+                    _new_avg = _old_avg if _old_avg > _EPS else avg
+                    conn.execute(
+                        "UPDATE positions SET qty=?, avg_entry=?, entry_known=?, updated_at=?,"
+                        " closed_at=NULL WHERE inst_id=? AND pos_side=?",
+                        (
+                            qty,
+                            _new_avg,
+                            1 if _new_avg > _EPS else 0,
+                            _ts,
+                            inst_id,
+                            pos_side,
+                        ),
+                    )
+                    conn.execute(
+                        "INSERT INTO fills (ts, inst_id, pos_side, action, qty, px, fee,"
+                        " realized_pnl, ratio, source) VALUES (?,?,?,?,?,?,0,NULL,NULL,?)",
+                        (_ts, inst_id, pos_side, "reconcile_update", qty, _new_avg, source),
+                    )
+                    updated.append(
+                        {
+                            "inst_id": inst_id,
+                            "pos_side": pos_side,
+                            "qty": qty,
+                            "avg_entry": _new_avg,
+                        }
+                    )
                     continue
                 conn.execute(
                     "INSERT INTO positions (inst_id, pos_side, qty, avg_entry, entry_known,"
@@ -281,11 +321,38 @@ class PositionLedger:
                     (_ts, inst_id, pos_side, "reconcile", qty, avg, source),
                 )
             written.append({"inst_id": inst_id, "pos_side": pos_side, "qty": qty, "avg_entry": avg})
+
+        # 交易所已无持仓，但账本仍开着：只关闭本对账源写入的陈旧行
+        with self._lock, self._connect() as conn:
+            _rows = conn.execute(
+                "SELECT inst_id, pos_side, qty, avg_entry, source FROM positions WHERE qty > ?",
+                (_EPS,),
+            ).fetchall()
+        for row in _rows:
+            _key = (row["inst_id"], row["pos_side"])
+            if _key in _active:
+                continue
+            if not str(row["source"] or "").startswith(source):
+                continue
+            self.apply_partial_close(
+                inst_id=row["inst_id"],
+                pos_side=row["pos_side"],
+                qty=float(row["qty"]),
+                px=float(row["avg_entry"] or 0),
+                ratio=1.0,
+                source=source,
+                exit_reason="ghost_stale",
+            )
+            closed.append(f"{row['inst_id']}:{row['pos_side']}")
         return {
             "ok": True,
             "inserted": len(written),
+            "updated": len(updated),
+            "closed": len(closed),
             "skipped": len(skipped),
             "written": written,
+            "updated_detail": updated,
+            "closed_detail": closed,
             "skipped_detail": skipped,
         }
 

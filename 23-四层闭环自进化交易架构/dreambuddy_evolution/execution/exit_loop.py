@@ -505,25 +505,47 @@ class EvolutionExitLoop:
         except Exception as e:  # noqa: BLE001
             self._log(f"[ExitLoop] {coin} ShadowRL 记录异常(FAIL-OPEN): {e}", "DEBUG")
 
-    def _resolve_close_sz(self, pos, inst_id: str, pos_side: str, ratio: float) -> int:
-        _full = 0
+    def _resolve_close_sz(self, pos, inst_id: str, pos_side: str, ratio: float) -> float:
+        """解析平仓数量（支持小数合约，禁止 int 截断）。
+
+        交易所持仓优先；兼容 net 模式与单仓无 side 标记；最后回退账本数量/名义价值。
+        """
+        _full = 0.0
         if self._okx is not None:
             try:
-                _q = self._okx.get_positions(inst_id)
+                _q = self._okx.get_positions(inst_id) or {}
                 if _q.get("ok"):
-                    for _p in _q.get("positions") or []:
-                        if _p.get("pos_side") == pos_side and float(_p.get("pos", 0) or 0) > 0:
-                            _full = int(float(_p.get("pos", 0)))
+                    _cands = [
+                        p for p in (_q.get("positions") or []) if float(p.get("pos", 0) or 0) > 0
+                    ]
+                    for _p in _cands:
+                        if _p.get("pos_side") == pos_side:
+                            _full = abs(float(_p.get("pos") or 0))
                             break
+                    if _full <= 0:
+                        for _p in _cands:
+                            if _p.get("pos_side") in (None, "", "net"):
+                                _full = abs(float(_p.get("pos") or 0))
+                                break
+                    if _full <= 0 and len(_cands) == 1:
+                        _full = abs(float(_cands[0].get("pos") or 0))
             except Exception as e:  # noqa: BLE001
                 self._log(f"[ExitLoop] {inst_id} 查询持仓失败: {e}", "DEBUG")
         if _full <= 0:
-            _full = int(float(pos.get("position_qty") or pos.get("sz") or 0))
+            _full = abs(float(pos.get("position_qty") or pos.get("qty") or pos.get("sz") or 0))
         if _full <= 0:
-            return 0
+            _px = float(
+                pos.get("current_price") or pos.get("last_px") or pos.get("entry_price") or 0
+            )
+            _notional = float(pos.get("position_usdt") or 0)
+            if _px > 0 and _notional > 0:
+                _full = _notional / _px
+        if _full <= 0:
+            return 0.0
         if ratio >= 0.999:
-            return _full
-        return max(1, int(_full * max(0.01, min(ratio, 1.0))))
+            return round(_full, 8)
+        _sz = _full * max(0.01, min(float(ratio), 1.0))
+        return round(_sz, 8) if _sz > 0 else round(_full, 8)
 
     def _execute_close(self, pos, inst_id, coin, pos_side, ratio, decision, ctx, on_closed):
         _trace = str(ctx.get("trace_id") or "")

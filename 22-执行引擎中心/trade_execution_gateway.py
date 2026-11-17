@@ -788,9 +788,11 @@ class TradeExecutionGateway:
         ]
         out = ledger.reconcile(items, source=source)
         logger.info(
-            "[Gateway] 账本对账回填 source=%s inserted=%s skipped=%s",
+            "[Gateway] 账本对账回填 source=%s inserted=%s updated=%s closed=%s skipped=%s",
             source,
             out.get("inserted"),
+            out.get("updated"),
+            out.get("closed"),
             out.get("skipped"),
         )
         return out
