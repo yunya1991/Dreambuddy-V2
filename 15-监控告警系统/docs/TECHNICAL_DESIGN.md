@@ -1266,8 +1266,8 @@ python -m pytest tests/test_chain_events_and_signal_params.py tests/test_decisio
 | `ledger_last_write_age_seconds` | `fills` 最新 `ts` | 账本最近写入距今秒数（仅观察） |
 | `ledger_reconcile_updated_1h` | `fills.action=reconcile_update` | 近 1h 数量/均价校正次数 |
 | `ledger_ghost_closed_24h` | `cooldowns.exit_reason ∈ {ghost_stale,ghost_exchange_flat}` | 24h 内清理的幽灵/陈旧仓 |
-| `sltp_reconcile_age_seconds` | `22/audit/sltp_reconcile.jsonl` mtime | SL/TP 补挂巡检新鲜度 |
-| `sltp_reconcile_patched_1h` / `_failed_1h` | 同上逐行 `ok` | 近 1h 补挂成功/失败数 |
+| `sltp_reconcile_age_seconds` | `22/audit/sltp_reconcile.jsonl` mtime | SL/TP 补挂巡检新鲜度（每轮写 `kind=summary`，无补挂动作也更新） |
+| `sltp_reconcile_patched_1h` / `_failed_1h` | 同上 `kind=summary` 行；无 summary 时回退逐条明细 | 近 1h 补挂成功/失败数 |
 
 判定口径（避免「稳定持仓、无写入」被误判为停摆）：
 

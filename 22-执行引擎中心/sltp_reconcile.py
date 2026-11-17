@@ -41,6 +41,27 @@ def _audit(record: dict[str, Any], audit_path: Path | None) -> None:
         logger.debug("[SLTP-Reconcile] audit fail: %s", exc)
 
 
+def _summary(
+    audit_path: str | Path | None,
+    *,
+    patched: int = 0,
+    skipped: int = 0,
+    failed: int = 0,
+    reason: str = "",
+) -> None:
+    """每轮写一条汇总审计：供监控判断巡检新鲜度，即使无补挂动作也留痕。"""
+    _audit(
+        {
+            "kind": "summary",
+            "patched": patched,
+            "skipped": skipped,
+            "failed": failed,
+            "reason": reason,
+        },
+        Path(audit_path) if audit_path else None,
+    )
+
+
 def _positions(okx_client: Any) -> list[dict[str, Any]]:
     """拉取全部真实持仓（兼容 snake_case / OKX 原始驼峰）。"""
     resp = okx_client.get_positions()
@@ -97,14 +118,17 @@ def reconcile_sltp(
     _log = log_fn or (lambda msg: logger.info(msg))
     _t0 = time.time()
     if not (okx_client and hasattr(okx_client, "get_positions")):
+        _summary(audit_path, reason="no_client")
         return {"patched": 0, "skipped": 0, "failed": 0}
     try:
         positions = _positions(okx_client)
     except Exception as exc:  # noqa: BLE001
         _log(f"[SLTP-Reconcile] 持仓拉取失败: {exc}")
+        _summary(audit_path, reason="fetch_failed")
         return {"patched": 0, "skipped": 0, "failed": 0}
     if not positions:
         _log(f"[SLTP-Reconcile] 无持仓，跳过 耗时={time.time() - _t0:.1f}s")
+        _summary(audit_path, reason="no_positions")
         return {"patched": 0, "skipped": 0, "failed": 0}
 
     patched = skipped = failed = 0
@@ -184,4 +208,5 @@ def reconcile_sltp(
         f"[SLTP-Reconcile] 补挂={patched} 跳过={skipped} 失败={failed} "
         f"耗时={time.time() - _t0:.1f}s"
     )
+    _summary(audit_path, patched=patched, skipped=skipped, failed=failed)
     return {"patched": patched, "skipped": skipped, "failed": failed}

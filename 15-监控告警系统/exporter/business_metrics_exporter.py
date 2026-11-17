@@ -281,10 +281,6 @@ class Collector:
         ex = self.config.get("execution", {}) or {}
         out = [
             _metric(
-                "entry23_active",
-                1 if self._active(str(ex.get("entry23_unit", "dreambuddy-entry23"))) else 0,
-            ),
-            _metric(
                 "exit23_active",
                 1 if self._active(str(ex.get("exit23_unit", "dreambuddy-exit23"))) else 0,
             ),
@@ -338,14 +334,22 @@ class Collector:
         age = max(0.0, _now() - path.stat().st_mtime)
         patched = failed = 0
         cutoff = _now() - 3600
+        _summaries = []
+        _details = []
         for rec in _tail_jsonl(path, limit=2000):
             ts = _iso_to_ts(str(rec.get("ts") or ""))
             if not ts or ts < cutoff:
                 continue
-            if rec.get("ok"):
-                patched += 1
-            else:
-                failed += 1
+            if rec.get("kind") == "summary":
+                _summaries.append(rec)
+            elif "ok" in rec:
+                _details.append(rec)
+        if _summaries:
+            patched = sum(int(r.get("patched") or 0) for r in _summaries)
+            failed = sum(int(r.get("failed") or 0) for r in _summaries)
+        else:
+            patched = sum(1 for r in _details if r.get("ok"))
+            failed = sum(1 for r in _details if not r.get("ok"))
         return [
             _metric("sltp_reconcile_age_seconds", round(age, 1)),
             _metric("sltp_reconcile_patched_1h", patched),
