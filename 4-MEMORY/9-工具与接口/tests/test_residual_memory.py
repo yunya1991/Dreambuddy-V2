@@ -29,6 +29,7 @@ from residual_memory import (  # noqa: E402
     gate,
     governance_decision,
     reclassify_invalid_anchors,
+    score_blind_sample,
     verify_deletion_set,
 )
 
@@ -255,6 +256,35 @@ def test_verify_deletion_set_passes_and_blocks_policy_delete(tmp_path):
     path2 = tmp_path / "bad.jsonl"
     path2.write_text("\n".join(json.dumps(c) for c in bad), encoding="utf-8")
     assert verify_deletion_set(path2)["passed"] is False
+
+
+def test_score_blind_sample_computes_kappa(tmp_path):
+    import csv
+
+    sheet = tmp_path / "sheet.csv"
+    with sheet.open("w", encoding="utf-8", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["id", "sample", "human_subclass"])
+        w.writerows(
+            [
+                ["1", 1, "code"],
+                ["2", 1, "D-policy"],
+                ["3", 1, "runtime"],
+                ["4", 0, ""],
+            ]
+        )
+    answers = tmp_path / "answers.jsonl"
+    answers.write_text(
+        "\n".join(
+            json.dumps({"id": i, "subclass": s})
+            for i, s in [("1", "code"), ("2", "D-policy"), ("3", "D-policy")]
+        ),
+        encoding="utf-8",
+    )
+    report = score_blind_sample(sheet, answers)
+    assert report["scored"] == 3
+    assert report["agreement"] == round(2 / 3, 4)
+    assert report["passed"] is False
 
 
 def test_backfill_classifies_and_is_idempotent():
