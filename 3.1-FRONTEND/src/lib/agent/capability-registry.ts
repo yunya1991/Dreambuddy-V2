@@ -302,15 +302,26 @@ export async function runCapability(
       payload,
       cap.latency_ms,
     );
-    const placeholder = res.ok ? looksPlaceholder(res.output) : false;
+    // 不同 handler 的结果字段不一致：subagent 用 output，c_drive 用 decision。
+    const raw = res as unknown as {
+      output?: unknown;
+      decision?: unknown;
+      data?: unknown;
+    };
+    const picked = raw.output ?? raw.decision ?? raw.data;
+    const hasValue = picked !== undefined && picked !== null;
+    const placeholder =
+      res.ok && hasValue ? looksPlaceholder(picked) : !hasValue;
     return {
-      ok: res.ok === true,
+      ok: res.ok === true && hasValue,
       capability: id,
-      output: res.ok ? clip(res.output) : undefined,
-      error: res.ok ? undefined : res.error || `${moduleName}_no_output`,
+      output: hasValue ? clip(picked) : undefined,
+      error: hasValue
+        ? undefined
+        : res.error || `${moduleName}_no_output`,
       degraded: placeholder || undefined,
       note: placeholder
-        ? "DSH 未获得有效指标输入，输出为默认中性值，不可作为结论依据"
+        ? "DSH 未返回有效结果或仅有默认中性值，不可作为结论依据"
         : undefined,
     };
   }
