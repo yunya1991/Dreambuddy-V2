@@ -250,6 +250,9 @@ class EngineRouter:
             "d_star_adjusted": d_star,
             "ri_adjusted": ri,
             "primary_contradiction": None,
+            "cross_validation": None,
+            "elastic_result": None,
+            "statistical_validation": None,
         }
 
         try:
@@ -329,13 +332,16 @@ class EngineRouter:
                         }
                     else:
                         optimal = None
+                    _pi = raw_optimal.get("path_info") or raw_optimal
+                    # G2：pc/cv 不再只依赖最优路径存在，未通过验证时也保留语义结果
+                    path_info["primary_contradiction"] = _pi.get("primary_contradiction")
+                    path_info["cross_validation"] = _pi.get("cross_validation")
+                    path_info["statistical_validation"] = _pi.get("statistical_validation")
                     if optimal:
                         path_info["optimal_source"] = optimal.get("source")
                         path_info["optimal_score"] = round(float(optimal.get("score", 0.0)), 6)
                         path_info["validated"] = optimal.get("validated", False)
                         path_info["low_conviction"] = optimal.get("low_conviction", False)
-                        _pi = raw_optimal.get("path_info") or raw_optimal
-                        path_info["primary_contradiction"] = _pi.get("primary_contradiction")
                         path_info["structural_break"] = _pi.get("structural_break")
                         path_info["shift_result"] = _pi.get("shift_result")
                         path_info["reflexivity_fuel"] = _pi.get("reflexivity_fuel")

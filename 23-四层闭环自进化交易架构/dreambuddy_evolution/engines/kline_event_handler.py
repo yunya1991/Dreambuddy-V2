@@ -20,6 +20,8 @@ from typing import Any
 
 import numpy as np
 
+from dreambuddy_evolution.execution.chain_events import emit_stage, new_trace_id
+
 logger = logging.getLogger(__name__)
 
 # Phase 1: 事件驱动策略模块级导入（支持测试 monkeypatch）
@@ -209,11 +211,23 @@ class KlineEventHandler:
         source_tag: str | None = None,
         price: float = 0.0,
         atr_pct: float = 0.0,
+        regime: str = "",
+        l4_v: float = 0.0,
+        path_info: dict[str, Any] | None = None,
+        trace_id: str | None = None,
     ) -> None:
         _pipeline = self._get_evolution_pipeline()
-        _pc = getattr(_pipeline, "_last_primary_contradiction", None) if _pipeline else None
-        _cv = getattr(_pipeline, "_last_cross_validation", None) if _pipeline else None
-        _el = getattr(_pipeline, "_last_elastic_result", None) if _pipeline else None
+        _pi = path_info or {}
+        # 优先使用本次决策的返回值，避免批量 symbol 下私有属性 last-write-wins
+        _pc = _pi.get("primary_contradiction")
+        _cv = _pi.get("cross_validation")
+        _el = _pi.get("elastic_result")
+        if _pc is None:
+            _pc = getattr(_pipeline, "_last_primary_contradiction", None) if _pipeline else None
+        if _cv is None:
+            _cv = getattr(_pipeline, "_last_cross_validation", None) if _pipeline else None
+        if _el is None:
+            _el = getattr(_pipeline, "_last_elastic_result", None) if _pipeline else None
         self._aggregator.trigger_build_position(
             symbol,
             action,
@@ -227,6 +241,9 @@ class KlineEventHandler:
             primary_contradiction=_pc,
             cross_validation=_cv,
             elastic_result=_el,
+            regime=regime,
+            l4_v=l4_v,
+            trace_id=trace_id,
         )
 
     def _apply_macro_event_filter(
@@ -299,6 +316,10 @@ class KlineEventHandler:
                     setattr(self._router, _a, _v)
 
             symbol = str(kline_data.get("symbol", "UNKNOWN"))
+            _trace_id = new_trace_id(symbol)
+            emit_stage(
+                "N1", "kline_event_handler.on_kline_close", symbol, "enter", trace_id=_trace_id
+            )
 
             # ============ 1. L1 R 向量 + AGI-A 签名 ============
             recv = self._receiver.receive_kline(kline_data, self._rv)
@@ -397,11 +418,48 @@ class KlineEventHandler:
                             symbol, r_vector, d_star, 0.5, kline_data
                         )
                     elif d_star == "WAIT":
-                        _, _, _ = self._run_path_discovery(
+                        _, _, _wait_info = self._run_path_discovery(
                             symbol, r_vector, "neutral", 0.5, kline_data
                         )
+                        if isinstance(_wait_info, dict):
+                            path_info.update(_wait_info)
             except Exception as e:
                 logger.debug("[PathLayer] %s outer crash: %s", symbol, e)
+
+            # ============ 3c. N5/N6 语义节点事件 ============
+            _pc = path_info.get("primary_contradiction")
+            _cv = path_info.get("cross_validation")
+            emit_stage(
+                "N5",
+                "pipeline.primary_contradiction",
+                symbol,
+                "pass" if _pc else "skip",
+                trace_id=_trace_id,
+                data={"primary_contradiction": _pc or {}},
+            )
+            emit_stage(
+                "N6",
+                "pipeline.cross_validation",
+                symbol,
+                "pass" if _cv else "skip",
+                trace_id=_trace_id,
+                data={"cross_validation": _cv or {}},
+            )
+            _sv = path_info.get("statistical_validation") or {}
+            emit_stage(
+                "N7",
+                "pipeline.statistical_validation",
+                symbol,
+                "pass" if _sv.get("validated") else "skip",
+                trace_id=_trace_id,
+                data={
+                    "validated": bool(_sv.get("validated")),
+                    "best_score": _sv.get("best_score"),
+                    "score_gap": _sv.get("score_gap"),
+                    "low_conviction": bool(_sv.get("low_conviction")),
+                    "reason": _sv.get("reason"),
+                },
+            )
 
             # ============ 4. RippleEngine RI 检测 ============
             ess_dir = str(kline_data.get("ess_top_direction", "")).lower()
@@ -567,6 +625,7 @@ class KlineEventHandler:
             inference_formed = ri >= PROBE_THRESHOLD
             action = "WAIT"
             auto_execute = False
+            aligned = False
 
             # ============ 宏观事件过滤器 ============
             _macro_source_tag: str | None = None
@@ -612,6 +671,13 @@ class KlineEventHandler:
                         self._store_pre_trade_snapshot(
                             symbol, action, d_star, ess_dir, ri, position_mult
                         )
+                        _l4_v_pre = 0.0
+                        try:
+                            _p = self._get_evolution_pipeline()
+                            if _p is not None:
+                                _l4_v_pre = float(_p.bellman.get_v(symbol))
+                        except Exception as _e:  # noqa: BLE001
+                            logger.debug("[FO] l4_v pre-read fail: %s", _e)
                         self._trigger_build_position(
                             symbol,
                             action,
@@ -622,6 +688,10 @@ class KlineEventHandler:
                             source_tag=_macro_source_tag,
                             price=_signal_price,
                             atr_pct=_signal_atr_pct,
+                            regime=regime,
+                            l4_v=_l4_v_pre,
+                            path_info=path_info,
+                            trace_id=_trace_id,
                         )
                     if self.mode == "MVP" and ri >= 0.75:
                         pass
@@ -742,8 +812,36 @@ class KlineEventHandler:
             except Exception as _e:
                 logger.warning("[EventDriven] shadow integration crash (FAIL-OPEN): %s", _e)
 
+            # ============ N8 决策节点事件（含主动 WAIT 归因） ============
+            _wait_reason = ""
+            if action == "WAIT":
+                if not inference_formed:
+                    _wait_reason = "low_ri"
+                elif d_star not in ("long", "short"):
+                    _wait_reason = "d_star_wait"
+                elif not aligned:
+                    _wait_reason = "direction_conflict"
+                else:
+                    _wait_reason = "unknown"
+            emit_stage(
+                "N8",
+                "pipeline.decision",
+                symbol,
+                "skip" if action == "WAIT" else "pass",
+                trace_id=_trace_id,
+                data={
+                    "action": action,
+                    "d_star": d_star,
+                    "ri": round(float(ri), 6),
+                    "tier": tier,
+                    "aligned": bool(aligned),
+                    "reason_category": _wait_reason,
+                },
+            )
+
             return {
                 "symbol": symbol,
+                "trace_id": _trace_id,
                 "r_vector": r_vector,
                 "d_star": d_star,
                 "action": action,

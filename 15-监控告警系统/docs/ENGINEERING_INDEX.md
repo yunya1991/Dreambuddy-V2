@@ -301,7 +301,7 @@ python -m pytest tests/ -v
 | 目标 | 路径 |
 |------|------|
 | 用户文档 | [../README.md](../README.md) |
-| 技术设计 | [./TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md)（v2.0，云端口径见第 10 章） |
+| 技术设计 | [./TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md)（v2.8；云端口径见第 10 章，23 分类/链路监控见第 13 章） |
 | 全链路调研与 D1–D6 决策 | [./RESEARCH-全链路监控体系调研-v0.2.md](./RESEARCH-全链路监控体系调研-v0.2.md) |
 | 项目文档索引 | [../../../0-系统文档管理/INDEX.md](../../0-系统文档管理/INDEX.md) |
 | 文档规范 | [../../../0-系统文档管理/1-规范体系/DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) |

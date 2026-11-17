@@ -18,6 +18,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from .chain_events import emit_stage
 from .outbox import STATE_SUBMITTING, SUCCESS_STATES
 
 logger = logging.getLogger(__name__)
@@ -173,6 +174,7 @@ def build_entry_decision(
     position_mult: float = 1.0,
     mode: str | None = None,
     horizon: str = "hours",
+    trace_id: str | None = None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
     """构造 23 域开仓 FinalDecisionSignal。
@@ -250,6 +252,7 @@ def build_entry_decision(
                 cross_validation=cross_validation,
                 path=path,
             )["payload"],
+            "trace_id": str(trace_id or ""),
         },
     }
 
@@ -376,13 +379,15 @@ class EvolutionSignalDispatcher:
         )
 
         if self._gateway is None:
-            return {
+            _out = {
                 "ok": False,
                 "executed": False,
                 "reason": "no_gateway_injected",
                 "reason_code": "NO_GATEWAY",
                 "decision_id": _did,
             }
+            self._emit_result(decision, _out)
+            return _out
 
         if self._outbox is not None and _did:
             try:
@@ -391,9 +396,53 @@ class EvolutionSignalDispatcher:
                 logger.warning("[23-evolution] outbox gate fail (fail-open): %s", e)
                 _gate = None
             if _gate is not None:
+                self._emit_result(decision, _gate)
                 return _gate
 
-        return self._submit_now(decision)
+        _out = self._submit_now(decision)
+        self._emit_result(decision, _out)
+        return _out
+
+    def _emit_result(self, decision: dict[str, Any], result: dict[str, Any]) -> None:
+        """链路汇总：N13 发件箱 / N14 网关提交结果（FAIL-OPEN）。"""
+        try:
+            _payload = decision.get("payload") or {}
+            _trace = str(_payload.get("trace_id") or "")
+            _did = str(result.get("decision_id") or decision.get("decision_id") or "")
+            _chain = str(_payload.get("chain_id") or _payload.get("upstream_decision_id") or _did)
+            _cached = bool(result.get("cached"))
+            emit_stage(
+                "N13",
+                "dispatcher.outbox",
+                str(decision.get("symbol") or "?"),
+                "skip" if _cached else "pass",
+                chain_id=_chain,
+                decision_id=_did,
+                trace_id=_trace,
+                data={
+                    "outbox_present": self._outbox is not None,
+                    "cached": _cached,
+                    "duplicate": str(result.get("reason_code") or "") == "DUPLICATE_DECISION",
+                },
+            )
+            _ok = bool(result.get("executed"))
+            emit_stage(
+                "N14",
+                "gateway.submit",
+                str(decision.get("symbol") or "?"),
+                "pass" if _ok else "failed",
+                chain_id=_chain,
+                decision_id=_did,
+                trace_id=_trace,
+                data={
+                    "executed": _ok,
+                    "reason_code": str(result.get("reason_code") or ""),
+                    "reason": str(result.get("reason") or ""),
+                    "notional_usdt": _payload.get("notional_usdt"),
+                },
+            )
+        except Exception as exc:  # noqa: BLE001 — 观测失败不影响交易
+            logger.debug("[FO] chain N13/N14 emit fail: %s", exc)
 
     def _outbox_gate(self, decision_id: str, decision: dict[str, Any]) -> dict[str, Any] | None:
         """抢占提交权。返回 dict 表示短路（重复/在途/重试耗尽），None 表示可提交。"""

@@ -1,6 +1,6 @@
 # 技术设计 — 15-监控告警系统
 
-> **版本**: v2.2 | **更新日期**: 2026-11-17
+> **版本**: v2.8 | **更新日期**: 2026-11-17
 > **定位**: 子系统技术架构设计，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.2
 > **v2.2 说明**: 一期范围收敛为「23 推理信号链」；新增第 12 章：23 模块全景、信号契约差异、8 步生命周期、信号 SLO 与落地审计。40 神经网络顺延二期。
 > **v2.0 说明**: 新增第 10 章「云端全链路监控目标架构」。第 1–9 章保留为本地 v1.0 适配器实现（仅覆盖 5 个老系统），**不再作为云端监控的权威口径**；云端架构以第 10 章为准。调研证据与选型过程见 [RESEARCH-全链路监控体系调研-v0.2.md](./RESEARCH-全链路监控体系调研-v0.2.md)。
@@ -913,6 +913,8 @@ business-metrics-exporter（只读 JSON）──┘        │
 
 **结论**：23 当前是"可执行扁平信号"，不是 v1.1 契约信号。22 网关 `FinalDecisionSignal`（L43-107）也只映射核心字段，且**未做 JSON Schema 校验**，因此契约漂移不会被任何一层拦截。这是本期监控必须补的第一类"契约监控"。
 
+> **2026-11-17 更新（v2.6/v2.7）**：上表差异已按 v1.2 契约修复——23 输出 `ts/horizon/risk_exposure_hint/mode` 与 payload 12 字段，顶层执行扩展在 v1.2 登记；22 已接入 alert-only 的 JSON Schema 校验。本节保留为问题溯源记录，当前口径以 §12.5 与 §13 为准。
+
 ### 12.3 信号生命周期 8 步与监控点
 
 | # | 阶段 | 代码/产物 | 监控指标 |
@@ -983,11 +985,256 @@ SLO 建议：信号 schema 一致率 ≥99%；信号→网关 p95 ≤2s；成交
 
 ---
 
+## 13. 分类监控模型与 23 交易链路逐节点监控（v2.7）
+
+> 依据：2026-11-17 对 23 `evolution_pipeline.py`、`engines/kline_event_handler.py`、`engines/result_aggregator.py`、`execution/decision_signal.py`、`execution/entry_loop.py`、`execution/outbox.py`、`22/trade_execution_gateway.py` 的代码走读，以及 `SPEC-双链路可观测性与状态同步修复.md`。
+> 定位：本章是 §12「8 步生命周期」的升级口径——把交易链路从「阶段清单」升级为「逐节点、可 join、可回放」的链路监控；非交易模块按结果导向粗糙覆盖。
+
+### 13.1 分类监控原则（A 类 / B 类）
+
+监控不是越细越好，而是按「是否直接决定资金动作」分类投入。判据三条：是否参与真实下单、是否可归因到单笔交易、是否需要事后复盘。
+
+| 类别 | 范围 | 监控方式 | 强度 | 目标 |
+|---|---|---|---|---|
+| **A 类：交易链路** | 23 推理 → 信号构造 → 闸门 → outbox → 22 网关 → 13 风控 → 交易所 → 回报/反馈 | **沿信号传递逐节点监控**；每节点产出结构化 stage event；全链路按 `chain_id` 汇总 | 高：节点级四态 + 字段语义 + 时延 + 完整性 | 一笔交易可完整复盘：为什么开/为什么没开/在哪一步丢的 |
+| **B 类：其他模块** | 40 神经网络、18 采集、19 DAL、48 反馈、50 决策、23 的 L3/L4 训练与基因治理、11/12/14 老系统 | **结果导向**：进程存活 + 心跳新鲜度 + 最近产物存在且新鲜 + 核心业务计数/分布 | 低：每模块 ≤3 个指标，允许抽样、允许粗糙 | 确认模块在工作、结果基本正确、核心节点无异常 |
+
+**为什么 A 类必须逐节点**：交易链路的故障绝大多数是「静默断链」——某一节点返回空/默认值，上下游都不报错，最终表现为「不交易」或「仓位不对」。只看结果（成交数、PnL）无法区分「策略主动 WAIT」与「链路断了」，也无法回答复盘时最重要的问题：这笔单当时看到的主矛盾、交叉验证、最优路径是什么。逐节点 + 链路汇总才能把「信号为什么消失」变成可查询事实。
+
+**B 类为什么可以粗糙**：这些模块的正确性最终会体现在产物被下游消费；对内部中间变量做逐字段契约监控，成本高、噪声大、误报会淹没 A 类告警。B 类的「结果正确」用四个可验收条件判定：
+
+1. 进程/单元存活（systemd active 或心跳 < TTL）；
+2. 最近一次成功产物存在且新鲜（文件 mtime / 表最新分区）；
+3. 核心计数不突变（产出量、错误量在历史分位内）；
+4. 下游可消费（每日一次端到端 spot check，而非每笔校验）。
+
+**边界规则**：
+
+| 场景 | 归类 | 处理 |
+|---|---|---|
+| 23 的 N1–N15 信号传递节点 | A | 逐节点 stage event + 指标 + 告警 |
+| 23 的基因库、反思、权重学习、Shadow-RL 训练 | B | 每日产物 + 样本量 + 晋升/淘汰计数 |
+| 18/19 数据生产 | B（但对 23 是 N0 输入） | 只监控新鲜度/空值率/行数增量，作为 A 类 N0 的门禁 |
+| 50 神经网络决策 | 二期 A 类 | 本期只做存活与产物新鲜度，不纳入告警路由 |
+| 40 主神经网络闭环 | 二期 | 存活探针 only |
+
+**成本纪律**：A 类开仓 16 节点 + 平仓 7 节点、每节点约 3–5 条时间序列，总量约 90 条，可接受；禁止把 payload 全字段展开成 label（高基数）。高频中间量（R 向量、路径得分）只保留最新值 + 分位摘要，不逐笔落盘。
+
+### 13.2 23 交易链路信号环节全景（N0–N15）
+
+链路三段：**推理段 N0–N9（无持久 id）→ 信号段 N10–N13（decision_id）→ 执行/回报段 N14–N15（order_id / fill_id）**。平仓为并行支链 E0–E6，从 E4 起共用 N12–N15 的构造、outbox 与执行段。
+
+> **文档缺口**：23 的 `docs/TECHNICAL_DESIGN.md` 只描述了基因三层准入（Layer 0/1/2）与路径求解，**没有执行信号链路章节**；本节的节点表以代码走读（`execution/` + `engines/`）与 `SPEC-双链路可观测性…`、`SPEC-主矛盾对实质交易影响链路修复` 为依据。建议 23 后续补一节「执行链路」，避免监控与实现口径再次漂移。
+
+| 节点 | 环节 | 代码入口 | 输入 | 输出（关键字段） | 关联键 | 现状可观测 | 静默失败模式 |
+|---|---|---|---|---|---|---|---|
+| N0 | 数据就绪 | `scripts/entry_runner.py`、18 `data_center.db`、19 DAL | symbol、K 线、微观结构 | `market_data{kline_data, funding_rate, oi}` | `(symbol, kline_ts)` | 文件 mtime、行数 | 空 K 线 → 下游默认值 |
+| N1 | 引擎调度 | `engines/kline_event_handler.py` `on_kline` → `_run_path_discovery` | K 线事件 | `action`、`d_star`、`ri`、`position_mult` | 无 trace_id（**缺口**） | 日志 `[PathDiscovery]` | 异常被 FAIL-OPEN 吞掉，周期静默跳过 |
+| N2 | L1 阻力向量 | `core/resistance_vector.py` `calculate` | market_data + 上轮主矛盾 | `R_up/R_down/R_smooth/R_flow/R_reflexivity/quality_score` | 无 | 无指标（仅内存） | NaN/全 0 → d* 恒 WAIT |
+| N3 | 高阶因子调制 | `evolution_pipeline._apply_high_order_factors` | R 向量、子系统桥 | 调制后 R 向量 | 无 | 无 | 桥不可用 → 静默跳过 |
+| N4 | 路径发现 | `_discover_paths` | R 向量、市场数据 | `paths[]`（source/direction/score） | 无 | 路径条数日志 | 路径为空 → 统计验证失败 → WAIT |
+| N5 | 主矛盾识别 | 路径发现内 `core/primary_contradiction_detector.py` | 维度特征 | `primary_contradiction{dimension,direction,strength}` | 无（旁路 `_last_primary_contradiction`） | `[Contradiction]` 日志；快照新增 | 识别为空 → payload 为 `unknown/{}` |
+| N6 | 矛盾 Transformer 交叉验证 | `core/cross_validation_gate.py` | G 管线/A 管线结果 | `cv{confidence_mult,shift_signal,divergence_count,degraded_mode,...}` | 无（旁路 `_last_cross_validation`） | 50 周期心跳 | 门禁静默 FAIL-OPEN，无法确认是否在跑 |
+| N7 | 统计验证 | `_select_optimal_path` | 路径得分、conf_mult | `statistical_validation{validated,best_score,score_gap,low_conviction}` | 无 | `[PathDiscovery]` | 阈值/乘数联动导致长期 validated=false |
+| N8 | d* 与动作决策 | `compute_d_star` + `aligned` 判定 | R 向量、最优路径 | `d_star`、`aligned`、`action∈{long,short,light_*,WAIT}`、`level0_confidence` | 无 | `[PathDiscovery]` | 方向冲突/降级 → WAIT，无原因计数 |
+| N9 | L3/L4 记录 | `shadow_rl.record`、`bellman.td_update` | 状态、动作、reward | L3 样本、`l4_v` | `(symbol, ts)` | 样本数、l4_v | reward 占位 0，样本静默不增长 |
+| N10 | 首个信号构造（v1.2） | `engines/result_aggregator.py` → `build_entry_decision` | action/d_star/ri/pc/cv/elastic | `signal_id`、`decision_id`、payload 12 字段 | **chain_id 起点** | 无审计（仅内存） | 构造异常被吞 → 走旧回调，信号丢失 |
+| N11 | 23 闸门/定容/配额 | `execution/entry_loop.py` `_check_gates`/`_size` | 信号、账户状态、配额 | `tier`、`u_open`、`notional_usdt`、`quota_attr`、拦截原因 | chain_id | `[P2-S4b]` 日志（仅命中时） | 拦截原因分散在日志，无计数 |
+| N12 | 最终信号 + 审计 | `entry_loop._dispatch` → `build_entry_decision` → `EvolutionSignalDispatcher.dispatch` | 上下文 + 上游 payload | 新 `decision_id`、`payload.upstream_decision_id`、审计行 `stage=submit` | `upstream_decision_id`→`decision_id` | `runtime/execution_decisions.jsonl` | **二次构造丢 ri/l4_v/regime**；审计只写 submit |
+| N13 | 发件箱状态机 | `execution/outbox.py` | 最终信号 | `pending/submitting/submitted/filled/failed`、attempts、error | decision_id | SQLite（不可 tail） | 卡在 submitting；重复/重试耗尽无计数 |
+| N14 | 22 网关 → 13 风控 → 下单 | `22/trade_execution_gateway.submit`、13 `PreTradeGate`、16 定容 | 最终信号 | `ExecutionResult{ok,executed,reason_code,order_result}`、`rules_evaluated` | decision_id | `22-执行引擎中心/audit/gateway.jsonl`、`contract_violations.jsonl` | 契约违规只落盘不阻断；`rules_evaluated=0` 仍放行 |
+| N15 | 回报/对账/反馈 | 成交回报 → `TradeSettlementBridge` → L3 reward/L4 | 成交、平仓 PnL | `filled_sz/avg_px/pnl`、反馈样本 | `decision_id`→`order_id/fill_id` | 无统一 join 指标 | 成交不回带 decision_id → 反馈链断 |
+
+**本次走读确认的 6 个链路缺口（监控必须先看见）**
+
+| # | 缺口 | 位置 | 后果 | 监控应对 |
+|---|---|---|---|---|
+| G1 | 推理段无 trace_id | N1–N9 | 无法把某次 WAIT/开仓归因到具体 R 向量/路径/主矛盾 | N1 生成 `trace_id`，写入 stage event 与 `payload.trace_id`（payload 允许扩展字段） |
+| G2 | pc/cv 走私有属性旁路 | `_last_primary_contradiction/_last_cross_validation` | 批量多 symbol 时 last-write-wins，可能张冠李戴 | stage event 显式携带 `symbol+trace_id`；后续改为返回值透传 |
+| G3 | 上游 regime 未传 | `kline_event_handler._trigger_build_position` 未传 `regime` | 最终 payload `regime` 为空/UNKNOWN | N10 指标 `signal_regime_missing_ratio` |
+| G4 | 二次构造参数退化 | `entry_loop._dispatch` 从上游 payload 取 `ri/l4_v/regime` | 上游 payload 本身就是 0/空 → 最终 `ri=0`，与顶层 confidence 不一致 | N12 校验 `ri ≈ confidence`、`regime != ""` |
+| G5 | 审计只有 submit | `EvolutionSignalDispatcher.dispatch` | 无 rejected/filled；WAIT 完全不落盘 | WAIT 也写 stage event（`status=skip`），结果由 22/13 join |
+| G6 | 双 decision_id | N10 与 N12 各生成一次 | 只按最终 id 复盘会丢失推理上下文 | 以 `chain_id`（N10 id）+ `upstream_decision_id` 串联 |
+
+**平仓链（E0–E6）**：23 的平仓不经过 N1–N11，由 `execution/exit_loop.py` 独立驱动，但从 E4 起与开仓共用信号构造、outbox 与 22/13 执行段，必须纳入同一套链路汇总。
+
+| 节点 | 环节 | 代码入口 | 输出（关键字段） | 关联键 | 静默失败模式 |
+|---|---|---|---|---|---|
+| E0 | 持仓快照/交易所同步 | `exit_loop.run` → `_sync_from_exchange` | `pos{inst_id,pos_side,entry_price,upl_ratio,position_usdt,age}` | `inst_id+pos_side` | 幽灵仓（交易所已平、账本未平）静默跳过 |
+| E1 | 离场决策 | `engines/exit_engine.decide` | `decision{action∈hold/force_close/partial_close/adjust_sl_tp/trailing, reason, confidence, params}` | 无 | 长期 hold / 异常 action 被吞 |
+| E2 | RL 覆盖 | `_apply_rl_override` | 修正后 action | 无 | 策略覆盖无记录，无法复盘 |
+| E3 | 影子记录 | `_record_shadow` | shadow 样本、reward | symbol | 样本不增长 |
+| E4 | 平仓信号构造 | `build_exit_decision` | `decision_id`、`action=close/reduce`、`sz`、`pos_side` | **chain_id（平仓链）** | `sz=0` 无法确定数量 → 跳过平仓 |
+| E5 | 提交/风控/成交 | `EvolutionSignalDispatcher.dispatch` → 22 → 13（平仓例外） | `executed/reason_code/order_result` | decision_id | 平仓失败仅日志，持仓风险继续暴露 |
+| E6 | 部分减仓刷新/全平清理/落账 | `_refresh_partial_size`、`_cleanup_engine_state`、`on_closed` | 剩余仓位、PnL、反馈样本 | decision_id | 部分减仓后数量未刷新 → 重复减仓；全平未清理 → 继承旧状态 |
+
+> 平仓链缺口：E0 的 `ctx.regime` 恒为空、`ctx.d_star` 从未赋值，导致平仓信号 `d_star/regime` 为空；E4 的 `sz` 计算失败只返回 `size_unknown`，不产生告警。平仓失败属于「风险未释放」，优先级应高于开仓拦截。
+
+### 13.3 逐节点监控方案
+
+统一四态计数：`chain_stage_total{stage,status}`，`status ∈ {enter, pass, blocked, failed, skip}`。所有节点先计数、再谈语义。
+
+| 节点 | 指标 | 类型 | 告警/规则 | 级别 | SLO |
+|---|---|---|---|---|---|
+| N0 | `data_freshness_seconds{source}`、`market_empty_ratio`、`rows_delta` | gauge | `DataStale`：交易时段 >180s；`MarketEmpty`：空 K 线连续 3 次 | P1 | 新鲜度 p95 ≤60s |
+| N1 | `pipeline_runs_total{symbol,result}`、`pipeline_duration_seconds`、`pipeline_last_success_ts` | counter/hist | `PipelineSilent`：15min 无成功 run（23 active 时） | P1 | 成功率 ≥99% |
+| N2 | `r_vector_quality_score`、`r_vector_degenerate_ratio`（NaN/全 0） | gauge | `RVectorDegenerate`：连续 5 次 quality<0.1 | P2 | 退化率 <1% |
+| N3 | `high_order_applied_ratio` | gauge | 仅观察 | P3 | — |
+| N4 | `paths_discovered`、`paths_valid_ratio` | gauge | `PathsEmpty`：连续 10 次 0 路径 | P2 | ≥1 路径率 ≥95% |
+| N5 | `contradiction_present_ratio`、`contradiction_strength`、`contradiction_dimension{dimension}` | gauge | `ContradictionMissing`：present=0 持续 30min | P1 | present ≥99% |
+| N6 | `cv_present_ratio`、`cv_degraded{degraded_mode}`、`cv_shift_signal`、`cv_confidence_mult`、`cv_divergence_count` | gauge | `CrossValidationMissing`（30min）、`CrossValidationDegraded`（degraded>0 持续 1h） | P1/P2 | present ≥99%，degraded <10% |
+| N7 | `path_validated_ratio`、`path_score_gap`、`low_conviction_ratio` | gauge | `ValidationCollapse`：validated=0 持续 2h（且 N4 有路径） | P2 | validated 5%–60% 合理带 |
+| N8 | `decision_action_total{action}`、`wait_ratio`、`aligned_ratio` | counter | `WaitRatioAnomaly`：WAIT=100% 且 N5/N7 正常，持续 2h | P2 | WAIT 比例有历史基线 |
+| N9 | `l3_sample_count`、`l4_v` | gauge | 仅观察（样本不增长时并入 B 类告警） | P3 | — |
+| N10 | `signal_built_total`、`signal_build_fail_total`、`signal_regime_missing_ratio`、`signal_ri_zero_ratio` | counter/gauge | `SignalBuildFail`：fail>0 持续 10min；`SignalParamDegraded`：ri=0 或 regime 空 >20% | P1/P2 | 构造成功率 ≥99.9% |
+| N11 | `entry_gate_blocked_total{gate}`、`quota_blocked_total`、`notional_usdt` 分布 | counter/hist | `GateRejectSpike`：单 gate 15min >10 次且占比 >50% | P2 | 拦截可解释率 100% |
+| N12 | `signal_schema_valid_ratio`、`signal_samples_recent`、`audit_write_fail_total`、`signal_expired_at_submit_total` | gauge/counter | `SignalSchemaViolation`（samples>0 且 ratio<99%）、`SignalExpiredAtSubmit` | P1 | schema ≥99%；审计写入失败=0 |
+| N13 | `outbox_state{state}`、`outbox_stuck_seconds`、`outbox_retry_exhausted_total`、`outbox_duplicate_total` | gauge/counter | `OutboxStuck`（submitting>300s）、`OutboxRetryExhausted` | P1 | 5min 内离开 submitting |
+| N14 | `gateway_requests_total{result}`、`gateway_reject_ratio`、`contract_violations_1h{source}`、`risk_rules_evaluated` | counter/gauge | `GatewayContractViolation`、`RiskGateEmpty`（rules_evaluated=0 且放行）、`GatewayRejectSpike`（>5%） | P1/P0 | 拒绝率 <5%；契约违规=0 |
+| N15 | `decision_fill_join_ratio`、`fill_feedback_age_seconds`、`pnl_feedback_age_seconds` | gauge | `DecisionFillJoinLow`（<95%）、`FeedbackStale`（>2h） | P1 | join ≥95% |
+| E1 | `exit_decide_total{action}`、`exit_hold_ratio`、`exit_decide_duration_seconds` | counter/hist | `ExitHoldAnomaly`：force/partial 连续 0 且浮亏扩大（观察项） | P3 | 决策 p95 ≤200ms |
+| E4 | `exit_signal_total{action}`、`exit_size_unknown_total`、`exit_signal_missing_dstar_ratio` | counter | `ExitSizeUnknown`：>0 且持续 10min | **P0** | size_unknown=0 |
+| E5 | `exit_close_failed_total{reason_code}`、`exit_close_latency_seconds` | counter/hist | `ExitCloseFailed`：>0 持续 10min（风险未释放） | **P0** | 平仓成功率 ≥99% |
+| E0/E6 | `exit_ghost_positions_total`、`position_ledger_mismatch` | counter/gauge | `GhostPosition`：>0 | P1 | 账本与交易所一致 |
+
+**降噪约束**（继承 §10.6）：
+
+1. 所有语义类指标必须带 `samples_recent > 0` 门槛，避免「无信号 → ratio=0 → 误报」。
+2. 节点级告警统一 `for:` 窗口（≥5min），P2 以上才路由飞书；P3 仅进 Grafana。
+3. 同一 `chain_id` 的同一 stage 10min 内只告警一次（Alertmanager `group_by: [alertname, symbol]` + 冷却）。
+4. 观察期（至 2026-12-01）全部 `alert_only`，规则只发通知不触发自动动作。
+
+### 13.4 链路汇总与复盘（A 类的核心价值）
+
+逐节点指标回答「某节点是否健康」；链路汇总回答「这一笔为什么发生/为什么没发生」。因此 stage event 必须落盘为**可 join 的事件流**，而不仅仅是指标。
+
+**事件模型（`chain_event.v1`）**
+
+```json
+{
+  "schema": "chain_event.v1",
+  "chain_id": "23-evolution|BTC-USDT-SWAP|open|20261117T121837",
+  "trace_id": "evt-20261117T121837-BTC",
+  "stage": "N12",
+  "node": "entry_loop.dispatch",
+  "symbol": "BTC-USDT-SWAP",
+  "ts": "2026-11-17T12:18:37.412+00:00",
+  "status": "pass",
+  "duration_ms": 3,
+  "decision_id": "evo23-...-final",
+  "upstream_decision_id": "evo23-...-first",
+  "data": {
+    "action": "open",
+    "tier": "standard",
+    "notional_usdt": 120.0,
+    "confidence": 0.62,
+    "d_star": "long",
+    "ri": 0.62,
+    "regime": "TREND_UP",
+    "pc": {"dimension": "structure", "direction": "long", "strength": 0.66},
+    "cv": {"confidence_mult": 0.8, "shift_signal": true, "degraded_mode": "partial"}
+  }
+}
+```
+
+**id 串联规则（复盘唯一路径）**
+
+```
+trace_id（N1 生成，贯穿推理段）
+  └─ chain_id = N10 首个 decision_id
+       └─ upstream_decision_id（写入 N12 payload）
+            └─ decision_id（N12/N14，22 幂等主键）
+                 └─ order_id / fill_id（N15 成交回报）
+```
+
+**落盘与查询**
+
+| 项 | 设计 |
+|---|---|
+| 写入方 | 23 内部 `chain_events` 追加写（FAIL-OPEN，写失败不影响交易）；N14/N15 由 15 导出器从 22 audit / 成交回报补齐 |
+| 路径 | `23-四层闭环自进化交易架构/runtime/chain_events.jsonl`，按日轮转 |
+| 留存 | 热存 30 天，冷存 1 年（与 §10 审计口径一致）；不含密钥、不含完整订单原始报文 |
+| 查询 | `chain_summary --chain-id` / `--symbol --since`：输出节点时间线、缺失节点、首个失败点、各段耗时、语义快照 |
+| 复盘视图 | 一笔成交 → `decision_id` → chain → 当时 N5/N6/N7/N8 字段 → 当时 R 向量摘要 → 实际 PnL |
+
+**链路级指标**
+
+| 指标 | 定义 | 用途 |
+|---|---|---|
+| `chain_completion_ratio{segment}` | 完整走完 N1→N12 的 chain 数 / 进入 N1 的 chain 数 | 发现「静默断链」 |
+| `chain_missing_stage_total{stage}` | 应该出现但缺失的节点计数 | 定位断点 |
+| `chain_latency_seconds{from,to}` | 相邻节点耗时直方图（N10→N14 为重点） | 发现时延异常 |
+| `chain_status_total{final_status}` | `opened/rejected/expired/blocked/wait/failed` | 结果分布 |
+| `chain_replay_join_ratio` | 可按 chain_id 还原完整时间线的成交占比 | 复盘可信度 |
+| `wait_vs_broken_ratio` | 主动 WAIT / 链路异常导致的 WAIT | 区分「策略不交易」与「系统坏了」 |
+
+`wait_vs_broken_ratio` 是分类监控的关键判据：WAIT 必须能归因到 N7（未通过验证）、N8（方向冲突/降级、war_state）或 N11（闸门/配额）。无法归因的 WAIT 一律计入 `chain_broken`。
+
+### 13.5 B 类模块粗糙监控清单
+
+| 模块 | 结果指标（≤3） | 核心节点 | 告警 |
+|---|---|---|---|
+| 40 主神经网络 | 进程存活、`nn_heartbeat_age_s`、最新产物新鲜度 | 推理入口 | 心跳 >10min P2（二期纳入路由） |
+| 18 数据采集 | `rows_per_min`、`empty_ratio`、`source_error_total` | 采集入库 | 连续空/错误 P1（作为 N0 门禁） |
+| 19 DAL | 表最新分区时间、backfill lag | 写入完成 | 新鲜度超 TTL P2 |
+| 50 神经网络决策 | `decisions_per_hour`、产物新鲜度 | 决策产出 | 静默 P2 |
+| 48 反馈 | `pnl_feedback_age_s`、样本增量 | 反馈入库 | >2h P2 |
+| 23 L3/L4 训练与基因治理 | 每日样本数、晋升/淘汰计数、权重版本 | 训练完成 | 产物缺失 P3 |
+| 11/12/14 老系统 | 既有 heartbeat、trading_halted | 心跳 | 沿用现有告警 |
+
+B 类统一验收：不要求逐字段契约、不要求链路汇总、不参与 P0 路由；每季度抽查一次端到端结果。
+
+### 13.6 实施顺序与验收
+
+| 阶段 | 内容 | 产出 | 验收 |
+|---|---|---|---|
+| P0 | N10/N12/N13/N14 + 平仓 E4/E5 的 stage event；导出器读事件流；`chain_summary` 最小实现 | chain_events.jsonl、8 条链路指标 | 一笔 OPEN / 一笔 CLOSE 均可串起；WAIT 可区分主动/断链；平仓失败可见 |
+| P1 | N5/N6/N7/N8 推理节点事件与指标（复用现有语义指标）；修复 G1 trace_id、G3/G4 参数退化 | 推理段可归因 | 任一开仓可回溯到当时主矛盾与 CV |
+| P2 | N0–N4、N15；N11 拦截原因计数化 | 全链 16 节点 | `chain_completion_ratio` 可按 symbol 查询 |
+| P3 | B 类粗糙清单接入 `domains.yaml` 对应 cell | 3+3 矩阵补齐 | 每格至少 1 条存活 + 1 条结果指标 |
+
+**一期验收（在 §12.6 之上追加）**
+
+1. `chain_events.jsonl` 出现完整 N1–N14 时间线，缺失节点可在 `chain_missing_stage_total` 看到。
+2. `wait_vs_broken_ratio` 可解释 ≥95% 的 WAIT（其余进入 `chain_broken` 告警）。
+3. 复盘命令对任意 `decision_id` 能在 1 次查询内输出：链路时间线 + 主矛盾 + CV + 路径得分 + 最终结果。
+4. B 类模块全部有存活与产物新鲜度指标，且不产生 P0/P1 噪声。
+
+**改动边界**：stage event 埋点全部只读、FAIL-OPEN，不改变任何交易判定；新增字段走 `payload.trace_id/chain_id`（v1.2 `payload.additionalProperties=true`），不需要再升契约版本。
+
+### 13.7 落地状态（v2.8，2026-11-17）
+
+| 项 | 状态 | 实现位置 |
+|---|---|---|
+| 链路事件写入 | ✅ 已实现 | `23/dreambuddy_evolution/execution/chain_events.py`：`emit_stage()` / `new_trace_id()`，按 UTC 日轮转为 `runtime/chain_events-YYYYMMDD.jsonl`，全异常 FAIL-OPEN |
+| G1 trace_id | ✅ 已实现 | `kline_event_handler.on_kline_close` 生成并写入 N1/N5/N6/N7/N8 事件与 `payload.trace_id`；`entry_loop` 透传 |
+| G2 pc/cv 旁路 | ✅ 已修复 | `engine_router.run_path_discovery` 在最优路径缺失时也保留 pc/cv/statistical_validation；`kline_event_handler` 优先使用本次 `path_info`，私有属性仅兜底 |
+| G3/G4 参数退化 | ✅ 已修复 | handler 透传 `regime`；`result_aggregator` 传入 `ri/l4_v/regime/trace_id`；`entry_loop` 的 `ri` 以 confidence 兜底，并写 `chain_id/upstream_decision_id` |
+| G5 WAIT/结果落盘 | ✅ 已实现 | N8 记录主动 WAIT 及 `reason_category`；`dispatcher` 记录 N13/N14（含 cached/duplicate/失败原因） |
+| G6 双 decision_id | ✅ 已实现 | `payload.chain_id`（上游首个 id）+ `upstream_decision_id` + 最终 `decision_id` 三键并存 |
+| G7 平仓链 | ✅ 已实现 | `exit_loop` 生成 trace，E0/E1/E4/E5/E6 事件；E4 失败显式记录 `SIZE_UNKNOWN`/`NO_GATEWAY`；`d_star/regime` 从持仓上下文透传 |
+| 导出器 | ✅ 已实现 | `chain_metrics()`：`chain_stage_total`、`chain_completion_ratio`、`chain_missing_stage_total`、`chain_wait_total`、`wait_vs_broken_ratio`、`chain_broken_total`、`exit_size_unknown_total`、`exit_close_failed_total` |
+| 告警规则 | ✅ 已实现 | `ChainBroken`、`ChainCompletionLow`、`ChainWaitBroken`、`ExitSizeUnknown`(P0)、`ExitCloseFailed`(P0) |
+| 自动化测试 | 🟡 已编写待执行 | `23/tests/test_chain_events_and_signal_params.py`（4 例）；受工作区信任限制，需在可信终端执行 |
+
+**执行测试**（可信终端）：
+
+```bash
+cd 23-四层闭环自进化交易架构
+python -m pytest tests/test_chain_events_and_signal_params.py tests/test_decision_signal_v12_contract.py tests/test_contradiction_cv_passthrough.py -q
+```
+
+**部署后验证**：`runtime/chain_events-*.jsonl` 出现 N1/N5/N6/N8（WAIT）或 N1→N14（开仓）时间线；`curl :9101/metrics | grep chain_` 可看到链路指标；`runtime/execution_decisions.jsonl` 中 `payload` 含 `trace_id/chain_id/ri/regime`。
+
+---
+
 ## 变更记录
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
 | v1.0 | 2026-08-02 | 初始版本：按 DOC_STANDARD §3.2 补建技术设计文档，覆盖概述/架构/算法/数据流/接口/状态/配置/错误处理/扩展性 9 章节 |
+| v2.8 | 2026-11-17 | 落地 §13：新增 chain_events 事件写入；修复 G1–G7（trace_id、pc/cv 返回值、regime/ri/l4_v 透传、WAIT 归因、chain_id、平仓链事件）；导出器新增 chain_*/exit_* 指标；新增 5 条告警规则 |
+| v2.7 | 2026-11-17 | 新增第 13 章：分类监控原则（A 类交易链路逐节点+汇总复盘 / B 类结果导向可粗糙）；23 链路 N0–N15 逐节点表、6 个链路缺口、节点指标/告警/SLO、`chain_event.v1` 事件模型与复盘查询、B 类清单与实施顺序 |
 | v2.6 | 2026-11-17 | 23 契约补齐 v1.2：ts/horizon/risk_exposure_hint/mode + payload 12 字段；v1.2 登记顶层执行扩展并扩展 action 枚举；审计携带完整 signal；导出器按 payload 校验并消除无信号误报 |
 | v2.0 | 2026-11-17 | 新增第 10 章「云端全链路监控目标架构」：云端实测基线、Prometheus 标准栈、TTL 矩阵、P0–P3 治理、D1–D6 决策、实施阶段；第 1–9 章降级为本地 v1.0 现状描述 |
 | v2.1 | 2026-11-17 | 新增第 11 章「3+3 全景监控架构」：三层×三链矩阵、四期覆盖、`config/domains.yaml` 注册表、M0–M5 成熟度与一格一 owner |
@@ -995,5 +1242,5 @@ SLO 建议：信号 schema 一致率 ≥99%；信号→网关 p95 ≤2s；成交
 
 ---
 
-**文档版本**: v2.2
+**文档版本**: v2.8
 **最后更新**: 2026-11-17

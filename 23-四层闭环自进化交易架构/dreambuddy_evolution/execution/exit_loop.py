@@ -18,6 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Optional
 
+from .chain_events import emit_stage, new_trace_id
 from .decision_signal import build_exit_decision
 
 _HERE = Path(__file__).resolve().parents[2]
@@ -246,6 +247,16 @@ class EvolutionExitLoop:
         if not inst_id or entry_price <= 0:
             return {"status": "skipped", "reason": "invalid_position"}
 
+        _trace_id = new_trace_id(inst_id)
+        emit_stage(
+            "E0",
+            "exit_loop.sync_position",
+            inst_id,
+            "enter",
+            trace_id=_trace_id,
+            data={"pos_side": pos_side, "position_usdt": pos.get("position_usdt")},
+        )
+
         current_price = float(pos.get("current_price") or 0.0)
         position_usdt = float(pos.get("position_usdt") or 0.0)
 
@@ -287,7 +298,9 @@ class EvolutionExitLoop:
             "r_vector": {},
             "ess": 0.5,
             "ftc_track": "exploit",
-            "regime": "",
+            "regime": str(pos.get("regime") or ""),
+            "d_star": str(pos.get("d_star") or ""),
+            "trace_id": _trace_id,
             "atr_pct": 0.02,
             "current_sl_px": 0.0,
             "current_tp_px": 0.0,
@@ -315,6 +328,19 @@ class EvolutionExitLoop:
             f"conf={decision.confidence:.2f} upl={upl:.2f}({upl_ratio:.2%}) "
             f"age={int(age_sec / 60)}min",
             "INFO",
+        )
+        emit_stage(
+            "E1",
+            "exit_loop.decide",
+            inst_id,
+            "pass",
+            trace_id=_trace_id,
+            data={
+                "action": decision.action,
+                "reason": decision.reason,
+                "confidence": round(float(decision.confidence or 0.0), 6),
+                "upl_ratio": round(float(upl_ratio), 6),
+            },
         )
 
         if on_decision is not None:
@@ -499,11 +525,28 @@ class EvolutionExitLoop:
         return max(1, int(_full * max(0.01, min(ratio, 1.0))))
 
     def _execute_close(self, pos, inst_id, coin, pos_side, ratio, decision, ctx, on_closed):
+        _trace = str(ctx.get("trace_id") or "")
         if self._dispatcher is None:
+            emit_stage(
+                "E4",
+                "exit_loop.build_exit_signal",
+                inst_id,
+                "failed",
+                trace_id=_trace,
+                data={"reason_code": "NO_GATEWAY", "pos_side": pos_side},
+            )
             return {"status": "failed", "reason": "no_gateway"}
         _sz = self._resolve_close_sz(pos, inst_id, pos_side, ratio)
         if _sz <= 0:
             self._log(f"[ExitLoop] {coin} 无法确定平仓数量，跳过", "WARN")
+            emit_stage(
+                "E4",
+                "exit_loop.build_exit_signal",
+                inst_id,
+                "failed",
+                trace_id=_trace,
+                data={"reason_code": "SIZE_UNKNOWN", "pos_side": pos_side, "ratio": ratio},
+            )
             return {"status": "failed", "reason": "size_unknown"}
 
         _sig = build_exit_decision(
@@ -516,12 +559,42 @@ class EvolutionExitLoop:
             d_star=str(ctx.get("d_star") or ""),
             regime=str(ctx.get("regime") or ""),
         )
+        _chain = str(_sig.get("decision_id") or "")
+        emit_stage(
+            "E4",
+            "exit_loop.build_exit_signal",
+            inst_id,
+            "pass",
+            chain_id=_chain,
+            decision_id=_chain,
+            trace_id=_trace,
+            data={
+                "action": _sig.get("action"),
+                "sz": _sz,
+                "pos_side": pos_side,
+                "d_star": ctx.get("d_star") or "",
+                "regime": ctx.get("regime") or "",
+            },
+        )
         _res = self._dispatcher.dispatch(_sig)
         if not _res.get("executed"):
             self._log(
                 f"[ExitLoop] {coin} {_sig['action']} 失败: "
                 f"{_res.get('reason')}({_res.get('reason_code')})",
                 "WARN",
+            )
+            emit_stage(
+                "E5",
+                "exit_loop.close",
+                inst_id,
+                "failed",
+                chain_id=_chain,
+                decision_id=_chain,
+                trace_id=_trace,
+                data={
+                    "reason_code": _res.get("reason_code"),
+                    "reason": _res.get("reason"),
+                },
             )
             return {
                 "status": "failed",
@@ -534,6 +607,16 @@ class EvolutionExitLoop:
             f"[ExitLoop] {coin} {_sig['action']} 成功 sz={_sz} decision_id={_sig['decision_id']}",
             "INFO",
         )
+        emit_stage(
+            "E5",
+            "exit_loop.close",
+            inst_id,
+            "pass",
+            chain_id=_chain,
+            decision_id=_chain,
+            trace_id=_trace,
+            data={"action": _sig["action"], "sz": _sz, "ratio": ratio},
+        )
         if ratio < 0.999:
             # P2：部分减仓后刷新剩余数量，避免下一轮用旧仓位重复减仓
             self._refresh_partial_size(pos, inst_id, pos_side, ratio, ctx)
@@ -545,6 +628,16 @@ class EvolutionExitLoop:
         if ratio >= 0.999:
             # P1-1：全平后清理持仓级状态，避免同币二次开仓继承 peak/partial/风险基准
             self._cleanup_engine_state(pos)
+        emit_stage(
+            "E6",
+            "exit_loop.settle",
+            inst_id,
+            "pass",
+            chain_id=_chain,
+            decision_id=_chain,
+            trace_id=_trace,
+            data={"ratio": ratio, "full_close": ratio >= 0.999},
+        )
         return {
             "status": "executed",
             "action": _sig["action"],

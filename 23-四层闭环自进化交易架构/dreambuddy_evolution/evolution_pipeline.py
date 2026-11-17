@@ -2089,6 +2089,9 @@ class EvolutionPipeline:
                 "optimal_path": optimal_path,
                 "path_info": path_selection.get("path_info", {}),
                 "statistical_validation": stat_val,
+                "primary_contradiction": path_selection.get("primary_contradiction"),
+                "cross_validation": path_selection.get("cross_validation"),
+                "elastic_result": path_selection.get("elastic_result"),
                 "n_paths": len(paths),
                 # 方向3: 每维度方向预测，供 ReverseDeriver 逆向推导
                 "dimension_predictions": path_selection.get("dimension_predictions", {}),

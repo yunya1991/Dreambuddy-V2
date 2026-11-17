@@ -243,6 +243,73 @@ class Collector:
             return [_metric("outbox_stuck", 0, state="error")]
         return out
 
+    # ---------- A 类交易链路事件（TD §13.4） ----------
+    def chain_metrics(self) -> list[str]:
+        runtime = self.repo / "23-四层闭环自进化交易架构/runtime"
+        cutoff_24h = _now() - 86400
+        cutoff_1h = _now() - 3600
+        rows: list[dict] = []
+        for path in sorted(runtime.glob("chain_events-*.jsonl"))[-2:]:
+            rows.extend(_tail_jsonl(path, limit=5000))
+
+        stage_counts: dict[tuple[str, str], int] = {}
+        chains: dict[str, set[str]] = {}
+        wait_reasons: dict[str, int] = {}
+        exit_size_unknown = 0
+        exit_close_failed: dict[str, int] = {}
+
+        for rec in rows:
+            ts = _iso_to_ts(str(rec.get("ts") or ""))
+            if not ts or ts < cutoff_24h:
+                continue
+            stage = str(rec.get("stage") or "?")
+            status = str(rec.get("status") or "?")
+            stage_counts[(stage, status)] = stage_counts.get((stage, status), 0) + 1
+            cid = str(rec.get("chain_id") or rec.get("trace_id") or rec.get("decision_id") or "")
+            if cid:
+                chains.setdefault(cid, set()).add(stage)
+            data = rec.get("data") if isinstance(rec.get("data"), dict) else {}
+            if stage == "N8" and status == "skip":
+                reason = str(data.get("reason_category") or "unknown")
+                wait_reasons[reason] = wait_reasons.get(reason, 0) + 1
+            if ts >= cutoff_1h:
+                if (
+                    stage == "E4"
+                    and status == "failed"
+                    and str(data.get("reason_code")) == "SIZE_UNKNOWN"
+                ):
+                    exit_size_unknown += 1
+                if stage == "E5" and status == "failed":
+                    rc = str(data.get("reason_code") or "UNKNOWN")
+                    exit_close_failed[rc] = exit_close_failed.get(rc, 0) + 1
+
+        out: list[str] = []
+        for (stage, status), n in sorted(stage_counts.items()):
+            out.append(_metric("chain_stage_total", n, stage=stage, status=status))
+        if chains:
+            signal_chains = [stages for stages in chains.values() if "N10" in stages]
+            if signal_chains:
+                complete = sum(1 for stages in signal_chains if {"N12", "N14"} <= stages)
+                out.append(
+                    _metric("chain_completion_ratio", round(complete / len(signal_chains), 4))
+                )
+                for required in ("N12", "N14"):
+                    missing = sum(1 for stages in signal_chains if required not in stages)
+                    out.append(_metric("chain_missing_stage_total", missing, stage=required))
+        wait_total = sum(wait_reasons.values())
+        if wait_total:
+            out.append(_metric("chain_wait_events_total", wait_total))
+            for reason, n in sorted(wait_reasons.items()):
+                out.append(_metric("chain_wait_total", n, reason=reason))
+            broken = wait_reasons.get("unknown", 0)
+            out.append(_metric("wait_vs_broken_ratio", round(broken / wait_total, 4)))
+            out.append(_metric("chain_broken_total", broken))
+
+        out.append(_metric("exit_size_unknown_total", exit_size_unknown))
+        for rc, n in sorted(exit_close_failed.items()):
+            out.append(_metric("exit_close_failed_total", n, reason_code=rc))
+        return out
+
     # ---------- 22 契约告警 ----------
     def contract_metrics(self) -> list[str]:
         path = self.repo / "22-执行引擎中心/audit/contract_violations.jsonl"
@@ -372,6 +439,7 @@ class Collector:
             self.outbox_metrics(),
             self.contract_metrics(),
             self.semantic_metrics(),
+            self.chain_metrics(),
             self.artifact_metrics(),
             self.cell_metrics(),
         ):

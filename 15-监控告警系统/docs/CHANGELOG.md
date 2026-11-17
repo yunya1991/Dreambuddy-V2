@@ -1,6 +1,6 @@
 # 变更记录 — 15-监控告警系统
 
-> **版本**: v2.6 | **更新日期**: 2026-11-17
+> **版本**: v2.8 | **更新日期**: 2026-11-17
 
 ---
 
@@ -8,6 +8,8 @@
 
 | 版本 | 日期 | 变更内容 | 影响范围 |
 |------|------|----------|----------|
+| v2.8 | 2026-11-17 | 落地 §13 链路监控：chain_events 事件流；修复 G1–G7；导出器新增 chain_*/exit_* 指标；新增 ChainBroken/ChainCompletionLow/ChainWaitBroken/ExitSizeUnknown/ExitCloseFailed 规则 | 代码+配置 |
+| v2.7 | 2026-11-17 | 技术设计新增第 13 章：A/B 分类监控原则；23 交易链路 N0–N15 逐节点监控方案；`chain_event.v1` 链路汇总与复盘；确认 6 个链路缺口（无 trace_id、pc/cv 旁路、regime/ri 退化、审计仅 submit、双 decision_id） | 文档 |
 | v2.6 | 2026-11-17 | 23 契约补齐 v1.2（payload 12 字段 + 顶层执行扩展）；审计携带完整 signal；导出器按 payload 校验并消除无信号误报 | 代码+契约 |
 | v2.5 | 2026-11-17 | 上线业务指标导出器(:9101)与 Prometheus/Alertmanager 栈；23 信号/发件箱/产物/单元指标已入库，端到端联调 am=200 | 代码+运维 |
 | v2.4 | 2026-11-17 | 告警通道接通：复用 hermes-gateway 飞书应用凭证，部署 receiver(:9098) + watchdog(5min)；联调消息已送达 Trading-Desk | 代码+运维 |
@@ -22,6 +24,42 @@
 ---
 
 ## 详细变更
+
+### v2.8 — 2026-11-17
+
+**链路事件（23）**
+- 新增 `execution/chain_events.py`：`emit_stage()` / `new_trace_id()`，写入 `runtime/chain_events-YYYYMMDD.jsonl`，按 UTC 日轮转，全异常 FAIL-OPEN
+- 开仓：N1 trace、N5 主矛盾、N6 交叉验证、N7 统计验证、N8 决策（含主动 WAIT 归因）、N10 信号构造、N11 闸门、N12 最终信号、N13 发件箱、N14 网关
+- 平仓：E0 持仓同步、E1 离场决策、E4 平仓信号（含 SIZE_UNKNOWN）、E5 执行、E6 落账
+
+**缺口修复**
+- G1：推理段 trace_id 贯穿到 `payload.trace_id`
+- G2：pc/cv 优先取本次 `path_info`，未通过验证时也保留；私有属性仅兜底
+- G3/G4：`regime/ri/l4_v` 透传；入口 `ri` 以 confidence 兜底
+- G5：WAIT/拦截/失败均落事件，不再只有 submit 审计
+- G6：`payload.chain_id` + `upstream_decision_id` 串联双 decision_id
+- G7：平仓链补 `d_star/regime`，平仓失败与数量未知可告警
+
+**监控**
+- `business_metrics_exporter.py` 新增 `chain_metrics()`：`chain_stage_total`、`chain_completion_ratio`、`chain_missing_stage_total`、`chain_wait_total`、`wait_vs_broken_ratio`、`chain_broken_total`、`exit_size_unknown_total`、`exit_close_failed_total`
+- 规则新增 `ChainBroken`、`ChainCompletionLow`、`ChainWaitBroken`、`ExitSizeUnknown`(P0)、`ExitCloseFailed`(P0)
+
+### v2.7 — 2026-11-17
+
+**分类监控原则（TD §13.1）**
+- A 类交易链路：沿信号传递逐节点监控 + 链路汇总/复盘（价值最高），每节点四态 `enter/pass/blocked/failed/skip`
+- B 类其他模块：结果导向，存活 + 产物新鲜度 + 核心计数，允许粗糙、允许抽样，不参与 P0 路由
+
+**23 链路逐节点方案（TD §13.2–13.3）**
+- N0 数据就绪 → N15 回报反馈，共 16 节点：代码入口、输入输出字段、关联键、现状观测、静默失败模式
+- 平仓并行支链 E0–E6（持仓同步/离场决策/RL 覆盖/信号构造/提交/清理），共用 N12–N15
+- 每节点指标、告警规则、级别、SLO；统一 `samples_recent>0` 与 `for:` 降噪约束
+- 确认 6 个链路缺口：G1 推理段无 trace_id、G2 pc/cv 私有属性旁路、G3 regime 未透传、G4 二次构造 ri/l4_v 退化、G5 审计仅 submit、G6 双 decision_id；平仓另有 `sz=0`/`d_star/regime` 为空缺口
+
+**链路汇总与复盘（TD §13.4）**
+- `chain_event.v1` 事件模型与 `trace_id → chain_id → upstream_decision_id → decision_id → order_id` 串联规则
+- `chain_completion_ratio`、`chain_missing_stage_total`、`chain_latency_seconds`、`wait_vs_broken_ratio` 等链路级指标
+- 落盘、留存、`chain_summary` 查询与复盘视图定义
 
 ### v2.6 — 2026-11-17
 

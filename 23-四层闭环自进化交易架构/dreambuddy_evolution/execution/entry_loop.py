@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 from typing import Any, Callable, Optional
 
+from .chain_events import emit_stage, new_trace_id
 from .decision_signal import (
     EvolutionSignalDispatcher,
     build_entry_decision,
@@ -177,6 +178,18 @@ class EvolutionEntryLoop:
         self, ctx: dict[str, Any], gate: str, reason: str, level: str = "WARN"
     ) -> dict[str, Any]:
         self._log(f"[P2-S4b] {ctx['symbol']} 开仓拦截 gate={gate} | {reason}", level)
+        _sig = ctx.get("signal") or {}
+        _payload = _sig.get("payload") or {}
+        emit_stage(
+            "N11",
+            f"entry_loop.gate.{gate}",
+            ctx.get("symbol", "?"),
+            "blocked",
+            chain_id=str(_payload.get("chain_id") or _sig.get("decision_id") or ""),
+            decision_id=str(_sig.get("decision_id") or ""),
+            trace_id=str(_payload.get("trace_id") or ""),
+            data={"gate": gate, "reason": reason, "tier": ctx.get("tier")},
+        )
         if self.on_blocked is not None:
             try:
                 self.on_blocked(ctx, gate, reason)
@@ -219,6 +232,17 @@ class EvolutionEntryLoop:
             "signal": signal or {},
             "kline": kline or {},
         }
+        _sig_meta = ctx["signal"] or {}
+        _sig_payload = _sig_meta.get("payload") or {}
+        ctx["trace_id"] = str(
+            _sig_payload.get("trace_id") or _sig_meta.get("trace_id") or new_trace_id(symbol)
+        )
+        ctx["chain_id"] = str(
+            _sig_payload.get("chain_id")
+            or _sig_meta.get("decision_id")
+            or _sig_payload.get("decision_id")
+            or ""
+        )
         _check = self._check_gates(ctx)
         if _check is not None:
             return _check
@@ -231,6 +255,20 @@ class EvolutionEntryLoop:
         if _sized.get("status") == "blocked":
             return _sized
         ctx.update(_sized)
+        emit_stage(
+            "N11",
+            "entry_loop.gates",
+            ctx["symbol"],
+            "pass",
+            chain_id=str(ctx.get("chain_id") or ""),
+            trace_id=str(ctx.get("trace_id") or ""),
+            data={
+                "tier": ctx["tier"],
+                "u_open": round(float(ctx.get("u_open") or 0.0), 6),
+                "notional_usdt": ctx.get("notional_usdt"),
+                "quota_attr": ctx.get("quota_attr"),
+            },
+        )
 
         return self._dispatch(ctx)
 
@@ -431,6 +469,15 @@ class EvolutionEntryLoop:
                 f"exec_path=23.entry_loop",
                 "WARN",
             )
+            emit_stage(
+                "N11",
+                "entry_loop.size.floor",
+                _sym,
+                "blocked",
+                chain_id=str(ctx.get("chain_id") or ""),
+                trace_id=str(ctx.get("trace_id") or ""),
+                data={"gate": "floor_rejected", "notional_usdt": _notional, "tier": _tier},
+            )
             return {
                 "status": "blocked",
                 "gate": "floor_rejected",
@@ -622,9 +669,11 @@ class EvolutionEntryLoop:
             source_tag=ctx["source_tag"],
             strategy="evolution",
             d_star=str(ctx["d_star"] or ""),
-            ri=float(_sig_payload.get("ri") or _signal_meta.get("ri") or 0.0),
+            ri=float(_sig_payload.get("ri") or ctx.get("confidence") or 0.0),
             l4_v=float(_sig_payload.get("l4_v") or _signal_meta.get("l4_v") or 0.0),
-            regime=str(_sig_payload.get("regime") or _signal_meta.get("regime") or ""),
+            regime=str(
+                _sig_payload.get("regime") or _signal_meta.get("regime") or ctx.get("regime") or ""
+            ),
             primary_contradiction=_sig_payload.get("primary_contradiction")
             or _signal_meta.get("primary_contradiction"),
             contradiction_shift=_sig_payload.get("contradiction_shift")
@@ -634,6 +683,7 @@ class EvolutionEntryLoop:
             or _signal_meta.get("cross_validation"),
             path=_sig_payload.get("path") or _signal_meta.get("path"),
             position_mult=float(ctx.get("u_open") or 1.0),
+            trace_id=str(ctx.get("trace_id") or ""),
         )
         _decision["payload"]["coin"] = _sym
         _decision["payload"]["position_mult"] = ctx["u_open"]
@@ -644,9 +694,46 @@ class EvolutionEntryLoop:
         _incoming = ctx.get("signal") or {}
         if _incoming.get("decision_id"):
             _decision["payload"]["upstream_decision_id"] = _incoming["decision_id"]
+        _chain_id = str(
+            _decision["payload"].get("upstream_decision_id")
+            or _incoming.get("decision_id")
+            or _decision.get("decision_id")
+            or ""
+        )
+        _decision["payload"]["chain_id"] = _chain_id
+        ctx["chain_id"] = _chain_id
+        emit_stage(
+            "N12",
+            "entry_loop.dispatch.build_signal",
+            _sym,
+            "pass",
+            chain_id=_chain_id,
+            decision_id=str(_decision.get("decision_id") or ""),
+            upstream_decision_id=str(_decision["payload"].get("upstream_decision_id") or ""),
+            trace_id=str(ctx.get("trace_id") or ""),
+            data={
+                "action": _decision.get("action"),
+                "tier": ctx["tier"],
+                "notional_usdt": _notional,
+                "confidence": round(float(ctx["confidence"]), 6),
+                "ri": _decision["payload"].get("ri"),
+                "l4_v": _decision["payload"].get("l4_v"),
+                "regime": _decision["payload"].get("regime"),
+            },
+        )
 
         if self._dispatcher is None:
             self._log(f"[P2-S4b] {_sym} 无 22 网关，放弃下单", "WARN")
+            emit_stage(
+                "N14",
+                "gateway.submit",
+                _sym,
+                "failed",
+                chain_id=_chain_id,
+                decision_id=str(_decision.get("decision_id") or ""),
+                trace_id=str(ctx.get("trace_id") or ""),
+                data={"reason_code": "NO_GATEWAY"},
+            )
             return {
                 "status": "failed",
                 "reason": "no_gateway_injected",

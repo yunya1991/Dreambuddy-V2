@@ -267,6 +267,53 @@ groups:
         annotations:
           summary: "23 交叉验证处于降级模式，检查 degraded_mode 与置信度乘数"
 
+      - alert: ChainBroken
+        expr: dreambuddy_chain_missing_stage_total > 0
+        for: 30m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "23 交易链路存在缺失节点（N10 有信号但 N12/N14 未到达）"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#134-链路汇总与复盘a-类的核心价值"
+
+      - alert: ChainCompletionLow
+        expr: dreambuddy_chain_completion_ratio < 0.95
+        for: 1h
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "23 交易链路完整率 <95%（部分链路静默中断）"
+
+      - alert: ChainWaitBroken
+        expr: dreambuddy_chain_broken_total > 0
+        for: 30m
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "存在无法归因的 WAIT（非策略主动不交易），链路可能断在推理段"
+
+      - alert: ExitSizeUnknown
+        expr: dreambuddy_exit_size_unknown_total > 0
+        for: 10m
+        labels:
+          severity: P0
+          channel: alert
+        annotations:
+          summary: "平仓数量无法确定，持仓风险未释放"
+
+      - alert: ExitCloseFailed
+        expr: dreambuddy_exit_close_failed_total > 0
+        for: 10m
+        labels:
+          severity: P0
+          channel: alert
+        annotations:
+          summary: "平仓/减仓执行失败，持仓风险持续暴露"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#132-23-交易链路信号环节全景n0n15"
+
   - name: trading
     rules:
       - alert: ReconcileBreak

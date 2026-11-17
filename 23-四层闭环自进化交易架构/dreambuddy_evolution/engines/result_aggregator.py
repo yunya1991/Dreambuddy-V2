@@ -10,6 +10,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from dreambuddy_evolution.execution.chain_events import emit_stage
+
 logger = logging.getLogger(__name__)
 
 
@@ -75,6 +77,8 @@ class ResultAggregator:
         cross_validation: dict | None = None,
         elastic_result: dict | None = None,
         regime: str = "",
+        l4_v: float = 0.0,
+        trace_id: str | None = None,
     ) -> None:
         """调用建仓回调（FAIL-OPEN）。
 
@@ -98,14 +102,44 @@ class ResultAggregator:
                     atr_pct=atr_pct,
                     source_tag=source_tag or "",
                     d_star=d_star,
+                    ri=float(ri or 0.0),
+                    l4_v=float(l4_v or 0.0),
                     regime=regime,
                     primary_contradiction=primary_contradiction,
                     cross_validation=cross_validation,
                     elastic_result=elastic_result,
+                    trace_id=trace_id,
                 )
                 _signal["payload"]["position_mult"] = float(position_mult)
+                emit_stage(
+                    "N10",
+                    "result_aggregator.build_signal",
+                    symbol,
+                    "pass",
+                    chain_id=_signal.get("decision_id"),
+                    decision_id=_signal.get("decision_id"),
+                    trace_id=trace_id,
+                    data={
+                        "action": action,
+                        "tier": tier,
+                        "d_star": d_star,
+                        "ri": round(float(ri or 0.0), 6),
+                        "l4_v": round(float(l4_v or 0.0), 6),
+                        "regime": regime,
+                        "pc_present": bool(primary_contradiction),
+                        "cv_present": bool(cross_validation),
+                    },
+                )
             except Exception as _sig_e:  # noqa: BLE001 — 信号构造失败不阻断旧链路
                 logger.debug("[FO] build_entry_decision fail: %s", _sig_e)
+                emit_stage(
+                    "N10",
+                    "result_aggregator.build_signal",
+                    symbol,
+                    "failed",
+                    trace_id=trace_id,
+                    data={"action": action, "error": str(_sig_e)},
+                )
 
             cb_kwargs = dict(  # noqa: C408
                 symbol=symbol,

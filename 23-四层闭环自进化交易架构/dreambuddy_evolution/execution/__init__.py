@@ -1,5 +1,6 @@
 """23 自进化域执行出口：向 22-执行引擎中心 提交 FinalDecisionSignal。"""
 
+from .chain_events import emit_stage, new_trace_id
 from .decision_signal import (
     SOURCE,
     EvolutionSignalDispatcher,
@@ -21,4 +22,6 @@ __all__ = [
     "build_entry_decision",
     "build_exit_decision",
     "compute_sl_tp_pct",
+    "emit_stage",
+    "new_trace_id",
 ]
