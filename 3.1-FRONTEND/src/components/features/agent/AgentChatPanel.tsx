@@ -296,9 +296,19 @@ function AgentChatPanelInner({
 }
 
 /** 外层按 sessionId 重挂载：useChat 的初始 messages 只在挂载时生效 */
-export function AgentChatPanel({ sessionId, title }: AgentChatPanelProps) {
+export function AgentChatPanel({
+  sessionId,
+  title,
+  agentEnabled,
+}: AgentChatPanelProps) {
   return (
-    <AgentChatPanelInner key={sessionId} sessionId={sessionId} title={title} />
+    // agentEnabled 必须透传：丢弃会让服务端永远收到 false，开关打开也提示「未启用」
+    <AgentChatPanelInner
+      key={sessionId}
+      sessionId={sessionId}
+      title={title}
+      agentEnabled={agentEnabled}
+    />
   );
 }
 
