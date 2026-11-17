@@ -316,7 +316,8 @@ class KlineEventHandler:
                     setattr(self._router, _a, _v)
 
             symbol = str(kline_data.get("symbol", "UNKNOWN"))
-            _trace_id = new_trace_id(symbol)
+            # G1：优先复用上游（N0）已生成的 trace_id，保证推理段可串联
+            _trace_id = str(kline_data.get("trace_id") or "") or new_trace_id(symbol)
             emit_stage(
                 "N1",
                 "kline_event_handler.on_kline_close",
@@ -333,6 +334,35 @@ class KlineEventHandler:
             recv = self._receiver.receive_kline(kline_data, self._rv)
             r_vector = recv["r_vector"]
             agi_signature = recv["agi_signature"]
+
+            # ============ N2 阻力向量 / N3 高阶因子调制 观测 ============
+            _rv_flags = r_vector.get("fallback_flags") or {}
+            _rv_n_fb = len(_rv_flags) if isinstance(_rv_flags, dict) else 0
+            emit_stage(
+                "N2",
+                "resistance_vector.calculate",
+                symbol,
+                "degraded" if _rv_n_fb >= 3 else "pass",
+                trace_id=_trace_id,
+                data={
+                    "R_up": r_vector.get("R_up"),
+                    "R_down": r_vector.get("R_down"),
+                    "R_smooth": r_vector.get("R_smooth"),
+                    "R_flow": r_vector.get("R_flow"),
+                    "R_reflexivity": r_vector.get("R_reflexivity"),
+                    "quality_score": r_vector.get("quality_score"),
+                    "fallback_flags": sorted(_rv_flags) if isinstance(_rv_flags, dict) else [],
+                },
+            )
+            _hif = r_vector.get("high_order_factors")
+            emit_stage(
+                "N3",
+                "pipeline.high_order_factors",
+                symbol,
+                "pass" if _hif else "skip",
+                trace_id=_trace_id,
+                data={"high_order_factors": _hif or {}},
+            )
 
             # ============ AGI 增强点 B: PathIntegralEngine 蒙特卡洛路径复核 ============
             agi_path_integral = None
@@ -434,7 +464,23 @@ class KlineEventHandler:
             except Exception as e:
                 logger.debug("[PathLayer] %s outer crash: %s", symbol, e)
 
-            # ============ 3c. N5/N6 语义节点事件 ============
+            # ============ 3c. N4/N5/N6/N7 语义节点事件 ============
+            emit_stage(
+                "N4",
+                "pipeline.path_discovery",
+                symbol,
+                "pass" if int(path_info.get("path_count") or 0) > 0 else "skip",
+                trace_id=_trace_id,
+                data={
+                    "path_count": int(path_info.get("path_count") or 0),
+                    "optimal_source": path_info.get("optimal_source"),
+                    "optimal_score": path_info.get("optimal_score"),
+                    "validated": bool(path_info.get("validated")),
+                    "low_conviction": bool(path_info.get("low_conviction")),
+                    "d_star_original": path_info.get("d_star_original"),
+                    "d_star_adjusted": path_info.get("d_star_adjusted"),
+                },
+            )
             _pc = path_info.get("primary_contradiction")
             _cv = path_info.get("cross_validation")
             emit_stage(
@@ -812,6 +858,19 @@ class KlineEventHandler:
                     l4_v = _pipeline.bellman.get_v(symbol)
             except Exception as _e:
                 logger.warning("[FO] L3/L4/AGI-H/I record crash(FAIL-OPEN): %s", _e)
+
+            # ============ N9 L3/L4 记录观测 ============
+            emit_stage(
+                "N9",
+                "pipeline.l3_l4_record",
+                symbol,
+                "pass" if int(l3_sample_count or 0) > 0 else "skip",
+                trace_id=_trace_id,
+                data={
+                    "l3_sample_count": int(l3_sample_count or 0),
+                    "l4_v": round(float(l4_v or 0.0), 6),
+                },
+            )
 
             # ===== 事件驱动策略 · 影子模式 =====
             try:

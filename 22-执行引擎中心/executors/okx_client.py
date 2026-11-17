@@ -946,6 +946,7 @@ class OKXSimulatedClient:
         sz: float = None,
         reason: str = "",
         tag: str = "",
+        source: str = "",
     ) -> Dict:
         """
         设置止盈止损单（OKX algo order: OCO 条件单）

@@ -709,6 +709,18 @@ class EvolutionPipeline:
                 "R_down_raw": round(R_down, 6),
                 "R_down_mod": round(R_down_mod, 6),
             }
+            try:
+                from dreambuddy_evolution.execution.chain_events import emit_stage
+
+                emit_stage(
+                    "N3",
+                    "pipeline.high_order_factors",
+                    symbol,
+                    "pass",
+                    data={"high_order_factors": r_out["high_order_factors"]},
+                )
+            except Exception:  # noqa: BLE001 — 观测失败不影响调制
+                pass
 
             return r_out
         except Exception as e:

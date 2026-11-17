@@ -35,6 +35,7 @@ for _p in (
 from dreambuddy_evolution.adapters.data_pipeline import DataPipelineAdapter  # noqa: E402
 from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler  # noqa: E402
 from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline  # noqa: E402
+from dreambuddy_evolution.execution.chain_events import emit_stage, new_trace_id  # noqa: E402
 from dreambuddy_evolution.execution.entry_loop import EvolutionEntryLoop  # noqa: E402
 from dreambuddy_evolution.execution.ledger_guards import LedgerGuards  # noqa: E402
 
@@ -68,11 +69,20 @@ class DataCenterMarketClient:
         candles_fn: Optional[Callable[..., List[dict]]] = None,
         ticker_fn: Optional[Callable[..., Optional[dict]]] = None,
         positions_fn: Optional[Callable[[], List[dict]]] = None,
+        raw_client: Any = None,
     ) -> None:
         self._bar = bar
         self._candles_fn = candles_fn
         self._ticker_fn = ticker_fn
         self._positions_fn = positions_fn
+        # 22 OKX 客户端透传：供订单簿公开 REST（auth=False）等直连数据使用
+        self._raw = raw_client
+
+    def _get(self, path: str, params: Optional[dict] = None, auth: bool = True) -> Dict[str, Any]:
+        """透传 22 OKX 客户端 REST。仅用于公开端点（订单簿/多空比）。"""
+        if self._raw is None:
+            raise RuntimeError("no raw okx client")
+        return self._raw._get(path, params, auth=auth)
 
     @staticmethod
     def to_ccxt_symbol(inst_id: str) -> str:
@@ -237,6 +247,25 @@ class EntryRunner:
             try:
                 kline_data = self.assemble(_coin)
                 _close = kline_data.get("close")
+                _trace_id = new_trace_id(_coin)
+                kline_data["trace_id"] = _trace_id
+                emit_stage(
+                    "N0",
+                    "entry_runner.assemble",
+                    _coin,
+                    "pass" if (_close is not None and len(_close) >= 20) else "skip",
+                    trace_id=_trace_id,
+                    data={
+                        "kline_bars": int(len(_close)) if _close is not None else 0,
+                        "funding_rate": kline_data.get("funding_rate"),
+                        "open_interest": kline_data.get("open_interest"),
+                        "long_short_ratio": kline_data.get("long_short_ratio"),
+                        "orderbook_ready": (
+                            kline_data.get("bids_depth") is not None
+                            and kline_data.get("asks_depth") is not None
+                        ),
+                    },
+                )
                 if _close is None or len(_close) < 20:
                     logger.warning("%s 行情不足（close 缺失或 <20 根），跳过", _coin)
                     _failed += 1
@@ -306,7 +335,7 @@ def build_runtime(dry_run: bool, symbols: List[str], bar: str = "1H"):
     raw = OKXSimulatedClient(cfg)
     gateway = TradeExecutionGateway(okx_client=raw, shadow_only=bool(dry_run))
     guards = LedgerGuards(gateway)
-    market = DataCenterMarketClient(bar=bar, positions_fn=gateway.list_positions)
+    market = DataCenterMarketClient(bar=bar, positions_fn=gateway.list_positions, raw_client=raw)
     adapter = DataPipelineAdapter(
         okx_client=market,
         trader=None,

@@ -424,7 +424,17 @@ class EvolutionExitLoop:
             return None
 
     def _apply_rl_override(self, decision, ctx: dict[str, Any], policy):
+        _trace = str(ctx.get("trace_id") or "")
+        _node_sym = str(ctx.get("inst_id") or ctx.get("symbol") or "?")
         if policy is None:
+            emit_stage(
+                "E2",
+                "exit_loop.rl_override",
+                _node_sym,
+                "skip",
+                trace_id=_trace,
+                data={"reason": "no_policy"},
+            )
             return decision
         try:
             import numpy as np
@@ -450,7 +460,22 @@ class EvolutionExitLoop:
                 f"shielded={_params.get('shielded', False)}",
                 "DEBUG",
             )
-            if _conf <= 0.7 or _action == "hold" or _action == decision.action:
+            _applied = not (_conf <= 0.7 or _action == "hold" or _action == decision.action)
+            emit_stage(
+                "E2",
+                "exit_loop.rl_override",
+                _node_sym,
+                "pass" if _applied else "skip",
+                trace_id=_trace,
+                data={
+                    "rule_action": decision.action,
+                    "rl_action": _action,
+                    "confidence": round(_conf, 6),
+                    "shielded": bool(_params.get("shielded", False)),
+                    "applied": _applied,
+                },
+            )
+            if not _applied:
                 return decision
             from dreambuddy_evolution.engines.exit_engine.exit_decision import ExitDecision
 
@@ -463,11 +488,29 @@ class EvolutionExitLoop:
                 confidence=max(decision.confidence, _conf),
             )
         except Exception as e:  # noqa: BLE001 — RL 失败保留规则决策
+            emit_stage(
+                "E2",
+                "exit_loop.rl_override",
+                _node_sym,
+                "failed",
+                trace_id=_trace,
+                data={"error": str(e)},
+            )
             self._log(f"[ExitLoop] {ctx.get('symbol')} RL 推理异常(FAIL-OPEN): {e}", "WARN")
             return decision
 
     def _record_shadow(self, shadow, coin: str, ctx: dict[str, Any], decision, upl_ratio: float):
+        _trace = str(ctx.get("trace_id") or "")
+        _node_sym = str(ctx.get("inst_id") or coin)
         if shadow is None:
+            emit_stage(
+                "E3",
+                "exit_loop.shadow_record",
+                _node_sym,
+                "skip",
+                trace_id=_trace,
+                data={"reason": "no_shadow"},
+            )
             return
         try:
             if decision.action == "hold":
@@ -503,7 +546,23 @@ class EvolutionExitLoop:
                 reward=_reward,
                 next_state=None,
             )
+            emit_stage(
+                "E3",
+                "exit_loop.shadow_record",
+                _node_sym,
+                "pass",
+                trace_id=_trace,
+                data={"action": decision.action, "reward": round(float(_reward or 0.0), 6)},
+            )
         except Exception as e:  # noqa: BLE001
+            emit_stage(
+                "E3",
+                "exit_loop.shadow_record",
+                _node_sym,
+                "failed",
+                trace_id=_trace,
+                data={"error": str(e)},
+            )
             self._log(f"[ExitLoop] {coin} ShadowRL 记录异常(FAIL-OPEN): {e}", "DEBUG")
 
     def _resolve_close_sz(self, pos, inst_id: str, pos_side: str, ratio: float) -> float:

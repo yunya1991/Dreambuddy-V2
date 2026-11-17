@@ -27,6 +27,7 @@ for _p in (
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
+from dreambuddy_evolution.execution.chain_events import emit_stage  # noqa: E402
 from dreambuddy_evolution.execution.exit_loop import EvolutionExitLoop  # noqa: E402
 
 logger = logging.getLogger("exit23")
@@ -294,6 +295,22 @@ def run_once(loop: EvolutionExitLoop, gateway: Any, okx: Any, args) -> Dict[str,
             _r = TradeSettlementBridge().on_trade_settled(rec)
             logger.info(
                 "[settle] %s cs=%s ess_delta=%s", inst_id, _r.get("cs"), _r.get("ess_delta")
+            )
+            emit_stage(
+                "N15",
+                "exit_runner.settlement_bridge",
+                inst_id,
+                "pass",
+                chain_id=str(ctx.get("chain_id") or ""),
+                decision_id=str(ctx.get("decision_id") or ""),
+                trace_id=str(ctx.get("trace_id") or ""),
+                data={
+                    "pnl": round(float(rec.pnl or 0.0), 6),
+                    "pnl_pct": round(float(rec.pnl_pct or 0.0), 6),
+                    "exit_reason": rec.exit_reason,
+                    "cs": _r.get("cs"),
+                    "ess_delta": _r.get("ess_delta"),
+                },
             )
         except Exception as exc:  # noqa: BLE001 — 反思失败不影响已完成的平仓
             logger.debug("[settle] 结算反思失败(FAIL-OPEN): %s", exc)

@@ -1028,16 +1028,16 @@ SLO 建议：信号 schema 一致率 ≥99%；信号→网关 p95 ≤2s；成交
 
 | 节点 | 环节 | 代码入口 | 输入 | 输出（关键字段） | 关联键 | 现状可观测 | 静默失败模式 |
 |---|---|---|---|---|---|---|---|
-| N0 | 数据就绪 | `scripts/entry_runner.py`、18 `data_center.db`、19 DAL | symbol、K 线、微观结构 | `market_data{kline_data, funding_rate, oi}` | `(symbol, kline_ts)` | 文件 mtime、行数 | 空 K 线 → 下游默认值 |
-| N1 | 引擎调度 | `engines/kline_event_handler.py` `on_kline` → `_run_path_discovery` | K 线事件 | `action`、`d_star`、`ri`、`position_mult` | 无 trace_id（**缺口**） | 日志 `[PathDiscovery]` | 异常被 FAIL-OPEN 吞掉，周期静默跳过 |
-| N2 | L1 阻力向量 | `core/resistance_vector.py` `calculate` | market_data + 上轮主矛盾 | `R_up/R_down/R_smooth/R_flow/R_reflexivity/quality_score` | 无 | 无指标（仅内存） | NaN/全 0 → d* 恒 WAIT |
-| N3 | 高阶因子调制 | `evolution_pipeline._apply_high_order_factors` | R 向量、子系统桥 | 调制后 R 向量 | 无 | 无 | 桥不可用 → 静默跳过 |
-| N4 | 路径发现 | `_discover_paths` | R 向量、市场数据 | `paths[]`（source/direction/score） | 无 | 路径条数日志 | 路径为空 → 统计验证失败 → WAIT |
+| N0 | 数据就绪 | `scripts/entry_runner.py`、18 `data_center.db`、19 DAL | symbol、K 线、微观结构 | `market_data{kline_data, funding_rate, oi}` | `(symbol, kline_ts)` | `chain_events` N0（bars/funding/oi/lsr/orderbook 就绪）+ 文件 mtime | 空 K 线 → 下游默认值 |
+| N1 | 引擎调度 | `engines/kline_event_handler.py` `on_kline` → `_run_path_discovery` | K 线事件 | `action`、`d_star`、`ri`、`position_mult` | `trace_id`（N0 生成，推理段贯穿） | `chain_events` N1 + 日志 `[PathDiscovery]` | 异常被 FAIL-OPEN 吞掉，周期静默跳过 |
+| N2 | L1 阻力向量 | `core/resistance_vector.py` `calculate` | market_data + 上轮主矛盾 | `R_up/R_down/R_smooth/R_flow/R_reflexivity/quality_score` | `trace_id` | `chain_events` N2（五维+quality+fallback_flags） | NaN/全 0 → d* 恒 WAIT |
+| N3 | 高阶因子调制 | `evolution_pipeline._apply_high_order_factors` | R 向量、子系统桥 | 调制后 R 向量 | `trace_id` | `chain_events` N3（pass/skip） | 桥不可用 → 静默跳过 |
+| N4 | 路径发现 | `_discover_paths` | R 向量、市场数据 | `paths[]`（source/direction/score） | `trace_id` | `chain_events` N4（path_count/validated/d_star_adjusted） | 路径为空 → 统计验证失败 → WAIT |
 | N5 | 主矛盾识别 | 路径发现内 `core/primary_contradiction_detector.py` | 维度特征 | `primary_contradiction{dimension,direction,strength}` | 无（旁路 `_last_primary_contradiction`） | `[Contradiction]` 日志；快照新增 | 识别为空 → payload 为 `unknown/{}` |
 | N6 | 矛盾 Transformer 交叉验证 | `core/cross_validation_gate.py` | G 管线/A 管线结果 | `cv{confidence_mult,shift_signal,divergence_count,degraded_mode,...}` | 无（旁路 `_last_cross_validation`） | 50 周期心跳 | 门禁静默 FAIL-OPEN，无法确认是否在跑 |
 | N7 | 统计验证 | `_select_optimal_path` | 路径得分、conf_mult | `statistical_validation{validated,best_score,score_gap,low_conviction}` | 无 | `[PathDiscovery]` | 阈值/乘数联动导致长期 validated=false |
 | N8 | d* 与动作决策 | `compute_d_star` + `aligned` 判定 | R 向量、最优路径 | `d_star`、`aligned`、`action∈{long,short,light_*,WAIT}`、`level0_confidence` | 无 | `[PathDiscovery]` | 方向冲突/降级 → WAIT，无原因计数 |
-| N9 | L3/L4 记录 | `shadow_rl.record`、`bellman.td_update` | 状态、动作、reward | L3 样本、`l4_v` | `(symbol, ts)` | 样本数、l4_v | reward 占位 0，样本静默不增长 |
+| N9 | L3/L4 记录 | `shadow_rl.record`、`bellman.td_update` | 状态、动作、reward | L3 样本、`l4_v` | `trace_id` | `chain_events` N9（l3_sample_count/l4_v） | reward 占位 0，样本静默不增长 |
 | N10 | 首个信号构造（v1.2） | `engines/result_aggregator.py` → `build_entry_decision` | action/d_star/ri/pc/cv/elastic | `signal_id`、`decision_id`、payload 12 字段 | **chain_id 起点** | 无审计（仅内存） | 构造异常被吞 → 走旧回调，信号丢失 |
 | N11 | 23 闸门/定容/配额 | `execution/entry_loop.py` `_check_gates`/`_size` | 信号、账户状态、配额 | `tier`、`u_open`、`notional_usdt`、`quota_attr`、拦截原因 | chain_id | `[P2-S4b]` 日志（仅命中时） | 拦截原因分散在日志，无计数 |
 | N12 | 最终信号 + 审计 | `entry_loop._dispatch` → `build_entry_decision` → `EvolutionSignalDispatcher.dispatch` | 上下文 + 上游 payload | 新 `decision_id`、`payload.upstream_decision_id`、审计行 `stage=submit` | `upstream_decision_id`→`decision_id` | `runtime/execution_decisions.jsonl` | **二次构造丢 ri/l4_v/regime**；审计只写 submit |
@@ -1049,7 +1049,7 @@ SLO 建议：信号 schema 一致率 ≥99%；信号→网关 p95 ≤2s；成交
 
 | # | 缺口 | 位置 | 后果 | 监控应对 |
 |---|---|---|---|---|
-| G1 | 推理段无 trace_id | N1–N9 | 无法把某次 WAIT/开仓归因到具体 R 向量/路径/主矛盾 | N1 生成 `trace_id`，写入 stage event 与 `payload.trace_id`（payload 允许扩展字段） |
+| G1 | 推理段无 trace_id | N1–N9 | 无法把某次 WAIT/开仓归因到具体 R 向量/路径/主矛盾 | **已落地**：N0 生成 `trace_id` → N1 透传 → N2/N3/N4/N7/N8/N9 事件均携带 |
 | G2 | pc/cv 走私有属性旁路 | `_last_primary_contradiction/_last_cross_validation` | 批量多 symbol 时 last-write-wins，可能张冠李戴 | stage event 显式携带 `symbol+trace_id`；后续改为返回值透传 |
 | G3 | 上游 regime 未传 | `kline_event_handler._trigger_build_position` 未传 `regime` | 最终 payload `regime` 为空/UNKNOWN | N10 指标 `signal_regime_missing_ratio` |
 | G4 | 二次构造参数退化 | `entry_loop._dispatch` 从上游 payload 取 `ri/l4_v/regime` | 上游 payload 本身就是 0/空 → 最终 `ri=0`，与顶层 confidence 不一致 | N12 校验 `ri ≈ confidence`、`regime != ""` |
@@ -1061,9 +1061,9 @@ SLO 建议：信号 schema 一致率 ≥99%；信号→网关 p95 ≤2s；成交
 | 节点 | 环节 | 代码入口 | 输出（关键字段） | 关联键 | 静默失败模式 |
 |---|---|---|---|---|---|
 | E0 | 持仓同步/对账 | `exit_runner.run_once` → `gateway.reconcile_ledger()` → `exit_loop.run` | `pos{inst_id,pos_side,entry_price,upl_ratio,position_usdt,age}` | `inst_id+pos_side` | 幽灵仓（交易所已平、账本未平）静默跳过 |
-| E1 | 离场决策 | `engines/exit_engine.decide` | `decision{action∈hold/force_close/partial_close/adjust_sl_tp/trailing, reason, confidence, params}` | 无 | 长期 hold / 异常 action 被吞 |
-| E2 | RL 覆盖 | `_apply_rl_override` | 修正后 action | 无 | 策略覆盖无记录，无法复盘 |
-| E3 | 影子记录 | `_record_shadow` | shadow 样本、reward | symbol | 样本不增长 |
+| E1 | 离场决策 | `engines/exit_engine.decide` | `decision{action∈hold/force_close/partial_close/adjust_sl_tp/trailing, reason, confidence, params}` | `trace_id`；`chain_events` E1 | 长期 hold / 异常 action 被吞 |
+| E2 | RL 覆盖 | `_apply_rl_override` | 修正后 action | `trace_id`；`chain_events` E2（rule/rl action+confidence+applied） | 策略覆盖无记录，无法复盘 |
+| E3 | 影子记录 | `_record_shadow` | shadow 样本、reward | `trace_id`；`chain_events` E3（action/reward） | 样本不增长 |
 | E4 | 平仓信号构造 | `build_exit_decision` + `_resolve_close_sz`/`_lot_sz` | `decision_id`、`action=close/reduce`、`sz`（交易所→账本→名义回退，按 lotSz 对齐）、`pos_side` | **chain_id（平仓链）** | `sz=0` 无法确定数量 → 跳过平仓 |
 | E5 | 提交/风控/成交 | `EvolutionSignalDispatcher.dispatch` → 22 → 13（平仓例外） | `executed/reason_code/order_result` | decision_id | 平仓失败仅日志，持仓风险继续暴露 |
 | E6 | 部分减仓刷新/全平清理/落账 | `_refresh_partial_size`、`_cleanup_engine_state`、`on_closed` | 剩余仓位、PnL、反馈样本 | decision_id | 部分减仓后数量未刷新 → 重复减仓；全平未清理 → 继承旧状态 |

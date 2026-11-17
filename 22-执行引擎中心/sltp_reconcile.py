@@ -28,6 +28,8 @@ _DEFAULT_AUDIT = _REPO_ROOT / "22-执行引擎中心" / "audit" / "sltp_reconcil
 SL_PCT = 0.05
 TP_PCT = 0.08
 BREAKEVEN_UPL_PCT = 3.0
+# 审计来源标签：区分「22 全局兜底补挂」与 11/23 主动挂单
+SOURCE_TAG = "22-sltp_reconcile"
 
 
 def _audit(record: dict[str, Any], audit_path: Path | None) -> None:
@@ -53,6 +55,7 @@ def _summary(
     _audit(
         {
             "kind": "summary",
+            "source": SOURCE_TAG,
             "patched": patched,
             "skipped": skipped,
             "failed": failed,
@@ -175,10 +178,13 @@ def reconcile_sltp(
                 stop_loss_px=0 if has_sl else round(sl_px, 6),
                 take_profit_px=0 if has_tp else round(tp_px, 6),
                 reason=f"sltp_reconcile:avg={avg_px:.2f} upl={upl_pct:.1f}%",
+                source=SOURCE_TAG,
             )
             ok = bool(isinstance(result, dict) and result.get("ok"))
             _audit(
                 {
+                    "kind": "patch",
+                    "source": SOURCE_TAG,
                     "inst_id": inst_id,
                     "pos_side": pos_side,
                     "avg_px": avg_px,

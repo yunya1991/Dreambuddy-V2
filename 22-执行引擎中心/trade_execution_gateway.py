@@ -283,6 +283,8 @@ class RiskGatedOkxClient:
         inst_id = kwargs.get("inst_id", "MULTI")
         side = str(kwargs.get("side", "")).lower()
         pos_side = str(kwargs.get("pos_side", "")).lower()
+        # 来源标签：23-evolution / 22-sltp_reconcile / 11-yijing …
+        source = str(kwargs.get("source") or "11-yijing")
         # 方向判定：pos_side 优先（long/short）；否则从 side 推断
         if pos_side in ("long", "short"):
             direction = pos_side
@@ -297,8 +299,8 @@ class RiskGatedOkxClient:
         else:
             action = "open"
         decision: Dict[str, Any] = {
-            "signal_id": f"11-yijing|{uuid.uuid4().hex[:12]}",
-            "source": "11-yijing",
+            "signal_id": f"{source}|{uuid.uuid4().hex[:12]}",
+            "source": source,
             "symbol": inst_id,
             "direction": direction,
             "confidence": 0.5,
@@ -315,11 +317,12 @@ class RiskGatedOkxClient:
         pos_side = str(kwargs.get("pos_side", "long")).lower()
         sl_px = kwargs.get("stop_loss_px")
         tp_px = kwargs.get("take_profit_px")
+        source = str(kwargs.get("source") or "11-yijing")
         # 同时设 SL 和 TP 时按 stop_loss 归类（algo order 会一起下）
         action = "stop_loss" if sl_px is not None else "take_profit"
         return {
-            "signal_id": f"11-yijing-sltp|{uuid.uuid4().hex[:12]}",
-            "source": "11-yijing",
+            "signal_id": f"{source}-sltp|{uuid.uuid4().hex[:12]}",
+            "source": source,
             "symbol": kwargs.get("inst_id", "MULTI"),
             "direction": pos_side if pos_side in ("long", "short") else "long",
             "confidence": 0.5,
