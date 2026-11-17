@@ -76,7 +76,9 @@ export function buildCapabilityPrompt(): string {
     "3. 趋势/结构类问题：至少组合 dsh.technical + dsh.sentiment（必要时加 dsh.macro）。",
     "4. 维度结论冲突时调 dsh.c_drive 做裁决，不要自行拼凑矛盾。",
     "5. 工具失败或数据缺失时明确说明缺失项与降级范围，禁止用训练记忆补行情数字。",
-    "6. 你没有下单、写库、改配置权限；但具备上述只读分析能力，不得声称\"无法分析\"。",
+    "6. 工具返回 degraded=true 时，必须在结论中标注「该维度数据缺失/为默认中性」，不得当作真实信号。",
+    "7. 调用 dsh.technical 时必须传 symbol，调度器会先用 L1 真实指标补水；宏观/情绪无数据时如实说明。",
+    "8. 你没有下单、写库、改配置权限；但具备上述只读分析能力，不得声称\"无法分析\"。",
   ].join("\n");
 }
 
@@ -130,11 +132,54 @@ async function runL1Query(
   }
 }
 
+/**
+ * 从 L1 技术指标答案解析 DSH technical 所需的结构化指标。
+ * DSH 子代理遵循 HC-1「不生成原始数据」，必须由调用方提供 indicators；
+ * 不注入时它会用默认值（RSI=50 / MACD=0）输出假中性。
+ */
+export function parseTechnicalIndicators(answer: string): Record<string, number> {
+  const num = (re: RegExp): number | undefined => {
+    const m = answer.match(re);
+    if (!m) return undefined;
+    const v = Number(m[1]);
+    return Number.isFinite(v) ? v : undefined;
+  };
+  const price = num(/现价\s*(-?[\d.]+)/);
+  const rsi14 = num(/RSI14\s*(-?[\d.]+)/);
+  const macd = num(/DIF\s*(-?[\d.]+)/);
+  const indicators: Record<string, number> = {};
+  if (price !== undefined) indicators.price = price;
+  if (rsi14 !== undefined) indicators.rsi14 = rsi14;
+  if (macd !== undefined) indicators.macd = macd;
+  return indicators;
+}
+
+/** DSH 输出是否只是默认占位（全中性 + RSI 恰为 50 / 宏观值全 0）。 */
+export function looksPlaceholder(output: unknown): boolean {
+  try {
+    const data = (typeof output === "string" ? JSON.parse(output) : output) as {
+      signals?: Array<{ value?: unknown; direction?: string; confidence?: number }>;
+      charts?: unknown[];
+    };
+    const signals = data?.signals ?? [];
+    if (signals.length === 0) return true;
+    const allNeutral = signals.every((s) => s.direction === "neutral");
+    const weak = signals.every((s) => (s.confidence ?? 0) <= 0.5);
+    const defaultish = signals.every((s) => s.value === 0 || s.value === 50 || s.value === "NEUTRAL");
+    return allNeutral && weak && defaultish && (data?.charts?.length ?? 0) === 0;
+  } catch {
+    return false;
+  }
+}
+
 export interface CapabilityRunResult {
   ok: boolean;
   capability: string;
   output?: string;
   error?: string;
+  /** true 表示工具虽返回但数据为默认占位，不可作为结论依据 */
+  degraded?: boolean;
+  note?: string;
 }
 
 /** 统一调度入口：按注册表 entry.kind 分发到 L1 / DSH / 6-TRADING。 */
@@ -166,6 +211,8 @@ export async function runCapability(
     let question = String(params.question ?? params.query ?? "").trim();
     if (id === "market.price" && symbol) {
       question = `查询${symbol}价格`;
+    } else if (id === "market.technical_indicator" && symbol) {
+      question = `查询${symbol}技术指标`;
     } else if (symbol && question && !question.includes(symbol)) {
       question = `${symbol} ${question}`;
     }
@@ -182,16 +229,40 @@ export async function runCapability(
   }
 
   if (cap.entry.kind === "dsh") {
+    const moduleName = cap.entry.module || id;
+    const symbol = String(params.symbol ?? "").trim();
+    let nodeOutput: Record<string, unknown> = { ...params };
+
+    // technical 子代理遵循 HC-1：只消费 indicators，不自行取数。
+    // 不注入时它会用默认值（RSI=50 / MACD=0）输出假中性，因此先用 L1 真实指标补水。
+    if (moduleName === "technical" && !nodeOutput.indicators && symbol) {
+      const l1 = await runL1Query(`查询${symbol}技术指标`, 20_000);
+      const indicators =
+        l1.ok && l1.answer ? parseTechnicalIndicators(l1.answer) : {};
+      if (Object.keys(indicators).length > 0) {
+        nodeOutput = {
+          ...nodeOutput,
+          indicators,
+          context: [nodeOutput.context, l1.answer].filter(Boolean).join("\n"),
+        };
+      }
+    }
+
     const res = await callDshHandler(
-      cap.entry.module || id,
-      { node_output: params },
+      moduleName,
+      { node_output: nodeOutput },
       cap.latency_ms,
     );
+    const placeholder = res.ok ? looksPlaceholder(res.output) : false;
     return {
       ok: res.ok === true,
       capability: id,
       output: res.ok ? clip(res.output) : undefined,
-      error: res.ok ? undefined : res.error || `${cap.entry.module}_no_output`,
+      error: res.ok ? undefined : res.error || `${moduleName}_no_output`,
+      degraded: placeholder || undefined,
+      note: placeholder
+        ? "DSH 未获得有效指标输入，输出为默认中性值，不可作为结论依据"
+        : undefined,
     };
   }
 

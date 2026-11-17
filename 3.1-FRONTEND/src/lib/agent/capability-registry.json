@@ -86,7 +86,8 @@
       "latency_ms": 20000,
       "readonly": true,
       "l2_allowed": true,
-      "enabled": true
+      "enabled": false,
+      "note": "路径判断属多维结构问题，统一走 dsh.technical + dsh.c_drive，避免分析式问法被 L1 闸门交回"
     },
     {
       "id": "news.listing",
