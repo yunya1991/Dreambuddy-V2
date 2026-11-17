@@ -220,6 +220,48 @@ function emitGateEvent(
   }
 }
 
+/**
+ * 给流式响应注入 SSE 心跳注释（每 3s 一行 `: keepalive`）。
+ * 模型首 token 前有 10s+ 静默，移动网络/企业代理会按空闲超时掐断连接，
+ * 浏览器侧表现为 "network error"。心跳不进入 UIMessage 协议，客户端解析器会忽略。
+ */
+function withHeartbeat(response: Response, intervalMs = 3000): Response {
+  const body = response.body;
+  if (!body) return response;
+  const reader = body.getReader();
+  const encoder = new TextEncoder();
+  let timer: ReturnType<typeof setInterval> | null = null;
+
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      timer = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(": keepalive\n\n"));
+        } catch {
+          if (timer) clearInterval(timer);
+        }
+      }, intervalMs);
+    },
+    async pull(controller) {
+      const { done, value } = await reader.read();
+      if (done) {
+        if (timer) clearInterval(timer);
+        controller.close();
+        return;
+      }
+      controller.enqueue(value);
+    },
+    cancel(reason) {
+      if (timer) clearInterval(timer);
+      void reader.cancel(reason).catch(() => {});
+    },
+  });
+
+  const headers = new Headers(response.headers);
+  headers.set("X-Accel-Buffering", "no");
+  return new Response(stream, { status: response.status, headers });
+}
+
 export async function POST(request: NextRequest) {
   let body: {
     messages?: UIMessage[];
@@ -427,9 +469,11 @@ export async function POST(request: NextRequest) {
         }
       },
     });
-    return result.toUIMessageStreamResponse({
-      headers: takeoverContext ? { "x-l2-takeover": "1" } : undefined,
-    });
+    return withHeartbeat(
+      result.toUIMessageStreamResponse({
+        headers: takeoverContext ? { "x-l2-takeover": "1" } : undefined,
+      }),
+    );
   } catch (e) {
     // FAIL-OPEN：模型调用/网络异常不阻塞主链路
     console.warn("[AgentChat] degraded:", e instanceof Error ? e.message : e);
