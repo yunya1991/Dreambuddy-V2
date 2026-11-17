@@ -20,7 +20,7 @@ STATE_DIR="${REPO_DIR}/.deploy"
 LAST_GOOD="${STATE_DIR}/last_good"
 ROLLBACK_LOG="${STATE_DIR}/rollback-log.jsonl"
 HEALTH="${REPO_DIR}/37-一键启动脚本/health-check.sh"
-UNITS=(dreambuddy-frontend yijing-data-server v15-api v15-capital-api)
+UNITS=("dreambuddy-frontend@3001" "dreambuddy-frontend@3002" yijing-data-server v15-api v15-capital-api)
 
 AUTO=false; CONFIRM=false; REASON="unspecified"
 while [ $# -gt 0 ]; do

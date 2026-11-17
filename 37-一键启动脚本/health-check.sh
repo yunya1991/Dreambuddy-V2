@@ -40,7 +40,7 @@ ok()   { DETAILS="${DETAILS}{\"check\":\"$1\",\"result\":\"OK\",\"detail\":\"$2\
 skip() { SKIPS=$((SKIPS + 1)); DETAILS="${DETAILS}{\"check\":\"$1\",\"result\":\"SKIP\",\"detail\":\"$2\"},"; }
 
 # ── 1. 关键 unit 存活 ──
-for unit in v15-api dreambuddy-frontend yijing-data-server yijing-polling-trader hermes-gateway trailing-stop-runner; do
+for unit in v15-api dreambuddy-frontend@3001 dreambuddy-frontend@3002 yijing-data-server yijing-polling-trader hermes-gateway trailing-stop-runner; do
     CHECKS=$((CHECKS + 1))
     if systemctl is-active --quiet "${unit}.service" 2>/dev/null; then
         ok "unit:${unit}" active
@@ -50,7 +50,7 @@ for unit in v15-api dreambuddy-frontend yijing-data-server yijing-polling-trader
 done
 
 # ── 2. HTTP 端点 ──
-for ep in "http://127.0.0.1:8771/health" "http://127.0.0.1:3001" "http://127.0.0.1:8765"; do
+for ep in "http://127.0.0.1:8771/health" "http://127.0.0.1:3001" "http://127.0.0.1:3002" "http://127.0.0.1:8765"; do
     CHECKS=$((CHECKS + 1))
     code="$(curl -s -o /dev/null -m 10 -w '%{http_code}' "${ep}" 2>/dev/null)"; code="${code:-000}"
     case "${code}" in
