@@ -27,6 +27,7 @@ from residual_memory import (  # noqa: E402
     ensure_residual_columns,
     gate,
     governance_decision,
+    reclassify_invalid_anchors,
 )
 
 # ============================================================
@@ -188,6 +189,36 @@ def test_backfill_reports_missing_columns():
     out = ensure_residual_columns(con)
     assert set(out["added"]) == {"subclass", "form", "source_anchor", "verify_state"}
     assert ensure_residual_columns(con)["added"] == []
+
+
+def test_reclassify_invalid_anchors(tmp_path):
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg" / "mod.py").write_text("def foo():\n    return 1\n", encoding="utf-8")
+    con = _mem_db(", subclass TEXT, form TEXT, source_anchor TEXT, verify_state TEXT")
+    con.executemany(
+        "INSERT INTO memories(id, content, source, tags, memory_type, subclass, form, "
+        "source_anchor, verify_state) VALUES (?,?,?,?,?,?,?,?,?)",
+        [
+            (
+                "ok",
+                "实现在 pkg/mod.py:foo",
+                "trae",
+                "[]",
+                "experience",
+                "code",
+                "M1",
+                "pkg/mod.py:foo",
+                "fresh",
+            ),
+            ("bad", "实现在 pool.js", "trae", "[]", "experience", "code", "M1", "pool.js", "fresh"),
+        ],
+    )
+    report = reclassify_invalid_anchors(con, repo_root=tmp_path, dry_run=False)
+    assert report["kept"] == 1 and report["reclassified"] == 1
+    row = con.execute(
+        "SELECT subclass, form, source_anchor FROM memories WHERE id='bad'"
+    ).fetchone()
+    assert row[0] in {"D-tech", "D-policy"} and row[1] == "M2" and row[2] == ""
 
 
 def test_backfill_classifies_and_is_idempotent():

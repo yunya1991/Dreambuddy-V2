@@ -521,6 +521,66 @@ def backfill(
     return stats
 
 
+def reclassify_invalid_anchors(
+    con: sqlite3.Connection,
+    *,
+    repo_root: Optional[Path] = None,
+    dry_run: bool = True,
+    limit: int = 0,
+) -> Dict[str, Any]:
+    """把「锚点在仓库中解析不到」的 code/config 降为内容型子类。
+
+    存量回填从正文正则抽出的裸文件名（如 `pool.js`）大多不是仓库路径；
+    若保留 code/config，复核会把它误标 stale。锚点不可解析时按无锚点重分型，
+    保守落到 D-tech / D-policy，form 改 M2。
+    """
+    stats: Dict[str, Any] = {"checked": 0, "kept": 0, "reclassified": 0, "by_subclass": {}}
+    sql = (
+        "SELECT id, content, source, tags, memory_type, subclass, source_anchor "
+        "FROM memories WHERE subclass IN ('code','config')"
+    )
+    params: list = []
+    if limit and limit > 0:
+        sql += " LIMIT ?"
+        params.append(limit)
+    updates = []
+    for row in con.execute(sql, params).fetchall():
+        rid = row[0] if not hasattr(row, "keys") else row["id"]
+        content = (row[1] if not hasattr(row, "keys") else row["content"]) or ""
+        source = (row[2] if not hasattr(row, "keys") else row["source"]) or ""
+        tags_raw = row[3] if not hasattr(row, "keys") else row["tags"]
+        memory_type = row[4] if not hasattr(row, "keys") else row["memory_type"]
+        anchor = (row[6] if not hasattr(row, "keys") else row["source_anchor"]) or ""
+        stats["checked"] += 1
+        if anchor and decode(anchor, repo_root=repo_root).get("ok"):
+            stats["kept"] += 1
+            continue
+        try:
+            tags = json.loads(tags_raw) if isinstance(tags_raw, str) else list(tags_raw or [])
+        except (ValueError, TypeError):
+            tags = []
+        new_subclass = classify(
+            content, source=source, tags=tags, memory_type=memory_type or "experience"
+        )
+        updates.append((new_subclass, form_for(new_subclass, ""), "", "fresh", rid))
+        stats["by_subclass"][new_subclass] = stats["by_subclass"].get(new_subclass, 0) + 1
+    stats["reclassified"] = len(updates)
+    if dry_run or not updates:
+        stats["dry_run"] = dry_run
+        return stats
+    try:
+        con.executemany(
+            "UPDATE memories SET subclass=?, form=?, source_anchor=?, verify_state=? WHERE id=?",
+            updates,
+        )
+        con.commit()
+    except sqlite3.Error as exc:
+        con.rollback()
+        stats["error"] = str(exc)
+    stats["dry_run"] = dry_run
+    return stats
+
+
 # ============================================================
 # CLI
 # ============================================================
@@ -535,12 +595,16 @@ def main(argv: Optional[list] = None) -> int:
 
     parser = argparse.ArgumentParser(description="残差记忆器（SPEC §3.7′/§4′）")
     parser.add_argument("--backfill", action="store_true", help="回填存量 subclass/form/anchor")
+    parser.add_argument(
+        "--reclassify", action="store_true", help="锚点不可解析的 code/config 降为内容型"
+    )
+    parser.add_argument("--repo-root", default="", help="锚点解析根目录（默认自动推断）")
     parser.add_argument("--db", default=str(_default_db()), help="cognitive_memory.db 路径")
     parser.add_argument("--apply", action="store_true", help="实际写入（缺省 dry-run）")
     parser.add_argument("--limit", type=int, default=0, help="单轮最多处理条数（0=不限）")
     args = parser.parse_args(argv)
 
-    if not args.backfill:
+    if not args.backfill and not args.reclassify:
         parser.print_help()
         return 1
 
@@ -549,7 +613,15 @@ def main(argv: Optional[list] = None) -> int:
     try:
         if args.apply:
             ensure_residual_columns(con)
-        report = backfill(con, dry_run=not args.apply, limit=args.limit)
+        if args.reclassify:
+            report = reclassify_invalid_anchors(
+                con,
+                repo_root=Path(args.repo_root) if args.repo_root else None,
+                dry_run=not args.apply,
+                limit=args.limit,
+            )
+        else:
+            report = backfill(con, dry_run=not args.apply, limit=args.limit)
     finally:
         con.close()
     print(json.dumps(report, ensure_ascii=False, indent=2))
