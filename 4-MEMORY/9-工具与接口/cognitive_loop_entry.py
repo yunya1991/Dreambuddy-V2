@@ -1291,8 +1291,11 @@ class CognitiveLoopEntry:
                 raise ValueError(f"admission_rejected:{verdict.reason}")
         except ValueError:
             raise
-        except Exception as _e:  # noqa: BLE001 - 准入器故障不阻塞既有写入路径
-            logger.debug("admission gate 不可用，按 D-policy 放行: %s", _e)
+        except Exception as _e:  # noqa: BLE001 - 准入器故障时轨迹类必须 fail-closed
+            _src = str(source or "").strip().lower()
+            if _src in {"rag-bridge", "l0.scheduler", "l1_router"}:
+                raise ValueError("admission_rejected:gate_unavailable_trajectory") from _e
+            logger.warning("admission gate 不可用，非轨迹写入按 D-policy 冻结放行: %s", _e)
             verdict = None
 
         memory_id = self._vm.add(
