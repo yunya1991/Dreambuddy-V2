@@ -42,12 +42,12 @@ scrape_configs:
       module: [http_2xx]
     static_configs:
       - targets:
-          - http://127.0.0.1:3001
-          - http://127.0.0.1:3002
-          - http://127.0.0.1:8765/health
-          - http://127.0.0.1:8771/health
-          - http://127.0.0.1:8093
-          - http://127.0.0.1:8099
+          - http://127.0.0.1:3001          # 前端 Next 实例 1（根路径即健康页）
+          - http://127.0.0.1:3002          # 前端 Next 实例 2
+          - http://127.0.0.1:8765          # yijing-data-server 健康页在根路径（/health 为 404）
+          - http://127.0.0.1:8771/health   # V15 决策 API
+          - http://127.0.0.1:8093/health   # m26（根路径 404）
+          - http://127.0.0.1:8099/health   # 8099 服务（根路径 404）
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target

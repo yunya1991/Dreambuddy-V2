@@ -4,7 +4,9 @@ modules:
     prober: http
     timeout: 5s
     http:
-      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      # 必须包含 HTTP/1.0：V15 决策 API 基于 Python BaseHTTPRequestHandler，响应头为 HTTP/1.0，
+      # 只允许 1.1/2.0 时探针会判失败（probe_success=0），造成 TargetDown 误报。
+      valid_http_versions: ["HTTP/1.0", "HTTP/1.1", "HTTP/2.0"]
       valid_status_codes: []   # 默认 2xx
       method: GET
       preferred_ip_protocol: ip4

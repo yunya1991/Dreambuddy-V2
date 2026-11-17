@@ -13,6 +13,8 @@
 | 探针目标 | `prometheus.yml` 中 targets 一律 `127.0.0.1:<port>`，`replacement` 为 `127.0.0.1:9115` | `grep -n "host.docker.internal" prometheus/prometheus.yml` → 应无输出 |
 | 业务绑定 | 被探服务绑定 `127.0.0.1`（V15 `run.py api` 即绑回环，`v15_api_server.py` 直跑才绑 `0.0.0.0`） | `ss -ltnp \| grep -E ':8771\|:8770\|:8765'` |
 | 端口矩阵 | 探针 targets 与 `31-分布式计算部署/docs/SERVICE_INVENTORY.md` 保持一致，端口下线需同步删目标 | 人工比对 |
+| 协议版本 | `blackbox.yml` 的 `valid_http_versions` 必须包含 `HTTP/1.0`（V15 API 基于 BaseHTTPRequestHandler，响应头为 HTTP/1.0） | `grep valid_http_versions blackbox/blackbox.yml` |
+| 探针路径 | 每个目标的健康路径逐个实测过（8765 用根路径，8093/8099/8771 用 `/health`），不可套用统一后缀 | 见第 3 节 |
 
 ## 1. 部署前
 
@@ -39,7 +41,8 @@ for t in http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:8765/healt
 done
 ```
 
-- [ ] 每个目标 `probe_success 1`；为 0 时先 `curl -sS <target>` 确认服务自身状态，再查绑定地址
+- [ ] 每个目标 `probe_success 1`；为 0 时先 `curl -sS <target>` 确认服务自身状态，再查绑定地址；
+      `curl -sS -i <target>` 若响应头是 `HTTP/1.0`，须确认 `valid_http_versions` 已包含 `HTTP/1.0`
 - [ ] TCP 探针：`curl -s "http://127.0.0.1:9115/probe?module=tcp_connect&target=127.0.0.1:5432" | grep '^probe_success'` → `1`
 
 ## 4. Prometheus 目标状态
