@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { ChunkLoadGuard } from '@/lib/chunk-load-guard';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -10,6 +11,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="zh" className="dark">
       <body className="min-h-screen bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] antialiased">
+        <ChunkLoadGuard />
         {children}
       </body>
     </html>

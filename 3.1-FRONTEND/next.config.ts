@@ -12,6 +12,17 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "2mb",
     },
   },
+  async headers() {
+    return [
+      {
+        // HTML 文档必须每次回源校验，否则浏览器会启发式缓存旧页面，
+        // 页面内引用的旧构建 chunk 会在下一次路由跳转时 404。
+        source: '/:path*',
+        has: [{ type: 'header', key: 'accept', value: '.*text/html.*' }],
+        headers: [{ key: 'Cache-Control', value: 'no-cache, must-revalidate' }],
+      },
+    ];
+  },
   async rewrites() {
     return [
       // 交易榜单 API 代理到 7-产物中台 (3456)

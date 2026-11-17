@@ -5,6 +5,7 @@ node_modules/
 
 # next.js
 .next/
+.next-static-archive/
 out/
 
 # production

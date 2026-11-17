@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect } from 'react';
+import { isChunkLoadError, reloadOnce } from '@/lib/chunk-load-guard';
 
 /**
  * App Router 错误边界（error.tsx）
  * 仅在 App Router 页面崩溃时渲染；不展示堆栈；提供重试。
+ * chunk 加载失败（旧构建引用）自动整页重载，避免用户停在错误页。
  */
 export default function Error({
   error,
@@ -14,6 +16,11 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
+    if (isChunkLoadError(error)) {
+      console.warn('[ErrorBoundary] chunk load failed, reloading:', error.message);
+      reloadOnce();
+      return;
+    }
     console.warn('[ErrorBoundary] page error:', error?.message);
   }, [error]);
 

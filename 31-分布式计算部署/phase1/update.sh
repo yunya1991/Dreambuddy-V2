@@ -176,8 +176,29 @@ EOF
     fi
 
     echo "  构建 Next.js..."
+    # 保留上一次构建的静态资源：Next.js 每次 build 会清空 .next，
+    # 已打开标签页持有的旧 chunk 哈希会变成 404（Loading chunk N failed）。
+    # 这里先归档旧 static，构建后合并回新 static（文件名带 hash，不会冲突）。
+    STATIC_ARCHIVE="${FRONTEND_DIR}/.next-static-archive"
+    if [ -d ".next/static" ]; then
+        mkdir -p "${STATIC_ARCHIVE}"
+        PREV_BUILD_ID="$(date +%Y%m%d-%H%M%S)"
+        cp -R ".next/static" "${STATIC_ARCHIVE}/${PREV_BUILD_ID}" 2>/dev/null || true
+        echo "  ✓ 旧静态资源已归档: ${PREV_BUILD_ID}"
+    fi
+
     pnpm build
     echo "  ✓ 构建完成"
+
+    if [ -d "${STATIC_ARCHIVE}" ]; then
+        for d in "${STATIC_ARCHIVE}"/*; do
+            [ -d "$d" ] || continue
+            cp -R -n "$d/." ".next/static/" 2>/dev/null || true
+        done
+        # 只保留最近 2 份归档，避免磁盘无限增长
+        ls -1dt "${STATIC_ARCHIVE}"/* 2>/dev/null | tail -n +3 | xargs -r rm -rf
+        echo "  ✓ 已合并历史 chunk（保留最近 2 次构建）"
+    fi
 
     echo "  重启前端 systemd 单元 (PM2 已废弃)..."
     systemctl restart dreambuddy-frontend.service 2>/dev/null && \
