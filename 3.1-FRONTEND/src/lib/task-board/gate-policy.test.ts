@@ -1,8 +1,23 @@
 import {
   DEFAULT_GATE_POLICIES,
+  assertGatePolicySet,
   buildGatePolicy,
   validateGatePolicies,
 } from "./gate-policy";
+import type { ModelRegistry, ModelSpec } from "@/lib/model/model-registry";
+
+function gateSpec(id: string, provider: string, family: string): ModelSpec {
+  return {
+    id,
+    class: "gate",
+    provider,
+    family,
+    model: id.split(":")[1] ?? id,
+    temperature: 0,
+    allowedCapabilities: [],
+    enabled: true,
+  };
+}
 
 describe("gate-policy", () => {
   it("五道门 × 四种风险的默认策略全部合法", () => {
@@ -76,5 +91,31 @@ describe("gate-policy", () => {
     const codes = validateGatePolicies([policy]).map((issue) => issue.code);
     expect(codes).toContain("high_risk_auto_approve");
     expect(codes).toContain("high_risk_without_human");
+  });
+
+  it("主副门禁模型都计入会签，不再误报模型不足", () => {
+    const registry: ModelRegistry = {
+      worker: null,
+      judge: null,
+      gate: gateSpec("qwen:qwen-plus", "qwen", "alibaba"),
+      gate_secondary: gateSpec("typesafe:jev", "typesafe", "typesafe"),
+    };
+    const codes = assertGatePolicySet(DEFAULT_GATE_POLICIES, registry, {
+      strict: false,
+    }).map((issue) => issue.code);
+    expect(codes).not.toContain("gate_models_insufficient_for_quorum");
+  });
+
+  it("只有主门禁时仍提示高风险门模型不足", () => {
+    const registry: ModelRegistry = {
+      worker: null,
+      judge: null,
+      gate: gateSpec("qwen:qwen-plus", "qwen", "alibaba"),
+      gate_secondary: null,
+    };
+    const codes = assertGatePolicySet(DEFAULT_GATE_POLICIES, registry, {
+      strict: false,
+    }).map((issue) => issue.code);
+    expect(codes).toContain("gate_models_insufficient_for_quorum");
   });
 });

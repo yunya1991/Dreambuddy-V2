@@ -15,6 +15,7 @@ import {
   isStrictEnvironment,
   validateModelRegistry,
   type ModelRegistry,
+  type ModelSpec,
 } from "@/lib/model/model-registry";
 
 export type RiskLevel = "low" | "medium" | "high" | "critical";
@@ -543,7 +544,10 @@ export function assertGatePolicySet(
     ...validateModelRegistry(registry, { strict }),
   ];
 
-  const gateModels = registry.gate ? [registry.gate] : [];
+  // 主副门禁都参与会签；同源/同 ID 的情况由 validateModelRegistry 单独报错
+  const gateModels = [registry.gate, registry.gate_secondary].filter(
+    (spec): spec is ModelSpec => Boolean(spec),
+  );
   for (const policy of policies) {
     const high = policy.applies_to.risk_levels.some(
       (risk) => risk === "high" || risk === "critical",
