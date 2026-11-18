@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -46,6 +47,23 @@ def run_once(bus: EmergenceBus) -> int:
     return len(fired)
 
 
+def _push_job(status: str) -> None:
+    """每轮向 Pushgateway 打点，供 Bus42Stale 判定。FAIL-OPEN：异常静默。"""
+    script = Path(__file__).resolve().parents[2] / "15-监控告警系统" / "scripts" / "push_job.sh"
+    if not script.exists():
+        return
+    try:
+        subprocess.run(
+            ["bash", str(script), "bus_42", status],
+            check=False,
+            timeout=5,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:  # noqa: BLE001 — 打点失败不影响探针
+        pass
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="E1 shadow 探针执行入口")
     parser.add_argument(
@@ -74,9 +92,11 @@ def main() -> int:
         if args.interval > 0:
             while True:
                 run_once(bus)
+                _push_job("success")
                 time.sleep(args.interval)
         else:
             run_once(bus)
+            _push_job("success")
     except KeyboardInterrupt:
         logger.info("收到中断，退出")
     except Exception as exc:  # noqa: BLE001 — FAIL-OPEN

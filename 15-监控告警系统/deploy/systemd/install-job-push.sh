@@ -20,6 +20,7 @@ EOF
 
 install_one dreambuddy-43-strategic-publish.service publish_43
 install_one dreambuddy-nn-live-chain.service live_50
+install_one dreambuddy-shadow-driver.service shadow_50
 
 systemctl daemon-reload
 echo "daemon-reload done"

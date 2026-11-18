@@ -1411,10 +1411,10 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 | `40_daily` | crontab 直接跑脚本，未打点 | 新增 `40/scripts/run_daily_pipeline_cron.sh`：执行 + 捕获退出码 + `push_job.sh 40_daily`；crontab 已切换 |
 | `publish_43` | timer 每 30min，无打点 | drop-in `ExecStopPost` 调 `push_job.sh publish_43`（`deploy/systemd/install-job-push.sh`） |
 | `live_50` | timer 每 5min，无打点 | 同上，`push_job.sh live_50` |
-| `bus_42` | 常驻 `--interval 300`，无退出事件 | 未接入；需服务内周期打点（建议下一步） |
-| `shadow_50` | 服务 inactive/dead | 未接入；先确认是否已退役，退役则删规则 |
+| `bus_42` | 常驻 `--interval 300`，无退出事件 | 在 `48/bus/run_shadow_probe.py` 每轮成功后调 `push_job.sh bus_42 success`（FAIL-OPEN，5s 超时） |
+| `shadow_50` | 服务 inactive/dead | 经核查**未退役**：timer active+enabled，每 10min 运行、退出码 0；补 `ExecStopPost` 打点 |
 
-验收：`dreambuddy_job_status` 现有 `40_daily=1 / publish_43=1 / live_50=1`；`JobFailed` 可在 1min 内发现 40 日更失败（此前要等 `ArtifactStale` 26h~8d）。
+验收：`dreambuddy_job_status` 现有 `40_daily=1 / publish_43=1 / live_50=1 / bus_42=1 / shadow_50=1`；`JobFailed` 可在 1min 内发现 40 日更失败（此前要等 `ArtifactStale` 26h~8d）。
 维护：新增定时任务必须同时调用 `push_job.sh`，否则对应 `*Stale/JobFailed` 规则无数据、不会告警。
 
 ---
