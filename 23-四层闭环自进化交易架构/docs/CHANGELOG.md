@@ -1,7 +1,46 @@
 # 23-四层闭环自进化交易架构 — 变更日志
 
-> **版本**: v1.21 | **更新日期**: 2026-11-18
+> **版本**: v1.22 | **更新日期**: 2026-11-18
 > **定位**: 模块级变更日志，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+
+---
+
+## [v1.22] - 2026-11-18 (F8 收口：trade_id 命名空间 + 禁止外部战绩回退)
+
+### 修复
+
+- **根因（v1.21 未覆盖的两层）**：
+  1. **`trade_id` 跨源覆盖**：索引以各源的自增 `id` 直接作为全局 `trade_id`。
+     `22 fills`（id 12–93）、`ess_reflection.jsonl`、`11-易经 bcrm_trades.db` 的 id 都是小整数，
+     后加载的源把 22 账本 19 笔成交覆盖到只剩 3 笔（实测 `ess_reflection` 覆盖 66 次、`bcrm` 覆盖 16 次）。
+  2. **无自有样本时回退外部战绩**：`stat_trades = own or real or backtest`，BTC/ETH/SOL 没有 23 自有成交时
+     直接统计 `11-易经` 的 76 笔，`sources={'yijing': N}`，等于用别的子系统的胜率驱动 23 的开仓。
+- **修复**：
+  1. `trade_id = f"{source}:{id}"`（无 id 时同样带 source 前缀），跨源不再互撞；
+  2. `ReflectionScanner` 先算 `has_any_own`：只要索引里存在 23 自有成交，就**只用自有成交**；
+     完全没有自有样本（新部署）才允许 `real/backtest` 冷启动；
+  3. `sources` 统计改为只反映实际参与统计的样本来源。
+
+### 验收（云端 2243ca76，2026-11-18 14:36 CST 重启）
+
+| 项 | v1.21 | v1.22 |
+|---|---|---|
+| 索引总量 | 191 | **207** |
+| `22-ledger` 成交 | 3（被覆盖） | **19（完整）** |
+| 自有成交（`23-evolution`） | 1 | **10**（MU 5 / NFLX 2 / BTC 1 / ARB 1 / CRCL 1） |
+| BTC | n=2（yijing 2 笔，win 0.5） | **n=1 / win=1.0 / ri=0.716 / eligible=True** |
+| ETH / SOL | n=1 / n=3（均为 yijing） | 无自有样本 → 类先验 0.65（`is_prior=True`） |
+| MU | — | n=5 / win=1.0 / ri=0.80 |
+| ARB / NFLX | — | n=1 / ri=0.716；n=2 / ri=0.758 |
+
+> 说明：v1.21 的「BTC n=2」实际是 11-易经的成交；v1.22 才是 23 自己的战绩。
+> 当前自有样本以 `reduce` 分批止盈为主，真实平仓多由 22 reconcile 记录（`realized_pnl=0` 已排除），
+> 因此胜率偏高属口径已知局限，后续需 22 侧在平仓时回写真实 PnL。
+
+### 测试
+
+- `tests/test_reflection_sample_quality.py` 增至 6 项：新增「不同源同 id 不互相覆盖」「存在自有成交时不继承外部战绩」；
+  与 d_star 校准 8 项合计 **17 passed**。
 
 ---
 

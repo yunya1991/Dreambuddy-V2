@@ -14,7 +14,7 @@
 | F5 | `reflection_ri=0.50` | 冷启动，`get_coin_stats.eligible=False` | 无需修复，样本积累后自然变化 | — | `[-]` |
 | F6 | 定位信息不足 | N0 未记录 `ess_top_direction` / `vol_ratio` / `is_source` | N9 事件补充 `ri/tier/ess_top_direction/vol_ratio/ripple_is_source/ripple_ri/reflection_ri/reflection_eligible` | 云端 N9 可直接看出卡在哪一条件 | `[x]` |
 | F7 | `PROBE_THRESHOLD` 口径不一致 | 记忆记录 0.55，23 handler 现值 0.50 | 已核对：23 handler 为 `0.50`；`0.55` 来自 `ripple_engine.get_ri_action`（cbr_boost 档）与 `tight_coupling_orchestrator`（RI≥0.55 形成推断），属不同阈值，非缺陷 | 结论记录 | `[-]` |
-| F8 | `reflection_ri` 始终 0.5，样本看似不积累 | ① 已知源相对 `project_root` 解析（相对路径无法向上），23 子目录启动 → 22 账本读不到；② 自动发现把 `gene_data/shadow_validation/*_samples.jsonl`、`data/ess_reflection.jsonl` 当真实交易（pnl=-100 占位、exit_reason='运行时检测OKX持仓消失'）；③ 仓库级索引混入 11-易经等外部子系统成交；④ `get_coin_stats` 用完整合约代码查不到 `BTC` 键 → 恒回退 0.5 | ① `_repo_root()` resolve 后向上定位仓库根；② fills 排除 `source LIKE '%reconcil%'`；③ `is_synthetic`/`pnl_valid` + `record_source` 归属过滤（只认 `23-evolution`/`22-ledger`）；④ `get_coin_stats` 归一化 `BTC-USDT-SWAP→BTC` | 单测 7 项；云端 BTC n=2/win=0.5/ri=0.5/eligible=False（**真实战绩**，未达 0.55 阈值）；SOL n=3/33% | `[x]` |
+| F8 | `reflection_ri` 始终 0.5，样本看似不积累 | ① 已知源相对 `project_root` 解析（相对路径无法向上），23 子目录启动 → 22 账本读不到；② 自动发现把 `gene_data/shadow_validation/*_samples.jsonl`、`data/ess_reflection.jsonl` 当真实交易（pnl=-100 占位、exit_reason='运行时检测OKX持仓消失'）；③ 仓库级索引混入 11-易经等外部子系统成交；④ `get_coin_stats` 用完整合约代码查不到 `BTC` 键 → 恒回退 0.5；⑤ **`trade_id` 直接使用各源自增 `id`，22 fills / ess_reflection / bcrm_trades 的数字 id 互相覆盖，19 笔账本成交只剩 3 笔** | ① `_repo_root()` resolve 后向上定位仓库根；② fills 排除 `source LIKE '%reconcil%'`；③ `is_synthetic`/`pnl_valid` + `record_source` 归属过滤；④ `get_coin_stats` 归一化 `BTC-USDT-SWAP→BTC`；⑤ `trade_id` 加来源命名空间 `{source}:{id}`；⑥ 存在自有成交后不再回退外部子系统战绩（无自有样本才允许冷启动） | 单测 9 项；云端索引 207 笔（22-ledger 19 笔完整）；自有样本 10 笔（BTC n=1/win=1.0/ri=0.716/eligible=True，MU n=5/ri=0.80）；ETH/SOL 无自有样本走类先验 0.65，不再吸收 yijing 战绩 | `[x]` |
 
 ## 执行记录
 
@@ -36,3 +36,6 @@
 | 2026-11-18 | 口径切换 | 云端 drop-in `/etc/systemd/system/dreambuddy-entry23.service.d/10-dstar.conf` 设 `EVOLUTION_DSTAR_WAIT_MODE=calibrated` + `MARGIN=0.30`，重启（13:00:27 CST）；N4 实测 `wait_mode=calibrated`、ETH/SOL `d_star=long`、BTC `d_star_calibrated=WAIT`（bc 0.4577 > wait 0.577×0.7） | `[x]` 已生效 |
 | 2026-11-18 | 监控接入 | 15 新增 `signal_calibration_metrics` 11 指标 + 5 条告警 + `23_REFLECTION_STARVED` 日报项（15 TD §13.9.4） | `[x]` |
 | 2026-11-18 | F8 样本排查 | 云端 `ReflectionScanner.scan()`：64 笔 trade 分布 64 个币（每币 1 笔）；`fills` 平仓 43 笔中 25 笔 `realized_pnl=0`、1 笔 NULL → win_rate 恒 0 → reflection_ri 恒 0.5 | `[!]` 待 22 侧回写 PnL |
+| 2026-11-18 | F8 二次定位 | 修复读账本后仍只有 3 笔账本成交：`trade_id` 用各源自增 `id`，被 `ess_reflection.jsonl`(66 次) 与 `bcrm_trades.db`(16 次) 覆盖；且自有样本为空时回落 `real_trades`，BTC/ETH/SOL 实际统计的是 yijing 76 笔 | `[x]` 根因锁定 |
+| 2026-11-18 | F8 最终修复 | `trade_id` 加来源命名空间；`has_any_own` 后禁止外部回退；localized 单测 9 项（新增 id 不覆盖、外部不回退）；提交 `2243ca76fb`，云端快进并重启（14:36:17 CST） | `[x]` 17 passed |
+| 2026-11-18 | F8 最终验收 | 云端 `project_root=/home/luke/dreambuddy`：索引 207 笔（22-ledger 19 笔）、自有样本 10 笔；BTC n=1/win=1.0/ri=0.716/eligible=True、ARB 同、MU n=5/ri=0.80、NFLX n=2/ri=0.758；ETH/SOL 无自有样本 → 类先验 0.65（不再显示 yijing 战绩） | `[x]` |
