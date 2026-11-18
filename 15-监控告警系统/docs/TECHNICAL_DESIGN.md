@@ -1037,7 +1037,7 @@ SLO 建议：信号 schema 一致率 ≥99%；信号→网关 p95 ≤2s；成交
 | N6 | 矛盾 Transformer 交叉验证 | `core/cross_validation_gate.py` | G 管线/A 管线结果 | `cv{confidence_mult,shift_signal,divergence_count,degraded_mode,...}` | 无（旁路 `_last_cross_validation`） | 50 周期心跳 | 门禁静默 FAIL-OPEN，无法确认是否在跑 |
 | N7 | 统计验证 | `_select_optimal_path` | 路径得分、conf_mult | `statistical_validation{validated,best_score,score_gap,low_conviction}` | 无 | `[PathDiscovery]` | 阈值/乘数联动导致长期 validated=false |
 | N8 | d* 与动作决策 | `compute_d_star` + `aligned` 判定 | R 向量、最优路径 | `d_star`、`aligned`、`action∈{long,short,light_*,WAIT}`、`level0_confidence` | 无 | `[PathDiscovery]` | 方向冲突/降级 → WAIT，无原因计数 |
-| N9 | L3/L4 记录 | `shadow_rl.record`、`bellman.td_update` | 状态、动作、reward | L3 样本、`l4_v` | `trace_id` | `chain_events` N9（l3_sample_count/l4_v） | reward 占位 0，样本静默不增长 |
+| N9 | L3/L4 记录 | `shadow_rl.record`、`bellman.td_update` | 状态、动作、reward | L3 样本、`l4_v`、`ri`、`tier`、`ess_top_direction`、`vol_ratio`、`ripple_is_source` | `trace_id` | `chain_events` N9（l3_sample_count/l4_v/ri/tier/ripple_*） | reward 占位 0，样本静默不增长 |
 | N10 | 首个信号构造（v1.2） | `engines/result_aggregator.py` → `build_entry_decision` | action/d_star/ri/pc/cv/elastic | `signal_id`、`decision_id`、payload 12 字段 | **chain_id 起点** | 无审计（仅内存） | 构造异常被吞 → 走旧回调，信号丢失 |
 | N11 | 23 闸门/定容/配额 | `execution/entry_loop.py` `_check_gates`/`_size` | 信号、账户状态、配额 | `tier`、`u_open`、`notional_usdt`、`quota_attr`、拦截原因 | chain_id | `[P2-S4b]` 日志（仅命中时） | 拦截原因分散在日志，无计数 |
 | N12 | 最终信号 + 审计 | `entry_loop._dispatch` → `build_entry_decision` → `EvolutionSignalDispatcher.dispatch` | 上下文 + 上游 payload | 新 `decision_id`、`payload.upstream_decision_id`、审计行 `stage=submit` | `upstream_decision_id`→`decision_id` | `runtime/execution_decisions.jsonl` | **二次构造丢 ri/l4_v/regime**；审计只写 submit |
@@ -1342,7 +1342,7 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 | N6 交叉验证 | `cv_present_ratio`、`cv_degraded{mode}` | `CrossValidationMissing`(P1)、`CrossValidationDegraded`(P2) | `stage=N6` |
 | N7 统计验证 | `path_validated_ratio`、`path_score_gap` | 观察 | `stage=N7` |
 | N8 d*/action | `decision_action_total{action}`、`wait_ratio` | `DecisionSilence` | `stage=N8 status=skip` |
-| N9 L3/L4 | `l3_sample_count`、`l4_v` | 观察 | `gene_data/`；`stage=N9` |
+| N9 L3/L4 | `l3_sample_count`、`l4_v`、`ri`、`tier`、`ess_top_direction`、`vol_ratio` | 观察（`ri` 恒定触发排查） | `gene_data/`；`stage=N9`（`ri=0.5` 且 `ess_top_direction=""` → 查 ESS top1 是否离场组合） |
 | N10 首信号 | `signal_built_total`、`signal_build_fail_total` | `SignalSchemaViolation` | `execution_decisions.jsonl`（`chain_id` 起点） |
 | N11 闸门/定容 | `entry_gate_blocked_total{gate}`、`notional_usdt` | `GateRejectSpike`(P2) | 日志 `[P2-S4b]`；`stage=N11` |
 | N12 最终信号 | `signal_schema_valid_ratio`、`signal_expired_at_submit_total` | `SignalSchemaViolation`(P1)、`SignalExpiredAtSubmit`(P1) | `execution_decisions.jsonl`（`stage=submit`） |

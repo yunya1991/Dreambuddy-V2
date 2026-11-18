@@ -33,6 +33,44 @@ class TestESSDirectionProvider:
         # top1 应该是 long（目前所有组合都是 entry_long）
         assert result["ess_top_direction"] in ("long", "short", "")
 
+    def test_skips_non_directional_top1(self, monkeypatch):
+        """top1 为纯离场组合（direction=both）→ 跳到下一个含 long/short 的组合"""
+        import dreambuddy_evolution.core.strategy_gene as sg
+
+        combos = [
+            {"combo_id": "CB-EXIT", "ess": 1.0, "action_ids": ["AC-EXIT"]},
+            {"combo_id": "CB-LONG", "ess": 0.85, "action_ids": ["AC-LONG"]},
+        ]
+        actions = [
+            {"gene_id": "AC-EXIT", "direction": "both"},
+            {"gene_id": "AC-LONG", "direction": "long"},
+        ]
+        monkeypatch.setattr(
+            sg, "load_gene_library", lambda root: {"actions": actions, "combinations": combos}
+        )
+        monkeypatch.setattr(sg, "top_combinations_by_ess", lambda lib, min_sample=30: combos)
+
+        provider = ESSDirectionProvider("/tmp", min_sample=0)
+        result = provider.get_top_direction()
+
+        assert result["ess_top_direction"] == "long"
+        assert result["ess_top1_id"] == "CB-LONG"
+        assert result["ess_top1_score"] == 0.85
+
+    def test_all_non_directional_returns_empty(self, monkeypatch):
+        """全部组合无方向 → 仍返回空（不 crash）"""
+        import dreambuddy_evolution.core.strategy_gene as sg
+
+        combos = [{"combo_id": "CB-EXIT", "ess": 1.0, "action_ids": ["AC-EXIT"]}]
+        actions = [{"gene_id": "AC-EXIT", "direction": "both"}]
+        monkeypatch.setattr(
+            sg, "load_gene_library", lambda root: {"actions": actions, "combinations": combos}
+        )
+        monkeypatch.setattr(sg, "top_combinations_by_ess", lambda lib, min_sample=30: combos)
+
+        result = ESSDirectionProvider("/tmp", min_sample=0).get_top_direction()
+        assert result["ess_top_direction"] == ""
+
     def test_empty_library_fo(self, tmp_path):
         """空基因库 → ess_top_direction=''"""
         provider = ESSDirectionProvider(str(tmp_path), min_sample=0)

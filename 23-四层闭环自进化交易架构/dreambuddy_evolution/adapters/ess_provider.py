@@ -94,30 +94,43 @@ class ESSDirectionProvider:
                 logger.info("[FO] ESS: no combos above min_sample=%d", self._min_sample)
                 return {"ess_top_direction": "", "ess_top1_id": "", "ess_top1_score": 0.0}
 
-            top1 = top_combos[0]
-            combo_id = top1.get("combo_id", "")
-            ess_score = float(top1.get("ess", 0.0))
-
-            # 从 action_ids 查找 action gene → 读取 direction
-            action_ids = top1.get("action_ids", [])
-            direction = ""
-            # actions 是 list[dict]
-            for aid in action_ids:
-                for a in actions:
-                    if isinstance(a, dict) and a.get("gene_id") == aid:
-                        d = a.get("direction", "")
-                        if d in ("long", "short"):
-                            direction = d
+            # 按 ESS 降序找第一个含 long/short 动作的组合：
+            # 离场动作 direction=both 会让 top1 拿不到方向，直接跳过而非整体降级
+            skipped: list[str] = []
+            for top in top_combos:
+                combo_id = top.get("combo_id", "")
+                ess_score = float(top.get("ess", 0.0))
+                # 从 action_ids 查找 action gene → 读取 direction
+                action_ids = top.get("action_ids", [])
+                direction = ""
+                # actions 是 list[dict]
+                for aid in action_ids:
+                    for a in actions:
+                        if isinstance(a, dict) and a.get("gene_id") == aid:
+                            d = a.get("direction", "")
+                            if d in ("long", "short"):
+                                direction = d
+                            break
+                    if direction:
                         break
-                if direction:
-                    break
 
-            logger.info("[ESS] top1=%s ess=%.4f dir=%s", combo_id, ess_score, direction)
-            return {
-                "ess_top_direction": direction,
-                "ess_top1_id": combo_id,
-                "ess_top1_score": ess_score,
-            }
+                if direction:
+                    if skipped:
+                        logger.info("[ESS] skip non-directional combos: %s", skipped)
+                    logger.info("[ESS] top1=%s ess=%.4f dir=%s", combo_id, ess_score, direction)
+                    return {
+                        "ess_top_direction": direction,
+                        "ess_top1_id": combo_id,
+                        "ess_top1_score": ess_score,
+                    }
+                skipped.append(combo_id)
+
+            logger.info(
+                "[FO] ESS: no directional combo among %d (skipped=%s)",
+                len(top_combos),
+                skipped[:5],
+            )
+            return {"ess_top_direction": "", "ess_top1_id": "", "ess_top1_score": 0.0}
 
         except Exception as e:
             logger.warning("[FO] ESSDirectionProvider compute crash: %s", e)

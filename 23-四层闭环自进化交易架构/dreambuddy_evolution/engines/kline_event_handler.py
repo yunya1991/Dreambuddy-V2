@@ -869,7 +869,10 @@ class KlineEventHandler:
             except Exception as _e:
                 logger.warning("[FO] L3/L4/AGI-H/I record crash(FAIL-OPEN): %s", _e)
 
-            # ============ N9 L3/L4 记录观测 ============
+            # ============ N9 L3/L4 记录观测（含 ri/tier 诊断字段）============
+            _v5_diag = float(kline_data.get("vol_5") or 0)
+            _v20_diag = float(kline_data.get("vol_20") or 0)
+            _vol_ratio_diag = round(_v5_diag / _v20_diag, 4) if _v20_diag > 0 else None
             emit_stage(
                 "N9",
                 "pipeline.l3_l4_record",
@@ -879,6 +882,14 @@ class KlineEventHandler:
                 data={
                     "l3_sample_count": int(l3_sample_count or 0),
                     "l4_v": round(float(l4_v or 0.0), 6),
+                    "ri": round(float(ri), 4),
+                    "tier": tier,
+                    "ess_top_direction": str(kline_data.get("ess_top_direction") or ""),
+                    "vol_ratio": _vol_ratio_diag,
+                    "ripple_is_source": bool(is_source),
+                    "ripple_ri": round(float(ripple_ri), 4),
+                    "reflection_ri": round(float(reflection_ri), 4),
+                    "reflection_eligible": bool(reflection_eligible),
                 },
             )
 

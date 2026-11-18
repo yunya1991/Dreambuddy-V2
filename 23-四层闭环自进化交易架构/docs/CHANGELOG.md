@@ -1,7 +1,26 @@
 # 23-四层闭环自进化交易架构 — 变更日志
 
-> **版本**: v1.17 | **更新日期**: 2026-11-18
+> **版本**: v1.18 | **更新日期**: 2026-11-18
 > **定位**: 模块级变更日志，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+
+---
+
+## [v1.18] - 2026-11-18 (ri 恒 0.5 根因修复 + 恒定值诊断流程固化)
+
+### 修复
+
+- **`ESDirectionProvider` 跳过无方向 top1**：此前只取 ESS 第一组合，而 top1 常为纯离场组合
+  （`direction=both`）→ `ess_top_direction=""` → `detect_ripple_source` 恒 False →
+  `ripple_ri` 回落 0.50 → `ri=0.50` → `tier=probe`。现按 ESS 降序取首个含 `long/short` 的组合。
+- **涟漪阈値 env 化**：`EVOLUTION_RIPPLE_VOL_RATIO`（默认 2.0）、`EVOLUTION_RIPPLE_LIQ_CHANGE`
+  （默认 0.30），默认行为不变，待 1H 分布定档。
+- **N9 诊断字段**：新增 `ri/tier/ess_top_direction/vol_ratio/ripple_is_source/ripple_ri/reflection_ri/reflection_eligible`。
+
+### 文档
+
+- 新增 §6.5「ri/tier/d_star 诊断基线」，判定 F1–F7 与证据链。
+- 新增 [FIXLIST-ri-tier-dstar-20261118.md](./FIXLIST-ri-tier-dstar-20261118.md)，逐项状态可追踪。
+- 固化 SKILL：`.trae/skills/dream-signal-chain-diagnosis/SKILL.md`。
 
 ---
 

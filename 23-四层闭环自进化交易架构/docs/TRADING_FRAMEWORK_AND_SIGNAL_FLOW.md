@@ -254,6 +254,39 @@ trace_id（N1 生成，贯穿推理段）
 
 ---
 
+## 6.5 ri / tier / d_star 诊断基线（2026-11-18）
+
+**现象**：云端三币持续 `ri=0.500`、`tier=probe`、`d_star=WAIT`。
+
+**根因链**
+
+1. `ESDirectionProvider` 只取 ESS top1。当前 top1 为 `CB-GRID-024`（`ess=1.0`，`n_samples=445`），
+   其 `action_ids` 全是 `direction=both` 的离场动作（`AC-EXIT-HALF-AT-1PCT`、`AC-STOP-BREAKEVEN`）。
+2. 取不到 `long/short` → `ess_top_direction=""` → `RippleEngine.detect_ripple_source` 的
+   `dir_match=False` → `is_source=False` → `ripple_ri` 走硬编码回落 0.50。
+3. `reflection_ri` 冷启动同为 0.50 → `ri=0.50`，恰好等于 `PROBE_THRESHOLD=0.50` → 恒 `tier=probe`
+   （`base_position_mult=0.4`），永远到不了 `standard/trend`。
+4. `d_star=WAIT` 与 ri 无关：`wait_cost = R_smooth × R_reflexivity`。当前三币
+   `R_smooth≈0.12~0.18`、`R_reflexivity=0.65` → wait≈0.08~0.12，远低于 `R_up≈0.37~0.43`。
+   该公式为 spec 定义且被测试固化（`test_evolution_pipeline.py` TR-EP-*），但语义上等价于
+   「走势越平滑越观望」，与「低阻力即可开仓」的直觉相反，需产品确认。
+
+**判定**
+
+| 现象 | 判定 | 去向 |
+|---|---|---|
+| `ess_top_direction` 为空 | 缺陷 | F1 |
+| 放量门槛 2.0 | 待按 1H 分布校准 | F2 |
+| `R_flow=0.0` | 设计内（Wyckoff effort/result 低阻力） | F3 关闭 |
+| `d_star=WAIT` | 设计使然，语义待确认 | F4 blocked |
+| `reflection_ri=0.5` | 冷启动正常 | F5 关闭 |
+| 定位字段缺失 | 可观测缺口 | F6 |
+
+**修复清单与逐项状态**：[FIXLIST-ri-tier-dstar-20261118.md](./FIXLIST-ri-tier-dstar-20261118.md)。
+修复期间的定位入口：`chain_events` 的 `N0`（数据就绪）/`N2`（R 向量）/`N5`（矛盾）/`N9`（ri·tier）。
+
+---
+
 ## 7. 变更规则
 
 1. 新增/修改信号字段：先改 `49-交易框架协议/contracts/final_decision_signal.v1.2.json`，再同步本文与 API_SPEC。

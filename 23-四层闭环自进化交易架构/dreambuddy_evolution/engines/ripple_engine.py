@@ -8,6 +8,7 @@ RippleEngine (§0.7 调研-观察-总结 涟漪扩散引擎)
 
 import logging
 import math
+import os
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -23,8 +24,12 @@ class RippleEngine:
           训练期可降至 1.3 以积累样本
         - liq_change_threshold: 清算指数变化率，默认 0.30
         """
-        self._vol_ratio_threshold = float(vol_ratio_threshold)
-        self._liq_change_threshold = float(liq_change_threshold)
+        self._vol_ratio_threshold = float(
+            os.getenv("EVOLUTION_RIPPLE_VOL_RATIO", vol_ratio_threshold)
+        )
+        self._liq_change_threshold = float(
+            os.getenv("EVOLUTION_RIPPLE_LIQ_CHANGE", liq_change_threshold)
+        )
 
     def detect_ripple_source(self, source: dict[str, Any]) -> bool:
         """
