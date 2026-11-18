@@ -661,10 +661,25 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
                     "23",
                     f"d_star 恒 WAIT（{wait_ratio}）",
                     f"N8 skip {n8['skip_total']} 次，d_star_wait 占 {wait_ratio}",
-                    "wait 成本在平滑行情下恒低于开仓（spec 定义，F4 待产品裁决）",
-                    "按 F4 模拟回测结论决定是否调整 d_star 门控，勿直接改阈值",
+                    "wait 成本在平滑行情下恒低于开仓（F4 已修：calibrated 口径 + 30% 中性区，默认 legacy）",
+                    "确认 EVOLUTION_DSTAR_WAIT_MODE=calibrated 已生效；若已生效仍全 WAIT，查 d_star_shadow 与 margin",
                 )
             )
+
+    if n9.get("reflection_eligible_ratio") == 0.0 and n9.get("ri", {}).get("count", 0) >= th.get(
+        "ri_min_samples", 10
+    ):
+        findings.append(
+            _finding(
+                "23_REFLECTION_STARVED",
+                "P1",
+                "23",
+                "reflection 无有效样本（ri 恒中性 0.5）",
+                f"N9 {n9['ri']['count']} 条，reflection_eligible=0，ri mode={n9['ri'].get('mode')}",
+                "22 账本平仓 realized_pnl 大量为 0（reconcile/幽灵仓清零也计入统计）→ win_rate 恒 0 → reflection_ri 恒 0.5",
+                "核查 22 fills 平仓 PnL 回写；reflection 统计应排除 realized_pnl 缺失/0 的 reconcile 记录",
+            )
+        )
 
     n2 = chain["n2"]
     if n2.get("count", 0) >= th.get("ri_min_samples", 10) and n2.get("degraded_ratio", 0) >= th.get(

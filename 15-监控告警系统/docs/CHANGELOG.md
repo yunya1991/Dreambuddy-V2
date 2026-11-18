@@ -1,6 +1,6 @@
 # 变更记录 — 15-监控告警系统
 
-> **版本**: v2.16 | **更新日期**: 2026-11-18
+> **版本**: v2.17 | **更新日期**: 2026-11-18
 
 ---
 
@@ -8,7 +8,7 @@
 
 | 版本 | 日期 | 变更内容 | 影响范围 |
 |------|------|----------|----------|
-| v2.16 | 2026-11-18 | N4 事件补充 `d_star_shadow`（`d_star_calibrated`/`costs`/`costs_calibrated`/`wait_mode`/`wait_margin`）：Level0 wait 口径校准（F4）的影子对比字段，默认 `legacy` 不改决策 | 代码+文档 |
+| v2.17 | 2026-11-18 | 新增信号口径校准监控：`signal_calibration_metrics()` 导出 11 个指标（dstar 口径/翻转、ri 中性、ESS 方向空、放量门槛、reflection 样本）；新增 5 条告警 `DstarCalibratedModeOff/DstarCalibratedAllWait/EssDirectionEmpty/RippleVolThresholdOutOfRange/ReflectionSampleStarved`；daily_insight 新增 `23_REFLECTION_STARVED` 并更新 `23_DSTAR_WAIT` 处置口径；TD 新增 §13.9.4 | 代码+规则+文档 |
 | v2.15 | 2026-11-18 | 新增每日 09:00 监控日报：23 核心链聚合 + 规则异常识别 + DeepSeek 归因 + 飞书推送；40 神经链预留（`enabled_chains` 未启用）；新增 launchd/systemd 定时与单测 | 代码+配置+运维 |
 | v2.14 | 2026-11-18 | ri/tier 恒值诊断：N9 事件与指标表补充 `ri/tier/ess_top_direction/vol_ratio/ripple_is_source`；§13.9.1 N9 行增加「ri 恒定」首查路径 | 代码+文档 |
 | v2.13 | 2026-11-18 | 接入 N3 高阶因子调制到实盘路径（`EngineRouter.run_path_discovery` 内、路径发现前），新增开关 `EVOLUTION_N3_HIGH_ORDER` 默认 off：关闭时只做影子对比（`n3_compare.before/after`、`direction_flip`），不改决策 | 代码+文档 |
@@ -41,7 +41,7 @@
 - 规则引擎：`ri` 恒定/高度集中、ESS 方向为空、tier 恒 probe、d_star WAIT、N2 降级、信号静默、CV 降级、chain_id 不贯通、发件箱积压、账本/补挂异常
 - 大模型：DeepSeek JSON 模式输出健康分、归因、建议；失败自动退化为规则报告（先生成报告，不阻塞）
 - 报告落盘 `logs/daily-insight/`；推送优先 receiver，失败直连飞书 management 群
-- 定时：本地 launchd 09:00；云端 systemd timer 09:00 Asia/Shanghai
+- 定时：生产在云端 systemd timer 09:00 Asia/Shanghai；本地仅手动验证，不装 launchd
 - 40 周期神经网络链路预留：`config/daily_insight.json` 的 `enabled_chains` 仅含 `23`，采集/TTL 接口保留
 - 单测：`tests/test_daily_insight.py`（8 项）
 

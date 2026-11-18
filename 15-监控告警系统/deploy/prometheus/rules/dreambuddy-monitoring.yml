@@ -298,6 +298,52 @@ groups:
         annotations:
           summary: "存在无法归因的 WAIT（非策略主动不交易），链路可能断在推理段"
 
+      # ---- 信号口径校准（F1–F4，2026-11-18）----
+      - alert: DstarCalibratedModeOff
+        expr: dreambuddy_dstar_calibrated_enabled == 0
+        for: 30m
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "23 d_star 未运行校准口径（EVOLUTION_DSTAR_WAIT_MODE≠calibrated），检查 entry23 drop-in 环境变量"
+
+      - alert: DstarCalibratedAllWait
+        expr: dreambuddy_dstar_calibrated_trade_1h == 0 and dreambuddy_dstar_calibrated_wait_1h > 0
+        for: 6h
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "23 校准口径连续 6h 全 WAIT（F4 回归：中性区 margin 或 R 量纲异常）"
+
+      - alert: EssDirectionEmpty
+        expr: dreambuddy_ess_direction_empty_1h > 0
+        for: 1h
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "23 ESS 方向为空（F1 回归：top 组合全为无方向离场组合），ripple_ri 将回退 0.5"
+
+      - alert: RippleVolThresholdOutOfRange
+        expr: dreambuddy_ripple_vol_threshold > 2.55 or dreambuddy_ripple_vol_threshold < 1.25
+        for: 30m
+        labels:
+          severity: P3
+          channel: alert
+        annotations:
+          summary: "23 自适应放量门槛越界（应在 1.30~2.50），检查 20 日波动率窗口或 K 线缺失"
+
+      - alert: ReflectionSampleStarved
+        expr: dreambuddy_reflection_ri_max <= 0.5 and dreambuddy_reflection_eligible_1h == 0
+        for: 24h
+        labels:
+          severity: P3
+          channel: alert
+        annotations:
+          summary: "23 reflection 24h 无有效样本（ri 恒 0.5）：检查 22 fills 平仓 realized_pnl 是否回写"
+
       - alert: ExitSizeUnknown
         expr: dreambuddy_exit_size_unknown_total > 0
         for: 10m

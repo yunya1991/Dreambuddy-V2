@@ -424,6 +424,14 @@ class KlineEventHandler:
             # ============ 3. Level0 d* 计算 ============
             d_star_result = self._compute_d_star(r_vector)
             d_star = d_star_result["d_star"]
+            # F4: wait 口径影子对比（EVOLUTION_DSTAR_WAIT_MODE 默认 legacy）
+            _dstar_shadow = {
+                "d_star_calibrated": d_star_result.get("d_star_calibrated"),
+                "wait_mode": d_star_result.get("wait_mode"),
+                "wait_margin": d_star_result.get("wait_margin"),
+                "costs": d_star_result.get("costs"),
+                "costs_calibrated": d_star_result.get("costs_calibrated"),
+            }
             # ============ 3b. 路径发现层 ============
             path_info: dict[str, Any] = {
                 "path_count": 0,
@@ -434,14 +442,7 @@ class KlineEventHandler:
                 "d_star_original": d_star,
                 "d_star_adjusted": d_star,
                 "primary_contradiction": None,
-                # F4: wait 口径影子对比（EVOLUTION_DSTAR_WAIT_MODE 默认 legacy）
-                "d_star_shadow": {
-                    "d_star_calibrated": d_star_result.get("d_star_calibrated"),
-                    "wait_mode": d_star_result.get("wait_mode"),
-                    "wait_margin": d_star_result.get("wait_margin"),
-                    "costs": d_star_result.get("costs"),
-                    "costs_calibrated": d_star_result.get("costs_calibrated"),
-                },
+                "d_star_shadow": _dstar_shadow,
             }
             try:
                 if (
@@ -461,6 +462,9 @@ class KlineEventHandler:
                             path_info.update(_wait_info)
             except Exception as e:
                 logger.debug("[PathLayer] %s outer crash: %s", symbol, e)
+            # 交易分支的 path_info 由 router 新建，需补回影子字段（监控/复盘依赖）
+            if not path_info.get("d_star_shadow"):
+                path_info["d_star_shadow"] = _dstar_shadow
 
             # ============ 3c. N3/N4/N5/N6/N7 语义节点事件 ============
             # N3 在 EngineRouter 内完成（开关 EVOLUTION_N3_HIGH_ORDER 默认 off，

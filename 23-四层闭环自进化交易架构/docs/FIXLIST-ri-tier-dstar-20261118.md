@@ -14,6 +14,7 @@
 | F5 | `reflection_ri=0.50` | 冷启动，`get_coin_stats.eligible=False` | 无需修复，样本积累后自然变化 | — | `[-]` |
 | F6 | 定位信息不足 | N0 未记录 `ess_top_direction` / `vol_ratio` / `is_source` | N9 事件补充 `ri/tier/ess_top_direction/vol_ratio/ripple_is_source/ripple_ri/reflection_ri/reflection_eligible` | 云端 N9 可直接看出卡在哪一条件 | `[x]` |
 | F7 | `PROBE_THRESHOLD` 口径不一致 | 记忆记录 0.55，23 handler 现值 0.50 | 已核对：23 handler 为 `0.50`；`0.55` 来自 `ripple_engine.get_ri_action`（cbr_boost 档）与 `tight_coupling_orchestrator`（RI≥0.55 形成推断），属不同阈值，非缺陷 | 结论记录 | `[-]` |
+| F8 | `reflection_ri` 始终 0.5，样本看似不积累 | 22 `fills` 平仓 43 笔中 25 笔 `realized_pnl=0`（reconcile/幽灵仓清零也计入）、1 笔 NULL；reflection 用 `win_rate` 计算 → 恒 0 → ri 恒 0.5 | ① 15 侧新增 `ReflectionSampleStarved` 告警与 `23_REFLECTION_STARVED` 日报项；② 22 侧补齐平仓 PnL 回写 / reflection 统计排除 `realized_pnl` 缺失记录（待 22 域修复） | 日报不再报 `23_REFLECTION_STARVED`；`reflection_eligible_1h > 0` | `[!]` |
 
 ## 执行记录
 
@@ -32,3 +33,6 @@
 | 2026-11-18 | F4 裁决 | legacy 恒 WAIT 是量纲问题（缺陷）；直接翻符号回撤过大（33%~60%）；采用「翻符号 + 30% 中性区」，默认开关关闭、影子对比后再启用 | `[x]` |
 | 2026-11-18 | F4 落地 | `level0_path_cost.compute_d_star` 增加 `wait_mode/wait_margin` 与 `d_star_calibrated`，N4 事件记录 `d_star_shadow`；新增 `tests/test_level0_wait_calibration.py` 8 项 | `[x]` 54 passed |
 | 2026-11-18 | 回测脚本 | `scripts/backtest_ri_gate.py` 新增 `--klines`（真实 K 线 walk-forward + margin 网格） | `[x]` |
+| 2026-11-18 | 口径切换 | 云端 drop-in `/etc/systemd/system/dreambuddy-entry23.service.d/10-dstar.conf` 设 `EVOLUTION_DSTAR_WAIT_MODE=calibrated` + `MARGIN=0.30`，重启（13:00:27 CST）；N4 实测 `wait_mode=calibrated`、ETH/SOL `d_star=long`、BTC `d_star_calibrated=WAIT`（bc 0.4577 > wait 0.577×0.7） | `[x]` 已生效 |
+| 2026-11-18 | 监控接入 | 15 新增 `signal_calibration_metrics` 11 指标 + 5 条告警 + `23_REFLECTION_STARVED` 日报项（15 TD §13.9.4） | `[x]` |
+| 2026-11-18 | F8 样本排查 | 云端 `ReflectionScanner.scan()`：64 笔 trade 分布 64 个币（每币 1 笔）；`fills` 平仓 43 笔中 25 笔 `realized_pnl=0`、1 笔 NULL → win_rate 恒 0 → reflection_ri 恒 0.5 | `[!]` 待 22 侧回写 PnL |

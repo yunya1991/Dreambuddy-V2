@@ -1,7 +1,25 @@
 # 23-四层闭环自进化交易架构 — 变更日志
 
-> **版本**: v1.19 | **更新日期**: 2026-11-18
+> **版本**: v1.20 | **更新日期**: 2026-11-18
 > **定位**: 模块级变更日志，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+
+---
+
+## [v1.20] - 2026-11-18 (d_star 校准口径正式启用 + reflection 样本排查)
+
+### 变更
+
+- **`EVOLUTION_DSTAR_WAIT_MODE=calibrated` 已启用**（云端 drop-in `10-dstar.conf`，margin=0.30）。
+  重启后 N4 实测：`wait_mode=calibrated`；ETH/SOL `d_star=long`；BTC `d_star_calibrated=WAIT`
+  （`long=0.4577` > `wait=0.5771×0.70=0.4040`，中性区正确拦截）。
+- **N4 影子字段覆盖交易分支**：此前仅 WAIT 分支写 `d_star_shadow`，交易分支由 router 新建
+  `path_info` 丢字段；现统一在 `d_star` 计算后构造并回填，监控可全量统计。
+
+### 排查（F8）
+
+- `reflection_ri` 恒 0.5 非冷启动：22 `fills` 平仓 43 笔中 **25 笔 `realized_pnl=0`**、1 笔 NULL
+  （reconcile/幽灵仓清零计入统计），reflection 用 win_rate → 恒 0 → ri 恒 0.5。
+  已由 15 侧 `ReflectionSampleStarved` 告警 + `23_REFLECTION_STARVED` 日报项兜住，PnL 回写待 22 域修复。
 
 ---
 

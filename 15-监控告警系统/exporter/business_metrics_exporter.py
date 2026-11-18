@@ -541,6 +541,74 @@ class Collector:
             )
         return out
 
+    # ---------- 信号口径校准（F1–F4，2026-11-18） ----------
+    def signal_calibration_metrics(self) -> list[str]:
+        """d_star wait 口径 / ri / ESS 方向 / 放量门槛 / reflection 样本 的 1h 健康度。"""
+        runtime = self.repo / "23-四层闭环自进化交易架构/runtime"
+        cutoff_1h = _now() - 3600
+        rows: list[dict] = []
+        for path in sorted(runtime.glob("chain_events-*.jsonl"))[-2:]:
+            rows.extend(_tail_jsonl(path, limit=5000))
+
+        mode = ""
+        cal_wait = cal_trade = flip = 0
+        ri_neutral = ess_empty = refl_ok = 0
+        refl_max = 0.0
+        latest_ri: dict[str, float] = {}
+        latest_thr: dict[str, float] = {}
+
+        for rec in rows:
+            ts = _iso_to_ts(str(rec.get("ts") or ""))
+            if not ts or ts < cutoff_1h:
+                continue
+            stage = str(rec.get("stage") or "")
+            data = rec.get("data") if isinstance(rec.get("data"), dict) else {}
+            sym = str(rec.get("symbol") or "?").split("-")[0] or "?"
+            if stage == "N4":
+                shadow = data.get("d_star_shadow")
+                if isinstance(shadow, dict) and shadow:
+                    mode = str(shadow.get("wait_mode") or mode)
+                    if str(shadow.get("d_star_calibrated")) == "WAIT":
+                        cal_wait += 1
+                    else:
+                        cal_trade += 1
+                    if str(shadow.get("d_star_calibrated")) != str(data.get("d_star_original")):
+                        flip += 1
+            elif stage == "N9":
+                try:
+                    if data.get("ri") is not None:
+                        ri = float(data["ri"])
+                        latest_ri[sym] = ri
+                        if abs(ri - 0.5) < 1e-9:
+                            ri_neutral += 1
+                    if data.get("vol_threshold") is not None:
+                        latest_thr[sym] = float(data["vol_threshold"])
+                    if data.get("reflection_ri") is not None:
+                        refl_max = max(refl_max, float(data["reflection_ri"]))
+                except (TypeError, ValueError):
+                    continue
+                if not str(data.get("ess_top_direction") or "").strip():
+                    ess_empty += 1
+                if data.get("reflection_eligible"):
+                    refl_ok += 1
+
+        out = [
+            _metric("dstar_calibrated_enabled", 1 if mode == "calibrated" else 0),
+            _metric("dstar_wait_mode", 1, mode=mode or "unknown"),
+            _metric("dstar_calibrated_wait_1h", cal_wait),
+            _metric("dstar_calibrated_trade_1h", cal_trade),
+            _metric("dstar_calibrated_flip_1h", flip),
+            _metric("ri_neutral_1h", ri_neutral),
+            _metric("ess_direction_empty_1h", ess_empty),
+            _metric("reflection_eligible_1h", refl_ok),
+            _metric("reflection_ri_max", round(refl_max, 4)),
+        ]
+        for sym, v in sorted(latest_ri.items()):
+            out.append(_metric("ri_value", round(v, 4), symbol=sym))
+        for sym, v in sorted(latest_thr.items()):
+            out.append(_metric("ripple_vol_threshold", round(v, 4), symbol=sym))
+        return out
+
     def collect(self) -> str:
         lines = [
             "# HELP dreambuddy_monitor_heartbeat_timestamp_seconds exporter heartbeat",
@@ -555,6 +623,7 @@ class Collector:
             self.universe_metrics(),
             self.execution_metrics(),
             self.chain_metrics(),
+            self.signal_calibration_metrics(),
             self.artifact_metrics(),
             self.cell_metrics(),
         ):

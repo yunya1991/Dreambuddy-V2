@@ -1337,12 +1337,12 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 | N1 引擎调度 | `pipeline_runs_total{symbol,result}`、`pipeline_last_success_ts` | `ChainBroken` | `23/runtime/chain_events-<date>.jsonl`（`stage=N1`） |
 | N2 L1 阻力向量 | `r_vector_quality_score`、`r_vector_degenerate_ratio` | 观察（Grafana） | `stage=N2`；`[PathDiscovery]` 日志 |
 | N3 高阶因子 | `high_order_applied_ratio` | 观察 | `stage=N3` |
-| N4 路径发现 | `paths_discovered`、`paths_valid_ratio` | `ChainBroken` | `stage=N4` |
+| N4 路径发现 | `paths_discovered`、`paths_valid_ratio`、`dstar_calibrated_enabled`、`dstar_calibrated_wait_1h`、`dstar_calibrated_trade_1h`、`dstar_calibrated_flip_1h` | `ChainBroken`、`DstarCalibratedModeOff`(P2)、`DstarCalibratedAllWait`(P2) | `stage=N4`（`data.d_star_shadow`：`wait_mode` / `d_star_calibrated` / 两套 `costs`） |
 | N5 主矛盾 | `contradiction_present_ratio`、`contradiction_dimension` | `ContradictionMissing`(P1) | `stage=N5`；`[Contradiction]` |
 | N6 交叉验证 | `cv_present_ratio`、`cv_degraded{mode}` | `CrossValidationMissing`(P1)、`CrossValidationDegraded`(P2) | `stage=N6` |
 | N7 统计验证 | `path_validated_ratio`、`path_score_gap` | 观察 | `stage=N7` |
 | N8 d*/action | `decision_action_total{action}`、`wait_ratio` | `DecisionSilence` | `stage=N8 status=skip` |
-| N9 L3/L4 | `l3_sample_count`、`l4_v`、`ri`、`tier`、`ess_top_direction`、`vol_ratio` | 观察（`ri` 恒定触发排查） | `gene_data/`；`stage=N9`（`ri=0.5` 且 `ess_top_direction=""` → 查 ESS top1 是否离场组合） |
+| N9 L3/L4 | `l3_sample_count`、`l4_v`、`ri`、`ri_value{symbol}`、`tier`、`ess_top_direction`、`vol_ratio`、`ripple_vol_threshold{symbol}`、`reflection_ri_max`、`reflection_eligible_1h`、`ri_neutral_1h`、`ess_direction_empty_1h` | `EssDirectionEmpty`(P2)、`RippleVolThresholdOutOfRange`(P3)、`ReflectionSampleStarved`(P3) | `gene_data/`；`stage=N9`（`ri=0.5` 且 `ess_top_direction=""` → 查 ESS top1 是否离场组合；`reflection_eligible=0` → 查 22 `fills` 平仓 `realized_pnl`） |
 | N10 首信号 | `signal_built_total`、`signal_build_fail_total` | `SignalSchemaViolation` | `execution_decisions.jsonl`（`chain_id` 起点） |
 | N11 闸门/定容 | `entry_gate_blocked_total{gate}`、`notional_usdt` | `GateRejectSpike`(P2) | 日志 `[P2-S4b]`；`stage=N11` |
 | N12 最终信号 | `signal_schema_valid_ratio`、`signal_expired_at_submit_total` | `SignalSchemaViolation`(P1)、`SignalExpiredAtSubmit`(P1) | `execution_decisions.jsonl`（`stage=submit`） |
@@ -1372,6 +1372,23 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
    以 `decision_id` 串 `22/audit/gateway.jsonl` + `position_ledger.db` 的 `fills`。
 4. **归属 → 边界**：执行/落账异常优先查 22（[22 TD §7](../../22-执行引擎中心/docs/TECHNICAL_DESIGN.md#7-统一持仓账本与执行兜底2026-11-18)）；
    决策/定容异常查 23；两者都不是再查 18/13。**不要先查已退役的 11 日志。**
+
+#### 13.9.4 信号口径校准指标（v2.16，2026-11-18）
+
+来源：`exporter/business_metrics_exporter.py::signal_calibration_metrics()`，读 23 `runtime/chain_events-*.jsonl` 近 1h。
+
+| 指标 | 含义 | 关联告警 | 异常处置 |
+|---|---|---|---|
+| `dstar_calibrated_enabled` | 1=calibrated 口径生效 | `DstarCalibratedModeOff`(P2, 30m) | 查 `systemctl show -p Environment dreambuddy-entry23 \| grep DSTAR`；drop-in 是否被覆盖 |
+| `dstar_wait_mode{mode}` | 当前口径（legacy/calibrated） | — | 与 enabled 交叉确认 |
+| `dstar_calibrated_wait_1h` / `_trade_1h` / `_flip_1h` | 近 1h 校准口径 WAIT/交易/与 legacy 分歧计数 | `DstarCalibratedAllWait`(P2, 6h) | 全 WAIT → 查 N4 `d_star_shadow.costs*` 与 margin；`flip` 持续 100% 说明 legacy 影子已完全失效 |
+| `ri_neutral_1h` | ri 恰为 0.5 的 N9 条数 | — | 与 `ess_direction_empty_1h`、`reflection_eligible_1h` 联合判读 |
+| `ess_direction_empty_1h` | ESS 方向为空的 N9 条数 | `EssDirectionEmpty`(P2, 1h) | ESS top 组合是否又变成纯离场组合 |
+| `ripple_vol_threshold{symbol}` | 自适应放量门槛 | `RippleVolThresholdOutOfRange`(P3, 30m) | 越界 → 检查 20 日波动率窗口与 K 线缺失 |
+| `reflection_ri_max`、`reflection_eligible_1h` | reflection 最大 ri / 有效样本数 | `ReflectionSampleStarved`(P3, 24h) | 恒 0.5/0 → 查 22 `position_ledger.db` 平仓 `realized_pnl` 是否回写（当前 43 笔平仓中 25 笔为 0） |
+
+每日分析由 `scripts/daily_insight.py` 覆盖：`23_DSTAR_WAIT`（F4 修复后改为提示确认 calibrated 已生效）、
+`23_REFLECTION_STARVED`（新增）、`23_N8_RI_CONCENTRATED`、`23_N9_ESS_TOP_DIR_EMPTY`。
 
 ---
 
