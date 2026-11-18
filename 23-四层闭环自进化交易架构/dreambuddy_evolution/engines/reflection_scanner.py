@@ -47,6 +47,8 @@ class ReflectionScanner:
     MIN_TRADES = 1
     MAX_HISTORY_DAYS = 90
     CACHE_TTL = 600
+    # 23 自己执行落库的 fills.source（其它值视为外部子系统战绩）
+    OWN_SOURCES = ("23-evolution", "22-ledger")
 
     def __init__(
         self, trades_path: str | Path | None = None, project_root: str | Path | None = None
@@ -110,9 +112,21 @@ class ReflectionScanner:
             if n == 0:
                 continue
 
-            real_trades = [t for t in coin_trades if t.get("source_system") != "backtest"]
-            backtest_trades = [t for t in coin_trades if t.get("source_system") == "backtest"]
-            stat_trades = real_trades if real_trades else backtest_trades
+            real_trades = [
+                t
+                for t in coin_trades
+                if not t.get("is_backtest") and t.get("source_system") != "backtest"
+            ]
+            backtest_trades = [
+                t
+                for t in coin_trades
+                if t.get("is_backtest") or t.get("source_system") == "backtest"
+            ]
+            # F8: 23 自己的执行结果经 22 账本落库（fills.source='23-evolution'）；
+            # 仓库级索引会混入 11-易经等其它子系统，只有本系统成交时优先采用，
+            # 避免外部战绩污染 reflection_ri
+            own_trades = [t for t in real_trades if t.get("record_source") in self.OWN_SOURCES]
+            stat_trades = own_trades or real_trades or backtest_trades
             is_backtest_only = len(real_trades) == 0 and len(backtest_trades) > 0
 
             stat_n = len(stat_trades)

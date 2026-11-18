@@ -75,6 +75,36 @@ def test_reflection_win_rate_ignores_invalid_samples(tmp_path: Path) -> None:
     assert "ETH" not in stats
 
 
+def test_own_ledger_trades_preferred_over_other_subsystems(tmp_path: Path) -> None:
+    """仓库级索引会混入 11-易经等其它子系统的成交，23 只应统计自己经 22 账本的成交。"""
+    db = _make_ledger(tmp_path)  # BTC 2 笔盈利，来源 22-ledger
+    conn = sqlite3.connect(db)
+    conn.executemany(
+        "INSERT INTO fills (ts,inst_id,pos_side,action,qty,px,fee,realized_pnl,ratio,source)"
+        " VALUES (?,?,?,?,?,?,?,?,?,?)",
+        [
+            (
+                datetime.now(timezone.utc).isoformat(),
+                "BTC-USDT",
+                "long",
+                "close",
+                1.0,
+                100.0,
+                0.0,
+                -4.0,
+                -0.04,
+                "yijing",
+            )
+        ],
+    )
+    conn.commit()
+    conn.close()
+
+    stats = ReflectionScanner(project_root=str(tmp_path)).scan(force=True)
+    assert stats["BTC"]["n_trades"] == 2, "外部子系统成交不得计入 23 的胜率"
+    assert stats["BTC"]["win_rate"] == 1.0
+
+
 def test_get_coin_stats_accepts_inst_id(tmp_path: Path) -> None:
     """handler 传的是 BTC-USDT-SWAP，统计键是 BTC，须能命中真实统计而非回退 0.5。"""
     _make_ledger(tmp_path)

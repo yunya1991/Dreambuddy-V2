@@ -434,6 +434,8 @@ class TradeIndexBuilder:
                 "exit_reason": raw.get("exit_reason", ""),
                 "confidence": float(raw.get("confidence", 0)),
                 "source_system": source,
+                # 原始流水来源（22 fills.source：23-evolution / 22-reconciled / 11-yijing …）
+                "record_source": str(raw.get("source") or ""),
                 "strategy_source": raw.get("strategy_source", source),
             }
         except Exception as e:
