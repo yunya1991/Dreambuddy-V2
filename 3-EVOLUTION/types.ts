@@ -63,6 +63,10 @@ export interface EvolutionProposal {
   requires_code: boolean;
   rollback_plan_id: string;
   evidence_refs: string[];
+  /** 实验预注册 ID（T4.1）：code/architecture 变更必须绑定 */
+  prereg_id?: string;
+  /** 由提案生成的 Ticket（T4.3）：禁止直改生产 */
+  ticket_id?: string;
   status: 'pending_review' | 'approved' | 'rejected' | 'implemented';
   created_at: string;
   approved_at?: string;

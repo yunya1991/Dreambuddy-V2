@@ -22,7 +22,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from core.ticket_state import (  # noqa: E402
     PAUSED_REASONS,
     TICKET_STATES,
+    VERDICT_LEVELS,
     create_ticket,
+    set_verdict_requirement,
     transition_ticket,
 )
 
@@ -32,7 +34,15 @@ class TestConstants:
         assert set(TICKET_STATES) == {"live", "paused", "waitsForPerson", "ended"}
 
     def test_paused_reasons(self):
-        assert set(PAUSED_REASONS) == {"waiting_event", "waiting_job", "waiting_person"}
+        assert set(PAUSED_REASONS) == {
+            "waiting_event",
+            "waiting_job",
+            "waiting_person",
+            "waiting_verdict",
+        }
+
+    def test_verdict_levels(self):
+        assert set(VERDICT_LEVELS) == {"U0", "U1", "U2", "U3"}
 
 
 class TestCreate:
@@ -47,6 +57,29 @@ class TestCreate:
     def test_create_fail_open(self):
         assert create_ticket(None) is None
         assert create_ticket("") is None
+
+    def test_create_with_claims_and_level(self):
+        t = create_ticket(
+            "TK-1",
+            claims=["样本外有效", "回撤可控"],
+            required_verdict_level="U2",
+        )
+        assert t["claims"] == ["样本外有效", "回撤可控"]
+        assert t["required_verdict_level"] == "U2"
+
+    def test_create_invalid_level_fail_open(self):
+        assert create_ticket("TK-1", required_verdict_level="U9") is None
+
+    def test_set_verdict_requirement(self):
+        t = create_ticket("TK-1")
+        out = set_verdict_requirement(t, claims=[" 有效 "], required_verdict_level="U3")
+        assert out["claims"] == ["有效"]
+        assert out["required_verdict_level"] == "U3"
+        assert t["claims"] == []  # 不改原对象
+
+    def test_set_invalid_level_fail_open(self):
+        t = create_ticket("TK-1")
+        assert set_verdict_requirement(t, required_verdict_level="U9") is None
 
 
 class TestLegalTransitions:

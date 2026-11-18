@@ -27,7 +27,8 @@ from .ticket_state import transition_ticket
 from .ticket_store import recover_tickets, save_ticket
 
 # 可被事件唤醒的 paused 子因(ADR-3;waiting_person 等人,不走事件唤醒)
-RESUMABLE_REASONS = ("waiting_event", "waiting_job")
+# waiting_verdict: U2/U3 异步裁决完成后由 verdict.updated 事件唤醒
+RESUMABLE_REASONS = ("waiting_event", "waiting_job", "waiting_verdict")
 
 
 def recover_resumable(store: Any) -> List[Dict[str, Any]]:

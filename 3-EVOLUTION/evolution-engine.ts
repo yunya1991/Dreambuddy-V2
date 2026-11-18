@@ -147,6 +147,26 @@ export class EvolutionEngine {
     return true;
   }
 
+  /**
+   * 绑定提案生成的 Ticket / 预注册（T4.3）。
+   * 不改变提案状态：仍需走完五道门后才可进生产。
+   */
+  attachProposalTicket(
+    evolutionId: string,
+    proposalId: string,
+    ticketId: string,
+    preregId?: string,
+  ): boolean {
+    const record = this.getRecord(evolutionId);
+    const proposal = record.proposals.find(p => p.id === proposalId);
+    if (!proposal || !ticketId) return false;
+    proposal.ticket_id = ticketId;
+    if (preregId) proposal.prereg_id = preregId;
+    record.updated_at = new Date().toISOString();
+    this.records.set(evolutionId, record);
+    return true;
+  }
+
   transitionPhase(evolutionId: string, newPhase: EvolutionPhase): void {
     const record = this.getRecord(evolutionId);
     record.phase = newPhase;

@@ -324,6 +324,10 @@ class L0Foundation:
             self._settle_cognitive_valuable(intent, message, result)
         except Exception:
             pass
+        try:
+            self._settle_residual_memory(intent, message, result, context)
+        except Exception:
+            pass
 
     # -------- scope: docs.search（B1，41 SPEC §13.2/§7.10） --------
     def _fetch_docs_search(self, params: Dict) -> Dict[str, Any]:
@@ -1326,6 +1330,22 @@ class L0Foundation:
         if not finding:
             return
         self._record_cognitive(f"[L1探索发现] intent={intent} | 问法: {message} | {finding}")
+
+    def _settle_residual_memory(
+        self,
+        intent: str,
+        message: str,
+        result: Optional[Dict],
+        context: Optional[Dict] = None,
+    ) -> None:
+        """把有价值发现交给残差记忆暂存，由治理周期统一准入落盘。"""
+        finding = self._detect_valuable_finding(result)
+        if not finding:
+            return
+        from .residual_memory_spool import append_candidate, build_candidate
+
+        candidate = build_candidate(finding, intent, message, result, context)
+        append_candidate(candidate, self.root)
 
     def _record_cognitive(self, content: str, intent: str = "") -> None:
         cle = self._load_cle()

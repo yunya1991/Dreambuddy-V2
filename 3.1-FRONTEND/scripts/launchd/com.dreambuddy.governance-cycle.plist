@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  DreamBuddy 治理周期（每日 03:30）
+  调用本机前端 POST /api/governance/cycle：门禁 SLA 巡检 + 残差遗忘计划。
+  如前端不在 3001 端口，修改下方 URL；日志见 /tmp/dreambuddy-governance-cycle.*.log。
+  安装：cp 到 ~/Library/LaunchAgents/ 后 launchctl bootstrap gui/$(id -u) <plist>
+  卸载：launchctl bootout gui/$(id -u)/com.dreambuddy.governance-cycle
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.dreambuddy.governance-cycle</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/curl</string>
+    <string>-fsS</string>
+    <string>-X</string>
+    <string>POST</string>
+    <string>http://127.0.0.1:3001/api/governance/cycle</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>3</integer>
+    <key>Minute</key>
+    <integer>30</integer>
+  </dict>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>StandardOutPath</key>
+  <string>/tmp/dreambuddy-governance-cycle.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/dreambuddy-governance-cycle.err.log</string>
+</dict>
+</plist>

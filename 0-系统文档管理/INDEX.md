@@ -1,6 +1,6 @@
 # 全项目文档索引 — INDEX
 
-> **版本**: v2.23 | **更新日期**: 2026-11-16
+> **版本**: v2.27 | **更新日期**: 2026-11-18
 > **定位（视角 B）**: **文档导航中枢，不是架构内容本身**。由 0-系统文档管理 维护，告诉你「到哪里找什么文档」。
 > **架构唯一事实源（SSoT）**: 所有架构争议以 [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v4.2** 为准（L0/L1/L2 三层 + L2 内部新 SACG + 认知 C1-C4 + 置信度门控）。被取代的旧架构文档已加「已归档」横幅，禁止作为实现依据。
 > **维护**: 每次新增/删除文档时同步更新；由 `4-工具与自动化/doc_coverage.py` 自动校验（已建成）
@@ -77,6 +77,9 @@
 | ★ **SKILL 编排主 SPEC** | [1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md](../1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md) | HC-1~HC-9 硬约束 + 三路径编排 + M2五组件 + 8.1 F1-F20 | ✅ 落地中 |
 | ★ **SKILL 模仿进化 SPEC** | [1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md](../1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md) **v0.3** | 路径B模仿+路径C联网兜底+ImitationCounter+token埋点 | ✅ 172/172 GREEN |
 | ★ **广义认知系统协作** | [35-广义认知系统协作模块/README.md](../35-广义认知系统协作模块/README.md) · [INDEX.md](../35-广义认知系统协作模块/INDEX.md) | 跨系统协作设计 SSoT：SPEC 收敛 + 协作接口契约 + PoE 统一框架（纯文档统筹层，不含代码） | ✅ v1.6（契约治理已落地） |
+| ★ **L2 系统架构能力总纲** | [1-ARCHITECTURE/specs/SPEC-SYSTEM-ARCH-CAPABILITY-v1.0.md](../1-ARCHITECTURE/specs/SPEC-SYSTEM-ARCH-CAPABILITY-v1.0.md) **v1.2.6** | 四平面 + 一生态；SACG/DSH 挂载；不确定性裁决 U0–U3；认知/残差/进化；GateFlow 与 Agent 治理 | ✅ 定稿（P0–P2.5 全闭环） |
+| ★ **架构能力落地清单** | [1-ARCHITECTURE/specs/TASKS-20261118-系统架构能力落地清单.md](../1-ARCHITECTURE/specs/TASKS-20261118-系统架构能力落地清单.md) **v1.0** | W0–W5 分波任务、进度标注、验收证据、归档结论 | ✅ 已归档 |
+| ★ **工作门禁制度调研** | [46-DSH架构/docs/tech/RESEARCH-GATE-INSTITUTIONS-v0.1.md](../46-DSH架构/docs/tech/RESEARCH-GATE-INSTITUTIONS-v0.1.md) **v0.2** | 管理制度 ↔ 飞书 ↔ GateFlow 对照；12 条流程校验；反模式 | ✅ 调研完成 |
 
 ---
 

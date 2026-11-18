@@ -90,11 +90,15 @@ def decide_verdict(
     opposite_significant: bool = False,
 ) -> Dict[str, Any]:
     """冻结规则，顺序不可调换（先排除不可信，再判强度）。"""
-    if stats.get("degraded") or not stats.get("leakage_free"):
+    if stats.get("degraded"):
         return {
             "verdict": "insufficient_data",
-            "reason_code": str(stats.get("reason") or "leakage_or_degraded"),
+            "reason_code": str(stats.get("reason") or "degraded"),
         }
+
+    # 泄漏不是“数据不足”，而是评估失效，必须 rejected（SPEC §3.6）
+    if not stats.get("leakage_free"):
+        return {"verdict": "rejected", "reason_code": "leakage_detected"}
 
     mean_inner = stats.get("mean_inner_score")
     if mean_inner is None or float(mean_inner) <= 0:

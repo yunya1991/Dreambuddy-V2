@@ -9,6 +9,11 @@ import { EvolutionEngine } from './evolution-engine';
 import { DZEBridge, DZEPhase } from './dze-bridge';
 import { DreamAgentBridge } from './dream-agent-bridge';
 import { ApprovalBridge } from './approval-bridge';
+import {
+  buildProposalTicket,
+  type BuildTicketResult,
+} from './proposal-ticket-bridge';
+import type { ExperimentPrereg } from './experiment-prereg';
 
 export interface OrchestratorResult {
   evolutionId: string;
@@ -52,6 +57,32 @@ export class EvolutionOrchestrator {
     this.processProposals(record.id);
 
     return this.buildResult(record);
+  }
+
+  /**
+   * 受治理入口（T4.3）：提案 → Ticket。
+   * 只生成 Ticket 并绑定，不触发 DZE、不标记 code_changed；进生产仍须过门禁。
+   */
+  createGovernedTicket(
+    evolutionId: string,
+    proposalId: string,
+    prereg: ExperimentPrereg,
+    options: { trace_id?: string; claims?: string[] } = {},
+  ): BuildTicketResult {
+    const record = this.engine.getRecord(evolutionId);
+    const proposal = record.proposals.find((p) => p.id === proposalId);
+    if (!proposal) throw new Error(`Proposal ${proposalId} not found`);
+
+    const result = buildProposalTicket(proposal, prereg, options);
+    if (result.ok) {
+      this.engine.attachProposalTicket(
+        evolutionId,
+        proposalId,
+        result.ticket.ticket_id,
+        result.ticket.prereg_id,
+      );
+    }
+    return result;
   }
 
   advanceDZEPhase(evolutionId: string, phase: DZEPhase): void {

@@ -54,17 +54,16 @@ def test_decide_verdict_rules_in_order():
         cost_bps=10,
     ) == {"verdict": "insufficient_data", "reason_code": "no_valid_fold"}
 
-    assert (
-        decide_verdict(
-            {**OK_STATS, "leakage_free": False},
-            same_sign_periods=9,
-            wilson_lb=0.9,
-            base_rate=0.5,
-            effect_bps=50,
-            cost_bps=10,
-        )["verdict"]
-        == "insufficient_data"
+    leaked = decide_verdict(
+        {**OK_STATS, "leakage_free": False},
+        same_sign_periods=9,
+        wilson_lb=0.9,
+        base_rate=0.5,
+        effect_bps=50,
+        cost_bps=10,
     )
+    assert leaked["verdict"] == "rejected"
+    assert leaked["reason_code"] == "leakage_detected"
 
     assert (
         decide_verdict(
@@ -89,6 +88,28 @@ def test_decide_verdict_rules_in_order():
         )["reason_code"]
         == "selection_overfit"
     )
+
+    # 相对阈值边界：0.1 / 0.5 = 0.2 恰好等于阈值，不判 overfit
+    at_threshold = decide_verdict(
+        {**OK_STATS, "selection_gap": 0.1},
+        same_sign_periods=9,
+        wilson_lb=0.9,
+        base_rate=0.5,
+        effect_bps=50,
+        cost_bps=10,
+    )
+    assert at_threshold["reason_code"] != "selection_overfit"
+
+    # 0.11 / 0.5 = 0.22 > 0.2，判 overfit
+    above_threshold = decide_verdict(
+        {**OK_STATS, "selection_gap": 0.11},
+        same_sign_periods=9,
+        wilson_lb=0.9,
+        base_rate=0.5,
+        effect_bps=50,
+        cost_bps=10,
+    )
+    assert above_threshold["reason_code"] == "selection_overfit"
 
     assert (
         decide_verdict(

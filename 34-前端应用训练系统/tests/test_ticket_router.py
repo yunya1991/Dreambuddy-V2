@@ -156,3 +156,48 @@ class TestFailOpen:
         out = route_single_round(plan, _WORKERS)
         refs = [a["external_ref"] for a in out["assignments"]]
         assert refs == ["N1"]
+
+
+class TestVerdictCapabilityRouting:
+    """T3.2: U2/U3 按能力标签路由，并以异步 job + waiting_verdict 唤醒。"""
+
+    def _plan_with_level(self, level):
+        ticket = _ticket("N1")
+        ticket["required_verdict_level"] = level
+        return _plan([ticket])
+
+    def test_u2_routes_to_worker_with_sandbox_and_backtest(self):
+        workers = {
+            "research": [
+                {"worker_id": "w-plain", "capabilities": ["research"]},
+                {"worker_id": "w-quant", "capabilities": ["sandbox", "backtest"]},
+            ]
+        }
+        out = route_single_round(self._plan_with_level("U2"), workers)
+        assignment = out["assignments"][0]
+        assert assignment["worker_id"] == "w-quant"
+        assert assignment["mode"] == "async_job"
+        assert assignment["wake_on"] == "waiting_verdict"
+        assert assignment["required_capabilities"] == ["sandbox", "backtest"]
+
+    def test_u2_without_capable_worker_is_unassigned(self):
+        workers = {"research": ["w-plain"]}
+        out = route_single_round(self._plan_with_level("U2"), workers)
+        assert out["assignments"] == []
+        assert out["unassigned"][0]["reason"] == "no_worker_for_verdict_capability"
+
+    def test_u3_requires_collect_and_rea(self):
+        workers = {
+            "research": [
+                {"worker_id": "w-collect", "capabilities": ["collect"]},
+                {"worker_id": "w-rea", "capabilities": ["collect", "rea"]},
+            ]
+        }
+        out = route_single_round(self._plan_with_level("U3"), workers)
+        assert out["assignments"][0]["worker_id"] == "w-rea"
+
+    def test_u1_stays_sync(self):
+        out = route_single_round(self._plan_with_level("U1"), _WORKERS)
+        assignment = out["assignments"][0]
+        assert assignment["mode"] == "sync"
+        assert assignment["wake_on"] is None

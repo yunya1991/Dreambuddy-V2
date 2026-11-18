@@ -156,3 +156,110 @@ def test_patrol_fail_open():
     report3 = patrol([None, _live("TK-9", last_ts=NOW - 10)], now=NOW)
     assert report3["ok"] is True
     assert report3["findings"] == []
+
+
+# ---------- T3.3 新增巡查 ----------
+
+
+def test_missing_evidence_at_acceptance():
+    tickets = [
+        _live(
+            "TK-E1",
+            last_ts=NOW,
+            at_acceptance=True,
+            required_verdict_level="U2",
+        )
+    ]
+    report = patrol(tickets, now=NOW)
+    assert any(f["kind"] == "missing_evidence" for f in report["findings"])
+
+
+def test_missing_evidence_not_flagged_with_evidence():
+    tickets = [
+        _live(
+            "TK-E2",
+            last_ts=NOW,
+            at_acceptance=True,
+            required_verdict_level="U2",
+            evidence_refs=["backtest:1"],
+        )
+    ]
+    report = patrol(tickets, now=NOW)
+    assert not any(f["kind"] == "missing_evidence" for f in report["findings"])
+
+
+def test_missing_evidence_skipped_before_acceptance():
+    tickets = [_live("TK-E3", last_ts=NOW, required_verdict_level="U2")]
+    report = patrol(tickets, now=NOW)
+    assert not any(f["kind"] == "missing_evidence" for f in report["findings"])
+
+
+def test_metric_drift_detected():
+    tickets = [
+        _live(
+            "TK-M1",
+            last_ts=NOW,
+            metrics={"win_rate": 0.42, "drawdown": 0.12},
+            baseline_metrics={"win_rate": 0.55, "drawdown": 0.11},
+        )
+    ]
+    report = patrol(tickets, now=NOW, metric_drift_threshold=0.2)
+    drifts = [f for f in report["findings"] if f["kind"] == "metric_drift"]
+    assert len(drifts) == 1
+    assert drifts[0]["metric"] == "win_rate"
+
+
+def test_metric_drift_below_threshold_not_flagged():
+    tickets = [
+        _live(
+            "TK-M2",
+            last_ts=NOW,
+            metrics={"win_rate": 0.54},
+            baseline_metrics={"win_rate": 0.55},
+        )
+    ]
+    report = patrol(tickets, now=NOW, metric_drift_threshold=0.2)
+    assert not any(f["kind"] == "metric_drift" for f in report["findings"])
+
+
+def test_unauthorized_tool_detected():
+    tickets = [
+        _live(
+            "TK-A1",
+            last_ts=NOW,
+            mandate={"allowed_tools": ["read_kline"]},
+            attempted_tools=["read_kline", "place_order"],
+        )
+    ]
+    report = patrol(tickets, now=NOW)
+    found = [f for f in report["findings"] if f["kind"] == "unauthorized_access"]
+    assert found and "place_order" in found[0]["resources"]
+
+
+def test_unauthorized_capability_detected():
+    tickets = [
+        _live(
+            "TK-A2",
+            last_ts=NOW,
+            granted_capabilities=["collect"],
+            attempted_capabilities=["collect", "write_production"],
+        )
+    ]
+    report = patrol(tickets, now=NOW)
+    found = [f for f in report["findings"] if f["kind"] == "unauthorized_access"]
+    assert found and "write_production" in found[0]["resources"]
+
+
+def test_authorized_access_not_flagged():
+    tickets = [
+        _live(
+            "TK-A3",
+            last_ts=NOW,
+            mandate={"allowed_tools": ["read_kline"]},
+            attempted_tools=["read_kline"],
+            granted_capabilities=["collect"],
+            attempted_capabilities=["collect"],
+        )
+    ]
+    report = patrol(tickets, now=NOW)
+    assert not any(f["kind"] == "unauthorized_access" for f in report["findings"])

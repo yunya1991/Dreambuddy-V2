@@ -21,7 +21,13 @@ import time
 from typing import Any, Dict, Optional
 
 TICKET_STATES = ("live", "paused", "waitsForPerson", "ended")
-PAUSED_REASONS = ("waiting_event", "waiting_job", "waiting_person")
+PAUSED_REASONS = (
+    "waiting_event",
+    "waiting_job",
+    "waiting_person",
+    "waiting_verdict",
+)
+VERDICT_LEVELS = ("U0", "U1", "U2", "U3")
 
 # 合法迁移表: from → 允许转入的 to 集合
 _TRANSITIONS = {
@@ -35,10 +41,18 @@ _TRANSITIONS = {
 _RELEASE_WORKER_STATES = {"paused", "waitsForPerson"}
 
 
-def create_ticket(ticket_id: Any, trace_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def create_ticket(
+    ticket_id: Any,
+    trace_id: Optional[str] = None,
+    claims: Optional[list] = None,
+    required_verdict_level: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
     """创建 live 态 Ticket 记录。非法 id → None(FAIL-OPEN)。"""
     try:
         if not ticket_id:
+            return None
+        level = _normalize_level(required_verdict_level)
+        if required_verdict_level and level is None:
             return None
         return {
             "ticket_id": str(ticket_id),
@@ -46,10 +60,45 @@ def create_ticket(ticket_id: Any, trace_id: Optional[str] = None) -> Optional[Di
             "paused_reason": None,
             "worker_id": None,
             "trace_id": trace_id,
+            "claims": _normalize_claims(claims),
+            "required_verdict_level": level,
             "history": [],
         }
     except Exception:
         return None
+
+
+def set_verdict_requirement(
+    ticket: Any,
+    claims: Optional[list] = None,
+    required_verdict_level: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """给已存在 Ticket 设置 claims / 所需裁决级别（纯函数，不改原对象）。
+
+    level 非法 → None(FAIL-OPEN)，避免把坏配置带进验收门。
+    """
+    try:
+        if not isinstance(ticket, dict):
+            return None
+        level = _normalize_level(required_verdict_level)
+        if required_verdict_level and level is None:
+            return None
+        out = dict(ticket)
+        out["claims"] = _normalize_claims(claims)
+        out["required_verdict_level"] = level
+        return out
+    except Exception:
+        return None
+
+
+def _normalize_claims(claims: Optional[list]) -> list:
+    if not claims:
+        return []
+    return [str(item).strip() for item in claims if str(item).strip()]
+
+
+def _normalize_level(level: Optional[str]) -> Optional[str]:
+    return level if level in VERDICT_LEVELS else None
 
 
 def transition_ticket(

@@ -23,6 +23,41 @@ from typing import Any, Dict, List, Optional, Set
 # 模块化开关(默认 False)
 ROUTER_SWITCH = "enable_superagent_router"
 
+# U2/U3 需要的能力标签（47 registry 的标签口径）
+VERDICT_CAPABILITIES: Dict[str, tuple] = {
+    "U0": (),
+    "U1": (),
+    "U2": ("sandbox", "backtest"),
+    "U3": ("collect", "rea"),
+}
+
+
+def required_capabilities(level: Any) -> tuple:
+    """按裁决级别返回所需能力标签；非法/缺失 → ()。"""
+    return VERDICT_CAPABILITIES.get(str(level), ())
+
+
+def _worker_entry(entry: Any):
+    """兼容两种花名册：字符串 worker_id 或 {worker_id, capabilities}。"""
+    if isinstance(entry, str) and entry:
+        return entry, set()
+    if isinstance(entry, dict) and entry.get("worker_id"):
+        caps = entry.get("capabilities") or []
+        return str(entry["worker_id"]), {str(c) for c in caps if c}
+    return None, set()
+
+
+def _eligible_workers(roster: Any, caps: tuple) -> list:
+    out = []
+    for entry in roster or []:
+        worker_id, worker_caps = _worker_entry(entry)
+        if not worker_id:
+            continue
+        if caps and not set(caps).issubset(worker_caps):
+            continue
+        out.append(worker_id)
+    return out
+
 
 def is_router_enabled(flags: Optional[Dict[str, Any]] = None) -> bool:
     """模块化开关读取。flags 非 dict / 缺键 → False(默认关)。"""
@@ -95,12 +130,23 @@ def route_single_round(
             if not role:
                 role = next(iter(workers.keys()), None)  # 无角色提示→首个可用角色
             roster = workers.get(role) or []
-            if not roster:
-                unassigned.append({"external_ref": ref, "reason": "no_worker_for_role"})
+            level = ticket.get("required_verdict_level")
+            caps = required_capabilities(level)
+            eligible = _eligible_workers(roster, caps)
+            if not eligible:
+                unassigned.append(
+                    {
+                        "external_ref": ref,
+                        "reason": (
+                            "no_worker_for_verdict_capability" if caps else "no_worker_for_role"
+                        ),
+                        "required_capabilities": list(caps),
+                    }
+                )
                 continue
 
             cursor = role_cursor.get(role, 0)
-            worker_id = roster[cursor % len(roster)]
+            worker_id = eligible[cursor % len(eligible)]
             role_cursor[role] = cursor + 1
             assignments.append(
                 {
@@ -108,6 +154,10 @@ def route_single_round(
                     "role": role,
                     "worker_id": worker_id,
                     "mandate": ticket.get("mandate"),
+                    "required_verdict_level": level,
+                    "required_capabilities": list(caps),
+                    "mode": "async_job" if caps else "sync",
+                    "wake_on": "waiting_verdict" if caps else None,
                 }
             )
 
