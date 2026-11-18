@@ -107,7 +107,10 @@ class DomainTaggedOkxClient:
                 datetime.now(timezone.utc) + timedelta(seconds=EVOLUTION_DECISION_TTL_SEC)
             ).isoformat()
         )
-        decision["px"] = px
+        # v1.2 契约根节点无 px 字段；px=None 时若仍写入会触发
+        # "Additional properties are not allowed ('px' was unexpected)"（止损/止盈单每轮必犯）
+        if px is not None:
+            decision["px"] = px
         decision["sl_px"] = sl_px
         decision["tp_px"] = tp_px
         decision["payload"] = {
