@@ -1385,7 +1385,7 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 | `ri_neutral_1h` | ri 恰为 0.5 的 N9 条数 | — | 与 `ess_direction_empty_1h`、`reflection_eligible_1h` 联合判读 |
 | `ess_direction_empty_1h` | ESS 方向为空的 N9 条数 | `EssDirectionEmpty`(P2, 1h) | ESS top 组合是否又变成纯离场组合 |
 | `ripple_vol_threshold{symbol}` | 自适应放量门槛 | `RippleVolThresholdOutOfRange`(P3, 30m) | 越界 → 检查 20 日波动率窗口与 K 线缺失 |
-| `reflection_ri_max`、`reflection_eligible_1h` | reflection 最大 ri / 有效样本数 | `ReflectionSampleStarved`(P3, 24h) | 恒 0.5/0 → 查 22 `position_ledger.db` 平仓 `realized_pnl` 是否回写（当前 43 笔平仓中 25 笔为 0） |
+| `reflection_ri_max`、`reflection_eligible_1h` | reflection 最大 ri / 有效样本数 | `ReflectionSampleStarved`(P3, 24h) | 恒 0.5/0 → 查 22 `position_ledger.db` 平仓 `realized_pnl` 是否回写（2026-11-18 已修：`source='22-reconciled'` 的对账平仓不再计入索引，缺失 PnL 标 `pnl_valid=False`） |
 
 每日分析由 `scripts/daily_insight.py` 覆盖：`23_DSTAR_WAIT`（F4 修复后改为提示确认 calibrated 已生效）、
 `23_REFLECTION_STARVED`（新增）、`23_N8_RI_CONCENTRATED`、`23_N9_ESS_TOP_DIR_EMPTY`。

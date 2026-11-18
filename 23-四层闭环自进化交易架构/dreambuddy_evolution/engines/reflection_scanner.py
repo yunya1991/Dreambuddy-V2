@@ -92,7 +92,9 @@ class ReflectionScanner:
                 return self._cache
 
         trades = self._load_trades()
-        recent = [t for t in trades if self._is_recent(t)]
+        # F8: 收益不可用（realized_pnl 与 pnl_pct 均缺失）的记录不参与胜率统计，
+        # 否则会被当作亏损，把 win_rate/reflection_ri 永久压在 0.5
+        recent = [t for t in trades if t.get("pnl_valid", True) and self._is_recent(t)]
 
         by_coin: dict[str, list[dict[str, Any]]] = {}
         for t in recent:

@@ -1,7 +1,26 @@
 # 23-四层闭环自进化交易架构 — 变更日志
 
-> **版本**: v1.20 | **更新日期**: 2026-11-18
+> **版本**: v1.21 | **更新日期**: 2026-11-18
 > **定位**: 模块级变更日志，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+
+---
+
+## [v1.21] - 2026-11-18 (F8 修复：reflection 样本质量)
+
+### 修复
+
+- **根因**：22 账本 43 笔平仓中 25 笔 `realized_pnl=0`，全部来自 `source='22-reconciled'`
+  （对账/幽灵仓清零，不是真实交易）；另有 1 笔 NULL。这些记录被当作亏损计入胜率
+  → `win_rate` 恒 0 → `reflection_ri` 恒 0.5、`eligible=False`。
+- **修复**：
+  1. `TradeIndexBuilder.KNOWN_SOURCES` 的 fills 查询增加 `COALESCE(source,'') NOT LIKE '%reconcil%'`；
+  2. `_normalize_trade` 新增 `pnl_valid`（`realized_pnl` 与 `pnl_pct` 均缺失才为 False）；
+  3. `ReflectionScanner.scan` 过滤 `pnl_valid=False` 的样本。
+- **不变量**：真实盈亏（含恰好为 0 的保本单）仍计入统计，只是不再把「收益未知」当亏损。
+
+### 测试
+
+- 新增 `tests/test_reflection_sample_quality.py` 3 项：reconcile 排除、缺失 PnL 标记、胜率只统计有效样本。
 
 ---
 

@@ -73,7 +73,12 @@ class TradeIndexBuilder:
             "source": "22-ledger",
             "type": "sqlite",
             "table": "fills",
-            "where": "action IN ('close','reduce','reduce_only')",
+            # F8: 排除 22 reconcile 产生的平仓流水（realized_pnl 恒 0，不是真实交易，
+            # 计入会把 win_rate 拉向 0，导致 reflection_ri 恒 0.5）
+            "where": (
+                "action IN ('close','reduce','reduce_only') "
+                "AND COALESCE(source,'') NOT LIKE '%reconcil%'"
+            ),
         },
         {
             "path": ".workbuddy/trade_index/backtest_trades.jsonl",
@@ -358,8 +363,11 @@ class TradeIndexBuilder:
                 or f"{coin}_{raw.get('entry_time', raw.get('timestamp', ''))}"
             )
             # pnl: 22 fills 表用 realized_pnl；SQLite 可能只有 pnl_pct，没有 pnl 绝对值
-            pnl = float(raw.get("pnl", raw.get("realized_pnl") or 0))
+            _pnl_raw = raw.get("pnl", raw.get("realized_pnl"))
+            pnl = float(_pnl_raw) if _pnl_raw is not None else 0.0
             pnl_pct = float(raw.get("pnl_pct", 0))
+            # F8: 只有 pnl 缺失且无 pnl_pct 的记录才算「收益不可用」，不参与胜率统计
+            pnl_valid = _pnl_raw is not None or pnl_pct != 0
             if pnl == 0 and pnl_pct != 0:
                 # 从 pnl_pct 推算 pnl（近似）
                 entry = float(raw.get("entry_price", 0))
@@ -383,6 +391,7 @@ class TradeIndexBuilder:
                 ),
                 "pnl": pnl,
                 "pnl_pct": pnl_pct,
+                "pnl_valid": pnl_valid,
                 "exit_reason": raw.get("exit_reason", ""),
                 "confidence": float(raw.get("confidence", 0)),
                 "source_system": source,
