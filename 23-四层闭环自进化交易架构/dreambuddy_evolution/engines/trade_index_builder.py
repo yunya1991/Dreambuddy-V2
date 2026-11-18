@@ -291,16 +291,23 @@ class TradeIndexBuilder:
     def _glob_sources(self) -> list[dict[str, Any]]:
         """合并已知源 + 自动发现源"""
         sources = []
+        base = self._repo_root()
 
-        # 1. 已知源（通配符展开）
+        # 1. 已知源（通配符展开）；相对仓库根解析，23 子目录启动时也能读到 22 账本
         for src in self.KNOWN_SOURCES:
             pattern = src["path"]
             if "*" in pattern:
-                for p in sorted(self._project_root.glob(pattern)):
-                    sources.append({**src, "path": str(p.relative_to(self._project_root))})
+                for p in sorted(base.glob(pattern)):
+                    sources.append(
+                        {
+                            **src,
+                            "path": str(p.relative_to(base)),
+                            "_root": str(base),
+                        }
+                    )
             else:
-                if (self._project_root / pattern).exists():
-                    sources.append(src)
+                if (base / pattern).exists():
+                    sources.append({**src, "_root": str(base)})
 
         # 2. 自动发现源
         for src in self._discover_sources():
@@ -309,6 +316,17 @@ class TradeIndexBuilder:
                 sources.append(src)
 
         return sources
+
+    def _repo_root(self) -> Path:
+        """向上定位仓库根（含 22-执行引擎中心），避免 23 子目录启动时读不到 22 账本。"""
+        cur = self._project_root
+        for _ in range(4):
+            if (cur / "22-执行引擎中心").exists():
+                return cur
+            if cur.parent == cur:
+                break
+            cur = cur.parent
+        return self._project_root
 
     def _load_closed_trades(self, file_path: Path) -> list[dict[str, Any]]:
         """加载已平仓交易记录（jsonl 格式）"""
@@ -349,7 +367,9 @@ class TradeIndexBuilder:
             logger.warning("[FO] load_sqlite_trades fail %s/%s: %s", file_path, table, e)
         return trades
 
-    def _normalize_trade(self, raw: dict[str, Any], source: str) -> dict[str, Any] | None:
+    def _normalize_trade(
+        self, raw: dict[str, Any], source: str, path: str = ""
+    ) -> dict[str, Any] | None:
         """将各子系统的交易记录统一为索引库格式"""
         try:
             _inst = str(raw.get("inst_id") or "")
@@ -360,6 +380,17 @@ class TradeIndexBuilder:
             # 计入会污染 win_rate；自动发现的源同样适用，故在归一化层统一拦截
             if "reconcil" in str(raw.get("source") or "").lower():
                 return None
+            # F8: shadow_validation / ess_reflection / 「持仓消失」幽灵记录不是真实成交，
+            # 其 pnl 为占位值（如 -100 / 0），不能进入 reflection 胜率统计
+            _reason = str(raw.get("exit_reason") or "")
+            _path_str = str(path)
+            is_synthetic = (
+                bool(raw.get("is_backtest") or raw.get("backtest"))
+                or any(k in _path_str for k in ("shadow_validation", "ess_reflection"))
+                or "持仓消失" in _reason
+                or "ghost" in _reason.lower()
+            )
+            is_backtest = is_synthetic or "backtest" in _path_str
             # SQLite trades 表的 id 字段作为 trade_id
             trade_id = str(
                 raw.get("trade_id")
@@ -395,7 +426,8 @@ class TradeIndexBuilder:
                 ),
                 "pnl": pnl,
                 "pnl_pct": pnl_pct,
-                "pnl_valid": pnl_valid,
+                "pnl_valid": pnl_valid and not is_synthetic,
+                "is_backtest": is_backtest,
                 "exit_reason": raw.get("exit_reason", ""),
                 "confidence": float(raw.get("confidence", 0)),
                 "source_system": source,
@@ -419,11 +451,11 @@ class TradeIndexBuilder:
         source_stats: list[str] = []
 
         for src in self._glob_sources():
-            file_path = self._project_root / src["path"]
+            file_path = Path(src.get("_root") or self._project_root) / src["path"]
             if src["type"] == "closed":
                 raw_trades = self._load_closed_trades(file_path)
                 for rt in raw_trades:
-                    normalized = self._normalize_trade(rt, src["source"])
+                    normalized = self._normalize_trade(rt, src["source"], src["path"])
                     if normalized:
                         all_trades[normalized["trade_id"]] = normalized
                 if raw_trades:
@@ -434,7 +466,7 @@ class TradeIndexBuilder:
                 table = src.get("table", "trades")
                 raw_trades = self._load_sqlite_trades(file_path, table, src.get("where"))
                 for rt in raw_trades:
-                    normalized = self._normalize_trade(rt, src["source"])
+                    normalized = self._normalize_trade(rt, src["source"], src["path"])
                     if normalized:
                         all_trades[normalized["trade_id"]] = normalized
                 if raw_trades:

@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -72,3 +73,37 @@ def test_reflection_win_rate_ignores_invalid_samples(tmp_path: Path) -> None:
     assert stats["BTC"]["reflection_ri"] > 0.55
     # ETH 唯一一笔收益缺失 → 不进入统计
     assert "ETH" not in stats
+
+
+def test_shadow_validation_excluded_and_22_ledger_resolved(tmp_path: Path) -> None:
+    """23 子目录启动时：已知源应解析到仓库根的 22 账本；shadow 样本不得计入 reflection。"""
+    _make_ledger(tmp_path)  # tmp_path 作为仓库根（含 22-执行引擎中心）
+    project23 = tmp_path / "23-四层闭环自进化交易架构"
+    shadow = project23 / "dreambuddy_evolution/gene_data/shadow_validation"
+    shadow.mkdir(parents=True)
+    (shadow / "CD-X_samples.jsonl").write_text(
+        json.dumps(
+            {
+                "coin": "BTC",
+                "direction": "long",
+                "entry_price": 0.0,
+                "exit_price": 0.0,
+                "pnl": -100.0,
+                "pnl_pct": -1.0,
+                "exit_reason": "运行时检测OKX持仓消失",
+                "exit_time": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    trades = TradeIndexBuilder(project_root=str(project23)).get_trades(force=True)
+    # 22 账本被解析到（2 笔 BTC 真实交易）；shadow 样本被标记为合成
+    assert any(t["source_system"] == "22-ledger" for t in trades)
+    shadow_rows = [t for t in trades if t["coin"] == "BTC" and t["pnl_valid"] is False]
+    assert shadow_rows, "幽灵/shadow 记录应标记 pnl_valid=False"
+
+    stats = ReflectionScanner(project_root=str(project23)).scan(force=True)
+    assert stats["BTC"]["n_trades"] == 2, "shadow 样本不得进入 reflection 统计"
+    assert stats["BTC"]["win_rate"] == 1.0
