@@ -15,7 +15,10 @@ export async function register(): Promise<void> {
       import("./lib/model/model-registry"),
     ]);
 
-  const strict = isStrictEnvironment();
+  // 默认只告警：缺少模型密钥不应阻断整站启动；
+  // 需要硬失败时显式设置 GATE_STRICT_STARTUP=true（门禁运行期仍 fail-closed）。
+  const strict =
+    isStrictEnvironment() && process.env.GATE_STRICT_STARTUP === "true";
   try {
     assertGatePolicySet(undefined, buildModelRegistry(), { strict });
   } catch (error) {
