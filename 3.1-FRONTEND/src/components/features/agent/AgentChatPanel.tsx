@@ -216,6 +216,8 @@ function AgentChatPanelInner({
     return createUIMessageStreamResponse({ stream });
   };
   const endRef = useRef<HTMLDivElement>(null);
+  // 已上报过的快照签名：同一快照不重复上报，避免父子 setState 互相触发
+  const reportedRef = useRef("");
   // 服务端事件同步去重：同一轮事件集只上报一次
   const syncedRef = useRef<string>("");
 
@@ -294,16 +296,31 @@ function AgentChatPanelInner({
     },
   });
 
-  // 流式消息里的 data-trace part 会持续更新：合并进面板状态（保留终态）
+  // 流式消息里的 data-trace part 会持续更新：合并进面板状态（保留终态）。
+  // 合并结果与上一次完全一致时返回 prev，避免「setState → 重渲染 → 再合并」的死循环。
   useEffect(() => {
     const next = collectTraceSpans(messages);
     if (next.length === 0) return;
     setTraceSpans((prev) => {
       const map = new Map(prev.map((span) => [span.span_id, span]));
       for (const span of next) map.set(span.span_id, span);
-      return [...map.values()].sort(
+      const merged = [...map.values()].sort(
         (a, b) => a.started_at - b.started_at || a.seq - b.seq,
       );
+      const same =
+        merged.length === prev.length &&
+        merged.every((span, index) => {
+          const before = prev[index];
+          return (
+            before &&
+            before.span_id === span.span_id &&
+            before.status === span.status &&
+            before.duration_ms === span.duration_ms &&
+            before.summary === span.summary &&
+            before.seq === span.seq
+          );
+        });
+      return same ? prev : merged;
     });
   }, [messages]);
 
@@ -325,13 +342,20 @@ function AgentChatPanelInner({
       ...collectTaskEvents(messages),
     ];
     const snapshot = applyEventsToStorage(traceId, traceId, events);
-    onTaskBoardSnapshot?.(snapshot, traceId);
+    // 没有可归并事件时 applyEventsToStorage 返回 null：保持上一份快照，不清空
+    if (snapshot) {
+      const signature = `${traceId}:${snapshot.seq}:${snapshot.updated_at}:${snapshot.status}`;
+      if (reportedRef.current !== signature) {
+        reportedRef.current = signature;
+        onTaskBoardSnapshot?.(snapshot, traceId);
+      }
+    }
 
     // 同步到服务端 L0：治理待办与门禁由服务端快照统一回放
     if (events.length === 0) return;
-    const signature = `${traceId}:${events.length}`;
-    if (syncedRef.current === signature) return;
-    syncedRef.current = signature;
+    const syncKey = `${traceId}:${events.length}`;
+    if (syncedRef.current === syncKey) return;
+    syncedRef.current = syncKey;
     void fetch(`/api/task/${encodeURIComponent(traceId)}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -342,7 +366,11 @@ function AgentChatPanelInner({
         const data = (await response.json().catch(() => null)) as
           | { success?: boolean; snapshot?: TaskBoardSnapshot }
           | null;
-        if (data?.snapshot) onTaskBoardSnapshot?.(data.snapshot, traceId);
+        if (!data?.snapshot) return;
+        const remoteSignature = `${data.snapshot.task_id}:${data.snapshot.seq}:${data.snapshot.updated_at}:${data.snapshot.status}`;
+        if (reportedRef.current === remoteSignature) return;
+        reportedRef.current = remoteSignature;
+        onTaskBoardSnapshot?.(data.snapshot, traceId);
       })
       .catch(() => {
         // 服务端不可达：本地快照仍然可用，不打断对话

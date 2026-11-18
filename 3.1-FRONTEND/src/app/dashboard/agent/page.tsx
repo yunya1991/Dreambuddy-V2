@@ -82,8 +82,7 @@ export default function DashboardAgentPage() {
   const inbox = useGovernanceInbox({
     paused: streaming,
     excludeTaskIds: activeTaskId ? [activeTaskId] : [],
-  });
-  const board = useTaskBoard(activeTaskId ?? EMPTY_TASK_ID);
+  });  const board = useTaskBoard(activeTaskId ?? EMPTY_TASK_ID);
 
   const loadTasks = useCallback(async () => {
     try {
@@ -132,7 +131,16 @@ export default function DashboardAgentPage() {
           | { snapshot?: TaskBoardSnapshot }
           | null;
         if (alive && response.ok && data?.snapshot) {
-          setChatSnapshot(data.snapshot);
+          const next = data.snapshot;
+          // 内容未变则复用旧对象，避免每 2s 触发整页重渲染
+          setChatSnapshot((prev) =>
+            prev &&
+            prev.task_id === next.task_id &&
+            prev.seq === next.seq &&
+            prev.updated_at === next.updated_at
+              ? prev
+              : next,
+          );
         }
       } catch {
         // 轮询失败保留上一次快照
