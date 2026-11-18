@@ -395,11 +395,14 @@ class TradeIndexBuilder:
             )
             is_backtest = is_synthetic or "backtest" in _path_str
             # SQLite trades 表的 id 字段作为 trade_id
-            trade_id = str(
-                raw.get("trade_id")
-                or raw.get("id")
-                or f"{coin}_{raw.get('entry_time', raw.get('timestamp', ''))}"
-            )
+            # F8: trade_id 必须带来源命名空间。22 fills、ess_reflection、bcrm_trades
+            # 的 id 都是自增整数，直接用作全局键会互相覆盖（实测 19 笔账本成交被覆盖
+            # 到只剩 3 笔），导致归属过滤失效
+            _raw_tid = raw.get("trade_id") or raw.get("id")
+            if _raw_tid is not None and str(_raw_tid).strip():
+                trade_id = f"{source}:{_raw_tid}"
+            else:
+                trade_id = f"{source}:{coin}_{raw.get('entry_time', raw.get('timestamp', ''))}"
             # pnl: 22 fills 表用 realized_pnl；SQLite 可能只有 pnl_pct，没有 pnl 绝对值
             _pnl_raw = raw.get("pnl", raw.get("realized_pnl"))
             pnl = float(_pnl_raw) if _pnl_raw is not None else 0.0

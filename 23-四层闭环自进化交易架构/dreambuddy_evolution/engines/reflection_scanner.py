@@ -107,6 +107,11 @@ class ReflectionScanner:
 
         result: dict[str, dict[str, Any]] = {}
         backtest_discount = _get_backtest_discount()
+        # F8: 只要索引里存在 23 自己的成交，就不再回退到其它子系统的战绩；
+        # 否则无自有样本的币种会被 11-易经等外部成交「喂」出假胜率
+        has_any_own = any(
+            not t.get("is_backtest") and t.get("record_source") in self.OWN_SOURCES for t in recent
+        )
         for coin, coin_trades in by_coin.items():
             n = len(coin_trades)
             if n == 0:
@@ -126,8 +131,13 @@ class ReflectionScanner:
             # 仓库级索引会混入 11-易经等其它子系统，只有本系统成交时优先采用，
             # 避免外部战绩污染 reflection_ri
             own_trades = [t for t in real_trades if t.get("record_source") in self.OWN_SOURCES]
-            stat_trades = own_trades or real_trades or backtest_trades
-            is_backtest_only = len(real_trades) == 0 and len(backtest_trades) > 0
+            # 有自有样本时只用自有样本；完全没有自有样本（新部署）才允许外部/回测样本冷启动
+            stat_trades = own_trades if has_any_own else (real_trades or backtest_trades)
+            if not stat_trades:
+                continue
+            is_backtest_only = all(
+                t.get("is_backtest") or t.get("source_system") == "backtest" for t in stat_trades
+            )
 
             stat_n = len(stat_trades)
             wins = sum(1 for t in stat_trades if t.get("pnl", 0) > 0)
@@ -136,7 +146,11 @@ class ReflectionScanner:
 
             from collections import Counter
 
-            sources = dict(Counter(t.get("source_system", "unknown") for t in coin_trades))
+            sources = dict(
+                Counter(
+                    t.get("record_source") or t.get("source_system", "unknown") for t in stat_trades
+                )
+            )
 
             base_ri = 0.5 + max(0.0, win_rate - 0.5) * 2 * 0.3
             base_ri = min(0.80, base_ri)

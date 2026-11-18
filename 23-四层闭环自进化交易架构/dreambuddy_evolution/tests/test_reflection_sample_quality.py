@@ -158,3 +158,64 @@ def test_shadow_validation_excluded_and_22_ledger_resolved(tmp_path: Path) -> No
     stats = ReflectionScanner(project_root=str(project23)).scan(force=True)
     assert stats["BTC"]["n_trades"] == 2, "shadow 样本不得进入 reflection 统计"
     assert stats["BTC"]["win_rate"] == 1.0
+
+
+def test_trade_id_namespaced_across_sources(tmp_path: Path) -> None:
+    """不同源的 id 都是自增整数，trade_id 必须带来源前缀，否则互相覆盖。"""
+    _make_ledger(tmp_path)  # 22 fills id=1..5
+    ext = tmp_path / "11-易经推理系统" / "misc"
+    ext.mkdir(parents=True)
+    (ext / "trades.jsonl").write_text(
+        json.dumps(
+            {
+                "trade_id": 1,
+                "coin": "BTC",
+                "direction": "long",
+                "entry_price": 1.0,
+                "exit_price": 1.0,
+                "pnl": -4.0,
+                "pnl_pct": -0.04,
+                "exit_time": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    trades = TradeIndexBuilder(project_root=str(tmp_path)).get_trades(force=True)
+    btc = [t for t in trades if t["coin"] == "BTC"]
+    assert len(btc) == 3, f"账本 2 笔 + 外部 1 笔都应保留，实际 {len(btc)}"
+    assert sum(1 for t in btc if t["source_system"] == "22-ledger") == 2
+
+
+def test_no_external_fallback_when_own_trades_exist(tmp_path: Path) -> None:
+    """存在自有成交时，无自有样本的币种不得借用外部子系统战绩。"""
+    _make_ledger(tmp_path)  # BTC 自有 2 笔，has_any_own=True
+    ext = tmp_path / "11-易经推理系统" / "misc"
+    ext.mkdir(parents=True)
+    (ext / "trades.jsonl").write_text(
+        json.dumps(
+            {
+                "trade_id": 99,
+                "coin": "SOL",
+                "direction": "long",
+                "entry_price": 1.0,
+                "exit_price": 2.0,
+                "pnl": 9.0,
+                "pnl_pct": 0.09,
+                "exit_time": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    stats = ReflectionScanner(project_root=str(tmp_path)).scan(force=True)
+    assert "BTC" in stats
+    assert "SOL" not in stats, "23 没有 SOL 成交时不应继承外部子系统的胜率"
+    assert (
+        ReflectionScanner(project_root=str(tmp_path)).get_coin_stats("SOL", force=True)[
+            "reflection_ri"
+        ]
+        <= 0.65
+    )
