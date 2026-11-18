@@ -52,6 +52,8 @@ import {
   type GateResult,
 } from "@/lib/l1-answer-guard";
 import { emitMonitorEvent } from "@/lib/monitor-bus";
+import { createTraceHandle } from "@/lib/agent/run-trace";
+import type { TraceSpan } from "@/types/run-trace";
 import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
@@ -96,9 +98,17 @@ function extractLastUserText(messages: UIMessage[]): string {
 }
 
 /** 用 UIMessage 文本流回显一段纯文本（useChat 可直接渲染，避免 JSON 信封导致「无返回」）。 */
-function textUiResponse(text: string, headers?: Record<string, string>) {
+function textUiResponse(
+  text: string,
+  headers?: Record<string, string>,
+  spans?: TraceSpan[],
+) {
   const stream = createUIMessageStream({
     execute: ({ writer }) => {
+      // 先回放已产生的调度轨迹，前端右侧时间线可与正文同时出现
+      for (const span of spans ?? []) {
+        writer.write({ type: "data-trace", id: span.span_id, data: span });
+      }
       const id = randomUUID();
       writer.write({ type: "text-start", id });
       writer.write({ type: "text-delta", id, delta: text });
@@ -297,8 +307,12 @@ export async function POST(request: NextRequest) {
   // AI Agent 开启时，L1 直答必须先过 L2 门禁（G1 规则门 + G3 灰区轻审）；
   // 判定 fail → 同一路由接管重答（agent 开）或统一提示（agent 关）。
   const userText = extractLastUserText(body.messages);
+  /** O0 调度轨迹：与 reasoning 同流透传，前端右侧时间线消费 */
+  const trace = createTraceHandle(traceId);
   if (userText) {
+    const endS1 = trace.start("S1", "意图识别与 L1 试探");
     const l1 = await tryL1Direct(userText, traceId);
+    endS1(l1 ? "done" : "skipped", l1 ? `L1 命中：${l1.intent}` : "未命中，转 L2");
     if (l1) {
       const gateInput: GateInput = {
         message: userText,
@@ -307,18 +321,26 @@ export async function POST(request: NextRequest) {
         data: l1.data,
         routeSignal: l1.routeSignal,
       };
+      const endGate = trace.start("A1", "L1 门禁复核", { role: "gate" });
       const gate = await reviewL1Answer(gateInput, {
         allowJudge: agentEnabled,
         judge: agentEnabled ? judgeL1Answer : undefined,
       });
+      endGate(
+        gate.verdict === "fail" ? "failed" : "done",
+        gate.reasons.join(",") || gate.verdict,
+      );
       const headers = gateHeaders(gate);
       emitGateEvent(traceId, gate, agentEnabled);
 
       if (gate.verdict !== "fail") {
-        return textUiResponse(l1.answer, headers);
+        trace.start("L1", "L1 确定性直答", { role: "l1" })("done", l1.intent);
+        trace.start("G1", "输出简报", { role: "g" })("done", "未调用大模型");
+        return textUiResponse(l1.answer, headers, trace.history);
       }
       if (!agentEnabled) {
-        return textUiResponse(L1_GATE_FAIL_HINT, headers);
+        trace.start("G1", "输出简报", { role: "g" })("done", "门禁未过且 Agent 关闭");
+        return textUiResponse(L1_GATE_FAIL_HINT, headers, trace.history);
       }
       takeoverContext = buildTakeoverContext(gateInput, gate);
       console.info(
@@ -391,7 +413,8 @@ export async function POST(request: NextRequest) {
     });
 
     // 系统能力工具（只读分析）始终可用；MCP tools 失败不致命，退化为仅能力工具
-    const capabilityTools = createCapabilityTools();
+    const endS2 = trace.start("S2", "上下文与工具准备");
+    const capabilityTools = createCapabilityTools(trace);
     let tools: Record<string, Tool> = { ...capabilityTools };
     try {
       const allTools = await getAgentMcpTools();
@@ -402,6 +425,7 @@ export async function POST(request: NextRequest) {
         e instanceof Error ? e.message : e,
       );
     }
+    endS2("done", `${Object.keys(tools).length} 个工具可用`);
 
     // SPEC-52 F4：预扣 → 结算（账本只追加；未产生 usage 时预扣自动释放）
     const reservation = reserveCu(traceId, estimateChatCu(0));
@@ -414,6 +438,7 @@ export async function POST(request: NextRequest) {
       .filter(Boolean)
       .join("\n");
 
+    const endL2 = trace.start("L2", "模型推理", { role: profile.id });
     const result = streamText({
       model,
       system,
@@ -421,6 +446,10 @@ export async function POST(request: NextRequest) {
       tools,
       stopWhen: stepCountIs(5),
       onFinish: async (event) => {
+        endL2(
+          "done",
+          `steps=${event.steps.length} tokens=${event.usage?.inputTokens ?? 0}/${event.usage?.outputTokens ?? 0}`,
+        );
         // Phase 3 蒸馏桥出口：会话轮数 ≥2 且有实质工具结果时写 session_summary 到 outbox。
         // FAIL-OPEN：maybeWriteSessionSummary 内部已 catch，此处再兜底绝不影响流响应。
         try {
@@ -472,12 +501,33 @@ export async function POST(request: NextRequest) {
             e instanceof Error ? e.message : e,
           );
         }
+
+        // O0：输出阶段打点（写入失败由 emit 内部吞掉，不影响已完成的响应）
+        trace.start("G1", "汇总输出", { role: "g" })(
+          "done",
+          `工具调用 ${event.steps.reduce(
+            (count, step) => count + step.toolCalls.length,
+            0,
+          )} 次`,
+        );
+      },
+    });
+    // 轨迹与 reasoning 共用一条 UIMessage 流：前端无需额外连接
+    const uiStream = createUIMessageStream({
+      execute: async ({ writer }) => {
+        trace.attach((span) => {
+          writer.write({ type: "data-trace", id: span.span_id, data: span });
+        });
+        // 回放 attach 之前的阶段（S1/S2），随后由 sink 实时追加
+        for (const span of trace.history) {
+          writer.write({ type: "data-trace", id: span.span_id, data: span });
+        }
+        writer.merge(result.toUIMessageStream({ sendReasoning: true }));
       },
     });
     return withHeartbeat(
-      result.toUIMessageStreamResponse({
-        // 前端「思考过程」可折叠区：把模型的 reasoning part 透传到 UIMessage 流
-        sendReasoning: true,
+      createUIMessageStreamResponse({
+        stream: uiStream,
         headers: takeoverContext ? { "x-l2-takeover": "1" } : undefined,
       }),
     );

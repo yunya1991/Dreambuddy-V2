@@ -27,6 +27,8 @@ import {
   type AgentSession,
 } from "@/stores/agent-session-store";
 import type { AgentMessage } from "@/types/agent-message";
+import { TracePanel } from "./TracePanel";
+import type { TraceSpan } from "@/types/run-trace";
 
 /** 静态技能候选（无 skills API 时的降级清单，SPEC-B §3.9） */
 const STATIC_SUGGESTIONS: ChatInputSuggestion[] = [
@@ -61,6 +63,25 @@ function toAgentMessages(
   }));
 }
 
+/** 从 UIMessage 的 data-trace part 收集调度轨迹（同一 span 保留终态） */
+function collectTraceSpans(messages: UIMessage[]): TraceSpan[] {
+  const map = new Map<string, TraceSpan>();
+  for (const message of messages) {
+    if (message.role !== "assistant") continue;
+    for (const part of (message.parts ?? []) as Array<{
+      type?: string;
+      data?: unknown;
+    }>) {
+      if (part?.type !== "data-trace" || !part.data) continue;
+      const span = part.data as TraceSpan;
+      if (span?.span_id) map.set(span.span_id, span);
+    }
+  }
+  return [...map.values()].sort(
+    (a, b) => a.started_at - b.started_at || a.seq - b.seq,
+  );
+}
+
 export interface AgentChatPanelProps {
   sessionId: string;
   /** 会话标题（用于头部展示） */
@@ -84,6 +105,9 @@ function AgentChatPanelInner({
   ); // eslint-disable-line react-hooks/exhaustive-deps
   const [input, setInput] = useState("");
   const [l2Reviewed, setL2Reviewed] = useState(false);
+  // O0 调度轨迹：随消息流累积，新一轮发送时清空
+  const [traceSpans, setTraceSpans] = useState<TraceSpan[]>([]);
+  const [showTrace, setShowTrace] = useState(true);
   const endRef = useRef<HTMLDivElement>(null);
 
   const transport = useMemo(
@@ -107,6 +131,19 @@ function AgentChatPanelInner({
       setMessages(sessionId, toAgentMessages(finalMessages, isError));
     },
   });
+
+  // 流式消息里的 data-trace part 会持续更新：合并进面板状态（保留终态）
+  useEffect(() => {
+    const next = collectTraceSpans(messages);
+    if (next.length === 0) return;
+    setTraceSpans((prev) => {
+      const map = new Map(prev.map((span) => [span.span_id, span]));
+      for (const span of next) map.set(span.span_id, span);
+      return [...map.values()].sort(
+        (a, b) => a.started_at - b.started_at || a.seq - b.seq,
+      );
+    });
+  }, [messages]);
 
   const busy = status === "submitted" || status === "streaming";
   const virtualize = shouldVirtualize(messages.length);
@@ -187,6 +224,7 @@ function AgentChatPanelInner({
         : text;
     setInput("");
     setL2Reviewed(false);
+    setTraceSpans([]);
     interruptedRef.current = false;
     retriedRef.current = false;
     autoRetriedRef.current = false;
@@ -194,21 +232,31 @@ function AgentChatPanelInner({
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <header className="shrink-0 border-b border-slate-800 px-4 py-2 text-xs text-slate-400">
-        {title || "新会话"}
-        <span className="ml-2 text-[10px] text-slate-600">
-          {agentEnabled ? "AI Agent · 按 token 计费" : "默认模式 · 不扣积分"}
-        </span>
-        {l2Reviewed && (
-          <span
-            data-testid="l2-reviewed-badge"
-            className="ml-2 rounded border border-indigo-700/50 bg-indigo-950/40 px-1.5 py-0.5 text-[10px] text-indigo-300"
-          >
-            已由 L2 复核
+    <div className="flex h-full min-h-0">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex shrink-0 items-center gap-2 border-b border-slate-800 px-4 py-2 text-xs text-slate-400">
+          <span className="truncate">{title || "新会话"}</span>
+          <span className="shrink-0 text-[10px] text-slate-600">
+            {agentEnabled ? "AI Agent · 按 token 计费" : "默认模式 · 不扣积分"}
           </span>
-        )}
-      </header>
+          {l2Reviewed && (
+            <span
+              data-testid="l2-reviewed-badge"
+              className="shrink-0 rounded border border-indigo-700/50 bg-indigo-950/40 px-1.5 py-0.5 text-[10px] text-indigo-300"
+            >
+              已由 L2 复核
+            </span>
+          )}
+          <button
+            type="button"
+            data-testid="agent-trace-toggle"
+            onClick={() => setShowTrace((v) => !v)}
+            className="ml-auto shrink-0 rounded border border-slate-700 px-2 py-0.5 text-[10px] text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+            aria-pressed={showTrace}
+          >
+            {showTrace ? "隐藏轨迹" : "调度轨迹"}
+          </button>
+        </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
         {messages.length === 0 && !busy && (
@@ -291,6 +339,10 @@ function AgentChatPanelInner({
           placeholder="输入问题，Enter 发送，Shift+Enter 换行，@ 选择技能"
         />
       </div>
+      </div>
+      {showTrace && (
+        <TracePanel spans={traceSpans} onClose={() => setShowTrace(false)} />
+      )}
     </div>
   );
 }

@@ -12,14 +12,16 @@ import { tool } from "ai";
 import { z } from "zod";
 import {
   CAPABILITY_PROMPT,
+  getCapability,
   listCapabilities,
   runCapability,
   type CapabilityLayer,
 } from "./capability-registry";
+import type { TraceHandle } from "./run-trace";
 
 export { CAPABILITY_PROMPT };
 
-export function createCapabilityTools() {
+export function createCapabilityTools(trace?: TraceHandle) {
   return {
     system_capabilities: tool({
       description:
@@ -40,17 +42,19 @@ export function createCapabilityTools() {
       }: {
         layer?: CapabilityLayer;
         keyword?: string;
-      }) => ({
-        ok: true,
-        capabilities: listCapabilities({ layer, keyword }).map((c) => ({
+      }) => {
+        const end = trace?.start("C1", "查询能力清单", { role: "orchestrator" });
+        const capabilities = listCapabilities({ layer, keyword }).map((c) => ({
           id: c.id,
           name: c.name,
           layer: c.layer,
           when: c.when,
           params: c.params,
           latency_ms: c.latency_ms,
-        })),
-      }),
+        }));
+        end?.("done", `命中 ${capabilities.length} 项`);
+        return { ok: true, capabilities };
+      },
     }),
 
     run_capability: tool({
@@ -69,9 +73,24 @@ export function createCapabilityTools() {
       }: {
         id: string;
         params?: Record<string, unknown>;
-      }) => runCapability(id, params ?? {}),
+      }) => {
+        const cap = getCapability(id);
+        const end = trace?.start("C2", cap?.name ?? id, {
+          role: cap?.module,
+          capability_id: id,
+        });
+        const result = await runCapability(id, params ?? {});
+        end?.(
+          result.ok ? (result.degraded ? "degraded" : "done") : "failed",
+          result.ok
+            ? (result.note ?? `输出 ${result.output?.length ?? 0} 字符`)
+            : (result.error ?? "调用失败"),
+        );
+        return result;
+      },
     }),
   };
 }
+
 
 export type CapabilityTools = ReturnType<typeof createCapabilityTools>;
