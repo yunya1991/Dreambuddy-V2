@@ -7,6 +7,11 @@ route:
   group_interval: 5m
   repeat_interval: 6h
   routes:
+    # Watchdog 等 meta 通道常驻告警只供外部死手开关读取 Prometheus，
+    # 不进飞书推送，避免每日一条 P3 噪声
+    - matchers: ['channel="meta"']
+      receiver: blackhole
+      repeat_interval: 24h
     - matchers: ['severity="P0"']
       receiver: feishu-risk
       group_wait: 10s
@@ -28,6 +33,7 @@ inhibit_rules:
     equal: ["job"]
 
 receivers:
+  - name: blackhole
   - name: feishu-risk
     webhook_configs:
       - url: "http://127.0.0.1:9098/alert?level=P0"

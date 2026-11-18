@@ -1,6 +1,6 @@
 # 变更记录 — 15-监控告警系统
 
-> **版本**: v2.19 | **更新日期**: 2026-11-18
+> **版本**: v2.20 | **更新日期**: 2026-11-18
 
 ---
 
@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 变更内容 | 影响范围 |
 |------|------|----------|----------|
+| v2.20 | 2026-11-18 | 告警降噪四项：① `GhostPositionCleaned` 改用 `ledger_ghost_exchange_flat_24h`，新增 `GhostStaleBulkCleanup`（stale>20/24h），导出器拆分 ghost 指标；② `CrossValidationDegraded` 只对 `both_none` 触发（attention_only/granger_only 属设计内降级）；③ Watchdog(meta) 路由到 blackhole 不进飞书；④ TD §13.9.5 记录 ArtifactStale 根因（运行时产物被 git 跟踪，pull 覆盖新鲜产物，部署后需重跑 40 流水线）；新增 ghost 指标单测 | 代码+规则+文档 |
 | v2.19 | 2026-11-18 | 修正链路完成率口径：N11 `blocked`（如 `duplicate_position`）属策略主动终止，从 `chain_completion_ratio` / `chain_missing_stage_total` 分母中剔除，新增 `chain_blocked_total{gate}`；避免正常拦截长期压低完成率触发 `ChainBroken`/`ChainCompletionLow` 误报；新增 1 项单测 | 代码+测试 |
 | v2.18 | 2026-11-18 | 新增模型用量告警：`scripts/model_usage_check.py` 每小时抓取 DeepSeek 余额，推算 24h/7d 消耗与可用天数，覆盖余额下限、可用天数、消耗突增、凭证失效 4 类告警（receiver 推送 + 6h 去重）；新增 `config/model_usage.json`、云端 hourly systemd timer、10 项单测 | 代码+配置+运维 |
 | v2.17 | 2026-11-18 | 新增信号口径校准监控：`signal_calibration_metrics()` 导出 11 个指标（dstar 口径/翻转、ri 中性、ESS 方向空、放量门槛、reflection 样本）；新增 5 条告警 `DstarCalibratedModeOff/DstarCalibratedAllWait/EssDirectionEmpty/RippleVolThresholdOutOfRange/ReflectionSampleStarved`；daily_insight 新增 `23_REFLECTION_STARVED` 并更新 `23_DSTAR_WAIT` 处置口径；TD 新增 §13.9.4 | 代码+规则+文档 |

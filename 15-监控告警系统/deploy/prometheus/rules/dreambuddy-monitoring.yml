@@ -259,13 +259,13 @@ groups:
           summary: "23 矛盾 Transformer 交叉验证缺失（payload.cross_validation 为空）"
 
       - alert: CrossValidationDegraded
-        expr: dreambuddy_cv_degraded > 0
+        expr: count(dreambuddy_cv_degraded_mode{mode="both_none"}) > 0
         for: 15m
         labels:
           severity: P2
           channel: alert
         annotations:
-          summary: "23 交叉验证处于降级模式，检查 degraded_mode 与置信度乘数"
+          summary: "23 交叉验证双链路均不可用（both_none）；attention_only/granger_only 属设计内单链路降级，不再告警"
 
       # 2026-11-18 下线：universe_snapshot 由 11 polling_trader 写入，11 交易循环已退役且 23 未接管，
       # 继续保留会导致 EvolutionScanStalled/Failed/PoolShrunk 永久误报（见 15 TD §13.8.2）。
@@ -397,13 +397,23 @@ groups:
           runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#138-11-交易循环退役后的监控对齐v210-2026-11-18"
 
       - alert: GhostPositionCleaned
-        expr: dreambuddy_ledger_ghost_closed_24h > 0
+        expr: dreambuddy_ledger_ghost_exchange_flat_24h > 0
         for: 10m
         labels:
           severity: P2
           channel: alert
         annotations:
-          summary: "24h 内清理过幽灵/陈旧仓（账本残留已自动清零，需复盘归属）"
+          summary: "24h 内出现交易所已平仓但账本仍持仓（ghost_exchange_flat），需核对成交回填"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#138-11-交易循环退役后的监控对齐v210-2026-11-18"
+
+      - alert: GhostStaleBulkCleanup
+        expr: dreambuddy_ledger_ghost_stale_24h > 20
+        for: 30m
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "24h 内 ghost_stale 清理超过 20 笔，疑似对账源批量漂移"
           runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#138-11-交易循环退役后的监控对齐v210-2026-11-18"
 
       - alert: SltpReconcileFailed

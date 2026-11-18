@@ -1082,7 +1082,7 @@ SLO 建议：信号 schema 一致率 ≥99%；信号→网关 p95 ≤2s；成交
 | N3 | `high_order_applied_ratio` | gauge | 仅观察 | P3 | — |
 | N4 | `paths_discovered`、`paths_valid_ratio` | gauge | `PathsEmpty`：连续 10 次 0 路径 | P2 | ≥1 路径率 ≥95% |
 | N5 | `contradiction_present_ratio`、`contradiction_strength`、`contradiction_dimension{dimension}` | gauge | `ContradictionMissing`：present=0 持续 30min | P1 | present ≥99% |
-| N6 | `cv_present_ratio`、`cv_degraded{degraded_mode}`、`cv_shift_signal`、`cv_confidence_mult`、`cv_divergence_count` | gauge | `CrossValidationMissing`（30min）、`CrossValidationDegraded`（degraded>0 持续 1h） | P1/P2 | present ≥99%，degraded <10% |
+| N6 | `cv_present_ratio`、`cv_degraded{degraded_mode}`、`cv_shift_signal`、`cv_confidence_mult`、`cv_divergence_count` | gauge | `CrossValidationMissing`（30min）、`CrossValidationDegraded`（仅 `both_none`，attention_only/granger_only 属设计内单链路降级） | P1/P2 | present ≥99%，degraded <10% |
 | N7 | `path_validated_ratio`、`path_score_gap`、`low_conviction_ratio` | gauge | `ValidationCollapse`：validated=0 持续 2h（且 N4 有路径） | P2 | validated 5%–60% 合理带 |
 | N8 | `decision_action_total{action}`、`wait_ratio`、`aligned_ratio` | counter | `WaitRatioAnomaly`：WAIT=100% 且 N5/N7 正常，持续 2h | P2 | WAIT 比例有历史基线 |
 | N9 | `l3_sample_count`、`l4_v` | gauge | 仅观察（样本不增长时并入 B 类告警） | P3 | — |
@@ -1095,7 +1095,7 @@ SLO 建议：信号 schema 一致率 ≥99%；信号→网关 p95 ≤2s；成交
 | E1 | `exit_decide_total{action}`、`exit_hold_ratio`、`exit_decide_duration_seconds` | counter/hist | `ExitHoldAnomaly`：force/partial 连续 0 且浮亏扩大（观察项） | P3 | 决策 p95 ≤200ms |
 | E4 | `exit_signal_total{action}`、`exit_size_unknown_total`、`exit_signal_missing_dstar_ratio` | counter | `ExitSizeUnknown`：>0 且持续 10min | **P0** | size_unknown=0 |
 | E5 | `exit_close_failed_total{reason_code}`、`exit_close_latency_seconds` | counter/hist | `ExitCloseFailed`：>0 持续 10min（风险未释放） | **P0** | 平仓成功率 ≥99% |
-| E0/E6 | `ledger_positions`、`ledger_last_write_age_seconds`、`ledger_reconcile_updated_1h`、`ledger_ghost_closed_24h` | gauge | `LedgerDriftFrequent`（1h>3）、`GhostPositionCleaned`（24h>0） | P2 | 账本与交易所一致；对账每轮清零 |
+| E0/E6 | `ledger_positions`、`ledger_last_write_age_seconds`、`ledger_reconcile_updated_1h`、`ledger_ghost_closed_24h`、`ledger_ghost_stale_24h`、`ledger_ghost_exchange_flat_24h` | gauge | `LedgerDriftFrequent`（1h>3）、`GhostPositionCleaned`（exchange_flat>0）、`GhostStaleBulkCleanup`（stale>20） | P2 | 账本与交易所一致；对账每轮清零 |
 
 **降噪约束**（继承 §10.6）：
 
@@ -1296,7 +1296,8 @@ python -m pytest tests/test_chain_events_and_signal_params.py tests/test_decisio
 | `Entry23Down` | `dreambuddy_entry23_active == 0` for 5m | P1 |
 | `Exit23Down` | `dreambuddy_exit23_active == 0` for 5m | **P0**（平仓链停机=风险未释放） |
 | `LedgerDriftFrequent` | `dreambuddy_ledger_reconcile_updated_1h > 3` for 30m | P2 |
-| `GhostPositionCleaned` | `dreambuddy_ledger_ghost_closed_24h > 0` for 10m | P2 |
+| `GhostPositionCleaned` | `dreambuddy_ledger_ghost_exchange_flat_24h > 0` for 10m | P2 |
+| `GhostStaleBulkCleanup` | `dreambuddy_ledger_ghost_stale_24h > 20` for 30m | P2 |
 | `SltpReconcileFailed` | `dreambuddy_sltp_reconcile_failed_1h > 0` for 10m | P1 |
 | `SltpReconcileStale` | `dreambuddy_exit23_active == 1 and dreambuddy_ledger_positions > 0 and dreambuddy_sltp_reconcile_age_seconds > 600` for 15m | P2 |
 
@@ -1389,6 +1390,17 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 
 每日分析由 `scripts/daily_insight.py` 覆盖：`23_DSTAR_WAIT`（F4 修复后改为提示确认 calibrated 已生效）、
 `23_REFLECTION_STARVED`（新增）、`23_N8_RI_CONCENTRATED`、`23_N9_ESS_TOP_DIR_EMPTY`。
+
+#### 13.9.5 告警降噪校准（v2.20，2026-11-18）
+
+2026-11-18 部署后复盘 4 条常驻告警，结论与处置：
+
+| 告警 | 复盘结论 | 处置 |
+|---|---|---|
+| `ArtifactStale` | 真实问题，但根因是**运行时产物被 git 跟踪**：部署 `git pull` 会把 40/48 新生成的 `cycle_state.json`、`sector_transmission.json`、`40_feedback.json` 覆盖回仓库旧版本（三文件 mtime 同一秒），下一次日更前必然 stale | 告警保留；部署后需重跑 `40/scripts/run_daily_pipeline.sh`（crontab `2 0 * * *` 亦可自愈）。长期建议将这些产物从 git 索引移除 |
+| `GhostPositionCleaned` | 13 笔/24h = 12 `ghost_stale`（11 笔零/微 PnL，`source=22-reconciled` 的历史残留批量清理）+ 1 `ghost_exchange_flat`（BTC short，真实交易所侧平仓，+516.29 USDT）。前者是自愈动作，后者才是需复盘的资金事件 | 拆分为 `ledger_ghost_stale_24h` 与 `ledger_ghost_exchange_flat_24h`；`GhostPositionCleaned` 仅对 exchange_flat 触发，新增 `GhostStaleBulkCleanup`（stale>20/24h） |
+| `CrossValidationDegraded` | `attention_only`/`granger_only` 是设计内单链路降级（`enable_degraded_mode` 默认 True），不是故障；仅 `both_none` 才是双链路失效 | 规则改为 `count(dreambuddy_cv_degraded_mode{mode="both_none"}) > 0` |
+| `Watchdog` | `expr: vector(1)` 是刻意常驻，供外部死手开关读取 Prometheus；但会按 P3 每日推送飞书 | 保留规则；Alertmanager 新增 `channel="meta"` → `blackhole` 路由，不再进飞书 |
 
 ---
 
