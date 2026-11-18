@@ -100,6 +100,15 @@ class KlineEventHandler:
         self._event_driven_strategy: Any = None
         self._path_layer_enabled: bool = False
 
+    def set_build_position_callback(self, callback: Any) -> None:
+        """注入建仓回调，并同步到 ResultAggregator。
+
+        aggregator 在构造期缓存回调，若只改 handler 属性，回调名存实亡，
+        N10 信号会与执行段断裂（chain_id 无法贯通）。
+        """
+        self._build_position_callback = callback
+        self._aggregator._build_position_callback = callback
+
     # ==================================================================
     # 委托方法 — EngineRouter
     # ==================================================================

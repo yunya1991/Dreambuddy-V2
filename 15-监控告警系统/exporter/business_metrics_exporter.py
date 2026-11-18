@@ -234,7 +234,7 @@ class Collector:
             if ts_col:
                 sql = (
                     f"SELECT {status_col}, COUNT(*), "
-                    f"SUM(CASE WHEN {status_col} NOT IN ('filled','failed','cancelled','canceled','done') "
+                    f"SUM(CASE WHEN {status_col} NOT IN ('filled','failed','cancelled','canceled','done','submitted') "
                     f"AND datetime(replace({ts_col}, 'T', ' ')) < datetime('now', '-{int(stuck_after)} seconds') "
                     f"THEN 1 ELSE 0 END) FROM {table} GROUP BY {status_col}"
                 )

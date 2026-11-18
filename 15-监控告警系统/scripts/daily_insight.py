@@ -361,7 +361,8 @@ def collect_outbox(repo: Path, win: dict, stuck_after: float) -> dict:
     db = repo / "23-四层闭环自进化交易架构/runtime/execution_outbox.db"
     if not db.exists():
         return {"present": False}
-    terminal = {"filled", "failed", "cancelled", "canceled", "done"}
+    # submitted 是生产终态（mark_filled 未接线），因此同样不参与 stuck 统计
+    terminal = {"filled", "failed", "cancelled", "canceled", "done", "submitted"}
     try:
         conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=2)
         cur = conn.cursor()
@@ -372,18 +373,25 @@ def collect_outbox(repo: Path, win: dict, stuck_after: float) -> dict:
 
     states = Counter(str(r[0]) for r in rows)
     in_win = [r for r in rows if in_window(parse_ts(r[1]), win)]
+    win_states = Counter(str(r[0]) for r in in_win)
     now = datetime.now(timezone.utc).timestamp()
     stuck = sum(
         1 for r in rows if str(r[0]) not in terminal and r[2] and now - parse_ts(r[2]) > stuck_after
     )
     failed = states.get("failed", 0)
+    # 窗口口径：只看本窗内已尝试（进入终态）的记录，避免历史存量污染当日判定
+    window_attempts = sum(n for s, n in win_states.items() if s in terminal)
+    window_failed = win_states.get("failed", 0)
     return {
         "present": True,
         "total": len(rows),
         "states": _counts(states),
         "window_total": len(in_win),
-        "window_states": _counts(Counter(str(r[0]) for r in in_win)),
+        "window_states": _counts(win_states),
         "failed_ratio": ratio(failed, len(rows)),
+        "window_attempts": window_attempts,
+        "window_failed": window_failed,
+        "window_failed_ratio": ratio(window_failed, window_attempts),
         "stuck": stuck,
     }
 
@@ -822,14 +830,21 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
                         "检查 execution_gateway 与 outbox 消费循环",
                     )
                 )
-            if outbox.get("failed_ratio", 0) > th.get("outbox_failed_ratio", 0.2):
+            # 优先用窗口口径；老实现无该字段时回退累计口径
+            win_ratio = outbox.get("window_failed_ratio", outbox.get("failed_ratio", 0))
+            if win_ratio > th.get("outbox_failed_ratio", 0.2):
                 findings.append(
                     _finding(
                         "22_OUTBOX_FAILED",
                         "P2",
                         "22",
-                        f"发件箱失败率 {outbox['failed_ratio']}",
-                        f"states={outbox.get('states')}",
+                        f"发件箱窗口失败率 {win_ratio}",
+                        (
+                            f"window_failed={outbox.get('window_failed')}/"
+                            f"{outbox.get('window_attempts')}，"
+                            f"window_states={outbox.get('window_states')}，"
+                            f"累计 failed_ratio={outbox.get('failed_ratio')}"
+                        ),
                         "网关拒单或参数不合法",
                         "抽查 failed 记录 last_error 与 result_json",
                     )

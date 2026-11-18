@@ -203,7 +203,10 @@ class EntryRunner:
         self._bar = bar
         self._klines: Dict[str, Dict[str, Any]] = {}
         if getattr(handler, "_build_position_callback", None) is None:
-            handler._build_position_callback = self.on_signal
+            if hasattr(handler, "set_build_position_callback"):
+                handler.set_build_position_callback(self.on_signal)
+            else:
+                handler._build_position_callback = self.on_signal
 
     def on_signal(
         self,

@@ -183,6 +183,87 @@ def test_collect_nn40_disabled(tmp_path: Path):
     assert out["artifacts"] == []
 
 
+def _outbox_db(tmp_path: Path, rows: list[tuple]) -> Path:
+    import sqlite3
+
+    runtime = tmp_path / "23-四层闭环自进化交易架构/runtime"
+    runtime.mkdir(parents=True)
+    db = runtime / "execution_outbox.db"
+    conn = sqlite3.connect(str(db))
+    conn.execute("CREATE TABLE execution_outbox (state TEXT, created_at TEXT, updated_at TEXT)")
+    conn.executemany("INSERT INTO execution_outbox VALUES (?,?,?)", rows)
+    conn.commit()
+    conn.close()
+    return tmp_path
+
+
+def test_collect_outbox_uses_window_ratio(tmp_path: Path):
+    """历史存量失败不应污染当窗失败率；submitted 是生产终态不算 stuck。"""
+    old = "2026-11-10T00:00:00+00:00"
+    win_ts = "2026-11-17T03:00:00+00:00"  # Asia/Shanghai 11-17 11:00
+    rows = [
+        ("failed", old, old),
+        ("failed", old, old),
+        ("failed", old, old),
+        ("filled", win_ts, win_ts),
+        ("submitted", win_ts, win_ts),
+        ("submitted", win_ts, win_ts),
+        ("submitted", win_ts, win_ts),
+    ]
+    repo = _outbox_db(tmp_path, rows)
+
+    win = di.window_for(date(2026, 11, 17), "Asia/Shanghai")
+    out = di.collect_outbox(repo, win, 300)
+
+    assert out["present"] is True
+    assert out["window_states"]["submitted"] == 3
+    assert out["window_total"] == 4
+    assert out["window_attempts"] == 4
+    assert out["window_failed"] == 0
+    assert out["window_failed_ratio"] == 0.0
+    # 累计口径仍保留（3/7 失败）
+    assert out["failed_ratio"] == round(3 / 7, 4)
+    # submitted 即使很旧也不是 stuck
+    assert out["stuck"] == 0
+
+
+def test_collect_outbox_stuck_only_pending(tmp_path: Path):
+    stale = "2026-11-17T03:00:00+00:00"
+    rows = [
+        ("pending", stale, stale),
+        ("submitting", stale, stale),
+        ("submitted", stale, stale),
+    ]
+    repo = _outbox_db(tmp_path, rows)
+    win = di.window_for(date(2026, 11, 17), "Asia/Shanghai")
+    out = di.collect_outbox(repo, win, 300)
+    assert out["stuck"] == 2
+
+
+def test_detect_findings_outbox_prefers_window_ratio():
+    metrics = base_metrics()
+    metrics["outbox"] = {
+        "present": True,
+        "total": 1158,
+        "states": {"failed": 1142, "submitted": 16},
+        "failed_ratio": 0.9862,
+        "window_total": 20,
+        "window_states": {"filled": 20},
+        "window_attempts": 20,
+        "window_failed": 0,
+        "window_failed_ratio": 0.0,
+        "stuck": 0,
+    }
+    ids = {f["id"] for f in di.detect_findings(metrics, CFG)}
+    assert "22_OUTBOX_FAILED" not in ids
+    assert "22_OUTBOX_STUCK" not in ids
+
+    metrics["outbox"]["window_failed"] = 10
+    metrics["outbox"]["window_failed_ratio"] = 0.5
+    ids = {f["id"] for f in di.detect_findings(metrics, CFG)}
+    assert "22_OUTBOX_FAILED" in ids
+
+
 def test_render_marks_40_reserved():
     metrics = base_metrics()
     win = di.window_for(date(2026, 11, 17), "Asia/Shanghai")

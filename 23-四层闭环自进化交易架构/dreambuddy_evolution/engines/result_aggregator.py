@@ -92,8 +92,12 @@ class ResultAggregator:
             try:
                 from dreambuddy_evolution.execution import build_entry_decision
 
+                # decision_id/chain_id 统一用合约 inst 命名空间，确保与执行段可逐单对齐
+                _inst = str(symbol or "").strip()
+                if "-" not in _inst:
+                    _inst = f"{_inst}-USDT-SWAP"
                 _signal = build_entry_decision(
-                    symbol=symbol,
+                    symbol=_inst,
                     direction=action,
                     confidence=ri,
                     notional_usdt=0.0,
