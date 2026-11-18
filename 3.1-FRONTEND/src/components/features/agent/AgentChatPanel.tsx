@@ -291,6 +291,9 @@ function AgentChatPanelInner({
     id: sessionId,
     messages: initialMessages,
     transport,
+    // 复杂问题一次工具调用会连续推送大量 part：不节流会触发 50+ 次同步渲染，
+    // React 直接抛 #185（Maximum update depth exceeded）甚至卡死。
+    experimental_throttle: 50,
     onFinish: ({ messages: finalMessages, isError }) => {
       setMessages(sessionId, toAgentMessages(finalMessages, isError));
     },
