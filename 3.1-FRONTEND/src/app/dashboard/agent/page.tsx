@@ -325,7 +325,8 @@ export default function DashboardAgentPage() {
   const activeSession = sessions.find((s) => s.id === activeSessionId);
   const agentEnabled = Boolean(activeSession?.agentEnabled);
   const balanceKnown = tokenState.lastChecked > 0;
-  const insufficient = balanceKnown && tokenState.balance <= 0;
+  // 管理员账号不设额度上限：余额为 0 也不锁定
+  const insufficient = balanceKnown && !tokenState.unlimited && tokenState.balance <= 0;
 
   const handleToggleAgent = () => {
     if (!activeSession) return;
@@ -386,7 +387,11 @@ export default function DashboardAgentPage() {
               title="AI Agent 按 token 扣积分"
             >
               积分{" "}
-              {balanceKnown ? tokenState.balance.toLocaleString("zh-CN") : "—"}
+              {tokenState.unlimited
+                ? "不限"
+                : balanceKnown
+                  ? tokenState.balance.toLocaleString("zh-CN")
+                  : "—"}
             </span>
           )}
 

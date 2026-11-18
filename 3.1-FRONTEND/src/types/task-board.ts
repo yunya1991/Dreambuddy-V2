@@ -150,6 +150,12 @@ export interface OkrNode {
   evidence_count: number;
   verdict: Verdict;
   reason?: string;
+  /** 能力域 ID（可注册到 superpowers skill manifest，长期优化对象） */
+  owner_domain?: string;
+  /** 本次执行绑定的 AgentRun.role（域内选出的实例） */
+  owner_agent?: string;
+  /** 本 KR 允许调用的能力白名单（子 Agent 越界即失败） */
+  capability_ids?: string[];
 }
 
 export interface TaskObjective {
@@ -166,6 +172,8 @@ export interface TaskObjective {
   required_verdict_level?: "U0" | "U1" | "U2" | "U3";
   /** 是否因等待裁决而挂起（waiting_verdict） */
   waiting_verdict?: boolean;
+  /** Debate 裁决引用（trace / evidence_ref） */
+  debate_ref?: string;
 }
 
 export type AgentState =
@@ -193,6 +201,8 @@ export interface AcceptanceRecord {
   reason?: string;
   evidence_refs: string[];
   ts: number;
+  /** 验收模型标识（必须与拆解/执行模型三元互异，用于隔离审计） */
+  verify_model?: string;
 }
 
 export interface DataQualityItem {
@@ -219,6 +229,8 @@ export interface TaskStep {
   reviewer?: string;
   comment?: string;
   ts: number;
+  /** 产生本步骤的拆解模型标识（角色隔离审计） */
+  decompose_model?: string;
 }
 
 export interface TaskBoardSnapshot {
@@ -371,7 +383,8 @@ function reconcileGates(snapshot: TaskBoardSnapshot): TaskGate[] {
   return (Object.keys(refs) as GateKind[]).map((kind) => {
     const evidenceRef = refs[kind] as string;
     const old = prev.get(kind);
-    const keep = old?.evidence_ref === evidenceRef && old.status !== "waiting";
+    const sameEvidence = old?.evidence_ref === evidenceRef;
+    const keep = sameEvidence && old?.status !== "waiting";
     return {
       gate_id: kind,
       kind,
@@ -381,14 +394,15 @@ function reconcileGates(snapshot: TaskBoardSnapshot): TaskGate[] {
       status: keep ? (old as TaskGate).status : "waiting",
       decided_by: keep ? (old as TaskGate).decided_by : undefined,
       decided_at: keep ? (old as TaskGate).decided_at : undefined,
-      comment: keep ? (old as TaskGate).comment : undefined,
+      // 同一证据下的待确认说明要保留，否则「为什么转人工」在回放后丢失
+      comment: sameEvidence ? (old as TaskGate).comment : undefined,
       rewind_to: keep ? (old as TaskGate).rewind_to : undefined,
-      requested_at: keep
-        ? (old as TaskGate).requested_at
+      requested_at: sameEvidence
+        ? (old as TaskGate).requested_at ?? snapshot.updated_at
         : snapshot.updated_at,
-      remind_count: keep ? (old as TaskGate).remind_count : 0,
-      reminded_at: keep ? (old as TaskGate).reminded_at : undefined,
-      escalated_at: keep ? (old as TaskGate).escalated_at : undefined,
+      remind_count: sameEvidence ? (old as TaskGate).remind_count : 0,
+      reminded_at: sameEvidence ? (old as TaskGate).reminded_at : undefined,
+      escalated_at: sameEvidence ? (old as TaskGate).escalated_at : undefined,
     };
   });
 }

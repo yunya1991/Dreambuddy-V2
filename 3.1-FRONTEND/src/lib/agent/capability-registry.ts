@@ -12,6 +12,7 @@
 import registryJson from "./capability-registry.json";
 import { callDshHandler } from "../dsh-execution-engine";
 import { executeTradingBinding } from "../trading-capability";
+import { l1BaseUrl as getL1BaseUrl } from "../l1-base-url";
 
 export type CapabilityLayer = "L0" | "L1" | "L2";
 export type CapabilityKind =
@@ -97,7 +98,7 @@ export function buildCapabilityPrompt(): string {
 export const CAPABILITY_PROMPT = buildCapabilityPrompt();
 
 function l1BaseUrl(): string {
-  return process.env.L1_INTERNAL_BASE_URL?.trim() || "http://127.0.0.1:3001";
+  return getL1BaseUrl();
 }
 
 /** 工具输出截断：避免单次结果撑爆上下文。 */

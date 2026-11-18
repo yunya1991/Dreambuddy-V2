@@ -96,6 +96,7 @@ function useTokenMonitorInternal({
     isDowngraded: false,
     checkCount: 0,
     consecutiveLowCount: 0,
+    unlimited: false,
   });
 
   const monitorRef = useRef<TokenMonitor | null>(null);

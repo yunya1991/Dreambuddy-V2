@@ -46,11 +46,13 @@ export const fetchTokenBalance: FetchBalanceFn = async () => {
     balance: number;
     totalEarned?: number;
     totalSpent?: number;
+    unlimited?: boolean;
   }>('/api/token/balance');
   return {
     balance: data?.balance ?? 0,
     totalEarned: data?.totalEarned ?? 0,
     totalSpent: data?.totalSpent ?? 0,
+    unlimited: data?.unlimited === true,
   };
 };
 

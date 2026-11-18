@@ -36,6 +36,8 @@ import {
   resolveToolProfile,
 } from "@/lib/agent/tool-profiles";
 import { isEntitled } from "@/lib/product/entitlement";
+import { isAdminSession } from "@/lib/auth-role";
+import { l1BaseUrl } from "@/lib/l1-base-url";
 import {
   estimateChatCu,
   hasCompute,
@@ -67,6 +69,7 @@ import {
   type SelectedSkill,
 } from "@/lib/task-board/spec-builder";
 import type { ComplexityLevel, IntentType } from "@/lib/planner/planner-types";
+import type { DecomposeResult } from "@/lib/task-board/decompose";
 import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
@@ -156,8 +159,7 @@ async function tryL1Direct(
   message: string,
   traceId: string,
 ): Promise<L1DirectResult | null> {
-  const base =
-    process.env.L1_INTERNAL_BASE_URL?.trim() || "http://127.0.0.1:3001";
+  const base = l1BaseUrl();
   try {
     const res = await fetch(new URL("/api/data/query", base), {
       method: "POST",
@@ -454,6 +456,125 @@ async function emitSpecEvent(
 }
 
 /**
+ * S→A 链路 · S 阶段（S_A_CHAIN_ENABLED 控制，默认关闭）：
+ * SPEC 确认后先拆解 → okr.updated。任何异常 FAIL-OPEN 返回 null。
+ */
+async function runSaLayerDecompose(
+  taskId: string,
+  text: string,
+  intent: IntentType,
+  level: ComplexityLevel,
+  score: number,
+): Promise<DecomposeResult | null> {
+  if (process.env.S_A_CHAIN_ENABLED !== "true") return null;
+  try {
+    // 启用能力域注册：读取 SKILL.md 显式 manifest（字段不全的 skill 自动跳过）
+    const registrar = await import(
+      "@/lib/task-board/capability-domain-registrar"
+    );
+    const registration = registrar.ensureDomainsRegistered();
+    const registeredCount = registration.reduce(
+      (sum, item) => sum + item.registered.length,
+      0,
+    );
+    if (registeredCount > 0) {
+      console.info(
+        `[AgentChat] 能力域注册新增 ${registeredCount} 个：${registration
+          .flatMap((item) => item.registered)
+          .join(",")}`,
+      );
+    }
+
+    const { decomposeTask } = await import("@/lib/task-board/decompose");
+    const result = await decomposeTask({ taskId, text, intent, level, score });
+    await appendTaskEvents(taskId, [
+      {
+        task_id: taskId,
+        trace_id: taskId,
+        seq: 0,
+        ts: Date.now(),
+        type: "okr.updated",
+        payload: { objective: result.objective, krs: result.krs },
+      },
+    ]);
+    console.info(
+      `[AgentChat] S 层拆解完成 strategy=${result.strategy} krs=${result.krs.length} degraded=${result.degraded}`,
+    );
+    return result;
+  } catch (e) {
+    console.warn(
+      "[AgentChat] S 层拆解失败（FAIL-OPEN）:",
+      e instanceof Error ? e.message : e,
+    );
+    return null;
+  }
+}
+
+export interface DebateSignal {
+  verdict?: "WIN" | "INCONCLUSIVE";
+  degraded?: boolean;
+}
+
+/**
+ * S→A 链路 · A 阶段：Debate 裁决 → dispatch 门 → 派发 AgentRun。
+ * 门未通过时子 Agent 一律 waiting，绝不写 running。
+ */
+async function runSaLayerDispatch(
+  taskId: string,
+  result: DecomposeResult,
+  level: ComplexityLevel,
+  score: number,
+  debate: DebateSignal,
+): Promise<void> {
+  try {
+    const [gate, dispatcher] = await Promise.all([
+      import("@/lib/task-board/okr-gate"),
+      import("@/lib/task-board/dispatcher"),
+    ]);
+    const snapshot = await readTaskBoard(taskId);
+    const okrSeq = snapshot.cursors["okr.updated:okr"] ?? 0;
+    const decision = gate.resolveDispatchGate({
+      objective: result.objective,
+      krs: result.krs,
+      level,
+      score,
+      debateVerdict: debate.verdict,
+      debateDegraded: debate.degraded,
+    });
+    await appendTaskEvents(taskId, [
+      {
+        task_id: taskId,
+        trace_id: taskId,
+        seq: 0,
+        ts: Date.now(),
+        type: "gate.updated",
+        payload: gate.buildDispatchGate(
+          decision,
+          gate.dispatchGateEvidenceRef(okrSeq),
+          Date.now(),
+        ),
+      },
+    ]);
+
+    const runs = dispatcher.planAgentRuns(result.krs, { decision });
+    if (runs.length > 0) {
+      await appendTaskEvents(
+        taskId,
+        dispatcher.buildAgentDispatchEvents(taskId, taskId, runs),
+      );
+    }
+    console.info(
+      `[AgentChat] dispatch 门 status=${decision.status} reasons=${decision.reasons.join(",") || "none"} agents=${runs.length}`,
+    );
+  } catch (e) {
+    console.warn(
+      "[AgentChat] A 层派发失败（FAIL-OPEN）:",
+      e instanceof Error ? e.message : e,
+    );
+  }
+}
+
+/**
  * SPEC 确认后的脑暴前置步：调用现成的 /api/agent/brainstorm，
  * 结果先汇报再交独立评审；评审不通过则调用方停止推进。
  * 只读编排结果，不在这里改编排器本身。
@@ -464,7 +585,12 @@ async function runBrainstormPreStep(
   traceId: string,
   text: string,
   nPerSide: number,
-): Promise<{ ok: boolean; summary: string }> {
+): Promise<{
+  ok: boolean;
+  summary: string;
+  verdict: "pass" | "fail" | "pending";
+  degraded: boolean;
+}> {
   let summary = "";
   try {
     const response = await fetch(new URL("/api/agent/brainstorm", request.url), {
@@ -534,7 +660,12 @@ async function runBrainstormPreStep(
     // 事件失败不影响主流程
   }
 
-  return { ok: verdict !== "fail", summary };
+  return {
+    ok: verdict !== "fail",
+    summary,
+    verdict,
+    degraded: verdict === "pending",
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -610,9 +741,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // SPEC 硬门禁：任何任务都必须先出 SPEC，确认后才允许推进（先后同步态）
+  // SPEC 硬门禁：仅在 AI Agent 开启时生效；关闭时只走规则直答，不产出 SPEC
   const boardTaskId = taskId || traceId;
-  if (userText) {
+  if (userText && agentEnabled) {
     const beforeSpec = await readTaskBoard(boardTaskId);
     if (!beforeSpec.spec) {
       await emitSpecEvent(boardTaskId, userText, inferIntent(userText));
@@ -646,9 +777,28 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // SPEC 确认后：S 层先拆解（feature flag 默认关闭），Debate 裁决后再过 dispatch 门
+  let saDecomposed: DecomposeResult | null = null;
+  let saLevel: ComplexityLevel = "quick";
+  let saScore = 0;
+  if (userText && agentEnabled) {
+    const saIntent = inferIntent(userText);
+    const saAssessment = assessComplexity(userText, saIntent);
+    saLevel = saAssessment.level;
+    saScore = saAssessment.score;
+    saDecomposed = await runSaLayerDecompose(
+      taskId || traceId,
+      userText,
+      saIntent,
+      saLevel,
+      saScore,
+    );
+  }
+
   // SPEC 确认后才允许脑暴前置步；轻量任务在 SPEC 里明确「不启用」
   let brainstormStepCount = 0;
   let brainstormContext = "";
+  let debateSignal: DebateSignal = {};
   if (userText) {
     const confirmedSpec = await readTaskBoard(boardTaskId);
     const value =
@@ -672,8 +822,24 @@ export async function POST(request: NextRequest) {
           trace.history,
         );
       }
+      // Debate 裁决进入 dispatch 门：pass=WIN；评审不可用=降级（转人工）
+      debateSignal =
+        result.verdict === "pass"
+          ? { verdict: "WIN" }
+          : { verdict: "INCONCLUSIVE", degraded: true };
       brainstormContext = `\n\n【择优脑暴结论（SPEC 已确认）】\n${result.summary}`;
     }
+  }
+
+  // 裁决之后才允许派发：门未通过时子 Agent 只会 waiting
+  if (saDecomposed && !saDecomposed.skip_dispatch) {
+    await runSaLayerDispatch(
+      taskId || traceId,
+      saDecomposed,
+      saLevel,
+      saScore,
+      debateSignal,
+    );
   }
 
   if (userText) {
@@ -755,8 +921,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 管理员账号不设配额上限：跳过余额门禁（用量仍照常记账，仅不限制）
+    const adminUnlimited = await isAdminSession();
+
     // AI Agent 显式启用时才校验积分；余额不足直接拒绝，避免静默降级
-    if (body.agent_enabled === true && !(await hasCompute())) {
+    if (!adminUnlimited && body.agent_enabled === true && !(await hasCompute())) {
       return NextResponse.json(
         {
           ok: false,
@@ -770,8 +939,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // SPEC-52 F4：交易产品零余额锁定（平台只读仍可用）
-    if (body.surface === "trading" && !(await hasCompute())) {
+    // SPEC-52 F4：交易产品零余额锁定（平台只读仍可用）；管理员不受限
+    if (!adminUnlimited && body.surface === "trading" && !(await hasCompute())) {
       return NextResponse.json(
         {
           ok: false,

@@ -71,10 +71,15 @@ export default function UsagePage() {
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
         <V3Card title="CU 余额" padding="sm">
-          <div className="text-2xl font-semibold text-gray-100">{fmt(usage?.balance_cu ?? 0)}</div>
+          <div className="text-2xl font-semibold text-gray-100">
+            {usage?.unlimited ? '不限' : fmt(usage?.balance_cu ?? 0)}
+          </div>
           <div className="mt-1 text-[11px] text-gray-500">
-            约 ¥{fmt((usage?.balance_cu ?? 0) * (usage?.unit_price_cny ?? 0), 2)} · 单价{' '}
-            {usage?.unit_price_cny ?? '-'} 元/CU
+            {usage?.unlimited
+              ? '管理员账号不设额度上限（计量照常记录）'
+              : `约 ¥${fmt((usage?.balance_cu ?? 0) * (usage?.unit_price_cny ?? 0), 2)} · 单价 ${
+                  usage?.unit_price_cny ?? '-'
+                } 元/CU`}
           </div>
         </V3Card>
         <V3Card title="已结算" padding="sm">

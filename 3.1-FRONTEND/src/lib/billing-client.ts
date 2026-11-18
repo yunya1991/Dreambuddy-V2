@@ -7,6 +7,8 @@ export interface CuBalance {
   spent_cu: number;
   reserved_cu: number;
   unit_price_cny: number;
+  /** 管理员账号不设额度上限 */
+  unlimited?: boolean;
 }
 
 export interface UsageRecord {

@@ -36,6 +36,8 @@ export interface TokenMonitorState {
   downgradedAt?: number;
   checkCount: number;
   consecutiveLowCount: number;
+  /** 管理员账号不设额度上限：true 时不因余额触发低额提示/降级 */
+  unlimited: boolean;
 }
 
 export interface TokenMonitorConfig {
@@ -70,6 +72,8 @@ export type FetchBalanceFn = () => Promise<{
   balance: number;
   totalEarned?: number;
   totalSpent?: number;
+  /** 管理员账号：不限额度 */
+  unlimited?: boolean;
 }>;
 
 // ============================================================
@@ -118,6 +122,7 @@ export class TokenMonitor {
       isDowngraded: false,
       checkCount: 0,
       consecutiveLowCount: 0,
+      unlimited: false,
     };
   }
 
@@ -241,9 +246,12 @@ export class TokenMonitor {
       this.state.totalSpent = result.totalSpent ?? this.state.totalSpent;
       this.state.lastChecked = Date.now();
       this.state.checkCount++;
+      // 管理员不限额度：等级恒为 healthy，不触发低额/降级
+      const unlimited = result.unlimited === true;
+      this.state.unlimited = unlimited;
 
       // 计算余额等级
-      const level = this.calculateLevel(balance);
+      const level = unlimited ? "healthy" : this.calculateLevel(balance);
       const prevLevel = this.state.level;
       this.state.level = level;
 
@@ -259,14 +267,19 @@ export class TokenMonitor {
       }
 
       // 检查低余额 / 严重低余额
-      if (level === "critical") {
+      if (!unlimited && level === "critical") {
         this.callbacks.onCriticalBalance?.(this.getState());
-      } else if (level === "low") {
+      } else if (!unlimited && level === "low") {
         this.callbacks.onLowBalance?.(this.getState());
       }
 
       // 自动降级 / 恢复逻辑
-      this.handleAutoDowngradeRecovery(balance, level);
+      if (!unlimited) {
+        this.handleAutoDowngradeRecovery(balance, level);
+      } else if (this.state.isDowngraded) {
+        this.state.isDowngraded = false;
+        this.state.consecutiveLowCount = 0;
+      }
 
       this.prevBalance = balance;
     } catch (error) {

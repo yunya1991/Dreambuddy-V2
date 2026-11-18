@@ -1,12 +1,13 @@
 /** SPEC-52 F4/F7 — CU 余额（服务端计量，前端只展示） */
 import { NextResponse } from 'next/server';
 import { summarizeUsage } from '@/lib/billing/meter';
+import { isAdminSession } from '@/lib/auth-role';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const summary = await summarizeUsage(1);
+  const [summary, unlimited] = await Promise.all([summarizeUsage(1), isAdminSession()]);
   return NextResponse.json({
     ok: true,
     data: {
@@ -15,6 +16,7 @@ export async function GET() {
       spent_cu: summary.spent_cu,
       reserved_cu: summary.reserved_cu,
       unit_price_cny: summary.unit_price_cny,
+      unlimited,
     },
   });
 }
