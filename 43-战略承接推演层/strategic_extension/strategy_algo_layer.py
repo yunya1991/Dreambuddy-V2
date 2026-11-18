@@ -49,6 +49,12 @@ def _normalize_0_100(raw_proxy: float, scale: float = 100.0) -> int:
 STYLE_ORDER = ("emergency", "trend_follow", "breakout", "mean_revert", "momentum", "volatility")
 ASSET_CLASSES = ("crypto_usdt", "us_stock", "precious_metal")
 DEFAULT_NEUTRAL_SCORES = {"dao": 50, "tian": 50, "di": 50, "jiang": 50, "fa": 70}
+# 五维权重表（按资产类差异化；本地固化，43 域已与 11 域解耦）
+_WEIGHTS_BY_CLASS = {
+    "crypto_usdt": {"dao": 0.30, "tian": 0.15, "di": 0.25, "jiang": 0.15, "fa": 0.15},
+    "us_stock": {"dao": 0.30, "tian": 0.12, "di": 0.25, "jiang": 0.18, "fa": 0.15},
+    "precious_metal": {"dao": 0.28, "tian": 0.22, "di": 0.20, "jiang": 0.15, "fa": 0.15},
+}
 
 
 @dataclass
@@ -346,16 +352,9 @@ class StrategyAlgorithmLayer:
         try:
             scores = five_scores or DEFAULT_NEUTRAL_SCORES
             # BUGFIX(Step B1发现): 按asset_class差异化取权重，而非硬编码crypto权重
-            # 与 five_domain_scorer.WEIGHTS_BY_CLASS 保持一致（TDD #约束：权重和=1.00）
-            try:
-                from scripts.memory_l4.five_domain_scorer import FiveDomainHeuristicScorer as _FDHS
-
-                weights = dict(
-                    _FDHS.WEIGHTS_BY_CLASS.get(asset_class, _FDHS.WEIGHTS_BY_CLASS["crypto_usdt"])
-                )
-            except Exception:
-                # 兜底：导入失败时保持crypto权重（fail-safe字节等价前）
-                weights = {"dao": 0.30, "tian": 0.15, "di": 0.25, "jiang": 0.15, "fa": 0.15}
+            # 43 域已独立：权重表本地固化，与历史 five_domain_scorer.WEIGHTS_BY_CLASS 保持一致
+            # （TDD #约束：权重和=1.00）
+            weights = dict(_WEIGHTS_BY_CLASS.get(asset_class, _WEIGHTS_BY_CLASS["crypto_usdt"]))
             total = int(round(sum(scores.get(k, 50) * w for k, w in weights.items())))
 
             # =============================================================
@@ -591,243 +590,7 @@ class StrategyAlgorithmLayer:
 
 
 # =====================================================================
-# 路径 B 核心函数（§三组合级完整改造，纯函数/配置表，无I/O）
-# =====================================================================
-# ---- ExitStrategy 轻量子类（仅用于PORTFOLIO_MODE_CHAINS占位，真实evaluate由ExitManager已有子类完成）----
-try:
-    from .bcrm2.exit_manager import ExitStrategy, ExitDecision  # noqa: E402, I001
-except Exception:  # noqa: BLE001 防御：独立脚本import时允许降级
-    try:
-        from bcrm2.exit_manager import ExitStrategy, ExitDecision  # type: ignore  # noqa: I001
-    except Exception:  # noqa: BLE001
-        # 终极兜底：用ABC类本地定义（保证import不崩，TDD RED阶段最小化耦合）
-        from abc import ABC, abstractmethod  # noqa: E402
-
-        class ExitDecision:  # type: ignore
-            def __init__(self, action="pass", reason="", strategy_name="", params=None):
-                self.action = action
-                self.reason = reason
-                self.strategy_name = strategy_name
-                self.params = params
-
-            @staticmethod
-            def pass_():
-                return ExitDecision(action="pass")
-
-        class ExitStrategy(ABC):  # type: ignore
-            name: str = ""
-            priority: int = 0
-            enabled: bool = True
-
-            @abstractmethod
-            def evaluate(self, context):
-                return ExitDecision.pass_()
-
-
-class _PortfolioChainPlaceholder(ExitStrategy):
-    """路径B组合模式链占位策略：不承担真实离场判断，仅用于结构性排序/模式路由。
-    真实evaluate由ExitManager注入的实盘子类（P3EarlyExit/SignalReverse/EvFC等）执行。"""
-
-    def __init__(self, name: str, priority: int, enabled: bool = True):
-        self.name = name
-        self.priority = priority
-        self.enabled = enabled
-
-    def evaluate(self, context) -> ExitDecision:  # pragma: no cover - 纯占位不调用
-        return ExitDecision.pass_()
-
-
-# ---------------------------------------------------------------------
-# 4 档组合模式预设链（§4.2 路径B组合模式配置表）
-#   default: 实盘5策略中性链（priority 10/20/30/40/60，与polling_trader实盘注册一致）
-#   cta_risk_on: 趋势风险偏好（让利润跑 → RankedTp关，紧SL放宽）
-#   mean_revert_mode: 震荡优先（开启RankedTp换仓，短持仓）
-#   risk_off_emergency: 应急风控（P3更早触发，Timeout缩短，EvFC阈值收紧）
-# ---------------------------------------------------------------------
-PORTFOLIO_MODE_CHAINS: Dict[str, List[ExitStrategy]] = {
-    "default": [
-        _PortfolioChainPlaceholder("Portfolio_P3EarlyExit", priority=10),
-        _PortfolioChainPlaceholder("Portfolio_SignalReverse", priority=20),
-        _PortfolioChainPlaceholder("Portfolio_EvForceClose", priority=30),
-        _PortfolioChainPlaceholder("Portfolio_TimeoutProfit", priority=40),
-        _PortfolioChainPlaceholder("Portfolio_EvAdjust", priority=60),
-    ],
-    "cta_risk_on": [
-        # 趋势行情：P3更晚触发（让利润飘）priority=15（比default更晚），保留EvFC/Timeout
-        _PortfolioChainPlaceholder("CTA_P3EarlyExit", priority=15),
-        _PortfolioChainPlaceholder("CTA_SignalReverse", priority=20),
-        _PortfolioChainPlaceholder("CTA_EvForceClose", priority=30),
-        _PortfolioChainPlaceholder("CTA_TimeoutProfitLong", priority=50),  # 拉长持仓时间
-        _PortfolioChainPlaceholder("CTA_EvAdjust", priority=65),
-    ],
-    "mean_revert_mode": [
-        # 震荡：P3更早出场（priority=8=最前线），Timeout短 → 快速止盈换仓
-        _PortfolioChainPlaceholder("MR_P3EarlyExit", priority=8),
-        _PortfolioChainPlaceholder("MR_SignalReverse", priority=20),
-        _PortfolioChainPlaceholder("MR_EvForceClose", priority=30),
-        _PortfolioChainPlaceholder("MR_TimeoutProfitShort", priority=35),  # 缩短换仓
-        _PortfolioChainPlaceholder("MR_EvAdjust", priority=60),
-    ],
-    "risk_off_emergency": [
-        # 应急：P3最紧(priority=5) → EvFC收紧阈值 → Timeout 6h上限
-        _PortfolioChainPlaceholder("EMG_P3EarlyExit_Tight", priority=5),
-        _PortfolioChainPlaceholder("EMG_SignalReverse", priority=18),
-        _PortfolioChainPlaceholder(
-            "EMG_EvForceClose_Squeeze", priority=28
-        ),  # ≤-0.20（对应factor≤0.80）
-        _PortfolioChainPlaceholder("EMG_Timeout_6hCap", priority=38),  # ≤6h（对应factor≤0.50）
-        _PortfolioChainPlaceholder("EMG_EvAdjust_Defensive", priority=60),
-    ],
-}
-
-
-# ---------------------------------------------------------------------
-# 组合级 RankedTp 开关路由（§4.12.3 路径B：组合级 override 单笔 RankedTp 开关）
-#   default=True: 中性；cta_risk_on=False: 趋势让利润跑，不换仓；
-#   mean_revert_mode=True: 震荡模式快速换仓；未知fail-open=True
-# ---------------------------------------------------------------------
-_RANKTP_ALLOW_TABLE: Dict[str, bool] = {
-    "default": True,
-    "cta_risk_on": False,
-    "mean_revert_mode": True,
-    "risk_off_emergency": True,  # 应急模式可以True也可以False（但组合级G10不开新仓）
-}
-
-
-def get_ranktp_allow_for_mode(mode: str) -> bool:
-    """§G8组合级RankedTp开关路由：未知模式fail-open=True（安全默认）。"""
-    try:
-        key = str(mode or "").strip() or "default"
-        return bool(_RANKTP_ALLOW_TABLE.get(key, True))
-    except Exception:  # noqa: BLE001 fail-open
-        return True
-
-
-# ---------------------------------------------------------------------
-# G9 聚类约束纯函数（§3.3：同方向同风格总仓位 ≤ 权益×cap_pct，默认50%）
-#
-# 算法：
-#   1. 将已有持仓按 (direction, dominant_style) 分桶
-#      dominant_style = style_exposures 中权重最大的非 emergency 风格
-#   2. 计算 "新开桶" = (new_direction, new_dominant_style)
-#   3. 累加 "新开桶" 内已有 size_usdt + new_size_usdt
-#   4. 若 > total_equity × cap_pct → False（拒绝）；否则 True（允许）
-#   5. size_usdt = abs(amount × entry_price × leverage) （多空通用）
-# ---------------------------------------------------------------------
-def _dominant_style_from_exposures(exposures: Dict[str, float]) -> str:
-    """从style_exposures取dominant风格（排除emergency，除非只有它）。"""
-    if not exposures:
-        return "heuristic_equilibrium"
-    candidates = [(s, w) for s, w in exposures.items() if s != "emergency"]
-    if not candidates:
-        return "emergency"
-    return max(candidates, key=lambda t: t[1])[0]
-
-
-def _pos_size_usdt(pos: Any) -> float:
-    """从持仓对象近似名义仓位：amount × entry × leverage（防御性兜底0）。"""
-    try:
-        amount = float(getattr(pos, "amount", 0.0) or 0.0)
-        entry = float(getattr(pos, "entry_price", 0.0) or 0.0)
-        lev = float(getattr(pos, "leverage", 1.0) or 1.0)
-        if entry <= 0 or amount <= 0:
-            return 0.0
-        return abs(amount * entry * lev)
-    except Exception:  # noqa: BLE001
-        return 0.0
-
-
-def enforce_cluster_cap(
-    positions_dict: Dict[str, Any],
-    new_direction: str,
-    new_style_exposures: Dict[str, float],
-    new_size_usdt: float,
-    total_equity: float,
-    cap_pct: float = 0.50,
-) -> bool:
-    """§G9 聚类约束：同方向×同风格桶 合并仓位 超过 equity×cap_pct → False（拒绝开仓）。
-
-    纯函数、无I/O；异常时fail-open=True（不阻塞交易）。
-    """
-    try:
-        # --- 防御：参数合理性 ---
-        if total_equity <= 0 or new_size_usdt <= 0:
-            return True  # 权益0或无新开仓 → 无需约束（fail-open安全）
-        cap_pct_f = float(cap_pct) if cap_pct else 0.50
-        cap_usdt = float(total_equity) * max(0.0, min(1.0, cap_pct_f))
-
-        # --- 确定新开仓的桶 key ---
-        new_dir_norm = "long" if str(new_direction or "").lower().startswith("l") else "short"
-        new_style = _dominant_style_from_exposures(new_style_exposures or {})
-        target_bucket = (new_dir_norm, new_style)
-
-        # --- 遍历已有持仓，累加同桶 size ---
-        bucket_sum = 0.0
-        for _coin, pos in (positions_dict or {}).items():
-            try:
-                p_dir = getattr(pos, "direction", "")
-                p_dir_norm = "long" if str(p_dir or "").lower().startswith("l") else "short"
-                enh = getattr(pos, "enhance_info", {}) or {}
-                p_exp = enh.get("style_exposures", {}) or {}
-                p_style = _dominant_style_from_exposures(p_exp)
-                if (p_dir_norm, p_style) == target_bucket:
-                    bucket_sum += _pos_size_usdt(pos)
-            except Exception:  # noqa: BLE001
-                continue
-
-        # --- 加新开仓尺寸 → 判断是否超限 ---
-        total = bucket_sum + float(new_size_usdt)
-        if total > cap_usdt + 1e-9:  # 浮点容忍
-            return False
-        return True
-    except Exception:  # noqa: BLE001 — fail-open：不阻塞交易
-        return True
-
-
-# ---------------------------------------------------------------------
-# 内部分支触发器（§3.2 路径B：单笔持仓按 ctx.strategy_type 触发差异化分支）
-#   分支名："breakout_fail"（假突破失败检测）
-#           "mean_revert_target"（均值回归达标检测）
-#   返回 bool：True=分支条件满足（可被ExitStrategy消费）
-# ---------------------------------------------------------------------
-def internal_branch_triggered(branch_name: str, ctx: Any) -> bool:
-    """按 strategy_type × 分支名 的规则表，判断内部分支是否触发。
-
-    纯函数：读取ctx的属性（不写入）；未知分支/异常 → False。
-    """
-    try:
-        bn = str(branch_name or "").strip()
-        stype = str(getattr(ctx, "strategy_type", "") or "").strip()
-
-        if bn == "breakout_fail":
-            # 假突破：strategy=breakout 且 紧震荡RANGE_TIGHT 且 age<1h（保护期内）且 浮亏≥1.5%
-            if stype != "breakout":
-                return False
-            regime = str(getattr(ctx, "regime_label", "") or "").strip().upper()
-            age = float(getattr(ctx, "age_hours", 0.0) or 0.0)
-            upnl = float(getattr(ctx, "unrealized_pnl_pct", 0.0) or 0.0)
-            if regime == "RANGE_TIGHT" and age < 1.0 and upnl < -0.015:
-                return True
-            return False
-
-        if bn == "mean_revert_target":
-            # 均值回归达标：strategy=mean_revert 且 浮盈≥2% 且 距离MA≤0.5%（回中）
-            if stype != "mean_revert":
-                return False
-            upnl = float(getattr(ctx, "unrealized_pnl_pct", 0.0) or 0.0)
-            dist = float(getattr(ctx, "distance_from_ma_pct", 0.0) or 0.0)
-            if upnl >= 0.02 and dist <= 0.005:
-                return True
-            return False
-
-        # 未知分支 → False（不意外触发）
-        return False
-    except Exception:  # noqa: BLE001
-        return False
-
-
-# =====================================================================
-# __all__ 出口（路径B新增6个符号 + 原有8个）
+# __all__ 出口
 # =====================================================================
 __all__ = [
     "_normalize_0_100",
@@ -838,11 +601,4 @@ __all__ = [
     "ASSET_CLASSES",
     "DEFAULT_NEUTRAL_SCORES",
     "STYLE_ORDER",
-    # 路径 B 新增：
-    "PORTFOLIO_MODE_CHAINS",
-    "get_ranktp_allow_for_mode",
-    "enforce_cluster_cap",
-    "internal_branch_triggered",
-    "_dominant_style_from_exposures",  # 导出便于单测/调试
-    "_pos_size_usdt",
 ]

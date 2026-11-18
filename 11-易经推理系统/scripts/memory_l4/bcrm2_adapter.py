@@ -19,6 +19,9 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
+# 进程内 BTC 参考数据缓存：(symbol, timeframe) -> (timestamp, df)，TTL 300s
+_REF_DF_CACHE: Dict[tuple, tuple] = {}
+
 
 class BCRM2Adapter:
     """
@@ -216,15 +219,33 @@ class BCRM2Adapter:
             logger.warning(f"[BCRM2] 保存模型缓存失败: {e}")
 
     def _fetch_ref_df(self, df: pd.DataFrame) -> Optional[pd.DataFrame]:
-        """获取 BTC 参考数据用于跨资产特征和 L2 MetaLabeling"""
+        """获取 BTC 参考数据用于跨资产特征和 L2 MetaLabeling
+
+        P1 修复：BTC 参考数据必须新鲜。此前 get_klines 无条件优先本地 CSV，
+        而本地 BTC_1H.csv 停在 2026-07-13，导致所有非 BTC 币的跨资产特征
+        在 7 月之后被 ffill 成常数，实盘推理严重失真。
+        """
         if self.symbol.upper() in ("BTC", "BTC-USDT-SWAP"):
             return None  # BTC 自身不需要 ref_df
 
         try:
             from scripts.memory_l4.bcrm2.data_fetcher import get_klines
 
-            # 获取与 df 时间范围对齐的 BTC K线
-            ref_df = get_klines("BTC", self.timeframe, max_bars=max(len(df) + 200, 5000))
+            key = ("BTC", self.timeframe)
+            now = time.time()
+            cached = _REF_DF_CACHE.get(key)
+            if cached and now - cached[0] < 300:  # 5 分钟内复用，避免每币重复拉取
+                ref_base = cached[1]
+            else:
+                ref_base = get_klines(
+                    "BTC",
+                    self.timeframe,
+                    max_bars=max(len(df) + 300, 1500),
+                    max_age_bars=2,
+                )
+                if ref_base is not None and len(ref_base) > 200:
+                    _REF_DF_CACHE[key] = (now, ref_base.copy())
+            ref_df = ref_base
             if ref_df is not None and len(ref_df) > 200:
                 # ══════════════════════════════════════════════════════
                 # Bug修复: 统一时区，避免 datetime64[ns] vs datetime64[ns, UTC] 冲突

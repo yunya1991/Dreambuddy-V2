@@ -102,18 +102,10 @@ class ExitManager:
         self._log_buffer: List[Dict[str, Any]] = []
         self._storage: Any = None  # EvolutionStorageSQLite 适配器
         # ── 路径B：组合模式子链字典 ──
+        # 战略层已从 11 域移除，组合模式链随之弃用；_chains 保持为空，
+        # get_current_chain() 自动回退到 legacy _strategies（实盘 7 策略）。
         self.portfolio_mode: str = "default"
         self._chains: Dict[str, List[ExitStrategy]] = {}
-        try:
-            # 防御：允许策略层未被打包的情况（独立import不崩）
-            from ..strategy_algo_layer import PORTFOLIO_MODE_CHAINS as _PMC  # noqa: E402
-
-            for m, chain in (_PMC or {}).items():
-                self._chains[str(m)] = sorted(  # noqa: C414
-                    list(chain), key=lambda s: getattr(s, "priority", 9999)
-                )
-        except Exception:  # noqa: BLE001 fail-open：无chain时仍通过legacy _strategies正常工作
-            self._chains = {}
 
     def set_storage(self, storage: Any) -> None:
         """注入 storage 适配器（EvolutionStorageSQLite），用于贡献值统计。"""

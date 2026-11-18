@@ -234,87 +234,9 @@ def monitor_alerts(
 
 
 # ---------------------------------------------------------------------------
-# fivedomain 子命令（易经推理五计庙算数据采集）
+# fivedomain 子命令已移除：11 域战略层（五计庙算）于 2026-11-18 删除，
+# 由 43-战略承接推演层承接；数据采集入口不再暴露。
 # ---------------------------------------------------------------------------
-@app.command(name="fivedomain")
-def fivedomain(
-    classes: str = typer.Option(
-        "all",
-        "--class",
-        help="资产类：all | crypto_usdt | us_stock | precious_metal（多类用逗号分隔）",
-    ),
-    raw_json: bool = typer.Option(False, "--raw-json", help="直接打印 JSON（否则人类可读摘要）"),
-) -> None:
-    """一次性采集五维所需全部外部数据，按类输出 coin_data。喂给 FiveDomainFeatureComputer。"""
-    import os
-    import sys
-
-    # 定位 11-易经推理系统/scripts/memory_l4，动态导入 FiveDomainFetcher
-    _REPO = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-    _L4 = os.path.join(_REPO, "11-易经推理系统", "scripts", "memory_l4")
-    if _L4 not in sys.path:
-        sys.path.insert(0, _L4)
-
-    try:
-        from fivedomain_fetcher import ASSET_CLASSES, FiveDomainFetcher
-    except Exception as e:  # pragma: no cover - 依赖缺失
-        typer.echo(f"导入 FiveDomainFetcher 失败: {type(e).__name__}: {e}", err=True)
-        raise typer.Exit(code=2)  # noqa: B904
-
-    dc = _get_dc()
-    fetcher = FiveDomainFetcher(data_center=dc)
-    all_data = fetcher.fetch_coin_data()
-
-    # 过滤选择的类
-    if classes.strip().lower() == "all":
-        chosen = list(ASSET_CLASSES)
-    else:
-        chosen = [c.strip() for c in classes.split(",") if c.strip() in ASSET_CLASSES]
-        if not chosen:
-            typer.echo(
-                f"未知 --class 值：{classes}。可用：all / {', '.join(ASSET_CLASSES)}", err=True
-            )
-            raise typer.Exit(code=1)
-    filtered = {c: all_data[c] for c in chosen}
-
-    if raw_json:
-        typer.echo(json.dumps(filtered, ensure_ascii=False, default=str, indent=2))
-        return
-
-    # 人类可读摘要
-    typer.echo("=" * 72)
-    typer.echo("  FiveDomainFetcher 采集摘要（喂给 FiveDomainFeatureComputer.coin_data）")
-    typer.echo("=" * 72)
-    for cls, coin in filtered.items():
-        typer.echo(f"\n【{cls}】")
-        # D 类道
-        typer.echo("  ·道(D1~D10) 采集：")
-        dao_keys = (
-            "fedfunds_rate",
-            "m2_yoy_pct",
-            "fed_balance_sheet_trillion",
-            "us_cpi_yoy_pct",
-            "us_ppi_yoy_pct",
-            "us_indpro_yoy_pct",
-            "stablecoin_mcap_bln",
-            "defi_tvl_bln",
-            "gas_eth_gwei",
-            "policy_sentiment_score",
-        )
-        for k in dao_keys:
-            if k in coin:
-                typer.echo(f"      - {k:<28s} = {coin[k]!r}")
-        # T 类天
-        typer.echo("  ·天(T1,T2,T4) 派生：")
-        tian_keys = ("merrill_phase", "vix_close", "liquidity_score")
-        for k in tian_keys:
-            typer.echo(f"      - {k:<28s} = {coin.get(k)!r}")
-        typer.echo(
-            "  ·地(G1~G7)：cycle4y_t_rel / regime / spring_force_score / amplitude / ATR / FTD / MA200_dist "
-            "→ 由本地行情派生（market_data_layer），不从 data_center 采集。"
-        )
-        typer.echo("  ·将/法：读 system_state（系统自省），不走外部采集。")
-    typer.echo("")
 
 
 def main() -> None:

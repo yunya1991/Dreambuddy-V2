@@ -234,6 +234,13 @@ def fetch_okx_klines(
     df = df.set_index("timestamp")
     df = df.sort_index()
 
+    # P0 修复：只保留已收盘 K 线（OKX confirm=1），避免未收盘 bar 污染训练/推理
+    try:
+        _confirm = df["confirm"].astype(str)
+        df = df[_confirm.isin(["1", "True", "true"])]
+    except Exception:  # noqa: BLE001 字段缺失时保持原行为
+        pass
+
     return df[["open", "high", "low", "close", "volume"]]
 
 
@@ -250,25 +257,61 @@ def save_klines(df: pd.DataFrame, symbol: str, timeframe: str, data_dir: Optiona
     print(f"  已保存到: {filepath}")
 
 
+_BAR_MS = {
+    "1m": 60_000,
+    "3m": 180_000,
+    "5m": 300_000,
+    "15m": 900_000,
+    "30m": 1_800_000,
+    "1H": 3_600_000,
+    "2H": 7_200_000,
+    "4H": 14_400_000,
+    "6H": 21_600_000,
+    "12H": 43_200_000,
+    "1D": 86_400_000,
+    "1W": 604_800_000,
+}
+
+
+def _is_fresh(df: pd.DataFrame, timeframe: str, max_age_bars: int) -> bool:
+    """判断本地缓存是否新鲜（最后一根 K 线距今不超过 max_age_bars 根）。"""
+    dur = _BAR_MS.get(timeframe)
+    if not dur or df is None or len(df) == 0:
+        return True
+    try:
+        last = df.index[-1]
+        ts_ms = int(last.timestamp() * 1000) if hasattr(last, "timestamp") else int(last)
+    except Exception:  # noqa: BLE001
+        return True
+    return int(time.time() * 1000) - ts_ms <= dur * (max_age_bars + 1)
+
+
 def get_klines(
     symbol: str,
     timeframe: str = "1H",
     use_cache: bool = True,
     refresh: bool = False,
     max_bars: int = 5000,
+    max_age_bars: Optional[int] = None,
 ) -> pd.DataFrame:
     """
     获取K线数据 (统一入口)
 
     优先级: 本地缓存 → OKX API
+
+    max_age_bars: 非 None 时启用新鲜度校验；本地缓存最后一根超过该 bar 数则强制拉取。
     """
     sym_usdt = symbol.replace("-USDT", "").replace("USDT", "")
     sym_key = f"{sym_usdt}-USDT"
 
-    # 尝试本地加载
+    # 尝试本地加载（可选的 freshness 校验）
     if use_cache and not refresh:
         df = load_kline_from_local(sym_usdt, timeframe)
-        if df is not None and len(df) > 100:
+        if (
+            df is not None
+            and len(df) > 100
+            and (max_age_bars is None or _is_fresh(df, timeframe, max_age_bars))
+        ):
             print(f"  从本地加载: {len(df)}根K线")
             return df.tail(max_bars)
 
@@ -279,7 +322,17 @@ def get_klines(
     if len(df) > 0:
         print(f"  获取到 {len(df)}根K线")
         if use_cache:
+            # 合并旧缓存再落盘，避免 freshness 刷新把长历史覆盖成短窗口
+            old = load_kline_from_local(sym_usdt, timeframe)
+            if old is not None and len(old) > 0:
+                df = pd.concat([old, df])
+                df = df[~df.index.duplicated(keep="last")].sort_index()
             save_klines(df, sym_usdt, timeframe)
         return df.tail(max_bars)
 
+    # 拉取失败：回退到本地旧缓存（避免整体 fail-closed）
+    df = load_kline_from_local(sym_usdt, timeframe)
+    if df is not None and len(df) > 0:
+        print(f"  OKX拉取失败，回退本地缓存: {len(df)}根K线")
+        return df.tail(max_bars)
     return pd.DataFrame()

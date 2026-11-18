@@ -6,6 +6,49 @@
 
 ---
 
+## [v4.6.0] - 2026-11-18
+
+### 删除 11 域战略层 + 推理周期 P0 修复
+
+- **删除（战略层，已由 43 域承接）**：
+  - 移除五计庙算/策略算法层 14 个模块：`five_domain_scorer`、`five_domain_feature_computer`、`strategy_algo_layer`、`fivedomain_fetcher`、`five_domain_ic_analysis`、`five_domain_subindicator_ic`、`five_domain_weight_optuna`、`five_domain_correlation_matrix`、`five_domain_oos_validation`、`stage4_grayscale_manager`、`backtest_five_domain_btc/v2`、`finbert_ab_validation` 及根级测试
+  - 同步删除 11 域 `tests/` 下 9 个依赖五域特征机的 FD7/Odaily/FinBERT 测试，以及 `scripts/memory_l4/tests/` 下 12 个战略层测试
+  - 18 域 `data-center fivedomain` CLI 子命令同步移除（原用于给五域特征机采集 coin_data）
+  - `polling_trader` 移除战略层初始化、日级打分更新、带宽影子、策略独立开仓入口与策略选择影子块；保留 `_five_domain_state_cache=None` 占位供历史 fail-open 读点安全降级
+  - 保留 `five_domain_sqlite_reader` / `_five_domain_store_port`（BCRM2 宏观特征与诊断仍依赖，非战略决策层）
+- **43 域解耦**：`strategy_algo_layer` 五维权重量本地固化（不再 import 11）；修正 `five_domain_feature_computer` 的「9-基本面分析」路径；P3 迁移比对脚本改为缺模块时归档退出
+- **行为修复**：`ExitManager` 不再注入占位 `PORTFOLIO_MODE_CHAINS`，`get_current_chain()` 回退 legacy 7 策略链。此前占位链全部返回 pass，真实离场策略被旁路
+- **P0 推理周期修复**：
+  - 推理仅使用**已收盘** bar：`_load_kline_from_okx(closed_only=True)` + `bcrm2.data_fetcher` 过滤 `confirm!=1`，消除 5 分钟轮询对当前 1H bar 的反复重绘
+  - `kline_limit` 200→1000，`limit>300` 自动走 `history-candles` 分页；新增按「已收盘 bar 开盘时间」的 K 线缓存，同一根 bar 内复用
+  - 模型缓存键随已收盘 bar 生成（同一小时内稳定），不再被未收盘 bar 干扰
+  - `_trigger_bcrm2_retrain` 改用已收盘 K 线并统一 `_kline_to_dataframe`（升序 DatetimeIndex），避免 newest-first 倒序训练污染模型
+- **验证**：`py_compile` 6 文件通过；`import polling_trader` 成功；`closed_only` 单测（3 根→2 根已收盘）通过；`test_shadow_mode_gate` 5 passed；`test_multi_coin_scenario_verify` 通过
+- **影响范围**：`11-易经推理系统/scripts/memory_l4/polling_trader.py`、`yijing_trainer.py`、`bcrm2/data_fetcher.py`、`bcrm2/exit_manager.py`、`43-战略承接推演层/strategic_extension/*`
+
+---
+
+## [v4.6.1] - 2026-11-18
+
+### 缓存模型 OOS 评估、清理与跨资产数据修复
+
+- **清理前评估**：对 1H 加密模型（78 个，35 个币种）按各自 `train_time` 之后的数据做 OOS 回放，统一 conf≥0.5、TP 2ATR / SL 1.5ATR / 60 根持有、60 根冷却
+  - 多数模型胜率 >50%，但同期「无脑做多」基线也有 47%~61%，其中相当部分是行情 beta
+  - 存在真实相对优势的样本：INJ best 80.0%（基线 47.7%）、SOL best 71.1%（51.1%）、BTC best 75.0%（51.7%）、AAVE 73.0%、GRT 73.3%
+  - 越新的模型越差（ETH latest 42.9%、SOL latest 51.7%、INJ latest 53.3%），说明近期重训模型过拟合/受行情切换影响
+  - 4H（245 个）/1D（16 个）/15m（1 个）未评估：与 1H 实盘周期不匹配
+- **重大发现（已修复）**：`scripts/data/klines/BTC_1H.csv` 内容停在 2026-07-13，而 `get_klines()` 无条件优先本地缓存；
+  `_fetch_ref_df` 用 ffill 对齐后，所有非 BTC 币的跨资产特征在 7 月之后被冻结成常数 → 实盘推理特征失真
+  - `get_klines` 新增 `max_age_bars` 新鲜度校验；`_fetch_ref_df` 传 `max_age_bars=2` 并加 300s 进程内缓存
+  - 刷新落盘改为「旧缓存 + 新数据合并去重」，避免短窗口覆盖长历史
+- **清理动作**：
+  - 369 个模型（目录 + meta.pkl）整体归档到 `scripts/data/bcrm2_models_archive_20261118/`
+  - 29 个通过筛选的模型复制到 `scripts/data/bcrm2_models_keep/`（含 `SHORTLIST.json`，仅作基准，不参与自动加载）
+  - 活动缓存 `scripts/data/bcrm2_models/` 清空，P0 新缓存键下按 1H 已收盘数据重新训练
+  - 五域两个权重文件回退等权，原文件另存 `*_deprecated_20261118.json`
+
+---
+
 ## [v4.5.0] - 2026-11-14
 
 ### M1-e：evolution 开仓循环下沉 23 `EvolutionEntryLoop`（执行器收口）

@@ -26,10 +26,15 @@ from strategic_extension.five_domain_feature_computer import (  # noqa: E402
 )  # noqa: E402
 
 # 11 侧：原位置以正规模块方式导入（其内部依赖同目录 strategy_algo_layer 等模块）
+# 归档说明：11 域战略层已删除，本脚本仅保留历史迁移比对记录；缺模块时优雅退出。
 _11_DIR = os.path.join(_DREAMBUDDY_ROOT, "11-易经推理系统", "scripts", "memory_l4")
 if _11_DIR not in sys.path:
     sys.path.insert(0, _11_DIR)
-import five_domain_feature_computer as _m11  # noqa: E402
+try:
+    import five_domain_feature_computer as _m11  # noqa: E402
+except ImportError:
+    print("[ARCHIVED] 11 域战略层已删除，P3 迁移比对脚本仅保留历史记录。")
+    raise SystemExit(0) from None
 
 FDC11 = _m11.FiveDomainFeatureComputer
 

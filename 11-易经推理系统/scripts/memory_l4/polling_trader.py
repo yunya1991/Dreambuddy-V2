@@ -88,6 +88,7 @@ from scripts.memory_l4.yijing_exit_system import (
 )
 from scripts.memory_l4.yijing_feishu_alert import notify_model_error, notify_system_error
 from scripts.memory_l4.yijing_trainer import (
+    _BAR_MS,
     _build_contradiction_list,
     _build_research_contradictions,
     _contradictions_to_bcrm_format,
@@ -888,7 +889,7 @@ class PollingTrader:
         confidence_threshold: float = 0.70,
         short_confidence_threshold: float = 0.80,
         max_positions: int = 5,
-        kline_limit: int = 200,
+        kline_limit: int = 1000,
         initial_equity: float = 100.0,
         daily_loss_limit: float = -30.0,
         max_consecutive_losses: int = 999,
@@ -1000,6 +1001,8 @@ class PollingTrader:
         self.short_confidence_threshold = short_confidence_threshold  # 做空独立阈值（高于做多）
         self.max_positions = max_positions
         self.kline_limit = kline_limit
+        # P0：按「已收盘 bar」缓存的推理 K 线（key=(inst_id, bar, 当前bar开盘ts)）
+        self._inference_kline_cache: dict = {}
         # 将/法维度 system_state 自省专用：缓存 P0 风控配置，便于 FiveDomainFeatureComputer
         # 通过 _cls_get(_by_class) 取 factor_coverage_pct / implemented_strategies。
         self.default_position_pct = float(default_position_pct or 0.10)
@@ -1259,31 +1262,6 @@ class PollingTrader:
         self.enable_bcrm_direction_state_check: bool = _os.environ.get(
             "ENABLE_BCRM_DIRECTION_STATE_CHECK", "0"
         ).lower() in ("1", "true", "yes")
-        # —— 战略层+策略层独立开仓开关（默认关闭，安全第一）——
-        #   独立开仓：三层信号组合（战略层 war_state/direction_state + 策略层 select() + 技术信号 d_star/ri）
-        #   → 产出独立买卖信号 → 独立建仓，用于单独测试战略层+策略层效果
-        #   仓位：cap_pct × position_mult × STRATEGY_BASE_BUDGET_USDT
-        #   子池隔离：source_tag="strategy"，独立计数不串扰 bdsm/bcrm/evolution
-        self.enable_strategy_independent_open: bool = _os.environ.get(
-            "ENABLE_STRATEGY_INDEPENDENT_OPEN", "0"
-        ).lower() in ("1", "true", "yes")
-        # 币种池与 BCRM2.0 保持一致：默认使用 self.coins（--coins 命令行参数）
-        # 可通过 STRATEGY_INDEPENDENT_COINS 环境变量覆盖（逗号分隔）
-        _env_strategy_coins = (_os.environ.get("STRATEGY_INDEPENDENT_COINS", "") or "").strip()
-        if _env_strategy_coins:
-            self.STRATEGY_INDEPENDENT_COINS: frozenset = frozenset(
-                c.strip().upper() for c in _env_strategy_coins.split(",") if c.strip()
-            )
-        else:
-            self.STRATEGY_INDEPENDENT_COINS: frozenset = frozenset(
-                str(c).upper() for c in self.coins
-            )
-        self.STRATEGY_BASE_BUDGET_USDT: float = float(
-            _os.environ.get("STRATEGY_BASE_BUDGET_USDT", "200") or "200"
-        )
-        self.MAX_STRATEGY_POSITIONS: int = int(
-            _os.environ.get("MAX_STRATEGY_POSITIONS", "3") or "3"
-        )
         # Kline 信号缓存（per-coin），由 _check_evolution_kline_signal 填充
         self._last_kline_result_by_coin: Dict[str, dict] = {}
         self.dynamic_blacklist: dict = (
@@ -1699,18 +1677,13 @@ class PollingTrader:
         self._init_capital_control()
 
         # ──────────────────────────────────────────────────────
-        # v1.4.1 Stage 1: 战略层五计庙算 + 策略算法层（影子模式，默认全关）
-        # 设计原则：所有开关默认 False → 两个组件均为 None → 字节等价
-        #           异常 catch → None → 不阻塞 __init__
-        # ──────────────────────────────────────────────────────
+        # 战略层（五计庙算 + 策略算法层）已迁出 11 域，这里仅保留 None 占位，
+        # 供历史日志/fail-open 读点安全降级（读到的永远是中性默认值）。
         self._five_domain_scorer = None  # type: ignore[assignment]
         self._five_domain_feature_computer = None  # type: ignore[assignment]
         self._strategy_algo_layer = None  # type: ignore[assignment]
         self._five_domain_state_cache = None  # type: ignore[assignment]
-        self._five_domain_state_shadow = (
-            None  # 真实计算值（供ShadowLogger记录，影子模式下不被中性值覆盖）
-        )
-        self._init_five_domain_and_strategy_layer()
+        self._five_domain_state_shadow = None
 
         # ──────────────────────────────────────────────────────
         # Phase1：CBR JSONL 双时点建库 + Elder-ray 日线影子 + 盈亏因子旁路
@@ -1891,119 +1864,6 @@ class PollingTrader:
     # v1.4.1 Stage 1: 战略层五计庙算 + 策略算法层（影子模式初始化）
     # 设计原则：失败降级为 None，仅影响影子日志，不改变任何交易逻辑
     # ================================================================
-
-    def _apply_fd_shadow_intercept(self, cfg, FiveDomainState):
-        """影子拦截：7子开关全开后，shadow_mode=True 时保存真实计算值到 _shadow，
-        下游 _state_cache 替换为中性默认值（war_state=ALLOW/cap=1.0/mask全True/band=None）。
-        确保战略层完整计算所有输出但不影响实盘，ShadowLogger 记录真实值供观测。"""
-        if self._five_domain_state_cache is None:
-            return
-        # 保存真实计算值（供 ShadowLogger 读取）
-        self._five_domain_state_shadow = self._five_domain_state_cache
-        # shadow_mode=True 时，下游消费中性默认值（字节等价"战略层不存在"）
-        if cfg.enable_five_domain_shadow_mode:
-            self._five_domain_state_cache = FiveDomainState.default_fail_open()
-            self._log(
-                "[战略层/影子拦截] 7子开关全开+影子模式：战略层完整计算所有6类输出，"
-                "下游消费中性默认值（不影响实盘），ShadowLogger 记录真实值供观测",
-                "INFO",
-            )
-
-    def _init_five_domain_and_strategy_layer(self):
-        """初始化五计庙算评分器 + 策略算法层（默认全关=fail-open字节等价）。
-
-        state_cache_path = runtime/five_domain_state.json（日级缓存，5分钟热路径只读）
-        """
-        import os as _os
-        from pathlib import Path as _Path
-
-        try:
-            from scripts.memory_l4.five_domain_scorer import FiveDomainHeuristicScorer
-            from scripts.memory_l4.strategy_algo_layer import (
-                StrategyAlgoConfig,
-                StrategyAlgorithmLayer,
-            )
-        except Exception as e:
-            self._log(f"[战略层/策略层] import失败，影子模式关闭（字节等价）: {e}", "WARN")
-            return
-
-        # cfg：2总+7子+3模式+1放宽 共13开关，默认全部False（符合§三开关表fail-open）
-        cfg = StrategyAlgoConfig(
-            enable_strategy_layer=True,  # P0 开关：策略算法层影子（只打日志+enhance_info，不影响交易）
-            enable_five_domain=False,
-            # 7 子开关全部 True：让战略层完整计算所有6类输出（war_state/cap/mask/mult/band/veto）
-            # 影子拦截确保：shadow_mode=True 时下游消费中性默认值，不影响实盘
-            enable_five_domain_war_state=True,
-            enable_five_domain_style_mask=True,
-            enable_five_domain_position_cap=True,
-            enable_five_domain_cross_asset=True,
-            enable_five_domain_dimensio=True,
-            enable_five_domain_front_layer_band=True,
-            enable_five_domain_ol=True,
-            # 影子 AB 模式默认 False
-            enable_five_domain_shadow_mode=True,  # 影子模式：_shadow保存真实值(供SubSystemBridge/ShadowDebug消费)，_cache替换为中性默认值(BCRM2.0不消费战略层)
-            enable_shadow_ab_static_baseline_v15=False,
-            enable_shadow_ab_dynamic_baseline=False,
-            # R5 红线：放宽阈值默认不允许
-            enable_strategy_layer_relax_allowed=False,
-        )
-        try:
-            cache_path = _Path(__file__).resolve().parent / "runtime" / "five_domain_state.json"
-            # A3: enable=True（影子模式），真实应用6决策不等式计算war_state/cap/mask/mult/band
-            # 零风险：7子开关(enable_five_domain_war_state/...)全False，下游不消费仅日志记录
-            self._five_domain_scorer = FiveDomainHeuristicScorer(
-                enable=True,
-                state_cache_path=cache_path,
-                enable_adaptive_weights=_os.environ.get("ENABLE_ADAPTIVE_WEIGHTS", "").lower()
-                in ("1", "true", "yes"),
-            )
-            # FiveDomainFeatureComputer：特征→评分计算层（A1: enable=True 影子模式，真实计算五维评分）
-            from scripts.memory_l4.five_domain_feature_computer import FiveDomainFeatureComputer
-
-            self._five_domain_feature_computer = FiveDomainFeatureComputer(enable=True)
-            self._strategy_algo_layer = StrategyAlgorithmLayer(cfg=cfg)
-            # 初始化 state_cache（A3后不再字节等价 default_fail_open，因为Scorer.enable=True）
-            # 日级刷新时会通过 A2 的真实 coin_data/system_state 重算，这里先用 fail-open 作为占位。
-            # 注意：占位值不落盘（persist=False）——落盘会覆盖上一次真实日级状态，
-            # 且占位文件无 _meta.updated_date，42 适配器会误判 stale（服务重启窗口期）。
-            self._five_domain_state_cache = self._five_domain_scorer.score_and_decide(persist=False)
-
-            from scripts.memory_l4.five_domain_scorer import FiveDomainState
-
-            # ★ 影子拦截：7子开关全开后，shadow_mode=True 时保存真实值到 _shadow，
-            #   下游 _state_cache 替换为中性默认值（war_state=ALLOW/cap=1.0/mask全True/band=None）
-            #   确保战略层完整计算所有输出但不影响实盘，ShadowLogger 记录真实值供观测
-            self._apply_fd_shadow_intercept(cfg, FiveDomainState)
-            # F1 影子红线：shadow_mode=True 时下游 _state_cache 必须为中性默认值
-            if cfg.enable_five_domain_shadow_mode:
-                _st = self._five_domain_state_cache
-                _default = FiveDomainState.default_fail_open()
-                for _c in _st.war_state.keys():
-                    assert _st.war_state.get(_c) == _default.war_state.get(
-                        _c
-                    ), f"[F1影子红线违规] shadow_mode=True时 war_state[{_c}]={_st.war_state.get(_c)}≠ALLOW"
-                    assert (
-                        abs(_st.aggregate_position_cap_pct.get(_c, 1.0) - 1.0) < 1e-6
-                    ), f"[F1影子红线违规] shadow_mode=True时 cap[{_c}]={_st.aggregate_position_cap_pct.get(_c)}≠1.0"
-            # ★ FIX 问题2：动态描述7子开关状态，避免 style_mask=True 时误写「全False」
-            try:
-                from scripts.memory_l4.five_domain_feature_computer import (
-                    describe_five_domain_subswitches as _desc_sw,
-                )
-
-                _sw_desc = _desc_sw(cfg)
-            except Exception:
-                _sw_desc = "子开关状态描述生成失败（详见five_domain_feature_computer.describe_five_domain_subswitches）"
-            self._log(
-                f"[战略层/策略层] 初始化完成（A1+A2+A3影子模式已启用，{_sw_desc}）",
-                "INFO",
-            )
-        except Exception as e:
-            self._five_domain_scorer = None
-            self._five_domain_feature_computer = None
-            self._strategy_algo_layer = None
-            self._five_domain_state_cache = None
-            self._log(f"[战略层/策略层] 构造失败，降级关闭（字节等价）: {e}", "WARN")
 
     def _init_phase1_three_components(self):
         """Phase1 三组件 + 方案C v3.0 五组件初始化（CBR/Elder/WinProb + C3~C6/C8）。
@@ -2355,766 +2215,6 @@ class PollingTrader:
         except Exception:
             return True  # FAIL-OPEN：异常 → 保守判定无干预者
 
-    def _run_once_five_domain_daily_update(self):
-        """§15.4.2 战略层日级打分影子（热路径只读，5分钟轮询不重算）。
-
-        日级缓存文件：runtime/five_domain_state.json，带 _meta.updated_date 防重算。
-        异常时 fail-open = FiveDomainState.default_fail_open()，仅 WARN 不阻塞。
-        """
-        from dataclasses import asdict as _asdict
-        from pathlib import Path as _Path
-
-        if self._five_domain_scorer is None:
-            return
-
-        # ═══════════════════════════════════════════════════════════════════
-        # 辅助：把 FiveDomainState 对象 → 打 9 条影子日志（war/total/dao/cap/mult/mask/veto/band/fc）
-        # ═══════════════════════════════════════════════════════════════════
-        def _emit_shadow_logs(state_obj, src_label: str):
-            try:
-                from scripts.memory_l4.five_domain_scorer import CLASSES as _CLASSES
-                from scripts.memory_l4.strategy_algo_layer import STYLE_ORDER as _STYLES
-
-                _scorer = self._five_domain_scorer
-                _war = getattr(state_obj, "war_state", {}) or {}
-                _scores = getattr(state_obj, "five_scores", {}) or {}
-                _caps = getattr(state_obj, "aggregate_position_cap_pct", {}) or {}
-                _mults = getattr(state_obj, "cross_asset_multiplier", {}) or {}
-                _mask = getattr(state_obj, "allowed_style_mask", {}) or {}
-                _veto = getattr(state_obj, "dimension_veto_flags", {}) or {}
-                _band = getattr(state_obj, "front_layer_band", {}) or {}
-                _fc = getattr(state_obj, "forced_close_flags", {}) or {}
-                _totals = {}
-                _dao_scores = {}
-                for _c in _CLASSES:
-                    _s = _scores.get(_c, {})
-                    _dao_scores[_c] = _s.get("dao", 50)
-                    if _scorer is not None:
-                        try:
-                            _totals[_c] = _scorer._weighted_total(_s, _c)
-                        except Exception:
-                            _totals[_c] = 50
-                    else:
-                        _totals[_c] = 50
-                _cls_list = list(_CLASSES)
-                self._log(
-                    f"[战略层影子][{src_label}] war_state | "
-                    + " | ".join(f"{_c}={_war.get(_c, 'ALLOW')}" for _c in _cls_list),
-                    "INFO",
-                )
-                self._log(
-                    f"[战略层影子][{src_label}] total_score | "
-                    + " | ".join(f"{_c}={_totals.get(_c, 50)}" for _c in _cls_list),
-                    "INFO",
-                )
-                self._log(
-                    f"[战略层影子][{src_label}] dao_score | "
-                    + " | ".join(f"{_c}={_dao_scores.get(_c, 50)}" for _c in _cls_list),
-                    "INFO",
-                )
-                self._log(
-                    f"[战略层影子][{src_label}] cap_mode | "
-                    + " | ".join(f"{_c}={_caps.get(_c, 1.0):.2f}" for _c in _cls_list),
-                    "INFO",
-                )
-                self._log(
-                    f"[战略层影子][{src_label}] mult_mode | "
-                    + " | ".join(f"{_c}={_mults.get(_c, 1.0):.2f}" for _c in _cls_list),
-                    "INFO",
-                )
-
-                # ★ FIX-字段补全：style_mask / dimension_veto / front_layer_band / forced_close_flags
-                # 6 类策略掩码：列出每类被禁用(False)的策略名
-                def _fmt_mask(c):
-                    _m = _mask.get(c, {}) or {}
-                    _disabled = [s for s in _STYLES if not _m.get(s, True)]
-                    return "all" if not _disabled else ",".join(_disabled)
-
-                self._log(
-                    f"[战略层影子][{src_label}] style_mask | "
-                    + " | ".join(f"{_c}=disabled[{_fmt_mask(_c)}]" for _c in _cls_list),
-                    "INFO",
-                )
-
-                # 5 个维度否决旗标：列出每类生效(True)的否决项
-                def _fmt_veto(c):
-                    _v = _veto.get(c, {}) or {}
-                    _active = [k for k, v in _v.items() if v]
-                    return "none" if not _active else ",".join(_active)
-
-                self._log(
-                    f"[战略层影子][{src_label}] dimension_veto | "
-                    + " | ".join(f"{_c}=[{_fmt_veto(_c)}]" for _c in _cls_list),
-                    "INFO",
-                )
-
-                # 前置层带宽：None=不clip，否则输出 min/max
-                def _fmt_band(c):
-                    _b = _band.get(c)
-                    if _b is None:
-                        return "None"
-                    return f"min={_b.get('min')},max={_b.get('max')}"
-
-                self._log(
-                    f"[战略层影子][{src_label}] front_layer_band | "
-                    + " | ".join(f"{_c}={_fmt_band(_c)}" for _c in _cls_list),
-                    "INFO",
-                )
-
-                # 强平标志：strong / protect
-                def _fmt_fc(c):
-                    _f = _fc.get(c, {}) or {}
-                    return f"strong={_f.get('strong', False)},protect={_f.get('protect', False)}"
-
-                self._log(
-                    f"[战略层影子][{src_label}] forced_close | "
-                    + " | ".join(f"{_c}={_fmt_fc(_c)}" for _c in _cls_list),
-                    "INFO",
-                )
-            except Exception as _log_e:
-                # 影子日志失败绝对不阻塞主流程
-                try:
-                    self._log(f"[战略层影子] 日志打印异常(不阻塞): {_log_e}", "WARN")
-                except Exception:
-                    pass
-
-        try:
-            state_cache_path = (
-                _Path(__file__).resolve().parent / "runtime" / "five_domain_state.json"
-            )
-            import datetime as _dt
-
-            today_str = _dt.date.today().isoformat()
-
-            need_recalc = True
-            _cached = None
-            if state_cache_path.exists():
-                try:
-                    with state_cache_path.open("r", encoding="utf-8") as _f:
-                        _cached = json.load(_f)
-                    _meta = (_cached or {}).get("_meta", {})
-                    if _meta.get("updated_date") == today_str:
-                        need_recalc = False
-                except Exception:
-                    need_recalc = True
-                    _cached = None
-
-            # ── 分支 A：今日缓存命中（need_recalc=False）→ 读缓存，不重算，但必须：
-            #    1) 反序列化填 self._five_domain_state_cache（否则策略层取不到）
-            #    2) 补打影子日志（否则看不到战略层今天在跑什么）
-            # ──────────────────────────────────────────────────────────────
-            if not need_recalc and _cached is not None:
-                _real_state = None
-                try:
-                    from scripts.memory_l4.five_domain_scorer import FiveDomainState as _FDS
-
-                    self._five_domain_state_cache = _FDS.from_json(
-                        state_cache_path, fallback_on_error=True
-                    )
-                    _real_state = self._five_domain_state_cache
-                except Exception:
-                    # from_json 失败：手工从 _cached 构造最小可用对象或 fail-open
-                    try:
-                        from scripts.memory_l4.five_domain_scorer import FiveDomainState as _FDS2
-
-                        self._five_domain_state_cache = _FDS2.default_fail_open()
-                    except Exception:
-                        self._five_domain_state_cache = None
-                # ★ FIX-日志一致性：显式同步 shadow 为 from_json 真实值，
-                #   防止 _apply_fd_shadow_intercept 被跳过时 shadow 停留在 init 的 stale 状态（dao=50）
-                if _real_state is not None:
-                    self._five_domain_state_shadow = _real_state
-                # ★ 影子拦截：缓存命中时先保存真实值到 _shadow 再替换 _state_cache
-                _fd_cls = _FDS if "_FDS" in locals() else None
-                _fd_cfg = self._strategy_algo_layer.cfg if self._strategy_algo_layer else None
-                if _fd_cls is not None and _fd_cfg is not None:
-                    self._apply_fd_shadow_intercept(_fd_cfg, _fd_cls)
-                # ★ 影子日志优先读 _real_state（from_json 结果），与缓存文件口径严格一致，
-                #   避免 stale _shadow 导致 dao_score 日志与 five_domain_state.json 不一致
-                _shadow_state = (
-                    self._five_domain_state_shadow or _real_state or self._five_domain_state_cache
-                )
-                _emit_shadow_logs(_shadow_state, "CACHE")
-                return  # ← 缓存命中：当日不再重算（保留原语义）
-
-            # ── 分支 B：需要重算（缓存缺失 / 日期不匹配 / 解析失败）
-            # ──────────────────────────────────────────────────────────────
-            try:
-                from scripts.memory_l4.five_domain_scorer import FiveDomainState
-            except Exception:
-                FiveDomainState = None
-
-            # ★ BUG FIX 1：删除「先 score_and_decide(None) 写一次中性分」的错误顺序
-            # 改为：先 FeatureComputer → 再 Scorer；失败兜底才 Scorer(None)
-            result_state = None
-            if self._five_domain_feature_computer is not None:
-                try:
-                    # ── coin_data：从现有系统可用数据中尽力构造（缺失=50）──
-                    import datetime as _dt_coin
-
-                    _month = _dt_coin.date.today().month
-                    # 美林时钟默认=RECOVERY（当前市场大周期假设，fail-open可换）
-                    _merrill = "RECOVERY"
-                    try:
-                        _y = _dt_coin.date.today().year
-                        _m = _month
-                        # 距离 2024-04 BTC 减半的月数 / 48 = 4年周期位置 0~1
-                        _cycle_months = (_y - 2024) * 12 + (_m - 4)
-                        _t_rel = max(0.0, min(1.0, _cycle_months / 48.0))
-                    except Exception:
-                        _t_rel = 0.5
-                    # P2-fix: 美股/黄金4年周期位置（暂用相同基准，后续可按选举周期/商品周期独立计算）
-                    _us_t_rel = _t_rel
-                    _metal_t_rel = _t_rel
-                    try:
-                        _ov = (
-                            self.perf_tracker.get_overall_stats()
-                            if hasattr(self, "perf_tracker")
-                            else {}
-                        )
-                        _win_rate = float(_ov.get("win_rate", 0.5) or 0.5)
-                        _pf = float(_ov.get("profit_factor", 1.5) or 1.5)
-                        _total_trades = int(_ov.get("total_trades", 0) or 0)
-                        _max_dd = float(_ov.get("max_drawdown", 0.10) or 0.10)
-                        _sharpe = float(_ov.get("sharpe_ratio", 3.0) or 3.0)
-                    except Exception:
-                        _ov, _win_rate, _pf, _total_trades, _max_dd, _sharpe = (
-                            {},
-                            0.5,
-                            1.5,
-                            0,
-                            0.10,
-                            3.0,
-                        )
-                    try:
-                        _open_pos_count = (
-                            len(getattr(self.position_tracker, "open_positions", {}))
-                            if hasattr(self, "position_tracker")
-                            else 0
-                        )
-                    except Exception:
-                        _open_pos_count = 0
-
-                    # ★ FIX 问题1 + P1：三类资产构造差异化 coin_data
-                    # P1-地维度：从弹簧力场真实计算 regime + spring_force_score（替代硬编码）
-                    # P1-道维度：从 FiveDomainFetcher 代理指标替代 fail-open=50
-                    # 所有数据获取 fail-open：异常时回退到硬编码默认值
-
-                    # ── P1: 尝试获取真实弹簧力场数据 ──
-                    _spring_crypto = self._try_get_spring_force("BTC-USDT-SWAP", "daily_btc")
-                    _spring_stock = self._try_get_spring_force_yf("SPY", "daily_index")
-                    _spring_metal = self._try_get_spring_force_yf("GLD", "daily_index")
-
-                    # ── P1: 尝试获取真实宏观代理指标（道维度）──
-                    _macro = self._try_fetch_macro_proxies()
-
-                    # P2-4: 美林时钟优先从真实 CPI/INDPRO 计算，缺失时回退 RECOVERY
-                    _merrill = _macro.get("merrill_phase") or _merrill
-                    # P2-4: ATR 分位优先从 VIX 代理获取，缺失时回退硬编码
-                    _atr_proxy = _macro.get("atr_percentile_proxy")
-                    # P2-4: 真实流动性评分
-                    _liq_score = _macro.get("liquidity_score")
-
-                    # P2-5: 按资产类获取差异化统计（将维度补强）
-                    _cls_stats = self._get_class_stats()
-
-                    # regime 映射：弹簧力场 market_regime → FeatureComputer 期望值
-                    _regime_map = {
-                        "TREND_BULL": "trend_up",
-                        "STRONG_TREND_BEAR": "trend_down",
-                        "TREND_BEAR": "trend_down",
-                        "MEAN_REVERTING": "ranging",
-                        "RANGING": "ranging",
-                    }
-
-                    # 加密货币（BTC减半周期 + 美林时钟原始值 + 真实弹簧力场）
-                    _crypto_regime = _regime_map.get(
-                        _spring_crypto.get("market_regime", ""),
-                        "trend_up" if _t_rel < 0.35 else "ranging",
-                    )
-                    _crypto_coin = {
-                        "cycle4y_t_rel": _t_rel,
-                        "merrill_phase": _merrill,
-                        "atr_percentile": _atr_proxy if _atr_proxy is not None else 0.62,
-                        "liquidity_score": _liq_score if _liq_score is not None else 0.65,
-                        "regime": _crypto_regime,
-                        "spring_force_score": _spring_crypto.get("spring_force_score", 70),
-                        "spring_force_F_total": _spring_crypto.get("F_total", 0.0),
-                        "spring_force_bearish_score": _spring_crypto.get("bearish_score", "NONE"),
-                        # P0-3: 地维度指标优先用弹簧力场实算值，失败才回退占位
-                        "price_amplitude": _spring_crypto.get("price_amplitude", 4.2),
-                        "atr": _spring_crypto.get("atr", 1.15),
-                        "ftd_signal": _spring_crypto.get("ftd_signal", 1 if _t_rel < 0.25 else 0),
-                        "ma200_distance_percentile": _spring_crypto.get(
-                            "ma200_distance_percentile", 0.68
-                        ),
-                        # P1-道维度代理指标
-                        "vix_close": _macro.get("vix_close"),
-                        "stablecoin_mcap_bln": _macro.get("stablecoin_mcap_bln"),
-                        "fedfunds_rate": _macro.get("fedfunds_rate"),
-                        "policy_sentiment_score": _macro.get("policy_sentiment_score"),
-                        # P2-3: 道维度变化率（稳定币市值一阶差分）
-                        "stablecoin_change_rate": _macro.get("stablecoin_change_rate"),
-                    }
-                    # 美股（总统周期中段 + 过热期倾向 + 真实弹簧力场）
-                    _stock_regime = _regime_map.get(
-                        _spring_stock.get("market_regime", ""), "ranging"
-                    )
-                    _stock_coin = {
-                        "cycle4y_t_rel": _us_t_rel,
-                        "merrill_phase": _merrill,  # P2-4: 使用真实美林时钟（非硬编码 OVERHEAT）
-                        "atr_percentile": _atr_proxy if _atr_proxy is not None else 0.42,
-                        "liquidity_score": _liq_score if _liq_score is not None else 0.52,
-                        "regime": _stock_regime,
-                        "spring_force_score": _spring_stock.get("spring_force_score", 58),
-                        "spring_force_F_total": _spring_stock.get("F_total", 0.0),
-                        "spring_force_bearish_score": _spring_stock.get("bearish_score", "NONE"),
-                        # P0-3: 地维度指标优先用弹簧力场实算值，失败才回退占位
-                        "price_amplitude": _spring_stock.get("price_amplitude", 2.1),
-                        "atr": _spring_stock.get("atr", 0.78),
-                        "ftd_signal": _spring_stock.get("ftd_signal", 0),
-                        "ma200_distance_percentile": _spring_stock.get(
-                            "ma200_distance_percentile", 0.46
-                        ),
-                        # P1-道维度代理指标
-                        "vix_close": _macro.get("vix_close"),
-                        "fedfunds_rate": _macro.get("fedfunds_rate"),
-                    }
-                    # 贵金属/黄金（避险周期中段 + 滞胀期倾向 + 真实弹簧力场）
-                    _metal_phase = (
-                        "STAGFLATION" if _merrill in ("OVERHEAT", "STAGFLATION") else "RECOVERY"
-                    )
-                    _metal_regime = _regime_map.get(
-                        _spring_metal.get("market_regime", ""),
-                        "breakout" if _merrill in ("STAGFLATION", "REFLATION") else "ranging",
-                    )
-                    _metal_coin = {
-                        "cycle4y_t_rel": _metal_t_rel,
-                        "merrill_phase": _metal_phase,
-                        "atr_percentile": _atr_proxy if _atr_proxy is not None else 0.50,
-                        "liquidity_score": _liq_score if _liq_score is not None else 0.56,
-                        "regime": _metal_regime,
-                        "spring_force_score": _spring_metal.get("spring_force_score", 66),
-                        "spring_force_F_total": _spring_metal.get("F_total", 0.0),
-                        "spring_force_bearish_score": _spring_metal.get("bearish_score", "NONE"),
-                        # P0-3: 地维度指标优先用弹簧力场实算值，失败才回退占位
-                        "price_amplitude": _spring_metal.get("price_amplitude", 2.7),
-                        "atr": _spring_metal.get("atr", 0.92),
-                        "ftd_signal": _spring_metal.get("ftd_signal", 0),
-                        "ma200_distance_percentile": _spring_metal.get(
-                            "ma200_distance_percentile", 0.60
-                        ),
-                        # P1-道维度代理指标
-                        "vix_close": _macro.get("vix_close"),
-                        "fedfunds_rate": _macro.get("fedfunds_rate"),
-                    }
-                    # ── Phase L：Panewslab 三类 coin_data 增量合并 ──
-                    # 调用 _try_fetch_coin_data_three_classes()：
-                    #   - 命中 SQLite（持续采集 4h 落库）→ 快省 API
-                    #   - 否则 FiveDomainFetcher 实时 → 兜底
-                    #   - 全失败 → 返回 {}（保持原有硬编码 coin_data，字节等价 fail-open）
-                    try:
-                        _three_cls = self._try_fetch_coin_data_three_classes()
-                    except Exception:
-                        _three_cls = {}
-                    # 把 panewslab proxy（pn_*）和额外宏观 proxy 增量合并进
-                    # _crypto_coin / _stock_coin / _metal_coin。
-                    # 原则：「只补不覆」——只有当原硬编码字段的值是 None/占位
-                    # (0.5/0.62/0.65这类 经验占位值 也被覆写，因为 panewslab 是真实数据)
-                    # 但 cycle4y_t_rel / regime / spring_force_* / price_amplitude /
-                    # atr / ftd_signal / ma200_distance_percentile 保留原内联。
-                    _OVERLAY_BLACKLIST = {
-                        "cycle4y_t_rel",
-                        "regime",
-                        "spring_force_score",
-                        "spring_force_F_total",
-                        "spring_force_bearish_score",
-                        "price_amplitude",
-                        "atr",
-                        "ftd_signal",
-                        "ma200_distance_percentile",
-                    }
-                    for _cls, _template in (
-                        ("crypto_usdt", _crypto_coin),
-                        ("us_stock", _stock_coin),
-                        ("precious_metal", _metal_coin),
-                    ):
-                        _external = (_three_cls or {}).get(_cls) or {}
-                        for _k, _v in _external.items():
-                            if _k in _OVERLAY_BLACKLIST:
-                                continue
-                            # 有真实值才 overlay；None 不覆盖（保留原占位值/None）
-                            if _v is None:
-                                continue
-                            _template[_k] = _v
-                    coin_data = {
-                        "crypto_usdt": _crypto_coin,
-                        "us_stock": _stock_coin,
-                        "precious_metal": _metal_coin,
-                        # ---- 兼容键（旧扁平结构字段，用于_Flat判定保留，未来可删）----
-                        "cycle4y_t_rel": _t_rel,
-                        "merrill_phase": _merrill,
-                    }
-
-                    system_state = {
-                        "factor_coverage_pct": 0.80,
-                        "win_rate": _win_rate,
-                        "profit_factor": _pf,
-                        "position_pct": float(getattr(self, "default_position_pct", 0.10) or 0.10),
-                        "max_consecutive_losses": int(
-                            getattr(self, "max_consecutive_losses", 999) or 999
-                        ),
-                        "auto_execute": True,
-                        "has_stop_loss": True,
-                        "has_drawdown_limit": True,
-                        "has_daily_trade_limit": False,
-                        "has_position_cap": True,
-                        "implemented_strategies": [True, True, True, True, False, True],
-                        "strategy_match_pct": 0.70,
-                        "risk_rules": {
-                            "stop_loss": True,
-                            "drawdown_limit": True,
-                            "position_cap": True,
-                            "correlation_limit": False,
-                        },
-                        "backtest_metrics": {"sharpe": _sharpe, "max_drawdown": _max_dd},
-                        "has_review_cycle": True,
-                        "has_strategy_retirement": True,
-                        # ── P2-5: _by_class 按类差异化统计（替代 P0 占位值）──
-                        # 从 perf_tracker.trades 按资产类筛选 win_rate/pf/max_dd
-                        # 策略库实现/风控规则/适配度按资产类差异化
-                        "_by_class": {
-                            "crypto_usdt": {
-                                "factor_coverage_pct": 0.80,
-                                "win_rate": _cls_stats.get("crypto_usdt", {}).get(
-                                    "win_rate", _win_rate
-                                ),
-                                "profit_factor": _cls_stats.get("crypto_usdt", {}).get(
-                                    "profit_factor", _pf
-                                ),
-                                "position_pct": float(
-                                    getattr(self, "default_position_pct", 0.10) or 0.10
-                                ),
-                                "max_consecutive_losses": int(
-                                    getattr(self, "max_consecutive_losses", 999) or 999
-                                ),
-                                "auto_execute": True,
-                                "has_stop_loss": True,
-                                "has_drawdown_limit": True,
-                                "has_daily_trade_limit": False,
-                                "has_position_cap": True,
-                                # crypto: 6类策略实现5类（波动率策略未实现）
-                                "implemented_strategies": [True, True, True, True, False, True],
-                                "strategy_match_pct": 0.70,
-                                "risk_rules": {
-                                    "stop_loss": True,
-                                    "drawdown_limit": True,
-                                    "position_cap": True,
-                                    "correlation_limit": False,
-                                },
-                                "backtest_metrics": {
-                                    "sharpe": _cls_stats.get("crypto_usdt", {}).get(
-                                        "sharpe_ratio", _sharpe
-                                    ),
-                                    "max_drawdown": _cls_stats.get("crypto_usdt", {}).get(
-                                        "max_drawdown", _max_dd
-                                    ),
-                                },
-                                "has_review_cycle": True,
-                                "has_strategy_retirement": True,
-                            },
-                            "us_stock": {
-                                "factor_coverage_pct": 0.65,  # 美股因子覆盖低于加密
-                                "win_rate": _cls_stats.get("us_stock", {}).get(
-                                    "win_rate", _win_rate
-                                ),
-                                "profit_factor": _cls_stats.get("us_stock", {}).get(
-                                    "profit_factor", _pf
-                                ),
-                                "position_pct": float(
-                                    getattr(self, "default_position_pct", 0.10) or 0.10
-                                ),
-                                "max_consecutive_losses": int(
-                                    getattr(self, "max_consecutive_losses", 999) or 999
-                                ),
-                                "auto_execute": True,
-                                "has_stop_loss": True,
-                                "has_drawdown_limit": True,
-                                "has_daily_trade_limit": True,  # 美股有日内交易限制
-                                "has_position_cap": True,
-                                # us_stock: 4类策略（趋势/突破/动量/应急，均值回归和波动率未实现）
-                                "implemented_strategies": [True, True, False, True, False, True],
-                                "strategy_match_pct": 0.55,  # 美股策略适配度低于加密
-                                "risk_rules": {
-                                    "stop_loss": True,
-                                    "drawdown_limit": True,
-                                    "position_cap": True,
-                                    "correlation_limit": True,
-                                },  # 美股有相关性限制
-                                "backtest_metrics": {
-                                    "sharpe": _cls_stats.get("us_stock", {}).get(
-                                        "sharpe_ratio", _sharpe
-                                    ),
-                                    "max_drawdown": _cls_stats.get("us_stock", {}).get(
-                                        "max_drawdown", _max_dd
-                                    ),
-                                },
-                                "has_review_cycle": True,
-                                "has_strategy_retirement": True,
-                            },
-                            "precious_metal": {
-                                "factor_coverage_pct": 0.55,  # 黄金因子覆盖最低
-                                "win_rate": _cls_stats.get("precious_metal", {}).get(
-                                    "win_rate", _win_rate
-                                ),
-                                "profit_factor": _cls_stats.get("precious_metal", {}).get(
-                                    "profit_factor", _pf
-                                ),
-                                "position_pct": float(
-                                    getattr(self, "default_position_pct", 0.10) or 0.10
-                                ),
-                                "max_consecutive_losses": int(
-                                    getattr(self, "max_consecutive_losses", 999) or 999
-                                ),
-                                "auto_execute": True,
-                                "has_stop_loss": True,
-                                "has_drawdown_limit": True,
-                                "has_daily_trade_limit": False,
-                                "has_position_cap": True,
-                                # precious_metal: 3类策略（趋势/突破/应急）
-                                "implemented_strategies": [True, True, False, False, False, True],
-                                "strategy_match_pct": 0.45,  # 黄金策略适配度最低
-                                "risk_rules": {
-                                    "stop_loss": True,
-                                    "drawdown_limit": True,
-                                    "position_cap": True,
-                                    "correlation_limit": False,
-                                },
-                                "backtest_metrics": {
-                                    "sharpe": _cls_stats.get("precious_metal", {}).get(
-                                        "sharpe_ratio", _sharpe
-                                    ),
-                                    "max_drawdown": _cls_stats.get("precious_metal", {}).get(
-                                        "max_drawdown", _max_dd
-                                    ),
-                                },
-                                "has_review_cycle": True,
-                                "has_strategy_retirement": False,  # 黄金未实现策略退役
-                            },
-                        },
-                    }
-                    _raw_scores = self._five_domain_feature_computer.compute(
-                        coin_data=coin_data,
-                        system_state=system_state,
-                    )
-                    # 构建方向偏置上下文（direction_context）：综合技术面+BDSM估值+BCRM方向
-                    _dir_ctx: Dict[str, Dict[str, Any]] = {}
-                    try:
-                        for _cls in ("crypto_usdt", "us_stock", "precious_metal"):
-                            _cd_cls = (coin_data or {}).get(_cls, {}) or {}
-                            _entry: Dict[str, Any] = {}
-                            # 高位滞涨分数（<50看空）
-                            if "high_stall_score" in _cd_cls:
-                                _entry["high_stall_score"] = float(_cd_cls["high_stall_score"])
-                            # BTC regime
-                            if "btc_regime" in _cd_cls:
-                                _entry["btc_regime"] = _cd_cls["btc_regime"]
-                            # BDSM 估值分位（从快照获取）
-                            try:
-                                _bdsm = self._get_bdsm_snapshot_today()
-                                _bdsm_coins = (_bdsm or {}).get("coins", {}) or {}
-                                _val_list = []
-                                for _c, _v in _bdsm_coins.items():
-                                    if isinstance(_v, dict):
-                                        _vp = _v.get("valuation_percentile")
-                                        if _vp is not None:
-                                            _val_list.append(float(_vp))
-                                if _val_list:
-                                    _entry["bdsm_valuation_percentile"] = sum(_val_list) / len(
-                                        _val_list
-                                    )
-                            except Exception:
-                                pass
-                            # BCRM 方向（从缓存获取，可能为None）
-                            _bcrm_cache = getattr(self, "_last_bcrm2_result", None)
-                            if isinstance(_bcrm_cache, dict):
-                                _ns = _bcrm_cache.get("next_state", {}) or {}
-                                _entry["bcrm_direction"] = _ns.get("direction", "HOLD")
-                                _entry["bcrm_confidence"] = float(_ns.get("confidence", 0.0) or 0.0)
-                                # Phase 4.3: 头肩顶形态
-                                _pat = _ns.get("pattern")
-                                if _pat:
-                                    _entry["pattern"] = _pat
-                            # Phase 4.3: ETF 净流入归一化（流出<0）
-                            _etf = _cd_cls.get("pn_btc_etf_flow_norm")
-                            if isinstance(_etf, (int, float)):
-                                _entry["etf_flow_norm"] = float(_etf)
-                            # Phase 4.3: BDSM exit_action 离场信号
-                            try:
-                                _bdsm = self._get_bdsm_snapshot_today()
-                                _bdsm_coins = (_bdsm or {}).get("coins", {}) or {}
-                                _exit_actions = []
-                                for _c, _v in _bdsm_coins.items():
-                                    if isinstance(_v, dict):
-                                        _ea = _v.get("exit_action")
-                                        if _ea:
-                                            _exit_actions.append(_ea)
-                                # 取最强 exit_action
-                                _priority = {"CLOSE_ALL": 3, "REDUCE_80": 2, "REDUCE_50": 1}
-                                if _exit_actions:
-                                    _entry["bdsm_exit_action"] = max(
-                                        _exit_actions, key=lambda x: _priority.get(x, 0)
-                                    )
-                            except Exception:
-                                pass
-                            if _entry:
-                                _dir_ctx[_cls] = _entry
-                    except Exception:
-                        _dir_ctx = {}  # FAIL-OPEN
-                    # ★ Phase 2：提取 force_vectors 供自适应权重（FAIL-OPEN：缺失/异常 → None）
-                    _fv_by_class = None
-                    try:
-                        _fv_shadow = (_raw_scores or {}).get("_force_vector_shadow", {})
-                        _per_class = (_fv_shadow or {}).get("per_class", {})
-                        _fv_by_class = {}
-                        for _cls in ("crypto_usdt", "us_stock", "precious_metal"):
-                            _cls_fv = (_per_class.get(_cls, {}) or {}).get("force_vectors")
-                            if _cls_fv and isinstance(_cls_fv, dict):
-                                _fv_by_class[_cls] = _cls_fv
-                        if not _fv_by_class:
-                            _fv_by_class = None
-                    except Exception:
-                        _fv_by_class = None
-                    result_state = self._five_domain_scorer.score_and_decide(
-                        raw_scores_by_class=_raw_scores,
-                        persist=True,
-                        direction_context=_dir_ctx or None,
-                        force_vectors_by_class=_fv_by_class,
-                    )
-                    # 注入 btc_regime（用户经验因子：BTC 强弱决定与美股相关性）
-                    try:
-                        _cd_crypto = (coin_data or {}).get("crypto_usdt", coin_data or {})
-                        if isinstance(_cd_crypto, dict):
-                            result_state.btc_regime["crypto_usdt"] = _cd_crypto.get(
-                                "btc_regime", "NEUTRAL"
-                            )
-                    except Exception:
-                        pass
-                except Exception as _fe:
-                    # ★ BUG FIX 3：异常时追加 traceback 便于定位（否则只看到"降级fail-open"）
-                    import traceback as _tb
-
-                    _tb_str = _tb.format_exc(limit=6)
-                    self._log(
-                        f"[战略层] feature computer 异常，降级 fail-open: "
-                        f"{type(_fe).__name__}: {_fe}\n{_tb_str}",
-                        "WARN",
-                    )
-                    # 兜底：用中性分 fail-open（FiveDomainHeuristicScorer(enable=True, raw=None)）
-                    try:
-                        if result_state is None:
-                            result_state = self._five_domain_scorer.score_and_decide(
-                                raw_scores_by_class=None,
-                                persist=True,
-                            )
-                    except Exception:
-                        pass
-
-            # FeatureComputer 不存在或最终 result_state 仍为空：走 Scorer 无参兜底
-            if result_state is None:
-                try:
-                    result_state = self._five_domain_scorer.score_and_decide(
-                        raw_scores_by_class=None,
-                        persist=True,
-                    )
-                except Exception:
-                    try:
-                        from scripts.memory_l4.five_domain_scorer import (
-                            FiveDomainState as _FDS3,
-                        )
-
-                        result_state = _FDS3.default_fail_open()
-                    except Exception:
-                        result_state = None
-
-            self._five_domain_state_cache = result_state
-
-            # ── 写缓存 _meta.updated_date=今天（to_json 已经写过 state；这里只补充/更新 _meta）
-            try:
-                if state_cache_path.exists():
-                    with state_cache_path.open("r", encoding="utf-8") as _f:
-                        _data = json.load(_f)
-                else:
-                    _data = (
-                        _asdict(result_state)
-                        if result_state is not None
-                        and hasattr(result_state, "__dataclass_fields__")
-                        else {}
-                    )
-                if "_meta" not in _data:
-                    _data["_meta"] = {}
-                _data["_meta"]["updated_date"] = today_str
-                state_cache_path.parent.mkdir(parents=True, exist_ok=True)
-                with state_cache_path.open("w", encoding="utf-8") as _f:
-                    json.dump(_data, _f, ensure_ascii=False, indent=2, sort_keys=True)
-            except Exception:
-                pass
-
-            _emit_shadow_logs(result_state, "RECALC")
-            # ★ 影子拦截：日级重算后也需保存真实值到 _shadow 并替换 _state_cache
-            _fd_cfg = self._strategy_algo_layer.cfg if self._strategy_algo_layer else None
-            if _fd_cfg is not None:
-                try:
-                    from scripts.memory_l4.five_domain_scorer import FiveDomainState as _FDS4
-
-                    self._apply_fd_shadow_intercept(_fd_cfg, _FDS4)
-                except Exception:
-                    pass
-        except Exception as _e:
-            try:
-                from scripts.memory_l4.five_domain_scorer import FiveDomainState
-
-                self._five_domain_state_cache = FiveDomainState.default_fail_open()
-            except Exception:
-                self._five_domain_state_cache = None
-            self._log(f"[战略层影子] 日级打分异常，fail-open降级: {_e}", "WARN")
-
-    # ================================================================
-    # P1 辅助方法：获取真实弹簧力场数据 + 宏观代理指标（fail-open）
-    # ================================================================
-
-    # ================================================================
-    # P2-5: 按资产类获取差异化统计（将维度补强）
-    # ================================================================
-
-    # 资产类符号识别规则
-    _CRYPTO_SYMBOLS = frozenset(
-        {
-            "BTC",
-            "ETH",
-            "SOL",
-            "XRP",
-            "DOGE",
-            "ADA",
-            "AVAX",
-            "LINK",
-            "DOT",
-            "MATIC",
-            "BNB",
-            "LTC",
-            "BCH",
-            "UNI",
-            "ATOM",
-            "NEAR",
-            "APT",
-            "ARB",
-            "OP",
-            "SUI",
-            "ZEC",
-        }
-    )
-    _METAL_SYMBOLS = frozenset({"XAG", "XAU", "GLD", "SLV", "GOLD", "SILVER", "PAXG"})
-
     @classmethod
     def _classify_symbol(cls, symbol: str) -> str:
         """从交易符号判定资产类 → crypto_usdt / us_stock / precious_metal。"""
@@ -3350,180 +2450,6 @@ class PollingTrader:
             pass
         return out
 
-    def _try_fetch_macro_proxies(self) -> dict:
-        """P1+P2: 获取道/天维度宏观代理指标（VIX/稳定币市值/利率/政策情绪/美林时钟）。
-
-        优先从数据中心 SQLite 读（持续采集调度器已落库），命中则直接返回，避免每次
-        日级重算都实时打外部 API；SQLite 缺失/异常时回退 FiveDomainFetcher 实时采集。
-        所有异常均 fail-open 返回空 dict，调用方用 .get(key, default) 兜底。
-        """
-        result: dict = {}
-        # ── 尝试 0: 从数据中心 SQLite 读已落库的五维数据（持续采集落库）──
-        try:
-            from scripts.memory_l4.five_domain_sqlite_reader import read_macro_from_sqlite
-
-            _sqlite_data = read_macro_from_sqlite()
-            # 关键宏观数据存在（利率/VIX）则视为 SQLite 命中
-            if (
-                _sqlite_data.get("fedfunds_rate") is not None
-                or _sqlite_data.get("vix_close") is not None
-            ):
-                result = _sqlite_data
-                # 派生：稳定币市值一阶差分（与原末尾逻辑一致，SQLite 命中时在此结算）
-                _sc_now = result.get("stablecoin_mcap_bln")
-                if _sc_now is not None and isinstance(_sc_now, (int, float)) and _sc_now > 0:
-                    _sc_prev = getattr(self, "_last_stablecoin_mcap", None)
-                    if _sc_prev is not None and isinstance(_sc_prev, (int, float)) and _sc_prev > 0:
-                        result["stablecoin_change_rate"] = float((_sc_now - _sc_prev) / _sc_prev)
-                    self._last_stablecoin_mcap = float(_sc_now)
-                self._log("[战略层] 宏观代理数据来源: SQLite（数据中心持续采集落库）", "INFO")
-                return result
-        except Exception as _se:
-            self._log(
-                f"[战略层] SQLite 读取异常，回退实时采集: {type(_se).__name__}: {_se}", "WARN"
-            )
-        # ── 尝试 1: FiveDomainFetcher（完整宏观数据，实时采集兜底）──
-        try:
-            from scripts.memory_l4.fivedomain_fetcher import FiveDomainFetcher
-
-            fetcher = FiveDomainFetcher()
-            coin_data_all = fetcher.fetch_coin_data()
-            crypto_data = coin_data_all.get("crypto_usdt", {})
-            result["vix_close"] = crypto_data.get("vix_close")
-            result["stablecoin_mcap_bln"] = crypto_data.get("stablecoin_mcap_bln")
-            result["fedfunds_rate"] = crypto_data.get("fedfunds_rate")
-            result["policy_sentiment_score"] = crypto_data.get("policy_sentiment_score")
-            result["liquidity_score"] = crypto_data.get("liquidity_score")
-            # P2-4: 天维度真实美林时钟 + CPI/INDPRO 数据
-            result["merrill_phase"] = crypto_data.get("merrill_phase")
-            result["us_cpi_yoy_pct"] = crypto_data.get("us_cpi_yoy_pct")
-            result["us_indpro_yoy_pct"] = crypto_data.get("us_indpro_yoy_pct")
-            result["m2_yoy_pct"] = crypto_data.get("m2_yoy_pct")
-            result["fed_balance_sheet_trillion"] = crypto_data.get("fed_balance_sheet_trillion")
-            # 派生：VIX → 天维度波动率代理
-            vix = result.get("vix_close")
-            if vix is not None:
-                # VIX > 30 = 高恐慌 → 低分；VIX < 15 = 低波动 → 高分
-                result["atr_percentile_proxy"] = float(np.clip((vix - 10) / 40.0, 0.0, 1.0))
-        except Exception:
-            pass
-        # ── 尝试 2: 如果 VIX 仍缺失，直接用 yfinance 补取（去掉^前缀重试）──
-        if not result.get("vix_close"):
-            try:
-                import yfinance as yf
-
-                # 先试 ^VIX，再试 VIX（不同 yfinance 版本兼容性）
-                for sym in ("^VIX", "VIX"):
-                    try:
-                        vix_ticker = yf.Ticker(sym)
-                        vix_hist = vix_ticker.history(period="5d")
-                        if vix_hist is not None and len(vix_hist) > 0:
-                            result["vix_close"] = float(vix_hist["Close"].iloc[-1])
-                            break
-                    except Exception:
-                        continue
-            except Exception:
-                pass
-        # ── P2-2 尝试 3: 如果 VIX 仍缺失，从 FRED VIXCLS 获取 ──
-        if not result.get("vix_close"):
-            try:
-                from scripts.memory_l4.fivedomain_fetcher import FiveDomainFetcher as _FDF
-
-                _fdf = _FDF.__new__(_FDF)
-                _fdf.dc = None  # 避免 DataCenter 初始化
-                # 直接用 DataCenter 获取 FRED VIXCLS
-                import sys as _sys
-
-                _dc_path = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心"
-                if _dc_path not in _sys.path:
-                    _sys.path.insert(0, _dc_path)
-                from data_center import DataCenter
-
-                _dc = DataCenter()
-                _records = _dc.fetch("macro", source="fred", series="VIXCLS")
-                if _records:
-                    _v = getattr(_records[0], "metrics", None)
-                    if isinstance(_v, dict):
-                        result["vix_close"] = _v.get("value") or _v.get("price")
-            except Exception:
-                pass
-        # ── 派生：如果 VIX 获取成功但 atr_percentile_proxy 缺失，补算 ──
-        if result.get("vix_close") and not result.get("atr_percentile_proxy"):
-            vix = result["vix_close"]
-            result["atr_percentile_proxy"] = float(np.clip((vix - 10) / 40.0, 0.0, 1.0))
-        # ── P2-3: 道维度变化率（稳定币市值一阶差分）──
-        # 与上次快照对比，计算资金流入/流出加速度
-        _sc_now = result.get("stablecoin_mcap_bln")
-        if _sc_now is not None and isinstance(_sc_now, (int, float)) and _sc_now > 0:
-            _sc_prev = getattr(self, "_last_stablecoin_mcap", None)
-            if _sc_prev is not None and isinstance(_sc_prev, (int, float)) and _sc_prev > 0:
-                # 变化率 = (当前 - 上次) / 上次
-                _sc_change_rate = (_sc_now - _sc_prev) / _sc_prev
-                result["stablecoin_change_rate"] = float(_sc_change_rate)
-            # 更新快照
-            self._last_stablecoin_mcap = float(_sc_now)
-        return result
-
-    # ================================================================
-    # Phase L: Panewslab + SQLite → 三类 coin_data 拉取
-    # 失败：fail-open 返回空 dict（调用方用自身硬编码兜底，字节等价未接入前）
-    # ================================================================
-    def _try_fetch_coin_data_three_classes(self) -> Dict[str, Dict[str, Any]]:
-        """获取三类资产 coin_data（含 panewslab 的 42 个 pn_* proxy）。
-
-        优先级：
-          1. FiveDomainSqliteReader.read_three_classes_from_sqlite() → 快、省 API
-          2. FiveDomainFetcher().fetch_coin_data() → 实时采集（兜底）
-
-        两类路径产出完全一致的字段名（crypto_usdt / us_stock / precious_metal）。
-        任一异常返回 {}，后续调用方会用内联硬编码 coin_data 替代。
-        """
-        fallback: Dict[str, Dict[str, Any]] = {}
-        # ── 1. SQLite reader（热路径） ──
-        try:
-            from scripts.memory_l4.five_domain_sqlite_reader import (
-                read_three_classes_from_sqlite,
-            )
-
-            three = read_three_classes_from_sqlite() or {}
-            crypto = three.get("crypto_usdt") or {}
-            # 判断 panewslab proxy 至少有 5+ 非空字段才算「命中」，
-            # 否则 panewslab collector 还没跑过 → 走实时路径。
-            pn_filled = sum(1 for v in crypto.values() if v is not None)
-            if crypto and pn_filled >= 5:
-                self._log("[战略层] coin_data 来源: SQLite(五维+Panewslab 落库)", "INFO")
-                return three
-        except Exception as _e:
-            self._log(
-                f"[战略层] read_three_classes_from_sqlite 异常: {type(_e).__name__}: {_e}",
-                "WARN",
-            )
-        # ── 2. 实时 Fetcher（慢路径兜底） ──
-        try:
-            from scripts.memory_l4.fivedomain_fetcher import FiveDomainFetcher
-
-            fetcher = FiveDomainFetcher()
-            coin_data = fetcher.fetch_coin_data() or {}
-            crypto = coin_data.get("crypto_usdt") or {}
-            pn_keys = [k for k in crypto.keys() if k.startswith("pn_")]
-            self._log(
-                f"[战略层] coin_data 来源: FiveDomainFetcher(实时采集)  "
-                f"crypto pn_*={len(pn_keys)} 个",
-                "INFO",
-            )
-            return coin_data
-        except Exception as _e:
-            self._log(
-                f"[战略层] FiveDomainFetcher 异常: {type(_e).__name__}: {_e}",
-                "WARN",
-            )
-            return fallback
-
-    # ================================================================
-    # Phase C+: 大小周期预测器 + ParameterMapper 初始化
-    # 设计原则：失败降级为 None，仅影响日志，不影响交易逻辑
-    # ================================================================
-
     def _init_morph_and_param_mapper(self):
         """初始化大小周期 MorphCyclePredictor（单例）与 ParameterMapper。
 
@@ -3749,66 +2675,6 @@ class PollingTrader:
                 )
                 or "n/a"
             )
-
-            # =====================================================================
-            # Task T3：ParameterMapper 战略层带宽 clip 影子（仅写影子，真实参数不动）
-            # =====================================================================
-            try:
-                layer = self._strategy_algo_layer
-                if layer is None:
-                    pass
-                elif not layer.cfg.enable_five_domain_front_layer_band:
-                    pass
-                else:
-                    L_r = float(L)
-                    T_r = float(T)
-                    sec_raw_vals = [
-                        float(sw.get(k, 0.5)) for k in ("defi", "ai", "rwa", "meme", "l2")
-                    ]
-                    state = self._five_domain_state_cache
-                    if state is None and self._five_domain_scorer is not None:
-                        try:
-                            state = self._five_domain_scorer.score_and_decide(persist=False)
-                        except Exception:
-                            state = None
-                    band = None
-                    if state is not None:
-                        try:
-                            cls_bands = getattr(state, "front_layer_band", {}) or {}
-                            band = cls_bands.get("crypto_usdt")
-                        except Exception:
-                            band = None
-                    if band is None:
-                        pass
-                    else:
-                        Lf, Tf, Sf = layer.apply_band_with_switch(
-                            np.asarray([L_r], dtype=float),
-                            np.asarray([T_r], dtype=float),
-                            np.asarray(sec_raw_vals, dtype=float),
-                            band,
-                        )
-                        front_band_switch_on = bool(layer.cfg.enable_five_domain_front_layer_band)
-                        inference["_band_shadow"] = {
-                            "L_before": L_r,
-                            "T_before": T_r,
-                            "L_after": float(Lf[0]),
-                            "T_after": float(Tf[0]),
-                            "sec_before": sec_raw_vals,
-                            "sec_after": [float(x) for x in Sf],
-                            "band": band,
-                            "front_band_switch_on": front_band_switch_on,
-                        }
-                        L_before = L_r
-                        L_after = float(Lf[0])
-                        T_before = T_r
-                        T_after = float(Tf[0])
-                        self._log(
-                            f"[战略层带宽影子] {coin} L: {L_before:.4f}→{L_after:.4f}, "
-                            f"T: {T_before:.4f}→{T_after:.4f}, switch={front_band_switch_on}",
-                            "INFO",
-                        )
-            except Exception:
-                pass
 
             self._log(
                 f"[{coin}] ParameterMapper 六维(只读对齐tab-morph src={src_tag}) | L={L:+.4f} T={T:+.4f} C={C:.4f} | "
@@ -5653,11 +4519,39 @@ class PollingTrader:
         except Exception as e:
             self._log(f"[每日摘要] 生成失败: {e}", "WARN")
 
+    def _get_inference_klines(self, inst_id: str, force_refresh: bool = False) -> list:
+        """P0：按已收盘 bar 拉取并缓存 K 线。
+
+        同一根 1H bar 内（5 分钟轮询 12 次）复用同一份已收盘数据，
+        既消除「未收盘 bar 反复重绘」，也避免每轮重复分页拉取。
+        """
+        dur = _BAR_MS.get(self.bar)
+        if dur is None:
+            return _load_kline_from_okx(
+                inst_id=inst_id, bar=self.bar, limit=self.kline_limit, closed_only=True
+            )
+        bucket = (int(time.time() * 1000) // dur) * dur  # 当前 bar 的开盘时间戳
+        key = (inst_id, self.bar, bucket)
+        cache = self._inference_kline_cache
+        if not force_refresh and key in cache:
+            return cache[key]
+
+        data = _load_kline_from_okx(
+            inst_id=inst_id, bar=self.bar, limit=self.kline_limit, closed_only=True
+        )
+        if data:
+            # 仅保留该币种最近 2 个 bar bucket，防止缓存无限增长
+            for _k in list(cache):
+                if _k[0] == inst_id and _k[2] < bucket - 2 * dur:
+                    cache.pop(_k, None)
+            cache[key] = data
+        return data
+
     def _fetch_and_infer(self, coin: str) -> dict:
         """获取实时行情并执行 BCRM + 八卦双引擎推理"""
         inst_id = f"{coin}-USDT-SWAP"
 
-        kline_data = _load_kline_from_okx(inst_id=inst_id, bar=self.bar, limit=self.kline_limit)
+        kline_data = self._get_inference_klines(inst_id)
         if not kline_data:
             return {"ok": False, "error": f"获取 {inst_id} K线失败"}
 
@@ -6047,6 +4941,16 @@ class PollingTrader:
             df = self._kline_to_dataframe(kline_data)
         except Exception as e:
             return {"ok": False, "error": f"K线转换失败: {e}"}
+
+        # P0 防御：确保最后一根是已收盘 bar（上游 closed_only 已过滤，此处双保险）
+        _bar_dur = _BAR_MS.get(self.bar)
+        if _bar_dur and len(df) > 1:
+            try:
+                _last_ms = int(df.index[-1].timestamp() * 1000)
+                if _last_ms + _bar_dur > int(time.time() * 1000):
+                    df = df.iloc[:-1]
+            except Exception:
+                pass
 
         # 首次推理时自动训练
         if adapter.engine is None:
@@ -8259,280 +7163,6 @@ class PollingTrader:
                 f"[BDSM独立开仓] 顶层异常（FAIL-OPEN 跳过不阻断）: {exc}",
                 "WARN",
             )
-
-    def _compute_strategy_open_signal(self, coin: str) -> Optional[Tuple[str, float, str]]:
-        """三层信号组合 → 产出 (direction, confidence, strategy_type) 或 None。
-
-        层1 战略层：war_state∈(ALLOW,COOLDOWN) + direction_state≠FREEZE
-        层2 策略层：select() 产出 strategy_type（heuristic_equilibrium→跳过）
-        层3 技术信号：d_star∈(long,short) 且 ri≥0.55
-        direction_state 闸门：SHORT_ONLY 禁做多，LONG_ONLY 禁做空
-
-        FAIL-OPEN：异常 → None
-        """
-        try:
-            # ── 层1：战略层检查 ──
-            fds = getattr(self, "_five_domain_state_cache", None)
-            if fds is None:
-                return None
-            cls = self._coin_asset_class(coin)
-            # ★ war_state 只影响仓位（通过 cap_pct 在仓位计算中使用），不拦截开仓
-            #   direction_state 才控制是否开仓 + 方向（独立的方向开关）
-            direction_state = (getattr(fds, "direction_state", {}) or {}).get(cls, "NEUTRAL")
-            if direction_state == "FREEZE":
-                self._log(f"[{coin}] 策略独立开仓方向冻结 direction_state=FREEZE", "DEBUG")
-                return None
-
-            # ── 层2：策略层 select() ──
-            layer = getattr(self, "_strategy_algo_layer", None)
-            if layer is None or not getattr(layer.cfg, "enable_strategy_layer", False):
-                return None
-            five_scores = (getattr(fds, "five_scores", {}) or {}).get(cls, {})
-            if not five_scores:
-                from scripts.memory_l4.strategy_algo_layer import DEFAULT_NEUTRAL_SCORES as _DNS
-
-                five_scores = dict(_DNS)
-            regime_summary = {"phase": getattr(self, "_last_regime", "UNKNOWN") or "UNKNOWN"}
-            liquidity_tier = "G2"
-            selection = layer.select(
-                asset_class=cls,
-                five_scores=five_scores,
-                regime_summary=regime_summary,
-                liquidity_tier=liquidity_tier,
-                five_domain_state=fds,
-            )
-            strategy_type = selection.strategy_type
-            if strategy_type == "heuristic_equilibrium":
-                return None  # 中性策略不触发独立开仓
-
-            # ── 层3：技术信号 ──
-            kline_result = (getattr(self, "_last_kline_result_by_coin", {}) or {}).get(
-                coin.upper(), {}
-            )
-            if not kline_result:
-                return None
-            d_star = str(kline_result.get("d_star", "WAIT") or "WAIT")
-            ri = float(kline_result.get("ri", 0.0) or 0.0)
-            if d_star not in ("long", "short"):
-                return None
-            # ri 阈值：正式 0.55，可通过环境变量 STRATEGY_RI_THRESHOLD 调整
-            _ri_threshold = float(os.environ.get("STRATEGY_RI_THRESHOLD", "0.55") or "0.55")
-            if ri < _ri_threshold:
-                return None
-
-            # ── direction_state 方向闸门 ──
-            if direction_state == "SHORT_ONLY" and d_star == "long":
-                return None
-            if direction_state == "LONG_ONLY" and d_star == "short":
-                return None
-
-            # ── 组合产出 ──
-            direction = "UP" if d_star == "long" else "DOWN"
-            style_exposure = float((selection.style_exposures or {}).get(strategy_type, 0.5))
-            confidence = max(0.40, min(0.95, ri * style_exposure * 2.0))
-            return (direction, confidence, strategy_type)
-        except Exception:
-            return None  # FAIL-OPEN
-
-    def _strategy_independent_open(self) -> None:
-        """战略层+策略层独立开仓入口：三层信号组合 → 独立建仓。
-
-        设计目的：单独测试战略层+策略层效果，不依赖 BCRM2.0 推理。
-        开关：self.enable_strategy_independent_open（默认 False，安全第一）
-
-        触发条件（全部满足）：
-          1. 币种 ∈ self.coins（与 BCRM2.0 保持一致，可通过 STRATEGY_INDEPENDENT_COINS 环境变量覆盖）
-          2. 三层信号组合通过（_compute_strategy_open_signal 返回非 None）
-          3. strategy 子池未满（< MAX_STRATEGY_POSITIONS）
-          4. 当前无该币种持仓
-          5. 冷静期检查通过（COOLDOWN_SEC）
-          6. 组合熔断未拦截
-
-        仓位计算：cap_pct × position_mult × STRATEGY_BASE_BUDGET_USDT
-        SL/TP：复用 _open_position 内部 ATR 自适应逻辑
-        FAIL-OPEN：任何异常 → 跳过，不影响主链路。
-        """
-        try:
-            if not getattr(self, "enable_strategy_independent_open", False):
-                return
-
-            strategy_coins = getattr(self, "STRATEGY_INDEPENDENT_COINS", frozenset()) or frozenset()
-            if not strategy_coins:
-                return
-
-            subpool_max = int(self.SUBPOOL_MAX_POSITIONS.get("strategy", 3))
-            strategy_count = self._count_subpool_positions("strategy")
-            if strategy_count >= subpool_max:
-                return
-
-            base_budget = float(getattr(self, "STRATEGY_BASE_BUDGET_USDT", 200.0))
-
-            for coin in strategy_coins:
-                if strategy_count >= subpool_max:
-                    break
-
-                coin_up = str(coin).upper()
-                inst_id = f"{coin_up}-USDT-SWAP"
-
-                # 检查当前无持仓
-                if self.position_tracker.has_open_position(inst_id):
-                    continue
-
-                # 冷静期检查
-                _in_cd, _cd_reason = self.position_tracker.is_in_cooldown(
-                    inst_id, "long", self.COOLDOWN_SEC
-                )
-                if _in_cd:
-                    continue
-
-                # 三层信号组合
-                signal = self._compute_strategy_open_signal(coin_up)
-                if signal is None:
-                    continue
-                direction, confidence, strategy_type = signal
-
-                # 组合熔断检查
-                _fuse = getattr(self, "_current_fuse_action", None)
-                if _fuse is not None and getattr(_fuse, "block_new_open", False):
-                    self._log(f"[{coin_up}] 策略独立开仓熔断拦截", "WARN")
-                    return
-
-                # 获取当前价格
-                try:
-                    _ticker = self.okx_client.get_ticker(inst_id)
-                    if not _ticker.get("ok"):
-                        continue
-                    current_price = float(_ticker.get("last", 0.0) or 0.0)
-                except Exception:
-                    continue
-                if current_price <= 0:
-                    continue
-
-                # 仓位计算：cap_pct × position_mult × base_budget
-                # ★ 读 _shadow（真实值）：战略层 cap_pct/position_mult 真实压缩仓位
-                fds = getattr(self, "_five_domain_state_shadow", None) or getattr(
-                    self, "_five_domain_state_cache", None
-                )
-                cls = self._coin_asset_class(coin_up)
-                cap_pct = 1.0
-                pos_mult = 1.0
-                if fds is not None:
-                    cap_pct = float(
-                        (getattr(fds, "aggregate_position_cap_pct", {}) or {}).get(cls, 1.0)
-                    )
-                    pos_mult = float((getattr(fds, "position_mult", {}) or {}).get(cls, 1.0))
-                position_usdt = cap_pct * pos_mult * base_budget
-                if position_usdt <= 0:
-                    continue
-
-                # 构建 inference（含 ATR 自适应 SL/TP + 调控系统参数硬约束）
-                _volatility = 0.03
-                _atr_est = max(current_price * _volatility, current_price * 0.005)
-                _sl_mult, _tp_mult = 8.0, 6.0  # SL翻倍4→8, TP减半12→6
-                if direction == "UP":
-                    _sl_px = round(current_price - _atr_est * _sl_mult, 4)
-                    _tp_px = round(current_price + _atr_est * _tp_mult, 4)
-                else:
-                    _sl_px = round(current_price + _atr_est * _sl_mult, 4)
-                    _tp_px = round(current_price - _atr_est * _tp_mult, 4)
-                # ★ 接入调控系统参数中心：clamp SL/TP 到集中配置硬约束范围
-                #   优先 param_center → sl_tp_config → 本地兜底（与 BCRM 链路口径一致）
-                try:
-                    import sys as _sys_strat
-                    from pathlib import Path as _Path_strat
-
-                    _proj_root_strat = _Path_strat(__file__).resolve().parents[3]
-                    _pc_dir_strat = _proj_root_strat / "4-MEMORY" / "9-工具与接口"
-                    if str(_pc_dir_strat) not in _sys_strat.path:
-                        _sys_strat.path.insert(0, str(_pc_dir_strat))
-                    from param_center.aggregator import SL_FLOOR, TP_FLOOR
-                    from param_center.api import get_sltp_params as _pc_get_strat
-                    from param_center.verifier import SL_CEIL, TP_CEIL
-
-                    _strat_sltp = _pc_get_strat(inst_id, market_regime="neutral")
-                    _strat_sl_floor = float(getattr(_strat_sltp, "sl_floor", SL_FLOOR))
-                    _strat_tp_floor = float(getattr(_strat_sltp, "tp_floor", TP_FLOOR))
-                    _strat_sl_ceil = float(SL_CEIL)
-                    _strat_tp_ceil = float(TP_CEIL)
-                except Exception:
-                    try:
-                        from scripts.memory_l4.bcrm2.sl_tp_config import SLTPParams
-
-                        _p = SLTPParams()
-                        _strat_sl_floor, _strat_tp_floor = _p.sl_floor, _p.tp_floor
-                        _strat_sl_ceil, _strat_tp_ceil = 0.15, 0.30
-                    except Exception:
-                        _strat_sl_floor, _strat_tp_floor = 0.04, 0.12
-                        _strat_sl_ceil, _strat_tp_ceil = 0.15, 0.30
-                _strat_sl_pct = abs(_sl_px - current_price) / current_price
-                _strat_tp_pct = abs(_tp_px - current_price) / current_price
-                # clamp SL 到 [sl_floor, sl_ceil]
-                if _strat_sl_pct < _strat_sl_floor:
-                    _sl_px = round(
-                        (
-                            current_price * (1 - _strat_sl_floor)
-                            if direction == "UP"
-                            else current_price * (1 + _strat_sl_floor)
-                        ),
-                        4,
-                    )
-                elif _strat_sl_pct > _strat_sl_ceil:
-                    _sl_px = round(
-                        (
-                            current_price * (1 - _strat_sl_ceil)
-                            if direction == "UP"
-                            else current_price * (1 + _strat_sl_ceil)
-                        ),
-                        4,
-                    )
-                # clamp TP 到 [tp_floor, tp_ceil]
-                if _strat_tp_pct < _strat_tp_floor:
-                    _tp_px = round(
-                        (
-                            current_price * (1 + _strat_tp_floor)
-                            if direction == "UP"
-                            else current_price * (1 - _strat_tp_floor)
-                        ),
-                        4,
-                    )
-                elif _strat_tp_pct > _strat_tp_ceil:
-                    _tp_px = round(
-                        (
-                            current_price * (1 + _strat_tp_ceil)
-                            if direction == "UP"
-                            else current_price * (1 - _strat_tp_ceil)
-                        ),
-                        4,
-                    )
-                inference = {
-                    "coin": coin_up,
-                    "inst_id": inst_id,
-                    "direction": direction,
-                    "confidence": confidence,
-                    "volatility": _volatility,
-                    "price": current_price,
-                    "stop_loss_px": _sl_px,
-                    "take_profit_px": _tp_px,
-                    "hexagram": f"策略层独立开仓_{strategy_type}",
-                    "reason": f"策略独立开仓|type={strategy_type}|cap={cap_pct:.2f}|mult={pos_mult:.2f}|ri-based",
-                    "source_tag": "strategy",  # ★ 子池隔离标签
-                }
-
-                self._log(
-                    f"[{coin_up}] 策略独立开仓触发 | type={strategy_type} dir={direction} "
-                    f"conf={confidence:.3f} budget={position_usdt:.1f}U price={current_price} | "
-                    f"cap={cap_pct:.2f} mult={pos_mult:.2f}",
-                    "INFO",
-                )
-
-                try:
-                    self._open_position(inference, is_reverse=False, is_trial=False)
-                    strategy_count += 1
-                except Exception as _oe:
-                    self._log(f"[{coin_up}] 策略独立开仓执行异常(FAIL-OPEN): {_oe}", "ERROR")
-
-        except Exception as _se:
-            self._log(f"[策略独立开仓] 顶层异常(FAIL-OPEN): {_se}", "WARN")
 
     def _enforce_soft_stop_loss(self) -> None:
         """软止损强制执行：扫描所有持仓，当亏损超过 SL 阈值时强制市价平仓。
@@ -11431,29 +10061,17 @@ class PollingTrader:
         try:
 
             inst_id = f"{coin}-USDT-SWAP"
-            kline_resp = self.okx_client.get_kline(inst_id, bar=self.bar, limit=self.kline_limit)
-            candles = kline_resp.get("candles", []) if isinstance(kline_resp, dict) else kline_resp
-            if not candles or len(candles) < 100:
+            # P0：复用已收盘 K 线（分页 + confirm 过滤），并保证升序 DatetimeIndex，
+            # 避免用 OKX newest-first 原始列表训练导致时间倒序污染模型。
+            kline_data = self._get_inference_klines(inst_id, force_refresh=True)
+            if not kline_data or len(kline_data) < 100:
                 self._log(
-                    f"[{coin}] BCRM2重训失败：K线不足 {len(candles) if candles else 0}", "WARN"
+                    f"[{coin}] BCRM2重训失败：K线不足 {len(kline_data) if kline_data else 0}",
+                    "WARN",
                 )
                 return False
 
-            import pandas as pd
-
-            df = pd.DataFrame(
-                [
-                    {
-                        "open": float(c["o"]),
-                        "high": float(c["h"]),
-                        "low": float(c["l"]),
-                        "close": float(c["c"]),
-                        "volume": float(c.get("vol", c.get("v", 0))),
-                        "timestamp": c.get("ts", ""),
-                    }
-                    for c in candles
-                ]
-            )
+            df = self._kline_to_dataframe(kline_data)
 
             retrained = adapter.train(df, force_retrain=True)
             if retrained:
@@ -18038,100 +16656,6 @@ class PollingTrader:
 
         if ok or order_result.get("dry_run"):
             enhance_info = inference.get("enhance_result")
-            _original_enhance_info = enhance_info
-            try:
-                if (
-                    self._strategy_algo_layer is not None
-                    and self._strategy_algo_layer.cfg.enable_strategy_layer
-                ):
-                    from dataclasses import asdict as _asdict_t4
-                    from statistics import median as _median_t4
-
-                    if coin in self.US_STOCK_COINS:
-                        cls = "us_stock"
-                    elif coin in {"XAU", "XAG"}:
-                        cls = "precious_metal"
-                    else:
-                        cls = "crypto_usdt"
-
-                    _raw_dir = inference.get("direction", "")
-                    if _raw_dir == "UP":
-                        direction_sel = "LONG"
-                    elif _raw_dir == "DOWN":
-                        direction_sel = "SHORT"
-                    else:
-                        direction_sel = ""
-
-                    market_regime = (
-                        inference.get("_regime_pred") or inference.get("regime_pred") or "UNKNOWN"
-                    )
-                    confidence_sel = float(inference.get("confidence", 0.0) or 0.0)
-                    five_domain_state = self._five_domain_state_cache
-
-                    _fd_scores_cls = {}
-                    if five_domain_state is not None:
-                        try:
-                            _fd_scores_cls = dict(
-                                getattr(five_domain_state, "five_scores", {}).get(cls, {}) or {}
-                            )
-                        except Exception:
-                            _fd_scores_cls = {}
-                    if not _fd_scores_cls:
-                        try:
-                            from scripts.memory_l4.strategy_algo_layer import (
-                                DEFAULT_NEUTRAL_SCORES as _DNS,
-                            )
-
-                            _fd_scores_cls = dict(_DNS)
-                        except Exception:
-                            _fd_scores_cls = {
-                                "dao": 50,
-                                "tian": 50,
-                                "di": 50,
-                                "jiang": 50,
-                                "fa": 70,
-                            }
-
-                    _regime_summary = {"phase": market_regime}
-                    _liquidity_tier = "G2"
-                    try:
-                        selection = self._strategy_algo_layer.select(
-                            asset_class=cls,
-                            five_scores=_fd_scores_cls,
-                            regime_summary=_regime_summary,
-                            liquidity_tier=_liquidity_tier,
-                            five_domain_state=five_domain_state,
-                        )
-                        selection_snapshot = _asdict_t4(selection)
-                        if enhance_info is None:
-                            enhance_info = {}
-                        enhance_info["strategy_selection"] = selection_snapshot
-                        # 回写 inference，确保下游 _record_shadow_log 能取到 sal_* 字段
-                        inference["enhance_result"] = enhance_info
-
-                        _cb_values = []
-                        for _v in (selection.calibration_biases or {}).values():
-                            if isinstance(_v, (int, float)):
-                                _cb_values.append(float(_v))
-                        if _cb_values:
-                            _calib_median = float(_median_t4(_cb_values))
-                        else:
-                            _calib_median = 1.0
-                        self._log(
-                            f"[策略算法层影子] {coin} cls={cls} type={selection.strategy_type} "
-                            f"gate={selection.calibration_biases.get('hard_relax_gate', False) if isinstance(selection.calibration_biases, dict) else False} "
-                            f"calib_median={_calib_median:.3f} "
-                            f"switch={self._strategy_algo_layer.cfg.enable_strategy_layer}",
-                            "INFO",
-                        )
-                    except Exception:
-                        enhance_info = _original_enhance_info
-                        pass
-                else:
-                    pass
-            except Exception:
-                enhance_info = _original_enhance_info
-                pass
 
             self.position_tracker.open_position(
                 coin=coin,
@@ -18830,11 +17354,6 @@ class PollingTrader:
             except Exception as _ce:
                 self._log(f"[资金调控] 轮询摘要异常，不影响交易: {_ce}", "WARN")
 
-        try:
-            self._run_once_five_domain_daily_update()
-        except Exception as _fde:
-            self._log(f"[战略层影子] 日级打分更新异常，不阻塞: {_fde}", "WARN")
-
         # ═══════════════════════════════════════════════════
         # 方案 C v3.0：组合级熔断（SW-C8）每轮 tick 一次
         #   - G-04 终极熔断 → 24h emergency_shutdown
@@ -19293,17 +17812,6 @@ class PollingTrader:
         except Exception as _bdsm_open_exc:
             self._log(
                 f"[BDSM 独立开仓] 顶层异常（FAIL-OPEN 跳过不阻断）: {_bdsm_open_exc}",
-                "WARN",
-            )
-
-        # —— 战略层+策略层独立开仓（三层信号组合，不依赖 BCRM2.0 推理）——
-        #   开关：enable_strategy_independent_open（默认 False，安全第一）
-        #   FAIL-OPEN：任何异常 → 跳过，不阻断主链路。
-        try:
-            self._strategy_independent_open()
-        except Exception as _strat_open_exc:
-            self._log(
-                f"[策略独立开仓] 顶层异常（FAIL-OPEN 跳过不阻断）: {_strat_open_exc}",
                 "WARN",
             )
 

@@ -438,10 +438,70 @@ def _contradictions_to_bcrm_format(contradictions: List[Dict], snapshot: Dict) -
     return bcrm_contradictions
 
 
+_BAR_MS = {
+    "1m": 60_000,
+    "3m": 180_000,
+    "5m": 300_000,
+    "15m": 900_000,
+    "30m": 1_800_000,
+    "1H": 3_600_000,
+    "2H": 7_200_000,
+    "4H": 14_400_000,
+    "6H": 21_600_000,
+    "12H": 43_200_000,
+    "1D": 86_400_000,
+    "2D": 172_800_000,
+    "3D": 259_200_000,
+    "1W": 604_800_000,
+}
+
+
 def _load_kline_from_okx(
-    inst_id: str = "BTC-USDT-SWAP", bar: str = "4H", limit: int = 200
+    inst_id: str = "BTC-USDT-SWAP",
+    bar: str = "4H",
+    limit: int = 200,
+    closed_only: bool = False,
 ) -> List[Dict]:
-    """从 OKX 获取 K 线数据"""
+    """从 OKX 获取 K 线数据（返回 newest-first 列表）。
+
+    P0 修复：
+    - limit > 300 时走 history-candles 分页（/market/candles 单次上限 300）；
+    - closed_only=True 时剔除当前未收盘 bar，避免 5 分钟轮询反复重绘同一根 1H bar。
+    """
+    if limit > 300:
+        # 分页路径：复用 BCRM2 数据获取器（含代理探测、分页、confirm 过滤）
+        try:
+            from scripts.memory_l4.bcrm2.data_fetcher import fetch_okx_klines
+
+            df = fetch_okx_klines(inst_id, bar=bar, limit=100, max_pages=(limit + 99) // 100)
+            if len(df) > 0:
+                df = df.tail(limit)
+                formatted = []
+                for ts, row in df.iterrows():
+                    ts_ms = int(ts.timestamp() * 1000)
+                    formatted.append(
+                        {
+                            "ts": ts_ms,
+                            "ts_str": ts.isoformat(),
+                            "o": float(row["open"]),
+                            "h": float(row["high"]),
+                            "l": float(row["low"]),
+                            "c": float(row["close"]),
+                            "v": float(row["volume"]),
+                        }
+                    )
+                formatted.reverse()  # 恢复 newest-first 契约
+                if closed_only:
+                    dur = _BAR_MS.get(bar)
+                    if dur:
+                        _now_ms = int(time.time() * 1000)
+                        formatted = [c for c in formatted if int(c.get("ts", 0)) + dur <= _now_ms]
+                return formatted
+        except Exception:
+            pass
+        # 分页失败 → 回退单次请求（最多 300 根）
+        limit = 300
+
     client = OKXSimulatedClient()
     result = client.get_kline(inst_id=inst_id, bar=bar, limit=limit)
     if not result.get("ok"):
@@ -464,6 +524,13 @@ def _load_kline_from_okx(
                 "v": c.get("vol", 0),
             }
         )
+
+    # 逐根剔除未收盘 bar（OKX 最新一根为当前进行中的 bar）
+    if closed_only and formatted:
+        dur = _BAR_MS.get(bar)
+        if dur:
+            now_ms = int(time.time() * 1000)
+            formatted = [c for c in formatted if int(c.get("ts", 0)) + dur <= now_ms]
     return formatted
 
 
