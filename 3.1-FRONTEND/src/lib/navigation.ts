@@ -28,6 +28,8 @@ export const SECTION_LABELS: Partial<Record<NavSection, string>> = {
 // 模块顺序：平台（工作台置顶）→ 产品（AI 交易）→ 运营 → 通用设置（单独置底）
 const ALL_NAV_ITEMS: NavItem[] = [
   { id: 'agent', label: 'Agent 工作台', href: '/dashboard/agent', icon: '🤖', section: 'platform' },
+  // 2026-11-18：任务看板已内嵌到 Agent 工作台主区，不再单独占一级导航；路由保留作为深链
+  { id: 'task-board', label: '任务看板', href: '/dashboard/task', icon: '🗂', section: 'platform', matchPaths: ['/dashboard/task'], hidden: true },
   { id: 'fundamental', label: '基本面', href: '/dashboard/fundamental', icon: '📈', section: 'platform' },
   { id: 'news', label: '新闻', href: '/dashboard/news', icon: '📰', section: 'platform' },
   // 2026-11-17：卡片已迁入「数据研究 · 技术图表」，前端隐藏入口；路由/组件保留，恢复时把 hidden 改为 false
@@ -52,6 +54,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
 
   { id: 'overview', label: '概览', href: '/dashboard', icon: '◉', section: 'operations' },
   { id: 'monitor', label: 'Agent工作监控', href: '/dashboard/monitor', icon: '🔍', section: 'operations' },
+  { id: 'gates', label: '门禁待办', href: '/dashboard/gates', icon: '🚧', section: 'operations' },
   { id: 'memory', label: '记忆管理', href: '/dashboard/memory', icon: '🧠', section: 'operations' },
   { id: 'approval', label: '人工审批', href: '/dashboard/board/approval', icon: '🛡️', section: 'operations', badgeKey: 'approval_pending' },
   { id: 'reports', label: '报告', href: '/dashboard/reports', icon: '📋', section: 'operations' },

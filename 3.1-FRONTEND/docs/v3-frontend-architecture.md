@@ -1107,6 +1107,94 @@ G (Graph)   #EF4444  红色  — BAC 压缩、历史回放、Checkpoint
 
 ---
 
+## 第七章：Agent 工作台工作流（SPEC 门禁 / 步骤评审 / 择优脑暴 / 治理待办）
+
+本章记录 2026-11 工作台工作流改造后的最终形态。核心原则：**任何任务先出 SPEC，
+确认后才推进；每完成一步先汇报、再经独立模型评审、通过后才进入下一步。**
+
+### 7.1 三区布局
+
+| 区域 | 内容 | 说明 |
+|---|---|---|
+| 左栏上 | 会话列表（可折叠） | 多会话展开/收起 |
+| 左栏中 | 定时任务（可折叠） | `+` 新开对话描述需求，确认后「设为定时任务」 |
+| 左栏下 | 治理待办抽屉 | 不遮挡、挤压式；仅承接窗口外工作流 |
+| 中间 | 对话（主区） | 任务出现后右栏展示工作流，对话保持在中间 |
+| 右栏 | SPEC 卡 + 门禁条 + 工作流思维导图 + 执行步骤 | 与对话共用同一份快照 |
+
+治理待办聚合来源：门禁待办、Agent 工作监控异常、记忆管理的重要写入/清理、
+人工审批、待查看报告（`/api/governance/feed`）。当前窗口任务自动排除，
+对话内确认（写操作 / 意图澄清）不进入治理待办。
+
+### 7.2 SPEC 统一产出（形式齐全，深度可伸缩）
+
+意图识别后立即生成 SPEC，写入 `spec.updated`，固定字段（任何深度不缺项）：
+
+目标 / 意图分类 / 复杂度与调研深度 / 范围（纳入·排除）/ 调研工具与预算 /
+选用 SKILL / 多 Agent 择优脑暴 / 执行步骤 / 验收标准 / 交付物 / 风险与约束。
+
+| 深度 | 判定 | 工具预算 | SKILL 数 |
+|---|---|---|---|
+| quick | 简单问答、单点行情 | 2 | 1–2 |
+| standard | 多步核查、含解释性推理 | 6 | 3–5 |
+| deep | 策略验证、回测、多标的对比、深度调研 | 15 | 全部匹配 + 方法论类（superpowers-*） |
+
+SKILL 来自现有注册表：`SkillsRegistry.query({ intent })`，深度任务额外并入
+`superpowers-*` 与方法论类；注册表不可用时字段仍齐全（FAIL-OPEN）。
+
+### 7.3 先后同步执行链（硬约束）
+
+1. 客户端按会话生成稳定 `task_id`，随请求下发；右栏立即挂载并 2s 轮询。
+2. 服务端检查 SPEC：不存在则先生成并返回 `409 SPEC_CONFIRM_REQUIRED`；
+   存在但未确认同样拦截。确认接口：`POST /api/task/[id]/spec/confirm`。
+3. SPEC 确认后才执行择优脑暴（若 SPEC 中启用）。
+4. 之后进入模型推理；每步 `onStepFinish` 写 `step.reported`，再由独立评审模型
+   （`AGENT_JUDGE_MODEL`）判定 PASS/FAIL；驳回则 `stopWhen` 停止后续步骤。
+5. 评审模型不可用时步骤标记 `pending` 放行，不伪造通过。
+
+### 7.4 择优脑暴接入
+
+- 触发：深度任务且意图为深度分析 / 策略验证 / 情景推演，或输入含
+  「方案 / 择优 / 对比 / 选哪个」；标准任务含择优词为 2 路/侧，深度为 3 路/侧。
+- 执行：`runBrainstormPreStep` 调用现成 `POST /api/agent/brainstorm`
+  （spawn `52-lobehub协议集成/orchestrator/brainstorm_orchestrator.py`），
+  结果作为上下文注入 L2；不改编排器实现。
+- 顺序：脑暴为第 0 步，先汇报再评审；驳回则整轮停止。
+- 成本：仅 AI Agent 开启时执行；轻量任务在 SPEC 中明确「不启用」。
+
+### 7.5 事件与快照
+
+| 事件 | 载荷 | 落点 |
+|---|---|---|
+| `intent.decided` | 意图判定与扩展门（脑暴/逆向解析/外部采集） | L0 JSONL |
+| `spec.updated` | 完整 SPEC（version/status/fields） | L0 JSONL |
+| `step.reported` | 步骤序号、标题、汇报、评审结论、评审人 | L0 JSONL |
+
+L0 采用 JSONL 追加（`src/lib/task-board/server-store.ts`），快照由事件归并得到；
+前端轮询 `/api/task/[id]`，不依赖流式结束。
+
+### 7.6 关键接口
+
+| 接口 | 用途 |
+|---|---|
+| `POST /api/agent/chat` | 对话主链路；未确认 SPEC 返回 409 |
+| `POST /api/task/[id]/spec/confirm` | 确认 SPEC（version+1、status=confirmed，幂等） |
+| `GET /api/task/[id]` | 快照（含 intent/spec/steps） |
+| `POST /api/task/[id]/gate` | 门禁决策（仅其它工作流门） |
+| `GET /api/governance/feed` | 治理待办聚合 |
+| `POST /api/agent/brainstorm` | 择优脑暴（现成能力，超时 180s，失败降级） |
+| `GET/POST /api/scheduled-tasks` | 定时任务增删改查与到期执行 |
+
+### 7.7 关键文件
+
+- `src/lib/task-board/spec-builder.ts`：深度判定、SKILL 选择、SPEC 十项字段
+- `src/components/features/task-board/WorkflowMindmap.tsx` / `SpecCard.tsx` / `GovernanceDrawer.tsx`
+- `src/components/features/agent/AgentChatPanel.tsx`：SPEC 弹窗、任务号、流状态
+- `src/app/api/agent/chat/route.ts`：SPEC 门禁、脑暴前置、步骤评审
+- `src/types/task-board.ts`：`TaskStep`、`step.reported`、事件归并
+
+---
+
 ## 附录
 
 ### 附录 A：96+ API 端点索引

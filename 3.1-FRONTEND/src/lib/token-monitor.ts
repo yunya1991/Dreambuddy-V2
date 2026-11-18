@@ -348,8 +348,21 @@ export class TokenMonitor {
   }
 
   private handleError(error: Error): void {
-    this.state.status = "error";
     this.state.lastError = error.message;
+    // 未登录/无会话（401）：停表静默，避免每 5 分钟刷一次控制台；
+    // 登录后刷新页面会重新 start()，无需手动恢复。
+    if (/401|unauthorized/i.test(error.message)) {
+      if (this.timerId) {
+        clearInterval(this.timerId);
+        this.timerId = null;
+      }
+      this.state.status = "idle";
+      console.warn("[TokenMonitor] 未授权，已暂停余额轮询");
+      this.callbacks.onError?.(error, this.getState());
+      return;
+    }
+
+    this.state.status = "error";
     console.error("[TokenMonitor] Error:", error.message);
     this.callbacks.onError?.(error, this.getState());
 

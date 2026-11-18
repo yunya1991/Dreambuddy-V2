@@ -12,6 +12,7 @@
  */
 
 import type { UncertaintyVerdict } from "@/lib/verdict/uncertainty-verdict";
+import type { GateRun } from "@/lib/task-board/gate-flow";
 
 /** 看板六个步骤（对外展示，不出现 SACG 等内部术语） */
 export type TaskStage =
@@ -115,6 +116,11 @@ export interface IntentDecision {
   gates: IntentGate[];
   /** 判定结论，如「直接生成 SPEC，无需多 Agent 辩论」 */
   decision: string;
+  /**
+   * 是否需要用户当场确认。
+   * 只有「意图澄清」与「写操作」两类需要打断对话；普通问答不产生人工门。
+   */
+  requires_confirmation?: boolean;
 }
 
 export interface SpecField {
@@ -202,6 +208,19 @@ export interface TaskSummary {
   data_quality: DataQualityItem[];
 }
 
+/** 执行步骤的汇报与独立评审结果（每步必须先汇报、再评审、后推进） */
+export interface TaskStep {
+  step_id: string;
+  index: number;
+  title: string;
+  summary: string;
+  /** pass=评审通过；fail=被驳回；pending=评审模型不可用（不阻塞但显式标注） */
+  verdict: "pass" | "fail" | "pending";
+  reviewer?: string;
+  comment?: string;
+  ts: number;
+}
+
 export interface TaskBoardSnapshot {
   task_id: string;
   trace_id: string;
@@ -212,10 +231,14 @@ export interface TaskBoardSnapshot {
   objective?: TaskObjective;
   krs: OkrNode[];
   agents: AgentRun[];
+  /** 逐步执行记录：右栏按顺序点亮，评审未过不进入下一步 */
+  steps?: TaskStep[];
   acceptance: AcceptanceRecord[];
   /** 人工门禁：由证据自动生成，确认动作只能由 gate.updated 事件写入 */
   gates: TaskGate[];
   summary?: TaskSummary;
+  /** GateFlow 运行实例：流程节点、当前停留位置与审批事件（append-only） */
+  flow?: GateRun;
   /** 管理员终止：终止后不再接受任何门禁推进 */
   terminated?: { reason: string; by: string; at: number };
   /** 已应用事件游标：`${type}:${entityId}` → seq */
@@ -242,8 +265,10 @@ export type TaskBoardEvent =
     })
   | (TaskEventBase & { type: "agent.updated"; payload: AgentRun })
   | (TaskEventBase & { type: "acceptance.recorded"; payload: AcceptanceRecord })
+  | (TaskEventBase & { type: "step.reported"; payload: TaskStep })
   | (TaskEventBase & { type: "gate.updated"; payload: TaskGate })
   | (TaskEventBase & { type: "verdict.updated"; payload: UncertaintyVerdict })
+  | (TaskEventBase & { type: "flow.updated"; payload: GateRun })
   | (TaskEventBase & {
       type: "task.terminated";
       payload: { reason: string; by: string; at: number };
@@ -256,8 +281,10 @@ export const TASK_EVENT_TYPES: TaskBoardEvent["type"][] = [
   "okr.updated",
   "agent.updated",
   "acceptance.recorded",
+  "step.reported",
   "gate.updated",
   "verdict.updated",
+  "flow.updated",
   "task.terminated",
   "summary.ready",
 ];
@@ -275,10 +302,14 @@ export function taskEventEntityId(event: TaskBoardEvent): string {
       return event.payload.role;
     case "acceptance.recorded":
       return `${event.payload.role}:${event.payload.node_id}`;
+    case "step.reported":
+      return event.payload.step_id;
     case "gate.updated":
       return event.payload.gate_id;
     case "verdict.updated":
       return event.payload.verdict_id || "verdict";
+    case "flow.updated":
+      return "flow";
     case "task.terminated":
       return "terminated";
     case "summary.ready":
@@ -297,6 +328,7 @@ export function emptyTaskBoard(
     stage: "intent",
     krs: [],
     agents: [],
+    steps: [],
     acceptance: [],
     gates: [],
     cursors: {},
@@ -310,10 +342,10 @@ function gateEvidenceRefs(
   snapshot: TaskBoardSnapshot,
 ): Partial<Record<GateKind, string>> {
   const refs: Partial<Record<GateKind, string>> = {};
-  if (snapshot.intent) {
-    refs.intent = `intent:${snapshot.cursors["intent.decided:intent"] ?? 0}`;
-  }
-  if (snapshot.spec) {
+  // 意图与 SPEC 都不自动设门：SPEC 每次任务都会生成，确认只在
+  // 「写操作 / 意图澄清」时通过对话内弹窗发生，避免每轮对话都产生待办。
+  // 只有已存在的 SPEC 门（历史记录或显式写操作）才继续参与证据一致性重算。
+  if (snapshot.spec && snapshot.gates.some((gate) => gate.kind === "spec")) {
     refs.spec = `spec:${snapshot.spec.spec_id}:v${snapshot.spec.version}`;
   }
   if (snapshot.objective && snapshot.krs.length > 0) {
@@ -452,6 +484,16 @@ export function applyTaskEvent(
     case "agent.updated":
       next.agents = upsertAgent(snapshot.agents, event.payload);
       break;
+    case "step.reported": {
+      const steps = snapshot.steps ?? [];
+      const exists = steps.some((step) => step.step_id === event.payload.step_id);
+      next.steps = exists
+        ? steps.map((step) =>
+            step.step_id === event.payload.step_id ? event.payload : step,
+          )
+        : [...steps, event.payload].sort((a, b) => a.index - b.index);
+      break;
+    }
     case "acceptance.recorded": {
       const record = event.payload;
       next.acceptance = [...snapshot.acceptance, record];
@@ -480,6 +522,9 @@ export function applyTaskEvent(
     }
     case "verdict.updated":
       // 裁决权威副本经 appendTaskEvents 落 L0 事件流；快照只推进游标与时间
+      break;
+    case "flow.updated":
+      next.flow = event.payload;
       break;
     case "task.terminated":
       next.terminated = event.payload;

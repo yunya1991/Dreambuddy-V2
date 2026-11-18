@@ -188,6 +188,18 @@ const RISK_RANK: Record<string, number> = {
   summary: 1,
 };
 
+/** 任务标题：优先 OKR 目标，其次用户原话（便于待办中心区分任务） */
+function taskTitle(snapshot: TaskBoardSnapshot): string {
+  const objective = snapshot.objective?.title?.trim();
+  if (objective) return objective;
+  const raw = snapshot.intent?.raw_input?.trim();
+  if (raw) {
+    const text = raw.slice(0, 28);
+    return raw.length > 28 ? `${text}…` : text;
+  }
+  return "未命名任务";
+}
+
 function taskRiskRank(gates: TaskGate[]): number {
   return gates.reduce(
     (max, gate) => Math.max(max, RISK_RANK[gate.kind] ?? 1),
@@ -214,7 +226,7 @@ export async function listPendingGateTasks(): Promise<PendingGateTask[]> {
       if (pending.length === 0) return null;
       return {
         task_id: snapshot.task_id,
-        title: snapshot.objective?.title || "未命名任务",
+        title: taskTitle(snapshot),
         updated_at: snapshot.updated_at,
         pending_gates: pending,
       } satisfies PendingGateTask;
@@ -228,6 +240,53 @@ export async function listPendingGateTasks(): Promise<PendingGateTask[]> {
         taskRiskRank(b.pending_gates) - taskRiskRank(a.pending_gates) ||
         b.updated_at - a.updated_at,
     );
+}
+
+export interface TaskBoardListItem {
+  task_id: string;
+  title: string;
+  status: TaskBoardSnapshot["status"];
+  stage: TaskBoardSnapshot["stage"];
+  done_count: number;
+  total_count: number;
+  pending_gates: number;
+  updated_at: number;
+}
+
+/** 任务列表：扫描全部任务事件流，按最近更新排序（无事件的文件不展示） */
+export async function listTaskBoards(limit = 50): Promise<TaskBoardListItem[]> {
+  let files: string[] = [];
+  try {
+    files = (await fs.readdir(DATA_DIR)).filter((name) =>
+      name.endsWith(".jsonl"),
+    );
+  } catch {
+    return [];
+  }
+
+  const items = await Promise.all(
+    files.map(async (file) => {
+      const taskId = file.replace(/\.jsonl$/, "");
+      const events = await readStored(taskId);
+      if (events.length === 0) return null;
+      const snapshot = snapshotFrom(taskId, events);
+      return {
+        task_id: snapshot.task_id,
+        title: taskTitle(snapshot),
+        status: snapshot.status,
+        stage: snapshot.stage,
+        done_count: snapshot.krs.filter((kr) => kr.verdict === "pass").length,
+        total_count: snapshot.krs.length,
+        pending_gates: pendingGates(snapshot).length,
+        updated_at: snapshot.updated_at,
+      } satisfies TaskBoardListItem;
+    }),
+  );
+
+  return items
+    .filter((item): item is TaskBoardListItem => Boolean(item))
+    .sort((a, b) => b.updated_at - a.updated_at)
+    .slice(0, limit);
 }
 
 export interface GateSlaSweepResult {

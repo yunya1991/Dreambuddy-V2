@@ -17,8 +17,14 @@ import {
   type ModelRegistry,
   type ModelSpec,
 } from "@/lib/model/model-registry";
+import {
+  GATE_RISK,
+  GATE_SLA_MINUTES,
+  type GateRiskLevel,
+} from "./gate-priority";
 
-export type RiskLevel = "low" | "medium" | "high" | "critical";
+export type RiskLevel = GateRiskLevel;
+export { GATE_RISK, GATE_SLA_MINUTES };
 export type ChangeClass = "standard" | "normal" | "emergency";
 export type Quorum = "any" | "all" | "sequential";
 export type ModelVoteWeight = "binding" | "advisory";
@@ -34,15 +40,6 @@ export const GATE_KINDS: GateKind[] = [
 ];
 
 export const RISK_LEVELS: RiskLevel[] = ["low", "medium", "high", "critical"];
-
-/** 每道门的固有风险：验收门最高，永远需要人工 */
-export const GATE_RISK: Record<GateKind, RiskLevel> = {
-  intent: "low",
-  spec: "medium",
-  dispatch: "medium",
-  acceptance: "high",
-  summary: "low",
-};
 
 export function getGateMode(
   env: Record<string, string | undefined> = process.env,
@@ -162,31 +159,31 @@ const KIND_BASE: Record<GateKind, KindBase> = {
     roles: ["owner"],
     evidence: ["intent:decision"],
     rewind_to: "none",
-    sla_minutes: 240,
+    sla_minutes: GATE_SLA_MINUTES.intent,
   },
   spec: {
     roles: ["owner"],
     evidence: ["spec:fields"],
     rewind_to: "intent",
-    sla_minutes: 480,
+    sla_minutes: GATE_SLA_MINUTES.spec,
   },
   dispatch: {
     roles: ["team_lead"],
     evidence: ["okr:krs"],
     rewind_to: "spec",
-    sla_minutes: 240,
+    sla_minutes: GATE_SLA_MINUTES.dispatch,
   },
   acceptance: {
     roles: ["risk_reviewer", "team_lead"],
     evidence: ["acceptance:records", "data_quality:declared"],
     rewind_to: "dispatch",
-    sla_minutes: 120,
+    sla_minutes: GATE_SLA_MINUTES.acceptance,
   },
   summary: {
     roles: ["team_lead"],
     evidence: ["summary:conclusion"],
     rewind_to: "acceptance",
-    sla_minutes: 240,
+    sla_minutes: GATE_SLA_MINUTES.summary,
   },
 };
 
