@@ -11,6 +11,8 @@ import math
 import os
 from typing import Any
 
+import numpy as np
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,12 +33,41 @@ class RippleEngine:
             os.getenv("EVOLUTION_RIPPLE_LIQ_CHANGE", liq_change_threshold)
         )
 
-    def detect_ripple_source(self, source: dict[str, Any]) -> bool:
+    def calibrate_vol_threshold(self, close: Any, lookback_days: int = 20) -> float:
+        """按 20 日已实现波动率动态校准放量门槛。
+
+        1H 对数收益 std × sqrt(24) → 日波动率；threshold = clamp(1.20 + 25σ_d, 1.30, 2.50)。
+        低波动品种降低门槛（放量 2 倍本就更罕见），高波动品种提高门槛，避免误触发。
+        数据不足 48 根 → 返回实例/环境默认值。
+        """
+        try:
+            arr = np.asarray(close if close is not None else [], dtype=float)
+            if arr.size < 48:
+                return self._vol_ratio_threshold
+            lr = np.diff(np.log(np.clip(arr, 1e-12, None)))
+            window = lr[-min(lr.size, 24 * lookback_days) :]
+            sigma_1h = float(np.std(window))
+            sigma_day = sigma_1h * math.sqrt(24.0)
+            return float(max(1.30, min(2.50, 1.20 + 25.0 * sigma_day)))
+        except Exception as e:
+            logger.debug("[FO] calibrate_vol_threshold fail: %s", e)
+            return self._vol_ratio_threshold
+
+    def detect_ripple_source(
+        self, source: dict[str, Any], vol_ratio_threshold: float | None = None
+    ) -> bool:
         """
         §0.7.2 Phase 0: 龙头检测
         条件: S_up簇(ESS_top方向一致) + vol_5/vol_20≥门槛 + liq_index↑≥门槛 + Scale∈{Classical,Meso}
+
+        vol_ratio_threshold: 调用方按 20 日波动率动态校准后的门槛；None 用实例默认值
         """
         try:
+            threshold = (
+                self._vol_ratio_threshold
+                if vol_ratio_threshold is None
+                else float(vol_ratio_threshold)
+            )
             r_vec = source.get("r_vector") or source.get("leader_r_vector") or {}
             r_up = float(r_vec.get("R_up", 0.5))
             r_down = float(r_vec.get("R_down", 0.5))
@@ -54,7 +85,7 @@ class RippleEngine:
 
             # 2. 放量: vol_5/vol_20 ≥ 门槛
             vol_ratio = vol_5 / max(vol_20, 1e-9)
-            if vol_ratio < self._vol_ratio_threshold:
+            if vol_ratio < threshold:
                 return False
 
             # 3. 清算指数上升 ≥ 门槛

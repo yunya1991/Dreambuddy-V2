@@ -536,7 +536,9 @@ class KlineEventHandler:
                 "liq_index_change": kline_data.get("liq_index_change", 0),
                 "scale_class": kline_data.get("scale_class", ""),
             }
-            is_source = self._ripple.detect_ripple_source(source)
+            # 20 日已实现波动率动态校准放量门槛（替代固定 2.0）
+            vol_threshold = self._ripple.calibrate_vol_threshold(kline_data.get("close"))
+            is_source = self._ripple.detect_ripple_source(source, vol_ratio_threshold=vol_threshold)
             ripple_ri = (
                 self._ripple.compute_ri(kline_data.get("ripples", {})) if is_source else 0.50
             )
@@ -886,6 +888,7 @@ class KlineEventHandler:
                     "tier": tier,
                     "ess_top_direction": str(kline_data.get("ess_top_direction") or ""),
                     "vol_ratio": _vol_ratio_diag,
+                    "vol_threshold": round(float(vol_threshold), 4),
                     "ripple_is_source": bool(is_source),
                     "ripple_ri": round(float(ripple_ri), 4),
                     "reflection_ri": round(float(reflection_ri), 4),

@@ -12,8 +12,10 @@
 - **`ESDirectionProvider` 跳过无方向 top1**：此前只取 ESS 第一组合，而 top1 常为纯离场组合
   （`direction=both`）→ `ess_top_direction=""` → `detect_ripple_source` 恒 False →
   `ripple_ri` 回落 0.50 → `ri=0.50` → `tier=probe`。现按 ESS 降序取首个含 `long/short` 的组合。
-- **涟漪阈値 env 化**：`EVOLUTION_RIPPLE_VOL_RATIO`（默认 2.0）、`EVOLUTION_RIPPLE_LIQ_CHANGE`
-  （默认 0.30），默认行为不变，待 1H 分布定档。
+- **涟漪放量门槛改为波动率自适应**：`threshold = clamp(1.20+25σ_day, 1.30, 2.50)`（20 日已实现波动率），
+  替代固定 2.0；模拟触发率 0.12% → 3.38%（σ_1h=0.003）。`EVOLUTION_RIPPLE_VOL_RATIO/LIQ_CHANGE` 仍可覆盖。
+- **新增验证脚本** `scripts/backtest_ri_gate.py`：模拟放量触发率 + d_star 两种 wait 口径对比
+  （A -118%/MDD75%，B +0.6%/MDD22%，含 5bps/边），支持 `--events` 读实际 N2 分布。
 - **N9 诊断字段**：新增 `ri/tier/ess_top_direction/vol_ratio/ripple_is_source/ripple_ri/reflection_ri/reflection_eligible`。
 
 ### 文档
