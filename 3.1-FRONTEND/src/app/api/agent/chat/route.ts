@@ -28,6 +28,7 @@ import { resolveAgentModel } from "@/lib/agent/providers";
 import { getAgentMcpTools } from "@/lib/agent/mcp-multi-shell";
 import { createCapabilityTools } from "@/lib/agent/capability-tools";
 import {
+  AGENT_MAX_OUTPUT_TOKENS,
   AGENT_MAX_STEPS,
   AGENT_TEMPERATURE,
   buildChatSystem,
@@ -1007,6 +1008,8 @@ export async function POST(request: NextRequest) {
       model,
       system,
       temperature: AGENT_TEMPERATURE,
+      // 不显式设置时沿用上游默认（DeepSeek 默认 4096），长回答会被静默截断
+      maxOutputTokens: AGENT_MAX_OUTPUT_TOKENS,
       messages: convertToModelMessages(body.messages),
       tools,
       stopWhen: ({ steps }) => stepReviewFailed || steps.length >= AGENT_MAX_STEPS,
@@ -1088,6 +1091,13 @@ export async function POST(request: NextRequest) {
         }
       },
       onFinish: async (event) => {
+        if (event.finishReason === "length") {
+          console.warn(
+            "[AgentChat] 输出达到 maxOutputTokens 被截断:",
+            AGENT_MAX_OUTPUT_TOKENS,
+            `steps=${event.steps.length}`,
+          );
+        }
         endL2(
           "done",
           `steps=${event.steps.length} tokens=${event.usage?.inputTokens ?? 0}/${event.usage?.outputTokens ?? 0}`,

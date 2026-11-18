@@ -32,6 +32,15 @@ export const AGENT_MAX_STEPS = Math.round(
   readNumber(process.env.AGENT_MAX_STEPS, 8, 1, 12),
 );
 
+/**
+ * 单步最大输出 token。不显式下发时用上游默认值（DeepSeek 为 4096），
+ * 长回答会被静默截断表现为「输出到一半就停了」；可用 AGENT_MAX_OUTPUT_TOKENS 覆盖。
+ * 注意推理模型的 reasoning tokens 也占用该额度。
+ */
+export const AGENT_MAX_OUTPUT_TOKENS = Math.round(
+  readNumber(process.env.AGENT_MAX_OUTPUT_TOKENS, 16384, 512, 32768),
+);
+
 export function buildChatSystem(
   profile: ToolProfileSpec,
   extra: Array<string | null | undefined> = [],
