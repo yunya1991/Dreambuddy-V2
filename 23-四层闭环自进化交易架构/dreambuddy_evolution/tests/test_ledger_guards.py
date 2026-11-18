@@ -26,10 +26,22 @@ def _gw():
     return _Gw(rows, {"NFLX-USDT-SWAP": {"exit_reason": "atr_retrace"}})
 
 
-def test_has_position_only_counts_23_owned():
+def test_has_position_counts_all_open_positions():
     g = LedgerGuards(_gw())
     assert g.has_position("AMZN-USDT-SWAP") is True
-    assert g.has_position("BTC-USDT-SWAP") is False  # 11 域持仓不算 23 重复仓
+    assert g.has_position("ETHFI-USDT-SWAP") is True
+    # 11 域/对账写入的仓位同样占仓，重复建仓必须拦截（source 不可作为豁免依据）
+    assert g.has_position("BTC-USDT-SWAP") is True
+    assert g.has_position("DOGE-USDT-SWAP") is False
+
+
+def test_has_position_blocks_reconciled_source():
+    """回归：22 对账回填的 source 不属于 23 标签，但仍必须拦住重复建仓。"""
+    gw = _Gw(
+        [{"inst_id": "ETH-USDT-SWAP", "pos_side": "long", "qty": 10.8, "source": "22-reconciled"}],
+        {},
+    )
+    assert LedgerGuards(gw).has_position("ETH-USDT-SWAP") is True
 
 
 def test_subpool_counts_ignore_closed_and_foreign():

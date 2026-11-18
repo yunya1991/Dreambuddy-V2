@@ -120,9 +120,10 @@ class PositionLedger:
                 )
             else:
                 conn.execute(
-                    "UPDATE positions SET qty=?, avg_entry=?, entry_known=?, updated_at=?,"
-                    " closed_at=NULL WHERE inst_id=? AND pos_side=?",
-                    (_new_qty, _new_avg, _known, _ts, inst_id, pos_side),
+                    "UPDATE positions SET qty=?, avg_entry=?, entry_known=?,"
+                    " source=CASE WHEN qty <= 0 THEN ? ELSE source END,"
+                    " updated_at=?, closed_at=NULL WHERE inst_id=? AND pos_side=?",
+                    (_new_qty, _new_avg, _known, source, _ts, inst_id, pos_side),
                 )
             conn.execute(
                 "INSERT INTO fills (ts, inst_id, pos_side, action, qty, px, fee, realized_pnl,"
@@ -333,7 +334,10 @@ class PositionLedger:
                     " VALUES (?,?,?,?,?,0,?,?,?,NULL)"
                     " ON CONFLICT(inst_id, pos_side) DO UPDATE SET qty=excluded.qty,"
                     " avg_entry=excluded.avg_entry, entry_known=excluded.entry_known,"
-                    " source=excluded.source, updated_at=excluded.updated_at, closed_at=NULL",
+                    " source=CASE WHEN positions.source != ''"
+                    " AND positions.source NOT LIKE '22-reconciled%'"
+                    " THEN positions.source ELSE excluded.source END,"
+                    " updated_at=excluded.updated_at, closed_at=NULL",
                     (inst_id, pos_side, qty, avg, 1 if avg > 0 else 0, source, _ts, _ts),
                 )
                 conn.execute(

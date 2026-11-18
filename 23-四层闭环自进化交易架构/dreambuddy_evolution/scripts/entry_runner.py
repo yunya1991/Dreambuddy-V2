@@ -310,6 +310,11 @@ class EntryRunner:
         }
 
 
+def _log_fn(msg: str, level: str = "INFO") -> None:
+    """把 entry loop 的闸门/定容日志接入 entry23 日志（默认 lambda 会丢弃）。"""
+    logger.log(getattr(logging, str(level).upper(), logging.INFO), msg)
+
+
 def _authority(dry_run: bool, tags: tuple[str, ...]) -> Callable[[str], bool]:
     """执行权闸门：dry-run / 全局开关 off 一律拦截；live 仅放行白名单标签。"""
     _allow = {t.lower() for t in tags}
@@ -354,6 +359,7 @@ def build_runtime(dry_run: bool, symbols: List[str], bar: str = "1H"):
 
     loop = EvolutionEntryLoop(
         gateway=gateway,
+        log_fn=_log_fn,
         authority_fn=_authority(dry_run, tags),
         has_position_fn=guards.has_position,
         cooldown_fn=guards.cooldown,

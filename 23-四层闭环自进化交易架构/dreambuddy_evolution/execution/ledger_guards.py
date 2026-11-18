@@ -42,13 +42,21 @@ class LedgerGuards:
         self._tags = tuple(tags)
         self._cooldown_sec = float(cooldown_sec)
 
-    def _open_positions(self) -> list[dict[str, Any]]:
+    def _all_open_positions(self) -> list[dict[str, Any]]:
         fn = getattr(self._gateway, "list_positions", None)
         rows = fn() if callable(fn) else []
-        return [r for r in rows or [] if float(r.get("qty") or 0) > 0 and _owned(r, self._tags)]
+        return [r for r in rows or [] if float(r.get("qty") or 0) > 0]
+
+    def _open_positions(self) -> list[dict[str, Any]]:
+        return [r for r in self._all_open_positions() if _owned(r, self._tags)]
 
     def has_position(self, inst_id: str) -> bool:
-        return any(str(p.get("inst_id")) == str(inst_id) for p in self._open_positions())
+        """防重复建仓判断账户全部持仓，不按 source 过滤。
+
+        同一 inst_id 只要账本里还有仓位（无论 23/11/50 域或 22 对账写入），
+        再加仓就是重复建仓；subpool 仍只统计 23 自有仓。
+        """
+        return any(str(p.get("inst_id")) == str(inst_id) for p in self._all_open_positions())
 
     def cooldown(self, inst_id: str, direction: str = "") -> tuple[bool, str]:
         fn = getattr(self._gateway, "is_in_cooldown", None)

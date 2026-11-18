@@ -83,6 +83,31 @@ def test_weighted_average_on_add(tmp_path):
     assert out["avg_entry"] == 110.0
 
 
+def test_reconcile_keeps_execution_source_on_conflict(tmp_path):
+    """回归：对账回填不得把 23 自有仓的 source 覆盖成 22-reconciled。"""
+    led = _ledger(tmp_path)
+    led.record_open("ETH-USDT-SWAP", "long", 1.54, 1808.0, source="23-evolution")
+
+    led.reconcile(
+        [{"inst_id": "ETH-USDT-SWAP", "pos_side": "long", "qty": 3.08, "avg_entry": 1809.0}]
+    )
+
+    pos = led.get_position("ETH-USDT-SWAP", "long")
+    assert pos["source"] == "23-evolution"
+    assert pos["qty"] == 3.08
+
+
+def test_record_open_after_full_close_takes_new_source(tmp_path):
+    """回归：仓位归零后重新开仓，source 必须切到本次执行域，避免沿用旧对账标签。"""
+    led = _ledger(tmp_path)
+    led.record_open("ETH-USDT-SWAP", "long", 1.0, 1800.0, source="22-reconciled")
+    led.apply_partial_close("ETH-USDT-SWAP", "long", 1.0, 1801.0, source="22-reconciled")
+
+    led.record_open("ETH-USDT-SWAP", "long", 1.0, 1802.0, source="23-evolution")
+
+    assert led.get_position("ETH-USDT-SWAP", "long")["source"] == "23-evolution"
+
+
 class _OkxWithFills:
     def get_recent_fills(self, inst_id=None, limit=10):
         return {
