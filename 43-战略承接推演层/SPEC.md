@@ -329,7 +329,7 @@
 
 ### 16.3 发布机制
 
-- **云端**：luke 用户 crontab，每小时 :18/:48 以 `python -m` 方式执行发布（SPEC v1.2.3 记录）；
+- **云端**：systemd timer `dreambuddy-43-strategic-publish.timer` 每小时 :18/:48 触发 `dreambuddy-43-strategic-publish.service`（oneshot，`User=luke`，`CYCLE_STATE_BRIDGE=1`，`python -B -m strategic_extension.signal_publisher`）；
 - **本地**：无调度器，需手动 `python -m strategic_extension.signal_publisher`（cwd=43-战略承接推演层）；`publish()` 采用临时文件 + `os.replace` 原子落盘，失败不阻断返回值；
 - **开关**：`CYCLE_STATE_BRIDGE=1` 承接 40 产出物（云端开启）；`ODAILY_ENGINE_BOOST` / `FUND_7ENGINES_BOOST` 默认关闭。
 

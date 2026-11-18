@@ -43,7 +43,7 @@
 | 经典指标系统 | `10-经典指标系统/ml_trade_service.py` | launchd / master_daemon | Flask后端，信号→决策→执行→结算 |
 | 前端监控面板 | `10-经典指标系统/frontend/` | Vite dev server | React+TypeScript，端口5173 |
 | 易经推理系统 | `11-易经推理系统/scripts/memory_l4/polling_trader.py` | launchd | A0-A9决策链+L4记忆（战略层已迁出至43） |
-| 战略承接推演层 | `43-战略承接推演层/strategic_extension/signal_publisher.py` | 云端 crontab 每小时 :18/:48（`python -m`） | 40大周期→五维→strategic_extension 信号（shadow） |
+| 战略承接推演层 | `43-战略承接推演层/strategic_extension/signal_publisher.py` | 云端 systemd timer `dreambuddy-43-strategic-publish.timer`（每小时 :18/:48） | 40大周期→五维→strategic_extension 信号（shadow） |
 | 资金管理API | `14-V15经典马丁策略/lib/capital_manager_engine.py api` | 独立启动 | HTTP API，端口8770 |
 
 #### 核心链路入口（信号 → 决策 → 执行 → 结算）
