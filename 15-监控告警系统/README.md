@@ -100,6 +100,31 @@ cd 15-监控告警系统
 bash start_monitor.sh
 ```
 
+## 每日监控日报（23 核心链路）
+
+每日 09:00 自动汇总最近 24h 的 23 推理链监控数据，先用规则引擎识别确定性异常，再调用大模型做归因分析，最后推送飞书并落盘报告。40 周期神经网络链路为预留项，接口已保留但本期不启用。
+
+```bash
+# 手动生成（滚动 24h）
+python3 scripts/daily_insight.py --push
+
+# 指定自然日
+python3 scripts/daily_insight.py --date 2026-11-17 --no-llm
+
+# 仅规则分析，不调用大模型
+python3 scripts/daily_insight.py --no-llm
+```
+
+| 项 | 路径/配置 |
+|---|---|
+| 聚合与规则 | `scripts/daily_insight.py` |
+| 阈值/LLM/预留链路 | `config/daily_insight.json`（`enabled_chains: ["23"]`，加入 `"40"` 即启用） |
+| 报告 | `logs/daily-insight/YYYY-MM-DD.md` + `.json` |
+| 本地定时 | `deploy/launchd/com.dreambuddy.monitor-daily-insight.plist`（09:00） |
+| 云端定时 | `deploy/systemd/dreambuddy-daily-insight.service/.timer`（09:00 Asia/Shanghai） |
+| 大模型 | DeepSeek（`DEEPSEEK_API_KEY`，读取 `1-ARCHITECTURE/dreamos/.env` 或环境变量） |
+| 推送 | 优先本地 receiver `:9098`，不可用时直连飞书 management 群 |
+
 ## 手动执行
 
 ```bash

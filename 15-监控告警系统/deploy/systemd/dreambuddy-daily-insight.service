@@ -1,0 +1,15 @@
+[Unit]
+Description=Dreambuddy daily insight (23 chain summary + LLM analysis + Feishu push)
+After=network-online.target dreambuddy-feishu-receiver.service
+Wants=dreambuddy-feishu-receiver.service
+
+[Service]
+Type=oneshot
+User=luke
+Group=luke
+WorkingDirectory=/home/luke/dreambuddy/15-监控告警系统
+# DEEPSEEK_API_KEY 可放在 monitoring.env 中；FEISHU_* 供 receiver 使用
+EnvironmentFile=-/etc/dreambuddy-monitoring/monitoring.env
+Environment=DREAMBUDDY_REPO_ROOT=/home/luke/dreambuddy
+ExecStart=/home/luke/venv-trading/bin/python -B scripts/daily_insight.py --out-dir logs/daily-insight --push
+TimeoutStartSec=600

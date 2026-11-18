@@ -1,0 +1,11 @@
+[Unit]
+Description=Run dreambuddy daily insight every day at 09:00 Asia/Shanghai
+
+[Timer]
+OnCalendar=*-*-* 09:00:00 Asia/Shanghai
+Persistent=true
+AccuracySec=1min
+Unit=dreambuddy-daily-insight.service
+
+[Install]
+WantedBy=timers.target

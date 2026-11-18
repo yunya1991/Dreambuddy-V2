@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "window": {
+    "timezone": "Asia/Shanghai",
+    "report_hour": 9
+  },
+  "enabled_chains": ["23"],
+  "reserved_chains": ["40"],
+  "llm": {
+    "enabled": true,
+    "provider": "deepseek",
+    "env_key": "DEEPSEEK_API_KEY",
+    "env_files": [
+      "1-ARCHITECTURE/dreamos/.env",
+      "6-TRADING/scripts/.env"
+    ],
+    "base_url": "https://api.deepseek.com",
+    "model": "deepseek-v4-flash",
+    "fallback_model": "deepseek-chat",
+    "timeout_seconds": 120,
+    "max_tokens": 4000,
+    "temperature": 0.2
+  },
+  "thresholds": {
+    "ri_min_samples": 10,
+    "ri_constant_ratio": 0.8,
+    "ess_topdir_empty_ratio": 0.8,
+    "probe_tier_ratio": 0.8,
+    "dstar_wait_ratio": 0.8,
+    "n2_degraded_ratio": 0.9,
+    "cv_degraded_ratio": 0.5,
+    "g_dim_missing_ratio": 0.5,
+    "chain_completion_min": 0.95,
+    "ledger_stale_hours": 24,
+    "outbox_stuck_seconds": 300,
+    "outbox_failed_ratio": 0.2
+  },
+  "nn40_artifacts": [
+    {"name": "cycle_state", "path": "40-周期神经网络系统/cycle_state.json", "timestamp_field": "generated_at", "ttl_seconds": 93600, "severity": "P1"},
+    {"name": "strategy_mapping", "path": "40-周期神经网络系统/strategy_mapping.json", "timestamp_field": "generated_at", "ttl_seconds": 93600, "severity": "P1"},
+    {"name": "fund_flow", "path": "40-周期神经网络系统/fund_flow.json", "timestamp_field": "generated_at", "ttl_seconds": 93600, "severity": "P2"},
+    {"name": "sector_transmission", "path": "40-周期神经网络系统/sector_transmission.json", "timestamp_field": "generated_at", "ttl_seconds": 93600, "severity": "P2"},
+    {"name": "resonance_matrix", "path": "40-周期神经网络系统/resonance_matrix.json", "timestamp_field": "generated_at", "ttl_seconds": 93600, "severity": "P2"},
+    {"name": "washout_verdicts", "path": "40-周期神经网络系统/washout_verdicts.json", "timestamp_field": "generated_at", "ttl_seconds": 93600, "severity": "P2"},
+    {"name": "asset_rotation", "path": "40-周期神经网络系统/asset_rotation.json", "timestamp_field": "generated_at", "ttl_seconds": 93600, "severity": "P2"}
+  ],
+  "push": {
+    "enabled": true,
+    "receiver_url": "http://127.0.0.1:9098/notify",
+    "level": "P3",
+    "fallback_direct": true,
+    "max_chars": 3200
+  }
+}
