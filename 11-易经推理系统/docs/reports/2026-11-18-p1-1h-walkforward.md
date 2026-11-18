@@ -51,7 +51,23 @@
 - 冒烟结果（BTC 3000 根 / 2 折，仅验证链路）：模型 N=38、WR=57.9%、E=+0.548%、CI=[0.060,1.046]、PF=2.79、MDD=4.75%；B3 随机方向 E=-0.288%、MDD=19.55% → 判定 `INSUFFICIENT`（样本门禁未达，符合预期）。
 - 尚未完成：BTC/ETH/SOL 各 30000 根 × 5 折正式评测与报告结论。
 
-## 四 · 后续动作
+## 四 · 修复状态（2026-11-18 13:20 CST）
+
+| 编号 | 状态 | 处理 |
+|---|---|---|
+| P0 23 开仓绕过 shadow | 已消除 | 11 已整体删除 23 执行/决策接线，不再存在该路径 |
+| P1 系统非整体影子 | 已澄清 | 11 影子；23/50 live 由独立服务驱动；已写入 docs 与 CHANGELOG |
+| P1 开关命名漂移 | 已消除 | `YIJING_23_ENABLED` 相关代码删除 |
+| P1 影子约束影响实盘定容 | 已修 | `entry_loop._apply_quota` 遇 `mode=shadow` 直接跳过 |
+| P1 execution_rights 未强制 | 已修 | 22 网关开仓校验单出口（平仓放行），云端 `EXECUTION_RIGHTS_ENFORCE=1` |
+| P1 ADR/SPEC 漂移 | 已修 | ADR-0002、SPEC §2.7 更新为 22 Gateway 通道 |
+| P2 契约告警噪声 | 已修 | 非 23 来源只校验 source/symbol/direction |
+| P2 40 mapping 缺失 | 结论修正 | 云端 `40/strategy_mapping.json` 存在且 12:23 新鲜；此前误查 `runtime/` |
+| P2 42 发布缺 mode | 已修 | 11 发布 payload 增加 `mode` |
+
+**新增**：`winrate_guard.py` + 云端日度/周度 timer；云端实测 N=75 WR=48.00% → ALERT，飞书已送达 `#trading`。
+
+## 五 · 后续动作
 
 1. 云端确认 `YIJING_23_ENABLED` 与 `YIJING_23_EXIT_ENABLED` 口径，统一为一个开关。
 2. 明确 `mode=shadow` 约束是否允许影响 23 实盘定容；若不允许，`_apply_quota` 需按 `mode` 跳过。
