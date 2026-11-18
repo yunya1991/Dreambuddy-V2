@@ -356,6 +356,10 @@ class TradeIndexBuilder:
             coin = raw.get("coin") or raw.get("symbol") or (_inst.split("-")[0] if _inst else "")
             if not coin:
                 return None
+            # F8: 对账/幽灵仓清仓流水（source 含 reconcil）不是真实交易，收益恒 0，
+            # 计入会污染 win_rate；自动发现的源同样适用，故在归一化层统一拦截
+            if "reconcil" in str(raw.get("source") or "").lower():
+                return None
             # SQLite trades 表的 id 字段作为 trade_id
             trade_id = str(
                 raw.get("trade_id")
