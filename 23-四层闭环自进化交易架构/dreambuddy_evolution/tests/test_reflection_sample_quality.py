@@ -75,6 +75,17 @@ def test_reflection_win_rate_ignores_invalid_samples(tmp_path: Path) -> None:
     assert "ETH" not in stats
 
 
+def test_relative_project_root_resolves_repo_root(tmp_path, monkeypatch) -> None:
+    """服务以相对路径（如 "."）启动时也要能向上找到仓库根的 22 账本。"""
+    _make_ledger(tmp_path)
+    project23 = tmp_path / "23-四层闭环自进化交易架构"
+    project23.mkdir()
+    monkeypatch.chdir(project23)
+    builder = TradeIndexBuilder(project_root=".")
+    assert builder._repo_root() == tmp_path.resolve()
+    assert any(s["source"] == "22-ledger" for s in builder._glob_sources())
+
+
 def test_shadow_validation_excluded_and_22_ledger_resolved(tmp_path: Path) -> None:
     """23 子目录启动时：已知源应解析到仓库根的 22 账本；shadow 样本不得计入 reflection。"""
     _make_ledger(tmp_path)  # tmp_path 作为仓库根（含 22-执行引擎中心）
