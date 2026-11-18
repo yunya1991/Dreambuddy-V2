@@ -46,8 +46,8 @@ LOCK_FILENAME = "dreambuddy-signal-scanner.lock"
 _lock_handle = None
 
 
-def acquire_single_instance_lock() -> str:
-    """获取单实例文件锁，已被其他实例持有时直接退出。
+def acquire_single_instance_lock(wait: bool = False) -> str:
+    """获取单实例文件锁；wait=True 时守护进程等待锁释放，而不是退出。
 
     锁文件固定在 /run/lock（开机自动清理），该目录不可写时退回 /tmp；
     可用环境变量 SIGNAL_SCANNER_LOCK 指定完整锁文件路径。
@@ -56,6 +56,9 @@ def acquire_single_instance_lock() -> str:
     不能降级到另一把锁，否则互斥形同虚设。
 
     返回锁文件路径；无法创建锁文件时返回空串（fail-open，不阻断信号生成）。
+    锁被其他实例持有时：
+      - wait=False（单次模式）→ 退出码 0，避免被 systemd 判为失败反复重启；
+      - wait=True（daemon）→ 每 30s 重试，直到对方释放，保证同一时刻只有一个写者。
     """
     global _lock_handle
     override = os.environ.get("SIGNAL_SCANNER_LOCK")
@@ -66,25 +69,33 @@ def acquire_single_instance_lock() -> str:
     else:
         path = os.path.join("/tmp", LOCK_FILENAME)
 
-    try:
-        handle = open(path, "a+")
-    except PermissionError as exc:
-        print(f"[Scanner] 锁文件无权访问，视为已有其他用户实例在运行: {path} ({exc})")
-        raise SystemExit(1) from None
-    except OSError as exc:
-        print(f"[Scanner] 警告: 无法创建单实例锁({exc})，本次启动未受互斥保护")
-        return ""
+    while True:
+        try:
+            handle = open(path, "a+")
+        except PermissionError as exc:
+            print(f"[Scanner] 锁文件无权访问，视为已有其他用户实例在运行: {path} ({exc})")
+            raise SystemExit(0) from None
+        except OSError as exc:
+            print(f"[Scanner] 警告: 无法创建单实例锁({exc})，本次启动未受互斥保护")
+            return ""
 
-    try:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except OSError:
-        handle.close()
-        print(f"[Scanner] 已有实例持有锁 {path}，本进程(pid={os.getpid()})退出")
-        raise SystemExit(1) from None
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            handle.close()
+            if not wait:
+                print(
+                    f"[Scanner] 已有实例持有锁 {path}，"
+                    f"本进程(pid={os.getpid()})退出（单次模式）"
+                )
+                raise SystemExit(0) from None
+            print(f"[Scanner] 单实例锁被 {path} 占用，30s 后重试（daemon 等待模式）")
+            time.sleep(30)
+            continue
 
-    _lock_handle = handle
-    print(f"[Scanner] 单实例锁已获取: {path} (pid={os.getpid()})")
-    return path
+        _lock_handle = handle
+        print(f"[Scanner] 单实例锁已获取: {path} (pid={os.getpid()})")
+        return path
 
 
 # 策略配置（与 screen_engine.py 保持一致）
@@ -294,7 +305,9 @@ def main():
     parser.add_argument("--interval", type=int, default=300, help="扫描间隔（秒），默认300")
     args = parser.parse_args()
 
-    acquire_single_instance_lock()
+    # daemon 模式等待锁（systemd 常驻，不能因手工进程占锁就退出）；
+    # 单次模式抢不到锁直接正常退出，避免被误判为失败。
+    acquire_single_instance_lock(wait=args.daemon)
 
     if args.once:
         scan_all_coins()
