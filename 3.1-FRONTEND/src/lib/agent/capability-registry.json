@@ -8,7 +8,7 @@
     "47-MCP管理系统",
     "46-DSH架构"
   ],
-  "note": "能力注册表是对话模型可调用能力的单一事实源；新增能力只改本文件，不改 prompt 与工具代码。entry.kind: l1_query | dsh | script | internal。",
+  "note": "能力注册表是对话模型可调用能力的单一事实源；新增能力只改本文件，不改 prompt 与工具代码。entry.kind: l1_query | dsh | script | http | pipeline | internal。http 走同实例只读 API（L1_INTERNAL_BASE_URL）；pipeline 为多能力编排。",
   "capabilities": [
     {
       "id": "market.price",
@@ -91,13 +91,70 @@
     },
     {
       "id": "news.listing",
-      "name": " L1 新闻检索",
+      "name": "L1 新闻/事件检索",
       "layer": "L1",
-      "module": "54",
+      "module": "54/39",
       "entry": { "kind": "l1_query", "intent_hint": "event_listing" },
-      "when": "需要最近新闻、热点、事件条目做背景时。",
+      "when": "需要最近新闻、热点、事件条目、宏观日历做背景时。",
       "params": { "question": "自然语言问题，可带主题与时间范围" },
       "latency_ms": 20000,
+      "readonly": true,
+      "l2_allowed": true,
+      "enabled": true
+    },
+    {
+      "id": "data.macro_snapshot",
+      "name": "宏观快照（美元/美债/VIX/黄金/标普/纳指/联邦基金利率/M2/CPI同比）",
+      "layer": "L1",
+      "module": "19/54",
+      "entry": { "kind": "http", "method": "GET", "path": "/api/data/macro" },
+      "when": "需要宏观读数（利率、通胀、美元、波动率、风险资产价格）作为背景或判断流动性/政策周期时。DSH 宏观子代理会自动消费该数据。",
+      "params": {},
+      "latency_ms": 10000,
+      "readonly": true,
+      "l2_allowed": true,
+      "enabled": true
+    },
+    {
+      "id": "data.fundamental_snapshot",
+      "name": "基本面快照（19-DAL 聚合 modules）",
+      "layer": "L1",
+      "module": "9/19",
+      "entry": { "kind": "http", "method": "GET", "path": "/api/fundamental/snapshot" },
+      "when": "需要基本面/估值/盈利质量等模块化数据时。返回 modules.<module>.metrics.core/breakdown，按模块名读取，缺失模块如实说明。",
+      "params": {},
+      "latency_ms": 20000,
+      "readonly": true,
+      "l2_allowed": true,
+      "enabled": true
+    },
+    {
+      "id": "data.onchain_cycle",
+      "name": "链上周期与巨鲸（MVRV/NUPL/Puell/恐惧贪婪/交易所余额/巨鲸净流）",
+      "layer": "L1",
+      "module": "19/36",
+      "entry": { "kind": "http", "method": "GET", "path": "/api/onchain/panewslab" },
+      "when": "需要链上周期位置、情绪极值、交易所余额变化、巨鲸资金流时。DSH 情绪子代理会自动消费该数据。",
+      "params": {},
+      "latency_ms": 15000,
+      "readonly": true,
+      "l2_allowed": true,
+      "enabled": true
+    },
+    {
+      "id": "chart.visual_capabilities",
+      "name": "图表能力目录",
+      "layer": "L1",
+      "module": "54",
+      "entry": {
+        "kind": "http",
+        "method": "GET",
+        "path": "/api/visual/capabilities",
+        "query": { "op": "list", "limit": "30" }
+      },
+      "when": "需要确认系统可出哪些图表/统计能力，或为结论挑选合适图表时。图表本身由 DSH 输出的 charts 规格承载。",
+      "params": {},
+      "latency_ms": 25000,
       "readonly": true,
       "l2_allowed": true,
       "enabled": true
@@ -257,6 +314,19 @@
       "readonly": true,
       "l2_allowed": true,
       "enabled": false
+    },
+    {
+      "id": "trading.analysis_pipeline",
+      "name": "6-TRADING 综合研判流水线（A0-A3）",
+      "layer": "L2",
+      "module": "6/46/56",
+      "entry": { "kind": "pipeline", "recipe": "trading_analysis_v1" },
+      "when": "用户要求对某标的做完整交易研判（方向、主要矛盾、情景、关键位、失效条件）时。按 6-TRADING A0-A3：取数→多维 DSH 并行→矛盾裁决→结构化结论，耗时较长但最完整。单点问题仍用单项能力。",
+      "params": { "symbol": "标的", "question": "用户原问题（可选）" },
+      "latency_ms": 120000,
+      "readonly": true,
+      "l2_allowed": true,
+      "enabled": true
     },
     {
       "id": "data.dal",

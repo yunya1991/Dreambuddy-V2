@@ -476,6 +476,8 @@ export async function POST(request: NextRequest) {
     });
     return withHeartbeat(
       result.toUIMessageStreamResponse({
+        // 前端「思考过程」可折叠区：把模型的 reasoning part 透传到 UIMessage 流
+        sendReasoning: true,
         headers: takeoverContext ? { "x-l2-takeover": "1" } : undefined,
       }),
     );

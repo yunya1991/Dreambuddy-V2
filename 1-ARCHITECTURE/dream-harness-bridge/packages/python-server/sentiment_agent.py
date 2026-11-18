@@ -56,24 +56,55 @@ class SentimentAgent:
         )
 
     def _extract_signals(self, sentiment: Dict[str, Any]) -> List[Signal]:
-        """从情绪指标提取标准化信号 (HC-1)"""
+        """从情绪指标提取标准化信号 (HC-1)
+
+        只对真实读数出信号：无数据时不生成「假中性」信号。
+        """
         signals: List[Signal] = []
         impact = sentiment.get("impact", "NEUTRAL")
         score = sentiment.get("score", 0.5)
         fgi = sentiment.get("fgi")
+        components = sentiment.get("components") or {}
 
-        # 新闻影响信号
-        dir_map = {"BULLISH": "long", "BEARISH": "short", "NEUTRAL": "neutral"}
-        signals.append(Signal("新闻情绪", impact, dir_map.get(impact, "neutral"), score))
+        # 新闻/资金合成情绪：仅在明确多空时出信号（NEUTRAL 且无分项 = 无数据）
+        dir_map = {"BULLISH": "long", "BEARISH": "short"}
+        if impact in dir_map:
+            signals.append(Signal("新闻情绪", impact, dir_map[impact], float(score)))
 
         # 恐惧贪婪指数信号
         if fgi is not None:
-            if fgi < 25:
-                signals.append(Signal("恐惧贪婪指数", fgi, "long", 0.6))
-            elif fgi > 75:
-                signals.append(Signal("恐惧贪婪指数", fgi, "short", 0.6))
+            try:
+                fgi_val = float(fgi)
+            except (TypeError, ValueError):
+                fgi_val = None
+            if fgi_val is not None:
+                if fgi_val < 25:
+                    signals.append(Signal("恐惧贪婪指数", fgi_val, "long", 0.6))
+                elif fgi_val > 75:
+                    signals.append(Signal("恐惧贪婪指数", fgi_val, "short", 0.6))
+                else:
+                    signals.append(Signal("恐惧贪婪指数", fgi_val, "neutral", 0.4))
+
+        # 增强情绪分项（0-100 口径）：资金费率/资本流/动量/波动率
+        for key, label in (
+            ("funding", "资金费率分项"),
+            ("capital_flow", "资本流分项"),
+            ("momentum", "动量分项"),
+            ("volatility", "波动率分项"),
+        ):
+            raw = components.get(key)
+            if raw is None:
+                continue
+            try:
+                val = float(raw)
+            except (TypeError, ValueError):
+                continue
+            if val >= 60:
+                signals.append(Signal(label, val, "long", 0.55))
+            elif val <= 40:
+                signals.append(Signal(label, val, "short", 0.55))
             else:
-                signals.append(Signal("恐惧贪婪指数", fgi, "neutral", 0.4))
+                signals.append(Signal(label, val, "neutral", 0.4))
 
         return signals
 
@@ -95,8 +126,15 @@ class SentimentAgent:
         return f"市场情绪{impact}(score={score:.2f})"
 
     def _generate_charts(self, sentiment: Dict[str, Any]) -> List[ChartSpec]:
-        """生成图表配置 (HC-6)"""
+        """生成图表配置 (HC-6)：无数据时不出图，避免渲染假仪表盘"""
         charts: List[ChartSpec] = []
+        has_data = (
+            sentiment.get("fgi") is not None
+            or sentiment.get("impact") in ("BULLISH", "BEARISH")
+            or bool(sentiment.get("components"))
+        )
+        if not has_data:
+            return charts
 
         # 情绪仪表盘
         score = sentiment.get("score", 0.5)

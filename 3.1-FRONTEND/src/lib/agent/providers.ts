@@ -11,6 +11,7 @@
  * 当前通过 openai-compatible 网关即可覆盖绝大多数模型，不新增依赖。
  */
 import { createOpenAI } from '@ai-sdk/openai';
+import { extractReasoningMiddleware, wrapLanguageModel } from 'ai';
 import type { LanguageModel } from 'ai';
 
 export type AgentProviderKind = 'openai' | 'openai-compatible';
@@ -19,6 +20,86 @@ export interface ResolveModelOptions {
   provider?: string;
   model?: string;
 }
+
+/**
+ * DeepSeek 等 OpenAI 兼容网关把思维链放在 delta.reasoning_content，
+ * 而 @ai-sdk/openai 不识别该字段（直接丢弃，前端因此看不到思考过程）。
+ * 这里在 fetch 层把它搬进 delta.content 并用 <think> 包裹，
+ * 再由 extractReasoningMiddleware 拆回 reasoning part。无该字段时是 no-op。
+ */
+function createReasoningShimFetch(baseFetch: typeof fetch): typeof fetch {
+  return async (input, init) => {
+    const response = await baseFetch(input, init);
+    const contentType = response.headers.get('content-type') ?? '';
+    if (!response.body || !contentType.includes('text/event-stream')) {
+      return response;
+    }
+
+    const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
+    let buffer = '';
+    let inThink = false;
+
+    const rewriteLine = (line: string): string => {
+      if (!line.startsWith('data:')) return line;
+      const payload = line.slice(5).trim();
+      if (!payload || payload === '[DONE]') return line;
+      try {
+        const json = JSON.parse(payload) as {
+          choices?: Array<{ delta?: Record<string, unknown> }>;
+        };
+        if (!Array.isArray(json.choices)) return line;
+        for (const choice of json.choices) {
+          const delta = choice?.delta;
+          if (!delta) continue;
+          const reasoning = delta.reasoning_content;
+          if (typeof reasoning === 'string' && reasoning.length > 0) {
+            delete delta.reasoning_content;
+            delta.content = `${inThink ? '' : '<think>'}${reasoning}`;
+            inThink = true;
+            continue;
+          }
+          const content = delta.content;
+          if (inThink && typeof content === 'string' && content.length > 0) {
+            delta.content = `</think>${content}`;
+            inThink = false;
+          }
+        }
+        return `data: ${JSON.stringify(json)}`;
+      } catch {
+        return line;
+      }
+    };
+
+    const transform = new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        buffer += decoder.decode(chunk, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
+          controller.enqueue(encoder.encode(`${rewriteLine(line)}\n`));
+        }
+      },
+      flush(controller) {
+        if (buffer) controller.enqueue(encoder.encode(rewriteLine(buffer)));
+      },
+    });
+
+    // 已由 fetch 解压过：长度/编码头必须去掉，否则客户端会按旧长度截断
+    const headers = new Headers(response.headers);
+    headers.delete('content-encoding');
+    headers.delete('content-length');
+
+    return new Response(response.body.pipeThrough(transform), {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  };
+}
+
+/** reasoning part 拆分：<think>…</think> → reasoning，其余保持 text */
+const REASONING_MIDDLEWARE = extractReasoningMiddleware({ tagName: 'think' });
 
 /**
  * 解析模型实例。未配置 API key / 缺 baseURL / 未知 provider → null（FAIL-OPEN）。
@@ -31,8 +112,14 @@ export function resolveAgentModel(opts: ResolveModelOptions = {}): LanguageModel
 
   if (provider === 'openai') {
     const modelName = (opts.model ?? process.env.AGENT_MODEL ?? 'gpt-4o-mini').trim();
-    const openai = createOpenAI({ apiKey });
-    return openai(modelName);
+    const openai = createOpenAI({
+      apiKey,
+      fetch: createReasoningShimFetch(globalThis.fetch),
+    });
+    return wrapLanguageModel({
+      model: openai(modelName),
+      middleware: REASONING_MIDDLEWARE,
+    });
   }
 
   if (provider === 'openai-compatible') {
@@ -40,8 +127,17 @@ export function resolveAgentModel(opts: ResolveModelOptions = {}): LanguageModel
     if (!baseURL) return null;
     const modelName = (opts.model ?? process.env.AGENT_MODEL ?? 'qwen-plus').trim();
     // @ai-sdk/openai 以自定义 baseURL 兼容所有 OpenAI 协议端点
-    const compat = createOpenAI({ baseURL, apiKey, name: 'openai-compatible' });
-    return compat(modelName);
+    const compat = createOpenAI({
+      baseURL,
+      apiKey,
+      name: 'openai-compatible',
+      fetch: createReasoningShimFetch(globalThis.fetch),
+    });
+    // 把 <think>…</think> 拆成 reasoning part，经 sendReasoning 透传到前端「思考过程」
+    return wrapLanguageModel({
+      model: compat(modelName),
+      middleware: REASONING_MIDDLEWARE,
+    });
   }
 
   // 未知 provider → 降级

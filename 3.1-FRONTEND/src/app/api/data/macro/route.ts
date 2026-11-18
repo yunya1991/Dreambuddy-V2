@@ -36,10 +36,10 @@ export async function GET() {
     degraded: data.degraded === true,
   };
 
-  // 映射宏观指标
+  // 映射宏观指标（cpi_yoy 供 DSH 宏观子代理的 cpi_yoy 输入；GDP 当前无入库源）
   const metrics = [
     'dxy', 'us10y_yield', 'vix', 'gold', 'sp500',
-    'fed_funds_rate', 'nasdaq', 'm2_supply',
+    'fed_funds_rate', 'nasdaq', 'm2_supply', 'cpi_yoy', 'cpi_ts',
   ];
 
   for (const key of metrics) {
