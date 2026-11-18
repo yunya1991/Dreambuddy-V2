@@ -1,0 +1,172 @@
+# L2 提示词 golden set（SPEC-57 §8 P2 / G-P-3）
+#
+# 用途：提示词版本变更的评测回归基线。`validate_contracts.py --prompts` 会校验
+#       每个 prompt 的 eval_suite 指向本文件且该 suite 用例数 ≥ 20。
+# 口径：只维护「任务类 + 判据 + 阈值」，不复制 prompt 正文（56 ADR-02）。
+# 执行：P4 起交给 45 评测系统跑分；当前由 57 evals/run_prompt_ab.py 复用同构用例。
+version: "1.0"
+owner: "57-Agent提示词工程"
+
+suites:
+  # 分类/路由类：直接引用既有 55 例意图识别用例（不复制）
+  - prompt_id: l2.intent.router
+    task: intent.route
+    metric: joint_accuracy
+    min_cases: 20
+    threshold:
+      delta_pp_min: -3.0
+      mcnemar_p_max: 0.20
+      json_ok_rate_min: 95.0
+    source: "1-ARCHITECTURE/intent-recognition-spec/test-cases.json"
+    cases: 55
+
+  # 分析/辩论类：20 例开放分析题，判据为 must_have_facts 关键词组命中
+  - prompt_id: l2.debate.core
+    task: debate.topic
+    metric: fact_rate
+    min_cases: 20
+    threshold:
+      delta_pp_min: -3.0
+      mcnemar_p_max: 0.20
+      evidence_declared_rate_min: 80.0
+    cases:
+      - id: D01
+        input: "BTC 现价是多少？请给出数据来源与时间戳。"
+        must_have_facts:
+          - text: "给出价格数值或明确说明无法实时获取"
+            match: ["BTC", "美元", "USDT", "无法获取", "实时"]
+          - text: "声明数据来源或时效"
+            match: ["来源", "数据源", "时间", "时效"]
+      - id: D02
+        input: "贵州茅台当前估值处于历史什么分位？"
+        must_have_facts:
+          - text: "给出估值指标口径（PE/PB/分位）"
+            match: ["PE", "市盈率", "PB", "市净率", "分位"]
+          - text: "说明数据时效或无法获取"
+            match: ["历史", "当前", "无法获取", "时效"]
+      - id: D03
+        input: "美联储降息对成长股估值的影响路径是什么？"
+        must_have_facts:
+          - text: "提到贴现率/无风险利率"
+            match: ["贴现率", "无风险利率", "利率", "折现"]
+          - text: "提到久期或现金流折现逻辑"
+            match: ["久期", "现金流", "估值", "远端"]
+      - id: D04
+        input: "北向资金最近流向如何？对哪些板块影响最大？"
+        must_have_facts:
+          - text: "说明资金流向需实时数据"
+            match: ["北向", "资金", "净流入", "净流出", "无法获取"]
+          - text: "给出受影响板块或影响机制"
+            match: ["板块", "权重", "核心资产", "消费", "金融"]
+      - id: D05
+        input: "人民币汇率波动如何影响出口链盈利？"
+        must_have_facts:
+          - text: "提到汇率与结汇/汇兑损益"
+            match: ["汇率", "结汇", "汇兑", "贬值", "升值"]
+          - text: "提到出口企业毛利或订单"
+            match: ["毛利", "订单", "出口", "盈利"]
+      - id: D06
+        input: "半导体行业当前处于周期什么位置？"
+        must_have_facts:
+          - text: "给出周期判断依据（库存/资本开支/价格）"
+            match: ["库存", "资本开支", "价格", "产能"]
+          - text: "区分设计与制造环节"
+            match: ["设计", "制造", "代工", "设备"]
+      - id: D07
+        input: "黄金价格与实际利率的关系现在是否仍然成立？"
+        must_have_facts:
+          - text: "提到实际利率"
+            match: ["实际利率", "TIPS", "通胀"]
+          - text: "提到避险或央行购金"
+            match: ["避险", "央行", "购金", "地缘"]
+      - id: D08
+        input: "原油库存变化对通胀预期的传导有多快？"
+        must_have_facts:
+          - text: "提到库存与价格"
+            match: ["库存", "原油", "价格", "供需"]
+          - text: "提到通胀传导或时滞"
+            match: ["通胀", "CPI", "传导", "时滞"]
+      - id: D09
+        input: "宁德时代的护城河来自哪里？是否可持续？"
+        must_have_facts:
+          - text: "给出护城河来源"
+            match: ["成本", "技术", "规模", "客户", "产业链"]
+          - text: "给出削弱风险"
+            match: ["竞争", "价格战", "替代", "产能过剩"]
+      - id: D10
+        input: "银行净息差还会继续收窄吗？关键变量是什么？"
+        must_have_facts:
+          - text: "提到资产端与负债端"
+            match: ["资产端", "负债端", "贷款利率", "存款利率"]
+          - text: "提到政策或存款成本"
+            match: ["LPR", "降息", "存款", "政策"]
+      - id: D11
+        input: "港股流动性为什么长期弱于 A 股？"
+        must_have_facts:
+          - text: "提到资金来源结构"
+            match: ["外资", "南向", "资金", "流动性"]
+          - text: "提到汇率或制度因素"
+            match: ["汇率", "港元", "制度", "印花税"]
+      - id: D12
+        input: "AI 算力资本开支的高增长还能持续多久？"
+        must_have_facts:
+          - text: "提到资本开支主体"
+            match: ["资本开支", "capex", "云厂商", "数据中心"]
+          - text: "提到需求验证或回报"
+            match: ["回报", "需求", "订单", "利用率"]
+      - id: D13
+        input: "光伏产能出清进行到哪一步？"
+        must_have_facts:
+          - text: "提到产能与价格"
+            match: ["产能", "价格", "硅料", "组件"]
+          - text: "提到出清信号"
+            match: ["减产", "停产", "出清", "亏损"]
+      - id: D14
+        input: "美债期限利差倒挂意味着衰退吗？"
+        must_have_facts:
+          - text: "提到期限利差"
+            match: ["期限利差", "10年", "2年", "倒挂"]
+          - text: "提示不能直接等同于衰退"
+            match: ["不等于", "概率", "不等于衰退", "滞后", "信号"]
+      - id: D15
+        input: "稳定币增发对加密市场流动性有什么影响？"
+        must_have_facts:
+          - text: "提到稳定币供应量"
+            match: ["稳定币", "USDT", "USDC", "增发", "供应"]
+          - text: "提到流动性传导"
+            match: ["流动性", "买盘", "资金", "交易所"]
+      - id: D16
+        input: "白酒行业动销数据说明了什么？"
+        must_have_facts:
+          - text: "提到动销或库存"
+            match: ["动销", "库存", "渠道", "批价"]
+          - text: "区分高端与次高端"
+            match: ["高端", "次高端", "区域酒", "价格带"]
+      - id: D17
+        input: "A 股成交额和情绪指标现在处于什么状态？"
+        must_have_facts:
+          - text: "说明需要实时数据"
+            match: ["成交额", "换手", "情绪", "无法获取"]
+          - text: "给出情绪判据"
+            match: ["涨停", "跌停", "拥挤", "风险偏好"]
+      - id: D18
+        input: "关税变化对出口链的影响如何评估？"
+        must_have_facts:
+          - text: "提到关税与成本转嫁"
+            match: ["关税", "成本", "转嫁", "价格"]
+          - text: "提到区域或订单转移"
+            match: ["东南亚", "转移", "订单", "份额"]
+      - id: D19
+        input: "保险负债成本下降对估值有什么影响？"
+        must_have_facts:
+          - text: "提到负债成本或预定利率"
+            match: ["负债成本", "预定利率", "利差损", "准备金"]
+          - text: "提到估值传导"
+            match: ["估值", "内含价值", "NBV", "利润"]
+      - id: D20
+        input: "房地产销售数据如何影响产业链盈利？"
+        must_have_facts:
+          - text: "提到销售与开工"
+            match: ["销售", "开工", "竣工", "拿地"]
+          - text: "提到产业链环节"
+            match: ["建材", "家电", "物业", "地产链"]

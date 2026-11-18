@@ -15,7 +15,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 # ── 路径设置 ──────────────────────────────────────────────────────────────
 
@@ -24,6 +24,12 @@ SPEC_DIR = Path(__file__).resolve().parent
 
 # 将项目根目录加入 path，以便导入 qwen_client
 sys.path.insert(0, str(BASE_DIR / "16-调控系统" / "core"))
+
+# SPEC-57 P1：宪法注入（运行时拼接，不改 system_prompt.md 字节）
+PROMPT_ID = "l2.intent.router"
+PROMPT_RUNTIME = BASE_DIR / "57-Agent提示词工程" / "runtime"
+if str(PROMPT_RUNTIME) not in sys.path:
+    sys.path.insert(0, str(PROMPT_RUNTIME))
 
 try:
     from qwen_client import QWEN_MODEL, chat_completion  # noqa: F401
@@ -65,6 +71,21 @@ def load_system_prompt() -> str:
         return content
 
     return "\n".join(prompt_lines)
+
+
+def build_runtime_prompt() -> Tuple[str, Dict[str, Any]]:
+    """基础 prompt + 宪法注入块（lite：P4 输出契约 + C-11），并返回出口 meta。
+
+    注入失败时 FAIL-OPEN：返回原 prompt 与空 meta，不阻断分类。
+    """
+    base = load_system_prompt()
+    try:
+        from prompt_context_57 import inject_system_prompt
+
+        prompt, meta = inject_system_prompt(PROMPT_ID, base)
+        return prompt, meta or {}
+    except Exception:  # noqa: BLE001
+        return base, {}
 
 
 # ── 槽位后置归一化 ────────────────────────────────────────────────────────
@@ -249,7 +270,7 @@ def classify_intent(user_input: str, context: Optional[Dict] = None) -> Dict[str
     Returns:
         结构化的意图识别结果
     """
-    system_prompt = load_system_prompt()
+    system_prompt, prompt_meta = build_runtime_prompt()
 
     # 添加上下文信息（如果有）
     user_message = user_input
@@ -259,9 +280,12 @@ def classify_intent(user_input: str, context: Optional[Dict] = None) -> Dict[str
 
     if HAS_QWEN:
         result = _classify_with_qwen(system_prompt, user_message)
+        result["meta"] = prompt_meta
         return normalize_slots(result)
     else:
-        return _classify_mock(user_input)
+        result = _classify_mock(user_input)
+        result["meta"] = prompt_meta
+        return result
 
 
 def _classify_with_qwen(system_prompt: str, user_message: str) -> Dict[str, Any]:

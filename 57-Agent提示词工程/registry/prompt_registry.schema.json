@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dreambuddy.local/57/prompt_registry.schema.json",
+  "title": "L2 Prompt Registry v1.0 (IF-P-1)",
+  "description": "L2 提示词注册表：只登记资产位置、版本、指纹与约束来源，不复述任何 prompt 正文。append-only，已发布版本不可原地修改。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "constitution_version",
+    "fingerprint_algorithm",
+    "persona",
+    "prompts"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.1" },
+    "persona": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["language", "style", "disclaimer", "forbidden_marketing"],
+      "description": "L2 统一人格与免责口径（SPEC-57 §3.2），由运行时注入，禁止各入口各自维护。",
+      "properties": {
+        "language": { "const": "zh" },
+        "style": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "disclaimer": { "type": "string", "minLength": 8 },
+        "forbidden_marketing": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "constitution_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "fingerprint_algorithm": { "type": "string", "minLength": 8 },
+    "prompts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "prompt_id",
+          "version",
+          "layer",
+          "sublane",
+          "role",
+          "task",
+          "owner_module",
+          "constitution_version",
+          "asset_path",
+          "asset_kind",
+          "source_files",
+          "variables",
+          "output_contract",
+          "tool_set_ref",
+          "token_budget",
+          "eval_suite",
+          "fingerprint",
+          "status",
+          "depends_on",
+          "changelog"
+        ],
+        "properties": {
+          "prompt_id": {
+            "type": "string",
+            "pattern": "^l2\\.[a-z0-9_]+\\.[a-z0-9_]+$"
+          },
+          "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+          "layer": { "const": "L2" },
+          "sublane": { "enum": ["L2-K", "L2-E", "L2-G", "L2-P", "L2-A"] },
+          "role": {
+            "enum": [
+              "l2.planner",
+              "l2.worker",
+              "l2.debater",
+              "l2.trainer",
+              "l2.emergence",
+              "l2.adapter",
+              "l2.app"
+            ]
+          },
+          "task": { "type": "string", "pattern": "^[a-z_]+\\.[a-z_]+$" },
+          "owner_module": { "type": "string", "minLength": 1 },
+          "constitution_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+          },
+          "asset_path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "仓库根相对路径；prompt 正文所在文件或目录。注册表不复制正文。"
+          },
+          "asset_kind": { "enum": ["file", "tree"] },
+          "source_files": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^SRC-\\d{2}$" },
+            "description": "宪法 §2 登记表 ID，只引用不复述。"
+          },
+          "variables": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+          },
+          "output_contract": {
+            "type": ["string", "null"],
+            "description": "null = 输出契约尚未冻结（P2 补齐），不得据此判通过。"
+          },
+          "tool_set_ref": {
+            "type": ["string", "null"],
+            "pattern": "^l[0-2]\\.[a-z0-9_]+\\.mcp$",
+            "description": "与 47 shell id 对齐；只记引用，不复制工具清单。"
+          },
+          "token_budget": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["fixed", "context"],
+            "properties": {
+              "fixed": { "type": "integer", "minimum": 0 },
+              "context": { "type": "integer", "minimum": 0 }
+            }
+          },
+          "eval_suite": {
+            "type": ["string", "null"],
+            "description": "指向 45 托管的 golden set；null = 尚未建立（P0 存量资产状态）。"
+          },
+          "fingerprint": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "status": { "enum": ["draft", "gated", "active", "deprecated"] },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "changelog": { "type": "string", "minLength": 1 },
+          "notes": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

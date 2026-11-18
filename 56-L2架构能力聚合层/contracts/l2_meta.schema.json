@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dreambuddy.local/56/l2_meta.schema.json",
+  "title": "L2Envelope.meta 增量（IF-P-3 / SPEC-57 §5.4）",
+  "description": "在 56 IF-3 L2Envelope.meta 上做次版本增量：6 个提示词溯源字段 + constitution_tokens。只增不改既有字段语义。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "prompt_id",
+    "prompt_version",
+    "prompt_fingerprint",
+    "constitution_version",
+    "constitution_tokens",
+    "tool_set_fingerprint",
+    "reasoning_effort"
+  ],
+  "properties": {
+    "prompt_id": {
+      "type": "string",
+      "pattern": "^l2\\.[a-z0-9_]+\\.[a-z0-9_]+$"
+    },
+    "prompt_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "prompt_fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "资产内容指纹；与注册表登记值不一致即 E_CONSTITUTION_DRIFT（G-P-2）。"
+    },
+    "constitution_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "constitution_tokens": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "本次注入宪法段的估算 token 数，计入 G-P-7 固定预算。"
+    },
+    "tool_set_fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "当次 tool_set 快照指纹（空集亦有确定指纹），用于 G-P-4 对账。"
+    },
+    "reasoning_effort": { "enum": ["low", "medium", "high"] }
+  }
+}

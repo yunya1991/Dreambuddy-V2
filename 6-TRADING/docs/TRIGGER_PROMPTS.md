@@ -216,7 +216,7 @@ P0.3: 验证 Screen1 有效期（valid_until 字段），已过期则先触发 S
 ## 五、Process D 触发提示词（每周一 06:00）
 
 ```
-运行 6-TRADING Process D 复盘（三级学习闭环 v1.3）：
+运行 6-TRADING Process D 复盘（三级学习闭环）：
 
 Step 0 [并行 — A8 + OE + PR 三路]:
   A) [A8-theory-practice-verification] 知行合一批评：

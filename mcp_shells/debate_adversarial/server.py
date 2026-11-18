@@ -40,6 +40,11 @@ if str(_BOT_ROOT) not in sys.path:
 from mcp_shells._shared.envelope_wrap import wrap  # noqa: E402
 from mcp_shells._shared.shell_runtime import run_stdio  # noqa: E402
 
+# SPEC-57 P1：提示词溯源字段（meta 增量，IF-P-3）
+_PROMPT_RUNTIME = _REPO_ROOT / "57-Agent提示词工程" / "runtime"
+if str(_PROMPT_RUNTIME) not in sys.path:
+    sys.path.insert(0, str(_PROMPT_RUNTIME))
+
 SHELL_SOURCE = "l2.debate.mcp"  # DEC-03：Phase 1 重命名，保留 agent.debate.mcp 别名 1 迭代
 _JOB_DIR = Path(__file__).resolve().parent / "runtime" / "jobs"
 _JOB_DIR.mkdir(parents=True, exist_ok=True)
@@ -74,6 +79,16 @@ def _settings(provider: str | None = None, model: str | None = None):
         timeout_sec=float(os.environ.get("DEBATE_TIMEOUT_SEC", "90")),
         max_retries=int(os.environ.get("DEBATE_MAX_RETRIES", "2")),
     )
+
+
+def _prompt_meta() -> dict[str, Any]:
+    """l2.debate.core 的溯源字段；失败返回空 dict（FAIL-OPEN，不阻断壳）。"""
+    try:
+        from prompt_context_57 import build_meta, injection_enabled
+
+        return build_meta("l2.debate.core") if injection_enabled() else {}
+    except Exception:  # noqa: BLE001
+        return {}
 
 
 def _job_path(debate_id: str) -> Path:
@@ -497,11 +512,13 @@ def start_debate(arguments: dict[str, Any]) -> str:
         name=f"debate-{debate_id}",
     )
     thread.start()
+    started_meta = {"tool": "start_debate", "judge": judge}
+    started_meta.update(_prompt_meta())
     return json.dumps(
         wrap(
             {"debate_id": debate_id, "status": "running", "rounds": rounds},
             SHELL_SOURCE,
-            meta={"tool": "start_debate", "judge": judge},
+            meta=started_meta,
         ),
         ensure_ascii=False,
     )
@@ -545,8 +562,10 @@ def get_debate_result(arguments: dict[str, Any]) -> str:
             ),
             ensure_ascii=False,
         )
+    result_meta = {"tool": "get_debate_result"}
+    result_meta.update(_prompt_meta())
     return json.dumps(
-        wrap(job, SHELL_SOURCE, meta={"tool": "get_debate_result"}),
+        wrap(job, SHELL_SOURCE, meta=result_meta),
         ensure_ascii=False,
     )
 

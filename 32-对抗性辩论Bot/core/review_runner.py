@@ -12,9 +12,11 @@ transcript + verdict + 元数据，便于其他系统直接消费。
 from __future__ import annotations
 
 import asyncio
+import sys
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from core.agents import BearAgent, BullAgent, JudgeAgent
@@ -22,6 +24,40 @@ from core.cross_exam import run_cross_examination
 from core.llm_compat import LLMSettings, create_llm_client
 from core.models import Turn
 from core.profiles import get_profile
+
+# ── SPEC-57 P1：宪法注入（运行时拼接，不改 prompt 资产字节） ──
+_PROMPT_RUNTIME = Path(__file__).resolve().parents[2] / "57-Agent提示词工程" / "runtime"
+_PROMPT_ID = "l2.debate.core"
+
+
+def _load_prompt_context() -> Any:
+    """加载 57 运行时模块；不可用时返回 None（FAIL-OPEN，不阻断辩论）。"""
+    if not _PROMPT_RUNTIME.is_dir():
+        return None
+    if str(_PROMPT_RUNTIME) not in sys.path:
+        sys.path.insert(0, str(_PROMPT_RUNTIME))
+    try:
+        import prompt_context_57
+
+        return prompt_context_57
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _wrap_with_constitution(debater_llm: Any, judge_llm: Any):
+    """给 LLM 客户端套宪法注入装饰器，并返回本次 meta（供出口对账）。"""
+    module = _load_prompt_context()
+    if module is None or not module.injection_enabled():
+        return debater_llm, judge_llm, None
+    try:
+        prompt_meta = module.build_meta(_PROMPT_ID)
+    except Exception:  # noqa: BLE001 — 注入失败不影响辩论主流程
+        prompt_meta = None
+    return (
+        module.wrap_llm(debater_llm, _PROMPT_ID),
+        module.wrap_llm(judge_llm, _PROMPT_ID),
+        prompt_meta,
+    )
 
 
 def _turn_dict(turn: Turn) -> dict:
@@ -174,6 +210,7 @@ async def run_review(
 
     debater_llm = debater_llm or create_llm_client(settings)
     judge_llm = judge_llm or create_llm_client(settings)
+    debater_llm, judge_llm, prompt_meta = _wrap_with_constitution(debater_llm, judge_llm)
 
     bull = BullAgent(debater_llm, max_tokens=2000, profile=profile_obj)
     bear = BearAgent(debater_llm, max_tokens=2000, profile=profile_obj)
@@ -237,6 +274,7 @@ async def run_review(
         "adjudication": adjudication_result is not None,
         "adjudication_error": adjudication_error,
         "research": research_meta,
+        "prompt": prompt_meta,
     }
     return ReviewResult(
         topic=topic,

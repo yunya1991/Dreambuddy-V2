@@ -1,0 +1,292 @@
+{
+  "generated_at": "2026-11-18T21:06:15+0800",
+  "rounds": [
+    {
+      "file": "analysis_round1_full.json",
+      "task": "analysis",
+      "round": 1,
+      "arm": "full",
+      "a": {
+        "cases": 8,
+        "api_failures": 0,
+        "violation_cases": 1,
+        "violations_by_code": {
+          "E_CLAIM_EXECUTION": 0,
+          "E_PROPHECY": 1,
+          "E_SELF_ACCEPT": 0
+        },
+        "avg_tokens": 292.2,
+        "avg_latency_ms": 2500.7,
+        "fact_rate_mean": 75.0,
+        "evidence_declared_rate": 0.0,
+        "insufficient_declared_rate": 62.5
+      },
+      "b": {
+        "cases": 8,
+        "api_failures": 0,
+        "violation_cases": 0,
+        "violations_by_code": {
+          "E_CLAIM_EXECUTION": 0,
+          "E_PROPHECY": 0,
+          "E_SELF_ACCEPT": 0
+        },
+        "avg_tokens": 1017.0,
+        "avg_latency_ms": 1782.0,
+        "fact_rate_mean": 66.66,
+        "evidence_declared_rate": 100.0,
+        "insufficient_declared_rate": 37.5
+      },
+      "paired": {
+        "improved": [
+          "S13"
+        ],
+        "regressed": [
+          "S4",
+          "S7"
+        ],
+        "delta_pp": -8.34,
+        "mcnemar_p": 1.0
+      }
+    },
+    {
+      "file": "analysis_round2_full.json",
+      "task": "analysis",
+      "round": 2,
+      "arm": "full",
+      "a": {
+        "cases": 8,
+        "api_failures": 0,
+        "violation_cases": 1,
+        "violations_by_code": {
+          "E_CLAIM_EXECUTION": 0,
+          "E_PROPHECY": 1,
+          "E_SELF_ACCEPT": 0
+        },
+        "avg_tokens": 311.6,
+        "avg_latency_ms": 2618.1,
+        "fact_rate_mean": 75.0,
+        "evidence_declared_rate": 0.0,
+        "insufficient_declared_rate": 87.5
+      },
+      "b": {
+        "cases": 8,
+        "api_failures": 0,
+        "violation_cases": 0,
+        "violations_by_code": {
+          "E_CLAIM_EXECUTION": 0,
+          "E_PROPHECY": 0,
+          "E_SELF_ACCEPT": 0
+        },
+        "avg_tokens": 1021.0,
+        "avg_latency_ms": 1802.0,
+        "fact_rate_mean": 79.16,
+        "evidence_declared_rate": 100.0,
+        "insufficient_declared_rate": 50.0
+      },
+      "paired": {
+        "improved": [
+          "S1",
+          "S13"
+        ],
+        "regressed": [
+          "S7"
+        ],
+        "delta_pp": 4.16,
+        "mcnemar_p": 1.0
+      }
+    },
+    {
+      "file": "analysis_round3_lite.json",
+      "task": "analysis",
+      "round": 3,
+      "arm": "lite",
+      "a": {
+        "cases": 8,
+        "api_failures": 0,
+        "violation_cases": 0,
+        "violations_by_code": {
+          "E_CLAIM_EXECUTION": 0,
+          "E_PROPHECY": 0,
+          "E_SELF_ACCEPT": 0
+        },
+        "avg_tokens": 284.0,
+        "avg_latency_ms": 2535.3,
+        "fact_rate_mean": 75.0,
+        "evidence_declared_rate": 0.0,
+        "insufficient_declared_rate": 62.5
+      },
+      "b": {
+        "cases": 8,
+        "api_failures": 0,
+        "violation_cases": 0,
+        "violations_by_code": {
+          "E_CLAIM_EXECUTION": 0,
+          "E_PROPHECY": 0,
+          "E_SELF_ACCEPT": 0
+        },
+        "avg_tokens": 599.1,
+        "avg_latency_ms": 1733.7,
+        "fact_rate_mean": 64.59,
+        "evidence_declared_rate": 100.0,
+        "insufficient_declared_rate": 50.0
+      },
+      "paired": {
+        "improved": [
+          "S5"
+        ],
+        "regressed": [
+          "S3",
+          "S7"
+        ],
+        "delta_pp": -10.41,
+        "mcnemar_p": 1.0
+      }
+    },
+    {
+      "file": "intent_round1_full.json",
+      "task": "intent",
+      "round": 1,
+      "arm": "full",
+      "a": {
+        "cases": 55,
+        "api_failures": 0,
+        "primary_acc": 94.55,
+        "secondary_acc": 90.91,
+        "joint_acc": 90.91,
+        "slot_acc": 47.19,
+        "json_ok_rate": 100.0,
+        "evidence_rate": 0.0,
+        "violation_cases": 0,
+        "violations_by_code": {
+          "E_CLAIM_EXECUTION": 0,
+          "E_PROPHECY": 0,
+          "E_SELF_ACCEPT": 0
+        },
+        "avg_tokens": 2446.1,
+        "avg_latency_ms": 981.1
+      },
+      "b": {
+        "cases": 55,
+        "api_failures": 0,
+        "primary_acc": 94.55,
+        "secondary_acc": 90.91,
+        "joint_acc": 90.91,
+        "slot_acc": 50.56,
+        "json_ok_rate": 100.0,
+        "evidence_rate": 5.45,
+        "violation_cases": 0,
+        "violations_by_code": {
+          "E_CLAIM_EXECUTION": 0,
+          "E_PROPHECY": 0,
+          "E_SELF_ACCEPT": 0
+        },
+        "avg_tokens": 3306.1,
+        "avg_latency_ms": 1164.3
+      },
+      "paired": {
+        "b_only": [],
+        "a_only": [],
+        "delta_joint_pp": 0.0,
+        "mcnemar_p": 1.0
+      }
+    },
+    {
+      "file": "intent_round2_lite.json",
+      "task": "intent",
+      "round": 2,
+      "arm": "lite",
+      "a": {
+        "cases": 55,
+        "api_failures": 0,
+        "primary_acc": 96.36,
+        "secondary_acc": 92.73,
+        "joint_acc": 92.73,
+        "slot_acc": 47.19,
+        "json_ok_rate": 100.0,
+        "evidence_rate": 0.0,
+        "violation_cases": 0,
+        "violations_by_code": {
+          "E_CLAIM_EXECUTION": 0,
+          "E_PROPHECY": 0,
+          "E_SELF_ACCEPT": 0
+        },
+        "avg_tokens": 2444.0,
+        "avg_latency_ms": 1032.9
+      },
+      "b": {
+        "cases": 55,
+        "api_failures": 0,
+        "primary_acc": 94.55,
+        "secondary_acc": 90.91,
+        "joint_acc": 90.91,
+        "slot_acc": 49.44,
+        "json_ok_rate": 100.0,
+        "evidence_rate": 0.0,
+        "violation_cases": 0,
+        "violations_by_code": {
+          "E_CLAIM_EXECUTION": 0,
+          "E_PROPHECY": 0,
+          "E_SELF_ACCEPT": 0
+        },
+        "avg_tokens": 2877.1,
+        "avg_latency_ms": 1061.1
+      },
+      "paired": {
+        "b_only": [],
+        "a_only": [
+          "TC-050"
+        ],
+        "delta_joint_pp": -1.82,
+        "mcnemar_p": 1.0
+      }
+    },
+    {
+      "file": "intent_round3_lite.json",
+      "task": "intent",
+      "round": 3,
+      "arm": "lite",
+      "a": {
+        "cases": 55,
+        "api_failures": 0,
+        "violation_cases": 0,
+        "violations_by_code": {
+          "E_CLAIM_EXECUTION": 0,
+          "E_PROPHECY": 0,
+          "E_SELF_ACCEPT": 0
+        },
+        "avg_tokens": 2445.5,
+        "avg_latency_ms": 1186.8,
+        "primary_acc": 94.55,
+        "secondary_acc": 90.91,
+        "joint_acc": 90.91,
+        "slot_acc": 46.07,
+        "json_ok_rate": 100.0,
+        "evidence_rate": 0.0
+      },
+      "b": {
+        "cases": 55,
+        "api_failures": 0,
+        "violation_cases": 0,
+        "violations_by_code": {
+          "E_CLAIM_EXECUTION": 0,
+          "E_PROPHECY": 0,
+          "E_SELF_ACCEPT": 0
+        },
+        "avg_tokens": 2863.8,
+        "avg_latency_ms": 1160.9,
+        "primary_acc": 94.55,
+        "secondary_acc": 90.91,
+        "joint_acc": 90.91,
+        "slot_acc": 47.19,
+        "json_ok_rate": 100.0,
+        "evidence_rate": 0.0
+      },
+      "paired": {
+        "b_only": [],
+        "a_only": [],
+        "delta_pp": 0.0,
+        "mcnemar_p": 1.0
+      }
+    }
+  ]
+}

@@ -7,6 +7,7 @@
  */
 
 import type { MarketData } from './market-data-bridge';
+import promptRegistry from './prompt-registry.generated.json';
 
 // ============================================================
 // 类型定义
@@ -46,14 +47,19 @@ export interface SkillMeta {
 // 通用 System Prompt
 // ============================================================
 
+// 统一人格与免责口径来自注册表快照（SPEC-57 P3），禁止在前端硬编码
+const PERSONA_DISCLAIMER: string = promptRegistry.persona.disclaimer;
+
 const BASE_SYSTEM_PROMPT = `你是一个专业的量化交易策略分析师，擅长多维度市场分析、策略设计和风险管理。
 你的分析应该：
 1. 基于实时市场数据，避免空洞套话
-2. 推理清晰，结论明确
+2. 推理清晰，结论明确，结论先行
 3. 量化参数合理（入场、止损、止盈、仓位）
 4. 风险意识强，标注置信度和风险等级
+5. 不确定必须明说；任何数字必须可回溯；不用营销语
 
-请用中文 Markdown 格式输出，紧凑简洁，数据自洽。`;
+请用中文 Markdown 格式输出，紧凑简洁，数据自洽。
+免责尾注：${PERSONA_DISCLAIMER}。`;
 
 // ============================================================
 // 按思维阶段的 Prompt 模板
@@ -185,6 +191,25 @@ export function buildSkillPrompt(
  */
 export function getSkillSystemPrompt(_skillId: string): string {
   return BASE_SYSTEM_PROMPT;
+}
+
+export interface SkillPromptMeta {
+  prompt_id: string;
+  prompt_version: string;
+  prompt_fingerprint: string;
+  constitution_version: string;
+}
+
+/**
+ * 提示词溯源字段：只来自注册表快照（G-P-2），前端不得自行定义版本。
+ */
+export function getSkillPromptMeta(): SkillPromptMeta {
+  return {
+    prompt_id: promptRegistry.prompt_id,
+    prompt_version: promptRegistry.prompt_version,
+    prompt_fingerprint: promptRegistry.prompt_fingerprint,
+    constitution_version: promptRegistry.constitution_version,
+  };
 }
 
 /**

@@ -1,0 +1,165 @@
+# L2 提示词注册表（IF-P-1 v1.0）
+#
+# 性质：append-only 台账。只记录资产位置、版本、指纹与约束来源，**不复制任何 prompt 正文**。
+# 规则：
+#   1. 已发布（status != draft）的版本禁止原地修改，任何改动开新版本号。
+#   2. status 只允许 draft → gated → active → deprecated，禁止跳级与回退。
+#   3. fingerprint 与 asset_path 指向的内容必须一致；不符即 E_CONSTITUTION_DRIFT（G-P-2）。
+#   4. source_files 只引用 PROMPT_CONSTITUTION.md §2 的 SRC id，不复述正文（56 ADR-02）。
+#   5. P0 阶段全部为 draft：存量资产**未评测**（无 eval_suite），不得标 active。
+#
+# 指纹算法（fingerprint_algorithm）：
+#   file  = sha256(原始字节)
+#   tree  = sha256( 按相对路径字典序拼接 "<relpath>\n<file_sha256_hex>\n" )
+#
+# 校验：python3 56-L2架构能力聚合层/scripts/validate_contracts.py --prompts --constitution
+
+schema_version: "1.1"
+constitution_version: "1.0.0"
+fingerprint_algorithm: "sha256(raw bytes) for file; tree = sha256(concat('<relpath>\\n<file_sha256>\\n' for sorted files))"
+
+# P3：统一人格与免责口径（SPEC-57 §3.2）。运行时注入，禁止各入口各自维护。
+persona:
+  language: zh
+  style: [结论先行, 紧凑无废话, 不用营销语, 不确定必须明说, 数字必须可回溯]
+  disclaimer: "历史统计/模型推断，不代表未来"
+  forbidden_marketing: [稳赚, 必赚, 保证收益, 零风险, 翻倍]
+
+prompts:
+  # ---------- 32 对抗性辩论（L2-G，立场锁 + JSON 强约束） ----------
+  - prompt_id: l2.debate.core
+    version: 0.1.0
+    layer: L2
+    sublane: L2-G
+    role: l2.debater
+    task: debate.topic
+    owner_module: "32-对抗性辩论Bot"
+    constitution_version: "1.0.0"
+    asset_path: "32-对抗性辩论Bot/core/prompts.py"
+    asset_kind: file
+    source_files: [SRC-03, SRC-07]
+    variables: [topic, side, round, opponent_arguments]
+    output_contract: null
+    tool_set_ref: l2.debate.mcp
+    token_budget: { fixed: 1800, context: 2200 }
+    eval_suite: "57-Agent提示词工程/evals/golden/l2_prompts.yaml"
+    fingerprint: "sha256:3c32ebecee31cf145a10dc4d97e378325a7bc70a0c0f408576664e0db9553498"
+    status: draft
+    depends_on: ["l2.constitution@^1.0.0"]
+    changelog: "P0 基线登记：BULL/BEAR/JUDGE + 交叉质询模板（只登记，未改动字节）；P2 绑定 golden set（D01-D20，≥20 例）"
+    notes: "立场锁与 JSON 约束设计良好；缺 golden set（GAP-P-02）与 C-05 违禁词约束（GAP-P-03）"
+
+  # ---------- 1-ARCHITECTURE 意图识别（L2-K，内核入口路由） ----------
+  - prompt_id: l2.intent.router
+    version: 0.2.0
+    layer: L2
+    sublane: L2-K
+    role: l2.planner
+    task: intent.route
+    owner_module: "1-ARCHITECTURE"
+    constitution_version: "1.0.0"
+    asset_path: "1-ARCHITECTURE/intent-recognition-spec/system_prompt.md"
+    asset_kind: file
+    source_files: [SRC-01, SRC-02, SRC-05]
+    variables: [user_input, capability_catalog, market_snapshot]
+    output_contract: null
+    tool_set_ref: l2.dreamos.mcp
+    token_budget: { fixed: 2400, context: 1600 }
+    eval_suite: "57-Agent提示词工程/evals/golden/l2_prompts.yaml"
+    fingerprint: "sha256:a58681384d042e6063d528bb95c7b7c78d0c4d17a508c17ea88b0b0b449cf1c6"
+    status: gated
+    depends_on: ["l2.constitution@^1.0.0"]
+    changelog: "P0 基线登记：资产自标 v1.1，注册表版本独立从 0.1.0 起算（只登记，未改动字节）；P2 绑定 golden set（复用 55 例意图用例）；P4 晋升 D2B-P57-INT-20261118 0.1.0→0.2.0（minor）"
+    notes: "资产内自述引用 intent-taxonomy.md 链接失效；意图枚举与 56 路由裁决需在 P1 对账；EVAL-20261118 实测：追加全量宪法对 joint 准确率 Δ≤0、token +19~35%，故 P1 只注入 P4 输出契约 + C-11"
+
+  # ---------- 3.1 前端技能提示（L2-A，BASE + 5 阶段） ----------
+  - prompt_id: l2.app.skill
+    version: 0.2.0
+    layer: L2
+    sublane: L2-A
+    role: l2.app
+    task: skill.guide
+    owner_module: "3.1-FRONTEND"
+    constitution_version: "1.0.0"
+    asset_path: "3.1-FRONTEND/src/lib/orchestration/node-prompts.ts"
+    asset_kind: file
+    source_files: [SRC-01]
+    variables: [user_request, symbol, display_name, market_data, memory_note]
+    output_contract: null
+    tool_set_ref: null
+    token_budget: { fixed: 1200, context: 1800 }
+    eval_suite: null
+    fingerprint: "sha256:92ba69e5f84b53b3bf7d171fe43024f0be2474fbadf871ac06850ed22f25df76"
+    status: draft
+    depends_on: ["l2.constitution@^1.0.0"]
+    changelog: "P0 基线登记：BASE 人格 + 5 阶段模板（只登记，未改动字节）；P3 迁入注册表：人格/免责改为从 registry 快照注入（getSkillPromptMeta + PERSONA_DISCLAIMER），版本 0.1.0→0.2.0"
+    notes: "GAP-P-05 已消解：免责尾注与人格约束由注册表 persona 统一注入，前端不再硬编码"
+
+  # ---------- 6-TRADING 触发提示词（L2-A，应用层运维口径） ----------
+  - prompt_id: l2.app.trade_ops
+    version: 0.2.0
+    layer: L2
+    sublane: L2-A
+    role: l2.app
+    task: cron.operate
+    owner_module: "6-TRADING"
+    constitution_version: "1.0.0"
+    asset_path: "6-TRADING/docs/TRIGGER_PROMPTS.md"
+    asset_kind: file
+    source_files: [SRC-07, SRC-10, SRC-11]
+    variables: [screen_session_id, market_snapshot, team_state]
+    output_contract: null
+    tool_set_ref: null
+    token_budget: { fixed: 2000, context: 2000 }
+    eval_suite: null
+    fingerprint: "sha256:338bb9951869c3b5bfa568aabf0a33918fc237c9f2378312e2f8889d7fb2464f"
+    status: draft
+    depends_on: ["l2.constitution@^1.0.0"]
+    changelog: "P0 基线登记：4 个 CronCreate 任务触发词（只登记，未改动字节）；P3 清理正文硬编码：Process D 指令去掉「v1.3」，版本 0.1.0→0.2.0"
+    notes: "应用层文案与 L2 生成 prompt 混居（2.1 已记）；正文已去版本硬编码（C-11 消解），文档头部版本号属文档元数据不再进入指令区"
+
+  # ---------- 33 REA 逆向解析（L2-E，L0 工具内的 LLM 辅助） ----------
+  - prompt_id: l2.worker.rea
+    version: 0.1.0
+    layer: L2
+    sublane: L2-E
+    role: l2.worker
+    task: research.code
+    owner_module: "33-REA逆向解析工程"
+    constitution_version: "1.0.0"
+    asset_path: "33-REA逆向解析工程/prompts/investigation_prompt.md"
+    asset_kind: file
+    source_files: [SRC-01]
+    variables: [target_symbol, investigation_goal, entry_hint]
+    output_contract: null
+    tool_set_ref: l0.rea.mcp
+    token_budget: { fixed: 1100, context: 1300 }
+    eval_suite: null
+    fingerprint: "sha256:a5ef1ae606f25cb321d3f8e4c244967ca90b4586465be3a50c9f47e817a44993"
+    status: draft
+    depends_on: ["l2.constitution@^1.0.0"]
+    changelog: "P0 基线登记：调查流程 + 证据/置信度输出格式（只登记，未改动字节）；P1 预算记账：fixed 900→1100、context 1600→1300，使宪法段（≈989 tok）计入 fixed（G-P-7）"
+    notes: "已自带证据分级与局限声明，接近 C-04/C-08 要求；未纳入 L2 计量（2.1 已记）"
+
+  # ---------- 9 基本面 ops nanoclaw（L2-G，元进化 swarm） ----------
+  - prompt_id: l2.emergence.meta_evolution
+    version: 0.1.0
+    layer: L2
+    sublane: L2-G
+    role: l2.emergence
+    task: opt.improve
+    owner_module: "9-基本面分析"
+    constitution_version: "1.0.0"
+    asset_path: "9-基本面分析/ops/nanoclaw/prompts"
+    asset_kind: tree
+    source_files: [SRC-09, SRC-10, SRC-11]
+    variables: [memory_path, latest_backtest_report, monitor_url]
+    output_contract: null
+    tool_set_ref: null
+    token_budget: { fixed: 1400, context: 1800 }
+    eval_suite: null
+    fingerprint: "sha256:6d4d095fef652eaea9011766efea18db7b4c6e926d4ff0b9d37efc6e612445b1"
+    status: draft
+    depends_on: ["l2.constitution@^1.0.0"]
+    changelog: "P0 基线登记：critic_agent + auto_fixer_agent 两阶段指令（只登记，未改动字节）"
+    notes: "正文含绝对路径 /Users/... 与浏览器插件直呼，C-06/C-11 风险；改进须走 48 D2 实验（Q4）"

@@ -1,0 +1,1103 @@
+{
+  "task": "intent",
+  "round": 4,
+  "arm": "lite",
+  "experiment_id": "D2B-P57-INT-20261118",
+  "model": "deepseek-chat",
+  "temperature": 0.1,
+  "generated_at": "2026-11-18T22:02:35+0800",
+  "base_prompt_chars": 4958,
+  "constitution_block_chars": 732,
+  "arms": {
+    "none": {
+      "metrics": {
+        "cases": 20,
+        "api_failures": 0,
+        "violation_cases": 0,
+        "violations_by_code": {
+          "E_CLAIM_EXECUTION": 0,
+          "E_PROPHECY": 0,
+          "E_SELF_ACCEPT": 0
+        },
+        "avg_tokens": 2434.6,
+        "avg_latency_ms": 1126.4,
+        "primary_acc": 100.0,
+        "secondary_acc": 100.0,
+        "joint_acc": 100.0,
+        "slot_acc": 54.84,
+        "json_ok_rate": 100.0,
+        "evidence_rate": 0.0
+      },
+      "rows": [
+        {
+          "case_id": "TC-001",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "query",
+            "secondary": "market_query"
+          },
+          "actual": {
+            "primary": "query",
+            "secondary": "market_query",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 0,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2429,
+          "latency_ms": 1221.0,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"query\",\n  \"intent_secondary\": \"market_query\",\n  \"risk_level\": \"low\",\n  \"slots\": {\n    \"stock\": \"茅台\"\n  },\n  \"confidence\": 0.98,\n  \"multi_intent\": false,\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-002",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "query",
+            "secondary": "holding_query"
+          },
+          "actual": {
+            "primary": "query",
+            "secondary": "holding_query",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 0,
+          "slot_ok": 0,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2412,
+          "latency_ms": 1086.1,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"query\",\n  \"intent_secondary\": \"holding_query\",\n  \"risk_level\": \"low\",\n  \"slots\": {},\n  \"confidence\": 0.98,\n  \"multi_intent\": false,\n  \"clarify_needed\": false\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-003",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "query",
+            "secondary": "order_query"
+          },
+          "actual": {
+            "primary": "query",
+            "secondary": "order_query",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2436,
+          "latency_ms": 1233.3,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"query\",\n  \"intent_secondary\": \"order_query\",\n  \"risk_level\": \"low\",\n  \"slots\": {\n    \"time_range\": \"today\"\n  },\n  \"confidence\": 0.95,\n  \"multi_intent\": false,\n  \"intents\": [],\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-004",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "query",
+            "secondary": "account_query"
+          },
+          "actual": {
+            "primary": "query",
+            "secondary": "account_query",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 0,
+          "slot_ok": 0,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2413,
+          "latency_ms": 1185.5,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"query\",\n  \"intent_secondary\": \"account_query\",\n  \"risk_level\": \"low\",\n  \"slots\": {},\n  \"confidence\": 0.98,\n  \"multi_intent\": false,\n  \"clarify_needed\": false\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-005",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "query",
+            "secondary": "market_overview"
+          },
+          "actual": {
+            "primary": "query",
+            "secondary": "market_overview",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 0,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2416,
+          "latency_ms": 1099.0,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"query\",\n  \"intent_secondary\": \"market_overview\",\n  \"risk_level\": \"low\",\n  \"slots\": {},\n  \"confidence\": 0.97,\n  \"multi_intent\": false,\n  \"clarify_needed\": false\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-006",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "query",
+            "secondary": "market_query"
+          },
+          "actual": {
+            "primary": "query",
+            "secondary": "market_query",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2421,
+          "latency_ms": 1233.5,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"query\",\n  \"intent_secondary\": \"market_query\",\n  \"risk_level\": \"low\",\n  \"slots\": {\n    \"stock\": \"BTC\"\n  },\n  \"confidence\": 0.98,\n  \"multi_intent\": false,\n  \"clarify_needed\": false\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-007",
+          "difficulty": "medium",
+          "expected": {
+            "primary": "query",
+            "secondary": "holding_query"
+          },
+          "actual": {
+            "primary": "query",
+            "secondary": "holding_query",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 0,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2438,
+          "latency_ms": 1072.0,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"query\",\n  \"intent_secondary\": \"holding_query\",\n  \"risk_level\": \"low\",\n  \"slots\": {\n    \"stock\": \"茅台\",\n    \"implied_holding\": true\n  },\n  \"confidence\": 0.95,\n  \"multi_intent\": false,\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-008",
+          "difficulty": "medium",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "sector_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "sector_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 2,
+          "slot_ok": 2,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2447,
+          "latency_ms": 1129.7,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"sector_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"sector\": \"新能源\",\n    \"time_range\": \"today\"\n  },\n  \"confidence\": 0.85,\n  \"multi_intent\": false,\n  \"intents\": [],\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-009",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "technical_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "technical_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 2,
+          "slot_ok": 0,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2422,
+          "latency_ms": 1044.0,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"technical_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"stock\": \"茅台\"\n  },\n  \"confidence\": 0.95,\n  \"multi_intent\": false,\n  \"clarify_needed\": false\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-010",
+          "difficulty": "medium",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "holding_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "holding_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 2,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2442,
+          "latency_ms": 1112.1,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"holding_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"stock\": \"茅台\",\n    \"implied_holding\": true\n  },\n  \"confidence\": 0.95,\n  \"multi_intent\": false,\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-011",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "deep_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "deep_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2422,
+          "latency_ms": 1023.5,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"deep_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"stock\": \"BTC\"\n  },\n  \"confidence\": 0.95,\n  \"multi_intent\": false,\n  \"clarify_needed\": false\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-012",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "three_screen_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "three_screen_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2426,
+          "latency_ms": 1022.2,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"three_screen_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"stock\": \"ETH\"\n  },\n  \"confidence\": 0.95,\n  \"multi_intent\": false,\n  \"clarify_needed\": false\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-013",
+          "difficulty": "hard",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "holding_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "holding_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 2,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2431,
+          "latency_ms": 1071.5,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"holding_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"stock\": \"茅台\",\n    \"implied_holding\": true\n  },\n  \"confidence\": 0.92,\n  \"multi_intent\": false,\n  \"clarify_needed\": false\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-014",
+          "difficulty": "medium",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "sector_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "sector_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2426,
+          "latency_ms": 1314.1,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"sector_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"sector\": \"新能源\"\n  },\n  \"confidence\": 0.85,\n  \"multi_intent\": false,\n  \"clarify_needed\": false\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-015",
+          "difficulty": "medium",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "technical_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "technical_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 2,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2454,
+          "latency_ms": 915.4,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"technical_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"stock\": \"ETH\",\n    \"timeframe\": null,\n    \"indicator\": null\n  },\n  \"confidence\": 0.95,\n  \"multi_intent\": false,\n  \"intents\": [],\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-016",
+          "difficulty": "medium",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "deep_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "deep_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2438,
+          "latency_ms": 1193.7,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"deep_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"stock\": \"宁德时代\"\n  },\n  \"confidence\": 0.9,\n  \"multi_intent\": false,\n  \"intents\": [],\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-017",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "trade",
+            "secondary": "buy"
+          },
+          "actual": {
+            "primary": "trade",
+            "secondary": "buy",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 4,
+          "slot_ok": 2,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2460,
+          "latency_ms": 1321.4,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"trade\",\n  \"intent_secondary\": \"buy\",\n  \"risk_level\": \"high\",\n  \"slots\": {\n    \"stock\": \"茅台\",\n    \"stock_code\": \"600519\",\n    \"action\": \"buy\",\n    \"quantity\": 100,\n    \"order_type\": \"market\"\n  },\n  \"confidence\": 0.95,\n  \"multi_intent\": false,\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-018",
+          "difficulty": "medium",
+          "expected": {
+            "primary": "trade",
+            "secondary": "sell"
+          },
+          "actual": {
+            "primary": "trade",
+            "secondary": "sell",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 3,
+          "slot_ok": 2,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2459,
+          "latency_ms": 1221.4,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"trade\",\n  \"intent_secondary\": \"sell\",\n  \"risk_level\": \"high\",\n  \"slots\": {\n    \"stock\": \"宁德时代\",\n    \"action\": \"sell\",\n    \"quantity\": \"all\"\n  },\n  \"confidence\": 0.85,\n  \"multi_intent\": false,\n  \"clarify_needed\": true,\n  \"clarify_question\": \"请问要卖出多少股宁德时代？是全部卖出还是部分卖出？\"\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-019",
+          "difficulty": "medium",
+          "expected": {
+            "primary": "trade",
+            "secondary": "add_position"
+          },
+          "actual": {
+            "primary": "trade",
+            "secondary": "add_position",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 4,
+          "slot_ok": 2,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2436,
+          "latency_ms": 907.4,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"trade\",\n  \"intent_secondary\": \"add_position\",\n  \"risk_level\": \"high\",\n  \"slots\": {\n    \"stock\": \"贵州茅台\",\n    \"action\": \"buy\",\n    \"quantity\": 50\n  },\n  \"confidence\": 0.95,\n  \"multi_intent\": false,\n  \"clarify_needed\": false\n}",
+          "arm": "none"
+        },
+        {
+          "case_id": "TC-020",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "trade",
+            "secondary": "close_position"
+          },
+          "actual": {
+            "primary": "trade",
+            "secondary": "close_position",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 0,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2463,
+          "latency_ms": 1120.5,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"trade\",\n  \"intent_secondary\": \"close_position\",\n  \"risk_level\": \"high\",\n  \"slots\": {\n    \"stock\": null,\n    \"quantity\": \"all\"\n  },\n  \"confidence\": 0.85,\n  \"multi_intent\": false,\n  \"intents\": [],\n  \"clarify_needed\": true,\n  \"clarify_question\": \"请问您要清仓哪只标的？是全部持仓都清仓，还是指定某只股票？\"\n}",
+          "arm": "none"
+        }
+      ]
+    },
+    "lite": {
+      "metrics": {
+        "cases": 20,
+        "api_failures": 0,
+        "violation_cases": 0,
+        "violations_by_code": {
+          "E_CLAIM_EXECUTION": 0,
+          "E_PROPHECY": 0,
+          "E_SELF_ACCEPT": 0
+        },
+        "avg_tokens": 2846.4,
+        "avg_latency_ms": 1015.4,
+        "primary_acc": 100.0,
+        "secondary_acc": 100.0,
+        "joint_acc": 100.0,
+        "slot_acc": 48.39,
+        "json_ok_rate": 100.0,
+        "evidence_rate": 0.0
+      },
+      "rows": [
+        {
+          "case_id": "TC-001",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "query",
+            "secondary": "market_query"
+          },
+          "actual": {
+            "primary": "query",
+            "secondary": "market_query",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 0,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2841,
+          "latency_ms": 776.7,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"query\",\n  \"intent_secondary\": \"market_query\",\n  \"risk_level\": \"low\",\n  \"slots\": {\n    \"stock\": \"茅台\"\n  },\n  \"confidence\": 0.95,\n  \"multi_intent\": false,\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-002",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "query",
+            "secondary": "holding_query"
+          },
+          "actual": {
+            "primary": "query",
+            "secondary": "holding_query",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 0,
+          "slot_ok": 0,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2824,
+          "latency_ms": 1038.3,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"query\",\n  \"intent_secondary\": \"holding_query\",\n  \"risk_level\": \"low\",\n  \"slots\": {},\n  \"confidence\": 0.98,\n  \"multi_intent\": false,\n  \"clarify_needed\": false\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-003",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "query",
+            "secondary": "order_query"
+          },
+          "actual": {
+            "primary": "query",
+            "secondary": "order_query",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2842,
+          "latency_ms": 862.6,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"query\",\n  \"intent_secondary\": \"order_query\",\n  \"risk_level\": \"low\",\n  \"slots\": {\n    \"time_range\": \"today\"\n  },\n  \"confidence\": 0.9,\n  \"multi_intent\": false,\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-004",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "query",
+            "secondary": "account_query"
+          },
+          "actual": {
+            "primary": "query",
+            "secondary": "account_query",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 0,
+          "slot_ok": 0,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2825,
+          "latency_ms": 1020.7,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"query\",\n  \"intent_secondary\": \"account_query\",\n  \"risk_level\": \"low\",\n  \"slots\": {},\n  \"confidence\": 0.97,\n  \"multi_intent\": false,\n  \"clarify_needed\": false\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-005",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "query",
+            "secondary": "market_overview"
+          },
+          "actual": {
+            "primary": "query",
+            "secondary": "market_overview",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 0,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2810,
+          "latency_ms": 983.5,
+          "api_ok": true,
+          "raw_head": "{\"intent_primary\":\"query\",\"intent_secondary\":\"market_overview\",\"risk_level\":\"low\",\"slots\":{},\"confidence\":0.95,\"multi_intent\":false,\"clarify_needed\":false}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-006",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "query",
+            "secondary": "market_query"
+          },
+          "actual": {
+            "primary": "query",
+            "secondary": "market_query",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2841,
+          "latency_ms": 905.5,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"query\",\n  \"intent_secondary\": \"market_query\",\n  \"risk_level\": \"low\",\n  \"slots\": {\n    \"stock\": \"BTC\"\n  },\n  \"confidence\": 0.97,\n  \"multi_intent\": false,\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-007",
+          "difficulty": "medium",
+          "expected": {
+            "primary": "query",
+            "secondary": "holding_query"
+          },
+          "actual": {
+            "primary": "query",
+            "secondary": "holding_query",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 0,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2850,
+          "latency_ms": 1121.9,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"query\",\n  \"intent_secondary\": \"holding_query\",\n  \"risk_level\": \"low\",\n  \"slots\": {\n    \"stock\": \"茅台\",\n    \"implied_holding\": true\n  },\n  \"confidence\": 0.92,\n  \"multi_intent\": false,\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-008",
+          "difficulty": "medium",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "sector_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "sector_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 2,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2837,
+          "latency_ms": 1035.7,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"sector_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"sector\": \"新能源\"\n  },\n  \"confidence\": 0.85,\n  \"multi_intent\": false,\n  \"clarify_needed\": false\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-009",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "technical_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "technical_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 2,
+          "slot_ok": 0,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2834,
+          "latency_ms": 1010.2,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"technical_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"stock\": \"茅台\"\n  },\n  \"confidence\": 0.95,\n  \"multi_intent\": false,\n  \"clarify_needed\": false\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-010",
+          "difficulty": "medium",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "holding_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "holding_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 2,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2846,
+          "latency_ms": 1070.6,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"holding_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"stock\": \"茅台\",\n    \"implied_holding\": true\n  },\n  \"confidence\": 0.92,\n  \"multi_intent\": false,\n  \"clarify_needed\": false\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-011",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "deep_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "deep_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2848,
+          "latency_ms": 966.3,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"deep_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"stock\": \"BTC\"\n  },\n  \"confidence\": 0.95,\n  \"multi_intent\": false,\n  \"intents\": [],\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-012",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "three_screen_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "three_screen_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2852,
+          "latency_ms": 859.7,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"three_screen_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"stock\": \"ETH\"\n  },\n  \"confidence\": 0.95,\n  \"multi_intent\": false,\n  \"intents\": [],\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-013",
+          "difficulty": "hard",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "holding_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "holding_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 2,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2843,
+          "latency_ms": 1020.4,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"holding_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"stock\": \"茅台\",\n    \"implied_holding\": true\n  },\n  \"confidence\": 0.85,\n  \"multi_intent\": false,\n  \"clarify_needed\": false\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-014",
+          "difficulty": "medium",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "sector_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "sector_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2838,
+          "latency_ms": 1201.1,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"sector_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"sector\": \"新能源\"\n  },\n  \"confidence\": 0.85,\n  \"multi_intent\": false,\n  \"clarify_needed\": false\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-015",
+          "difficulty": "medium",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "technical_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "technical_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 2,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2866,
+          "latency_ms": 920.3,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"technical_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"stock\": \"ETH\",\n    \"timeframe\": null,\n    \"indicator\": null\n  },\n  \"confidence\": 0.92,\n  \"multi_intent\": false,\n  \"intents\": [],\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-016",
+          "difficulty": "medium",
+          "expected": {
+            "primary": "analysis",
+            "secondary": "deep_analysis"
+          },
+          "actual": {
+            "primary": "analysis",
+            "secondary": "deep_analysis",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2850,
+          "latency_ms": 901.9,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"analysis\",\n  \"intent_secondary\": \"deep_analysis\",\n  \"risk_level\": \"medium\",\n  \"slots\": {\n    \"stock\": \"宁德时代\"\n  },\n  \"confidence\": 0.85,\n  \"multi_intent\": false,\n  \"intents\": [],\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-017",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "trade",
+            "secondary": "buy"
+          },
+          "actual": {
+            "primary": "trade",
+            "secondary": "buy",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 4,
+          "slot_ok": 1,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2855,
+          "latency_ms": 1030.9,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"trade\",\n  \"intent_secondary\": \"buy\",\n  \"risk_level\": \"high\",\n  \"slots\": {\n    \"stock\": \"茅台\",\n    \"quantity\": 100,\n    \"action\": \"buy\"\n  },\n  \"confidence\": 0.95,\n  \"multi_intent\": false,\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-018",
+          "difficulty": "medium",
+          "expected": {
+            "primary": "trade",
+            "secondary": "sell"
+          },
+          "actual": {
+            "primary": "trade",
+            "secondary": "sell",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 3,
+          "slot_ok": 2,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2884,
+          "latency_ms": 1169.0,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"trade\",\n  \"intent_secondary\": \"sell\",\n  \"risk_level\": \"high\",\n  \"slots\": {\n    \"stock\": \"宁德时代\",\n    \"action\": \"sell\",\n    \"quantity\": \"all\"\n  },\n  \"confidence\": 0.85,\n  \"multi_intent\": false,\n  \"clarify_needed\": true,\n  \"clarify_question\": \"请确认卖出宁德时代的数量：是全部卖出（清仓），还是卖出部分？如为部分，请提供具体股数。\"\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-019",
+          "difficulty": "medium",
+          "expected": {
+            "primary": "trade",
+            "secondary": "add_position"
+          },
+          "actual": {
+            "primary": "trade",
+            "secondary": "add_position",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 4,
+          "slot_ok": 2,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2856,
+          "latency_ms": 1163.1,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"trade\",\n  \"intent_secondary\": \"add_position\",\n  \"risk_level\": \"high\",\n  \"slots\": {\n    \"stock\": \"贵州茅台\",\n    \"action\": \"buy\",\n    \"quantity\": 50\n  },\n  \"confidence\": 0.95,\n  \"multi_intent\": false,\n  \"clarify_needed\": false,\n  \"clarify_question\": \"\"\n}",
+          "arm": "lite"
+        },
+        {
+          "case_id": "TC-020",
+          "difficulty": "easy",
+          "expected": {
+            "primary": "trade",
+            "secondary": "close_position"
+          },
+          "actual": {
+            "primary": "trade",
+            "secondary": "close_position",
+            "evidence": null
+          },
+          "primary_ok": true,
+          "secondary_ok": true,
+          "joint_ok": true,
+          "slot_total": 1,
+          "slot_ok": 0,
+          "json_ok": true,
+          "evidence_ok": false,
+          "violations": [],
+          "tokens": 2887,
+          "latency_ms": 1250.4,
+          "api_ok": true,
+          "raw_head": "{\n  \"intent_primary\": \"trade\",\n  \"intent_secondary\": \"close_position\",\n  \"risk_level\": \"high\",\n  \"slots\": {\n    \"stock\": null,\n    \"quantity\": \"all\",\n    \"action\": \"sell\"\n  },\n  \"confidence\": 0.72,\n  \"multi_intent\": false,\n  \"intents\": [],\n  \"clarify_needed\": true,\n  \"clarify_question\": \"请确认要清仓的标的：是清仓全部持仓，还是指定某只标的（如茅台/宁德时代）？\"\n}",
+          "arm": "lite"
+        }
+      ]
+    }
+  },
+  "paired": {
+    "b_only": [],
+    "a_only": [],
+    "delta_pp": 0.0,
+    "mcnemar_p": 1.0
+  }
+}

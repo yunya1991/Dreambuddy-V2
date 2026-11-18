@@ -254,6 +254,16 @@
 | 评审报告（v0.5 可判定性） | [56-L2架构能力聚合层/SPEC评审报告-L2能力聚合层-v0.5.md](../56-L2架构能力聚合层/SPEC评审报告-L2能力聚合层-v0.5.md) | v0.5（不通过 2.4/5；6 个 P0：状态机无迁移表、IF-5 枚举冲突、IF-6 无 schema；复审门槛=6 件产物） |
 | 层级 MCP 现状（实测） | [47-MCP管理系统/registry/mcp_capabilities.yaml](../47-MCP管理系统/registry/mcp_capabilities.yaml) | `1.2-mcp`：17 壳 / 78 active / L2 14 active / 配额 L0:60·L1:30·L2:30 |
 
+### 57-Agent提示词工程
+
+| 文档 | 路径 | 版本 |
+|------|------|------|
+| 母 SPEC（Agent 提示词工程） | [57-Agent提示词工程/SPEC-57-Agent提示词工程.md](../57-Agent提示词工程/SPEC-57-Agent提示词工程.md) | v0.9（六层架构 P0–P5 + 注册表 + G-P-1~8；P0–P5 已落地：裁剪注入 / 12 条门禁 / golden set / 晋升留痕 / 45 deploy 凭证） |
+| 源文件宪法 | [57-Agent提示词工程/PROMPT_CONSTITUTION.md](../57-Agent提示词工程/PROMPT_CONSTITUTION.md) | constitution@1.0.0（H0–H5 优先级 + SRC-01~12 源文件登记 + C-01~12 硬条款与违例码；工具返回数据永不作为指令） |
+| 业界对标调研 | [57-Agent提示词工程/docs/RESEARCH-20261118-提示词工程业界对标.md](../57-Agent提示词工程/docs/RESEARCH-20261118-提示词工程业界对标.md) | v0.1（Anthropic/OpenAI/Google/LLMOps 四路对标 + 五条收敛铁律 + 冲突项 + 本仓 prompt 版本零命中证据） |
+| 提示词注册表（IF-P-1） | [57-Agent提示词工程/registry/prompt_registry.yaml](../57-Agent提示词工程/registry/prompt_registry.yaml) | schema 1.1（6 处存量资产；根级 persona 统一人格/免责；l2.intent.router 已 gated@0.2.0；晋升留痕见 promotion_log.jsonl） |
+| P1 前置 A/B 多轮回测 | [57-Agent提示词工程/docs/EVAL-20261118-P1-A-B多轮回测.md](../57-Agent提示词工程/docs/EVAL-20261118-P1-A-B多轮回测.md) | v1.0（2 任务类 × 3 轮：准确率无提升；证据声明 0%→100%、C-05 违例 1→0；token +19~35%；结论=P1 按任务类裁剪注入） |
+
 ---
 
 ## L3 — 辅助系统与实验性模块

@@ -1,0 +1,71 @@
+{
+  "eval_id": "prompt.l2.intent.router",
+  "run_id": "D2B-P57-INT-20261118",
+  "spec_hash": "sha256:fdc29eaf0c7a9de611104894fb59f0b88287da2c4e7d27a9c7c9d8844b7b5938",
+  "verdict": "PASS",
+  "score": 0.0,
+  "n": 20,
+  "ci": null,
+  "items": [
+    {
+      "name": "delta_pp",
+      "kind": "paired_delta",
+      "status": "PASS",
+      "score": 0.0,
+      "n": 20,
+      "ci_lower": null,
+      "ci_upper": null,
+      "weight": 0.5,
+      "evidence_id": "D2B-P57-INT-20261118",
+      "detail": "mcnemar_p=1.0"
+    },
+    {
+      "name": "json_ok_rate",
+      "kind": "guardrail",
+      "status": "PASS",
+      "score": 100.0,
+      "n": 20,
+      "ci_lower": null,
+      "ci_upper": null,
+      "weight": 0.3,
+      "evidence_id": "D2B-P57-INT-20261118",
+      "detail": ""
+    },
+    {
+      "name": "tokens_ratio",
+      "kind": "guardrail",
+      "status": "PASS",
+      "score": 1.1691,
+      "n": 20,
+      "ci_lower": null,
+      "ci_upper": null,
+      "weight": 0.2,
+      "evidence_id": "D2B-P57-INT-20261118",
+      "detail": "max=1.4"
+    }
+  ],
+  "block_reasons": [],
+  "evidence": {
+    "uri": "57-Agent提示词工程/evals/out/intent_round4_lite.json",
+    "sha256": "d49ef2dbe487f33b4c3c87ce390b3b162f9ace0d231b6ed5525151265c81dcc2"
+  },
+  "thresholds_version": "golden@1.0",
+  "baseline_run_id": "D2B-P57-INT-20261118-A",
+  "evaluated_at": "2026-11-18T14:02:55Z",
+  "expires_at": "2026-11-25T14:02:55Z",
+  "promoted_at": "2026-11-18T14:02:55Z",
+  "credential": {
+    "eval_id": "prompt.l2.intent.router",
+    "run_id": "D2B-P57-INT-20261118",
+    "spec_hash": "sha256:fdc29eaf0c7a9de611104894fb59f0b88287da2c4e7d27a9c7c9d8844b7b5938",
+    "verdict": "PASS",
+    "purpose": "deploy",
+    "thresholds_version": "golden@1.0",
+    "evaluator_id": "prompt.ab",
+    "evaluator_version": "1.0.0",
+    "evidence_sha256": "d49ef2dbe487f33b4c3c87ce390b3b162f9ace0d231b6ed5525151265c81dcc2",
+    "issued_at": "2026-11-18T14:06:05Z",
+    "expires_at": "2026-11-25T14:02:55Z"
+  },
+  "credential_verified": true
+}
