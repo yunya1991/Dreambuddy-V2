@@ -18764,8 +18764,16 @@ class PollingTrader:
             )
         self.coins = new_coins
 
+    def _stop_requested(self) -> bool:
+        """停机请求检查：SIGTERM 只置 running=False，需在长循环中主动让出。"""
+        return not getattr(self, "running", True)
+
     def run_once(self):
         """执行一轮推理 + 交易"""
+        # 停机检查点 0：收到 SIGTERM 后不再开始新一轮
+        if self._stop_requested():
+            self._log("[停机] 收到退出信号，跳过本轮", "WARN")
+            return
         self._maybe_refresh_coins()
         self._check_date_rollover()
         # BDSM 每日快照自动生成（幂等，已存在则跳过）
@@ -19051,6 +19059,9 @@ class PollingTrader:
         anomaly_coins = []
         try:
             for coin in anom_coins_mode:
+                if self._stop_requested():
+                    self._log("[停机] 异常检测阶段中断", "WARN")
+                    break
                 kline_data = _load_kline_from_okx(
                     inst_id=f"{coin}-USDT-SWAP", bar=self.bar, limit=self.kline_limit
                 )
@@ -19091,6 +19102,9 @@ class PollingTrader:
 
         # ── Step 1: Full 推理（infer_full_coins = 持仓 + MODE1/2 的候选TopN）──
         for coin in infer_full_coins:
+            if self._stop_requested():
+                self._log("[停机] Full 推理阶段中断", "WARN")
+                break
             # P0-2: 动态币种黑名单过滤（连续2次亏损→封禁3日，到期自动释放）
             blocked, bl_reason = self._check_dynamic_blacklist(coin)
             if blocked:
@@ -19158,6 +19172,9 @@ class PollingTrader:
         if infer_coarse_coins:
             self._log(f"[MODE3][Step2] {len(infer_coarse_coins)} 个粗推理候选 → 快速MA交叉粗排")
             for coin in infer_coarse_coins:
+                if self._stop_requested():
+                    self._log("[停机] Coarse 推理阶段中断", "WARN")
+                    break
                 blocked, bl_reason = self._check_dynamic_blacklist(coin)
                 if blocked:
                     self._log(f"[{coin}] [MODE3][Coarse] 黑名单跳过（{bl_reason}）")
@@ -19184,6 +19201,9 @@ class PollingTrader:
         if topup_list:
             self._log(f"[MODE3][Step3] Top1 补全推理 → {topup_list}（其他粗结果禁止开仓）")
         for topup_coin in topup_list:
+            if self._stop_requested():
+                self._log("[停机] Top1 补全推理阶段中断", "WARN")
+                break
             blocked, bl_reason = self._check_dynamic_blacklist(topup_coin)
             if blocked:
                 self._log(f"[{topup_coin}] [MODE3][补全] 黑名单跳过（{bl_reason}）")
@@ -19223,6 +19243,15 @@ class PollingTrader:
                     )
             except Exception as e:
                 self._log(f"[{topup_coin}] [MODE3][补全] 异常: {e}", "ERROR")
+
+        # 停机检查点：推理阶段已结束但交易阶段未开始 → 直接结束本轮，
+        # 不开新仓、不做批量离场评估；交易所侧已有 SL/TP 挂单继续生效。
+        if self._stop_requested():
+            self._log(
+                "[停机] 推理阶段结束后收到退出信号，跳过本轮交易阶段（交易所侧 SL/TP 保持有效）",
+                "WARN",
+            )
+            return
 
         # —— BDSM 协作 · 缺口 3：出场 OR 逻辑（先于 BCRM S4 排名止盈 + 单币离场评估）——
         #   按 BDSM 快照 exit_action 优先级 CLOSE_ALL > REDUCE_80 > REDUCE_50 先执行；
@@ -19326,6 +19355,9 @@ class PollingTrader:
         # ===== 第二阶段：先处理持仓管理（平仓/反手/离场），按币种顺序 =====
         # 持仓管理按币种顺序即可（无需排名），关键是不要打乱离场时机
         for coin, inference in all_inferences.items():
+            if self._stop_requested():
+                self._log("[停机] 持仓管理阶段中断", "WARN")
+                break
             try:
                 pos_info = self._check_positions(coin)
                 if pos_info.get("has_position"):
@@ -19358,6 +19390,9 @@ class PollingTrader:
         # 规则：默认根据置信度排名开仓，高置信度优先，仓位大小也根据置信度调控
         open_candidates = []
         for coin, inference in all_inferences.items():
+            if self._stop_requested():
+                self._log("[停机] 开仓候选评估阶段中断", "WARN")
+                break
             try:
                 pos_info = self._check_positions(coin)
                 if pos_info.get("has_position"):
@@ -19464,6 +19499,9 @@ class PollingTrader:
 
         # 依次按排名执行开仓
         for candidate in open_candidates:
+            if self._stop_requested():
+                self._log("[停机] 排名开仓阶段中断（未开始的开仓全部取消）", "WARN")
+                break
             coin = candidate["coin"]
             inference = candidate["inference"]
             confidence = candidate["confidence"]
