@@ -274,12 +274,28 @@ def test_gateway_reconcile_ghost_uses_exchange_fill(tmp_path, monkeypatch):
     )
     gw._get_ledger().record_open("LINK-USDT-SWAP", "long", 10.9, 9.136, source="22-reconciled")
 
-    out = gw.reconcile_ledger()
+    first = gw.reconcile_ledger()
+    assert first["closed"] == 0  # 第一轮缺失不下结论，防止快照不全误平
+    assert gw._get_ledger().get_position("LINK-USDT-SWAP", "long") is not None
 
-    assert out["closed"] == 1
+    second = gw.reconcile_ledger()
+    assert second["closed"] == 1
     last = gw._get_ledger().recent_fills(1)[0]
     assert abs(last["px"] - 9.151) < 1e-9
     assert last["realized_pnl"] > 0
+
+
+def test_ghost_close_requires_two_confirmed_misses(tmp_path):
+    led = _ledger(tmp_path)
+    led.record_open("MU-USDT-SWAP", "long", 0.07, 712.0, source="22-reconciled")
+
+    first = led.reconcile([], source="22-reconciled", ghost_confirm=lambda _i, _s: False)
+    assert first["closed"] == 0
+    assert led.get_position("MU-USDT-SWAP", "long") is not None
+
+    second = led.reconcile([], source="22-reconciled", ghost_confirm=lambda _i, _s: True)
+    assert second["closed"] == 1
+    assert led.get_position("MU-USDT-SWAP", "long") is None
 
 
 class _OkxBothSides:

@@ -842,7 +842,26 @@ class TradeExecutionGateway:
             }
             for r in rows
         ]
-        out = ledger.reconcile(items, source=source, fill_lookup=self._latest_close_fill)
+        # 连续两轮确认缺失才平掉账本行，避免 OKX 持仓快照瞬时不全导致假幽灵仓。
+        present = {(str(i["inst_id"]), str(i["pos_side"])) for i in items}
+        misses: Dict[Any, int] = getattr(self, "_ghost_misses", {})
+        for _k in list(misses):
+            if _k in present:
+                misses.pop(_k, None)
+
+        def _ghost_confirm(inst_id: str, pos_side: str) -> bool:
+            _k = (str(inst_id), str(pos_side))
+            _n = misses.get(_k, 0) + 1
+            misses[_k] = _n
+            return _n >= 2
+
+        self._ghost_misses = misses
+        out = ledger.reconcile(
+            items,
+            source=source,
+            fill_lookup=self._latest_close_fill,
+            ghost_confirm=_ghost_confirm,
+        )
         logger.info(
             "[Gateway] 账本对账回填 source=%s inserted=%s updated=%s closed=%s skipped=%s",
             source,

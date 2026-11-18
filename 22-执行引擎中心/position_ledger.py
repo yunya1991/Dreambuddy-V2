@@ -240,6 +240,7 @@ class PositionLedger:
         source: str = "22-reconciled",
         ts: Optional[str] = None,
         fill_lookup: Optional[Callable[[str, str], Optional[Dict[str, Any]]]] = None,
+        ghost_confirm: Optional[Callable[[str, str], bool]] = None,
     ) -> Dict[str, Any]:
         """存量仓一次性对账回填（幂等）。
 
@@ -353,6 +354,13 @@ class PositionLedger:
             if _key in _active:
                 continue
             if not str(row["source"] or "").startswith(source):
+                continue
+            # 连续 N 轮确认缺失才平仓：OKX 持仓快照可能瞬时返回不完整列表，
+            # 单轮"没返回"不等于已平仓，误判会产生假幽灵仓并让开仓闸门看到空仓。
+            if ghost_confirm is not None and not ghost_confirm(
+                str(row["inst_id"]), str(row["pos_side"])
+            ):
+                skipped.append(f"{row['inst_id']}:{row['pos_side']}")
                 continue
             _fill: Dict[str, Any] = {}
             if callable(fill_lookup):
