@@ -367,6 +367,8 @@ class Collector:
 
         stage_counts: dict[tuple[str, str], int] = {}
         chains: dict[str, set[str]] = {}
+        blocked_chains: set[str] = set()
+        blocked_reasons: dict[str, int] = {}
         wait_reasons: dict[str, int] = {}
         exit_size_unknown = 0
         exit_close_failed: dict[str, int] = {}
@@ -382,6 +384,12 @@ class Collector:
             if cid:
                 chains.setdefault(cid, set()).add(stage)
             data = rec.get("data") if isinstance(rec.get("data"), dict) else {}
+            # N11 拦截（如已有持仓）是策略主动终止，不是静默断链；
+            # 计入完成率会让正常拦截长期压低 ratio 并触发 ChainBroken/ChainCompletionLow 误报
+            if stage == "N11" and status == "blocked" and cid:
+                blocked_chains.add(cid)
+                _gate = str(data.get("gate") or "unknown")
+                blocked_reasons[_gate] = blocked_reasons.get(_gate, 0) + 1
             if stage == "N8" and status == "skip":
                 reason = str(data.get("reason_category") or "unknown")
                 wait_reasons[reason] = wait_reasons.get(reason, 0) + 1
@@ -400,7 +408,11 @@ class Collector:
         for (stage, status), n in sorted(stage_counts.items()):
             out.append(_metric("chain_stage_total", n, stage=stage, status=status))
         if chains:
-            signal_chains = [stages for stages in chains.values() if "N10" in stages]
+            signal_chains = [
+                stages
+                for cid, stages in chains.items()
+                if "N10" in stages and cid not in blocked_chains
+            ]
             if signal_chains:
                 complete = sum(1 for stages in signal_chains if {"N12", "N14"} <= stages)
                 out.append(
@@ -409,6 +421,8 @@ class Collector:
                 for required in ("N12", "N14"):
                     missing = sum(1 for stages in signal_chains if required not in stages)
                     out.append(_metric("chain_missing_stage_total", missing, stage=required))
+        for gate, n in sorted(blocked_reasons.items()):
+            out.append(_metric("chain_blocked_total", n, gate=gate))
         wait_total = sum(wait_reasons.values())
         if wait_total:
             out.append(_metric("chain_wait_events_total", wait_total))
