@@ -4797,16 +4797,19 @@ class PollingTrader:
                 confidence = float(ns.get("confidence", 0.0) or 0.0)
             except (TypeError, ValueError):
                 confidence = 0.0
+            _mode = "shadow" if getattr(self, "shadow_mode", False) else "live"
             coins[str(coin)] = {
                 "ok": bool((bcrm_result or {}).get("ok")),
                 "direction": direction,
                 "raw_direction": raw_dir,
                 "confidence": confidence,
                 "pattern": ns.get("pattern"),
+                "mode": _mode,
                 "updated_at": now.isoformat(),
                 "expires_at": (now + timedelta(hours=2)).isoformat(),
             }
             state["coins"] = coins
+            state["mode"] = _mode
             state["_meta"] = {"updated_at": now.isoformat(), "schema_version": "1"}
             tmp_path = state_path + ".tmp"
             with open(tmp_path, "w", encoding="utf-8") as f:

@@ -122,6 +122,9 @@ def build_signals(state: dict):
                 "direction": direction,
                 "confidence": round(confidence, 4),
                 "horizon": "days",
+                # 49 SignalSchema v1：11 战路层已随 2026-11-18 解耦下线，
+                # 该日级缓存为 legacy 产物，无 mode 字段时按 shadow 透传。
+                "mode": str(state.get("mode") or "shadow"),
                 "risk_exposure_hint": exposure,
                 "expires_at": (now + timedelta(hours=24)).isoformat(),
                 "payload": {

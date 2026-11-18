@@ -103,6 +103,8 @@ def build_signals(state: dict):
                 "direction": direction,
                 "confidence": round(confidence, 4),
                 "horizon": "hours",
+                # 49 SignalSchema v1：优先取 per-coin / 根级 mode，旧快照回退 shadow
+                "mode": str(snap.get("mode") or state.get("mode") or "shadow"),
                 "risk_exposure_hint": 0.5,
                 "expires_at": (now + timedelta(hours=2)).isoformat(),
                 "payload": {
