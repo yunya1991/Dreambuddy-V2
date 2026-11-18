@@ -525,6 +525,9 @@ class EvolutionEntryLoop:
         _mc = self._call(self.macro_constraint_fn, {}, "macro_constraint_fn", (coin_cls,)) or {}
         if not _mc:
             return notional, "quota=NA", None
+        # 49 §3.1：mode=shadow 的宏观约束只观测、不裁决 → 不得影响实盘定容
+        if str(_mc.get("mode") or "").lower() == "shadow":
+            return notional, f"quota=SKIP(shadow) src={_mc.get('source')}", None
 
         from dreambuddy_evolution.adapters.asset_class_quota import (
             build_quota_plan,

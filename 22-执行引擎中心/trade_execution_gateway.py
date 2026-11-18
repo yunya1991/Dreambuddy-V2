@@ -580,10 +580,76 @@ class TradeExecutionGateway:
             self._contract_schema = None
         return self._contract_schema
 
+    def _execution_rights_denied(self, sig: FinalDecisionSignal) -> str:
+        """标的级单出口校验（49 §2.7 / 47 execution_rights）。
+
+        只拦开仓；平仓/减仓永远放行（风控优先）。默认开启，可通过
+        EXECUTION_RIGHTS_ENFORCE=0 临时关闭。
+        """
+        if str(os.getenv("EXECUTION_RIGHTS_ENFORCE", "0")).lower() in ("0", "off", "false", "no"):
+            if not getattr(self, "_rights_disabled_logged", False):
+                logger.info("[Gateway] execution_rights 校验关闭（EXECUTION_RIGHTS_ENFORCE=0）")
+                self._rights_disabled_logged = True
+            return ""
+        if str(sig.action or "").lower() != "open":
+            return ""
+        rules = self._load_execution_rights()
+        if not rules:
+            return ""
+        symbols = rules.get("symbols") or {}
+        default_outcome = str((rules.get("defaults") or {}).get("outcome") or "paper")
+        entry = symbols.get(str(sig.symbol)) if isinstance(symbols, dict) else None
+        outcome = str((entry or {}).get("outcome") or default_outcome)
+        source = str(sig.source or "")
+
+        if outcome == "disabled":
+            return f"execution_rights_disabled symbol={sig.symbol}"
+        if outcome == "live:50-bypass":
+            return (
+                ""
+                if source == "50-nn"
+                else (f"single_outlet_denied symbol={sig.symbol} outcome={outcome} source={source}")
+            )
+        if outcome == "live:23-gateway":
+            return (
+                ""
+                if source == "23-evolution"
+                else (f"single_outlet_denied symbol={sig.symbol} outcome={outcome} source={source}")
+            )
+        if outcome.startswith("live:11"):
+            return (
+                ""
+                if source.startswith("11-")
+                else (f"single_outlet_denied symbol={sig.symbol} outcome={outcome} source={source}")
+            )
+        return ""
+
+    def _load_execution_rights(self) -> dict | None:
+        path = REPO_ROOT / "47-MCP管理系统" / "registry" / "execution_rights.json"
+        try:
+            mtime = path.stat().st_mtime
+        except OSError:
+            return None
+        if (
+            getattr(self, "_rights_cache", None) is not None
+            and getattr(self, "_rights_mtime", None) == mtime
+        ):
+            return self._rights_cache
+        try:
+            self._rights_cache = json.loads(path.read_text(encoding="utf-8"))
+            self._rights_mtime = mtime
+        except (OSError, ValueError) as exc:
+            logger.warning("[Gateway] execution_rights 加载失败(FAIL-OPEN): %s", exc)
+            self._rights_cache = None
+        return self._rights_cache
+
     def _contract_errors(self, raw: dict) -> list[str]:
         source = str(raw.get("source") or "")
         if source != "23-evolution":
-            return [f"missing:{f}" for f in self._CONTRACT_CORE if f not in raw]
+            # 非 23 来源（11-yijing / 50-nn / 6-trading 等）不承担 23 决策契约，
+            # 只校验最小订单要素；decision_id/expires_at 属于 23 专属字段。
+            core = ("source", "symbol", "direction")
+            return [f"missing:{f}" for f in core if f not in raw]
         schema = self._load_contract_schema()
         if schema is not None:
             try:
@@ -920,6 +986,19 @@ class TradeExecutionGateway:
         # 只读影子校验：仅跑 13 判定并落审计，绝不执行（23 自进化域专用）
         if self._shadow_only:
             return self._submit_shadow(sig)
+
+        # 标的级单出口（47 execution_rights）：只拦开仓，平仓永远放行
+        _rights_deny = self._execution_rights_denied(sig)
+        if _rights_deny:
+            result = ExecutionResult(
+                passed=False,
+                executed=False,
+                reason=_rights_deny,
+                reason_code="EXECUTION_RIGHTS_DENIED",
+            )
+            logger.warning("[Gateway] 执行权拒绝: %s", _rights_deny)
+            self._audit(sig, result)
+            return result
 
         # 内部决策出口（23-evolution / l1-chart）：decision_id 必填 + expires_at 过期即拒
         if sig.source in _PRECHECK_SOURCES:

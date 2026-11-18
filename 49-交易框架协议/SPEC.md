@@ -364,8 +364,8 @@ action / strategic_tier(43) / position_tier(23) / position_mult / regime / d_sta
 - **分层归属**：13 风控、16 定容、22 执行、11 交易执行器属于本层，**不属于 L0**；L0 只提供数据/认知/语义/REA。
 - **paper（现状）**：`23 信号 → 前置过滤(中性/过期/幂等) → 执行权 → 行情+定容 → 13 风控(fail-closed) → paper 下单 → 落账`。RiskCheckPort 已真实桥接 13；**16 定容与 22 执行引擎尚未接线**，定容由 13 的 `RiskEngine.calculate_position` 或 `risk_exposure_hint × balance` 兜底；OrderPort 为自包含 `OKXPaperLedger`。
 - **paper（目标）**：接入 16 `capital_allocator` 与 22 `tee_core`（P3）。
-- **live**：`23 信号 → 11 交易执行器（EXECUTION_AUTHORITY）→ okx_client 直连`；不经 MCP。
-- **标的级互斥**：`47-MCP管理系统/registry/execution_rights.json` 声明 `paper / live:11-bypass / disabled`；同一标的同一时刻单出口。
+- **live（2026-11-18 修订）**：`23 信号 → 22 TradeExecutionGateway（13 fail-closed → 16 定容 → 交易所）`；11 已删除 23 raw 通道与域路由客户端，23 由 `dreambuddy-entry23 / exit23` 独立驱动，不再经 11。
+- **标的级互斥**：`47-MCP管理系统/registry/execution_rights.json` 声明 `paper / live:50-bypass / live:23-gateway / disabled`；同一标的同一时刻单出口，开仓由 22 网关强制校验（平仓永远放行）。
 - **命名迁移**：现有 `mcp_shells/l0_trade_exec` / `l0.trade-exec.mcp` 是历史命名，逻辑归属执行层；目标命名 `exec.trade.mcp`，迁移项 R-EXEC-04。
 
 ### 2.8 反馈层

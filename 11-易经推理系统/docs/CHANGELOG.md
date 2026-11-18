@@ -2,7 +2,7 @@
 
 > **定位**：记录每次变更的原因、内容、验证方式
 > **格式**：`[版本] - 日期 → 变更类型（新增/修改/修复/删除）`
-> **版本**：v4.6.2 | **更新**：2026-11-18
+> **版本**：v4.7.0 | **更新**：2026-11-18
 
 ---
 
@@ -46,6 +46,28 @@
   - 29 个通过筛选的模型复制到 `scripts/data/bcrm2_models_keep/`（含 `SHORTLIST.json`，仅作基准，不参与自动加载）
   - 活动缓存 `scripts/data/bcrm2_models/` 清空，P0 新缓存键下按 1H 已收盘数据重新训练
   - 五域两个权重文件回退等权，原文件另存 `*_deprecated_20261118.json`
+
+---
+
+## [v4.7.0] - 2026-11-18
+
+### 11 / 23 域解耦 + 主神经网络（50）适配 + 定期胜率回测告警
+
+- **11 与 23 解耦（执行/决策接线全删）**
+  - 删除 `EvolutionEntryLoop` / `EvolutionExitLoop` / `KlineEventHandler` 接线，及 `_evolution_entry_build` / `_get_evolution_exit_loop` / `_check_evolution_kline_signal` / `_ensure_bcrm2_for_evolution_positions` / `_maybe_upgrade_probe_to_standard` / `_p2_s4b_compute_sltp` 与全部 evolution 回调；
+  - 删除 `YIJING_23_ENABLED` 开关、`_EVO_EXIT_TAGS`、`_EVOLUTION_*` 常量、23 域路由客户端（`DomainRoutedOkxClient` / `DomainTaggedOkxClient` / `_is_evolution_position`）与主循环 23 开/平仓触发块；
+  - 11 的 `okx_client` 统一为自身 `RiskGatedOkxClient`；23 由 `dreambuddy-entry23 / exit23` 独立驱动；
+  - 保留 11 自身策略只读引用的 23 引擎（three_factor / dynamic_short_blacklist / bdsm_signal_level）与结算/反思桥。
+- **适配主神经网络（50）**
+  - 11 子池信号继续经 42 总线供 50 消费；发布 payload 增加 `mode`（shadow/live），对齐 49 `SignalSchema v1`；
+  - 22 网关不再对非 23 来源强校验 `decision_id/expires_at`（消除 `missing:expires_at` 噪声）。
+- **执行权（单出口）强制**
+  - 22 `TradeExecutionGateway` 新增 `execution_rights` 校验：开仓按标的 `outcome` 限定来源（`live:50-bypass`→仅 50-nn，`live:23-gateway`→仅 23-evolution），平仓/减仓永远放行；默认关闭，生产以 `EXECUTION_RIGHTS_ENFORCE=1` 开启（已写入云端 drop-in）。
+- **影子约束不得影响实盘定容**
+  - `EvolutionEntryLoop._apply_quota`：`mode=shadow` 的宏观约束直接跳过配额钳制（49 §3.1）。
+- **定期回测 + 胜率告警**
+  - 新增 `scripts/memory_l4/winrate_guard.py`：`--mode winrate` 统计近 N 天已平仓胜率，`--mode walkforward` 跑 1H 5 折评测；<50% 飞书 warning、50%~60% info、≥60% OK，样本不足不告警；结果落 `data/eval/winrate_guard.json` + `logs/winrate_guard.log`。
+- **验证**：`py_compile` 通过；本地 winrate 冒烟 N=49 WR=34.69% → ALERT（符合门禁预期）。
 
 ---
 
