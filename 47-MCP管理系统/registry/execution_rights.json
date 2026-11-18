@@ -1,25 +1,24 @@
 {
   "version": "0.7",
-  "updated": "2026-11-15",
+  "updated": "2026-11-18",
   "owner": "47-MCP管理系统",
-  "description": "执行权注册表（标的级单出口声明）。同一标的同一时刻只能有一个执行出口：paper=trade-exec MCP 模拟盘；live:50-bypass=50 决策经 22-执行引擎中心 TradeExecutionGateway 唯一下单（11 只做信号与转发，不持有下单客户端）；live:23-gateway=23 决策同样经 22 Gateway 执行；disabled=不执行。 2026-11-14 执行权收口 22：OKX 客户端/凭据/真实下单桥全部落 22，11 侧 Gateway 不可用时写操作 fail-closed（不再回退 raw）。 fifty_nn_domain 分区：2026-11-13 起 BTC-USDT-SWAP 灰度 live:50-bypass；2026-11-14 扩到 22 域 live_symbols.json 注册表全量；2026-11-15 对齐 40 G1/G2 全集（72 标的：crypto 21 / precious_metal 4 / industrial_metal 1 / energy 4 / us_index 3 / us_etf 8 / apac_index 2 / us_stock 28 / rates_credit 1），Mandate=mandate-20261114-50-live-multi，单笔 ≤100 USDT、3x、最多 6 仓、SL/TP 必带。 twentythree_domain 分区：23 自进化只产 FinalDecisionSignal(source=23-evolution) 交由 22 TradeExecutionGateway 唯一执行，decision_id 必填、expires_at 过期即拒，DomainTaggedOkxClient 已改为经网关执行（仅保留 13 只读影子校验）。",
+  "description": "执行权注册表（标的级单出口声明）。同一标的同一时刻只能有一个执行出口：paper=trade-exec MCP 模拟盘；live:50-bypass=50 决策经 22-执行引擎中心 TradeExecutionGateway 唯一下单（11 只做信号与转发，不持有下单客户端）；live:23-gateway=23 决策同样经 22 Gateway 执行；disabled=不执行。 2026-11-14 执行权收口 22：OKX 客户端/凭据/真实下单桥全部落 22，11 侧 Gateway 不可用时写操作 fail-closed（不再回退 raw）。 fifty_nn_domain 分区：2026-11-13 起 BTC-USDT-SWAP 灰度 live:50-bypass；2026-11-14 扩到 22 域 live_symbols.json 注册表全量；2026-11-15 对齐 40 G1/G2 全集（72 标的：crypto 21 / precious_metal 4 / industrial_metal 1 / energy 4 / us_index 3 / us_etf 8 / apac_index 2 / us_stock 28 / rates_credit 1），Mandate=mandate-20261114-50-live-multi，单笔 ≤100 USDT、3x、最多 6 仓、SL/TP 必带。 twentythree_domain 分区：23 自进化只产 FinalDecisionSignal(source=23-evolution) 交由 22 TradeExecutionGateway 唯一执行，decision_id 必填、expires_at 过期即拒，DomainTaggedOkxClient 已改为经网关执行（仅保留 13 只读影子校验）。 2026-11-18 调整：BTC/ETH/SOL 由 live:50-bypass 移交 live:23-gateway，23 恢复开仓能力；50 对这三币只保留平仓（平仓不受单出口限制）。",
   "defaults": {
     "outcome": "paper",
     "conflict_policy": "reject_mcp"
   },
   "symbols": {
     "BTC-USDT-SWAP": {
-      "outcome": "live:50-bypass",
-      "mandate_id": "mandate-20261114-50-live-multi",
-      "note": "首发灰度标的，已并入多资产 Mandate"
+      "outcome": "live:23-gateway",
+      "note": "2026-11-18 由 live:50-bypass 移交 23 单出口（恢复 23 开仓）"
     },
     "ETH-USDT-SWAP": {
-      "outcome": "live:50-bypass",
-      "mandate_id": "mandate-20261114-50-live-multi"
+      "outcome": "live:23-gateway",
+      "note": "2026-11-18 由 live:50-bypass 移交 23 单出口（恢复 23 开仓）"
     },
     "SOL-USDT-SWAP": {
-      "outcome": "live:50-bypass",
-      "mandate_id": "mandate-20261114-50-live-multi"
+      "outcome": "live:23-gateway",
+      "note": "2026-11-18 由 live:50-bypass 移交 23 单出口（恢复 23 开仓）"
     },
     "AVAX-USDT-SWAP": {
       "outcome": "live:50-bypass",
@@ -313,7 +312,23 @@
     "kill_switch_env": "EVOLUTION_ENTRY23_ENABLED",
     "kill_switch_value": "off",
     "mapping_note": "2026-11-14 开仓侧收口：23 由独立 entry_runner 取 18-数据获取中心行情，经 23 pipeline/EvolutionEntryLoop 产出 FinalDecisionSignal(source=23-evolution)，由 22 TradeExecutionGateway 唯一执行（13 风控→16 定容→交易所）。11 已删除 _execute_evolution_(order|close)_via_tee 直连回退与 23 开仓 PositionTracker 写盘；持仓/冷静期/子池一律读 22 PositionLedger（LedgerGuards）。23 与 11/50 同一标的不得并存；decision_id 必填、expires_at 过期即拒。EVOLUTION_ENTRY23_ENABLED=off 即全局拒开仓（dry-run 同样拦截）。",
-    "symbols": {}
+    "symbols": {
+      "BTC-USDT-SWAP": {
+        "outcome": "live:23-gateway",
+        "since": "2026-11-18",
+        "source": "23-evolution"
+      },
+      "ETH-USDT-SWAP": {
+        "outcome": "live:23-gateway",
+        "since": "2026-11-18",
+        "source": "23-evolution"
+      },
+      "SOL-USDT-SWAP": {
+        "outcome": "live:23-gateway",
+        "since": "2026-11-18",
+        "source": "23-evolution"
+      }
+    }
   },
   "eleven_domain": {
     "gate": "EXECUTION_AUTHORITY",
