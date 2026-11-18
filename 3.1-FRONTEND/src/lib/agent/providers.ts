@@ -19,6 +19,10 @@ export type AgentProviderKind = 'openai' | 'openai-compatible';
 export interface ResolveModelOptions {
   provider?: string;
   model?: string;
+  /** 覆盖 AGENT_BASE_URL（评审/门禁模型可与 worker 异构） */
+  baseURL?: string;
+  /** 覆盖 AGENT_API_KEY */
+  apiKey?: string;
 }
 
 /**
@@ -107,7 +111,7 @@ const REASONING_MIDDLEWARE = extractReasoningMiddleware({ tagName: 'think' });
  */
 export function resolveAgentModel(opts: ResolveModelOptions = {}): LanguageModel | null {
   const provider = (opts.provider ?? process.env.AGENT_PROVIDER ?? 'openai-compatible').trim();
-  const apiKey = process.env.AGENT_API_KEY?.trim();
+  const apiKey = opts.apiKey?.trim() || process.env.AGENT_API_KEY?.trim();
   if (!apiKey) return null;
 
   if (provider === 'openai') {
@@ -123,7 +127,7 @@ export function resolveAgentModel(opts: ResolveModelOptions = {}): LanguageModel
   }
 
   if (provider === 'openai-compatible') {
-    const baseURL = process.env.AGENT_BASE_URL?.trim();
+    const baseURL = opts.baseURL?.trim() || process.env.AGENT_BASE_URL?.trim();
     if (!baseURL) return null;
     const modelName = (opts.model ?? process.env.AGENT_MODEL ?? 'qwen-plus').trim();
     // @ai-sdk/openai 以自定义 baseURL 兼容所有 OpenAI 协议端点

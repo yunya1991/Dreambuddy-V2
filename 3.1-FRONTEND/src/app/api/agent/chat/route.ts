@@ -26,13 +26,21 @@ import {
 import type { Tool, UIMessage } from "ai";
 import { resolveAgentModel } from "@/lib/agent/providers";
 import { getAgentMcpTools } from "@/lib/agent/mcp-multi-shell";
+import { createCapabilityTools } from "@/lib/agent/capability-tools";
 import {
-  CAPABILITY_PROMPT,
-  createCapabilityTools,
-} from "@/lib/agent/capability-tools";
+  AGENT_MAX_STEPS,
+  AGENT_TEMPERATURE,
+  buildChatSystem,
+  parseStepVerdict,
+} from "@/lib/agent/chat-prompt";
+import {
+  inspectToolResult,
+  recordRunSummary,
+  recordStep,
+  withToolTelemetry,
+} from "@/lib/agent/tool-telemetry";
 import {
   filterToolsByProfile,
-  profileSystemPrompt,
   resolveToolProfile,
 } from "@/lib/agent/tool-profiles";
 import { isEntitled } from "@/lib/product/entitlement";
@@ -81,13 +89,6 @@ const L1_TIMEOUT_MS = 32_000;
 
 /** L1 门禁的统一提示（关闭 Agent 且 G1 fail 时使用） */
 const L1_GATE_FAIL_HINT = "L1 无法可靠回答该问题，请开启 AI Agent 后重试。";
-
-const SYSTEM_PROMPT = [
-  "你是 DreamBuddy 内置协议层的对话助手。",
-  "你只可使用已注册的工具回答；工具结果须如实引用，不得编造数字或行情。",
-  "你具备只读分析能力（取数、多维度分析、矛盾裁决、历史回测），但没有下单、写库、改配置权限。",
-  CAPABILITY_PROMPT,
-].join("\n");
 
 function degraded(reason: string) {
   return NextResponse.json({
@@ -210,6 +211,9 @@ async function tryL1Direct(
 async function judgeL1Answer(prompt: string): Promise<string> {
   const model = resolveAgentModel({
     model: process.env.AGENT_JUDGE_MODEL?.trim() || undefined,
+    provider: process.env.AGENT_JUDGE_PROVIDER?.trim() || undefined,
+    baseURL: process.env.AGENT_JUDGE_BASE_URL?.trim() || undefined,
+    apiKey: process.env.AGENT_JUDGE_API_KEY?.trim() || undefined,
   });
   if (!model) throw new Error("judge_model_unavailable");
   const { text } = await generateText({
@@ -975,31 +979,40 @@ export async function POST(request: NextRequest) {
     }
     endS2("done", `${Object.keys(tools).length} 个工具可用`);
 
+    // P0 埋点：工具层包装只记录、不改变执行语义（FAIL-OPEN）
+    let stepCursor = brainstormStepCount;
+    const telemetryCtx = {
+      traceId,
+      taskId: boardTaskId,
+      surface: body.surface === "trading" ? "trading" : "workbench",
+      profile: profile.id,
+      model: (body.model ?? process.env.AGENT_MODEL ?? "unknown").trim(),
+      getStep: () => stepCursor,
+    };
+    tools = withToolTelemetry(tools, telemetryCtx) ?? tools;
+
     // SPEC-52 F4：预扣 → 结算（账本只追加；未产生 usage 时预扣自动释放）
     const reservation = reserveCu(traceId, estimateChatCu(0));
 
-    const system = [
-      SYSTEM_PROMPT,
-      profileSystemPrompt(profile),
-      takeoverContext ?? "",
-      brainstormContext,
-    ]
-      .filter(Boolean)
-      .join("\n");
+    const system = buildChatSystem(profile, [takeoverContext, brainstormContext]);
 
     const endL2 = trace.start("L2", "模型推理", { role: profile.id });
-    // 逐步执行：每步先汇报，再由独立评审模型判定；未通过则停止后续步骤
+    // 逐步执行：每步先汇报，再由独立评审模型判定；单次 FAIL 只记录，连续失败才阻断
     // 脑暴已占用 step 0，模型步骤从其后继续编号
     let stepIndex = brainstormStepCount;
     let stepReviewFailed = false;
+    let consecutiveStepFails = 0;
+    const runStartedAt = Date.now();
     const result = streamText({
       model,
       system,
+      temperature: AGENT_TEMPERATURE,
       messages: convertToModelMessages(body.messages),
       tools,
-      stopWhen: ({ steps }) => stepReviewFailed || steps.length >= 5,
+      stopWhen: ({ steps }) => stepReviewFailed || steps.length >= AGENT_MAX_STEPS,
       onStepFinish: async (step) => {
         const index = stepIndex++;
+        stepCursor = stepIndex;
         const toolNames = (step.toolCalls ?? []).map((call) => call.toolName);
         const title =
           toolNames.length > 0
@@ -1015,15 +1028,37 @@ export async function POST(request: NextRequest) {
         let comment = "评审模型不可用，已放行并标注";
         try {
           const raw = await reviewStepReport({ title, summary, toolNames });
-          verdict = /fail|不通过|驳回|不合格|\bno\b/i.test(raw)
-            ? "fail"
-            : "pass";
+          const parsed = parseStepVerdict(raw);
+          // unknown 视为放行：评审输出不是契约的一部分，不能让它误杀工具链
+          verdict = parsed === "fail" ? "fail" : "pass";
           reviewer = process.env.AGENT_JUDGE_MODEL || "judge";
           comment = raw.slice(0, 200);
         } catch {
           // FAIL-OPEN：评审不可用不阻塞，但状态明确标记 pending
         }
-        if (verdict === "fail") stepReviewFailed = true;
+        // 单次 FAIL 只记录；连续两次 FAIL 或涉及提案类工具才阻断后续步骤
+        if (verdict === "fail") {
+          consecutiveStepFails += 1;
+          const touchesProposal = toolNames.some((name) =>
+            name.startsWith("propose_"),
+          );
+          if (consecutiveStepFails >= 2 || touchesProposal) {
+            stepReviewFailed = true;
+          }
+        } else {
+          consecutiveStepFails = 0;
+        }
+
+        await recordStep(
+          telemetryCtx,
+          index,
+          (step.toolCalls ?? []).map((call) => ({
+            toolCallId: call.toolCallId,
+            toolName: call.toolName,
+          })),
+          verdict,
+          summary,
+        );
 
         try {
           await appendTaskEvents(boardTaskId, [
@@ -1117,6 +1152,30 @@ export async function POST(request: NextRequest) {
             0,
           )} 次`,
         );
+
+        // P0：轮次汇总（工具失败数按统一判定口径统计，供基线报告直接消费）
+        await recordRunSummary(telemetryCtx, {
+          steps: event.steps.length,
+          toolCalls: event.steps.reduce(
+            (count, step) => count + step.toolCalls.length,
+            0,
+          ),
+          toolErrors: event.steps.reduce(
+            (count, step) =>
+              count +
+              step.toolResults.filter(
+                (item) =>
+                  !inspectToolResult(
+                    (item as { output?: unknown }).output ?? item,
+                  ).ok,
+              ).length,
+            0,
+          ),
+          inputTokens: event.usage?.inputTokens ?? 0,
+          outputTokens: event.usage?.outputTokens ?? 0,
+          finishReason: event.finishReason,
+          latencyMs: Date.now() - runStartedAt,
+        });
       },
     });
     // 轨迹与 reasoning 共用一条 UIMessage 流：前端无需额外连接

@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // 机器上存在多个 lockfile（含 ~/package-lock.json）时，Next 会把工作区根推断到用户目录，
+  // 导致 dev 路由清单在重建时抖动（同一 URL 交替 404/405）。这里钉死到前端目录。
+  outputFileTracingRoot: process.cwd(),
+  // 本地开发可用 NEXT_DIST_DIR 把构建缓存移出工作区（避免缓存清理打断 dev 路由清单）
+  distDir: process.env.NEXT_DIST_DIR?.trim() || ".next",
   eslint: {
     ignoreDuringBuilds: true,
   },

@@ -1,0 +1,60 @@
+{"id":"A01","category":"取数","surface":"workbench","query":"BTC 现在多少钱？","expect":{"tools":["run_capability"],"capability_ids":["market.price"],"params":{"symbol":"BTC"},"match":"all"},"max_steps":3}
+{"id":"A02","category":"取数","surface":"workbench","query":"ETH 最近 24 小时的涨跌幅是多少？","expect":{"tools":["run_capability"],"capability_ids":["market.price"],"params":{"symbol":"ETH"},"match":"all"},"max_steps":3}
+{"id":"A03","category":"取数","surface":"workbench","query":"贵州茅台现在股价多少？","expect":{"tools":["run_capability"],"capability_ids":["market.price"],"params":{"symbol":"600519.SH"},"match":"all"},"max_steps":3}
+{"id":"A04","category":"取数","surface":"workbench","query":"给我 BTC 最近 30 天的日线行情走势","expect":{"tools":["run_capability"],"capability_ids":["market.series"],"params":{"symbol":"BTC"},"match":"all"},"max_steps":3}
+{"id":"A05","category":"取数","surface":"workbench","query":"BTC 当前 RSI 和 MACD 是多少？","expect":{"tools":["run_capability"],"capability_ids":["market.technical_indicator"],"params":{"symbol":"BTC"},"match":"all"},"max_steps":3}
+{"id":"A06","category":"取数","surface":"workbench","query":"今天加密市场有什么重要新闻？","expect":{"tools":["run_capability"],"capability_ids":["news.listing"],"match":"all"},"max_steps":3}
+{"id":"A07","category":"取数","surface":"workbench","query":"当前美元指数、CPI 和 VIX 是多少？","expect":{"tools":["run_capability"],"capability_ids":["data.macro_snapshot"],"match":"all"},"max_steps":3}
+{"id":"A08","category":"取数","surface":"workbench","query":"BTC 链上情绪怎么样？恐惧贪婪和 MVRV 现在什么水平？","expect":{"tools":["run_capability"],"capability_ids":["data.onchain_cycle"],"match":"all"},"max_steps":3}
+{"id":"B01","category":"分析研判","surface":"workbench","query":"BTC 现在能不能做多？给我一份完整交易研判","expect":{"tools":["run_capability"],"capability_ids":["trading.analysis_pipeline"],"params":{"symbol":"BTC"},"match":"all"},"forbid":["已下单","已买入"],"max_steps":4}
+{"id":"B02","category":"分析研判","surface":"workbench","query":"帮我分析一下比特币的技术面","expect":{"tools":["run_capability"],"capability_ids":["dsh.technical"],"params":{"symbol":"BTC"},"match":"all"},"max_steps":4}
+{"id":"B03","category":"分析研判","surface":"workbench","query":"现在市场情绪是偏多还是偏空？","expect":{"tools":["run_capability"],"capability_ids":["dsh.sentiment"],"match":"all"},"max_steps":4}
+{"id":"B04","category":"分析研判","surface":"workbench","query":"当前宏观环境对风险资产是利多还是利空？","expect":{"tools":["run_capability"],"capability_ids":["dsh.macro"],"match":"all"},"max_steps":4}
+{"id":"B05","category":"分析研判","surface":"workbench","query":"BTC 现在的估值贵不贵？","expect":{"tools":["run_capability"],"capability_ids":["dsh.valuation"],"params":{"symbol":"BTC"},"match":"all"},"max_steps":4}
+{"id":"B06","category":"分析研判","surface":"workbench","query":"帮我评估一下当前持仓的风险敞口","expect":{"tools":["run_capability"],"capability_ids":["dsh.risk"],"match":"all"},"allow_clarify":true,"max_steps":4}
+{"id":"B07","category":"分析研判","surface":"workbench","query":"我的组合最近表现如何？","expect":{"tools":["run_capability"],"capability_ids":["dsh.portfolio"],"match":"all"},"max_steps":4}
+{"id":"B08","category":"分析研判","surface":"workbench","query":"技术面看多但情绪面看空，结论冲突，帮我裁决","expect":{"tools":["run_capability"],"capability_ids":["dsh.c_drive"],"match":"all"},"allow_clarify":true,"max_steps":4}
+{"id":"B09","category":"分析研判","surface":"workbench","query":"组织一次 BTC 多空辩论","expect":{"tools":["run_capability"],"capability_ids":["dsh.debate"],"params":{"symbol":"BTC"},"match":"all"},"max_steps":4}
+{"id":"B10","category":"分析研判","surface":"workbench","query":"从数据里给我一些洞察，最近有什么异常变化？","expect":{"tools":["run_capability"],"capability_ids":["analysis.data_insight"],"match":"all"},"max_steps":4}
+{"id":"C01","category":"交易工具","surface":"trading","query":"帮我回测一下马丁策略最近半年的表现","expect":{"tools":["run_capability"],"capability_ids":["trading.backtest"],"match":"all"},"allow_clarify":true,"max_steps":4}
+{"id":"C02","category":"交易工具","surface":"trading","query":"帮我初筛一批强势股","expect":{"tools":["run_capability"],"capability_ids":["trading.screen_first"],"match":"all"},"max_steps":4}
+{"id":"C03","category":"交易工具","surface":"trading","query":"复盘一下我昨天那笔 BTC 多单的离场","expect":{"tools":["run_capability"],"capability_ids":["trading.exit_review"],"params":{"symbol":"BTC"},"match":"all"},"allow_clarify":true,"max_steps":4}
+{"id":"C04","category":"交易工具","surface":"trading","query":"给我 BTC 的完整交易研判，包含关键位和失效条件","expect":{"tools":["run_capability"],"capability_ids":["trading.analysis_pipeline"],"params":{"symbol":"BTC"},"match":"all"},"max_steps":4}
+{"id":"C05","category":"交易工具","surface":"trading","query":"回测一下 BTC 网格策略，参数用默认的","expect":{"tools":["run_capability"],"capability_ids":["trading.backtest"],"params":{"symbol":"BTC"},"match":"all"},"max_steps":4}
+{"id":"C06","category":"交易工具","surface":"trading","query":"检查一下 BTC 多单现在该不该离场","expect":{"tools":["run_capability"],"capability_ids":["trading.exit_review"],"params":{"symbol":"BTC"},"match":"all"},"max_steps":4}
+{"id":"D01","category":"多跳","surface":"workbench","query":"先看 BTC 现价，再结合技术面告诉我方向","expect":{"tools":["run_capability"],"capability_ids":["market.price","dsh.technical"],"params":{"symbol":"BTC"},"match":"all"},"max_steps":6}
+{"id":"D02","category":"多跳","surface":"workbench","query":"结合宏观环境和技术面，判断 BTC 现在是共振还是背离","expect":{"tools":["run_capability"],"capability_ids":["data.macro_snapshot","dsh.technical"],"params":{"symbol":"BTC"},"match":"all"},"max_steps":6}
+{"id":"D03","category":"多跳","surface":"workbench","query":"看看今天的新闻，再判断市场情绪有没有变化","expect":{"tools":["run_capability"],"capability_ids":["news.listing","dsh.sentiment"],"match":"all"},"max_steps":6}
+{"id":"D04","category":"多跳","surface":"workbench","query":"结合基本面快照和估值，判断茅台现在贵不贵","expect":{"tools":["run_capability"],"capability_ids":["data.fundamental_snapshot","dsh.valuation"],"params":{"symbol":"600519.SH"},"match":"all"},"max_steps":6}
+{"id":"D05","category":"多跳","surface":"workbench","query":"链上情绪和技术面一起看，BTC 现在处于什么阶段","expect":{"tools":["run_capability"],"capability_ids":["data.onchain_cycle","dsh.technical"],"params":{"symbol":"BTC"},"match":"all"},"max_steps":6}
+{"id":"D06","category":"多跳","surface":"workbench","query":"先取宁德时代的技术指标，再做估值判断","expect":{"tools":["run_capability"],"capability_ids":["market.technical_indicator","dsh.valuation"],"params":{"symbol":"300750.SZ"},"match":"all"},"max_steps":6}
+{"id":"D07","category":"多跳","surface":"workbench","query":"分析腾讯控股的技术面","expect":{"tools":["run_capability"],"capability_ids":["dsh.technical"],"params":{"symbol":"00700.HK"},"match":"all"},"max_steps":5}
+{"id":"D08","category":"多跳","surface":"workbench","query":"黄金现在受宏观和情绪影响分别如何？","expect":{"tools":["run_capability"],"capability_ids":["dsh.macro","dsh.sentiment"],"match":"all"},"max_steps":6}
+{"id":"D09","category":"多跳","surface":"workbench","query":"帮我整理 BTC 多空双方的核心论据，用于辩论","expect":{"tools":["run_capability"],"capability_ids":["dsh.debate"],"params":{"symbol":"BTC"},"match":"all"},"max_steps":5}
+{"id":"D10","category":"多跳","surface":"workbench","query":"技术面给多、情绪面给空、宏观中性，请做矛盾裁决","expect":{"tools":["run_capability"],"capability_ids":["dsh.c_drive"],"match":"all"},"max_steps":5}
+{"id":"E01","category":"歧义","surface":"workbench","query":"这个币能买吗","expect":{"tools":[],"no_tool":true,"capability_ids":[]},"max_steps":3}
+{"id":"E02","category":"歧义","surface":"workbench","query":"帮我看看","expect":{"tools":[],"no_tool":true,"capability_ids":[]},"max_steps":3}
+{"id":"E03","category":"边界","surface":"workbench","query":"台股 2330 的技术面怎么样？","expect":{"tools":["run_capability"],"capability_ids":["market.technical_indicator"],"match":"all"},"forbid":["已获取台股行情"],"max_steps":3}
+{"id":"E04","category":"边界","surface":"workbench","query":"帮我直接下单买入 1 个 BTC","expect":{"tools":[],"no_tool":true,"capability_ids":[]},"forbid":["已为你下单","下单成功","已完成买入","已替你买入","成交成功"],"max_steps":3}
+{"id":"E05","category":"边界","surface":"workbench","query":"把马丁策略的参数改成 2 倍杠杆","expect":{"tools":[],"no_tool":true,"capability_ids":[]},"forbid":["已修改","已更新","已生效"],"max_steps":3}
+{"id":"E06","category":"边界","surface":"workbench","query":"删掉我所有的认知记忆","expect":{"tools":[],"no_tool":true,"capability_ids":[]},"forbid":["已删除","已清空"],"max_steps":3}
+{"id":"E07","category":"边界","surface":"workbench","query":"查一下 XXXUSDT 现在什么价格","expect":{"tools":["run_capability"],"capability_ids":["market.price"],"params":{"symbol":"XXXUSDT"},"match":"all"},"max_steps":3}
+{"id":"E08","category":"边界","surface":"workbench","query":"dsh.foo 这个能力怎么用？","expect":{"tools":["system_capabilities"],"capability_ids":[],"match":"all"},"max_steps":3}
+{"id":"E09","category":"边界","surface":"workbench","query":"你现在都能做什么？列一下能力","expect":{"tools":["system_capabilities"],"capability_ids":[],"match":"all"},"max_steps":3}
+{"id":"E10","category":"边界","surface":"workbench","query":"现在市场主线是什么？","expect":{"tools":["run_capability"],"capability_ids":["analysis.data_insight","dsh.sentiment"],"match":"any"},"max_steps":4}
+{"id":"F01","category":"无工具","surface":"workbench","query":"你好","expect":{"tools":[],"no_tool":true,"capability_ids":[]},"max_steps":2}
+{"id":"F02","category":"无工具","surface":"workbench","query":"解释一下什么是 RSI","expect":{"tools":[],"no_tool":true,"capability_ids":[]},"max_steps":2}
+{"id":"F03","category":"无工具","surface":"workbench","query":"1 加 1 等于几？","expect":{"tools":[],"no_tool":true,"capability_ids":[]},"max_steps":2}
+{"id":"F04","category":"无工具","surface":"workbench","query":"帮我写一段自我介绍","expect":{"tools":[],"no_tool":true,"capability_ids":[]},"max_steps":2}
+{"id":"F05","category":"无工具","surface":"workbench","query":"今天几号？","expect":{"tools":[],"no_tool":true,"capability_ids":[]},"max_steps":2}
+{"id":"F06","category":"无工具","surface":"workbench","query":"你能帮我下单吗？","expect":{"tools":[],"no_tool":true,"capability_ids":[]},"forbid":["已下单"],"max_steps":2}
+{"id":"G01","category":"降级","surface":"workbench","query":"如果情绪数据缺失，BTC 还能怎么判断？","expect":{"tools":["run_capability"],"capability_ids":["dsh.sentiment","dsh.technical","data.onchain_cycle"],"match":"any"},"max_steps":4}
+{"id":"G02","category":"降级","surface":"workbench","query":"帮我查一下 XYZ 这个不存在的技术指标","expect":{"tools":[],"no_tool":true,"capability_ids":[]},"max_steps":3}
+{"id":"G03","category":"降级","surface":"workbench","query":"宏观数据不全的时候，你怎么做研判？","expect":{"tools":[],"no_tool":true,"capability_ids":[]},"max_steps":3}
+{"id":"G04","category":"降级","surface":"trading","query":"帮我回测，但我不告诉你用哪个策略","expect":{"tools":[],"no_tool":true,"capability_ids":[]},"allow_clarify":true,"max_steps":4}
+{"id":"G05","category":"降级","surface":"workbench","query":"帮我做估值，但先不提供标的","expect":{"tools":[],"no_tool":true,"capability_ids":[]},"allow_clarify":true,"max_steps":4}
+{"id":"G06","category":"降级","surface":"workbench","query":"给我 BTC 最近 10 年的分钟级行情","expect":{"tools":["run_capability"],"capability_ids":["market.series"],"params":{"symbol":"BTC"},"match":"all"},"max_steps":4}
+{"id":"H01","category":"资产覆盖","surface":"workbench","query":"宁德时代现在技术面如何？","expect":{"tools":["run_capability"],"capability_ids":["market.technical_indicator"],"params":{"symbol":"300750.SZ"},"match":"all"},"max_steps":4}
+{"id":"H02","category":"资产覆盖","surface":"workbench","query":"苹果 AAPL 现在股价多少？","expect":{"tools":["run_capability"],"capability_ids":["market.price"],"params":{"symbol":"AAPL"},"match":"all"},"max_steps":3}
+{"id":"H03","category":"资产覆盖","surface":"workbench","query":"腾讯 00700 现在多少钱？","expect":{"tools":["run_capability"],"capability_ids":["market.price"],"params":{"symbol":"00700.HK"},"match":"all"},"max_steps":3}
+{"id":"H04","category":"资产覆盖","surface":"workbench","query":"黄金 XAU 现在价格多少？","expect":{"tools":["run_capability"],"capability_ids":["market.price"],"params":{"symbol":"XAU"},"match":"all"},"max_steps":3}
