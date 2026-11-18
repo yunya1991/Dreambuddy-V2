@@ -1,0 +1,8 @@
+[Unit]
+Description=DreamBuddy governance cycle (SLA + memory ingestion + forgetting plan)
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/curl --fail --silent --show-error --max-time 120 -X POST http://127.0.0.1/api/governance/cycle
+TimeoutStartSec=180

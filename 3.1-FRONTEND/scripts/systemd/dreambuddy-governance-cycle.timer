@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily DreamBuddy governance cycle at 03:30
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+RandomizedDelaySec=300
+Unit=dreambuddy-governance-cycle.service
+
+[Install]
+WantedBy=timers.target
