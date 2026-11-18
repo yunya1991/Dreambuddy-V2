@@ -1,5 +1,16 @@
 # 执行引擎中心 — 变更记录
 
+## v1.9.2（2026-11-18）— 23 域决策 px 空值契约修复
+
+### 修复
+- `executors/domain_clients._submit_via_gateway`：`px` 仅在非空时写入决策根节点。v1.2 契约根节点无 `px` 字段，
+  止损/止盈单此前每轮都带 `px: null`，导致 `contract_violations.jsonl` 持续写入
+  `Additional properties are not allowed ('px' was unexpected)` 并触发 `GatewayContractViolation`(P1) 告警。
+- 新增 `tests/test_domain_clients_contract.py` 2 项：止损/止盈决策不含 `px`；开仓决策保留限价 `px`。
+
+### 验收
+- 云端重启后（2026-11-18 14:56 CST）连续 6 分钟无新增违规（此前约每 70s 一条）。
+
 ## v1.9.1（2026-11-14）— 50 声明名义上限接入（M4-4 小额灰度）
 
 ### 新增
