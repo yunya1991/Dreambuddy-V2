@@ -18,6 +18,7 @@
 """
 
 import argparse
+import fcntl
 import json
 import os
 import sys
@@ -39,6 +40,45 @@ if CLASSIC_SYSTEM_PATH not in sys.path:
 
 # 信号池文件路径
 POOL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pool.json")
+
+# 单实例锁：systemd 实例与手工启动共用同一把锁，避免双进程同时写 pool.json
+LOCK_FILENAME = "dreambuddy-signal-scanner.lock"
+_lock_handle = None
+
+
+def acquire_single_instance_lock() -> str:
+    """获取单实例文件锁，已被其他实例持有时直接退出。
+
+    锁文件优先放在 /run/lock（开机重启后自动清理），不可用时退回 /tmp；
+    可用环境变量 SIGNAL_SCANNER_LOCK 指定完整锁文件路径。
+
+    返回锁文件路径；无法创建任何锁文件时返回空串（fail-open，不阻断信号生成）。
+    """
+    global _lock_handle
+    override = os.environ.get("SIGNAL_SCANNER_LOCK")
+    candidates = [override] if override else ["/run/lock", "/tmp"]
+    last_error = None
+
+    for target in candidates:
+        path = target if override else os.path.join(target, LOCK_FILENAME)
+        try:
+            handle = open(path, "a+")
+        except OSError as exc:
+            last_error = exc
+            continue
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            handle.close()
+            print(f"[Scanner] 已有实例持有锁 {path}，本进程(pid={os.getpid()})退出")
+            raise SystemExit(1) from None
+        _lock_handle = handle
+        print(f"[Scanner] 单实例锁已获取: {path} (pid={os.getpid()})")
+        return path
+
+    print(f"[Scanner] 警告: 无法创建单实例锁({last_error})，本次启动未受互斥保护")
+    return ""
+
 
 # 策略配置（与 screen_engine.py 保持一致）
 STRATEGIES_4H = [
@@ -246,6 +286,8 @@ def main():
     parser.add_argument("--daemon", action="store_true", help="守护模式（定时扫描）")
     parser.add_argument("--interval", type=int, default=300, help="扫描间隔（秒），默认300")
     args = parser.parse_args()
+
+    acquire_single_instance_lock()
 
     if args.once:
         scan_all_coins()
