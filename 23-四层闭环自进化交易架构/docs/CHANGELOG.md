@@ -9,18 +9,34 @@
 
 ### 修复
 
-- **根因**：22 账本 43 笔平仓中 25 笔 `realized_pnl=0`，全部来自 `source='22-reconciled'`
-  （对账/幽灵仓清零，不是真实交易）；另有 1 笔 NULL。这些记录被当作亏损计入胜率
-  → `win_rate` 恒 0 → `reflection_ri` 恒 0.5、`eligible=False`。
+- **根因（两层）**：
+  1. **已知源路径解析错误**：`TradeIndexBuilder.KNOWN_SOURCES` 的相对路径按 `project_root` 解析，
+     而 entry23 以 `23-四层闭环自进化交易架构` 为根启动，`22-执行引擎中心/runtime/position_ledger.db`
+     解析后不存在 → **真实交易全部漏读**。现按「含 22-执行引擎中心 的仓库根」解析已知源。
+  2. **影子样本冒充真实交易**：`gene_data/shadow_validation/*_samples.jsonl` 与 `data/ess_reflection.jsonl`
+     被自动发现当作已平仓交易，其 `pnl` 为占位值（如 -100 / 0）、`exit_reason='运行时检测OKX持仓消失'`；
+     加上 22 对账平仓 25 笔 `realized_pnl=0`（`source='22-reconciled'`）→ `win_rate` 恒 0
+     → `reflection_ri` 恒 0.5、`eligible=False`。
 - **修复**：
-  1. `TradeIndexBuilder.KNOWN_SOURCES` 的 fills 查询增加 `COALESCE(source,'') NOT LIKE '%reconcil%'`；
-  2. `_normalize_trade` 新增 `pnl_valid`（`realized_pnl` 与 `pnl_pct` 均缺失才为 False）；
-  3. `ReflectionScanner.scan` 过滤 `pnl_valid=False` 的样本。
-- **不变量**：真实盈亏（含恰好为 0 的保本单）仍计入统计，只是不再把「收益未知」当亏损。
+  1. `_repo_root()` 向上定位仓库根，已知源统一据此解析（`_glob_sources` + `build_index`）；
+  2. fills 查询排除 `source LIKE '%reconcil%'`；
+  3. `_normalize_trade` 新增 `is_synthetic`（shadow 样本 / 幽灵仓 / 显式 backtest 标记）与 `pnl_valid`；
+  4. `ReflectionScanner.scan` 只统计 `pnl_valid=True` 的记录。
+- **不变量**：真实盈亏（含恰好为 0 的保本单）仍计入统计，只排除「收益未知 / 非真实成交」。
+
+### 验收（云端 e2a57cb7，2026-11-18 13:47 CST 重启）
+
+| 项 | 修复前 | 修复后 |
+|---|---|---|
+| 索引交易数 | 64（全为 shadow 样本） | 83（含 `22-ledger` 真实交易） |
+| 覆盖币种 | 64（每币 1 笔假样本） | 8（真实交易 + 类先验） |
+| BTC | n=1、win_rate=0.0、ri=0.5、eligible=False | **n=3、win_rate=1.0、ri=0.80、eligible=True** |
+| ETH / SOL | n=1 / n=0，ri=0.5 | 无真实平仓 → 类先验 ri=0.65、`is_prior=True` |
 
 ### 测试
 
-- 新增 `tests/test_reflection_sample_quality.py` 3 项：reconcile 排除、缺失 PnL 标记、胜率只统计有效样本。
+- 新增 `tests/test_reflection_sample_quality.py` 4 项：reconcile 排除、缺失 PnL 标记、胜率只统计有效样本、
+  跨目录源解析 + shadow 样本排除。
 
 ---
 

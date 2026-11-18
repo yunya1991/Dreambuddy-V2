@@ -14,7 +14,7 @@
 | F5 | `reflection_ri=0.50` | 冷启动，`get_coin_stats.eligible=False` | 无需修复，样本积累后自然变化 | — | `[-]` |
 | F6 | 定位信息不足 | N0 未记录 `ess_top_direction` / `vol_ratio` / `is_source` | N9 事件补充 `ri/tier/ess_top_direction/vol_ratio/ripple_is_source/ripple_ri/reflection_ri/reflection_eligible` | 云端 N9 可直接看出卡在哪一条件 | `[x]` |
 | F7 | `PROBE_THRESHOLD` 口径不一致 | 记忆记录 0.55，23 handler 现值 0.50 | 已核对：23 handler 为 `0.50`；`0.55` 来自 `ripple_engine.get_ri_action`（cbr_boost 档）与 `tight_coupling_orchestrator`（RI≥0.55 形成推断），属不同阈值，非缺陷 | 结论记录 | `[-]` |
-| F8 | `reflection_ri` 始终 0.5，样本看似不积累 | 22 `fills` 平仓 43 笔中 25 笔 `realized_pnl=0`（**全部来自 `source='22-reconciled'`**，即对账/幽灵仓清零，不是真实交易）、1 笔 NULL；reflection 用 `win_rate` → 恒 0 → ri 恒 0.5 | ① `TradeIndexBuilder` 建索引时排除 `source LIKE '%reconcil%'`；② `_normalize_trade` 增加 `pnl_valid`（`realized_pnl` 与 `pnl_pct` 均缺失则为 False）；③ `ReflectionScanner.scan` 跳过 `pnl_valid=False`；④ 15 侧 `ReflectionSampleStarved` 告警 + `23_REFLECTION_STARVED` 日报项 | 单测 3 项；云端 BTC 2 笔真实交易 → win_rate=1.0、`reflection_ri>0.55`、`eligible=True` | `[x]` |
+| F8 | `reflection_ri` 始终 0.5，样本看似不积累 | ① 已知源相对 `project_root` 解析，entry23 以 23 目录启动 → 22 账本路径不存在，**真实交易全漏读**；② 自动发现把 `gene_data/shadow_validation/*_samples.jsonl`、`data/ess_reflection.jsonl` 当真实交易（pnl=-100 占位、exit_reason='运行时检测OKX持仓消失'）；③ 22 对账平仓 25 笔 `realized_pnl=0`（`source='22-reconciled'`）被当亏损 | ① `_repo_root()` 向上定位仓库根，已知源据此解析；② fills 查询排除 `source LIKE '%reconcil%'`；③ `_normalize_trade` 增 `is_synthetic`/`pnl_valid`；④ `ReflectionScanner` 只统计 `pnl_valid=True` | 单测 4 项；云端 BTC n=3、win_rate=1.0、ri=0.80、eligible=True；索引 83 笔（含 22-ledger） | `[x]` |
 
 ## 执行记录
 
