@@ -11001,6 +11001,34 @@ class PollingTrader:
         signal=None,
     ):
         """M1-e：KlineEventHandler 建仓回调（薄 adapter）→ 23 EvolutionEntryLoop。"""
+        # ★ shadow-mode 全局硬闸门：23 开仓链路同样禁止真实下单
+        #   此前仅 _open_position(BCRM/BDSM) 校验 shadow_mode，23→22 网关路径可绕过；
+        #   开启 YIJING_23_ENABLED 时会导致「影子服务真实开仓」。
+        if getattr(self, "shadow_mode", False):
+            try:
+                self._log(
+                    f"[SHADOW MODE BLOCKED-23OPEN] {symbol} {action} conf={float(confidence or 0):.3f} "
+                    f"tier={tier} | 仅记录不真实下单",
+                    "WARN",
+                )
+                self._write_shadow_signal(
+                    {
+                        "coin": str(symbol).upper().replace("-USDT-SWAP", ""),
+                        "inst_id": (
+                            str(symbol)
+                            if str(symbol).upper().endswith("-USDT-SWAP")
+                            else f"{str(symbol).upper()}-USDT-SWAP"
+                        ),
+                        "direction": "UP" if str(action).lower() == "long" else "DOWN",
+                        "confidence": float(confidence or 0.0),
+                        "reason": f"23_entry_build:{action}",
+                        "source_tag": source_tag or "evolution",
+                    },
+                    source_tag or "evolution",
+                )
+            except Exception:  # noqa: BLE001 — 影子日志失败不阻断主循环
+                pass
+            return None
         try:
             _kline = (getattr(self, "_last_evolution_kline_by_coin", {}) or {}).get(
                 str(symbol).upper()

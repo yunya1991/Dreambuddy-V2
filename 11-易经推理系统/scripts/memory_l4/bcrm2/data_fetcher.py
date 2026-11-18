@@ -76,6 +76,7 @@ def fetch_okx_klines(
     bar: str = "1H",
     limit: int = 1000,
     max_pages: int = 5,
+    after_ts: Optional[int] = None,
 ) -> pd.DataFrame:
     """
     从OKX获取K线数据
@@ -85,6 +86,8 @@ def fetch_okx_klines(
         bar: K线周期: 1H, 4H, 1D 等
         limit: 每次请求的K线数量 (最大100)
         max_pages: 最大翻页次数
+        after_ts: 分页锚点（毫秒）。传入本地最旧 bar 的 ts 时，只补更早历史，
+                  用于断点续传补齐 30k 根长历史。
 
     Returns:
         DataFrame with columns: open, high, low, close, volume
@@ -130,7 +133,10 @@ def fetch_okx_klines(
         return s
 
     all_data = []
-    after = None  # 分页锚点
+    after = after_ts  # 分页锚点
+    page_size = min(limit, 100)
+    if after:
+        print(f"  [data_fetcher] 断点续传: 只补更早于 {after} 的 K 线")
 
     _sess = None
     try:
@@ -149,11 +155,31 @@ def fetch_okx_klines(
                     params = {
                         "instId": inst_id,
                         "bar": bar,
-                        "limit": min(limit, 100),
+                        "limit": page_size,
                     }
                     if after:  # noqa: B023
                         params["after"] = str(after)  # noqa: B023
                     return _sess.get(url, params=params, timeout=10)  # noqa: B023
+
+                def _request_with_retry(inst_id: str, attempts: int = 3):
+                    """单页最多 3 次指数退避重试；51001 直接返回给候选回退逻辑。"""
+                    last_json = {}
+                    for k in range(attempts):
+                        try:
+                            r0 = _do_request(inst_id)
+                            j0 = r0.json()
+                            code = str(j0.get("code"))
+                            if code == "0":
+                                return r0, j0
+                            last_json = j0
+                            if code == "51001":  # instrument 不存在，换 SWAP 候选
+                                return r0, j0
+                            # 50011: 限频；其他可重试错误
+                            time.sleep(1.0 * (2**k))
+                        except Exception as e:  # noqa: BLE001
+                            last_json = {"code": "EXC", "msg": str(e)}
+                            time.sleep(1.0 * (2**k))
+                    return None, last_json
 
                 # 构造候选 instId 列表：现货 → SWAP
                 base_symbol = (
@@ -161,23 +187,22 @@ def fetch_okx_klines(
                 )
                 candidates = [f"{base_symbol}-USDT", f"{base_symbol}-USDT-SWAP"]
                 resp = None
+                data = {}
                 for inst_id in candidates:
-                    r0 = _do_request(inst_id)
-                    j0 = r0.json()
+                    r0, j0 = _request_with_retry(inst_id)
                     tried.append(f"{inst_id}->code={j0.get('code')}")
-                    if j0.get("code") == "0" and j0.get("data"):
+                    if r0 is not None and j0.get("code") == "0" and j0.get("data"):
                         resp = r0
+                        data = j0
                         break
                     # 仅当 51001 / data 为空时继续尝试下一个
+                    if str(j0.get("code")) not in ("51001", "0"):
+                        data = j0
+                        break
                 if resp is None:
-                    # 拿 candidates[0] 的响应作为最终返回，便于在下面走 code != 0 break
-                    resp = r0
-
-                data = resp.json()
-                if data.get("code") != "0":
                     # 只在首次请求时打印尝试过的 instId 序列，后续页不重复打印
-                    if after is None:
-                        print(f"  [data_fetcher] 候选 instId 尝试: {tried}")
+                    if after is None or page == 0:
+                        print(f"  [data_fetcher] 候选 instId 尝试: {tried} last={data.get('code')}")
                     break
 
                 candles = data.get("data", [])
@@ -189,13 +214,19 @@ def fetch_okx_klines(
                 # 设置下一页锚点 (最后一根K线的ts)
                 after = candles[-1][0]
 
-                if len(candles) < limit:
+                if page and page % 50 == 0:
+                    print(f"  [data_fetcher] 已翻页 {page}，累计 {len(all_data)} 根")
+
+                if len(candles) < page_size:
                     break
 
-                time.sleep(0.2)  # 限频
+                time.sleep(0.25)  # 限频
 
             except Exception as e:
-                print(f"  获取K线失败 (page {page+1}): {e}  proxies={_sess.proxies}")
+                print(
+                    f"  获取K线失败 (page {page+1}): {e}  proxies={_sess.proxies} "
+                    f"已获取={len(all_data)}"
+                )
                 break
     finally:
         if _sess is not None:
@@ -315,15 +346,28 @@ def get_klines(
             print(f"  从本地加载: {len(df)}根K线")
             return df.tail(max_bars)
 
+    old = load_kline_from_local(sym_usdt, timeframe) if use_cache else None
+
+    # 本地已覆盖最新但长度不足时，从最旧 bar 继续向上游补历史（断点续传）
+    after_ts = None
+    if old is not None and len(old) > 0 and len(old) < max_bars and _is_fresh(old, timeframe, 2):
+        after_ts = int(old.index[0].timestamp() * 1000)
+        print(f"  本地已有 {len(old)} 根且最新，向上游补更早历史")
+
     # 从OKX拉取
     print(f"  从OKX获取 {sym_key} {timeframe} K线...")
-    df = fetch_okx_klines(sym_usdt, bar=timeframe, limit=100, max_pages=max_bars // 100 + 1)
+    df = fetch_okx_klines(
+        sym_usdt,
+        bar=timeframe,
+        limit=100,
+        max_pages=max_bars // 100 + 1,
+        after_ts=after_ts,
+    )
 
     if len(df) > 0:
         print(f"  获取到 {len(df)}根K线")
         if use_cache:
             # 合并旧缓存再落盘，避免 freshness 刷新把长历史覆盖成短窗口
-            old = load_kline_from_local(sym_usdt, timeframe)
             if old is not None and len(old) > 0:
                 df = pd.concat([old, df])
                 df = df[~df.index.duplicated(keep="last")].sort_index()
@@ -331,8 +375,7 @@ def get_klines(
         return df.tail(max_bars)
 
     # 拉取失败：回退到本地旧缓存（避免整体 fail-closed）
-    df = load_kline_from_local(sym_usdt, timeframe)
-    if df is not None and len(df) > 0:
-        print(f"  OKX拉取失败，回退本地缓存: {len(df)}根K线")
-        return df.tail(max_bars)
+    if old is not None and len(old) > 0:
+        print(f"  OKX拉取失败，回退本地缓存: {len(old)}根K线")
+        return old.tail(max_bars)
     return pd.DataFrame()

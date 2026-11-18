@@ -2,7 +2,7 @@
 
 > **定位**：记录每次变更的原因、内容、验证方式
 > **格式**：`[版本] - 日期 → 变更类型（新增/修改/修复/删除）`
-> **版本**：v4.5.0 | **更新**：2026-11-14
+> **版本**：v4.6.2 | **更新**：2026-11-18
 
 ---
 
@@ -46,6 +46,21 @@
   - 29 个通过筛选的模型复制到 `scripts/data/bcrm2_models_keep/`（含 `SHORTLIST.json`，仅作基准，不参与自动加载）
   - 活动缓存 `scripts/data/bcrm2_models/` 清空，P0 新缓存键下按 1H 已收盘数据重新训练
   - 五域两个权重文件回退等权，原文件另存 `*_deprecated_20261118.json`
+
+---
+
+## [v4.6.2] - 2026-11-18
+
+### 49 协议架构走查（代码+云端日志）+ 1H 5 折评测脚本 + 23 开仓影子闸门
+
+- **架构走查（以代码与云端日志为准，详见 `docs/reports/2026-11-18-p1-1h-walkforward.md` 与本次会话结论）**
+  - 已一致：42 总线多源汇聚（`11-bcrm` / `11-bcrm-tactical` / `bdsm` / `strategic_extension` / `23-contradiction`，云端 12:30 新鲜）；43 发布器定时运行（云端 12:18）；23 开/平仓经 22 `TradeExecutionGateway` + 13 fail-closed；`FinalDecisionSignal v1.2` 字段（`decision_id`/`action`/`position_tier`/`position_mult`/`path` 等）由 `build_entry_decision` 完整填充；`execution_rights` 已登记 `fifty_nn_domain`（`live:50-bypass`，Mandate + 单笔 ≤100U + 3x）
+  - 运维事实澄清：`yijing-polling-trader` 的 `--shadow-mode` 只约束 11 自有子池；云端 `dreambuddy-nn-live-chain`（50 → 22 → OKX live，今日 7 笔真实成交）与 `dreambuddy-entry23`（BTC/ETH/SOL，经 22 网关）均为 live，二者与 11 影子态不是同一层开关
+  - 冲突/缺口（P0/P1/P2 分级见报告）：`--shadow-mode` 未覆盖 23 开仓回调；`YIJING_23_EXIT_ENABLED` 与代码读取的 `YIJING_23_ENABLED` 命名不一致（开关失效）；`get_macro_elastic_constraint` 固定 `mode=shadow` 但 `EVOLUTION_QUOTA_GATE` 仍作用于 23 实盘定容；22 网关未消费 `execution_rights`（仅 50 的 x1 执行器消费）；23 契约校验默认 alert-only
+- **修复（P0）**：`polling_trader._evolution_entry_build` 增加 `shadow_mode` 硬闸门——影子模式下 23 开仓回调只写 `shadow_signals.jsonl` 并记 `[SHADOW MODE BLOCKED-23OPEN]`，不再透传到 22 网关。此前该路径可绕过 `_open_position` 的 shadow 校验
+- **新增（P1 评测）**：`scripts/memory_l4/bcrm2/eval_1h_walkforward.py`（5 折 anchoring walk-forward + B0/B1/B3 基线 + bootstrap CI + G0–G4 门禁）；`bcrm2/data_fetcher.py` 增加单页 3 次指数退避、`after_ts` 断点续传与本地长历史合并（实测 BTC 8199→30000 根）
+- **验证**：`data_fetcher` 抓取链路实测 300 页全成功（224.7s）；评测脚本冒烟（BTC 3000 根/2 折）输出 G0/G0.5/G2 判定；影子闸门为纯前置 return，不影响 `shadow_mode=False` 路径
+- **影响范围**：`scripts/memory_l4/polling_trader.py`（`_evolution_entry_build`）、`scripts/memory_l4/bcrm2/data_fetcher.py`、`scripts/memory_l4/bcrm2/eval_1h_walkforward.py`（新增）、`docs/SPEC-20261118-1H-walkforward-validation.md`（新增）
 
 ---
 
