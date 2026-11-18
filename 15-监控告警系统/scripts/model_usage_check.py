@@ -460,6 +460,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--config", default=str(DEFAULT_CONFIG))
     parser.add_argument("--state", default=str(DEFAULT_STATE))
+    parser.add_argument("--push", action="store_true", help="推送飞书（默认开启，显式声明用）")
     parser.add_argument("--no-push", action="store_true", help="只检查不推送")
     parser.add_argument("--dry-run", action="store_true", help="不推送、不写去重状态")
     parser.add_argument("--json", action="store_true", help="stdout 输出 JSON 摘要")
