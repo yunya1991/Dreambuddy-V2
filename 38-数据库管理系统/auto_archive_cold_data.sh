@@ -15,7 +15,10 @@ DATE=$(date +%Y%m%d)
 
 log() { echo "$(date '+%F %T') $1" >> "$LOG"; }
 
-COLD_WHERE="substring(timestamp from 1 for 10) < to_char(now() - interval '30 days', 'YYYY-MM-DD')"
+# 宏观序列（category=macro：FEDFUNDS/CPI/M2/PAYEMS 等月频/季频）不参与 30 天冷删：
+# 月频序列 30 天内只剩 1 个点，会让 40 p1_real_cycle 的「至少 3 个点」状态机直接失败
+# （2026-11-18 事故：FEDFUNDS 仅剩 1 行，40 日更流水线首节点 exit=1）
+COLD_WHERE="substring(timestamp from 1 for 10) < to_char(now() - interval '30 days', 'YYYY-MM-DD') AND COALESCE(category,'') <> 'macro'"
 
 # ============ Part 1: PostgreSQL 冷数据归档（30 天阈值） ============
 COUNT=$($PG -c "SELECT COUNT(*) FROM records WHERE $COLD_WHERE;")
