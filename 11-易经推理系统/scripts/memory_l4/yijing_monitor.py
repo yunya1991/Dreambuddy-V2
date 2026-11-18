@@ -256,24 +256,19 @@ def check_yijing_health() -> tuple[bool, str, dict]:
 # ── 恢复执行 ────────────────────────────────────────────────────────────────
 
 
-def _build_popen_env() -> dict:
-    """构造 Popen env，确保三引擎 env 变量传递给 polling_trader 子进程。
-
-    Gap2：当 yijing_monitor 从 launchd 自动触发时，父进程可能没有
-    ODAILY_ENGINE_BOOST / FUND_7ENGINES_BOOST / FORCE_VECTOR_SHADOW，导致子进程也不继承。
-    使用 setdefault（不覆盖已有值），然后显式传 env 给 Popen。
-    """
-    env = os.environ.copy()
-    env.setdefault("ODAILY_ENGINE_BOOST", "1")
-    env.setdefault("FUND_7ENGINES_BOOST", "1")
-    env.setdefault("FORCE_VECTOR_SHADOW", "1")
-    return env
+_YIJING_TRADER_UNIT = "yijing-polling-trader"
 
 
 def run_polling_trader():
-    """启动易经推理轮询交易器"""
+    """通过 systemd 启动易经推理轮询交易器（独立常驻单元）。
+
+    历史坑：yijing-monitor 是 Type=oneshot 单元，过去用 Popen 在单元内拉子进程，
+    monitor 退出时 systemd 会按 cgroup 把子进程一起回收，导致 11 每次只活 2~3 秒。
+    改为 systemctl start 独立单元后，11 由 systemd（Restart=always）托管，
+    生命周期不再受 monitor 影响。
+    """
     _log("=" * 60)
-    _log("启动易经推理轮询交易器")
+    _log(f"启动易经推理轮询交易器（systemctl start {_YIJING_TRADER_UNIT}）")
     _log("=" * 60)
 
     # 并发保护：若已有 polling_trader 实例运行则跳过，避免多实例共享同一 OKX 账户
@@ -293,69 +288,44 @@ def run_polling_trader():
     except Exception as _e:
         _log(f"并发检查失败（忽略，继续启动）: {_e}")
 
-    script = BASE_DIR / "scripts" / "memory_l4" / "polling_trader.py"
-    if not script.exists():
-        _log(f"错误: 脚本不存在 {script}")
-        return False
-
     try:
-        # 使用 nohup 后台启动（参数与 .env 保持一致：INITIAL_EQUITY 200USDT，15币种，interval=300s）
-        import os
-
-        coins = os.environ.get("POLLING_COINS", _load_polling_coins_default())
-        interval = os.environ.get("POLLING_INTERVAL", "300")
-        confidence = os.environ.get("CONFIDENCE_THRESHOLD", "0.7955")
-        max_positions = os.environ.get("MAX_POSITIONS", "5")
-        position_pct = os.environ.get("DEFAULT_POSITION_PCT", "0.20")
-        initial_equity = os.environ.get("INITIAL_EQUITY", "200.0")
-
-        # 日志重定向到 BASE_DIR/logs
-        log_dir = BASE_DIR / "logs"
-        log_dir.mkdir(parents=True, exist_ok=True)
-        stdout_log = log_dir / "trading_stdout.log"
-        stderr_log = log_dir / "trading_stderr.log"
-
-        # 用 Popen 后台启动（nohup + 重定向），避免 subprocess.run timeout=30 触发"启动超时"误报
-        cmd = [
-            "nohup",
-            sys.executable,
-            "-m",
-            "scripts.memory_l4.polling_trader",
-            "--interval",
-            interval,
-            "--coins",
-            coins,
-            "--confidence",
-            confidence,
-            "--max-positions",
-            max_positions,
-            "--position-pct",
-            position_pct,
-            "--initial-equity",
-            initial_equity,
-        ]
-        with open(stdout_log, "a") as out_f, open(stderr_log, "a") as err_f:
-            proc = subprocess.Popen(
-                cmd,
-                cwd=str(BASE_DIR),
-                stdout=out_f,
-                stderr=err_f,
-                start_new_session=True,
-                env=_build_popen_env(),
-            )
-        _log(f"Popen 启动成功 PID={proc.pid}")
-        # 短等待确认进程未立即退出
-        time.sleep(3)
-        polled = proc.poll()
-        if polled is None:
-            _log(f"polling_trader 已在后台启动（PID={proc.pid}，存活）")
-            return True
-        else:
-            _log(f"启动后立即退出 (exit={polled})，请检查 {stderr_log}")
-            return False
+        started = subprocess.run(
+            ["systemctl", "start", _YIJING_TRADER_UNIT],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
     except Exception as e:
-        _log(f"启动异常: {e}")
+        _log(f"systemctl start 调用异常: {e}")
         return False
+
+    if started.returncode != 0:
+        _log(
+            f"systemctl start 失败 exit={started.returncode} "
+            f"stderr={started.stderr.strip()[:300]}"
+        )
+        return False
+
+    # 等待单元进入 active（Restart=always 会持续拉起）
+    for _ in range(10):
+        time.sleep(1)
+        try:
+            active = subprocess.run(
+                ["systemctl", "is-active", _YIJING_TRADER_UNIT],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            ).stdout.strip()
+        except Exception:
+            active = ""
+        if active == "active":
+            _log(f"{_YIJING_TRADER_UNIT} 已由 systemd 启动（active）")
+            return True
+
+    _log(
+        f"{_YIJING_TRADER_UNIT} 启动后未进入 active，" f"请检查 journalctl -u {_YIJING_TRADER_UNIT}"
+    )
+    return False
 
 
 # ── 自进化学习 ──────────────────────────────────────────────────────────────
