@@ -290,7 +290,7 @@
 ### 15.2 实施载体
 
 - `domain_semantics.py`：语义映射层（内部键↔语义键映射 + 新权重 + 语义总分计算），内部计算键名与全部计算函数结构不变；
-- `sentiment_channel.py`：自建情绪通道（落实 v1.0 冻结决策 #2），只读 18-数据获取中心 F&G 数据（fear_greed_enhanced 优先，回退 fear_greed），3 天时效校验，fail-open 中性 50；
+- `sentiment_channel.py`：自建情绪通道（落实 v1.0 冻结决策 #2），只读 18-数据获取中心 F&G 数据（fear_greed_enhanced 优先，回退 fear_greed），3 天时效校验，fail-open 中性 50；PG 密码发现顺序：`DATA_CENTER_PG_PASSWORD` → `7-产物中台/系统研究索引体系/.env` → `18-数据获取中心/.env`（DATABASE_URL，云端实际来源）；
 - 信号 payload 新增 `semantic_view`：语义五维评分 + 新权重总分 + 权重表 + 语义描述 + 情绪通道结果。
 
 ### 15.3 实施验证记录（2026-10-28）
@@ -378,5 +378,6 @@ grep -rn "memory_l4\|five_domain_sqlite_reader\|skill_engine\|llm_bridge" strate
 | v1.2.2 | 2026-10-28 | 同类问题排查修复 + 待办②关闭：① five_domain_feature_computer.py 的 _fetch_news_72h_limit200（7引擎 news 读取）同样读 SQLite 旧库，切换为 PostgreSQL 优先（复用 sentiment_channel.query_pg 公共查询函数），回退 SQLite，显式 db_path 保持测试语义不变；验证 news 200 条实时数据恢复；② 待办②归类微调：fedfunds_rate 央行政策子指标从道维（资金流向）移至天维（宏观政策），道维 6→5 子指标、天维 4→5 子指标等权，内部键名不变；验证移维生效（tian diff -8，dao diff 0）；测试基线 60 passed 不变 | 18 层 PG 迁移影响面排查；SPEC §15.4 待办② |
 | v1.2.3 | 2026-10-29 | 发布机制变更：信号发布从手动触发改为 crontab 定时高频发布（luke 用户，每小时 18/48 分，python -m 模块方式），四要素历史（strategic_elements_history.jsonl）随发布持续追加，与分支神经网络子系统持续对齐积累训练样本；验证 cron 自动发布生效（四要素历史自动追加）；同日修复 39 层语义事件停更（trader.log 10-25 轮转导致状态错位，重置状态追回 4873 条，crontab 每小时 3/33 分 --live 增量恢复） | P5/P6 数据积累健康度检查；分支子系统对齐需求 |
 | v1.3 | 2026-11-18 | 独立化收尾：11 域战略层删除后，43 清理 4 处残留（five_domain_sqlite_reader 依赖→18 层 data_center.db 本地推导；删除 a3_strategy_adapter.py；删除 Force Vector 影子计算与开关；删除 strategy_algo_layer 路径 B 死代码）；§一架构改自建情绪通道、§五重写为独立化收尾、§六/§七改自洽验收、§八决策#2 关闭、新增§十六实际运行状态；验证 74 passed + 独立导入 OK | 2026-11-18 独立化审计；11 域战略层删除（working tree） |
+| v1.3.1 | 2026-11-18 | 云端部署验证修复：`sentiment_channel._discover_pg_password` 增加 `18-数据获取中心/.env`（DATABASE_URL）候选来源，修复云端 `fe_sendauth: no password supplied` 导致的情绪通道 fail-open；部署后信号发布成功、信号 ts 刷新、情绪通道恢复 | 云端 43 发布服务实测；18 层 `start_scheduler.sh` 环境导出口径 |
 
 > v1.0 冻结决策不变；v1.1 为实施记录与架构增补，不改变v1.0任何冻结决策。后续调整继续走版本变更流程（新版本号+变更记录+评审）。

@@ -52,6 +52,9 @@ def _discover_pg_password() -> str:
     for env_path in (
         Path.home() / "dreambuddy" / "7-产物中台" / "系统研究索引体系" / ".env",
         Path(_DREAMBUDDY_ROOT) / "7-产物中台" / "系统研究索引体系" / ".env",
+        # 18 层采集器实际使用的凭据来源（DATABASE_URL 内含密码），云端首选
+        Path.home() / "dreambuddy" / "18-数据获取中心" / ".env",
+        Path(_DREAMBUDDY_ROOT) / "18-数据获取中心" / ".env",
     ):
         try:
             if env_path.exists():
