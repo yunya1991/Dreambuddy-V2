@@ -215,14 +215,16 @@ class ReflectionScanner:
     def get_coin_stats(self, symbol: str, force: bool = False) -> dict[str, Any]:
         """获取单个币种统计。无记录时尝试类先验继承（P1a）。"""
         stats = self.scan(force=force)
-        if symbol in stats:
-            return stats[symbol]
+        # F8: 调用方可能传完整合约代码（BTC-USDT-SWAP），统计键为币种（BTC），需归一化
+        base_symbol = str(symbol or "").split("-")[0].upper()
+        if base_symbol in stats:
+            return stats[base_symbol]
 
         # P1a: 类先验继承
         try:
             from dreambuddy_evolution.engines.asset_class_mapper import get_asset_class
 
-            ac = get_asset_class(symbol)
+            ac = get_asset_class(base_symbol)
             if ac and ac in self._class_priors:
                 prior = self._class_priors[ac]
                 return {

@@ -75,6 +75,16 @@ def test_reflection_win_rate_ignores_invalid_samples(tmp_path: Path) -> None:
     assert "ETH" not in stats
 
 
+def test_get_coin_stats_accepts_inst_id(tmp_path: Path) -> None:
+    """handler 传的是 BTC-USDT-SWAP，统计键是 BTC，须能命中真实统计而非回退 0.5。"""
+    _make_ledger(tmp_path)
+    stats = ReflectionScanner(project_root=str(tmp_path)).get_coin_stats(
+        "BTC-USDT-SWAP", force=True
+    )
+    assert stats["n_trades"] == 2
+    assert stats["reflection_ri"] > 0.55
+
+
 def test_relative_project_root_resolves_repo_root(tmp_path, monkeypatch) -> None:
     """服务以相对路径（如 "."）启动时也要能向上找到仓库根的 22 账本。"""
     _make_ledger(tmp_path)
