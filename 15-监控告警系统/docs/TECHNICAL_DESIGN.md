@@ -1402,6 +1402,21 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 | `CrossValidationDegraded` | `attention_only`/`granger_only` 是设计内单链路降级（`enable_degraded_mode` 默认 True），不是故障；仅 `both_none` 才是双链路失效 | 规则改为 `count(dreambuddy_cv_degraded_mode{mode="both_none"}) > 0` |
 | `Watchdog` | `expr: vector(1)` 是刻意常驻，供外部死手开关读取 Prometheus；但会按 P3 每日推送飞书 | 保留规则；Alertmanager 新增 `channel="meta"` → `blackhole` 路由，不再进飞书 |
 
+#### 13.9.6 任务打点覆盖（v2.21，2026-11-18）
+
+复盘 40 日更失败时发现：`JobFailed`、`Daily40PipelineFailedOrLate`、`Bus42Stale`、`Publish43Stale`、`Shadow50Stale`、`NnLiveChainNoRun` 六条规则都依赖 `dreambuddy_job_*`，但 Pushgateway **一条 series 都没有**，全部静默失效（无数据 ≠ 告警）。
+
+| 任务 | 原状态 | 处置 |
+|---|---|---|
+| `40_daily` | crontab 直接跑脚本，未打点 | 新增 `40/scripts/run_daily_pipeline_cron.sh`：执行 + 捕获退出码 + `push_job.sh 40_daily`；crontab 已切换 |
+| `publish_43` | timer 每 30min，无打点 | drop-in `ExecStopPost` 调 `push_job.sh publish_43`（`deploy/systemd/install-job-push.sh`） |
+| `live_50` | timer 每 5min，无打点 | 同上，`push_job.sh live_50` |
+| `bus_42` | 常驻 `--interval 300`，无退出事件 | 未接入；需服务内周期打点（建议下一步） |
+| `shadow_50` | 服务 inactive/dead | 未接入；先确认是否已退役，退役则删规则 |
+
+验收：`dreambuddy_job_status` 现有 `40_daily=1 / publish_43=1 / live_50=1`；`JobFailed` 可在 1min 内发现 40 日更失败（此前要等 `ArtifactStale` 26h~8d）。
+维护：新增定时任务必须同时调用 `push_job.sh`，否则对应 `*Stale/JobFailed` 规则无数据、不会告警。
+
 ---
 
 ## 变更记录
