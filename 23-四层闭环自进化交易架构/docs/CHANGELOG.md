@@ -1,7 +1,35 @@
 # 23-四层闭环自进化交易架构 — 变更日志
 
-> **版本**: v1.18 | **更新日期**: 2026-11-18
+> **版本**: v1.19 | **更新日期**: 2026-11-18
 > **定位**: 模块级变更日志，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+
+---
+
+## [v1.19] - 2026-11-18 (d_star wait 口径校准 + 云端生效验证)
+
+### 修复
+
+- **Level0 wait 量纲失配**：`wait = R_smooth × R_reflexivity` 是两维 [0,1] 乘积，量纲系统性低于
+  单维 `R_up/R_down`。实测 `R_smooth` p90=0.164 → wait≈0.07，方向代价最低 0.31 → `d_star=WAIT`
+  结构性恒胜。新增 calibrated 口径 `wait=(1-R_smooth)×R_reflexivity` + 中性区
+  `min(R_up,R_down) ≤ wait×(1-margin)` 才交易。
+- **开关默认 legacy（行为不变）**：`EVOLUTION_DSTAR_WAIT_MODE=legacy|calibrated`（默认 legacy）、
+  `EVOLUTION_DSTAR_WAIT_MARGIN`（默认 0.30）。N4 事件新增 `d_star_shadow`
+  （`d_star_calibrated` / `costs` / `costs_calibrated` / `wait_mode` / `wait_margin`）供云端影子对比。
+
+### 验证
+
+- **云端生效确认**（重启 `dreambuddy-entry23` 后）：N9 `ess_top_direction=long`（F1 生效）、
+  `vol_threshold=1.9303/2.1578`（F2 生效）；`vol_ratio=0.4226/0.2406` → `ripple_is_source=False`
+  → `ri=0.5` 属正确行为（无放量），非缺陷。
+- **真实 K 线 walk-forward**（`scripts/backtest_ri_gate.py --klines`，BTC/ETH/SOL × 300×1H，5bps/边）：
+  legacy 100% WAIT；flip MDD 32.97%(4h)/59.77%(24h)；**flip+30% 中性区 MDD 3.91%(4h)/10.37%(24h)，
+  4h 累计 +21.07%** → 裁决采用 flip + 30% 中性区，开关暂关。
+
+### 文档
+
+- §6.5 补「F4 实际事件 n=339」「真实 K 线 walk-forward」「ri 与 d_star 关系」三段结论。
+- FIXLIST F4 `[!]`→`[x]`，F7 `[!]`→`[-]`（`0.55` 属 `get_ri_action` 口径，非缺陷）。
 
 ---
 

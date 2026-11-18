@@ -266,25 +266,27 @@ trace_id（N1 生成，贯穿推理段）
    `dir_match=False` → `is_source=False` → `ripple_ri` 走硬编码回落 0.50。
 3. `reflection_ri` 冷启动同为 0.50 → `ri=0.50`，恰好等于 `PROBE_THRESHOLD=0.50` → 恒 `tier=probe`
    （`base_position_mult=0.4`），永远到不了 `standard/trend`。
-4. `d_star=WAIT` 与 ri 无关：`wait_cost = R_smooth × R_reflexivity`。当前三币
-   `R_smooth≈0.12~0.18`、`R_reflexivity=0.65` → wait≈0.08~0.12，远低于 `R_up≈0.37~0.43`。
-   该公式为 spec 定义且被测试固化（`test_evolution_pipeline.py` TR-EP-*），但语义上等价于
-   「走势越平滑越观望」，与「低阻力即可开仓」的直觉相反，需产品确认。
+4. `d_star=WAIT` 与 ri 无关：`wait_cost = R_smooth × R_reflexivity`。两个 [0,1] 维度相乘，
+   量纲系统性低于单维 `R_up/R_down`。实测三币 `R_smooth` p10/p50/p90 = 0.0963/0.1119/0.164，
+   `R_reflexivity=0.65` → wait≈0.063~0.107；方向代价最低 0.31（`R_up` 均值 0.3969）。
+   要让方向胜出需 `R_smooth > 0.61`，而 R_smooth 的 p90 仅 0.164 → **WAIT 结构性恒胜，属缺陷**
+   （不是行情导致，也不是 spec 语义问题，是两维乘积与单维比较的尺度失配）。
 
 **判定**
 
 | 现象 | 判定 | 去向 |
 |---|---|---|
-| `ess_top_direction` 为空 | 缺陷 | F1（已修） |
-| 放量门槛固定 2.0（1H 触发率 0.12%） | 缺陷 | F2（已修：按 20 日波动率自适应，模拟 3.38%） |
+| `ess_top_direction` 为空 | 缺陷 | F1（已修，云端 N9 已见 `long`） |
+| 放量门槛固定 2.0（1H 触发率 0.12%） | 缺陷 | F2（已修，云端 `vol_threshold` 已随波动率变化） |
 | `R_flow=0.0` | 设计内（Wyckoff effort/result 低阻力） | F3 关闭 |
-| `d_star=WAIT` | 模拟与事件分布已出结论，待云端正常态实际回测裁决 | F4 blocked |
+| `d_star=WAIT` | 缺陷（量纲失配） | F4（已修：calibrated 口径 + 30% 中性区，开关默认 legacy） |
 | `reflection_ri=0.5` | 冷启动正常 | F5 关闭 |
 | 定位字段缺失 | 可观测缺口 | F6（已修） |
+| `0.55` vs `0.50` 阈值 | 口径混淆（`0.55` 属 `get_ri_action` / `tight_coupling`） | F7 关闭 |
 
 **F2 门槛公式**：`threshold = clamp(1.20 + 25·σ_day, 1.30, 2.50)`，σ_day 为 20 日已实现波动率
 （1H 对数收益 std × √24）。模拟触发率：σ_1h=0.001→13.96%、0.003→3.38%、0.006→0.20%；
-固定 2.0 恒为 0.12%，确认「太罕见即异常」。
+固定 2.0 恒为 0.12%，确认「太罕见即异常」。云端重启后实测 `vol_threshold` = 1.9303（BTC）/ 2.1578（ETH）。
 
 **F4 模拟回测**（`scripts/backtest_ri_gate.py`，含 5bps/边）：
 
@@ -293,8 +295,28 @@ trace_id（N1 生成，贯穿推理段）
 | A: `R_smooth×R_refl`（现状） | -118.38% | 2981 | 0.0% | 74.96% |
 | B: `(1-R_smooth)×R_refl` | +0.61% | 1093 | 63.3% | 21.84% |
 
-实际事件分布（本地 210 条 N2，FO 降级态）：A=100% WAIT，B=60% long，翻转率 60%。
-结论方向支持 B，但本地数据为降级态，须以云端正常态实际回测为准，暂不改公式。
+**F4 实际事件（云端 n=339 N2，去重 33 组）**：A=100% WAIT、B=100% long、flip_rate=100%
+→ 简单翻符号会退化成单边死多，**不可直接采纳**。
+
+**F4 真实 K 线 walk-forward**（`--klines`，云端 BTC/ETH/SOL × 300×1H，逐 bar 重算 R，含 5bps/边）：
+
+| 口径 | h=4h WAIT/L/S | h=4h 累计/MDD | h=24h 累计/MDD |
+|---|---|---|---|
+| legacy `R_smooth×R_refl` | 100% / 0% / 0% | 0% / 0% | 0% / 0% |
+| flip `(1-R_smooth)×R_refl` | 0% / 0% / 100% | +12.50% / 32.97% | +170.52% / 59.77% |
+| flip + 20% 中性区 | 11.1% / 0% / 88.9% | -0.43% / 32.49% | +81.87% / 59.77% |
+| **flip + 30% 中性区** | **87.8% / 0% / 12.2%** | **+21.07% / 3.91%** | **-2.72% / 10.37%** |
+
+裁决：legacy 恒 WAIT 属缺陷；单纯翻符号回撤 33%~60%，风险不可接受；**采用「翻符号 + 30% 中性区」**。
+落地方式：`compute_d_star` 增加 `wait_mode`（`legacy|calibrated`）与 `wait_margin`（默认 0.30），
+开关 `EVOLUTION_DSTAR_WAIT_MODE` **默认 legacy（行为不变）**，N4 事件同时记录 `d_star_shadow`
+（`d_star_calibrated` / 两套 costs），云端观察一致后再切换。
+
+**ri 与 d_star 的关系**：F1 修好只是必要条件，不充分。`ri=max(ripple_ri, reflection_ri)`，
+`ripple_ri` 还要求 `vol_ratio ≥ threshold`（当前实测 0.42/0.24，确无放量，`ri=0.5` 正确）；
+`tier` 升级需 `ri≥0.55/0.60/0.70`，且 `reflection_ri` 冷启动仍为 0.5。因此 ri 不会因 F1 自动脱离 0.5，
+要等真实放量或 reflection 样本积累。
+
 
 **修复清单与逐项状态**：[FIXLIST-ri-tier-dstar-20261118.md](./FIXLIST-ri-tier-dstar-20261118.md)。
 修复期间的定位入口：`chain_events` 的 `N0`（数据就绪）/`N2`（R 向量）/`N5`（矛盾）/`N9`（ri·tier）。

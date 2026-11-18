@@ -1,6 +1,6 @@
 # 变更记录 — 15-监控告警系统
 
-> **版本**: v2.14 | **更新日期**: 2026-11-18
+> **版本**: v2.16 | **更新日期**: 2026-11-18
 
 ---
 
@@ -8,6 +8,8 @@
 
 | 版本 | 日期 | 变更内容 | 影响范围 |
 |------|------|----------|----------|
+| v2.16 | 2026-11-18 | N4 事件补充 `d_star_shadow`（`d_star_calibrated`/`costs`/`costs_calibrated`/`wait_mode`/`wait_margin`）：Level0 wait 口径校准（F4）的影子对比字段，默认 `legacy` 不改决策 | 代码+文档 |
+| v2.15 | 2026-11-18 | 新增每日 09:00 监控日报：23 核心链聚合 + 规则异常识别 + DeepSeek 归因 + 飞书推送；40 神经链预留（`enabled_chains` 未启用）；新增 launchd/systemd 定时与单测 | 代码+配置+运维 |
 | v2.14 | 2026-11-18 | ri/tier 恒值诊断：N9 事件与指标表补充 `ri/tier/ess_top_direction/vol_ratio/ripple_is_source`；§13.9.1 N9 行增加「ri 恒定」首查路径 | 代码+文档 |
 | v2.13 | 2026-11-18 | 接入 N3 高阶因子调制到实盘路径（`EngineRouter.run_path_discovery` 内、路径发现前），新增开关 `EVOLUTION_N3_HIGH_ORDER` 默认 off：关闭时只做影子对比（`n3_compare.before/after`、`direction_flip`），不改决策 | 代码+文档 |
 | v2.12 | 2026-11-18 | 可观测补齐：N0/N2/N3/N4/N9/N15/E2/E3 落地 `chain_events`；`trace_id` 由 N0 生成并在推理段贯穿（G1 关闭）；22 SLTP 补挂审计新增 `source=22-sltp_reconcile`；同步 §13.2 节点表「现状可观测/关联键」 | 代码+文档 |
@@ -30,6 +32,20 @@
 ---
 
 ## 详细变更
+
+### v2.15 — 2026-11-18
+
+**动机**：23 链存在 `ri` 长期集中于 0.5、`d_star` 恒 WAIT、N2 全量降级等隐性退化，人工巡检难以及时发现；需要每日自动汇总并借助大模型做归因。
+
+- 新增 `scripts/daily_insight.py`：聚合 `chain_events-*.jsonl`（N1–N14/E*）、`execution_decisions.jsonl`、发件箱、22 账本与 SL/TP 审计
+- 规则引擎：`ri` 恒定/高度集中、ESS 方向为空、tier 恒 probe、d_star WAIT、N2 降级、信号静默、CV 降级、chain_id 不贯通、发件箱积压、账本/补挂异常
+- 大模型：DeepSeek JSON 模式输出健康分、归因、建议；失败自动退化为规则报告（先生成报告，不阻塞）
+- 报告落盘 `logs/daily-insight/`；推送优先 receiver，失败直连飞书 management 群
+- 定时：本地 launchd 09:00；云端 systemd timer 09:00 Asia/Shanghai
+- 40 周期神经网络链路预留：`config/daily_insight.json` 的 `enabled_chains` 仅含 `23`，采集/TTL 接口保留
+- 单测：`tests/test_daily_insight.py`（8 项）
+
+**实测**：对最近 24h 数据运行，识别 7 项 P1（ri 0.5 占 82.9%、ESS 空方向 85.7%、d_star WAIT 100%、N2 降级 100% 等）并成功推送飞书。
 
 ### v2.11 — 2026-11-18
 

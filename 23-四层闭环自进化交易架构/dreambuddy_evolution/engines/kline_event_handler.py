@@ -424,7 +424,6 @@ class KlineEventHandler:
             # ============ 3. Level0 d* 计算 ============
             d_star_result = self._compute_d_star(r_vector)
             d_star = d_star_result["d_star"]
-
             # ============ 3b. 路径发现层 ============
             path_info: dict[str, Any] = {
                 "path_count": 0,
@@ -435,6 +434,14 @@ class KlineEventHandler:
                 "d_star_original": d_star,
                 "d_star_adjusted": d_star,
                 "primary_contradiction": None,
+                # F4: wait 口径影子对比（EVOLUTION_DSTAR_WAIT_MODE 默认 legacy）
+                "d_star_shadow": {
+                    "d_star_calibrated": d_star_result.get("d_star_calibrated"),
+                    "wait_mode": d_star_result.get("wait_mode"),
+                    "wait_margin": d_star_result.get("wait_margin"),
+                    "costs": d_star_result.get("costs"),
+                    "costs_calibrated": d_star_result.get("costs_calibrated"),
+                },
             }
             try:
                 if (
@@ -489,6 +496,7 @@ class KlineEventHandler:
                     "low_conviction": bool(path_info.get("low_conviction")),
                     "d_star_original": path_info.get("d_star_original"),
                     "d_star_adjusted": path_info.get("d_star_adjusted"),
+                    "d_star_shadow": path_info.get("d_star_shadow") or {},
                 },
             )
             _pc = path_info.get("primary_contradiction")
