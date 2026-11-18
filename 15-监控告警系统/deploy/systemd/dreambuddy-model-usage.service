@@ -1,0 +1,15 @@
+[Unit]
+Description=Dreambuddy model usage alert (LLM balance / burn / availability)
+After=network-online.target dreambuddy-feishu-receiver.service
+Wants=dreambuddy-feishu-receiver.service
+
+[Service]
+Type=oneshot
+User=luke
+Group=luke
+WorkingDirectory=/home/luke/dreambuddy/15-监控告警系统
+# DEEPSEEK_API_KEY 优先从 monitoring.env 注入；缺失时脚本回退读仓库 .env（自动跳过 401 的失效 key）
+EnvironmentFile=-/etc/dreambuddy-monitoring/monitoring.env
+Environment=DREAMBUDDY_REPO_ROOT=/home/luke/dreambuddy
+ExecStart=/home/luke/venv-trading/bin/python -B scripts/model_usage_check.py --push
+TimeoutStartSec=120

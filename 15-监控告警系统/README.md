@@ -125,6 +125,34 @@ python3 scripts/daily_insight.py --no-llm
 | 大模型 | DeepSeek（`DEEPSEEK_API_KEY`，优先环境变量/`/etc/dreambuddy-monitoring/monitoring.env`，其次仓库 `.env`） |
 | 推送 | 优先本地 receiver `:9098`，不可用时直连飞书 management 群 |
 
+## 模型用量告警（LLM 余额/消耗）
+
+云端每小时抓取 DeepSeek 余额接口（覆盖全部调用方的真实消耗，不依赖埋点），推算 24h 消耗、7 日均消耗与可用天数，异常推飞书；同一告警 6h 内去重。本地手动验证。
+
+```bash
+# 检查并按需推送
+python3 scripts/model_usage_check.py --push
+
+# 只检查（不推送、不写去重状态）
+python3 scripts/model_usage_check.py --dry-run --json
+```
+
+| 告警 | 级别 | 触发条件 |
+|---|---|---|
+| `*_unavailable` | P1 | 余额接口 401/不可用、所有候选 key 失效、`is_available=false` |
+| `*_balance_low` | P1 | 余额 ≤ `min_balance`（默认 ¥10） |
+| `*_balance_warn` | P2 | 余额 ≤ `warn_balance`（默认 ¥20） |
+| `*_days_remaining` | P2 | 按 7 日均消耗可用天数 < 3 天 |
+| `*_burn_spike` | P2 | 24h 折算消耗 ≥ 7 日均值 3x（需 ≥3 天基线） |
+
+| 项 | 路径/配置 |
+|---|---|
+| 检查脚本 | `scripts/model_usage_check.py` |
+| 阈值/供应商 | `config/model_usage.json`（新增供应商按 `type` 扩展；Qwen 无余额接口待接埋点） |
+| 余额快照 | `logs/model-usage/balance-<provider>-YYYYMMDD.jsonl`（保留 14 天） |
+| 云端定时 | `deploy/systemd/dreambuddy-model-usage.service/.timer`（每小时） |
+| 凭证 | 环境变量/`/etc/dreambuddy-monitoring/monitoring.env` 优先，其次按 `env_files` 顺序回退，401 自动跳过失效 key |
+
 ## 手动执行
 
 ```bash

@@ -342,7 +342,10 @@ python -m pytest tests/ -v
 ├── scripts/watchdog.py        # 2 周 alert_only：服务/日志/磁盘，5min 一次
 ├── scripts/daily_insight.py   # 每日 09:00：23 链聚合 + 规则/大模型分析 + 飞书推送（40 预留）
 ├── config/daily_insight.json  # 日报阈值 / LLM / 启用链路
+├── scripts/model_usage_check.py   # 每小时：LLM 余额/消耗/可用天数告警（快照 logs/model-usage/）
+├── config/model_usage.json        # 供应商余额接口 / 阈值 / 去重与推送
 ├── deploy/systemd/*daily-insight*  # 云端 09:00 定时（生产；本地仅手动）
+├── deploy/systemd/*model-usage*    # 云端 hourly 定时
 └── tests/
 ```
 

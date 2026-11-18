@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "timezone": "Asia/Shanghai",
+  "providers": [
+    {
+      "name": "deepseek",
+      "type": "deepseek_balance",
+      "enabled": true,
+      "base_url": "https://api.deepseek.com",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "env_files": [
+        "1-ARCHITECTURE/dreamos/.env",
+        "11-易经推理系统/.env",
+        "6-TRADING/scripts/.env"
+      ],
+      "thresholds": {
+        "min_balance": 10.0,
+        "warn_balance": 20.0,
+        "min_days_remaining": 3.0,
+        "burn_spike_ratio": 3.0,
+        "min_baseline_days": 3
+      }
+    }
+  ],
+  "history": {
+    "dir": "logs/model-usage",
+    "retain_days": 14
+  },
+  "push": {
+    "enabled": true,
+    "receiver_url": "http://127.0.0.1:9098/notify",
+    "level": "P1",
+    "cooldown_seconds": 21600,
+    "fallback_direct": true
+  }
+}

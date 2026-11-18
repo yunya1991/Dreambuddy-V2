@@ -1,0 +1,11 @@
+[Unit]
+Description=Run dreambuddy model usage alert hourly
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+AccuracySec=1min
+Unit=dreambuddy-model-usage.service
+
+[Install]
+WantedBy=timers.target

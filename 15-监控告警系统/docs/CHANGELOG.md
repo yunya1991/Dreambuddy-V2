@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 变更内容 | 影响范围 |
 |------|------|----------|----------|
+| v2.18 | 2026-11-18 | 新增模型用量告警：`scripts/model_usage_check.py` 每小时抓取 DeepSeek 余额，推算 24h/7d 消耗与可用天数，覆盖余额下限、可用天数、消耗突增、凭证失效 4 类告警（receiver 推送 + 6h 去重）；新增 `config/model_usage.json`、云端 hourly systemd timer、10 项单测 | 代码+配置+运维 |
 | v2.17 | 2026-11-18 | 新增信号口径校准监控：`signal_calibration_metrics()` 导出 11 个指标（dstar 口径/翻转、ri 中性、ESS 方向空、放量门槛、reflection 样本）；新增 5 条告警 `DstarCalibratedModeOff/DstarCalibratedAllWait/EssDirectionEmpty/RippleVolThresholdOutOfRange/ReflectionSampleStarved`；daily_insight 新增 `23_REFLECTION_STARVED` 并更新 `23_DSTAR_WAIT` 处置口径；TD 新增 §13.9.4 | 代码+规则+文档 |
 | v2.15 | 2026-11-18 | 新增每日 09:00 监控日报：23 核心链聚合 + 规则异常识别 + DeepSeek 归因 + 飞书推送；40 神经链预留（`enabled_chains` 未启用）；新增 launchd/systemd 定时与单测 | 代码+配置+运维 |
 | v2.14 | 2026-11-18 | ri/tier 恒值诊断：N9 事件与指标表补充 `ri/tier/ess_top_direction/vol_ratio/ripple_is_source`；§13.9.1 N9 行增加「ri 恒定」首查路径 | 代码+文档 |
@@ -32,6 +33,18 @@
 ---
 
 ## 详细变更
+
+### v2.18 — 2026-11-18
+
+**动机**：模型用量（余额/消耗）此前无告警，余额耗尽或凭证失效会让 23 推理链、日报归因等 LLM 调用静默断供；2026-11-18 云端就出现过 `1-ARCHITECTURE/dreamos/.env` 的 DeepSeek key 失效（401）而无人感知。
+
+- 新增 `scripts/model_usage_check.py`：按 `config/model_usage.json` 遍历启用的供应商，抓取余额并落快照
+- DeepSeek 走 `/user/balance`（权威消耗口径，无需在每个调用点埋点）；key 按 环境变量 → `env_files` 顺序回退，401 自动跳过失效 key
+- 用量推算：24h 消耗、按自然日末余额的 7 日均消耗、可用天数、24h 折算消耗 vs 基线（充值日不计消耗）
+- 4 类告警：`*_unavailable`(P1)、`*_balance_low`(P1)、`*_balance_warn`/`*_days_remaining`/`*_burn_spike`(P2)
+- 推送复用 receiver，失败直连飞书；同一告警 6h 去重，状态存 `~/.cache/dreambuddy-model-usage.json`
+- 云端 `dreambuddy-model-usage.timer` 每小时执行；快照保留 14 天
+- 单测 `tests/test_model_usage_check.py`（10 项）：余额解析、凭证回退、充值不计消耗、阈值判定、快照读写
 
 ### v2.15 — 2026-11-18
 
