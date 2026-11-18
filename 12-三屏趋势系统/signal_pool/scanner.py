@@ -49,35 +49,42 @@ _lock_handle = None
 def acquire_single_instance_lock() -> str:
     """获取单实例文件锁，已被其他实例持有时直接退出。
 
-    锁文件优先放在 /run/lock（开机重启后自动清理），不可用时退回 /tmp；
+    锁文件固定在 /run/lock（开机自动清理），该目录不可写时退回 /tmp；
     可用环境变量 SIGNAL_SCANNER_LOCK 指定完整锁文件路径。
 
-    返回锁文件路径；无法创建任何锁文件时返回空串（fail-open，不阻断信号生成）。
+    锁文件已存在但当前用户无权打开时，说明已有其他用户启动的实例，直接退出，
+    不能降级到另一把锁，否则互斥形同虚设。
+
+    返回锁文件路径；无法创建锁文件时返回空串（fail-open，不阻断信号生成）。
     """
     global _lock_handle
     override = os.environ.get("SIGNAL_SCANNER_LOCK")
-    candidates = [override] if override else ["/run/lock", "/tmp"]
-    last_error = None
+    if override:
+        path = override
+    elif os.path.isdir("/run/lock") and os.access("/run/lock", os.W_OK | os.X_OK):
+        path = os.path.join("/run/lock", LOCK_FILENAME)
+    else:
+        path = os.path.join("/tmp", LOCK_FILENAME)
 
-    for target in candidates:
-        path = target if override else os.path.join(target, LOCK_FILENAME)
-        try:
-            handle = open(path, "a+")
-        except OSError as exc:
-            last_error = exc
-            continue
-        try:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError:
-            handle.close()
-            print(f"[Scanner] 已有实例持有锁 {path}，本进程(pid={os.getpid()})退出")
-            raise SystemExit(1) from None
-        _lock_handle = handle
-        print(f"[Scanner] 单实例锁已获取: {path} (pid={os.getpid()})")
-        return path
+    try:
+        handle = open(path, "a+")
+    except PermissionError as exc:
+        print(f"[Scanner] 锁文件无权访问，视为已有其他用户实例在运行: {path} ({exc})")
+        raise SystemExit(1) from None
+    except OSError as exc:
+        print(f"[Scanner] 警告: 无法创建单实例锁({exc})，本次启动未受互斥保护")
+        return ""
 
-    print(f"[Scanner] 警告: 无法创建单实例锁({last_error})，本次启动未受互斥保护")
-    return ""
+    try:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        handle.close()
+        print(f"[Scanner] 已有实例持有锁 {path}，本进程(pid={os.getpid()})退出")
+        raise SystemExit(1) from None
+
+    _lock_handle = handle
+    print(f"[Scanner] 单实例锁已获取: {path} (pid={os.getpid()})")
+    return path
 
 
 # 策略配置（与 screen_engine.py 保持一致）
