@@ -133,9 +133,11 @@ export function resolveAgentModel(opts: ResolveModelOptions = {}): LanguageModel
       name: 'openai-compatible',
       fetch: createReasoningShimFetch(globalThis.fetch),
     });
-    // 把 <think>…</think> 拆成 reasoning part，经 sendReasoning 透传到前端「思考过程」
+    // 必须显式走 Chat Completions：@ai-sdk/openai v2 的默认入口是 Responses API，
+    // DeepSeek 在该接口只回传 encrypted reasoning（前端拿不到可读思维链）。
+    // Chat Completions 会返回 delta.reasoning_content，由上面的 shim + 中间件转成 reasoning part。
     return wrapLanguageModel({
-      model: compat(modelName),
+      model: compat.chat(modelName),
       middleware: REASONING_MIDDLEWARE,
     });
   }
