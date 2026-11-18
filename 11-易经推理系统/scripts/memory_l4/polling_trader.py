@@ -1328,6 +1328,8 @@ class PollingTrader:
                 self._log("[BCRM2.0] 模式已启用（严格：禁用BCRM 1.0降级），健康检查通过", "INFO")
 
         self.running = False
+        # 独立的停机标志：只由 SIGTERM/SIGINT 置位，避免影响 --once 直接调用 run_once()
+        self._shutdown_requested = False
         self.cycle_count = 0
         self.last_date = datetime.now().strftime("%Y-%m-%d")
 
@@ -18765,8 +18767,12 @@ class PollingTrader:
         self.coins = new_coins
 
     def _stop_requested(self) -> bool:
-        """停机请求检查：SIGTERM 只置 running=False，需在长循环中主动让出。"""
-        return not getattr(self, "running", True)
+        """停机请求检查：SIGTERM/SIGINT 置位，需在长循环中主动让出。
+
+        不复用 running：--once 模式从不启动主循环，running 恒为 False，
+        用它判断会导致单次执行被跳过。
+        """
+        return bool(getattr(self, "_shutdown_requested", False))
 
     def run_once(self):
         """执行一轮推理 + 交易"""
@@ -19610,6 +19616,7 @@ class PollingTrader:
             }
             _sn = _sig_names.get(signum, f"SIG#{signum}")
             self._log(f"收到退出信号 {_sn}，正在停止...", "WARN")
+            self._shutdown_requested = True
             self.running = False
 
         signal_module.signal(signal_module.SIGINT, _shutdown)
