@@ -16,7 +16,7 @@ import sqlite3
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _DEFAULT_DB = _REPO_ROOT / "22-执行引擎中心" / "runtime" / "position_ledger.db"
@@ -239,12 +239,14 @@ class PositionLedger:
         positions: List[Dict[str, Any]],
         source: str = "22-reconciled",
         ts: Optional[str] = None,
+        fill_lookup: Optional[Callable[[str, str], Optional[Dict[str, Any]]]] = None,
     ) -> Dict[str, Any]:
         """存量仓一次性对账回填（幂等）。
 
         - 缺失持仓 → 补录；
         - 已存在但数量与交易所不一致 → 以交易所为准校正数量（真实流水保留原均价）；
         - 账本有、交易所已无 → 仅关闭本对账源（source）写入的陈旧行，避免每轮重复报幽灵仓；
+          传 fill_lookup 时按交易所真实平仓成交价落账（否则回退均价，realized_pnl 记 0）；
         - 无开仓流水时 realized_pnl 保持 0，不臆造盈亏；
         - 每次校正/关闭都写一条 fills 审计，便于追溯。
         """
@@ -352,13 +354,34 @@ class PositionLedger:
                 continue
             if not str(row["source"] or "").startswith(source):
                 continue
+            _fill: Dict[str, Any] = {}
+            if callable(fill_lookup):
+                try:
+                    _fill = fill_lookup(row["inst_id"], row["pos_side"]) or {}
+                except Exception:  # noqa: BLE001 — 查真实成交失败时回退均价
+                    _fill = {}
+            _fill_px = float(_fill.get("fill_px") or 0.0)
+            _exit_px = _fill_px if _fill_px > _EPS else float(row["avg_entry"] or 0)
+            _exit_ts = ts
+            _fill_ts = int(_fill.get("ts") or 0)
+            if _fill_ts > 0:
+                try:
+                    _exit_ts = (
+                        datetime.fromtimestamp(_fill_ts / 1000, tz=timezone.utc)
+                        .isoformat()
+                        .replace("+00:00", "Z")
+                    )
+                except (OSError, OverflowError, ValueError):
+                    _exit_ts = ts
             self.apply_partial_close(
                 inst_id=row["inst_id"],
                 pos_side=row["pos_side"],
                 qty=float(row["qty"]),
-                px=float(row["avg_entry"] or 0),
+                px=_exit_px,
                 ratio=1.0,
                 source=source,
+                fee=float(_fill.get("fee") or 0.0),
+                ts=_exit_ts,
                 exit_reason="ghost_stale",
             )
             closed.append(f"{row['inst_id']}:{row['pos_side']}")

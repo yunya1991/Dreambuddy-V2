@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent  # 22-执行引擎中心
@@ -87,7 +88,14 @@ class _OkxWithFills:
         return {
             "ok": True,
             "fills": [
-                {"pos_side": "long", "fill_px": 110.0, "fill_sz": 40.0, "fee": 0.5},
+                {
+                    "side": "sell",
+                    "pos_side": "long",
+                    "fill_px": 110.0,
+                    "fill_sz": 40.0,
+                    "fee": 0.5,
+                    "ts": int(time.time() * 1000),
+                },
             ],
         }
 
@@ -198,3 +206,105 @@ def test_gateway_is_in_cooldown_reads_ledger(tmp_path, monkeypatch):
     assert gw.is_in_cooldown("BTC-USDT-SWAP", 3600) is True
     assert gw.get_cooldown("BTC-USDT-SWAP")["exit_reason"] == "tp"
     assert gw.is_in_cooldown("BTC-USDT-SWAP", 0) is False
+
+
+def test_reconcile_ghost_close_uses_real_fill_price(tmp_path):
+    """交易所侧平仓（SL/TP/外部）不再按均价落账，改为真实成交价 + 已实现盈亏。"""
+    led = _ledger(tmp_path)
+    led.record_open("LINK-USDT-SWAP", "long", 10.9, 9.136, source="22-reconciled")
+    looked_up = []
+
+    def _lookup(inst_id, pos_side):
+        looked_up.append((inst_id, pos_side))
+        return {
+            "side": "sell",
+            "pos_side": "long",
+            "fill_px": 9.151,
+            "fee": 0.01,
+            "ts": 1763452967000,
+        }
+
+    out = led.reconcile([], source="22-reconciled", fill_lookup=_lookup)
+
+    assert out["closed"] == 1
+    assert looked_up == [("LINK-USDT-SWAP", "long")]
+    last = led.recent_fills(1)[0]
+    assert last["action"] == "close"
+    assert abs(last["px"] - 9.151) < 1e-9
+    assert abs(last["realized_pnl"] - (10.9 * (9.151 - 9.136) - 0.01)) < 1e-6
+
+
+def test_reconcile_ghost_close_falls_back_to_avg_entry(tmp_path):
+    """查不到真实成交时保留旧行为：均价平仓、盈亏记 0，不臆造。"""
+    led = _ledger(tmp_path)
+    led.record_open("XAU-USDT-SWAP", "long", 1.0, 3800.0, source="22-reconciled")
+
+    out = led.reconcile([], source="22-reconciled", fill_lookup=lambda _i, _s: None)
+
+    assert out["closed"] == 1
+    last = led.recent_fills(1)[0]
+    assert last["px"] == 3800.0
+    assert last["realized_pnl"] == 0.0
+
+
+class _OkxFlatWithCloseFill:
+    def get_positions(self, inst_id=None):
+        return {"ok": True, "positions": []}
+
+    def get_recent_fills(self, inst_id=None, limit=10):
+        return {
+            "ok": True,
+            "fills": [
+                {
+                    "side": "sell",
+                    "pos_side": "long",
+                    "fill_px": 9.151,
+                    "fill_sz": 10.9,
+                    "fee": 0.01,
+                    "ts": int(time.time() * 1000),
+                },
+            ],
+        }
+
+
+def test_gateway_reconcile_ghost_uses_exchange_fill(tmp_path, monkeypatch):
+    monkeypatch.setenv("POSITION_LEDGER_PATH", str(tmp_path / "ghost.db"))
+    gw = TradeExecutionGateway(
+        okx_client=_OkxFlatWithCloseFill(), audit_path=tmp_path / "audit.jsonl"
+    )
+    gw._get_ledger().record_open("LINK-USDT-SWAP", "long", 10.9, 9.136, source="22-reconciled")
+
+    out = gw.reconcile_ledger()
+
+    assert out["closed"] == 1
+    last = gw._get_ledger().recent_fills(1)[0]
+    assert abs(last["px"] - 9.151) < 1e-9
+    assert last["realized_pnl"] > 0
+
+
+class _OkxBothSides:
+    def get_recent_fills(self, inst_id=None, limit=10):
+        _now = int(time.time() * 1000)
+        return {
+            "ok": True,
+            "fills": [
+                {"side": "buy", "pos_side": "long", "fill_px": 9.136, "fee": 0.0, "ts": _now},
+                {
+                    "side": "sell",
+                    "pos_side": "long",
+                    "fill_px": 9.151,
+                    "fee": 0.0,
+                    "ts": _now - 1000,
+                },
+            ],
+        }
+
+
+def test_latest_fill_filters_by_side_and_age(tmp_path):
+    gw = TradeExecutionGateway(okx_client=_OkxBothSides(), audit_path=tmp_path / "a.jsonl")
+
+    fill = gw._latest_fill("LINK-USDT-SWAP", "long", side="sell")
+    assert fill is not None and fill["fill_px"] == 9.151
+
+    stale = gw._latest_fill("LINK-USDT-SWAP", "long", side="sell", max_age_sec=0.5)
+    assert stale is None

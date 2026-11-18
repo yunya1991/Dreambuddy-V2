@@ -687,7 +687,12 @@ class TradeExecutionGateway:
             _side = str(sig.pos_side or sig.direction or "").lower()
             if _side not in ("long", "short"):
                 return
-            _fill = self._latest_fill(sig.symbol, _side)
+            _expect_side = (
+                ("buy" if _side == "long" else "sell")
+                if _action == "open"
+                else ("sell" if _side == "long" else "buy")
+            )
+            _fill = self._latest_fill(sig.symbol, _side, side=_expect_side)
             _order = result.order_result or {}
             _qty = float((_fill or {}).get("fill_sz") or _order.get("filled_sz") or sig.sz or 0.0)
             _px = float(
@@ -716,18 +721,46 @@ class TradeExecutionGateway:
         except Exception as exc:  # noqa: BLE001 — 落账失败不影响已成交订单
             logger.warning("[Gateway] 账本落账失败(FAIL-OPEN): %s", exc)
 
-    def _latest_fill(self, inst_id: str, pos_side: str) -> Optional[Dict[str, Any]]:
+    def _latest_fill(
+        self,
+        inst_id: str,
+        pos_side: str,
+        side: Optional[str] = None,
+        max_age_sec: Optional[float] = 120.0,
+    ) -> Optional[Dict[str, Any]]:
+        """取最近一笔成交。
+
+        side：限定买卖方向（平多=sell / 平空=buy / 开多=buy / 开空=sell）。
+        不限定方向时，刚下的平仓单可能还没进成交索引，会误取到开仓成交
+        （价格=开仓均价），导致平仓价与已实现盈亏失真。
+        """
         fn = getattr(self._okx, "get_recent_fills", None)
         if not callable(fn):
             return None
         try:
-            data = fn(inst_id, limit=10) or {}
-            for f in data.get("fills") or []:
-                if str(f.get("pos_side") or "").lower() in ("", pos_side):
-                    return f
+            data = fn(inst_id, limit=20) or {}
         except Exception:  # noqa: BLE001
             return None
+        _now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+        _fills = sorted(data.get("fills") or [], key=lambda f: int(f.get("ts") or 0), reverse=True)
+        for f in _fills:
+            if str(f.get("pos_side") or "").lower() not in ("", str(pos_side).lower()):
+                continue
+            if side and str(f.get("side") or "").lower() != side:
+                continue
+            if float(f.get("fill_px") or 0) <= 0:
+                continue
+            if max_age_sec is not None:
+                _ts = int(f.get("ts") or 0)
+                if _ts > 0 and (_now_ms - _ts) > float(max_age_sec) * 1000:
+                    continue
+            return f
         return None
+
+    def _latest_close_fill(self, inst_id: str, pos_side: str) -> Optional[Dict[str, Any]]:
+        """Ghost 平仓落账：取该方向最近一笔真实平仓成交（不限时效）。"""
+        _expect_side = "sell" if str(pos_side).lower() == "long" else "buy"
+        return self._latest_fill(inst_id, pos_side, side=_expect_side, max_age_sec=None)
 
     def _current_position_qty(self, inst_id: str, pos_side: str) -> float:
         """开仓数量兜底：直接读交易所持仓（单位与合约 sz 一致）。"""
@@ -809,7 +842,7 @@ class TradeExecutionGateway:
             }
             for r in rows
         ]
-        out = ledger.reconcile(items, source=source)
+        out = ledger.reconcile(items, source=source, fill_lookup=self._latest_close_fill)
         logger.info(
             "[Gateway] 账本对账回填 source=%s inserted=%s updated=%s closed=%s skipped=%s",
             source,
