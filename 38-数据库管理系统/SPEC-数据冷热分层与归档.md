@@ -48,6 +48,7 @@ records 表结构：id, dedupe_key, source, category, sub_category, timestamp, m
 
 ### 方案 3：自动降层机制
 - 复用每日凌晨 4 点低峰窗口，增加归档定时任务：自动将超过 30 天的数据从热库移到归档区
+- **豁免低频率序列（2026-11-18 补充）**：`category='macro'`（FEDFUNDS/CPIAUCSL/M2SL/PAYEMS 等月频、季频）不受 30 天阈值约束，否则月频序列在热库只剩 1 个点，40 `p1_real_cycle` 的 ≥3 点状态机会直接失败（事故：2026-11-18 FEDFUNDS 仅剩 1 行，40 日更首节点 exit=1）。归档脚本 `auto_archive_cold_data.sh` 的 `COLD_WHERE` 已加 `COALESCE(category,'') <> 'macro'`
 - MinIO 可作为归档区，形成『热库 SQLite + 冷库对象存储』两层架构
 
 ### 方案 4：长期演进
