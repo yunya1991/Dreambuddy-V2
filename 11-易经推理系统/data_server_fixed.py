@@ -2633,7 +2633,7 @@ def _get_correction_cache_tag(symbol: str, predictor) -> str:
 
 
 def get_morph_cycle(symbol: str = "BTCUSDT", hist_days: int = 60, forecast_days: int = 20):
-    """市场形态周期曲线（Phase A：Predictor.predict()，预测前自动回填+修正，冷却 23h）。"""
+    """市场形态周期曲线（predict_with_fallback，预测前自动回填+修正，冷却 23h）。"""
     predictor = _get_predictor()
     tag = _get_correction_cache_tag(symbol, predictor)
     cache_key = f"cycle_{symbol}_{hist_days}_{forecast_days}_{tag}"
@@ -2648,7 +2648,12 @@ def get_morph_cycle(symbol: str = "BTCUSDT", hist_days: int = 60, forecast_days:
     try:
         if predictor is None:
             return {"ok": False, "error": "无法构造 MorphCyclePredictor，请检查 bcrm2 模块"}
-        result = predictor.predict(symbol, hist_days=hist_days, forecast_days=forecast_days)
+        # 非 BTC 标的（AMZN/BNB/XAG/GOOGL/LINK/NVDA 等）通常不足 20 条 regime
+        # trajectory，直接 predict() 会返回“trajectory 数据不足”。改走 BTC 锚定
+        # + β 缩放 fallback，返回可用曲线并带 fallback_used/beta_scaled 标记。
+        result = predictor.predict_with_fallback(
+            symbol, hist_days=hist_days, forecast_days=forecast_days
+        )
         if result.get("ok"):
             # Predictor 可能在 predict() 内部触发了自动修正 → tag 可能已变化 → 用最新 tag 存缓存
             latest_tag = _get_correction_cache_tag(symbol, predictor)
