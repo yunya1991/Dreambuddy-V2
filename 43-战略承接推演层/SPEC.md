@@ -1,10 +1,10 @@
 # SPEC: 43-战略承接推演层（Strategic Extension & Inference Layer）
 
-> 版本：v1.1（调研整合增补版）
-> 日期：2026-10-28
-> 状态：v1.0 已冻结；v1.1 为实施记录与架构增补（走版本变更流程）
+> 版本：v1.3（独立化收尾版）
+> 日期：2026-11-18
+> 状态：v1.0 冻结决策不变；v1.3 按 11 域战略层删除后的实际运行状态重构文档并完成代码独立化收尾
 > 定位：40主神经网络的大周期承接推演层
-> 来源：11-易经推理系统战略层综合调研报告-20261026 + 42协调层SPEC v1.1.3 流转4演进 + 20261028 架构调研（P2实施/扩展承接/矛盾边界/四要素/多尺度对齐）
+> 来源：11-易经推理系统战略层综合调研报告-20261026 + 42协调层SPEC v1.1.3 流转4演进 + 20261028 架构调研 + 2026-11-18 独立化审计（11 域战略层删除、4 处残留清理、74 tests）
 
 ---
 
@@ -13,7 +13,7 @@
 1. **承接而非重复**：本层承接40主神经网络的大周期判定（cycle_state），经五计庙算五维合成与A3战略推演，输出 strategic_extension 信号供矛盾系统归一化裁决。**本层是40的承接推演层，不是第二套宏观系统**——宏观信号源头唯一（40），推演框架唯一（本层）。
 2. **只产建议不产交易信号**：对齐40执行层既有红线——本层输出为战略建议（偏向/仓位修正/标的圈定/时机指引），不直接产生交易信号，不绕过13系统风控。
 3. **单向依赖不回写**：本层只读取40产出物（cycle_state.json / fund_flow.json / washout_verdicts.json），绝不写回40系统内部状态；40产出物缺失/损坏/过期时按 fail-open 处理。
-4. **零代码侵入**：本层不修改40/11/23/42任何系统的代码；迁移自11系统的代码由本模块自主维护。
+4. **独立自治**：11 域战略层已于 2026-11-18 删除，本层代码/测试/运行时不再引用 11 域任何模块，迁移代码由本层自主维护；本层不修改 40/42/23/13/50 任何系统的代码。
 5. **推演链条完整**：大周期判定注入五维 → 五维合成总分 → 四档决策 → 仓位映射 → 战略指令（偏向/修正/圈定/时机），每步可审计。
 
 ### 与各系统的分工边界
@@ -22,7 +22,7 @@
 |---|---|
 | 40-周期神经网络 | 周期理论源头：大周期判定（美林时钟象限/MA200锚点/板块传导/资金流/洗盘），产出 cycle_state 等 |
 | **43-本层** | 承接推演：消费40产出物，五维合成+四档决策+战略指令+战略四要素，输出 strategic_extension |
-| 11-易经推理 | 保留 BCRM2.0 分支信号与 A0-A9 决策链；战略层代码迁出后保留过渡期引用 |
+| 11-易经推理 | 仅保留自身 BCRM2.0 分支信号与 A0-A9 决策链；战略层已在 11 域删除，与 43 无代码/运行时依赖 |
 | 23-自进化 | 矛盾归一化裁决：strategic_extension（理论预期）与分支实际信号冲突时统一裁决 |
 | 42-协调层 | 信号传递与参数下发：本层信号经42层SignalBus流转，source 标注 strategic_extension |
 | 13-通用风控 | 风控门禁不变，本层任何输出不得放宽或绕过 |
@@ -37,24 +37,25 @@
 │ （大周期源头）  │   美林时钟/MA200锚点/板块传导      │                     │
 │              │   fund_flow.json（资金流/聪明钱）  │ ┌─────────────────┐ │
 │              │   washout_verdicts.json（洗盘）   │ │ 五维承接合成       │ │
-└──────────────┘                                 │ │ 道30/天15/地25/   │ │
-                                                 │ │ 将15/法15        │ │
-┌──────────────┐   S1-S3情绪引擎（道维供给）       │ └────────┬────────┘ │
-│ 11-易经推理    │ ─────────────────────────────→ │          ▼          │
-│ （道维引擎源）  │                                 │ ┌─────────────────┐ │
+└──────────────┘                                 │ │ 语义权重 20/25/20/ │ │
+                                                 │ │ 15/20（v1.2）     │ │
+┌──────────────┐   F&G + 行情分量（自建情绪通道）    │ └────────┬────────┘ │
+│ 18-数据获取中心 │ ─────────────────────────────→ │          ▼          │
+│ （PostgreSQL） │   sentiment_channel.py          │ ┌─────────────────┐ │
 └──────────────┘                                 │ │ 四档决策+状态机    │ │
                                                  │ │ 进攻/防御/轻仓/全禁 │ │
                                                  │ │ war_state+维度否决 │ │
                                                  │ └────────┬────────┘ │
                                                  │          ▼          │
                                                  │ ┌─────────────────┐ │
-                                                 │ │ A3战略推演        │ │
-                                                 │ │ 偏向/仓位修正/     │ │
-                                                 │ │ 标的圈定/时机指引   │ │
+                                                 │ │ 战略聚合          │ │
+                                                 │ │ 四要素+语义视图    │ │
+                                                 │ │ 偏向/仓位/标的/时机│ │
                                                  │ └────────┬────────┘ │
                                                  └──────────┼──────────┘
                                                             ▼
                                               strategic_extension 信号
+                                              （runtime/ 原子落盘，shadow）
                                                             │
                                     ┌───────────────────────┼──────────┐
                                     ▼                       ▼          ▼
@@ -78,7 +79,7 @@
 
 **置信度校准规则**：40执行层验证指标（方向准确率/方向IC/概率校准度）达标后，其判别置信度作为五维分数的校准信号——校准度斜率 [0.85, 1.15] 为五维分数可信区间。**置信度只做分数校准，不直接修改五维权重**（权重调整走版本变更流程）。
 
-## 三 · 三重安全机制（自11系统战略层迁移）
+## 三 · 三重安全机制（迁移继承，43 自主维护）
 
 1. **war_state 状态机**：FREEZE →（连续3日总分≥60）→ 解冻中 → ACTIVE；总分<58 回冻。资产类隔离：crypto_usdt / us_stock / precious_metal 三类资产独立计算 war_state 与解冻计数器；
 2. **维度否决**：道<40 或 将<40 → 仓位≤30%；法<40 → 不开新仓；地+天均<40 → 只允许对冲或空仓；**道维度一票否决**：dao<40 立即 war_state=FREEZE 并清零解冻计数器；
@@ -91,54 +92,59 @@
 
 | 风险 | 防范方案 |
 |---|---|
-| 角色冲突（承接者 vs 11系统组成部分） | 本层信号统一标注 source: strategic_extension，在矛盾裁决中作为主网络侧路径参与；11系统自身信号仍走 bcrm 路径。两个身份、两条路径、互不叠加权重 |
+| 角色冲突（承接者 vs 11系统组成部分） | 本层信号统一标注 source: strategic_extension；11 域战略层已删除，43 独立运行，不存在双身份/双路径叠加问题 |
 | 五维权重固定 vs 动态校准矛盾 | 40置信度只做分数校准（斜率[0.85,1.15]可信区间），权重调整走版本变更流程 |
 | 40产出物过期导致推演退化 | 消费cycle_state时检查时效（对齐42层TTL规则72h；实施取7×24h上限，见§九），过期时对应字段不注入、回退fallback，war_state 自动降一档（进攻→防御）而非静默使用fallback |
 
 ---
 
-## 五 · 迁移策略（自11系统迁入）
+## 五 · 独立化收尾（v1.3，2026-11-18）
 
-**迁移范围**：
-- 五计庙算战略层：five_domain_feature_computer.py（五维评估+四档决策+war_state状态机+维度否决+资产隔离）；
-- A3战略推演链路：a3_strategy_adapter.py 的合成逻辑（strategy_directive 生成）；
-- 力向量映射：strategic_mapper.py（war_state/cap/style_mask 映射，fail-open）；
-- 相关测试与文档随代码迁移。
+**背景**：11 域已于 2026-11-18 删除 14 个战略层模块（five_domain_feature_computer / strategy_algo_layer / 相关测试与验证脚本），43 域成为战略推演唯一载体。原 v1.0「过渡期双轨 + 回退 11 原链路」条款随之失效，本节记录独立化收尾结果。
 
-**迁移原则**：
-1. **先落SPEC后迁代码**：本次仅落本SPEC，代码迁移作为P1阶段任务；
-2. **过渡期双轨**：迁移期间11系统保留原代码与引用，43模块以适配器方式消费11系统产出物，不中断现有运行；
-3. **灰度切换**：43模块推演输出先以影子模式与11系统战略层并行比对（对齐42层P2回放验证模式），一致率达标后才切换为唯一战略推演源；
-4. **回退保障**：切换后11系统原代码保留至少一个版本周期，43模块异常时回退11系统原链路。
+**代码清理（4 处残留，已完成）**：
 
-**不迁移内容**：11系统的BCRM2.0、八卦力学、五角校验、A0-A9决策链其余环节均保留在11系统，本层只承接战略推演职能。
+| # | 文件 | 原残留 | 处理 |
+|---|---|---|---|
+| 1 | `strategic_extension/five_domain_feature_computer.py` | `_fetch_news_72h_limit200` 无条件 `from five_domain_sqlite_reader import DEFAULT_DB_PATH`（43 独立运行时必 ImportError） | 改为本文件推导仓库根 + `18-数据获取中心/data_center.db`，存在则用作 SQLite 回退，否则 None；PG（`sentiment_channel.query_pg`）仍为主路径 |
+| 2 | `strategic_extension/a3_strategy_adapter.py` | 依赖 16-调控系统 `skill_engine` / `llm_bridge`，43 内不可用（实测 ModuleNotFoundError），且 signal_publisher 未接线 | **删除文件**（467 行）；A3 语义由 `signal_publisher` 四档映射 + `strategic_elements_deriver` 战略聚合承接 |
+| 3 | `strategic_extension/five_domain_feature_computer.py` | `_force_vector_shadow_compute`（约 720 行）+ `enable_force_vector` 开关 + JSONL 常量/路径 + compute() 调用点；因 43 内缺 `ForceVectorCalculator`，影子链路恒 `FV_IMPORT_ATTR_ERR` 空转 | **删除**影子方法与开关/调用点；保留 `force_vector/models.py`、`force_vector/strategic_mapper.py`（被 `test_strategic_mapper.py` 覆盖） |
+| 4 | `strategic_extension/strategy_algo_layer.py` | 路径 B 死代码：`bcrm2.exit_manager` 两级导入 + 本地 ABC 兜底、`_PortfolioChainPlaceholder`、`PORTFOLIO_MODE_CHAINS`、5 个无消费方纯函数 | **删除**（约 235 行）并从 `__all__` 移除；43 内无任何消费方 |
+
+**保留边界**：11 域 BCRM2.0、八卦力学、五角校验、A0-A9 决策链仍保留在 11 域自身；43 不再迁移、不再引用，也不向其回写任何状态。
+
+**独立化验证**：
+- `cd 43-战略承接推演层 && python -m pytest tests` → **74 passed**；
+- `sys.path` 仅含 43 根时，`five_domain_feature_computer` / `strategy_algo_layer` / `signal_publisher` / `strategic_elements_deriver` / `cycle_state_adapter` / `sentiment_channel` / `domain_semantics` 全部导入成功，`compute()` 返回 3 类资产；
+- 全目录检索 `memory_l4` / `five_domain_sqlite_reader` / `skill_engine` / `llm_bridge` / `bcrm2`：运行时代码零引用（仅 `docs/p3_shadow_compare.py` 保留归档脚本，缺 11 模块时打印 `[ARCHIVED]` 并优雅退出）。
 
 ## 六 · 实施路线
 
-| 阶段 | 内容 | 退出标准 | 状态（v1.1） |
+| 阶段 | 内容 | 退出标准 | 状态（v1.3） |
 |---|---|---|---|
 | P0 SPEC落定 | 本SPEC评审冻结 | 评审通过，边界确认 | ✅ 完成（v1.0） |
-| P1 代码迁移 | 五计庙算+A3链路迁入43模块，双轨运行 | 迁移完成，11系统引用不中断，测试通过 | ✅ 完成（60 passed，14个源系统既有技术债测试已修复） |
+| P1 代码迁移 | 五计庙算+A3链路迁入43模块，双轨运行 | 迁移完成，测试通过 | ✅ 完成（14个源系统既有技术债测试已修复；双轨阶段已结束） |
 | P2 五维承接 | 40产出物作为天/地/将三维输入源，替代fallback | 三维数据质量提升，fallback触发率下降 | ✅ 完成（扩展至道/天/地/将四维，见§九/§十） |
-| P3 影子比对 | 43推演输出与11系统战略层并行比对 | 一致率与推演质量达标（阈值≥85%） | ✅ 完成（9用例135项比对一致率100%，报告见 docs/p3_shadow_report.json） |
-| P4 正式接入 | strategic_extension信号接入42层SignalBus与23矛盾系统 | source标注正确，矛盾裁决链路贯通 | ✅ 完成（42层SignalBus最小实现落地+43信号经适配器发布accepted+总线状态落盘；23矛盾系统实际消费待其侧后续接入） |
-| P5 四要素推演 | 战略四要素输出+分支对比结构（见§十二） | 四要素结构化输出+分歧上报链路贯通 | ✅ 完成（strategic_elements_deriver.py 四要素+分支对比，已并入信号 payload 发布到42层总线，端到端验证通过） |
+| P3 影子比对 | 43推演输出与11系统战略层并行比对 | 一致率与推演质量达标（阈值≥85%） | ✅ 完成并归档（9用例135项比对一致率100%，报告见 docs/p3_shadow_report.json；11 基线已删除，脚本仅保留历史记录） |
+| P4 正式接入 | strategic_extension信号接入42层SignalBus与23矛盾系统 | source标注正确，矛盾裁决链路贯通 | ✅ 完成（42层SignalBus+总线状态落盘；23 data_pipeline 5g 注入点就绪） |
+| P5 四要素推演 | 战略四要素输出+分支对比结构（见§十二） | 四要素结构化输出+分歧上报链路贯通 | ✅ 完成（strategic_elements_deriver.py 四要素+分支对比，并入信号 payload） |
+| P6 独立化收尾 | 清理 11 域残留耦合与死代码，43 可独立导入/测试/发布 | 无 11 模块引用；74 tests passed；独立 import OK | ✅ 完成（2026-11-18，见§五/§十六） |
 
-## 七 · 验收标准
+## 七 · 验收标准（v1.3 独立自洽口径）
 
 1. 40产出物缺失/过期时，本层fail-open降级（war_state降档），不产生错误推演；
-2. 本层信号source统一标注strategic_extension，与11系统bcrm信号互不叠加权重；
+2. 本层信号source统一标注strategic_extension，不与 11 域 bcrm 信号叠加权重；
 3. 五维权重保持预注册值，置信度校准不修改权重；
 4. 13系统门禁在任何输出组合下不被放宽或绕过；
-5. 迁移期间11系统现有运行零中断；
-6. 切换后回退演练通过（43异常时回退11系统原链路）。
+5. **独立运行**：43 目录内即可完成导入、测试、信号发布，不依赖 11 域任何模块；`python -m pytest tests` 全绿；
+6. **发布链自洽**：`signal_publisher.publish()` 原子落盘 runtime 信号并追加四要素历史；42/23/13/50 消费方读取同一产物。
 
 ## 八 · 冻结决策记录（v1.0，2026-10-28）
 
 | # | 开放问题 | 冻结决策 |
 |---|---|---|
 | 1 | P3影子比对一致率阈值 | ≥ 85% |
-| 2 | 道维（情绪）供给方式 | **43模块自建情绪通道**（避免过于分散缺乏管理；P2阶段实施，过渡期暂用11系统S1-S3引擎供给，自建通道影子验证达标后切换） |
+| 2 | 道维（情绪）供给方式 | **43模块自建情绪通道**（决策已落地：v1.2 新增 sentiment_channel.py，数据源 18 层 PostgreSQL F&G，fail-open 中性 50；不再依赖 11 S1-S3） |
 | 3 | 监控告警接入 | 复用15-监控告警系统，不新建 |
 | 4 | 42协调层SPEC同步修订 | 已同步（42层SPEC v1.2 第二十一章，延伸函数推演部分归属43层） |
 
@@ -300,6 +306,61 @@
 
 ---
 
+## 十六 · 实际运行状态（v1.3，2026-11-18）
+
+### 16.1 代码事实
+
+| 项 | 状态 |
+|---|---|
+| 模块清单 | `five_domain_feature_computer` / `strategy_algo_layer` / `signal_publisher` / `strategic_elements_deriver` / `cycle_state_adapter` / `sentiment_channel` / `domain_semantics` / `force_vector/{models,strategic_mapper}` |
+| 已删除 | `a3_strategy_adapter.py`；`_force_vector_shadow_compute` 及开关/JSONL；`strategy_algo_layer` 路径 B 全部死代码 |
+| 测试 | `python -m pytest tests` → **74 passed**（0.3s） |
+| 独立导入 | 仅以 43 根为 `sys.path` 时全部模块导入成功，`compute()` 返回 3 类资产 |
+| 11 域引用 | 运行时代码零引用（`docs/p3_shadow_compare.py` 为归档脚本，缺 11 模块时优雅退出） |
+
+### 16.2 运行时产物（`runtime/`）
+
+| 文件 | 现状 |
+|---|---|
+| `strategic_extension_signal.json` | 最新信号 `sig_20261109_e89bb4c4`，ts `2026-11-09T13:29:22Z`，`expires_at 2026-11-10T13:29:22Z`（已过期），`shadow=true`，`bridge_switch=true`，三类资产 total=51 / tier=light_defense / war_state=FREEZE |
+| `shadow_gate_state.json` | `{consecutive_days: 0, last_qualifying_date: null}`（影子门禁未解除，`released=false`） |
+| `shadow_gate_audit.jsonl` | 每次发布追加门禁审计（bridge_on / qualifying_today / p3_ok / released / shadow） |
+| `strategic_elements_history.jsonl` | 四要素历史随发布持续追加，供 23 系统训练样本积累 |
+
+### 16.3 发布机制
+
+- **云端**：luke 用户 crontab，每小时 :18/:48 以 `python -m` 方式执行发布（SPEC v1.2.3 记录）；
+- **本地**：无调度器，需手动 `python -m strategic_extension.signal_publisher`（cwd=43-战略承接推演层）；`publish()` 采用临时文件 + `os.replace` 原子落盘，失败不阻断返回值；
+- **开关**：`CYCLE_STATE_BRIDGE=1` 承接 40 产出物（云端开启）；`ODAILY_ENGINE_BOOST` / `FUND_7ENGINES_BOOST` 默认关闭。
+
+### 16.4 下游消费方（均只读 runtime 信号）
+
+| 系统 | 入口 | 读取方式 |
+|---|---|---|
+| 42-协调层 | `adapters/strategic_extension_adapter.py` | 读取 runtime 信号，source=strategic_extension 进入 SignalBus |
+| 23-自进化 | `dreambuddy_evolution/adapters/data_pipeline.py`（5g 注入点） | `kline_data["strategic_extension"]`，fail-open |
+| 13-通用风控 | `risk_capital/capital_allocator/constraint_envelope.py` | 四档约束包络钳位（lev/资产数/多空数/net_bias） |
+| 50-主矛盾评估器 | `adapters/constraint_loader.py` | 读取约束口径 |
+| 15-监控告警 | `config/monitoring.yaml` | 监控信号文件与 shadow_gate_state |
+
+### 16.5 已知边界（本次不处理，显式记录）
+
+1. **过期信号**：42/13 消费方只读文件与 ts，不校验 `expires_at`；云端 cron 正常运行时可覆盖，但若发布中断，过期信号仍可能被消费（修复需跨域改动，本次范围外）。
+2. **影子门禁**：`shadow=true` 仍为默认状态，影子门禁解除需连续达标 + P3 门槛，本次不解除。
+3. **本地 PG 凭据**：本机 `role "dreambuddy" does not exist` 导致情绪通道/新闻 PG 查询 fail-open（中性 50），属运行环境问题，非代码缺陷。
+4. **力向量**：仅保留 `models.py` + `strategic_mapper.py` 纯映射与单测，不参与五维评分与信号决策。
+
+### 16.6 复验命令
+
+```bash
+cd 43-战略承接推演层
+python -m pytest tests -q                      # 74 passed
+python -m strategic_extension.signal_publisher # 手动发布，检查 runtime 产物
+grep -rn "memory_l4\|five_domain_sqlite_reader\|skill_engine\|llm_bridge" strategic_extension --include=*.py  # 应为空
+```
+
+---
+
 ## 十四 · 变更记录
 
 | 版本 | 日期 | 变更内容 | 依据 |
@@ -316,5 +377,6 @@
 | v1.2.1 | 2026-10-28 | §15.3/§15.4 修正与待办①关闭：F&G『停更』确认为误判（18 层 2026-10-17 已完成 SQLite → PostgreSQL 迁移，采集持续正常）；sentiment_channel.py 数据源切换为 PostgreSQL 优先（复用 18 层 sink_postgres 密码发现逻辑，不硬编码凭据），回退 SQLite；综合值缺失时回退分量均值；切换后验证通过（available=true，情绪分 58，实时 F&G）；测试基线 60 passed 不变 | 38-数据库管理系统 SPEC 方案 4；PostgreSQL metrics 实测 |
 | v1.2.2 | 2026-10-28 | 同类问题排查修复 + 待办②关闭：① five_domain_feature_computer.py 的 _fetch_news_72h_limit200（7引擎 news 读取）同样读 SQLite 旧库，切换为 PostgreSQL 优先（复用 sentiment_channel.query_pg 公共查询函数），回退 SQLite，显式 db_path 保持测试语义不变；验证 news 200 条实时数据恢复；② 待办②归类微调：fedfunds_rate 央行政策子指标从道维（资金流向）移至天维（宏观政策），道维 6→5 子指标、天维 4→5 子指标等权，内部键名不变；验证移维生效（tian diff -8，dao diff 0）；测试基线 60 passed 不变 | 18 层 PG 迁移影响面排查；SPEC §15.4 待办② |
 | v1.2.3 | 2026-10-29 | 发布机制变更：信号发布从手动触发改为 crontab 定时高频发布（luke 用户，每小时 18/48 分，python -m 模块方式），四要素历史（strategic_elements_history.jsonl）随发布持续追加，与分支神经网络子系统持续对齐积累训练样本；验证 cron 自动发布生效（四要素历史自动追加）；同日修复 39 层语义事件停更（trader.log 10-25 轮转导致状态错位，重置状态追回 4873 条，crontab 每小时 3/33 分 --live 增量恢复） | P5/P6 数据积累健康度检查；分支子系统对齐需求 |
+| v1.3 | 2026-11-18 | 独立化收尾：11 域战略层删除后，43 清理 4 处残留（five_domain_sqlite_reader 依赖→18 层 data_center.db 本地推导；删除 a3_strategy_adapter.py；删除 Force Vector 影子计算与开关；删除 strategy_algo_layer 路径 B 死代码）；§一架构改自建情绪通道、§五重写为独立化收尾、§六/§七改自洽验收、§八决策#2 关闭、新增§十六实际运行状态；验证 74 passed + 独立导入 OK | 2026-11-18 独立化审计；11 域战略层删除（working tree） |
 
 > v1.0 冻结决策不变；v1.1 为实施记录与架构增补，不改变v1.0任何冻结决策。后续调整继续走版本变更流程（新版本号+变更记录+评审）。

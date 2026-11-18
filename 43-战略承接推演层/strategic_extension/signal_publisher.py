@@ -249,7 +249,7 @@ def build_signal(
         except Exception:  # noqa: BLE001
             semantic_view = None
 
-        # R1a：四档约束包络（tier → 杠杆/资产数量/多空数量/净偏置；与 a3_strategy_adapter 口径对齐）
+        # R1a：四档约束包络（tier → 杠杆/资产数量/多空数量/净偏置）
         _TIER_CONSTRAINTS = {
             "attack": {
                 "leverage_cap": 5,

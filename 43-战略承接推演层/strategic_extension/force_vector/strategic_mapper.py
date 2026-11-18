@@ -15,8 +15,8 @@ from dataclasses import replace
 # ============================================================
 try:  # noqa: E402
     _HERE = _os.path.dirname(_os.path.abspath(__file__))  # force_vector
-    _SCRIPTS = _os.path.dirname(_HERE)  # scripts
-    _YIJING = _os.path.dirname(_SCRIPTS)  # 11-易经推理系统
+    _SCRIPTS = _os.path.dirname(_HERE)  # strategic_extension
+    _YIJING = _os.path.dirname(_SCRIPTS)  # 43-战略承接推演层
     _ROOT = _os.path.dirname(_YIJING)  # dreambuddy-v2
     _9_FUND_PATH = _os.path.join(_ROOT, "9-基本面分析")
     if _os.path.isdir(_9_FUND_PATH) and _9_FUND_PATH not in _sys.path:

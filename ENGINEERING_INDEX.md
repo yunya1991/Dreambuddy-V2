@@ -1,6 +1,6 @@
 # DreamBuddy-V2 工程索引
 
-> **版本**: v3.1 | **更新日期**: 2026-10-11
+> **版本**: v3.2 | **更新日期**: 2026-11-18
 > **定位**: 项目工程入口索引，提供运行入口、核心链路、配置落地点的快速导航
 > **架构 SSoT**: ★ [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](./1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0 — 所有架构争议以此为准
 > **文档管理**: [0-系统文档管理/INDEX.md](./0-系统文档管理/INDEX.md) v2.8 — 全项目文档导航中枢
@@ -42,7 +42,8 @@
 | V15马丁策略 | `14-V15经典马丁策略/run.py trader` | master_daemon hourly | 16层入场+马丁加仓+超时离场 |
 | 经典指标系统 | `10-经典指标系统/ml_trade_service.py` | launchd / master_daemon | Flask后端，信号→决策→执行→结算 |
 | 前端监控面板 | `10-经典指标系统/frontend/` | Vite dev server | React+TypeScript，端口5173 |
-| 易经推理系统 | `11-易经推理系统/scripts/memory_l4/polling_trader.py` | launchd | A0-A9决策链+L4记忆 |
+| 易经推理系统 | `11-易经推理系统/scripts/memory_l4/polling_trader.py` | launchd | A0-A9决策链+L4记忆（战略层已迁出至43） |
+| 战略承接推演层 | `43-战略承接推演层/strategic_extension/signal_publisher.py` | 云端 crontab 每小时 :18/:48（`python -m`） | 40大周期→五维→strategic_extension 信号（shadow） |
 | 资金管理API | `14-V15经典马丁策略/lib/capital_manager_engine.py api` | 独立启动 | HTTP API，端口8770 |
 
 #### 核心链路入口（信号 → 决策 → 执行 → 结算）
@@ -68,6 +69,7 @@
 | 三屏趋势 | `12-三屏趋势系统/core/config.py`（代码内配置） | 无独立状态文件 |
 | 通用风控 | `13-通用风控模块/core/context.py`（代码内配置） | 无独立状态文件 |
 | 易经推理 | `11-易经推理系统/.env` | `11-易经推理系统/artifacts/` 下JSON产物 |
+| 战略承接推演 | 环境变量开关（`CYCLE_STATE_BRIDGE` / `ODAILY_ENGINE_BOOST` / `FUND_7ENGINES_BOOST`） | `43-战略承接推演层/runtime/strategic_extension_signal.json`, `runtime/shadow_gate_state.json` |
 | 全局 | `ops/state/` | master_daemon状态 |
 
 #### 配置加载优先级
@@ -336,6 +338,12 @@ dreambuddy-v2/
 ├── 33-REA逆向解析工程/           # REA逆向解析工程
 ├── 34-前端应用训练系统/          # 前端应用训练系统
 ├── 35-广义认知系统协作模块/      # 广义认知系统协作（纯文档统筹层）
+├── 43-战略承接推演层/            # 战略承接推演层（40大周期→五维→strategic_extension 信号）
+│   ├── strategic_extension/     # 五维计算/策略算法/信号发布/四要素/承接适配/情绪通道/力向量映射
+│   ├── runtime/                 # 信号、影子门禁状态与审计、四要素历史
+│   ├── docs/                    # P3 迁移比对归档（11 基线已删，缺模块时优雅退出）
+│   ├── tests/                   # 74 tests
+│   └── SPEC.md                  # v1.3 独立化收尾 SPEC
 │
 ├── ops/                         # 运维工具
 │   ├── master_daemon.py         # 主守护进程
@@ -472,6 +480,7 @@ dreambuddy-v2/
 | 约束层 | 30+约束文档 + 版本化发布 |
 | 技能体系 | 5大类40+技能（0-CORE/1-TRADE/2-INTELLIGENCE/3-SUPPORT/4-GENERIC） |
 | 文档状态 | ✅ 完整（ENGINEERING_INDEX v2.1 + TECHNICAL_DESIGN v2.1） |
+| 战略推演层 | 已迁出至 `43-战略承接推演层/`（2026-11-18 删除 14 个战略层模块）；11 保留 BCRM2/QMM/A0-A9，与 43 无代码依赖 |
 | 基线综合夏普 | 7.45（BTC/ETH/SOL/UNI 4币种组合） |
 
 **核心代码结构：**
@@ -638,6 +647,7 @@ dreambuddy-v2/
 | REA逆向解析工程 | `33-REA逆向解析工程/` | — | REA逆向解析工程 |
 | 前端应用训练 | `34-前端应用训练系统/` | — | 前端应用训练系统 |
 | 广义认知协作 | `35-广义认知系统协作模块/` | — | 跨系统协作设计 SSoT（纯文档，不含代码） |
+| 战略承接推演 | `43-战略承接推演层/` | SPEC v1.3 | 40大周期承接→五维/四档/四要素→strategic_extension（shadow，74 tests） |
 
 > 注："—" 表示该子系统尚无 docs/ENGINEERING_INDEX.md 文件。
 
@@ -839,6 +849,7 @@ python 14-V15经典马丁策略/lib/capital_manager_engine.py api --port 8770
 | 易经推理 | `11-易经推理系统/tests/` | e2e_l4_test.py, stress_test_l4.py, test_trading_protocol_*.py | 60+ |
 | 经典指标 | `10-经典指标系统/test_*.py` | test_exit_system_backtest.py, test_signals_dedup.py, tests_three_chain_eval.py | ~15 |
 | 调控系统 | `16-调控系统/tests/` | （空） | 0 |
+| 战略承接推演 | `43-战略承接推演层/tests/` | test_five_domain_feature_computer.py, test_strategic_mapper.py 等 | 74 |
 
 ### 8.2 测试命令
 
@@ -854,6 +865,9 @@ cd 14-V15经典马丁策略 && python test_multi_scenario.py
 
 # 经典指标测试
 cd 10-经典指标系统 && python -m pytest test_*.py -v
+
+# 战略承接推演测试（43 独立运行，无 11 域依赖）
+cd 43-战略承接推演层 && python -m pytest tests -q
 ```
 
 ---
