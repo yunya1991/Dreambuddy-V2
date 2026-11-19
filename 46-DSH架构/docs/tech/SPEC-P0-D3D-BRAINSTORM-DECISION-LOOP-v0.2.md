@@ -774,6 +774,8 @@ GateFlow 需要人工授权
 
 认知系统升级期间，Hermes 反思不得直写记忆/图谱/向量库；必须先过门禁，再作为候选证据注入。
 
+**默认关闭**：`enable_hermes_reflection_gate` 未置 `1` 时门禁不启用，广义认知系统（含残差记忆器等）走原路径，`ReflectionInbox.evaluate_and_enqueue` 返回 `gate_disabled` 且不落盘。
+
 ```text
 Hermes 反思 → ReflectionProposal
   → ReflectionGate（trace/证据/写动作/密钥/CoT/限长/去重/置信度）
@@ -783,6 +785,7 @@ Hermes 反思 → ReflectionProposal
 
 | 规则 | 处置 |
 |---|---|
+| 开关未打开（默认） | `gate_disabled`，认知原路径不变 |
 | 缺 `trace_id` / `task_id` / `reflection_id` | 拒绝 |
 | 任一 insight 无 `evidence_refs` | 拒绝 |
 | 写动作（`memory_write` / `record` / `place_order` 等） | 拒绝 |

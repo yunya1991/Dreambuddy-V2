@@ -7,7 +7,8 @@
   通过后写入 append-only 反思收件箱，由广义认知系统按其升级后的策略消费。
 
 硬约束：
-  - Hermes 不得直写认知记忆 / 图谱 / 向量库；
+  - 默认关闭：广义认知系统（含残差记忆器等）继续走原路径，本门禁不参与；
+  - 打开后 Hermes 不得直写认知记忆 / 图谱 / 向量库；
   - 门禁未过 → 不进入收件箱；
   - 注入模式固定 `candidate_only`，必须由认知系统复核后才能升级为记忆；
   - 原始思维链、密钥、写动作、无证据 claim 一律拒绝。
@@ -63,6 +64,17 @@ _SECRET_PATTERNS = (
     re.compile(r"(password|passwd|secret)\s*[:=]\s*\S+", re.I),
 )
 _COT_KEYS = frozenset({"reasoning", "chain_of_thought", "thoughts", "raw_cot"})
+
+_ENABLE_KEYS = ("enable_hermes_reflection_gate", "ENABLE_HERMES_REFLECTION_GATE")
+
+
+def reflection_gate_enabled(env: Optional[Mapping[str, str]] = None) -> bool:
+    """默认关闭：未显式打开时，认知系统走原路径。"""
+    values = os.environ if env is None else env
+    for key in _ENABLE_KEYS:
+        if str(values.get(key) or "").strip().lower() in ("1", "true", "yes", "on"):
+            return True
+    return False
 
 
 @dataclass(frozen=True)
@@ -232,10 +244,15 @@ def evaluate_reflection(
 
 
 class ReflectionInbox:
-    """append-only 反思收件箱；只接收门禁通过的 candidate_only artifact。"""
+    """append-only 反思收件箱；只接收门禁通过的 candidate_only artifact。
 
-    def __init__(self, path: str) -> None:
+    默认关闭（`enabled=None` 时读 `enable_hermes_reflection_gate`）；
+    关闭状态下既不评估也不落盘，广义认知原路径完全不受影响。
+    """
+
+    def __init__(self, path: str, *, enabled: Optional[bool] = None) -> None:
         self.path = str(path)
+        self.enabled = reflection_gate_enabled() if enabled is None else bool(enabled)
         self._lock = threading.Lock()
 
     def _load_keys(self) -> set:
@@ -263,6 +280,8 @@ class ReflectionInbox:
         return keys
 
     def enqueue(self, artifact: Mapping[str, Any]) -> bool:
+        if not self.enabled:
+            return False
         if not isinstance(artifact, Mapping):
             return False
         injection = artifact.get("injection") or {}
@@ -289,6 +308,10 @@ class ReflectionInbox:
         now: float,
         min_confidence: float = MIN_CONFIDENCE,
     ) -> ReflectionGateResult:
+        if not self.enabled:
+            return ReflectionGateResult(
+                False, str(getattr(proposal, "reflection_id", "") or ""), ("gate_disabled",)
+            )
         result = evaluate_reflection(
             proposal,
             now=now,

@@ -12,6 +12,7 @@ from core.hermes_reflection_gate import (  # noqa: E402
     ReflectionInsight,
     ReflectionProposal,
     evaluate_reflection,
+    reflection_gate_enabled,
 )
 
 NOW = 1_700_000_000.0
@@ -112,7 +113,7 @@ def test_duplicate_reflection_is_rejected():
 
 def test_inbox_is_idempotent_across_restart(tmp_path):
     path = str(tmp_path / "reflection_inbox.jsonl")
-    inbox = ReflectionInbox(path)
+    inbox = ReflectionInbox(path, enabled=True)
 
     first = inbox.evaluate_and_enqueue(proposal(), now=NOW)
     assert first.allowed
@@ -122,7 +123,7 @@ def test_inbox_is_idempotent_across_restart(tmp_path):
     assert "duplicate_reflection" in second.reasons
 
     # 重启：从文件重载去重键
-    restarted = ReflectionInbox(path)
+    restarted = ReflectionInbox(path, enabled=True)
     third = restarted.evaluate_and_enqueue(proposal(), now=NOW + 20)
     assert not third.allowed
 
@@ -132,7 +133,7 @@ def test_inbox_is_idempotent_across_restart(tmp_path):
 
 
 def test_inbox_rejects_non_candidate_artifact(tmp_path):
-    inbox = ReflectionInbox(str(tmp_path / "inbox.jsonl"))
+    inbox = ReflectionInbox(str(tmp_path / "inbox.jsonl"), enabled=True)
     assert inbox.enqueue({"reflection_id": "RF-X", "content_hash": "sha256:x"}) is False
     assert (
         inbox.enqueue(
@@ -144,3 +145,33 @@ def test_inbox_rejects_non_candidate_artifact(tmp_path):
         )
         is False
     )
+
+
+# ── 默认关闭：认知系统走原路径 ──────────────────────────────────────────
+def test_gate_is_disabled_by_default(tmp_path, monkeypatch):
+    monkeypatch.delenv("enable_hermes_reflection_gate", raising=False)
+    monkeypatch.delenv("ENABLE_HERMES_REFLECTION_GATE", raising=False)
+
+    assert reflection_gate_enabled() is False
+    inbox = ReflectionInbox(str(tmp_path / "inbox.jsonl"))
+    assert inbox.enabled is False
+
+    result = inbox.evaluate_and_enqueue(proposal(), now=NOW)
+    assert not result.allowed
+    assert result.reasons == ("gate_disabled",)
+    assert not (tmp_path / "inbox.jsonl").exists()
+    assert inbox.enqueue(evaluate_reflection(proposal(), now=NOW).artifact) is False
+
+
+def test_gate_can_be_enabled_explicitly_or_by_env(tmp_path, monkeypatch):
+    monkeypatch.delenv("enable_hermes_reflection_gate", raising=False)
+    monkeypatch.delenv("ENABLE_HERMES_REFLECTION_GATE", raising=False)
+
+    explicit = ReflectionInbox(str(tmp_path / "a.jsonl"), enabled=True)
+    assert explicit.evaluate_and_enqueue(proposal(), now=NOW).allowed
+
+    monkeypatch.setenv("enable_hermes_reflection_gate", "1")
+    assert reflection_gate_enabled() is True
+    by_env = ReflectionInbox(str(tmp_path / "b.jsonl"))
+    assert by_env.enabled is True
+    assert by_env.evaluate_and_enqueue(proposal(), now=NOW).allowed

@@ -263,6 +263,8 @@ DSH ExpertCore
 
 定位：Hermes 反思只是**候选证据**，不是认知真相。认知系统升级期间，Hermes 不得直写记忆 / 图谱 / 向量库。
 
+**当前默认关闭**：`enable_hermes_reflection_gate` 未显式置 `1` 时，门禁不评估、不落盘，广义认知系统（含残差记忆器等）继续走原路径；`ReflectionInbox` 关闭状态下 `evaluate_and_enqueue` 返回 `gate_disabled`。
+
 ```text
 Hermes 反思
   → ReflectionProposal（trace_id / task_id / evidence_refs / insights / confidence）
@@ -274,6 +276,7 @@ Hermes 反思
 
 | 规则 | 处置 |
 |---|---|
+| 开关未打开（默认） | 返回 `gate_disabled`，不影响认知原路径 |
 | 缺 `trace_id` / `task_id` / `reflection_id` | 拒绝 |
 | 任一 insight 无 `evidence_refs` | 拒绝 |
 | 出现写动作（`memory_write` / `record` / `place_order` 等） | 拒绝 |
@@ -283,7 +286,7 @@ Hermes 反思
 | 重复 `reflection_id` / `content_hash` | 幂等丢弃 |
 | 通过 | 写入 inbox，`mode=candidate_only`、`requires_review=true`、TTL 7 天 |
 
-实现：`34-前端应用训练系统/core/hermes_reflection_gate.py`（10 项契约测试）。
+实现：`34-前端应用训练系统/core/hermes_reflection_gate.py`（12 项契约测试，含默认关闭/显式开启）。
 边界：本门禁不替代认知系统的写入策略；它只保证“进入认知系统之前”的反思是干净、可审计、可回滚的候选证据。
 
 ---
