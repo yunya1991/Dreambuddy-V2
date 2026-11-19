@@ -12,7 +12,8 @@
     D3_ROOT             仓库根（默认按 core/ 反推）
     D3_ROLES_PATH       花名册 yaml（47 registry）
     D3_WORKERS          本地 roster，逗号分隔；缺省接受任意 worker_id
-    D3_EXECUTOR         inproc | dsh-cli | noop（默认 inproc）
+    D3_EXECUTOR         inproc | dsh-cli | noop | auto | hermes（默认 inproc）
+                        auto: 按 worker_roles.executor + enable_hermes_executor 路由
     D3_PROFILE          DSH profile（默认 sandbox）
     D3_MAX_CONCURRENCY  批内并发上限（默认 8）
     D3_POLL_INTERVAL    空闲轮询间隔秒（默认 0.5）
@@ -33,6 +34,7 @@ from typing import Any, Dict, List, Optional
 if __package__ in (None, ""):  # 允许 `python core/worker_launcher_cli.py`
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from core.hermes_executor import HermesExecutor, build_executor_router  # noqa: E402
 from core.inproc_session_executor import InProcessSessionExecutor  # noqa: E402
 from core.worker_launcher import DshCliExecutor, WorkerLauncher  # noqa: E402
 from core.worker_roles import DEFAULT_ROLES_PATH, RolePolicy, load_worker_roles  # noqa: E402
@@ -65,12 +67,22 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _make_executor(args: argparse.Namespace) -> Any:
+def _make_executor(args: argparse.Namespace, roles: Dict[str, Any]) -> Any:
     kind = str(args.executor or "inproc").lower()
     if kind == "noop":
         return _NoopExecutor()
     if kind == "dsh-cli":
         return DshCliExecutor(profile=args.profile, dsh_bin=_env("D3_DSH_BIN", "dsh") or "dsh")
+    if kind == "hermes":
+        return HermesExecutor(roles=roles, profile=args.profile)
+    if kind == "auto":
+        base = DshCliExecutor(profile=args.profile, dsh_bin=_env("D3_DSH_BIN", "dsh") or "dsh")
+        return build_executor_router(
+            roles,
+            {"dsh": base, "hermes": HermesExecutor(roles=roles, profile=args.profile)},
+            env=os.environ,
+            default="dsh",
+        )
     return InProcessSessionExecutor(
         root=args.root,
         profile=args.profile,
@@ -87,7 +99,7 @@ def _make_launcher(args: argparse.Namespace) -> WorkerLauncher:
     return WorkerLauncher(
         args.root,
         roles=roles,
-        executor=_make_executor(args),
+        executor=_make_executor(args, roles),
         worker_ids=workers,
     )
 

@@ -1,0 +1,17 @@
+[Unit]
+Description=DreamBuddy D3 Worker Launcher (DSH + optional Hermes executor)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/Dreambuddy-V2-main/34-前端应用训练系统
+EnvironmentFile=-/etc/dreambuddy/worker-launcher.env
+ExecStart=/usr/bin/python3 -u core/worker_launcher_cli.py run
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=30
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

@@ -4,6 +4,7 @@
 用法:
     python3 53-DSH插件模块/check_whitelist.py --profile sandbox
     python3 53-DSH插件模块/check_whitelist.py --profile headless --json
+    python3 53-DSH插件模块/check_whitelist.py --runtime hermes --role research --profile sandbox
 
 校验对象: 指定 dsh profile 的 package.json dependencies + cordis.patch.yml 插入条目,
 与 plugin_whitelist.yaml 对齐。deny-by-default:
@@ -28,6 +29,7 @@ import yaml
 
 _MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 _DEFAULT_WHITELIST = os.path.join(_MODULE_DIR, "plugin_whitelist.yaml")
+_DEFAULT_EXTERNAL_RUNTIMES = os.path.join(_MODULE_DIR, "external_runtimes.yaml")
 _DEFAULT_DSH_HOME = os.path.join(
     _MODULE_DIR, "..", "1-ARCHITECTURE", "dream-harness-bridge", ".dsh-home"
 )
@@ -128,13 +130,82 @@ def check(profile: str, whitelist: Dict[str, Any], plugins: List[str]) -> List[s
     return violations
 
 
+def check_external_runtime(runtime: str, role: str, profile: str, doc: Dict[str, Any]) -> List[str]:
+    """校验外部运行时（如 hermes）是否允许在指定角色/profile 激活。"""
+    entries = doc.get("external_runtimes") if isinstance(doc, dict) else None
+    entries = entries if isinstance(entries, list) else []
+    entry = next(
+        (item for item in entries if isinstance(item, dict) and item.get("id") == runtime),
+        None,
+    )
+    if entry is None:
+        return [f"{runtime}: 未在 external_runtimes 登记"]
+
+    violations: List[str] = []
+    if str(entry.get("status") or "") == "forbidden":
+        violations.append(f"{runtime}: status=forbidden")
+    if not bool(entry.get("enabled")):
+        violations.append(f"{runtime}: enabled=false，禁止激活")
+    allowed_roles = entry.get("allowed_roles") or []
+    if role and role not in {str(item) for item in allowed_roles}:
+        violations.append(f"{runtime}: role={role} 不在 allowed_roles={allowed_roles}")
+    permitted = entry.get("permitted_profiles") or []
+    if profile and profile not in {str(item) for item in permitted}:
+        violations.append(f"{runtime}: profile={profile} 不在 permitted_profiles={permitted}")
+    return violations
+
+
 def main(argv: List[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="DSH 插件白名单校验")
-    parser.add_argument("--profile", required=True, help="dsh profile 名（如 sandbox/headless）")
+    parser = argparse.ArgumentParser(description="DSH 插件 / 外部运行时白名单校验")
+    parser.add_argument("--profile", help="dsh profile 名（插件校验必填）")
+    parser.add_argument("--runtime", help="外部运行时 id（如 hermes）")
+    parser.add_argument("--role", default="", help="外部运行时的 worker 角色")
+    parser.add_argument(
+        "--external-runtimes",
+        default=_DEFAULT_EXTERNAL_RUNTIMES,
+        help="external_runtimes.yaml 路径",
+    )
     parser.add_argument("--dsh-home", default=_DEFAULT_DSH_HOME, help="DSH_HOME 路径")
     parser.add_argument("--whitelist", default=_DEFAULT_WHITELIST, help="白名单 YAML 路径")
     parser.add_argument("--json", action="store_true", help="以 JSON 输出结果")
     args = parser.parse_args(argv)
+
+    if args.runtime:
+        try:
+            doc = _load_whitelist(args.external_runtimes)
+        except Exception as e:  # noqa: BLE001
+            print(f"[whitelist] external_runtimes 加载失败: {e}", file=sys.stderr)
+            return 2
+        violations = check_external_runtime(args.runtime, args.role, args.profile or "", doc)
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "runtime": args.runtime,
+                        "role": args.role,
+                        "profile": args.profile or "",
+                        "violations": violations,
+                        "ok": not violations,
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+        else:
+            print(
+                f"[whitelist] runtime={args.runtime} role={args.role or '-'} "
+                f"profile={args.profile or '-'}"
+            )
+            if violations:
+                print(f"[whitelist] ❌ {len(violations)} 项违规:")
+                for item in violations:
+                    print(f"  ! {item}")
+            else:
+                print("[whitelist] ✅ 外部运行时允许激活")
+        return 1 if violations else 0
+
+    if not args.profile:
+        parser.error("插件校验必须提供 --profile（或使用 --runtime 校验外部运行时）")
 
     profile_dir = os.path.join(args.dsh_home, "profiles", args.profile)
     if not os.path.isdir(profile_dir):

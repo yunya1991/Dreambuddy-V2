@@ -996,6 +996,7 @@ shells:
 worker_roles:
   research:
     description: 研究 Worker——认知检索 / 金融语义 / REA 分析（只读）
+    executor: hermes
     shells:
     - l0.cognition.mcp
     - l0.semantic-39.mcp
@@ -1012,6 +1013,7 @@ worker_roles:
     - get_rea_snapshot
   engineer:
     description: 工程 Worker——REA 分析/追踪/对比/假设门禁/方法论（只读，10 工具满额）
+    executor: hermes
     shells:
     - l0.rea.mcp
     - l0.cognition.mcp

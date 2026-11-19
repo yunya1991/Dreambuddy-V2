@@ -1,0 +1,24 @@
+# 53-DSH插件模块/external_runtimes.yaml
+# 外部执行运行时登记（deny-by-default）。不是 Cordis 插件，不进入 cordis.patch.yml。
+version: "v1"
+last_updated: "2026-11-19"
+default_deny: true
+
+external_runtimes:
+  - id: "hermes"
+    status: "pending_verification"
+    enabled: false
+    reason: "Phase 0 H1/H2 部分验证；H3、0.20 源码恢复与隔离测试未完成"
+    allowed_roles: ["research", "engineer"]
+    permitted_profiles: ["sandbox"]
+    sandbox_profile: "hermes-sandbox"
+    credentials: "approval_bridge_short_lived_only"
+    network_policy:
+      default: "deny"
+      allowed_egress: ["47-mcp", "approval-bridge"]
+      dsh_internal_reachable: false
+    writable_paths: ["workspace", "tmp"]
+    max_concurrency: 1
+    allowed_shells: []
+    required_gates: ["H1", "H2", "H3", "B1"]
+    audit_sink: ".data/hermes/audit.jsonl"

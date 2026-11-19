@@ -23,6 +23,7 @@ import json
 import os
 from typing import Any, Dict, List, Optional
 
+from core.dual_acceptance import SemanticReview, merge_verdict
 from core.okr_nodes import VERIFY_C_ACTION
 
 VERDICT_PASS = "pass"
@@ -141,7 +142,36 @@ def _evaluate_finance_node(entry: Dict[str, Any], result: Dict[str, Any]) -> Dic
     return entry
 
 
-def _evaluate_node(node: Dict[str, Any], result: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+def _apply_semantic(entry: Dict[str, Any], semantic_review: Any) -> Dict[str, Any]:
+    """把 Hermes 语义候选合并进规则裁决；规则硬门优先，FAIL-OPEN。"""
+    try:
+        review = semantic_review
+        if isinstance(review, dict):
+            review = SemanticReview.from_dict(review)
+        if not isinstance(review, SemanticReview):
+            return entry
+        rule_verdict = str(entry.get("verdict") or "")
+        merged, reason = merge_verdict(rule_verdict, review)
+        entry["rule_verdict"] = rule_verdict
+        entry["verdict"] = merged
+        entry["reason"] = reason
+        entry["semantic_verdict"] = review.verdict
+        entry["semantic_confidence"] = review.confidence
+        entry["semantic_evidence_refs"] = list(review.evidence_refs)
+        entry["semantic_rationale"] = review.rationale
+        entry["semantic_missing"] = list(review.missing)
+        if rule_verdict != review.verdict:
+            entry["disagreement"] = True
+        return entry
+    except Exception:  # FAIL-OPEN：语义层异常不影响规则裁决
+        return entry
+
+
+def _evaluate_node(
+    node: Dict[str, Any],
+    result: Optional[Dict[str, Any]],
+    semantic_review: Any = None,
+) -> Dict[str, Any]:
     """单节点验收：按 verify 类型分派规则，产出 verdict + reason（证据）。"""
     node_id = str(node.get("node_id") or "N?")
     verify = str(node.get("verify") or VERIFY_C_ACTION)
@@ -154,36 +184,61 @@ def _evaluate_node(node: Dict[str, Any], result: Optional[Dict[str, Any]]) -> Di
 
     if result is None:
         entry.update(verdict=VERDICT_FAIL, reason=REASON_RESULT_MISSING)
-        return entry
+        return _apply_semantic(entry, semantic_review)
     if action in FAIL_ACTIONS:
         entry.update(verdict=VERDICT_FAIL, reason=REASON_ACTION_REJECTED)
-        return entry
+        return _apply_semantic(entry, semantic_review)
     if action == REDO_ACTION:
         entry.update(verdict=VERDICT_DEGRADED, reason=REASON_ACTION_REDO)
-        return entry
+        return _apply_semantic(entry, semantic_review)
     if result.get("error"):
         entry.update(verdict=VERDICT_DEGRADED, reason=REASON_ERROR_RECORDED)
-        return entry
+        return _apply_semantic(entry, semantic_review)
     if str(node.get("domain") or "") == FINANCE_DOMAIN:
-        return _evaluate_finance_node(entry, result)
+        return _apply_semantic(_evaluate_finance_node(entry, result), semantic_review)
     if verify == VERIFY_C_ACTION:
         entry.update(verdict=VERDICT_PASS, reason=REASON_ACTION_OK)
     else:
         # evidence_backed / gap_closed 首版规则化：不做证据比对，标记待验
         entry.update(verdict=VERDICT_DEGRADED, reason=REASON_EVIDENCE_PENDING)
-    return entry
+    return _apply_semantic(entry, semantic_review)
+
+
+def _index_semantic_reviews(semantic_reviews: Any) -> Dict[str, SemanticReview]:
+    """归一化语义候选：支持 {node_id: review} 或 [review, ...]。"""
+    out: Dict[str, SemanticReview] = {}
+    try:
+        if isinstance(semantic_reviews, dict):
+            items = semantic_reviews.values()
+        elif isinstance(semantic_reviews, (list, tuple)):
+            items = semantic_reviews
+        else:
+            return out
+        for item in items:
+            review = item if isinstance(item, SemanticReview) else SemanticReview.from_dict(item)
+            if review is not None:
+                node_id = review.node_id or ""
+                if node_id:
+                    out[node_id] = review
+    except Exception:  # FAIL-OPEN
+        return {}
+    return out
 
 
 def evaluate_nodes(
-    nodes: Optional[List[Dict[str, Any]]], node_results: Optional[List[Dict[str, Any]]]
+    nodes: Optional[List[Dict[str, Any]]],
+    node_results: Optional[List[Dict[str, Any]]],
+    semantic_reviews: Any = None,
 ) -> Dict[str, Any]:
     """C 层结果回传验收：逐节点核对（对账式），汇总整体 verdict。
 
+    semantic_reviews 为可选双层验收输入；缺省时行为与旧版完全一致。
     FAIL-OPEN: 任何非法输入返回 degraded 骨架，绝不抛错。
     """
     try:
         nodes = list(nodes or [])
         node_results = list(node_results or [])
+        reviews_by_id = _index_semantic_reviews(semantic_reviews)
         by_id = {
             str(r.get("node_id")): r
             for r in node_results
@@ -195,7 +250,7 @@ def evaluate_nodes(
             if not isinstance(node, dict):
                 continue
             node_id = str(node.get("node_id") or "N?")
-            verdicts.append(_evaluate_node(node, by_id.get(node_id)))
+            verdicts.append(_evaluate_node(node, by_id.get(node_id), reviews_by_id.get(node_id)))
 
         node_ids = {str(n.get("node_id")) for n in nodes if isinstance(n, dict)}
         extras = [nid for nid in by_id if nid not in node_ids]

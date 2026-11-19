@@ -24,8 +24,26 @@ from pathlib import Path
 import requests
 
 # ── 配置 ─────────────────────────────────────────────────────────────────────
-FEISHU_APP_ID = "cli_aa95b2dee3b85bd1"  # 云涯Hermes Bot
-FEISHU_APP_SECRET = "dnHO43AQ68jua7Z8XEAQ3gJwNoMeYQ70"
+
+
+def _load_feishu_credentials() -> tuple:
+    """凭据只从环境变量或 ~/.hermes/.env 读取，禁止硬编码。"""
+    env_path = os.path.expanduser("~/.hermes/.env")
+    values = {}
+    if os.path.exists(env_path):
+        with open(env_path, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, value = line.split("=", 1)
+                    values[key.strip()] = value.strip()
+    return (
+        os.environ.get("FEISHU_APP_ID") or values.get("FEISHU_APP_ID", ""),
+        os.environ.get("FEISHU_APP_SECRET") or values.get("FEISHU_APP_SECRET", ""),
+    )
+
+
+FEISHU_APP_ID, FEISHU_APP_SECRET = _load_feishu_credentials()
 
 # 多维表格
 BITABLE_APP_TOKEN = "CMlnbvAKYafUL0sxLpFcxNfVnoc"
@@ -64,6 +82,8 @@ ALERT_COLOR = {"info": "blue", "warning": "orange", "critical": "red"}
 
 
 def get_token() -> str:
+    if not FEISHU_APP_ID or not FEISHU_APP_SECRET:
+        raise RuntimeError("FEISHU_APP_ID / FEISHU_APP_SECRET 未配置（env 或 ~/.hermes/.env）")
     resp = requests.post(
         TOKEN_URL,
         json={

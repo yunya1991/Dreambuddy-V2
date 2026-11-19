@@ -25,6 +25,10 @@ import {
 } from "@/lib/task-board/gate-governance";
 import { latestVerdictL0 } from "@/lib/verdict/verdict-events";
 import { checkVerdictForGate } from "@/lib/verdict/verdict-gate";
+import {
+  appendGateFlowEvent,
+  buildGateFlowRejectionRecord,
+} from "@/lib/task-board/gateflow-event-export";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -369,6 +373,33 @@ export async function POST(
   }
 
   const next = await appendTaskEvents(id, events);
+
+  // D3D Phase 2：驳回后导出 GateFlow 事件，供 Python 立案消费者幂等消费。
+  // FAIL-OPEN：导出失败不阻断门禁结果，但必须在响应中可见。
+  let gateflowExported: boolean | undefined;
+  if (status === "rejected" && targets.length === 1) {
+    const gate = targets[0];
+    const policy = policies.get(gate.kind)!;
+    const rejectedRewind = rewindTo ?? policy.rejection.rewind_to;
+    gateflowExported = await appendGateFlowEvent(
+      buildGateFlowRejectionRecord({
+        taskId: id,
+        traceId: snapshot.trace_id,
+        runId: snapshot.flow?.run_id,
+        flowId: snapshot.flow?.flow_id,
+        gateId: gate.gate_id,
+        gateKind: gate.kind,
+        comment,
+        rewindTo: rejectedRewind,
+        evidenceRef: gate.evidence_ref,
+        highRisk:
+          GATE_RISK[gate.kind] === "high" ||
+          GATE_RISK[gate.kind] === "critical",
+        at: now,
+      }),
+    );
+  }
+
   return NextResponse.json({
     success: true,
     snapshot: next,
@@ -376,5 +407,6 @@ export async function POST(
     actor: { id: actor.actorId, kind: actor.kind },
     batch: gateIds.length > 1,
     rewound,
+    gateflow_exported: gateflowExported,
   });
 }

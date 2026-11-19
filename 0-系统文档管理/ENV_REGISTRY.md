@@ -82,7 +82,7 @@ ssh -o ConnectTimeout=15 dreambuddy-remote 'sudo -n grep "^<KEY>=" <文件路径
 | `DASHSCOPE_API_KEY` | 阿里百炼 | `/home/luke/.hermes/.env` | `~/.hermes/.env` | ✅ |
 | `OPENAI_API_KEY` | OpenAI 兼容端点 | `/home/luke/.hermes/.env` | `~/.hermes/.env` | ✅ |
 | `TAVILY_API_KEY` | 联网检索 | `.env.cloud`、`11-易经推理系统/.env`、`3.1-FRONTEND/.env.production` | 项目内 | ✅ |
-| `QWEN_API_KEY` / `BAILIAN_API_KEY` | 通义 | **未发现** | 项目内可能有 | ✅ |
+| `QWEN_API_KEY` / `QWEN_BASE_URL` / `QWEN_MODEL` | 通义千问（百炼 token-plan，`cn-beijing`，`qwen3.8-max`）**已配置但未启用**：云端到阿里云 cn-beijing 出网超时，2026-11-18 决定仅用 DeepSeek | `/home/luke/dreambuddy/6-TRADING/scripts/.env`（2026-11-18 新建，未被任何服务引用） | `6-TRADING/scripts/.env`、`experiments/ab-trading/config/.env` | ✅ |
 | `ANTHROPIC_AUTH_TOKEN` / `ANTHROPIC_BASE_URL` | Anthropic 兼容 | **未发现** | 项目内可能有 | ✅ |
 | `FRED_API_KEY` | 宏观数据 | **未发现** | - | ✅ |
 | `COINGLASS_API_KEY` / `CG_API_KEY` | 链上数据 | **未发现** | - | ✅ |
@@ -104,6 +104,11 @@ ssh -o ConnectTimeout=15 dreambuddy-remote 'sudo -n grep "^<KEY>=" <文件路径
 | `FEISHU_APP_ID` / `FEISHU_APP_SECRET` | Hermes 飞书机器人 | `/home/luke/.hermes/.env`、`/etc/dreambuddy-monitoring/monitoring.env` | ✅ |
 | `LARK_APP_ID` / `LARK_APP_SECRET` | 前端 Lark 登录 | `.env.cloud` | ✅ |
 | `FEISHU_CHAT_DESK` / `_MANAGEMENT` / `_RISK` | 告警群 ID | `monitoring.env` | ❌ |
+| `FEISHU_APPROVAL_SECRET` / `_CODE` / `_KEY_ID` | D3D 审批 Grant 签名、审批定义 Code、签名 key | `~/.hermes/.env` 或审批服务环境 | ✅ |
+| `FEISHU_REQUESTER_USER_ID` / `FEISHU_APPROVER_USER_ID` | 审批发起人 / 兜底审批人 | 同上 | ❌ |
+| `APPROVAL_OUTBOX_TOKEN` | 前端 outbox 消费 API 鉴权（可选） | 服务环境 | ✅ |
+| `GATEFLOW_APPROVAL_OUTBOX` / `APPROVAL_OUTBOX_STATE` | approval outbox 与其消费游标路径 | 服务环境 | ❌ |
+| `GATEFLOW_APPLY_URL` | 授权后立即触发前端 outbox 消费的 URL | 服务环境 | ❌ |
 
 ### 3.5 认证 / 加密 / 对象存储
 

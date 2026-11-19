@@ -19,6 +19,10 @@ import yaml
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_ROLES_PATH = os.path.join(_REPO_ROOT, "47-MCP管理系统", "registry", "mcp_capabilities.yaml")
 DEFAULT_PROFILES_PATH = os.path.join(_REPO_ROOT, "47-MCP管理系统", "registry", "mcp_profiles.json")
+DEFAULT_EXTERNAL_RUNTIMES_PATH = os.path.join(
+    _REPO_ROOT, "53-DSH插件模块", "external_runtimes.yaml"
+)
+EXECUTORS = frozenset({"dsh", "hermes"})
 
 MAX_TOOLS_PER_ROLE = 10
 
@@ -36,7 +40,32 @@ def load_worker_roles(path: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
     except Exception:
         return {}
     roles = data.get("worker_roles") if isinstance(data, dict) else None
-    return roles if isinstance(roles, dict) else {}
+    roles = roles if isinstance(roles, dict) else {}
+    for cfg in roles.values():
+        if isinstance(cfg, dict):
+            cfg.setdefault("executor", "dsh")
+    return roles
+
+
+def load_external_runtime_roles(
+    runtime_id: str = "hermes", path: Optional[str] = None
+) -> Optional[Set[str]]:
+    """读取 53 外部运行时登记中的 allowed_roles；文件/条目缺失返回 None（fail-closed）。"""
+    try:
+        with open(path or DEFAULT_EXTERNAL_RUNTIMES_PATH, encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+    except Exception:
+        return None
+    items = data.get("external_runtimes") if isinstance(data, dict) else None
+    if not isinstance(items, list):
+        return None
+    for item in items:
+        if isinstance(item, dict) and str(item.get("id") or "") == runtime_id:
+            roles = item.get("allowed_roles")
+            if not isinstance(roles, (list, tuple)):
+                return set()
+            return {str(role) for role in roles}
+    return None
 
 
 class RolePolicy:
@@ -70,9 +99,10 @@ class RolePolicy:
             return "tool(s) %s not allowed for role %r" % (",".join(extra), role)
         return None
 
-    def validate(self) -> List[str]:
-        """花名册自检：工具上限、写工具、壳声明、重复项。"""
+    def validate(self, external_runtimes_path: Optional[str] = None) -> List[str]:
+        """花名册自检：工具上限、写工具、壳声明、executor 与 53 登记。"""
         problems: List[str] = []
+        hermes_roles = load_external_runtime_roles(path=external_runtimes_path)
         for role, cfg in self.roles.items():
             if not isinstance(cfg, dict):
                 problems.append("%s: role config is not a mapping" % role)
@@ -91,6 +121,14 @@ class RolePolicy:
             shells = cfg.get("shells")
             if not isinstance(shells, (list, tuple)) or not shells:
                 problems.append("%s: empty shells" % role)
+            executor = str(cfg.get("executor") or "dsh").lower()
+            if executor not in EXECUTORS:
+                problems.append("%s: unknown executor %r" % (role, executor))
+            elif executor == "hermes":
+                if hermes_roles is None:
+                    problems.append("%s: hermes runtime not registered in 53" % role)
+                elif role not in hermes_roles:
+                    problems.append("%s: not in hermes allowed_roles" % role)
         return problems
 
 

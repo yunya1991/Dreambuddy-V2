@@ -1,0 +1,123 @@
+{
+  "spec": "P0-D3B-HERMES-EXECUTOR-v0.1",
+  "generated_at": "2026-11-19T14:06:35",
+  "ok": true,
+  "failed": [],
+  "gates": [
+    {
+      "id": "H0",
+      "name": "契约一致性",
+      "status": "PASS",
+      "evidence": {
+        "valid": 10,
+        "total": 10
+      }
+    },
+    {
+      "id": "H1",
+      "name": "程序化入口",
+      "status": "PASS",
+      "evidence": [
+        {
+          "bin": "/usr/local/bin/hermes",
+          "ok": true,
+          "returncode": 0,
+          "repl_only": false,
+          "output_head": [
+            "usage: hermes [-h] [--version] [-z PROMPT] [--usage-file PATH] [-m MODEL]",
+            "              [--provider PROVIDER] [-t TOOLSETS] [--resume SESSION]",
+            "              [--no-restore-cwd] [--continue [SESSION_NAME]] [--worktree]"
+          ]
+        },
+        {
+          "bin": "/home/luke/.hermes/.venv/bin/hermes",
+          "ok": true,
+          "returncode": 0,
+          "repl_only": false,
+          "output_head": [
+            "usage: hermes [-h] [--version] [-z PROMPT] [--usage-file PATH] [-m MODEL]",
+            "              [--provider PROVIDER] [-t TOOLSETS] [--resume SESSION]",
+            "              [--no-restore-cwd] [--continue [SESSION_NAME]] [--worktree]"
+          ]
+        },
+        {
+          "bin": "/usr/local/bin/hermes",
+          "ok": true,
+          "returncode": 0,
+          "repl_only": false,
+          "output_head": [
+            "usage: hermes [-h] [--version] [-z PROMPT] [--usage-file PATH] [-m MODEL]",
+            "              [--provider PROVIDER] [-t TOOLSETS] [--resume SESSION]",
+            "              [--no-restore-cwd] [--continue [SESSION_NAME]] [--worktree]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "H2",
+      "name": "工具边界",
+      "status": "PASS",
+      "evidence": {
+        "entry_reject": "contract_error",
+        "runtime_reject": "role_violation",
+        "transport_calls": 1
+      }
+    },
+    {
+      "id": "H3",
+      "name": "写隔离",
+      "status": "PASS",
+      "evidence": {
+        "files_unchanged": true
+      }
+    },
+    {
+      "id": "H4",
+      "name": "回执兼容",
+      "status": "PASS",
+      "evidence": {
+        "done": "done",
+        "retryable": "retryable",
+        "manual": "manual"
+      }
+    },
+    {
+      "id": "H5",
+      "name": "Trace",
+      "status": "PASS",
+      "evidence": {
+        "summary": "ok",
+        "hermes_session_id": "hs-1",
+        "executor": "hermes",
+        "trace_id": "trace-gate-1",
+        "duration_ms": 0
+      }
+    },
+    {
+      "id": "H6",
+      "name": "崩溃恢复",
+      "status": "SKIP",
+      "evidence": {
+        "reason": "需要 kill -9 故障注入；由 launcher 租约回收测试覆盖"
+      }
+    },
+    {
+      "id": "H7",
+      "name": "预算/超时",
+      "status": "PASS",
+      "evidence": {
+        "no_trace": "contract_error",
+        "timeout": "timeout"
+      }
+    },
+    {
+      "id": "H8",
+      "name": "回归/回退",
+      "status": "PASS",
+      "evidence": {
+        "switch_off_identity": true
+      }
+    }
+  ],
+  "decision": "eligible_for_canary"
+}

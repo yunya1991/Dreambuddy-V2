@@ -11,6 +11,7 @@
 ├── README.md                                    # 本文件 (域定位+索引)
 ├── SPEC-53-DSH插件生态接入总规范.md               # 核心 SPEC (§九 含落地进展)
 ├── plugin_whitelist.yaml                        # 插件白名单唯一事实源 (deny-by-default)
+├── external_runtimes.yaml                       # 外部执行运行时登记 (hermes 当前 disabled/sandbox)
 └── check_whitelist.py                           # 白名单校验器 (按 profile 校验)
 ```
 
@@ -20,6 +21,7 @@
 | --- | --- | --- |
 | [SPEC-53-DSH插件生态接入总规范.md](SPEC-53-DSH插件生态接入总规范.md) | 🟢 v0.2（§九 已落地） | **核心 SPEC**: 三维接入 (消费/封装/治理) + 技术规范 + 分阶段路线 + 7 条 ADR |
 | [plugin_whitelist.yaml](plugin_whitelist.yaml) | 🟢 v1 | 插件白名单：11 个自有 approved + 5 个社区 candidate + 交易热路径 forbidden 通配 |
+| [external_runtimes.yaml](external_runtimes.yaml) | 🟡 v1 | 外部运行时登记（deny-by-default）：`hermes` 当前 `enabled: false`，仅 sandbox，角色限 research/engineer |
 | [check_whitelist.py](check_whitelist.py) | 🟢 v1 | 校验器：未登记/越 profile/forbidden/未 sandbox 实测 → 退出码 1 |
 
 
@@ -28,6 +30,9 @@
 | 文档 | 位置 | 关系 |
 | --- | --- | --- |
 | DSH 架构升级方案 v0.2 | [46-DSH架构/docs/tech/DESIGN-DSH-ARCH-UPGRADE-v0.2.md](../46-DSH架构/docs/tech/DESIGN-DSH-ARCH-UPGRADE-v0.2.md) | 上层架构约束 |
+| HermesExecutor 接入 SPEC v0.1 | [46-DSH架构/docs/tech/SPEC-P0-D3B-HERMES-EXECUTOR-v0.1.md](../46-DSH架构/docs/tech/SPEC-P0-D3B-HERMES-EXECUTOR-v0.1.md) | 外部执行运行时：已以 `external_runtimes` 分类登记；`hermes` 当前 `enabled: false`（待 H3/隔离验证） |
+| Hermes 场外助手 SPEC v0.1（主方案） | [46-DSH架构/docs/tech/SPEC-P0-D3C-HERMES-FIELD-ASSISTANT-v0.1.md](../46-DSH架构/docs/tech/SPEC-P0-D3C-HERMES-FIELD-ASSISTANT-v0.1.md) | 场外助手+双层验收+有界自主+死信接管；Hermes 仍按外部运行时治理，不进入 Cordis 插件 |
+| 脑暴决策闭环 SPEC v0.2 | [46-DSH架构/docs/tech/SPEC-P0-D3D-BRAINSTORM-DECISION-LOOP-v0.2.md](../46-DSH架构/docs/tech/SPEC-P0-D3D-BRAINSTORM-DECISION-LOOP-v0.2.md) | Hermes 仅提案/异议，Council 决策，DSH 只消费 adopted DecisionRecord；Presentation Assist（FactUsageManifest+FactGate）；ApprovalBridge 唯一写 GateFlow；UrgentPolicy/TierPolicy/运行时隔离 |
 | MCP 管理系统 SPEC | [47-MCP管理系统/README.md](../47-MCP管理系统/README.md) | L0 能力封装的当前形态 |
 | 42 协调层 (插件总线) | [49-交易框架协议/SPEC.md §42](../49-交易框架协议/SPEC.md) | 内部插件治理参考 |
 | Cordis 官方教程 | https://deepseek-harness.github.io/deepseek-harness/develop/cordis-tutorial/ | 插件开发规范依据 |
