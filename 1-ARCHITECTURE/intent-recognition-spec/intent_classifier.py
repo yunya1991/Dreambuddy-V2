@@ -88,6 +88,29 @@ def build_runtime_prompt() -> Tuple[str, Dict[str, Any]]:
         return base, {}
 
 
+def apply_output_gate(result: Dict[str, Any]) -> Dict[str, Any]:
+    """SPEC-57 §4.3：意图出口宪法门禁（FAIL-OPEN，deny 才阻断）。
+
+    意图结果属路由元数据，无执行证据，故 evidence=none；命中 deny 时不返回
+    原始分类，改为 blocked 结构，避免下游拿违例结果继续执行。
+    """
+    try:
+        from l2_output_gate import gate_output, is_degraded, should_block
+    except Exception:  # noqa: BLE001 — 门禁不可用不阻断分类
+        return result
+    gate = gate_output(PROMPT_ID, result, evidence="none")
+    result.setdefault("meta", {})
+    if isinstance(result["meta"], dict):
+        result["meta"]["constitution"] = gate
+    if should_block(gate):
+        result["blocked"] = True
+        result["intent"] = "blocked"
+        result["constitution"] = gate
+    elif is_degraded(gate):
+        result.setdefault("degraded", True)
+    return result
+
+
 # ── 槽位后置归一化 ────────────────────────────────────────────────────────
 
 STOCK_ALIASES = {
@@ -281,11 +304,11 @@ def classify_intent(user_input: str, context: Optional[Dict] = None) -> Dict[str
     if HAS_QWEN:
         result = _classify_with_qwen(system_prompt, user_message)
         result["meta"] = prompt_meta
-        return normalize_slots(result)
+        result = normalize_slots(result)
     else:
         result = _classify_mock(user_input)
         result["meta"] = prompt_meta
-        return result
+    return apply_output_gate(result)
 
 
 def _classify_with_qwen(system_prompt: str, user_message: str) -> Dict[str, Any]:

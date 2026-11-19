@@ -341,4 +341,6 @@ def build_frontend_snapshot(prompt_id: str = "l2.app.skill") -> Dict[str, Any]:
         "prompt_fingerprint": verify_fingerprint(entry),
         "constitution_version": constitution_version(),
         "persona": persona(),
+        # IF-P-3 七字段：前端出口直接消费，避免只带 4 字段导致 --l2-meta 违规
+        "meta": build_meta(prompt_id),
     }

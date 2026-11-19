@@ -276,7 +276,7 @@ async def run_review(
         "research": research_meta,
         "prompt": prompt_meta,
     }
-    return ReviewResult(
+    result = ReviewResult(
         topic=topic,
         background=background,
         rounds=rounds,
@@ -287,6 +287,28 @@ async def run_review(
         debate_id=debate_id or uuid.uuid4().hex[:12],
         adjudication=adjudication_result,
     )
+    _apply_output_gate(result)
+    return result
+
+
+def _apply_output_gate(result: "ReviewResult") -> None:
+    """SPEC-57 §4.3：出口宪法门禁（FAIL-OPEN，deny 才阻断）。"""
+    if _load_prompt_context() is None:
+        return
+    try:
+        import l2_output_gate
+    except Exception:  # noqa: BLE001 — 门禁不可用不阻断辩论
+        return
+    gate = l2_output_gate.gate_output(
+        _PROMPT_ID,
+        result.to_dict(),
+        evidence="partial",  # 辩论属论证性输出：有推理证据、无执行证据
+    )
+    result.meta["constitution"] = gate
+    if l2_output_gate.should_block(gate):
+        result.status = "blocked"
+    elif l2_output_gate.is_degraded(gate):
+        result.meta["degraded"] = True
 
 
 def run_review_sync(

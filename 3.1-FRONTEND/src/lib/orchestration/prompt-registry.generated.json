@@ -3,8 +3,8 @@
   "_notice": "DO NOT EDIT：由 prompt_registry.yaml 生成，改动请改注册表后重跑脚本",
   "schema_version": "1.1",
   "prompt_id": "l2.app.skill",
-  "prompt_version": "0.2.0",
-  "prompt_fingerprint": "sha256:92ba69e5f84b53b3bf7d171fe43024f0be2474fbadf871ac06850ed22f25df76",
+  "prompt_version": "0.3.0",
+  "prompt_fingerprint": "sha256:757f69aebbf2be27f95308cc06ee9cd2039b42e7abb1eec5340eead140d18fdf",
   "constitution_version": "1.0.0",
   "persona": {
     "language": "zh",
@@ -23,5 +23,14 @@
       "零风险",
       "翻倍"
     ]
+  },
+  "meta": {
+    "prompt_id": "l2.app.skill",
+    "prompt_version": "0.3.0",
+    "prompt_fingerprint": "sha256:757f69aebbf2be27f95308cc06ee9cd2039b42e7abb1eec5340eead140d18fdf",
+    "constitution_version": "1.0.0",
+    "constitution_tokens": 202,
+    "tool_set_fingerprint": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "reasoning_effort": "low"
   }
 }

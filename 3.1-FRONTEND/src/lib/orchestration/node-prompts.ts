@@ -198,17 +198,25 @@ export interface SkillPromptMeta {
   prompt_version: string;
   prompt_fingerprint: string;
   constitution_version: string;
+  constitution_tokens: number;
+  tool_set_fingerprint: string;
+  reasoning_effort: 'low' | 'medium' | 'high';
 }
 
 /**
  * 提示词溯源字段：只来自注册表快照（G-P-2），前端不得自行定义版本。
+ * 七字段对齐 IF-P-3（l2_meta.schema.json），缺一即 --l2-meta 违规。
  */
 export function getSkillPromptMeta(): SkillPromptMeta {
+  const meta = promptRegistry.meta;
   return {
-    prompt_id: promptRegistry.prompt_id,
-    prompt_version: promptRegistry.prompt_version,
-    prompt_fingerprint: promptRegistry.prompt_fingerprint,
-    constitution_version: promptRegistry.constitution_version,
+    prompt_id: meta.prompt_id,
+    prompt_version: meta.prompt_version,
+    prompt_fingerprint: meta.prompt_fingerprint,
+    constitution_version: meta.constitution_version,
+    constitution_tokens: meta.constitution_tokens,
+    tool_set_fingerprint: meta.tool_set_fingerprint,
+    reasoning_effort: meta.reasoning_effort as SkillPromptMeta['reasoning_effort'],
   };
 }
 

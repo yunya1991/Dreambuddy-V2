@@ -74,7 +74,7 @@ prompts:
 
   # ---------- 3.1 前端技能提示（L2-A，BASE + 5 阶段） ----------
   - prompt_id: l2.app.skill
-    version: 0.2.0
+    version: 0.3.0
     layer: L2
     sublane: L2-A
     role: l2.app
@@ -89,11 +89,11 @@ prompts:
     tool_set_ref: null
     token_budget: { fixed: 1200, context: 1800 }
     eval_suite: null
-    fingerprint: "sha256:92ba69e5f84b53b3bf7d171fe43024f0be2474fbadf871ac06850ed22f25df76"
+    fingerprint: "sha256:757f69aebbf2be27f95308cc06ee9cd2039b42e7abb1eec5340eead140d18fdf"
     status: draft
     depends_on: ["l2.constitution@^1.0.0"]
-    changelog: "P0 基线登记：BASE 人格 + 5 阶段模板（只登记，未改动字节）；P3 迁入注册表：人格/免责改为从 registry 快照注入（getSkillPromptMeta + PERSONA_DISCLAIMER），版本 0.1.0→0.2.0"
-    notes: "GAP-P-05 已消解：免责尾注与人格约束由注册表 persona 统一注入，前端不再硬编码"
+    changelog: "P0 基线登记：BASE 人格 + 5 阶段模板（只登记，未改动字节）；P3 迁入注册表：人格/免责改为从 registry 快照注入（getSkillPromptMeta + PERSONA_DISCLAIMER），版本 0.1.0→0.2.0；P6 出口 meta 补齐 IF-P-3 七字段（constitution_tokens/tool_set_fingerprint/reasoning_effort），版本 0.2.0→0.3.0"
+    notes: "GAP-P-05 已消解：免责尾注与人格约束由注册表 persona 统一注入，前端不再硬编码；出口 meta 与 l2_meta.schema.json 对齐（--l2-meta 0 violation）"
 
   # ---------- 6-TRADING 触发提示词（L2-A，应用层运维口径） ----------
   - prompt_id: l2.app.trade_ops
