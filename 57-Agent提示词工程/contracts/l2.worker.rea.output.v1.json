@@ -1,0 +1,9 @@
+{
+  "contract_id": "l2.worker.rea.output.v1",
+  "version": "1.0.0",
+  "prompt_id": "l2.worker.rea",
+  "description": "REA 逆向调查出口：每条结论必须带证据等级，区分观察与推断。",
+  "required": ["findings", "evidence"],
+  "evidence_enum": ["none", "partial", "full"],
+  "forbidden_marketing": ["稳赚", "必赚", "保证收益", "零风险", "翻倍"]
+}

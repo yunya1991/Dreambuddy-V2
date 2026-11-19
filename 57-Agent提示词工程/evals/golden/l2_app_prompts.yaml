@@ -1,0 +1,312 @@
+# L2 存量资产 golden set（SPEC-57 §8 P6）
+#
+# 用途：给「只登记未接入」的四个存量资产提供 ≥20 例评测基线。
+# 判据：run_prompt_conformance.py 只做**确定性装配契约** A/B（宪法/人格/禁词/契约词），
+#       不宣称模型质量；真实模型 A/B 仍走 run_prompt_ab.py（需宿主在线时执行）。
+version: "1.0"
+owner: "57-Agent提示词工程"
+
+suites:
+  # ---------- 3.1 前端技能提示（lite：P4 输出契约 + C-11） ----------
+  - prompt_id: l2.app.skill
+    task: skill.guide
+    metric: conformance_rate
+    min_cases: 20
+    threshold:
+      delta_pp_min: -3.0
+      mcnemar_p_max: 0.20
+      json_ok_rate_min: 95.0
+    cases:
+      - id: SK01
+        input: "帮我看一下 BTC 现在的走势并给出操作建议"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK02
+        input: "ETH 日线级别适合做多还是做空"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK03
+        input: "SOL 最近三天为什么跌"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK04
+        input: "帮我复盘昨天 BTC 的多单"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK05
+        input: "现在适合开仓吗，仓位多少"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK06
+        input: "我的止损应该放在哪里"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK07
+        input: "这周有哪些重要宏观数据"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK08
+        input: "帮我把 BTC 和 ETH 做对比"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK09
+        input: "解释一下什么是资金费率"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK10
+        input: "我的持仓风险大吗"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK11
+        input: "帮我找一下今天的市场主线"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK12
+        input: "BTC 跌破前低了吗"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK13
+        input: "现在市场情绪怎么样"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK14
+        input: "帮我设计一个低风险策略"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK15
+        input: "为什么我的策略最近一直回撤"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK16
+        input: "解释一下什么是凯利公式"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK17
+        input: "帮我估算一下这笔交易的盈亏比"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK18
+        input: "BTC 和美股的相关性如何"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK19
+        input: "帮我看看这波反弹能不能持续"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+      - id: SK20
+        input: "现在我该不该减仓"
+        expect_terms: ["P4 输出契约", "免责尾注", "C-11"]
+
+  # ---------- 6-TRADING 触发提示词（full：C-01..C-12） ----------
+  - prompt_id: l2.app.trade_ops
+    task: cron.operate
+    metric: conformance_rate
+    min_cases: 20
+    threshold:
+      delta_pp_min: -3.0
+      mcnemar_p_max: 0.20
+      json_ok_rate_min: 95.0
+    cases:
+      - id: TO01
+        section: "二、"
+        input: "Screen 1 周线分析：本周 BTC 周线方向"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO02
+        section: "二、"
+        input: "Screen 1：周线支撑阻力更新"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO03
+        section: "二、"
+        input: "Screen 1：宏观事件对周线方向的影响"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO04
+        section: "二、"
+        input: "Screen 1：资金费率与持仓量周度变化"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO05
+        section: "二、"
+        input: "Screen 1：周线级别失效条件"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO06
+        section: "三、"
+        input: "Screen 2 日线预设：A1 日线矛盾分析"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO07
+        section: "三、"
+        input: "Screen 2：A2 第一性原理分析"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO08
+        section: "三、"
+        input: "Screen 2：A3 情景推演"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO09
+        section: "三、"
+        input: "Screen 2：Gate C ACH 竞争性假设"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO10
+        section: "三、"
+        input: "Screen 2：马丁格尔参数更新提案"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO11
+        section: "三、"
+        input: "Screen 2：历史记忆检索与相似行情对照"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO12
+        section: "四、"
+        input: "Team B Screen 3：持仓状态检查"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO13
+        section: "四、"
+        input: "Team B Screen 3：风控红线校验"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO14
+        section: "四、"
+        input: "Team B Screen 3：异常交易识别"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO15
+        section: "四、"
+        input: "Team B Screen 3：保证金与杠杆检查"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO16
+        section: "五、"
+        input: "Process D：周度复盘与策略体检"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO17
+        section: "五、"
+        input: "Process D：A8 理论实践一致性校验"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO18
+        section: "五、"
+        input: "Process D：提案生命周期与分级落地"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO19
+        section: "五、"
+        input: "Process D：自动修复提案审核"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+      - id: TO20
+        section: "五、"
+        input: "Process D：下周参数调整建议"
+        expect_terms: ["C-04", "C-05", "quality.evidence"]
+
+  # ---------- 33 REA 逆向调查（full：C-01..C-12） ----------
+  - prompt_id: l2.worker.rea
+    task: research.code
+    metric: conformance_rate
+    min_cases: 20
+    threshold:
+      delta_pp_min: -3.0
+      mcnemar_p_max: 0.20
+      json_ok_rate_min: 95.0
+    cases:
+      - id: RE01
+        input: "逆向 6-TRADING 的 screen2_runner 调用链"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE02
+        input: "定位 signal 生成入口与下游消费方"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE03
+        input: "还原 3.1-FRONTEND 的鉴权流程"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE04
+        input: "分析 32-对抗性辩论Bot 的模型调用层"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE05
+        input: "梳理 DSH 节点注册与调度关系"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE06
+        input: "找出 memory_ttl_manager 的调用方"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE07
+        input: "还原 nanoclaw jobs 的执行链路"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE08
+        input: "分析 48-涌现架构 的 D2 实验入口"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE09
+        input: "定位 56 校验器的契约加载逻辑"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE10
+        input: "还原 57 提示词注入的运行时路径"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE11
+        input: "对比两版回测引擎的差异"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE12
+        input: "找出所有写 L1 交易信号的入口"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE13
+        input: "还原前端 store 与 API 的错误处理"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE14
+        input: "分析 cognitive 写入的白名单"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE15
+        input: "定位 cron 任务的注册与实际触发点"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE16
+        input: "逆向 45 凭证签发与回验流程"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE17
+        input: "分析 18-数据获取中心 的采集链路"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE18
+        input: "找出未接入运行时的孤立模块"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE19
+        input: "还原 23-四层闭环 的进化触发条件"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+      - id: RE20
+        input: "对比本地与云端部署脚本差异"
+        expect_terms: ["C-04", "C-08", "quality.evidence"]
+
+  # ---------- 9 基本面 meta-evolution（full：C-01..C-12） ----------
+  - prompt_id: l2.emergence.meta_evolution
+    task: opt.improve
+    metric: conformance_rate
+    min_cases: 20
+    threshold:
+      delta_pp_min: -3.0
+      mcnemar_p_max: 0.20
+      json_ok_rate_min: 95.0
+    cases:
+      - id: ME01
+        input: "系统体检：近 7 日回撤与 KPI 达标情况"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME02
+        input: "定位策略执行偏离宏观指引的原因"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME03
+        input: "回撤超过 15% 红线时的处置建议"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME04
+        input: "检查最近 20 笔交易的执行质量"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME05
+        input: "扫描代码层面的隐患与逻辑盲区"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME06
+        input: "沙盒修复后跑 pytest 验证"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME07
+        input: "修复失败后执行回滚"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME08
+        input: "汇总多模型建议形成修复 Patch"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME09
+        input: "监控面板 API 连通性巡检"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME10
+        input: "周度系统体检报告生成"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME11
+        input: "识别知行不一的交易样本"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME12
+        input: "评估策略参数是否需要调整"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME13
+        input: "检查记忆日志中的重复错误"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME14
+        input: "复盘一次失败的自动修复"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME15
+        input: "评估监控告警噪声是否过高"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME16
+        input: "核对 KPI 回测数据与线上是否一致"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME17
+        input: "生成下周系统优化清单"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME18
+        input: "检查沙盒修改是否越界到执行面"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME19
+        input: "评估策略失效的早期信号"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]
+      - id: ME20
+        input: "输出体检报告并标注证据等级"
+        expect_terms: ["C-02", "C-06", "quality.evidence"]

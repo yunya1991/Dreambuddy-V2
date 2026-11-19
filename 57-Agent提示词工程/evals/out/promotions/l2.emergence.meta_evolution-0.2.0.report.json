@@ -1,0 +1,60 @@
+{
+  "eval_id": "prompt.l2.emergence.meta_evolution",
+  "run_id": "D2B-P57-l2-emergence-meta_evolution-20261119",
+  "spec_hash": "sha256:b043ad53173653f643f73830db678a2bd28e3a3f4a46ca1c9d3748b78bca79e8",
+  "verdict": "PASS",
+  "score": 100.0,
+  "n": 20,
+  "ci": null,
+  "items": [
+    {
+      "name": "delta_pp",
+      "kind": "paired_delta",
+      "status": "PASS",
+      "score": 100.0,
+      "n": 20,
+      "ci_lower": null,
+      "ci_upper": null,
+      "weight": 0.5,
+      "evidence_id": "D2B-P57-l2-emergence-meta_evolution-20261119",
+      "detail": "mcnemar_p=0.0"
+    },
+    {
+      "name": "json_ok_rate",
+      "kind": "guardrail",
+      "status": "PASS",
+      "score": 100.0,
+      "n": 20,
+      "ci_lower": null,
+      "ci_upper": null,
+      "weight": 0.3,
+      "evidence_id": "D2B-P57-l2-emergence-meta_evolution-20261119",
+      "detail": ""
+    },
+    {
+      "name": "tokens_ratio",
+      "kind": "guardrail",
+      "status": "PASS",
+      "score": 1.0,
+      "n": 20,
+      "ci_lower": null,
+      "ci_upper": null,
+      "weight": 0.2,
+      "evidence_id": "D2B-P57-l2-emergence-meta_evolution-20261119",
+      "detail": "max=1.4"
+    }
+  ],
+  "block_reasons": [],
+  "evidence": {
+    "uri": "57-Agent提示词工程/evals/out/conformance/l2.emergence.meta_evolution-D2B-P57-l2-emergence-meta_evolution-20261119.json",
+    "sha256": "736839176630d474f2c624da3b1f85afcdf648af0f6482f1cc558e65254bec11"
+  },
+  "thresholds_version": "golden@1.0",
+  "baseline_run_id": "D2B-P57-l2-emergence-meta_evolution-20261119-A",
+  "evaluated_at": "2026-11-19T08:25:15Z",
+  "expires_at": "2026-11-26T08:25:15Z",
+  "prompt_id": "l2.emergence.meta_evolution",
+  "to_version": "0.2.0",
+  "experiment_id": "D2B-P57-l2-emergence-meta_evolution-20261119",
+  "promoted_at": "2026-11-19T08:25:15Z"
+}

@@ -10,7 +10,7 @@
 #
 # 指纹算法（fingerprint_algorithm）：
 #   file  = sha256(原始字节)
-#   tree  = sha256( 按相对路径字典序拼接 "<relpath>\n<file_sha256_hex>\n" )
+#   tree  = sha256( 按相对路径字典序拼接 "<relpath>\n<file_sha256_hex>\n" )，忽略点开头文件（.DS_Store 等）
 #
 # 校验：python3 56-L2架构能力聚合层/scripts/validate_contracts.py --prompts --constitution
 
@@ -74,7 +74,7 @@ prompts:
 
   # ---------- 3.1 前端技能提示（L2-A，BASE + 5 阶段） ----------
   - prompt_id: l2.app.skill
-    version: 0.3.0
+    version: 0.4.0
     layer: L2
     sublane: L2-A
     role: l2.app
@@ -85,19 +85,19 @@ prompts:
     asset_kind: file
     source_files: [SRC-01]
     variables: [user_request, symbol, display_name, market_data, memory_note]
-    output_contract: null
+    output_contract: "57-Agent提示词工程/contracts/l2.app.skill.output.v1.json"
     tool_set_ref: null
     token_budget: { fixed: 1200, context: 1800 }
-    eval_suite: null
+    eval_suite: "57-Agent提示词工程/evals/golden/l2_app_prompts.yaml"
     fingerprint: "sha256:757f69aebbf2be27f95308cc06ee9cd2039b42e7abb1eec5340eead140d18fdf"
-    status: draft
+    status: active
     depends_on: ["l2.constitution@^1.0.0"]
-    changelog: "P0 基线登记：BASE 人格 + 5 阶段模板（只登记，未改动字节）；P3 迁入注册表：人格/免责改为从 registry 快照注入（getSkillPromptMeta + PERSONA_DISCLAIMER），版本 0.1.0→0.2.0；P6 出口 meta 补齐 IF-P-3 七字段（constitution_tokens/tool_set_fingerprint/reasoning_effort），版本 0.2.0→0.3.0"
-    notes: "GAP-P-05 已消解：免责尾注与人格约束由注册表 persona 统一注入，前端不再硬编码；出口 meta 与 l2_meta.schema.json 对齐（--l2-meta 0 violation）"
+    changelog: "P0 基线登记：BASE 人格 + 5 阶段模板（只登记，未改动字节）；P3 迁入注册表：人格/免责改为从 registry 快照注入（getSkillPromptMeta + PERSONA_DISCLAIMER），版本 0.1.0→0.2.0；P6 出口 meta 补齐 IF-P-3 七字段（constitution_tokens/tool_set_fingerprint/reasoning_effort），版本 0.2.0→0.3.0；P4 晋升 D2B-P57-l2-app-skill-20261119 0.3.0→0.3.1（patch）；P4 晋升 D2B-P57-l2-app-skill-20261119 0.3.1→0.4.0（minor）"
+    notes: "GAP-P-05 已消解：免责尾注与人格约束由注册表 persona 统一注入，前端不再硬编码；出口 meta 与 l2_meta.schema.json 对齐（--l2-meta 0 violation）；P6 运行时接入：前端读快照 + 57 bridge 提供 render/gate 统一入口"
 
   # ---------- 6-TRADING 触发提示词（L2-A，应用层运维口径） ----------
   - prompt_id: l2.app.trade_ops
-    version: 0.2.0
+    version: 0.3.0
     layer: L2
     sublane: L2-A
     role: l2.app
@@ -108,19 +108,19 @@ prompts:
     asset_kind: file
     source_files: [SRC-07, SRC-10, SRC-11]
     variables: [screen_session_id, market_snapshot, team_state]
-    output_contract: null
+    output_contract: "57-Agent提示词工程/contracts/l2.app.trade_ops.output.v1.json"
     tool_set_ref: null
-    token_budget: { fixed: 2000, context: 2000 }
-    eval_suite: null
+    token_budget: { fixed: 3500, context: 500 }
+    eval_suite: "57-Agent提示词工程/evals/golden/l2_app_prompts.yaml"
     fingerprint: "sha256:338bb9951869c3b5bfa568aabf0a33918fc237c9f2378312e2f8889d7fb2464f"
-    status: draft
+    status: gated
     depends_on: ["l2.constitution@^1.0.0"]
-    changelog: "P0 基线登记：4 个 CronCreate 任务触发词（只登记，未改动字节）；P3 清理正文硬编码：Process D 指令去掉「v1.3」，版本 0.1.0→0.2.0"
-    notes: "应用层文案与 L2 生成 prompt 混居（2.1 已记）；正文已去版本硬编码（C-11 消解），文档头部版本号属文档元数据不再进入指令区"
+    changelog: "P0 基线登记：4 个 CronCreate 任务触发词（只登记，未改动字节）；P3 清理正文硬编码：Process D 指令去掉「v1.3」，版本 0.1.0→0.2.0；P4 晋升 D2B-P57-l2-app-trade_ops-20261119 0.2.0→0.3.0（minor）"
+    notes: "应用层文案与 L2 生成 prompt 混居（2.1 已记）；正文已去版本硬编码（C-11 消解），文档头部版本号属文档元数据不再进入指令区；P6 运行时接入：6-TRADING/scripts/l2_trade_ops_prompt.py 在 deepseek_analyst 出口做宪法注入 + meta 台账 + 门禁，正文仍由 CronCreate 宿主消费"
 
   # ---------- 33 REA 逆向解析（L2-E，L0 工具内的 LLM 辅助） ----------
   - prompt_id: l2.worker.rea
-    version: 0.1.0
+    version: 0.2.0
     layer: L2
     sublane: L2-E
     role: l2.worker
@@ -131,19 +131,19 @@ prompts:
     asset_kind: file
     source_files: [SRC-01]
     variables: [target_symbol, investigation_goal, entry_hint]
-    output_contract: null
+    output_contract: "57-Agent提示词工程/contracts/l2.worker.rea.output.v1.json"
     tool_set_ref: l0.rea.mcp
-    token_budget: { fixed: 1100, context: 1300 }
-    eval_suite: null
+    token_budget: { fixed: 1300, context: 1300 }
+    eval_suite: "57-Agent提示词工程/evals/golden/l2_app_prompts.yaml"
     fingerprint: "sha256:a5ef1ae606f25cb321d3f8e4c244967ca90b4586465be3a50c9f47e817a44993"
-    status: draft
+    status: gated
     depends_on: ["l2.constitution@^1.0.0"]
-    changelog: "P0 基线登记：调查流程 + 证据/置信度输出格式（只登记，未改动字节）；P1 预算记账：fixed 900→1100、context 1600→1300，使宪法段（≈989 tok）计入 fixed（G-P-7）"
-    notes: "已自带证据分级与局限声明，接近 C-04/C-08 要求；未纳入 L2 计量（2.1 已记）"
+    changelog: "P0 基线登记：调查流程 + 证据/置信度输出格式（只登记，未改动字节）；P1 预算记账：fixed 900→1100、context 1600→1300，使宪法段（≈989 tok）计入 fixed（G-P-7）；P4 晋升 D2B-P57-l2-worker-rea-20261119 0.1.0→0.2.0（minor）"
+    notes: "已自带证据分级与局限声明，接近 C-04/C-08 要求；P6 运行时接入：core/prompt_binding.py 给 S33_rea_audit 的 ai_context 补 prompt_id/version/fingerprint，成本台账节点输出 prompt 绑定；内核仍不调用模型"
 
   # ---------- 9 基本面 ops nanoclaw（L2-G，元进化 swarm） ----------
   - prompt_id: l2.emergence.meta_evolution
-    version: 0.1.0
+    version: 0.2.0
     layer: L2
     sublane: L2-G
     role: l2.emergence
@@ -154,12 +154,12 @@ prompts:
     asset_kind: tree
     source_files: [SRC-09, SRC-10, SRC-11]
     variables: [memory_path, latest_backtest_report, monitor_url]
-    output_contract: null
+    output_contract: "57-Agent提示词工程/contracts/l2.emergence.meta_evolution.output.v1.json"
     tool_set_ref: null
-    token_budget: { fixed: 1400, context: 1800 }
-    eval_suite: null
+    token_budget: { fixed: 2000, context: 1800 }
+    eval_suite: "57-Agent提示词工程/evals/golden/l2_app_prompts.yaml"
     fingerprint: "sha256:6d4d095fef652eaea9011766efea18db7b4c6e926d4ff0b9d37efc6e612445b1"
-    status: draft
+    status: gated
     depends_on: ["l2.constitution@^1.0.0"]
-    changelog: "P0 基线登记：critic_agent + auto_fixer_agent 两阶段指令（只登记，未改动字节）"
-    notes: "正文含绝对路径 /Users/... 与浏览器插件直呼，C-06/C-11 风险；改进须走 48 D2 实验（Q4）"
+    changelog: "P0 基线登记：critic_agent + auto_fixer_agent 两阶段指令（只登记，未改动字节）；P4 晋升 D2B-P57-l2-emergence-meta_evolution-20261119 0.1.0→0.2.0（minor）"
+    notes: "正文含绝对路径 /Users/... 与浏览器插件直呼，C-06/C-11 风险；改进须走 48 D2 实验（Q4）；P6 运行时接入：ops/nanoclaw/render_l2_prompt.py 在 job 第 0 步渲染（含宪法注入）并对体检报告执行出口门禁，渲染产物落 cache/l2_prompt 避免污染 tree 指纹"

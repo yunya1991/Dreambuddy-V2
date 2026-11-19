@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""local_acceptance.py — 57 提示词工程 P0–P5 本地完整验收
+"""local_acceptance.py — 57 提示词工程 P0–P6 本地完整验收
 
 覆盖：
   1. 契约校验：--self-test / --prompts / --constitution / --persona
@@ -245,17 +245,58 @@ def check_debate() -> Tuple[bool, str]:
 def check_golden() -> Tuple[bool, str]:
     import yaml
 
-    doc = yaml.safe_load(
-        (PROMPT_HOME / "evals" / "golden" / "l2_prompts.yaml").read_text(encoding="utf-8")
+    counts: Dict[str, int] = {}
+    for name in ("l2_prompts.yaml", "l2_app_prompts.yaml"):
+        path = PROMPT_HOME / "evals" / "golden" / name
+        doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+        for suite in doc.get("suites") or []:
+            cases = suite.get("cases")
+            counts[suite["prompt_id"]] = cases if isinstance(cases, int) else len(cases or [])
+    required = (
+        "l2.intent.router",
+        "l2.debate.core",
+        "l2.app.skill",
+        "l2.app.trade_ops",
+        "l2.worker.rea",
+        "l2.emergence.meta_evolution",
     )
-    counts = {}
-    for suite in doc.get("suites") or []:
-        cases = suite.get("cases")
-        count = cases if isinstance(cases, int) else len(cases or [])
-        counts[suite["prompt_id"]] = count
-    if counts.get("l2.intent.router", 0) < 20 or counts.get("l2.debate.core", 0) < 20:
-        return False, f"用例不足: {counts}"
-    return True, f"intent={counts['l2.intent.router']} 例；debate={counts['l2.debate.core']} 例"
+    short = {k: counts.get(k, 0) for k in required if counts.get(k, 0) < 20}
+    if short:
+        return False, f"用例不足: {short}"
+    return True, "；".join(f"{k}={counts[k]}" for k in required)
+
+
+# ── 6.5 存量资产运行时接入（P6） ──────────────────────────────────────
+
+
+def check_bridge() -> Tuple[bool, str]:
+    import l2_prompt_bridge as bridge
+
+    samples = {
+        "l2.app.skill": {"text": "震荡为主", "evidence": "partial"},
+        "l2.app.trade_ops": {"summary": "区间震荡", "risk_flags": [], "evidence": "partial"},
+        "l2.worker.rea": {"findings": [], "evidence": "partial"},
+        "l2.emergence.meta_evolution": {
+            "critic_report": "体检通过",
+            "bugs_found": [],
+            "fixer_actions": [],
+            "rollback_status": "Rolled_Back",
+            "evidence": "partial",
+        },
+    }
+    details = []
+    for prompt_id, sample in samples.items():
+        rendered = bridge.render(prompt_id)
+        if not rendered["injected"] or not rendered["meta"]:
+            return False, f"{prompt_id} 未注入"
+        info = bridge.verify(prompt_id)
+        if not info["eval_cases"] or info["eval_cases"] < 20:
+            return False, f"{prompt_id} golden 用例不足"
+        result = bridge.gate(prompt_id, sample, evidence="partial")
+        if result["verdict"] != "allow":
+            return False, f"{prompt_id} 门禁拒了干净样例: {result.get('violations')}"
+        details.append(f"{prompt_id}@{info['version']}({info['status']})")
+    return True, "；".join(details)
 
 
 # ── 7. 前端快照 ───────────────────────────────────────────────────────
@@ -338,6 +379,7 @@ CHECKS: List[Tuple[str, Callable[[], Tuple[bool, str]], bool]] = [
     ("意图识别", check_intent, False),
     ("辩论链路", check_debate, True),
     ("golden set", check_golden, False),
+    ("存量资产接入", check_bridge, False),
     ("前端快照", check_frontend, False),
     ("晋升判定", check_promotion, False),
     ("45 凭证", check_credential, True),
@@ -375,7 +417,7 @@ def main() -> int:
         results.append((name, ok, detail))
 
     width = max(len(name) for name, _, _ in results)
-    print("\n57 提示词工程本地验收（P0–P5）")
+    print("\n57 提示词工程本地验收（P0–P6）")
     print("-" * 78)
     for name, ok, detail in results:
         print(f"{'PASS' if ok else 'FAIL'}  {name.ljust(width)}  {detail}")

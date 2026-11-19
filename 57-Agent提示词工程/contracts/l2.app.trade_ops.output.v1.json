@@ -1,0 +1,9 @@
+{
+  "contract_id": "l2.app.trade_ops.output.v1",
+  "version": "1.0.0",
+  "prompt_id": "l2.app.trade_ops",
+  "description": "6-TRADING cron 运维出口：结论、证据等级与风险标记三件套，禁止执行权主张。",
+  "required": ["summary", "evidence", "risk_flags"],
+  "evidence_enum": ["none", "partial", "full"],
+  "forbidden_marketing": ["稳赚", "必赚", "保证收益", "零风险", "翻倍"]
+}

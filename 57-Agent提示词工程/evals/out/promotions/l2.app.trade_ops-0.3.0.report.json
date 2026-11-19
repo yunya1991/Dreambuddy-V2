@@ -1,0 +1,60 @@
+{
+  "eval_id": "prompt.l2.app.trade_ops",
+  "run_id": "D2B-P57-l2-app-trade_ops-20261119",
+  "spec_hash": "sha256:c3ddee4c1dd28ada417e8adae9395b0bf7652f0b925de695bf100748a2143322",
+  "verdict": "PASS",
+  "score": 100.0,
+  "n": 20,
+  "ci": null,
+  "items": [
+    {
+      "name": "delta_pp",
+      "kind": "paired_delta",
+      "status": "PASS",
+      "score": 100.0,
+      "n": 20,
+      "ci_lower": null,
+      "ci_upper": null,
+      "weight": 0.5,
+      "evidence_id": "D2B-P57-l2-app-trade_ops-20261119",
+      "detail": "mcnemar_p=0.0"
+    },
+    {
+      "name": "json_ok_rate",
+      "kind": "guardrail",
+      "status": "PASS",
+      "score": 100.0,
+      "n": 20,
+      "ci_lower": null,
+      "ci_upper": null,
+      "weight": 0.3,
+      "evidence_id": "D2B-P57-l2-app-trade_ops-20261119",
+      "detail": ""
+    },
+    {
+      "name": "tokens_ratio",
+      "kind": "guardrail",
+      "status": "PASS",
+      "score": 1.0,
+      "n": 20,
+      "ci_lower": null,
+      "ci_upper": null,
+      "weight": 0.2,
+      "evidence_id": "D2B-P57-l2-app-trade_ops-20261119",
+      "detail": "max=1.4"
+    }
+  ],
+  "block_reasons": [],
+  "evidence": {
+    "uri": "57-Agent提示词工程/evals/out/conformance/l2.app.trade_ops-D2B-P57-l2-app-trade_ops-20261119.json",
+    "sha256": "554cc0aef79060043f874fa1e39620a6eeb2cc156349c15479fdd84a1d212d8a"
+  },
+  "thresholds_version": "golden@1.0",
+  "baseline_run_id": "D2B-P57-l2-app-trade_ops-20261119-A",
+  "evaluated_at": "2026-11-19T08:25:11Z",
+  "expires_at": "2026-11-26T08:25:11Z",
+  "prompt_id": "l2.app.trade_ops",
+  "to_version": "0.3.0",
+  "experiment_id": "D2B-P57-l2-app-trade_ops-20261119",
+  "promoted_at": "2026-11-19T08:25:11Z"
+}

@@ -1,0 +1,285 @@
+{
+  "method": "prompt_conformance_deterministic",
+  "prompt_id": "l2.emergence.meta_evolution",
+  "task": "opt.improve",
+  "experiment_id": "D2B-P57-l2-emergence-meta_evolution-20261119",
+  "golden_version": "1.0",
+  "generated_at": "2026-11-19T08:25:02Z",
+  "note": "确定性装配契约 A/B，不含模型推理；avg_tokens 按注册表 fixed+context 预算口径记账，raw_avg_tokens 为两臂原文实测；判据见 run_prompt_conformance.py 头注释",
+  "arm": "constitution",
+  "arms": {
+    "none": {
+      "metrics": {
+        "n": 20,
+        "conformance_rate": 0.0,
+        "json_ok_rate": 100.0,
+        "avg_tokens": 3800,
+        "raw_avg_tokens": 868.0,
+        "evidence_declared_rate": 0.0,
+        "violation_cases": 0
+      },
+      "rows": [
+        {
+          "id": "ME01",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME02",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME03",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME04",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME05",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME06",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME07",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME08",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME09",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME10",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME11",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME12",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME13",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME14",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME15",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME16",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME17",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME18",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME19",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME20",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        }
+      ]
+    },
+    "constitution": {
+      "metrics": {
+        "n": 20,
+        "conformance_rate": 100.0,
+        "json_ok_rate": 100.0,
+        "avg_tokens": 3800,
+        "raw_avg_tokens": 1942.1,
+        "evidence_declared_rate": 100.0,
+        "violation_cases": 0,
+        "b_failure_breakdown": {}
+      },
+      "rows": [
+        {
+          "id": "ME01",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME02",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME03",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME04",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME05",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME06",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME07",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME08",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME09",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME10",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME11",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME12",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME13",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME14",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME15",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME16",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME17",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME18",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME19",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "ME20",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        }
+      ]
+    }
+  },
+  "paired": {
+    "delta_pp": 100.0,
+    "mcnemar_p": 0.0,
+    "discordant_b": 20,
+    "discordant_c": 0
+  }
+}

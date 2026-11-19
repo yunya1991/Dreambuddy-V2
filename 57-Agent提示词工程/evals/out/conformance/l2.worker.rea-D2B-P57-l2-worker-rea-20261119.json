@@ -1,0 +1,285 @@
+{
+  "method": "prompt_conformance_deterministic",
+  "prompt_id": "l2.worker.rea",
+  "task": "research.code",
+  "experiment_id": "D2B-P57-l2-worker-rea-20261119",
+  "golden_version": "1.0",
+  "generated_at": "2026-11-19T08:25:01Z",
+  "note": "确定性装配契约 A/B，不含模型推理；avg_tokens 按注册表 fixed+context 预算口径记账，raw_avg_tokens 为两臂原文实测；判据见 run_prompt_conformance.py 头注释",
+  "arm": "constitution",
+  "arms": {
+    "none": {
+      "metrics": {
+        "n": 20,
+        "conformance_rate": 0.0,
+        "json_ok_rate": 100.0,
+        "avg_tokens": 2600,
+        "raw_avg_tokens": 249.0,
+        "evidence_declared_rate": 0.0,
+        "violation_cases": 0
+      },
+      "rows": [
+        {
+          "id": "RE01",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE02",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE03",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE04",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE05",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE06",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE07",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE08",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE09",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE10",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE11",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE12",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE13",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE14",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE15",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE16",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE17",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE18",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE19",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE20",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        }
+      ]
+    },
+    "constitution": {
+      "metrics": {
+        "n": 20,
+        "conformance_rate": 100.0,
+        "json_ok_rate": 100.0,
+        "avg_tokens": 2600,
+        "raw_avg_tokens": 1326.2,
+        "evidence_declared_rate": 100.0,
+        "violation_cases": 0,
+        "b_failure_breakdown": {}
+      },
+      "rows": [
+        {
+          "id": "RE01",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE02",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE03",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE04",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE05",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE06",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE07",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE08",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE09",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE10",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE11",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE12",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE13",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE14",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE15",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE16",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE17",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE18",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE19",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "RE20",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        }
+      ]
+    }
+  },
+  "paired": {
+    "delta_pp": 100.0,
+    "mcnemar_p": 0.0,
+    "discordant_b": 20,
+    "discordant_c": 0
+  }
+}

@@ -29,6 +29,10 @@
     },
     {
       "id": "meta_evolution_swarm",
+      "prompt_id": "l2.emergence.meta_evolution",
+      "prompt_asset": "prompts/meta_evolution_prompt.md",
+      "prompt_renderer": "ops/nanoclaw/render_l2_prompt.py",
+      "output_contract": "57-Agent提示词工程/contracts/l2.emergence.meta_evolution.output.v1.json",
       "goal": "融合 L3_memory.json 的日志，生成达利欧式的系统体检报告并对执行链路发起修复与演化",
       "agents": [
         {"name": "critic_agent", "focus": "依据达利欧原则寻找系统与策略 Bug，审视交易日志及 KPI 达标情况，评估回撤。使用 agent-browser 监控网页状态"},

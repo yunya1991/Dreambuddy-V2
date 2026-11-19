@@ -34,7 +34,7 @@
       "id": "meta_evolution_monitor_hourly",
       "cron": "0 * * * *",
       "group": "evolution-main",
-      "task": "启动 Meta-Evolution Supervisor 监控链路：1. 调用 l3_command_center/main.py 运行 KPI 回测并读取内存日志。2. 若回测不达标，触发 auto-fixer 进行异常定位与沙盒修复。3. 打开监控网页截图保存。严格按照达利欧系统化机器原则产出《系统/策略体检报告》。"
+      "task": "启动 Meta-Evolution Supervisor 监控链路：0) 先执行 python3 ops/nanoclaw/render_l2_prompt.py render，读取 cache/l2_prompt/meta_evolution_prompt.rendered.md 作为系统提示（含 constitution@1.0.0 注入与 persona 尾注），缺失或 injected=false 时中止并告警。1. 调用 l3_command_center/main.py 运行 KPI 回测并读取内存日志。2. 若回测不达标，触发 auto-fixer 进行异常定位与沙盒修复。3. 打开监控网页截图保存。4. 产出《系统/策略体检报告》JSON 后执行 python3 ops/nanoclaw/render_l2_prompt.py gate --report <报告路径>，deny 时不得落库。严格按照达利欧系统化机器原则产出《系统/策略体检报告》。"
     }
   ]
 }

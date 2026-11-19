@@ -24,6 +24,8 @@ import urllib.request
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
+import l2_trade_ops_prompt as l2_ops  # noqa: E402 — 需在 stdout/stderr 包装之后导入
+
 API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 URL = "https://api.deepseek.com/chat/completions"
 
@@ -80,6 +82,18 @@ def clean_json(text):
     return text.strip()
 
 
+def run_task(task, prompt, *, model, max_tokens):
+    """统一出口：l2.app.trade_ops 注入 + JSON 解析 + 出口门禁台账（FAIL-OPEN）。"""
+    system, _ = l2_ops.system_prompt(SYSTEM_BASE, task)
+    resp = deepseek_chat(
+        [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
+        model=model,
+        max_tokens=max_tokens,
+    )
+    # 证据等级按 partial：结论基于调用方提供的 Phase-0 数据，非全量实时行情
+    return l2_ops.finalize_output(task, json.loads(clean_json(resp)), evidence="partial")
+
+
 # ─── A1: 日线矛盾分析（deepseek-v4-flash） ────────────────────────────────────
 
 
@@ -121,12 +135,7 @@ def analyze_a1(ctx_data, historical_context: str = ""):
   "summary": "两句话结论"
 }}
 """
-    resp = deepseek_chat(
-        [{"role": "system", "content": SYSTEM_BASE}, {"role": "user", "content": prompt}],
-        model="deepseek-v4-flash",
-        max_tokens=1500,
-    )
-    return json.loads(clean_json(resp))
+    return run_task("a1", prompt, model="deepseek-v4-flash", max_tokens=1500)
 
 
 # ─── A2: 第一性原理分析（deepseek-v4-pro，降级备用） ────────────────────────
@@ -170,12 +179,7 @@ def analyze_a2(ctx_data, a1_result, historical_context: str = ""):
   "summary": "两句话结论"
 }}
 """
-    resp = deepseek_chat(
-        [{"role": "system", "content": SYSTEM_BASE}, {"role": "user", "content": prompt}],
-        model="deepseek-v4-pro",
-        max_tokens=1500,
-    )
-    return json.loads(clean_json(resp))
+    return run_task("a2", prompt, model="deepseek-v4-pro", max_tokens=1500)
 
 
 # ─── A3: 日线沙盘推演（deepseek-v4-pro，降级备用） ───────────────────────────
@@ -242,12 +246,7 @@ def analyze_a3(ctx_data, a1_result, a2_result):
   }}
 }}
 """
-    resp = deepseek_chat(
-        [{"role": "system", "content": SYSTEM_BASE}, {"role": "user", "content": prompt}],
-        model="deepseek-v4-pro",
-        max_tokens=2500,
-    )
-    return json.loads(clean_json(resp))
+    return run_task("a3", prompt, model="deepseek-v4-pro", max_tokens=2500)
 
 
 # ─── Gate C: ACH 竞争性假设分析（deepseek-v4-pro） ───────────────────────────
@@ -294,12 +293,7 @@ def analyze_gate_c(ctx_data, a7_score, signal_score_pct):
   "reasoning_quality": "一句话说明 CoT 推理关键决策点"
 }}
 """
-    resp = deepseek_chat(
-        [{"role": "system", "content": SYSTEM_BASE}, {"role": "user", "content": prompt}],
-        model="deepseek-v4-pro",
-        max_tokens=3000,
-    )
-    return json.loads(clean_json(resp))
+    return run_task("gate_c", prompt, model="deepseek-v4-pro", max_tokens=3000)
 
 
 # ─── Process D: A8 复盘分析（deepseek-v4-pro） ───────────────────────────────
@@ -336,12 +330,7 @@ def analyze_process_d(episodes_summary, weekly_data):
   "summary": "两句话总结"
 }}
 """
-    resp = deepseek_chat(
-        [{"role": "system", "content": SYSTEM_BASE}, {"role": "user", "content": prompt}],
-        model="deepseek-v4-pro",
-        max_tokens=3000,
-    )
-    return json.loads(clean_json(resp))
+    return run_task("process_d", prompt, model="deepseek-v4-pro", max_tokens=3000)
 
 
 # ─── CLI 入口 ─────────────────────────────────────────────────────────────────

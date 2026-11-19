@@ -1,0 +1,285 @@
+{
+  "method": "prompt_conformance_deterministic",
+  "prompt_id": "l2.app.trade_ops",
+  "task": "cron.operate",
+  "experiment_id": "D2B-P57-l2-app-trade_ops-20261119",
+  "golden_version": "1.0",
+  "generated_at": "2026-11-19T08:25:00Z",
+  "note": "确定性装配契约 A/B，不含模型推理；avg_tokens 按注册表 fixed+context 预算口径记账，raw_avg_tokens 为两臂原文实测；判据见 run_prompt_conformance.py 头注释",
+  "arm": "constitution",
+  "arms": {
+    "none": {
+      "metrics": {
+        "n": 20,
+        "conformance_rate": 0.0,
+        "json_ok_rate": 100.0,
+        "avg_tokens": 4000,
+        "raw_avg_tokens": 2419.2,
+        "evidence_declared_rate": 0.0,
+        "violation_cases": 0
+      },
+      "rows": [
+        {
+          "id": "TO01",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO02",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO03",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO04",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO05",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO06",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO07",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO08",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO09",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO10",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO11",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO12",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO13",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO14",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO15",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO16",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO17",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO18",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO19",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO20",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        }
+      ]
+    },
+    "constitution": {
+      "metrics": {
+        "n": 20,
+        "conformance_rate": 100.0,
+        "json_ok_rate": 100.0,
+        "avg_tokens": 4000,
+        "raw_avg_tokens": 3497.7,
+        "evidence_declared_rate": 100.0,
+        "violation_cases": 0,
+        "b_failure_breakdown": {}
+      },
+      "rows": [
+        {
+          "id": "TO01",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO02",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO03",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO04",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO05",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO06",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO07",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO08",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO09",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO10",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO11",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO12",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO13",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO14",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO15",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO16",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO17",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO18",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO19",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "TO20",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        }
+      ]
+    }
+  },
+  "paired": {
+    "delta_pp": 100.0,
+    "mcnemar_p": 0.0,
+    "discordant_b": 20,
+    "discordant_c": 0
+  }
+}

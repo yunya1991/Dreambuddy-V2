@@ -53,6 +53,7 @@ from core.hypothesis import audit_hypotheses, build_write_hint  # noqa: E402
 from core.investigation_workflow import investigate  # noqa: E402
 from core.llm_budget import check_budget, record_cost  # noqa: E402
 from core.methodology_abstraction import MethodologyAbstractor  # noqa: E402
+from core.prompt_binding import enrich_ai_context  # noqa: E402
 from core.python_analyzer import PythonAnalyzer  # noqa: E402
 from core.relevance import apply_relevance_scores, write_relevance_scores  # noqa: E402
 from core.ts_project_analyzer import TSProjectAnalyzer  # noqa: E402
@@ -2187,6 +2188,7 @@ def S33_rea_cost_ledger(params: Dict[str, Any]) -> Dict[str, Any]:
             "recorded": recorded["recorded"],
             "path": recorded["path"],
             "record": recorded.get("record"),
+            "prompt": enrich_ai_context({}, model=model),
             "known_gaps": known_gaps,
             "evidence": evidence,
             "trace_id": trace_id,
@@ -2376,7 +2378,8 @@ def S33_rea_audit(params: Dict[str, Any]) -> Dict[str, Any]:
         )
 
     trace_id = str(params.get("trace_id") or _gen_trace_id("s33aud"))
-    ai_context = params.get("ai_context")
+    # SPEC-57 P6：审计 provenance 绑定 l2.worker.rea（FAIL-OPEN）
+    ai_context = enrich_ai_context(params.get("ai_context"))
 
     # SPEC-33-E：带 hypotheses 时走假设门禁模式（校验 + 静态复核 + PoE gate）
     hypotheses = params.get("hypotheses")

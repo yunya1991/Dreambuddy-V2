@@ -1,0 +1,285 @@
+{
+  "method": "prompt_conformance_deterministic",
+  "prompt_id": "l2.app.skill",
+  "task": "skill.guide",
+  "experiment_id": "D2B-P57-l2-app-skill-20261119",
+  "golden_version": "1.0",
+  "generated_at": "2026-11-19T08:24:59Z",
+  "note": "确定性装配契约 A/B，不含模型推理；avg_tokens 按注册表 fixed+context 预算口径记账，raw_avg_tokens 为两臂原文实测；判据见 run_prompt_conformance.py 头注释",
+  "arm": "constitution",
+  "arms": {
+    "none": {
+      "metrics": {
+        "n": 20,
+        "conformance_rate": 0.0,
+        "json_ok_rate": 100.0,
+        "avg_tokens": 3000,
+        "raw_avg_tokens": 4246.0,
+        "evidence_declared_rate": 0.0,
+        "violation_cases": 0
+      },
+      "rows": [
+        {
+          "id": "SK01",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK02",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK03",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK04",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK05",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK06",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK07",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK08",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK09",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK10",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK11",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK12",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK13",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK14",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK15",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK16",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK17",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK18",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK19",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK20",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        }
+      ]
+    },
+    "constitution": {
+      "metrics": {
+        "n": 20,
+        "conformance_rate": 100.0,
+        "json_ok_rate": 100.0,
+        "avg_tokens": 3000,
+        "raw_avg_tokens": 4483.9,
+        "evidence_declared_rate": 100.0,
+        "violation_cases": 0,
+        "b_failure_breakdown": {}
+      },
+      "rows": [
+        {
+          "id": "SK01",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK02",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK03",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK04",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK05",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK06",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK07",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK08",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK09",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK10",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK11",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK12",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK13",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK14",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK15",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK16",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK17",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK18",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK19",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        },
+        {
+          "id": "SK20",
+          "a_pass": false,
+          "b_pass": true,
+          "b_failures": []
+        }
+      ]
+    }
+  },
+  "paired": {
+    "delta_pp": 100.0,
+    "mcnemar_p": 0.0,
+    "discordant_b": 20,
+    "discordant_c": 0
+  }
+}

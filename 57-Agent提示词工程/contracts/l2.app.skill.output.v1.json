@@ -1,0 +1,9 @@
+{
+  "contract_id": "l2.app.skill.output.v1",
+  "version": "1.0.0",
+  "prompt_id": "l2.app.skill",
+  "description": "前端技能提示出口：必须给出可读文本与证据等级，禁止无证据结论。",
+  "required": ["text", "evidence"],
+  "evidence_enum": ["none", "partial", "full"],
+  "forbidden_marketing": ["稳赚", "必赚", "保证收益", "零风险", "翻倍"]
+}

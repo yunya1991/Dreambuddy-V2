@@ -1,0 +1,74 @@
+{
+  "eval_id": "prompt.l2.app.skill",
+  "run_id": "D2B-P57-l2-app-skill-20261119",
+  "spec_hash": "sha256:c7fcd122acf8558cd786c19dc6e5b4a16b2699beb05d8432ff318cfbb067efca",
+  "verdict": "PASS",
+  "score": 100.0,
+  "n": 20,
+  "ci": null,
+  "items": [
+    {
+      "name": "delta_pp",
+      "kind": "paired_delta",
+      "status": "PASS",
+      "score": 100.0,
+      "n": 20,
+      "ci_lower": null,
+      "ci_upper": null,
+      "weight": 0.5,
+      "evidence_id": "D2B-P57-l2-app-skill-20261119",
+      "detail": "mcnemar_p=0.0"
+    },
+    {
+      "name": "json_ok_rate",
+      "kind": "guardrail",
+      "status": "PASS",
+      "score": 100.0,
+      "n": 20,
+      "ci_lower": null,
+      "ci_upper": null,
+      "weight": 0.3,
+      "evidence_id": "D2B-P57-l2-app-skill-20261119",
+      "detail": ""
+    },
+    {
+      "name": "tokens_ratio",
+      "kind": "guardrail",
+      "status": "PASS",
+      "score": 1.0,
+      "n": 20,
+      "ci_lower": null,
+      "ci_upper": null,
+      "weight": 0.2,
+      "evidence_id": "D2B-P57-l2-app-skill-20261119",
+      "detail": "max=1.4"
+    }
+  ],
+  "block_reasons": [],
+  "evidence": {
+    "uri": "57-Agent提示词工程/evals/out/conformance/l2.app.skill-D2B-P57-l2-app-skill-20261119.json",
+    "sha256": "4173c00b7707fc390dfb384a66f4bdc9f3871a66ff34c8a3aad13b9d5ed97c88"
+  },
+  "thresholds_version": "golden@1.0",
+  "baseline_run_id": "D2B-P57-l2-app-skill-20261119-A",
+  "evaluated_at": "2026-11-19T08:25:10Z",
+  "expires_at": "2026-11-26T08:25:10Z",
+  "prompt_id": "l2.app.skill",
+  "to_version": "0.4.0",
+  "experiment_id": "D2B-P57-l2-app-skill-20261119",
+  "promoted_at": "2026-11-19T08:25:10Z",
+  "credential": {
+    "eval_id": "prompt.l2.app.skill",
+    "run_id": "D2B-P57-l2-app-skill-20261119",
+    "spec_hash": "sha256:c7fcd122acf8558cd786c19dc6e5b4a16b2699beb05d8432ff318cfbb067efca",
+    "verdict": "PASS",
+    "purpose": "deploy",
+    "thresholds_version": "golden@1.0",
+    "evaluator_id": "prompt.ab",
+    "evaluator_version": "1.0.0",
+    "evidence_sha256": "4173c00b7707fc390dfb384a66f4bdc9f3871a66ff34c8a3aad13b9d5ed97c88",
+    "issued_at": "2026-11-19T08:25:10Z",
+    "expires_at": "2026-11-26T08:25:10Z"
+  },
+  "credential_verified": true
+}

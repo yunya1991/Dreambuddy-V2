@@ -87,7 +87,11 @@ def get_prompt(prompt_id: str) -> Dict[str, Any]:
 
 
 def asset_fingerprint(entry: Dict[str, Any]) -> str:
-    """file = sha256(原始字节)；tree = sha256(按相对路径排序拼接 '<relpath>\\n<sha256>\\n')。"""
+    """file = sha256(原始字节)；tree = sha256(按相对路径排序拼接 '<relpath>\\n<sha256>\\n')。
+
+    tree 忽略点开头文件（.DS_Store 等 OS 元数据），否则 macOS Finder 打开目录
+    就会让资产指纹漂移（E_CONSTITUTION_DRIFT 误报）。
+    """
     asset = entry.get("asset_path")
     if not isinstance(asset, str) or not asset:
         raise PromptContextError(f"{entry.get('prompt_id')}: asset_path 非法")
@@ -96,7 +100,9 @@ def asset_fingerprint(entry: Dict[str, Any]) -> str:
         if not target.is_dir():
             raise PromptContextError(f"{asset}: 不是目录")
         chunks: List[str] = []
-        for path in sorted(p for p in target.rglob("*") if p.is_file()):
+        for path in sorted(
+            p for p in target.rglob("*") if p.is_file() and not p.name.startswith(".")
+        ):
             rel = path.relative_to(target).as_posix()
             chunks.append(f"{rel}\n{hashlib.sha256(path.read_bytes()).hexdigest()}\n")
         return "sha256:" + hashlib.sha256("".join(chunks).encode("utf-8")).hexdigest()

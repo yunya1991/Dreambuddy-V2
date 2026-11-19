@@ -1,0 +1,9 @@
+{
+  "contract_id": "l2.emergence.meta_evolution.output.v1",
+  "version": "1.0.0",
+  "prompt_id": "l2.emergence.meta_evolution",
+  "description": "nanoclaw meta-evolution 出口：体检报告四字段，修复结果必须可回滚核验。",
+  "required": ["critic_report", "bugs_found", "fixer_actions", "rollback_status"],
+  "evidence_enum": ["none", "partial", "full"],
+  "forbidden_marketing": ["稳赚", "必赚", "保证收益", "零风险", "翻倍"]
+}
