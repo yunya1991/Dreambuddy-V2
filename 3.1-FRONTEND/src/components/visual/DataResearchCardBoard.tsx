@@ -92,6 +92,15 @@ export function DataResearchCardBoard() {
   const [activeId, setActiveId] = useState(DEFAULT_ACTIVE_TAB);
   const [hydrated, setHydrated] = useState(false);
   const [base, setBase] = useState("BTC");
+
+  // 深链预填：/dashboard/visual/research?base=ETH
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const param = (new URLSearchParams(window.location.search).get("base") || "")
+      .trim()
+      .toUpperCase();
+    if (/^[A-Z0-9]{2,12}$/.test(param)) setBase(param);
+  }, []);
   const [rec, setRec] = useState<RunResponse | null>(null);
   const [recLoading, setRecLoading] = useState(false);
   const [selected, setSelected] = useState(0);

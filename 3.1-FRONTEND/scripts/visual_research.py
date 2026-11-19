@@ -102,6 +102,146 @@ def _short_target(target: str) -> str:
     return text.split("/", 1)[0] if "/" in text else text
 
 
+def _target_symbol(value: Any) -> str:
+    """BTC/USDT → BTC；600519.SH → 600519.SH（不做交易所映射）。"""
+    text = str(value or "").strip().upper()
+    return text.split("/", 1)[0] if "/" in text else text
+
+
+def _matches_target(value: Any, target: str) -> bool:
+    symbol = _target_symbol(target)
+    return bool(symbol) and _target_symbol(value) == symbol
+
+
+def _latest_findings(target: str, limit: int) -> List[Dict[str, Any]]:
+    """只读最近一期 discovery findings.jsonl，按标的过滤并截断；不重算。"""
+    try:
+        names = sorted(
+            (name for name in os.listdir(DISCOVERY_DIR) if len(name) == 13 and name[8] == "-"),
+            reverse=True,
+        )
+    except OSError:
+        return []
+    for name in names:
+        path = os.path.join(DISCOVERY_DIR, name, "findings.jsonl")
+        if not os.path.isfile(path):
+            continue
+        rows: List[Dict[str, Any]] = []
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        item = json.loads(line)
+                    except ValueError:
+                        continue
+                    if not isinstance(item, dict):
+                        continue
+                    if not (
+                        _matches_target(item.get("target"), target)
+                        or _matches_target(item.get("series"), target)
+                    ):
+                        continue
+                    ic = _num(item.get("rank_ic"))
+                    if ic is None:
+                        continue
+                    rows.append(
+                        {
+                            "method": item.get("method"),
+                            "series": item.get("series"),
+                            "transform": item.get("transform"),
+                            "horizon": _int(item.get("horizon")),
+                            "rank_ic": ic,
+                            "holdout_ic": _num(item.get("holdout_ic")),
+                            "p_adj": _num(item.get("p_adj")),
+                            "stability": _num(item.get("stability")),
+                            "n": _int(item.get("n")),
+                            "status": "candidate",
+                            "eval_at": item.get("eval_at"),
+                            "data_version": item.get("data_version"),
+                        }
+                    )
+        except OSError:
+            return []
+        rows.sort(key=lambda row: abs(row.get("rank_ic") or 0.0), reverse=True)
+        return rows[:limit]
+    return []
+
+
+def _target_block(
+    rows: List[Dict[str, Any]],
+    relation_of: Dict[str, str],
+    target: str,
+    horizon: int,
+    limit: int,
+) -> Dict[str, Any]:
+    """单标的研究证据投影：只读注册表 + 最近一期发现，不重算统计量。"""
+    symbol = _target_symbol(target)
+    if not symbol:
+        return {"available": False, "reason": "target 未提供", "caveats": []}
+
+    picked = [row for row in rows if _matches_target(row.get("target"), target)]
+    if not picked:
+        return {
+            "available": False,
+            "target": symbol,
+            "reason": "MERS 未覆盖该标的",
+            "caveats": ["该标的无关系评估记录，不能据此推断任何统计关系"],
+            "top": [],
+            "discovery": [],
+        }
+
+    counts = {"stable": 0, "candidate": 0, "decayed": 0, "other": 0}
+    for row in picked:
+        status = str(row.get("status") or "")
+        counts[status if status in counts else "other"] += 1
+    gate_pass = sum(1 for row in picked if _int(row.get("gate_pass")) == 1)
+    stable = sum(1 for row in picked if str(row.get("status")) == "stable")
+    evaluable = sum(1 for row in picked if _int(row.get("n")) >= MIN_N)
+
+    horizon_rows = [row for row in picked if _int(row.get("horizon")) == int(horizon)]
+    ranked = [row for row in (horizon_rows or picked) if _num(row.get("rank_ic")) is not None]
+    ranked.sort(key=lambda row: (-abs(_num(row.get("rank_ic")) or 0.0), -_int(row.get("n"))))
+    top = [
+        {
+            "relation": relation_of.get(str(row.get("method"))) or "unmapped",
+            "method": row.get("method"),
+            "transform": row.get("transform"),
+            "horizon": _int(row.get("horizon")),
+            "rank_ic": _num(row.get("rank_ic")),
+            "hit_rate": _num(row.get("hit_rate")),
+            "base_rate": _num(row.get("base_rate")),
+            "holdout_hit_rate": _num(row.get("holdout_hit_rate")),
+            "p_adj": _num(row.get("p_adj")),
+            "n": _int(row.get("n")),
+            "status": row.get("status"),
+            "gate_pass": _int(row.get("gate_pass")),
+        }
+        for row in ranked[:limit]
+    ]
+
+    caveats: List[str] = []
+    if gate_pass == 0:
+        caveats.append("当前无通过门禁的关系；以下全部为未验证的历史候选")
+    caveats.append("候选只代表历史统计相关，不代表未来收益或方向")
+
+    return {
+        "available": True,
+        "target": symbol,
+        "horizon": int(horizon),
+        "rows": len(picked),
+        "evaluable": evaluable,
+        "gate_pass": gate_pass,
+        "stable": stable,
+        "counts": counts,
+        "top": top,
+        "discovery": _latest_findings(target, limit),
+        "caveats": caveats,
+    }
+
+
 def _relation_roles() -> Dict[str, List[str]]:
     """method → 全部关系角色（一个方法可服务多个关系类）。"""
     registry = _read_yaml(ALGORITHM_FILE)
@@ -619,7 +759,7 @@ def _evidence(recommendations: List[Dict[str, Any]]) -> Dict[str, Any]:
     return {"available": True, "nodes": nodes, "edges": edges, "headline": head.get("eval_id")}
 
 
-def build(top: int = 12) -> Dict[str, Any]:
+def build(top: int = 12, target: str = "", horizon: int = 1) -> Dict[str, Any]:
     path = _registry_path()
     space = _space_block()
     relation_of = _relation_map()
@@ -661,6 +801,14 @@ def build(top: int = 12) -> Dict[str, Any]:
             "candidates": [],
             "distribution": {"relations": [], "horizons": [], "values": []},
             "evidence": {"available": False, "nodes": [], "edges": []},
+            "target": {
+                "available": False,
+                "target": _target_symbol(target),
+                "reason": "关系评估注册表尚未生成",
+                "caveats": [],
+                "top": [],
+                "discovery": [],
+            },
         }
 
     rows, present = _load_eval_rows(path)
@@ -727,6 +875,7 @@ def build(top: int = 12) -> Dict[str, Any]:
             **latest_counts,
         },
         "classes": classes,
+        "target": _target_block(rows, relation_of, target, horizon, limit=3),
         "patterns": patterns,
         "gates": gates,
         "funnel": funnel,
@@ -745,9 +894,15 @@ def build(top: int = 12) -> Dict[str, Any]:
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--top", type=int, default=12)
+    parser.add_argument("--target", default="")
+    parser.add_argument("--horizon", type=int, default=1)
     args, _ = parser.parse_known_args(argv or sys.argv[1:])
     try:
-        payload = build(top=max(1, min(int(args.top), 50)))
+        payload = build(
+            top=max(1, min(int(args.top), 50)),
+            target=str(args.target or ""),
+            horizon=max(1, int(args.horizon or 1)),
+        )
     except Exception as exc:  # noqa: BLE001 — FAIL-OPEN
         payload = {
             "ok": False,

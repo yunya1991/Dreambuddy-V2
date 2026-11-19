@@ -5,6 +5,7 @@
 // 只定义自有模型，不依赖 AI SDK 类型（AI SDK 经 adapters 单向映射进来）。
 
 import type { PlanCard } from './plancard';
+import type { VisualSpec } from '@/components/visual/types';
 
 export type ToolPartState = 'pending' | 'running' | 'success' | 'error';
 
@@ -23,6 +24,7 @@ export type AgentPart =
     }
   | { type: 'plan-card'; card: PlanCard }
   | { type: 'artifact'; artifactId: string; title: string; kind: 'report' | 'chart' | 'file' }
+  | { type: 'chart'; visual: VisualSpec }
   | { type: 'verification'; verdict: 'PASS' | 'BLOCK' | 'INCONCLUSIVE'; evidenceRefs: string[] };
 
 export type AgentPartType = AgentPart['type'];

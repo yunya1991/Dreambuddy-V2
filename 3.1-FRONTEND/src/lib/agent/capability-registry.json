@@ -160,6 +160,43 @@
       "enabled": true
     },
     {
+      "id": "research.snapshot",
+      "name": "数据研究快照（覆盖/候选/门禁/最近发现）",
+      "layer": "L1",
+      "module": "54",
+      "entry": {
+        "kind": "http",
+        "method": "GET",
+        "path": "/api/visual/research",
+        "query": { "top": "12" },
+        "queryParams": { "target": "target", "horizon": "horizon" }
+      },
+      "when": "问到某标的的数据覆盖、统计关系候选、门禁通过情况、最近研究发现时。只陈述历史统计关系，不给方向或预测。",
+      "params": { "target": "标的，如 BTC", "horizon": "期限天数，默认 1" },
+      "latency_ms": 25000,
+      "readonly": true,
+      "l2_allowed": true,
+      "enabled": true
+    },
+    {
+      "id": "research.technical_visuals",
+      "name": "技术图表（看板同源 T1-T4）",
+      "layer": "L1",
+      "module": "54",
+      "entry": {
+        "kind": "http",
+        "method": "GET",
+        "path": "/api/visual/overview",
+        "queryParams": { "symbols": "symbol", "visual_id": "visual_id" }
+      },
+      "when": "用户要看图表、技术看板、点亮投影、信号点阵、关系网络时。图表与「技术图表」看板同源。",
+      "params": { "symbol": "标的，如 BTC", "visual_id": "可选，指定图 id" },
+      "latency_ms": 40000,
+      "readonly": true,
+      "l2_allowed": true,
+      "enabled": true
+    },
+    {
       "id": "dsh.technical",
       "name": "DSH 技术面子代理",
       "layer": "L2",

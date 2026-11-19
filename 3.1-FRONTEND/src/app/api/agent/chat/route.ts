@@ -1002,7 +1002,22 @@ export async function POST(request: NextRequest) {
 
     // 系统能力工具（只读分析）始终可用；MCP tools 失败不致命，退化为仅能力工具
     const endS2 = trace.start("S2", "上下文与工具准备");
-    const capabilityTools = createCapabilityTools(trace);
+    // 看板同源图表：工具执行时先入队，writer 挂载后立即下发
+    type ChartPart = { type: "data-chart"; id: string; data: { visual: unknown } };
+    const chartQueue: ChartPart[] = [];
+    let chartWriter: { write: (chunk: ChartPart) => void } | null = null;
+    const chartSink = (capabilityId: string, visuals: unknown[]) => {
+      for (const [index, visual] of visuals.entries()) {
+        const part: ChartPart = {
+          type: "data-chart",
+          id: `chart-${capabilityId}-${index}-${Date.now()}`,
+          data: { visual },
+        };
+        if (chartWriter) chartWriter.write(part);
+        else chartQueue.push(part);
+      }
+    };
+    const capabilityTools = createCapabilityTools(trace, { onVisuals: chartSink });
     let tools: Record<string, Tool> = { ...capabilityTools };
     try {
       const allTools = await getAgentMcpTools();
@@ -1241,6 +1256,9 @@ export async function POST(request: NextRequest) {
         for (const span of trace.history) {
           writer.write({ type: "data-trace", id: span.span_id, data: span });
         }
+        // 图表 sink 挂载：先冲刷工具执行早期入队的图，再实时下发
+        chartWriter = writer as unknown as { write: (chunk: ChartPart) => void };
+        for (const part of chartQueue.splice(0)) chartWriter.write(part);
         writer.merge(result.toUIMessageStream({ sendReasoning: true }));
       },
     });

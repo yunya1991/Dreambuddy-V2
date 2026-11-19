@@ -1282,6 +1282,27 @@ def _execute_supplement_and_synthesize(
 # ============================================================
 
 
+def _summarize_research(research: Any) -> Optional[Dict[str, Any]]:
+    """研究证据只做裁决注解：不改变方向、置信度与信号。"""
+    if not isinstance(research, dict) or not research.get("available"):
+        return None
+    top = research.get("top") if isinstance(research.get("top"), list) else []
+    discovery = research.get("discovery") if isinstance(research.get("discovery"), list) else []
+    caveats = research.get("caveats")
+    return {
+        "target": research.get("target"),
+        "status": research.get("status"),
+        "as_of": research.get("as_of"),
+        "data_version": research.get("data_version"),
+        "gate_pass": research.get("gate_pass"),
+        "stable": research.get("stable"),
+        "counts": research.get("counts") or {},
+        "top": top[:3],
+        "discovery": discovery[:3],
+        "caveats": [str(item) for item in (caveats if isinstance(caveats, list) else [])],
+    }
+
+
 def handle_c_drive_agent(params: dict) -> dict:
     """IPC handler: C-Drive-Agent 四步循环
 
@@ -1329,7 +1350,13 @@ def handle_c_drive_agent(params: dict) -> dict:
         if decision.action == CDriveAction.SUPPLEMENT or intent_lower == "deep_analysis":
             decision = _execute_supplement_and_synthesize(decision, params)
 
-        return {"ok": True, "decision": decision.to_dict()}
+        payload = decision.to_dict()
+        # 研究证据入裁决：只注解口径与限制条件，不参与方向/置信度计算
+        research_evidence = _summarize_research(params.get("research"))
+        if research_evidence is not None:
+            payload["research_evidence"] = research_evidence
+            payload["research_caveats"] = research_evidence["caveats"]
+        return {"ok": True, "decision": payload}
     except Exception as e:
         stack = traceback.format_exc()
         return {"ok": False, "error": str(e), "stack": stack}

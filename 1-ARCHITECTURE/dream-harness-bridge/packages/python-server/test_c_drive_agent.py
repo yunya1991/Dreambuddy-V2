@@ -426,5 +426,56 @@ class TestStepsTrace(unittest.TestCase):
         self.assertIn("recall", decision.steps_executed)
 
 
+class TestResearchEvidenceAnnotation(unittest.TestCase):
+    """研究证据只注解 decision，不改变方向/置信度/信号"""
+
+    RESEARCH = {
+        "available": True,
+        "target": "BTC",
+        "status": "candidate_only",
+        "as_of": "2026-11-16",
+        "data_version": "db@20261117",
+        "gate_pass": 0,
+        "stable": 0,
+        "counts": {"stable": 0, "candidate": 1260},
+        "top": [{"method": "M01", "rank_ic": -0.0858}],
+        "discovery": [{"method": "B14", "horizon": 5}],
+        "caveats": ["当前无通过门禁的关系"],
+    }
+
+    def _run(self, research=None):
+        from c_drive_agent import handle_c_drive_agent
+
+        params = {
+            "node_id": "C1",
+            "confidence": 0.9,
+            "direction": "NEUTRAL",
+            "signals": [],
+        }
+        if research is not None:
+            params["research"] = research
+        return handle_c_drive_agent(params)
+
+    def test_attaches_research_evidence(self):
+        out = self._run(self.RESEARCH)
+        self.assertTrue(out["ok"])
+        decision = out["decision"]
+        self.assertEqual(decision["research_evidence"]["target"], "BTC")
+        self.assertEqual(decision["research_evidence"]["gate_pass"], 0)
+        self.assertEqual(decision["research_caveats"], ["当前无通过门禁的关系"])
+        # 注解不改变裁决本体
+        self.assertEqual(decision["confidence"], 0.9)
+
+    def test_no_research_keeps_payload_clean(self):
+        out = self._run(None)
+        self.assertTrue(out["ok"])
+        self.assertNotIn("research_evidence", out["decision"])
+
+    def test_malformed_research_ignored(self):
+        out = self._run("oops")
+        self.assertTrue(out["ok"])
+        self.assertNotIn("research_evidence", out["decision"])
+
+
 if __name__ == "__main__":
     unittest.main()

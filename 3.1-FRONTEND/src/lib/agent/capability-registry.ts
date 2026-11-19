@@ -13,6 +13,12 @@ import registryJson from "./capability-registry.json";
 import { callDshHandler } from "../dsh-execution-engine";
 import { executeTradingBinding } from "../trading-capability";
 import { l1BaseUrl as getL1BaseUrl } from "../l1-base-url";
+import {
+  buildResearchVisuals,
+  buildResearchVisualsFromPayload,
+  fetchResearchEvidence,
+  renderResearchBrief,
+} from "./research-evidence";
 
 export type CapabilityLayer = "L0" | "L1" | "L2";
 export type CapabilityKind =
@@ -38,6 +44,8 @@ export interface CapabilityEntry {
     method?: string;
     path?: string;
     query?: Record<string, string>;
+    /** query 动态映射：query 键 → params 键（如 target → target） */
+    queryParams?: Record<string, string>;
     recipe?: string;
   };
   when: string;
@@ -92,6 +100,11 @@ export function buildCapabilityPrompt(): string {
     "8. 工具返回 degraded=true 或 note 含缺失项时，必须在结论中标注「该维度数据缺失」，不得当作真实信号。",
     "9. 调用 dsh.technical 时必须传 symbol；dsh.macro/dsh.sentiment 的输入由调度器注入真实数据，你不需要自己拼 indicators。",
     "10. 你没有下单、写库、改配置权限；但具备上述只读分析能力，不得声称\"无法分析\"。",
+    "11. 引用研究证据（research.snapshot / 裁决里的 research_evidence）必须带 as_of、data_version、status、gate_pass、n。",
+    "12. candidate 必须表述为「未通过门禁的历史候选」；stable=0 时如实说明，不得把缺失当利空或利好。",
+    "13. 研究证据只陈述历史统计关系，禁止据此给出买卖方向、目标价或预测。",
+    "14. 用户要「图表 / 技术看板 / 关系网络」时调用 research.technical_visuals；图表与看板同源，由消息流直接渲染。",
+    "15. 涉及覆盖或关系详情时，给出 `/dashboard/visual/research?base=<标的>` 深链。",
   ].join("\n");
 }
 
@@ -119,6 +132,44 @@ export function clip(value: unknown, max = 4000): string {
   }
   if (!text) return "";
   return text.length > max ? `${text.slice(0, max)}…(truncated)` : text;
+}
+
+function isVisualSpec(value: unknown): value is Record<string, unknown> {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    typeof (value as { kind?: unknown }).kind === "string" &&
+    typeof (value as { spec_version?: unknown }).spec_version === "string"
+  );
+}
+
+/** 从只读 API 响应中取看板同源 VisualSpec；单次最多 2 个，避免长消息。 */
+function extractVisuals(
+  id: string,
+  data: Record<string, unknown>,
+  params: Record<string, unknown>,
+): Record<string, unknown>[] {
+  const out: Record<string, unknown>[] = [];
+  const push = (value: unknown) => {
+    if (isVisualSpec(value)) out.push(value);
+  };
+
+  if (id === "research.snapshot") {
+    buildResearchVisualsFromPayload(data).forEach(push);
+  }
+  push(data.visual);
+  const result = data.result;
+  if (result && typeof result === "object") {
+    push((result as Record<string, unknown>).visual);
+  }
+  if (Array.isArray(data.visuals)) data.visuals.forEach(push);
+
+  const visualId =
+    typeof params.visual_id === "string" ? params.visual_id.trim() : "";
+  const filtered = visualId
+    ? out.filter((item) => String(item.id ?? "") === visualId)
+    : out;
+  return (filtered.length > 0 ? filtered : out).slice(0, 2);
 }
 
 async function runL1Query(
@@ -480,6 +531,8 @@ export interface CapabilityRunResult {
   /** true 表示工具虽返回但数据为默认占位，不可作为结论依据 */
   degraded?: boolean;
   note?: string;
+  /** 看板同源图规格（SPEC-54 VisualSpec），由对话流下发渲染 */
+  visuals?: unknown[];
 }
 
 /** 统一调度入口：按注册表 entry.kind 分发到 L1 / DSH / 6-TRADING。 */
@@ -539,6 +592,13 @@ export async function runCapability(
   if (cap.entry.kind === "dsh") {
     const moduleName = cap.entry.module || id;
     let nodeOutput: Record<string, unknown> = { ...params };
+
+    // 研究证据入裁决：C-Drive 只消费 signals/direction/confidence，
+    // 这里把只读研究证据作为顶层 research 透传，由 handler 注解到 decision。
+    if (moduleName === "c_drive" && symbol) {
+      const evidence = await fetchResearchEvidence(symbol, { timeoutMs: 8000 });
+      nodeOutput = { ...nodeOutput, research: evidence };
+    }
     /** 数据缺失说明：非空时把结果标记为部分降级，避免模型把默认值当真实信号 */
     const missingNotes: string[] = [];
 
@@ -624,6 +684,7 @@ export async function runCapability(
         confidence: 0.5,
         direction: "NEUTRAL",
         intent_type: "analysis",
+        ...(nodeOutput.research ? { research: nodeOutput.research } : {}),
         signals,
       });
     }
@@ -667,7 +728,20 @@ export async function runCapability(
     if (!path) {
       return { ok: false, capability: id, error: `能力「${id}」缺少 API 路径` };
     }
-    const res = await apiGet(path, cap.entry.query, cap.latency_ms);
+    const query: Record<string, string> = { ...(cap.entry.query ?? {}) };
+    for (const [queryKey, paramKey] of Object.entries(
+      cap.entry.queryParams ?? {},
+    )) {
+      const value = params[paramKey];
+      if (value !== undefined && value !== null && String(value).trim()) {
+        query[queryKey] = String(value).trim();
+      }
+    }
+    const res = await apiGet(
+      path,
+      Object.keys(query).length > 0 ? query : undefined,
+      cap.latency_ms,
+    );
     if (!res.ok || !res.data) {
       return {
         ok: false,
@@ -676,12 +750,18 @@ export async function runCapability(
       };
     }
     const degraded = res.data.degraded === true || res.data.ok === false;
+    const visuals = extractVisuals(id, res.data, params);
     return {
       ok: !degraded,
       capability: id,
       output: clip(res.data),
       degraded: degraded || undefined,
-      note: degraded ? "数据源不可达或为空，请如实说明缺失，勿用训练记忆补数" : undefined,
+      note: degraded
+        ? "数据源不可达或为空，请如实说明缺失，勿用训练记忆补数"
+        : visuals.length > 0
+          ? `已附 ${visuals.length} 个看板同源图表`
+          : undefined,
+      visuals: visuals.length > 0 ? visuals : undefined,
     };
   }
 
@@ -735,11 +815,12 @@ async function runTradingAnalysisPipeline(
   const question =
     String(params.question ?? "").trim() || `${symbol} 综合交易研判`;
 
-  // A0 取数：技术指标 + 宏观 + 情绪并行（三者互不依赖）
-  const [l1Tech, macroSnap, sentSnap] = await Promise.all([
+  // A0 取数：技术指标 + 宏观 + 情绪 + 研究证据并行（互不依赖）
+  const [l1Tech, macroSnap, sentSnap, research] = await Promise.all([
     runL1Query(`查询${symbol}技术指标`, 20_000),
     fetchMacroSnapshot(),
     fetchSentimentSnapshot(),
+    fetchResearchEvidence(symbol, { timeoutMs: 8000 }),
   ]);
   const technicalAnswer = l1Tech.ok ? l1Tech.answer ?? "" : "";
   const indicators = parseTechnicalIndicators(technicalAnswer);
@@ -800,6 +881,7 @@ async function runTradingAnalysisPipeline(
       direction: "NEUTRAL",
       intent_type: "analysis",
       signals,
+      research,
       node_output: { symbol, question, dimensions },
     },
     30_000,
@@ -823,23 +905,41 @@ async function runTradingAnalysisPipeline(
     },
     dimensions,
     conflict: pick(conflict as never),
+    research: {
+      available: research.available,
+      target: research.target,
+      status: research.status,
+      as_of: research.as_of,
+      data_version: research.data_version,
+      gate_pass: research.gate_pass,
+      stable: research.stable,
+      counts: research.counts,
+      top: research.top.slice(0, 3),
+      discovery: research.discovery.slice(0, 2),
+      caveats: research.caveats,
+    },
+    research_brief: renderResearchBrief(research),
     missing,
     output_contract: [
       "1) 主要矛盾：以 conflict 裁决为准，不自行拼凑",
       "2) 方向与置信度：说明技术/情绪/宏观是否共振",
       "3) 关键位与失效条件：引用 indicators / technical 的具体数值",
       "4) 数据缺口：missing 中每一项都要标注，禁止编造",
+      "5) 研究证据：引用 as_of/data_version/status/gate_pass；candidate 标注未过门禁；不得转成方向或预测",
     ],
   };
 
   return {
     ok: true,
     capability: id,
-    output: clip(payload, 6000),
+    output: clip(payload, 7000),
     degraded: missing.length > 0 || undefined,
     note:
       missing.length > 0
         ? `部分维度缺失：${missing.join(", ")}（需在结论中标注）`
-        : undefined,
+        : research.available
+          ? `研究证据：${research.status}，gate_pass=${research.gate_pass}`
+          : "研究证据不可用（MERS 未覆盖或产物缺失）",
+    visuals: buildResearchVisuals(research),
   };
 }

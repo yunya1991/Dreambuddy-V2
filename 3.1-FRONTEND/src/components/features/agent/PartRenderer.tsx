@@ -11,6 +11,7 @@ import React, { useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ToolCard } from './ToolCard';
 import { PlanCardView } from './PlanCardView';
+import { VisualRenderer, type VisualSpec } from '@/components/visual';
 import type { AgentPart, AgentMessage, UnknownAgentPart } from '@/types/agent-message';
 
 export interface PartRenderProps {
@@ -57,6 +58,19 @@ function ToolPart({ part }: PartRenderProps) {
 function PlanCardPart({ part }: PartRenderProps) {
   if (part.type !== 'plan-card') return null;
   return <PlanCardView card={part.card} />;
+}
+
+/** 看板同源图表（SPEC-54 VisualSpec）：与「数据研究 / 技术图表」共用统一渲染器 */
+function ChartPart({ part }: PartRenderProps) {
+  if (part.type !== 'chart') return null;
+  return (
+    <div
+      data-testid="chart-part"
+      className="rounded-lg border border-slate-700/60 bg-slate-900/30 p-2"
+    >
+      <VisualRenderer visual={part.visual as VisualSpec} />
+    </div>
+  );
 }
 
 const ARTIFACT_KIND_LABEL: Record<'report' | 'chart' | 'file', string> = {
@@ -142,6 +156,7 @@ const RENDERERS: Record<AgentPart['type'], React.ComponentType<PartRenderProps>>
   reasoning: ReasoningPart,
   tool: ToolPart,
   'plan-card': PlanCardPart,
+  chart: ChartPart,
   artifact: ArtifactPart,
   verification: VerificationPart,
 };

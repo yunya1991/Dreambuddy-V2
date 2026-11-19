@@ -14,6 +14,7 @@ export interface LooseUIPart {
   input?: unknown;
   output?: unknown;
   errorText?: string;
+  data?: unknown;
 }
 
 export interface LooseUIMessage {
@@ -58,6 +59,14 @@ export function uiMessageToParts(message: LooseUIMessage | null | undefined): Ag
 
     if (part.type === 'reasoning') {
       if (part.text) parts.push({ type: 'reasoning', text: part.text });
+      continue;
+    }
+
+    if (part.type === 'data-chart') {
+      const visual = (part.data as { visual?: unknown } | undefined)?.visual;
+      if (visual && typeof visual === 'object') {
+        parts.push({ type: 'chart', visual: visual as never });
+      }
       continue;
     }
 

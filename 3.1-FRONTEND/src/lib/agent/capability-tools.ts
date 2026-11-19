@@ -21,7 +21,15 @@ import type { TraceHandle } from "./run-trace";
 
 export { CAPABILITY_PROMPT };
 
-export function createCapabilityTools(trace?: TraceHandle) {
+export interface CapabilityToolHooks {
+  /** 能力返回看板同源 VisualSpec 时回调（由对话流下发 data-chart part） */
+  onVisuals?: (capabilityId: string, visuals: unknown[]) => void;
+}
+
+export function createCapabilityTools(
+  trace?: TraceHandle,
+  hooks?: CapabilityToolHooks,
+) {
   return {
     system_capabilities: tool({
       description:
@@ -86,6 +94,9 @@ export function createCapabilityTools(trace?: TraceHandle) {
             ? (result.note ?? `输出 ${result.output?.length ?? 0} 字符`)
             : (result.error ?? "调用失败"),
         );
+        if (result.ok && result.visuals && result.visuals.length > 0) {
+          hooks?.onVisuals?.(id, result.visuals);
+        }
         return result;
       },
     }),
