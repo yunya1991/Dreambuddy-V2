@@ -340,11 +340,15 @@ function AgentChatPanelInner({
     if (status === "submitted" || status === "streaming") return;
     const traceId = traceSpans[0]?.trace_id;
     if (!traceId) return;
+    // 看板任务号必须与请求体 task_id 一致：服务端 S→A 事件写在 task_id 下，
+    // 若这里用 trace_id 归并，applyTaskEvent 会因 task_id 不匹配整批丢弃，
+    // 表现就是「链路已执行但右侧看板看不到」。
+    const boardTaskId = taskId || traceId;
     const events = [
-      ...projectTaskEvents({ taskId: traceId, traceId }, traceSpans),
+      ...projectTaskEvents({ taskId: boardTaskId, traceId }, traceSpans),
       ...collectTaskEvents(messages),
     ];
-    const snapshot = applyEventsToStorage(traceId, traceId, events);
+    const snapshot = applyEventsToStorage(boardTaskId, traceId, events);
     // 没有可归并事件时 applyEventsToStorage 返回 null：保持上一份快照，不清空
     if (snapshot) {
       const signature = `${traceId}:${snapshot.seq}:${snapshot.updated_at}:${snapshot.status}`;
@@ -356,10 +360,10 @@ function AgentChatPanelInner({
 
     // 同步到服务端 L0：治理待办与门禁由服务端快照统一回放
     if (events.length === 0) return;
-    const syncKey = `${traceId}:${events.length}`;
+    const syncKey = `${boardTaskId}:${events.length}`;
     if (syncedRef.current === syncKey) return;
     syncedRef.current = syncKey;
-    void fetch(`/api/task/${encodeURIComponent(traceId)}`, {
+    void fetch(`/api/task/${encodeURIComponent(boardTaskId)}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ events }),
@@ -378,7 +382,7 @@ function AgentChatPanelInner({
       .catch(() => {
         // 服务端不可达：本地快照仍然可用，不打断对话
       });
-  }, [traceSpans, messages, status, onTaskBoardSnapshot]);
+  }, [traceSpans, messages, status, onTaskBoardSnapshot, taskId]);
 
   const busy = status === "submitted" || status === "streaming";
 

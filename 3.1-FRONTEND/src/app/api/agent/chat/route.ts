@@ -126,6 +126,20 @@ function needsIntentClarification(text: string): boolean {
 }
 
 /** 用 UIMessage 文本流回显一段纯文本（useChat 可直接渲染，避免 JSON 信封导致「无返回」）。 */
+/** data-task part 的唯一 id：同一批 agent.updated 的 seq/ts 相同，必须再带实体键 */
+function taskEventPartId(event: TaskBoardEvent): string {
+  const payload = (event.payload ?? {}) as Record<string, unknown>;
+  const entity =
+    payload.agent_id ??
+    payload.role ??
+    payload.gate_id ??
+    payload.step_id ??
+    payload.spec_id ??
+    payload.node_id ??
+    event.seq;
+  return `${event.task_id}:${event.type}:${String(entity)}:${event.ts}`;
+}
+
 function textUiResponse(
   text: string,
   headers?: Record<string, string>,
@@ -142,7 +156,7 @@ function textUiResponse(
       for (const event of taskEvents ?? []) {
         writer.write({
           type: "data-task",
-          id: `${event.task_id}:${event.type}:${event.seq}:${event.ts}`,
+          id: taskEventPartId(event),
           data: event,
         });
       }
@@ -1216,7 +1230,7 @@ export async function POST(request: NextRequest) {
         for (const event of preTaskEvents) {
           writer.write({
             type: "data-task",
-            id: `${event.task_id}:${event.type}:${event.seq}:${event.ts}`,
+            id: taskEventPartId(event),
             data: event,
           });
         }
