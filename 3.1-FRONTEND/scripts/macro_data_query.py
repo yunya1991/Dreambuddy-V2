@@ -156,10 +156,18 @@ def main():
         if ndq is not None:
             output["nasdaq"] = ndq
 
-        # M2 货币供应
-        m2 = latest_of(("macro", "m2_sl"))
+        # M2 货币供应（FRED 序列名是 M2SL/M2NS；此前查 ("macro","m2_sl") 永远查不到）
+        m2 = latest_of(("M2SL", "value"), ("M2NS", "value"), ("macro", "m2_sl"))
         if m2 is not None:
             output["m2_supply"] = m2
+
+        # GDP 同比：库内没有 GDPC1，使用 INDPRO（工业生产指数）同比作为代理，
+        # 并显式标注 gdp_is_proxy，避免把代理值当成官方 GDP 同比。
+        gdp_proxy = latest_of(("INDPRO", "yoy_pct"))
+        if gdp_proxy is not None:
+            output["gdp_yoy"] = gdp_proxy
+            output["gdp_source"] = "INDPRO_yoy_proxy"
+            output["gdp_is_proxy"] = True
 
         # 美国 CPI 同比（宏观子代理的 cpi_yoy 输入）
         cpi = query_cpi_yoy()

@@ -90,6 +90,30 @@ class TechnicalAgent:
         elif macd < 0:
             signals.append(Signal("MACD", macd, "short", 0.6))
 
+        # 均线结构（L1 D-B01 的 ma20/ma60）：补齐"趋势结构"维度
+        ma20 = indicators.get("ma20")
+        ma60 = indicators.get("ma60")
+        if price > 0 and isinstance(ma20, (int, float)) and isinstance(ma60, (int, float)):
+            if price > ma20 > ma60:
+                signals.append(Signal("均线结构", f"{price:.2f}>MA20>MA60", "long", 0.6))
+            elif price < ma20 < ma60:
+                signals.append(Signal("均线结构", f"{price:.2f}<MA20<MA60", "short", 0.6))
+
+        # 关键位位置（L1 D-B07）：0=贴近支撑，1=贴近压力
+        support = indicators.get("support")
+        resistance = indicators.get("resistance")
+        if (
+            price > 0
+            and isinstance(support, (int, float))
+            and isinstance(resistance, (int, float))
+            and resistance > support
+        ):
+            pos = (price - support) / (resistance - support)
+            if pos <= 0.2:
+                signals.append(Signal("支撑阻力位置", round(pos, 3), "long", 0.5))
+            elif pos >= 0.8:
+                signals.append(Signal("支撑阻力位置", round(pos, 3), "short", 0.5))
+
         return signals
 
     def _generate_summary(

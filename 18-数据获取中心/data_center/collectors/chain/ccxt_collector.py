@@ -19,6 +19,19 @@ def _num(d: dict, key: str) -> float:
     return float(v) if v is not None else 0.0
 
 
+def _first_num(d: dict, *keys: str) -> float:
+    """按顺序取首个有效数值；ccxt 各交易所对成交量字段支持不一致。"""
+    for key in keys:
+        v = d.get(key)
+        if v is None:
+            continue
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            continue
+    return 0.0
+
+
 class CcxtCollector(BaseCollector):
     source = "ccxt"
     category = "chain"
@@ -46,7 +59,10 @@ class CcxtCollector(BaseCollector):
                     "ask": _num(ticker, "ask"),
                     "high": _num(ticker, "high"),
                     "low": _num(ticker, "low"),
-                    "volume": _num(ticker, "volume"),
+                    # ccxt 4.x 对 OKX 等交易所的 unified volume 为 None，
+                    # 真实成交量在 baseVolume；只读 volume 会整列写成 0.0。
+                    "volume": _first_num(ticker, "volume", "baseVolume"),
+                    "quote_volume": _first_num(ticker, "quoteVolume"),
                 },
                 events=[],
                 timeseries=[],

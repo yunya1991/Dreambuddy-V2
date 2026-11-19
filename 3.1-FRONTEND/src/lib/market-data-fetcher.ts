@@ -10,6 +10,8 @@ export interface MarketMetrics {
   change24h?: number;
   high24h?: number;
   low24h?: number;
+  /** 24h 成交量（OKX vol24h，基币口径） */
+  volume24h?: number;
   funding_rate?: number;
   funding_rate_annualized?: number;
   fear_greed?: number;
@@ -60,6 +62,9 @@ export function formatMarketMetricsForLLM(m: MarketMetrics, lang: string = 'zh')
     }
     if (m.change24h !== undefined) {
       lines.push(`24h涨跌: ${m.change24h >= 0 ? '+' : ''}${m.change24h.toFixed(2)}%`);
+    }
+    if (m.volume24h !== undefined && m.volume24h > 0) {
+      lines.push(`24h成交量: ${m.volume24h.toLocaleString()} ${m.symbol}`);
     }
     if (m.funding_rate !== undefined) {
       lines.push(`资金费率: ${m.funding_rate.toFixed(4)}% (年化 ${m.funding_rate_annualized?.toFixed(2) || 'N/A'}%)`);

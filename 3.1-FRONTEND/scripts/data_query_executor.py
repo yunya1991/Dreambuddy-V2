@@ -2383,17 +2383,27 @@ def exec_price_query(message):
         open24h = t.get("open24h", "")
         high = t.get("high24h", "")
         low = t.get("low24h", "")
+        vol = t.get("vol24h") or t.get("baseVolume")
+        vol_ccy = t.get("volCcy24h") or t.get("quoteVolume")
         try:
             chg = (float(last) - float(open24h)) / float(open24h) * 100 if open24h else 0.0
         except Exception:
             chg = 0.0
         sign = "+" if chg >= 0 else ""
+        # 成交量只在真实大于 0 时展示，缺失不写成 0.0（避免模型把 0 当事实）
+        vol_txt = ""
+        try:
+            vol_f = float(vol) if vol not in (None, "") else 0.0
+            if vol_f > 0:
+                vol_txt = f"，24h成交量 {vol_f:.2f} {symbol}"
+        except (TypeError, ValueError):
+            vol_f = 0.0
         return _attach_hooks(
             {
                 "success": True,
                 "answer": (
                     f"{symbol} 实时价格（OKX {inst_id}）：{last} USDT，"
-                    f"24h涨跌 {sign}{chg:.2f}%，24h最高 {high}，最低 {low}"
+                    f"24h涨跌 {sign}{chg:.2f}%，24h最高 {high}，最低 {low}{vol_txt}"
                 ),
                 "data": {
                     "symbol": symbol,
@@ -2403,6 +2413,8 @@ def exec_price_query(message):
                     "high24h": high,
                     "low24h": low,
                     "change_pct": round(chg, 2),
+                    "volume24h": vol_f if vol_f > 0 else None,
+                    "volume_quote24h": float(vol_ccy) if vol_ccy not in (None, "") else None,
                     "source": "okx",
                 },
             },
@@ -2411,6 +2423,11 @@ def exec_price_query(message):
     # 降级: 回查 18 中心数据库
     fallback = exec_data_query(message)
     if fallback.get("data"):
+        data = fallback["data"]
+        metrics = data.get("metrics") if isinstance(data, dict) else None
+        # 缓存行成交量可能因采集缺陷写成 0.0：改为 null + 明确说明，不冒充真实成交量
+        if isinstance(metrics, dict) and not metrics.get("volume"):
+            metrics["volume"] = None
         fallback["answer"] = f"（OKX 实时接口不可用，降级为缓存数据）{fallback.get('answer', '')}"
     return fallback
 

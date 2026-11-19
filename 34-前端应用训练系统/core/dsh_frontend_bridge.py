@@ -1672,6 +1672,11 @@ def call_handler(handler_name: str, args: Optional[Dict[str, Any]] = None) -> Di
         # 部分 SubAgent 信封把业务体放在 output（而非 data），只读 data 会丢结果
         if data is None and "output" in envelope:
             return {"ok": True, "output": envelope.get("output")}
+        # c_drive 等 handler 返回 {ok:true, decision:{...}}；只认 data/output 会把
+        # 裁决体吞掉，前端 runCapability 收到 output=null → 误判「调用失败」。
+        if data is None and "decision" in envelope:
+            decision = envelope.get("decision")
+            return {"ok": True, "output": decision, "decision": decision, "data": decision}
         # SubAgent/Orchestrator handler 原返回 {ok:true, output:{...}}
         if isinstance(data, dict):
             if "output" in data:

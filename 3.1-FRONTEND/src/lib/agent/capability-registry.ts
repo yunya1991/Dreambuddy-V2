@@ -101,6 +101,14 @@ function l1BaseUrl(): string {
   return getL1BaseUrl();
 }
 
+/**
+ * L1 查询超时下限：l1_route_signal.py 每次冷启动都要 import sklearn/l1agg
+ * （实测 11–22s），低于该值会在冷启动时被 AbortSignal 中止，
+ * 表现为 market.price 超时、dsh.technical 拿不到指标而只剩默认中性值。
+ * 路由脚本自身上限 30s，这里留 5s 余量由路由先返回。
+ */
+const L1_QUERY_TIMEOUT_MS = 35_000;
+
 /** 工具输出截断：避免单次结果撑爆上下文。 */
 export function clip(value: unknown, max = 4000): string {
   let text: string;
@@ -116,13 +124,21 @@ export function clip(value: unknown, max = 4000): string {
 async function runL1Query(
   question: string,
   timeoutMs: number,
-): Promise<{ ok: boolean; answer?: string; decision?: string; degraded?: boolean; error?: string }> {
+): Promise<{
+  ok: boolean;
+  answer?: string;
+  decision?: string;
+  degraded?: boolean;
+  error?: string;
+  /** L1 脚本的结构化结果（含 data/capabilities），比正则解析更可靠 */
+  data?: Record<string, unknown>;
+}> {
   try {
     const res = await fetch(new URL("/api/data/query", l1BaseUrl()), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: question }),
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: AbortSignal.timeout(Math.max(timeoutMs, L1_QUERY_TIMEOUT_MS)),
     });
     const json = (await res.json()) as {
       ok?: boolean;
@@ -131,6 +147,7 @@ async function runL1Query(
         answer?: string;
         degraded?: boolean;
         route_signal?: { decision?: string };
+        data?: Record<string, unknown>;
       };
     };
     const data = json?.data ?? {};
@@ -139,6 +156,7 @@ async function runL1Query(
       answer: data.answer ?? "",
       decision: data.route_signal?.decision ?? "",
       degraded: data.degraded === true,
+      data: data.data,
     };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "l1_query_failed" };
@@ -199,6 +217,7 @@ export async function fetchMacroSnapshot(): Promise<MacroSnapshot> {
     "nasdaq",
     "m2_supply",
     "cpi_yoy",
+    "gdp_yoy",
   ];
   const metrics: Record<string, number> = {};
   for (const k of keys) {
@@ -211,17 +230,19 @@ export async function fetchMacroSnapshot(): Promise<MacroSnapshot> {
   if (metrics.m2_supply !== undefined)
     indicators.liquidity_m2 = metrics.m2_supply;
   if (metrics.cpi_yoy !== undefined) indicators.cpi_yoy = metrics.cpi_yoy;
+  // gdp_yoy 来自 INDPRO 同比代理（route 层带 gdp_is_proxy 标注），仅在确实取到值时才填
+  if (metrics.gdp_yoy !== undefined) indicators.gdp_yoy = metrics.gdp_yoy;
   if (metrics.us10y_yield !== undefined)
     indicators.treasury_10y = metrics.us10y_yield;
   if (metrics.dxy !== undefined) indicators.dxy = metrics.dxy;
   if (metrics.vix !== undefined) indicators.vix = metrics.vix;
 
-  // GDP 当前没有入库数据源：如实标注缺失，不用 0 冒充
+  // 缺失项如实标注（不用 0 冒充）；GDP 有代理值时不再列为缺失
   const missing: string[] = [];
   if (indicators.interest_rate === undefined) missing.push("interest_rate");
   if (indicators.cpi_yoy === undefined) missing.push("cpi_yoy");
   if (indicators.liquidity_m2 === undefined) missing.push("m2_supply");
-  missing.push("gdp_yoy");
+  if (indicators.gdp_yoy === undefined) missing.push("gdp_yoy");
 
   return {
     indicators,
@@ -307,6 +328,7 @@ function formatMacroContext(snap: MacroSnapshot): string {
     nasdaq: "纳指",
     m2_supply: "M2",
     cpi_yoy: "CPI同比(%)",
+    gdp_yoy: "GDP同比(INDPRO工业生产代理)",
   };
   const parts = Object.entries(snap.metrics).map(
     ([k, v]) => `${label[k] ?? k}=${v}`,
@@ -317,24 +339,57 @@ function formatMacroContext(snap: MacroSnapshot): string {
 }
 
 /**
- * 从 L1 技术指标答案解析 DSH technical 所需的结构化指标。
+ * 从 L1 技术指标结果解析 DSH technical 所需的结构化指标。
+ *
+ * 两条来源（结构化优先，正则兜底）：
+ *  1. L1 脚本返回的 `data.capabilities`（D-B01..B07），字段稳定、无需猜格式；
+ *  2. answer 文本正则（兼容旧版 L1/直连执行器）。
+ *
  * DSH 子代理遵循 HC-1「不生成原始数据」，必须由调用方提供 indicators；
  * 不注入时它会用默认值（RSI=50 / MACD=0）输出假中性。
  */
-export function parseTechnicalIndicators(answer: string): Record<string, number> {
+export function parseTechnicalIndicators(
+  answer: string,
+  structured?: Record<string, unknown>,
+): Record<string, number> {
+  const indicators: Record<string, number> = {};
+
+  // ── 1) 结构化 capabilities（新路径） ──
+  const caps = (structured?.capabilities ?? {}) as Record<
+    string,
+    Record<string, unknown> | undefined
+  >;
+  const numOf = (block: Record<string, unknown> | undefined, key: string) =>
+    block && block.gate === "ok" ? toNum(block[key]) : undefined;
+  const put = (key: string, v: number | undefined) => {
+    if (v !== undefined) indicators[key] = v;
+  };
+  put("price", numOf(caps["D-B01"], "price"));
+  put("ma20", numOf(caps["D-B01"], "ma20"));
+  put("ma60", numOf(caps["D-B01"], "ma60"));
+  put("rsi14", numOf(caps["D-B02"], "rsi14"));
+  put("macd", numOf(caps["D-B03"], "dif"));
+  put("macd_dea", numOf(caps["D-B03"], "dea"));
+  put("macd_hist", numOf(caps["D-B03"], "hist"));
+  put("atr14", numOf(caps["D-B04"], "atr14"));
+  put("boll_pos", numOf(caps["D-B05"], "boll_pos"));
+  put("vol_ratio", numOf(caps["D-B06"], "vol_ratio"));
+  put("support", numOf(caps["D-B07"], "support"));
+  put("resistance", numOf(caps["D-B07"], "resistance"));
+
+  // ── 2) answer 文本兜底（缺失项才补，避免覆盖结构化真值） ──
   const num = (re: RegExp): number | undefined => {
     const m = answer.match(re);
     if (!m) return undefined;
     const v = Number(m[1]);
     return Number.isFinite(v) ? v : undefined;
   };
-  const price = num(/现价\s*(-?[\d.]+)/);
-  const rsi14 = num(/RSI14\s*(-?[\d.]+)/);
-  const macd = num(/DIF\s*(-?[\d.]+)/);
-  const indicators: Record<string, number> = {};
-  if (price !== undefined) indicators.price = price;
-  if (rsi14 !== undefined) indicators.rsi14 = rsi14;
-  if (macd !== undefined) indicators.macd = macd;
+  if (indicators.price === undefined) put("price", num(/现价\s*(-?[\d.]+)/));
+  if (indicators.rsi14 === undefined) put("rsi14", num(/RSI14\s*(-?[\d.]+)/));
+  if (indicators.macd === undefined) put("macd", num(/DIF\s*(-?[\d.]+)/));
+  if (indicators.support === undefined) put("support", num(/支撑\s*(-?[\d.]+)/));
+  if (indicators.resistance === undefined)
+    put("resistance", num(/压力\s*(-?[\d.]+)/));
   return indicators;
 }
 
@@ -344,9 +399,18 @@ export function looksPlaceholder(output: unknown): boolean {
     const data = (typeof output === "string" ? JSON.parse(output) : output) as {
       signals?: Array<{ value?: unknown; direction?: string; confidence?: number }>;
       charts?: unknown[];
+      /** c_drive 裁决信封：没有 signals，但有 action/reason/steps_executed */
+      action?: unknown;
+      reason?: unknown;
     };
     const signals = data?.signals ?? [];
-    if (signals.length === 0) return true;
+    if (signals.length === 0) {
+      // c_drive 的有效裁决不是占位：有 action 字符串 + reason 即视为真实结论
+      if (typeof data?.action === "string" && typeof data?.reason === "string") {
+        return false;
+      }
+      return true;
+    }
     const allNeutral = signals.every((s) => s.direction === "neutral");
     const weak = signals.every((s) => (s.confidence ?? 0) <= 0.5);
     const defaultish = signals.every((s) => s.value === 0 || s.value === 50 || s.value === "NEUTRAL");
@@ -480,17 +544,27 @@ export async function runCapability(
 
     // technical 子代理遵循 HC-1：只消费 indicators，不自行取数。
     // 不注入时它会用默认值（RSI=50 / MACD=0）输出假中性，因此先用 L1 真实指标补水。
-    if (moduleName === "technical" && !nodeOutput.indicators && symbol) {
-      const l1 = await runL1Query(`查询${symbol}技术指标`, 20_000);
-      const indicators =
-        l1.ok && l1.answer ? parseTechnicalIndicators(l1.answer) : {};
-      if (Object.keys(indicators).length > 0) {
-        nodeOutput = {
-          ...nodeOutput,
-          symbol,
-          indicators,
-          context: [nodeOutput.context, l1.answer].filter(Boolean).join("\n"),
-        };
+    // 注意：模型可能传入 indicators:{}（空对象仍为 truthy），需按键数判断是否真的缺数据。
+    if (moduleName === "technical" && symbol) {
+      const injected = nodeOutput.indicators as Record<string, unknown> | undefined;
+      const hasIndicators = !!injected && Object.keys(injected).length > 0;
+      if (!hasIndicators) {
+        const l1 = await runL1Query(`查询${symbol}技术指标`, L1_QUERY_TIMEOUT_MS);
+        const indicators = l1.ok
+          ? parseTechnicalIndicators(l1.answer ?? "", l1.data)
+          : {};
+        if (Object.keys(indicators).length > 0) {
+          nodeOutput = {
+            ...nodeOutput,
+            symbol,
+            indicators,
+            context: [nodeOutput.context, l1.answer].filter(Boolean).join("\n"),
+          };
+        } else {
+          missingNotes.push(
+            `技术指标未取到（L1 ${l1.error || "未命中"}），DSH 无真实指标输入`,
+          );
+        }
       }
     }
 
