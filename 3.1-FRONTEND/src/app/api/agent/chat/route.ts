@@ -70,7 +70,7 @@ import {
 } from "@/lib/task-board/gate-block";
 import { getGateMode } from "@/lib/task-board/gate-policy";
 import type { TraceSpan } from "@/types/run-trace";
-import type { IntentDecision } from "@/types/task-board";
+import type { IntentDecision, TaskBoardEvent } from "@/types/task-board";
 import {
   assessComplexity,
   buildTaskSpec,
@@ -130,12 +130,21 @@ function textUiResponse(
   text: string,
   headers?: Record<string, string>,
   spans?: TraceSpan[],
+  taskEvents?: TaskBoardEvent[],
 ) {
   const stream = createUIMessageStream({
     execute: ({ writer }) => {
       // 先回放已产生的调度轨迹，前端右侧时间线可与正文同时出现
       for (const span of spans ?? []) {
         writer.write({ type: "data-trace", id: span.span_id, data: span });
+      }
+      // S→A 链路事件（拆解/门禁/派发）随消息下发，右侧看板据此展示
+      for (const event of taskEvents ?? []) {
+        writer.write({
+          type: "data-task",
+          id: `${event.task_id}:${event.type}:${event.seq}:${event.ts}`,
+          data: event,
+        });
       }
       const id = randomUUID();
       writer.write({ type: "text-start", id });
@@ -470,7 +479,7 @@ async function runSaLayerDecompose(
   intent: IntentType,
   level: ComplexityLevel,
   score: number,
-): Promise<DecomposeResult | null> {
+): Promise<{ result: DecomposeResult; events: TaskBoardEvent[] } | null> {
   if (process.env.S_A_CHAIN_ENABLED !== "true") return null;
   try {
     // 启用能力域注册：读取 SKILL.md 显式 manifest（字段不全的 skill 自动跳过）
@@ -492,7 +501,7 @@ async function runSaLayerDecompose(
 
     const { decomposeTask } = await import("@/lib/task-board/decompose");
     const result = await decomposeTask({ taskId, text, intent, level, score });
-    await appendTaskEvents(taskId, [
+    const events: TaskBoardEvent[] = [
       {
         task_id: taskId,
         trace_id: taskId,
@@ -501,11 +510,12 @@ async function runSaLayerDecompose(
         type: "okr.updated",
         payload: { objective: result.objective, krs: result.krs },
       },
-    ]);
+    ];
+    await appendTaskEvents(taskId, events);
     console.info(
       `[AgentChat] S 层拆解完成 strategy=${result.strategy} krs=${result.krs.length} degraded=${result.degraded}`,
     );
-    return result;
+    return { result, events };
   } catch (e) {
     console.warn(
       "[AgentChat] S 层拆解失败（FAIL-OPEN）:",
@@ -530,7 +540,7 @@ async function runSaLayerDispatch(
   level: ComplexityLevel,
   score: number,
   debate: DebateSignal,
-): Promise<void> {
+): Promise<TaskBoardEvent[]> {
   try {
     const [gate, dispatcher] = await Promise.all([
       import("@/lib/task-board/okr-gate"),
@@ -546,7 +556,7 @@ async function runSaLayerDispatch(
       debateVerdict: debate.verdict,
       debateDegraded: debate.degraded,
     });
-    await appendTaskEvents(taskId, [
+    const events: TaskBoardEvent[] = [
       {
         task_id: taskId,
         trace_id: taskId,
@@ -559,23 +569,23 @@ async function runSaLayerDispatch(
           Date.now(),
         ),
       },
-    ]);
+    ];
 
     const runs = dispatcher.planAgentRuns(result.krs, { decision });
     if (runs.length > 0) {
-      await appendTaskEvents(
-        taskId,
-        dispatcher.buildAgentDispatchEvents(taskId, taskId, runs),
-      );
+      events.push(...dispatcher.buildAgentDispatchEvents(taskId, taskId, runs));
     }
+    await appendTaskEvents(taskId, events);
     console.info(
       `[AgentChat] dispatch 门 status=${decision.status} reasons=${decision.reasons.join(",") || "none"} agents=${runs.length}`,
     );
+    return events;
   } catch (e) {
     console.warn(
       "[AgentChat] A 层派发失败（FAIL-OPEN）:",
       e instanceof Error ? e.message : e,
     );
+    return [];
   }
 }
 
@@ -786,18 +796,22 @@ export async function POST(request: NextRequest) {
   let saDecomposed: DecomposeResult | null = null;
   let saLevel: ComplexityLevel = "quick";
   let saScore = 0;
+  /** S→A 链路事件：随本次响应下发给前端看板（否则只落服务端，界面不可见） */
+  const preTaskEvents: TaskBoardEvent[] = [];
   if (userText && agentEnabled) {
     const saIntent = inferIntent(userText);
     const saAssessment = assessComplexity(userText, saIntent);
     saLevel = saAssessment.level;
     saScore = saAssessment.score;
-    saDecomposed = await runSaLayerDecompose(
+    const sa = await runSaLayerDecompose(
       taskId || traceId,
       userText,
       saIntent,
       saLevel,
       saScore,
     );
+    saDecomposed = sa?.result ?? null;
+    if (sa) preTaskEvents.push(...sa.events);
   }
 
   // SPEC 确认后才允许脑暴前置步；轻量任务在 SPEC 里明确「不启用」
@@ -838,12 +852,14 @@ export async function POST(request: NextRequest) {
 
   // 裁决之后才允许派发：门未通过时子 Agent 只会 waiting
   if (saDecomposed && !saDecomposed.skip_dispatch) {
-    await runSaLayerDispatch(
-      taskId || traceId,
-      saDecomposed,
-      saLevel,
-      saScore,
-      debateSignal,
+    preTaskEvents.push(
+      ...(await runSaLayerDispatch(
+        taskId || traceId,
+        saDecomposed,
+        saLevel,
+        saScore,
+        debateSignal,
+      )),
     );
   }
 
@@ -880,11 +896,11 @@ export async function POST(request: NextRequest) {
           `L1 直答：${l1.intent}`,
           "命中确定性数据查询",
         );
-        return textUiResponse(l1.answer, headers, trace.history);
+        return textUiResponse(l1.answer, headers, trace.history, preTaskEvents);
       }
       if (!agentEnabled) {
         trace.start("G1", "输出简报", { role: "g" })("done", "门禁未过且 Agent 关闭");
-        return textUiResponse(L1_GATE_FAIL_HINT, headers, trace.history);
+        return textUiResponse(L1_GATE_FAIL_HINT, headers, trace.history, preTaskEvents);
       }
       takeoverContext = buildTakeoverContext(gateInput, gate);
       console.info(
@@ -918,11 +934,16 @@ export async function POST(request: NextRequest) {
         return textUiResponse(
           "L1 回答未通过复核，但当前未配置对话模型（AGENT_API_KEY / AGENT_BASE_URL），无法由 L2 接管重答。",
           { "x-l1-gate": "fail", "x-l2-takeover": "1" },
+          trace.history,
+          preTaskEvents,
         );
       }
       // 未配置 AGENT_API_KEY / baseURL：用文本流显式告知（JSON 信封会让 useChat 静默无返回）
       return textUiResponse(
         "当前未配置对话模型（AGENT_API_KEY / AGENT_BASE_URL），只能回答 L1 确定性查询（行情、数据、技术面、风控等）。\n\n请先在服务端配置模型后再试。",
+        undefined,
+        trace.history,
+        preTaskEvents,
       );
     }
 
@@ -1191,6 +1212,14 @@ export async function POST(request: NextRequest) {
     // 轨迹与 reasoning 共用一条 UIMessage 流：前端无需额外连接
     const uiStream = createUIMessageStream({
       execute: async ({ writer }) => {
+        // S→A 链路事件先下发，前端看板可立即渲染拆解/门禁/派发
+        for (const event of preTaskEvents) {
+          writer.write({
+            type: "data-task",
+            id: `${event.task_id}:${event.type}:${event.seq}:${event.ts}`,
+            data: event,
+          });
+        }
         trace.attach((span) => {
           writer.write({ type: "data-trace", id: span.span_id, data: span });
         });
