@@ -21,12 +21,17 @@
 """
 
 import json
+import logging
 import math
+import os
 import threading
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -128,13 +133,44 @@ class BayesianMemoryUpdater:
     #  加载 / 保存 + 向后兼容 (优化点4：旧JSON自动补默认)
     # ============================================================
 
-    def _load_memories(self):
-        memory_file = self.memory_unit_path / "bayesian_memories.json"
-        if not memory_file.exists():
-            return
+    @staticmethod
+    def _parse_concatenated_json(raw: str) -> List[dict]:
+        """解析「一个文件里拼接了多个 JSON 文档」的损坏文件。
 
-        data = json.loads(memory_file.read_text(encoding="utf-8"))
-        for item in data.get("memories", []):
+        历史上多进程并发写共用同一个 .json.tmp，可能导致文件尾部残留上一次
+        写出的完整文档（json.loads 报 Extra data）。这里逐个 raw_decode，
+        把所有完整文档都取出来，供上层按 memory_id 合并。
+        """
+        docs: List[dict] = []
+        decoder = json.JSONDecoder()
+        idx = 0
+        length = len(raw)
+        while idx < length:
+            while idx < length and raw[idx] in " \t\r\n":
+                idx += 1
+            if idx >= length:
+                break
+            try:
+                doc, end = decoder.raw_decode(raw, idx)
+            except json.JSONDecodeError:
+                break
+            if isinstance(doc, dict):
+                docs.append(doc)
+            idx = end
+        return docs
+
+    def _backup_corrupt_file(self, memory_file: Path) -> Path:
+        backup = memory_file.with_name(
+            f"bayesian_memories.corrupt-{datetime.now().strftime('%Y%m%d%H%M%S')}.json"
+        )
+        try:
+            memory_file.replace(backup)
+        except OSError:
+            backup = memory_file
+        return backup
+
+    def _ingest_items(self, items) -> None:
+        for item in items:
             # === 兼容旧版：没有 beta_alpha/beta_beta 时，用 verify/conflict 推导 ===
             verify_count = item.get("verify_count", 0)
             conflict_count = item.get("conflict_count", 0)
@@ -172,6 +208,46 @@ class BayesianMemoryUpdater:
             )
             self.memories[entry.memory_id] = entry
 
+    def _load_memories(self):
+        memory_file = self.memory_unit_path / "bayesian_memories.json"
+        if not memory_file.exists():
+            return
+
+        raw = memory_file.read_text(encoding="utf-8")
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            # 容错：多进程并发写曾导致文件内拼接了多个 JSON 文档。
+            # 取出全部完整文档，按 memory_id 合并（后者覆盖前者）后自愈重写。
+            docs = self._parse_concatenated_json(raw)
+            merged: Dict[str, dict] = {}
+            for doc in docs:
+                for item in doc.get("memories", []):
+                    mid = item.get("memory_id")
+                    if mid:
+                        merged[mid] = item
+            if not merged:
+                backup = self._backup_corrupt_file(memory_file)
+                logger.error(
+                    "bayesian_memories.json 无法解析且不可恢复（%s），已备份到 %s，本次从空记忆启动",
+                    exc,
+                    backup,
+                )
+                return
+            backup = self._backup_corrupt_file(memory_file)
+            self._ingest_items(merged.values())
+            logger.warning(
+                "bayesian_memories.json 存在拼接残留（%s），已从 %d 个文档合并恢复 %d 条并重写；原文件备份 %s",
+                exc,
+                len(docs),
+                len(merged),
+                backup,
+            )
+            self._save_memories()
+            return
+
+        self._ingest_items(data.get("memories", []))
+
     def _save_memories(self):
         with self._file_lock:
             memory_file = self.memory_unit_path / "bayesian_memories.json"
@@ -181,7 +257,11 @@ class BayesianMemoryUpdater:
                 "schema_version": 2,  # v2 = 严格贝叶斯版
                 "memories": [m.to_dict() for m in self.memories.values()],
             }
-            tmp_file = memory_file.with_suffix(".json.tmp")
+            # 唯一临时文件名：多进程并发写不再共用同一个 .json.tmp，
+            # 避免 A 的 replace 覆盖 B 正在写的半成品，形成拼接残留。
+            tmp_file = memory_file.with_name(
+                f"bayesian_memories.json.tmp.{os.getpid()}.{uuid.uuid4().hex[:8]}"
+            )
             tmp_file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
             tmp_file.replace(memory_file)
 
