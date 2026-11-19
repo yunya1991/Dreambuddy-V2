@@ -318,3 +318,30 @@ def test_cli_transport_parses_json_and_timeout():
     assert timed_out["status"] == "failed"
     assert timed_out["failure_class"] == "retryable"
     assert timed_out["evidence"]["reason"] == "timeout"
+
+
+def test_default_command_matches_headless_protocol(monkeypatch):
+    for name in ("hermes_executor_cmd", "HERMES_EXECUTOR_CMD", "D3_HERMES_BIN"):
+        monkeypatch.delenv(name, raising=False)
+    assert CliHermesTransport().command == ("hermes", "-z", "{prompt}")
+
+    monkeypatch.setenv("D3_HERMES_BIN", "/opt/hermes")
+    assert CliHermesTransport().command == ("/opt/hermes", "-z", "{prompt}")
+
+    monkeypatch.setenv("hermes_executor_cmd", "/opt/hermes -z {prompt} -t mcp")
+    assert CliHermesTransport().command == ("/opt/hermes", "-z", "{prompt}", "-t", "mcp")
+
+
+def test_cli_transport_passes_prompt_and_parses_fenced_json():
+    script = (
+        "import sys, json;"
+        "assert 'TASK JSON' in sys.argv[1], sys.argv[1];"
+        "assert 'TK-9' in sys.argv[1];"
+        "print('```json');"
+        "print(json.dumps({'status': 'done', 'evidence': {'summary': 'fenced'}}));"
+        "print('```')"
+    )
+    transport = CliHermesTransport(command=[sys.executable, "-c", script, "{prompt}"])
+    result = transport.execute({"ticket_id": "TK-9", "mandate": {"goal": "g", "tools": ["recall"]}})
+    assert result["status"] == "done"
+    assert result["evidence"]["summary"] == "fenced"

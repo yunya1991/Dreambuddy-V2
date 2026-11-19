@@ -19,6 +19,8 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
+import shlex
 import signal
 import subprocess
 import tempfile
@@ -36,6 +38,37 @@ DEFAULT_STATE_DIR = os.path.join(_REPO_ROOT, "34-前端应用训练系统", ".wo
 MAX_EVIDENCE_BYTES = 32 * 1024
 MAX_SUMMARY_CHARS = 2000
 DEFAULT_BUDGET = {"max_turns": 12, "max_tokens": 60000, "timeout_s": 600.0}
+
+#: 与云端 `hermes -z PROMPT` 对齐；`{prompt}` 由 transport 替换。
+DEFAULT_HERMES_COMMAND = ("hermes", "-z", "{prompt}")
+
+PROMPT_TEMPLATE = (
+    "You are the Hermes executor inside a DSH worker ticket.\n"
+    "Complete the mandate described by the TASK JSON at the end of this prompt.\n"
+    "Hard rules:\n"
+    "1. Read-only: never write files, never call write tools, never place or cancel orders.\n"
+    "2. Stay inside mandate.tools; never invent tools outside that list.\n"
+    "3. Never print secrets, tokens or full chain-of-thought.\n"
+    "4. Reply with EXACTLY one JSON object and no other text, shaped as:\n"
+    '{"status":"done","evidence":{"summary":"...","tool_calls":[{"name":"..."}],'
+    '"artifacts":[]}}\n'
+    "If you cannot complete the mandate reply "
+    '{"status":"failed","failure_class":"retryable"|"manual",'
+    '"evidence":{"summary":"..."}}.\n'
+    "TASK JSON:\n%s"
+)
+
+
+def build_task_prompt(task: Dict[str, Any]) -> str:
+    """把任务契约压成可直接喂给 `hermes -z` 的单个 prompt。"""
+    return PROMPT_TEMPLATE % json.dumps(task, ensure_ascii=False)
+
+
+def _default_command() -> Sequence[str]:
+    raw = os.environ.get("hermes_executor_cmd") or os.environ.get("HERMES_EXECUTOR_CMD")
+    if raw:
+        return tuple(shlex.split(raw))
+    return (os.environ.get("D3_HERMES_BIN") or "hermes", "-z", "{prompt}")
 
 
 def _failed(failure_class: str, reason: str, summary: str, **extra: Any) -> Dict[str, Any]:
@@ -74,7 +107,7 @@ class CliHermesTransport:
         timeout: float = 600.0,
         env: Optional[Dict[str, str]] = None,
     ) -> None:
-        self.command = tuple(command or ("hermes", "run", "--json", "--task", "{task_file}"))
+        self.command = tuple(command) if command else _default_command()
         self.work_dir = work_dir
         self.timeout = float(timeout)
         self.env = dict(env) if env is not None else None
@@ -90,9 +123,24 @@ class CliHermesTransport:
 
     @staticmethod
     def _parse(stdout: str) -> Optional[Dict[str, Any]]:
-        for line in reversed([item.strip() for item in stdout.splitlines() if item.strip()]):
+        """兼容整段 JSON、```json 围栏、尾部说明文字三种输出形态。"""
+        if not stdout or not stdout.strip():
+            return None
+        stripped = stdout.strip()
+        candidates: List[str] = [stripped]
+        fence = re.search(r"```(?:json)?\s*(.*?)```", stripped, re.S)
+        if fence and fence.group(1).strip():
+            candidates.append(fence.group(1).strip())
+        start, end = stripped.find("{"), stripped.rfind("}")
+        if 0 <= start < end:
+            candidates.append(stripped[start : end + 1])
+        candidates.extend(
+            line
+            for line in reversed([item.strip() for item in stripped.splitlines() if item.strip()])
+        )
+        for candidate in candidates:
             try:
-                data = json.loads(line)
+                data = json.loads(candidate)
             except Exception:
                 continue
             if isinstance(data, dict):
@@ -101,8 +149,13 @@ class CliHermesTransport:
 
     def execute(self, task: Dict[str, Any]) -> Dict[str, Any]:
         ticket_id = str(task.get("ticket_id") or "")
-        task_file = self._export_task(task)
-        cmd = [part.replace("{task_file}", task_file) for part in self.command]
+        needs_file = any("{task_file}" in part for part in self.command)
+        task_file = self._export_task(task) if needs_file else ""
+        prompt = build_task_prompt(task) if any("{prompt}" in part for part in self.command) else ""
+        cmd = [
+            part.replace("{prompt}", prompt).replace("{task_file}", task_file)
+            for part in self.command
+        ]
         budget = task.get("budget") if isinstance(task.get("budget"), dict) else {}
         timeout = float(budget.get("timeout_s") or self.timeout)
         started = time.time()

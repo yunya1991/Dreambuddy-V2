@@ -542,12 +542,18 @@ acceptance_bundles/<date>_hermes_executor_poc/
 - ✅ `47/.../mcp_capabilities.yaml`：`research` / `engineer` 标记 `executor: hermes`（开关关闭时不生效）。
 - ✅ `53/check_whitelist.py`：新增 `--runtime/--role/--profile` 外部运行时校验。
 - ✅ `deploy/systemd/dreambuddy-worker-launcher.service` + `.env.example`：`D3_EXECUTOR=auto`，默认关闭 Hermes。
-- ✅ `tests/test_hermes_executor.py`：14 项契约/路由/超时/证据限长/写隔离测试通过。
+- ✅ `D3_EXECUTOR=auto` 语义修正：默认执行器与 `inproc` 完全一致，只对登记为 `executor: hermes` 的角色按 canary 分流，避免灰度期把生产执行路径从 inproc 换成 dsh-cli。
+- ✅ `CliHermesTransport` 改为云端真实协议 `hermes -z {prompt}`（可由 `D3_HERMES_BIN` / `hermes_executor_cmd` 覆盖），并兼容整段 JSON、```json 围栏、尾部说明文字三种输出。
+- ✅ `tests/test_hermes_executor.py` / `tests/test_worker_launcher_cli.py`：契约/路由/超时/证据限长/写隔离/prompt 协议/auto 默认执行器全部通过。
 - ⛔ **本地 H1 FAIL**：`~/.hermes/.venv/bin/hermes` 缺 `hermes_cli`；PATH 上是 npm REPL。
-- ✅ **云端 H0–H8 全过**（H6 SKIP）：`/usr/local/bin/hermes` 0.19.0，`-z PROMPT` headless 可用；证据包 `acceptance_bundles/P0-D3B-GATES-CLOUD-2026-11-19.json`，决策 `eligible_for_canary`。
+- ✅ **云端 H0–H8 全过**（H6 SKIP）：`/usr/local/bin/hermes` 0.19.0，`-z PROMPT` 入口存在；证据包 `acceptance_bundles/P0-D3B-GATES-CLOUD-2026-11-19.json`，决策 `eligible_for_canary`。
 - ✅ **canary 机制实测**（云端）：0/10/50/100 → Hermes 命中 0/106/509/1000；修正了 `digest[0] % 100` 的分布偏差（改用 4 字节取模）。
-- ⛔ **实际放开被阻塞**：云端仓库尚未包含 Phase 3 代码（`core/hermes_executor.py` 不存在），需要 commit/push + 云端 ff-only 更新 + 重启 `dreambuddy-worker-launcher.service` 后才能把 canary 置为 10。
-- 🔒 53 `hermes.enabled=false`：任何角色即使被标记 hermes，运行时仍返回 `runtime_disabled`，fail-closed。
+- ⛔ **云端真实 headless 冒烟失败（canary 保持 0 的唯一原因）**：`hermes -z` 返回 `API call failed after 1 retries: Connection error`。根因是**云端出网无法到达模型端点**，不是代码：
+  - provider `openai` → `https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`，模型 `qwen3.8-max`；
+  - 云端 `TCP 443` 到 `39.106.104.16`、`39.106.80.255`、`39.96.213.166`（dashscope）全部超时；
+  - 同机 `baidu=200`、`api.deepseek.com=401`、`mirrors.aliyun.com=301`，说明出网本身正常，仅到这些阿里云 IP 不通；
+  - 本机（Mac）直连同一端点返回 `401`，证明端点在线、且是云端侧 egress/白名单问题。
+- 🔒 因此 53 `hermes.enabled=false`、`hermes_executor_canary_pct=0` 保持不变，fail-closed；待网络放通或改走可达 provider 后再按 0→10→50→100 放开。
 
 ---
 

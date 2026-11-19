@@ -13,7 +13,8 @@
     D3_ROLES_PATH       花名册 yaml（47 registry）
     D3_WORKERS          本地 roster，逗号分隔；缺省接受任意 worker_id
     D3_EXECUTOR         inproc | dsh-cli | noop | auto | hermes（默认 inproc）
-                        auto: 按 worker_roles.executor + enable_hermes_executor 路由
+                        auto: 默认仍走 inproc，仅把 worker_roles.executor=hermes 的角色
+                        在 enable_hermes_executor 打开且 canary 命中时分流给 hermes
     D3_PROFILE          DSH profile（默认 sandbox）
     D3_MAX_CONCURRENCY  批内并发上限（默认 8）
     D3_POLL_INTERVAL    空闲轮询间隔秒（默认 0.5）
@@ -52,6 +53,12 @@ def _env(name: str, default: Optional[str] = None) -> Optional[str]:
     return value if value not in (None, "") else default
 
 
+def _with_executor(args: argparse.Namespace, kind: str) -> argparse.Namespace:
+    clone = argparse.Namespace(**vars(args))
+    clone.executor = kind
+    return clone
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="worker_launcher_cli")
     parser.add_argument("command", choices=("preflight", "once", "run", "status"))
@@ -76,7 +83,8 @@ def _make_executor(args: argparse.Namespace, roles: Dict[str, Any]) -> Any:
     if kind == "hermes":
         return HermesExecutor(roles=roles, profile=args.profile)
     if kind == "auto":
-        base = DshCliExecutor(profile=args.profile, dsh_bin=_env("D3_DSH_BIN", "dsh") or "dsh")
+        # 默认执行器保持与 inproc 一致（生产现状），只把登记为 hermes 的角色按 canary 分流。
+        base = _make_executor(_with_executor(args, "inproc"), roles)
         return build_executor_router(
             roles,
             {"dsh": base, "hermes": HermesExecutor(roles=roles, profile=args.profile)},

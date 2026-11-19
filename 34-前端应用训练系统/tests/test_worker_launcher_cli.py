@@ -112,3 +112,48 @@ def test_status_reports_metrics_and_claims(tmp_path, capsys):
     report = json.loads(capsys.readouterr().out.strip())
     assert report["metrics"]["passes"] == 1
     assert report["claims"]["total"] == 0
+
+
+# ── auto：默认执行器不变，只按 canary 分流 hermes ────────────────────────
+def _auto_executor(tmp_path, monkeypatch, roles):
+    import argparse
+
+    from core.worker_launcher_cli import _make_executor
+
+    args = argparse.Namespace(
+        root=str(tmp_path),
+        roles=_write_roles(tmp_path),
+        workers=None,
+        executor="auto",
+        profile="sandbox",
+        max_concurrency=8,
+        poll_interval=0.5,
+    )
+    return _make_executor(args, roles)
+
+
+def test_auto_keeps_inproc_default_when_hermes_disabled(tmp_path, monkeypatch):
+    from core.inproc_session_executor import InProcessSessionExecutor
+    from core.worker_roles import load_worker_roles
+
+    monkeypatch.delenv("enable_hermes_executor", raising=False)
+    monkeypatch.delenv("ENABLE_HERMES_EXECUTOR", raising=False)
+    roles = load_worker_roles(_write_roles(tmp_path))
+    assert isinstance(_auto_executor(tmp_path, monkeypatch, roles), InProcessSessionExecutor)
+
+
+def test_auto_routes_hermes_only_after_canary_hit(tmp_path, monkeypatch):
+    from core.hermes_executor import ExecutorRouter
+    from core.worker_roles import load_worker_roles
+
+    roles = load_worker_roles(_write_roles(tmp_path))
+    roles["research"]["executor"] = "hermes"
+    monkeypatch.setenv("enable_hermes_executor", "1")
+    monkeypatch.setenv("hermes_executor_roles", "research")
+    monkeypatch.setenv("hermes_executor_canary_pct", "0")
+
+    router = _auto_executor(tmp_path, monkeypatch, roles)
+    assert isinstance(router, ExecutorRouter)
+    assert router.role_executors == {"research": "hermes"}
+    assert router.canary_pct == 0
+    assert router._canary_pass("T-any") is False
