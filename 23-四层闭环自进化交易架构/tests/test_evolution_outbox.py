@@ -200,3 +200,41 @@ def test_disabled_outbox_returns_none(tmp_path, monkeypatch):
     monkeypatch.setenv("EVOLUTION_OUTBOX_ENABLED", "on")
     box = default_outbox()
     assert box is not None and box.enabled is True
+
+
+def test_terminal_failed_not_reset_by_retry_pending(tmp_path):
+    """本地判定的终态失败（如保证金不足）不应被 retry_pending 重置重试。"""
+    box = ExecutionOutbox(db_path=tmp_path / "ob.db", max_attempts=3)
+    sig = _sig()
+    box.enqueue(sig)
+    assert box.try_acquire(sig["decision_id"]) is True
+    box.mark_failed(sig["decision_id"], "insufficient_margin", terminal=True)
+
+    assert box.retry_pending() == 0
+    assert box.try_acquire(sig["decision_id"]) is False
+    assert box.get(sig["decision_id"])["attempts"] == 3
+
+
+def test_dispatcher_insufficient_margin_is_terminal(tmp_path):
+    box = ExecutionOutbox(db_path=tmp_path / "ob.db", max_attempts=3)
+
+    class _MarginGateway:
+        def __init__(self):
+            self.calls = 0
+
+        def submit(self, decision):
+            self.calls += 1
+            return _FakeExecResult(
+                executed=False,
+                reason="insufficient_margin: need=80 avail=20",
+                reason_code="INSUFFICIENT_MARGIN",
+            )
+
+    gw = _MarginGateway()
+    d = EvolutionSignalDispatcher(gateway=gw, runtime_dir=tmp_path, outbox=box)
+    sig = _sig()
+
+    assert d.dispatch(sig)["reason_code"] == "INSUFFICIENT_MARGIN"
+    assert box.get(sig["decision_id"])["attempts"] == box.max_attempts
+    assert d.dispatch(sig)["reason_code"] == "RETRY_EXHAUSTED"
+    assert gw.calls == 1

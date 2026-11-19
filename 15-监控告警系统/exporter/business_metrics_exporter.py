@@ -243,6 +243,16 @@ class Collector:
             for status, total, stuck in cur.execute(sql):
                 out.append(_metric("outbox_items", total, state=str(status)))
                 out.append(_metric("outbox_stuck", stuck or 0, state=str(status)))
+            # 可用保证金不足导致的拒单：区分「资金不足」与「参数/网关」类失败
+            if "last_error" in cols:
+                try:
+                    n_insufficient = cur.execute(
+                        f"SELECT COUNT(*) FROM {table} WHERE {status_col}='failed' "
+                        f"AND lower(last_error) LIKE '%insufficient%'"
+                    ).fetchone()[0]
+                    out.append(_metric("outbox_failed_insufficient_margin", n_insufficient or 0))
+                except sqlite3.Error:
+                    pass
             conn.close()
         except sqlite3.Error:
             return [_metric("outbox_stuck", 0, state="error")]

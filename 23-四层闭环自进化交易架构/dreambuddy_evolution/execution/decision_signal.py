@@ -339,6 +339,18 @@ class EvolutionSignalDispatcher:
     gateway=None 时只记录决策并返回失败，便于离线/单测环境。
     """
 
+    # 本地可判定的终态失败：重试同一决策不会成功，直接耗尽 attempts 停止无效重试
+    _NON_RETRYABLE_REASON_CODES = frozenset(
+        {
+            "INSUFFICIENT_MARGIN",
+            "EXECUTION_RIGHTS_DENIED",
+            "SZ_UNAVAILABLE",
+            "NEUTRAL_NO_EXECUTION",
+            "MISSING_DECISION_ID",
+            "SIGNAL_EXPIRED",
+        }
+    )
+
     def __init__(
         self,
         gateway: Any = None,
@@ -515,7 +527,11 @@ class EvolutionSignalDispatcher:
         if executed:
             self._mark_submitted(_did, out)
         else:
-            self._mark_failed(_did, out["reason"] or out["reason_code"] or "not_executed")
+            self._mark_failed(
+                _did,
+                out["reason"] or out["reason_code"] or "not_executed",
+                terminal=out["reason_code"] in self._NON_RETRYABLE_REASON_CODES,
+            )
         return out
 
     def _mark_submitted(self, decision_id: Any, result: dict[str, Any]) -> None:
@@ -526,10 +542,10 @@ class EvolutionSignalDispatcher:
         except Exception as e:  # noqa: BLE001 — 落库失败不阻断已成交订单
             logger.debug("[23-evolution] outbox mark_submitted fail: %s", e)
 
-    def _mark_failed(self, decision_id: Any, error: str) -> None:
+    def _mark_failed(self, decision_id: Any, error: str, terminal: bool = False) -> None:
         if self._outbox is None or not decision_id:
             return
         try:
-            self._outbox.mark_failed(str(decision_id), error)
+            self._outbox.mark_failed(str(decision_id), error, terminal=terminal)
         except Exception as e:  # noqa: BLE001
             logger.debug("[23-evolution] outbox mark_failed fail: %s", e)

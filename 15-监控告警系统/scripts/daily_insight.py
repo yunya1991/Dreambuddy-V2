@@ -193,6 +193,8 @@ def collect_chain23(repo: Path, win: dict) -> dict:
         rows.extend(r for r in iter_jsonl(path) if in_window(parse_ts(r.get("ts")), win))
 
     stage_counts = Counter(f"{r.get('stage')}|{r.get('status')}" for r in rows)
+    _ts_all = [parse_ts(r.get("ts")) for r in rows if r.get("ts")]
+    _last_ts = max(_ts_all) if _ts_all else 0.0
     by_stage: dict[str, list[dict]] = {}
     for rec in rows:
         by_stage.setdefault(str(rec.get("stage")), []).append(rec)
@@ -217,6 +219,8 @@ def collect_chain23(repo: Path, win: dict) -> dict:
         str(x.get("reason_category") or "unknown") for x in n8_data if x.get("reason_category")
     )
     n8_ri = [float(x["ri"]) for x in n8_data if isinstance(x.get("ri"), (int, float))]
+    # d_star 全量分布（含 pass 样本），避免只看 skip 原因导致「恒 WAIT」误判
+    n8_dstar = Counter(str(x.get("d_star") or "") for x in n8_data if x.get("d_star"))
 
     n10_data = [r.get("data") or {} for r in by_stage.get("N10", [])]
     n10_ri = [float(x["ri"]) for x in n10_data if isinstance(x.get("ri"), (int, float))]
@@ -283,6 +287,9 @@ def collect_chain23(repo: Path, win: dict) -> dict:
 
     return {
         "events": len(rows),
+        "last_event_age_hours": (
+            round(max(0.0, (win["end_ts"] - _last_ts) / 3600.0), 2) if _last_ts else None
+        ),
         "stage_counts": _counts(stage_counts, limit=40),
         "n9": {
             "count": len(n9_data),
@@ -300,6 +307,8 @@ def collect_chain23(repo: Path, win: dict) -> dict:
             "skip_total": sum(n8_skips.values()),
             "skip_reasons": _counts(n8_skips),
             "ri": num_stats(n8_ri),
+            "d_star": _counts(n8_dstar),
+            "d_star_wait_ratio": ratio(n8_dstar.get("WAIT", 0), sum(n8_dstar.values())),
         },
         "n10": {
             "count": len(n10_data),
@@ -571,9 +580,50 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
     n9 = chain["n9"]
     findings: list[dict] = []
 
+    # ── 链路数据门禁：窗口内无事件 / 链路停跑 / 样本不足时，
+    #    推理链降级类判定只反映陈旧快照，必须先报数据缺失并抑制下游误报。
+    _events = int(chain.get("events") or 0)
+    _stale_h = chain.get("last_event_age_hours")
+    _min_n = float(th.get("ri_min_samples", 10))
+    _stale_limit = float(th.get("chain_stale_hours", 2.0))
+    chain_gate: dict | None = None
+    if _events == 0:
+        chain_gate = _finding(
+            "23_CHAIN_NO_EVENT",
+            "P1",
+            "23",
+            "23 链路窗口内无事件（数据缺失）",
+            f"统计窗口内 chain_events=0，N9 覆盖 {n9.get('count', 0)}",
+            "entry23 未运行或 chain_events 未落盘",
+            "检查 entry23 systemd/launchd 状态与 runtime/chain_events-*.jsonl 最后写入时间",
+        )
+    elif isinstance(_stale_h, (int, float)) and _stale_h >= _stale_limit:
+        chain_gate = _finding(
+            "23_CHAIN_STALE",
+            "P1",
+            "23",
+            f"23 链路窗口末已停跑（最后事件距今 {_stale_h}h）",
+            f"窗口内 events={_events}、N9 覆盖 {n9.get('count', 0)}，最后事件距窗口结束 {_stale_h}h",
+            "entry23 进程中断或事件写入停止，窗口内数据只覆盖停跑前片段",
+            "检查 entry23 运行状态与日志；恢复后重跑日报，停跑前的推理链降级判定不可信",
+        )
+    elif int(n9.get("count") or 0) < _min_n:
+        chain_gate = _finding(
+            "23_CHAIN_SAMPLE_STARVED",
+            "P1",
+            "23",
+            "23 链路窗口内样本不足（数据缺失）",
+            f"窗口内 events={_events}，N9 仅 {n9.get('count', 0)} 条（阈值 {int(_min_n)}）",
+            "链路长时间未运行或采集频率过低，样本不足以支撑推理链判定",
+            "确认链路运行时长与事件采样；样本恢复后再评估 ri/d_star/N2",
+        )
+    chain_ok = chain_gate is None
+    if chain_gate is not None:
+        findings.append(chain_gate)
+
     # ── 23 推理链 ──
     ri = n9["ri"]
-    if ri.get("count", 0) >= th.get("ri_min_samples", 10):
+    if chain_ok and ri.get("count", 0) >= th.get("ri_min_samples", 10):
         if ri.get("distinct", 99) <= 1:
             findings.append(
                 _finding(
@@ -599,7 +649,7 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
                 )
             )
 
-    if n9.get("ess_top_direction_coverage", 0) >= th.get("ri_min_samples", 10):
+    if chain_ok and n9.get("ess_top_direction_coverage", 0) >= th.get("ri_min_samples", 10):
         empty = n9.get("ess_top_direction_empty_ratio", 0)
         if empty >= th.get("ess_topdir_empty_ratio", 0.9):
             findings.append(
@@ -616,8 +666,10 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
 
     tier = n9.get("tier") or {}
     probe_ratio = ratio(tier.get("probe", 0), sum(tier.values()))
-    if sum(tier.values()) >= th.get("ri_min_samples", 10) and probe_ratio >= th.get(
-        "probe_tier_ratio", 0.8
+    if (
+        chain_ok
+        and sum(tier.values()) >= th.get("ri_min_samples", 10)
+        and probe_ratio >= th.get("probe_tier_ratio", 0.8)
     ):
         findings.append(
             _finding(
@@ -633,7 +685,7 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
 
     n8 = chain["n8"]
     n8_ri = n8["ri"]
-    if n8_ri.get("count", 0) >= th.get("ri_min_samples", 10):
+    if chain_ok and n8_ri.get("count", 0) >= th.get("ri_min_samples", 10):
         if n8_ri.get("distinct", 99) <= 1:
             findings.append(
                 _finding(
@@ -659,7 +711,25 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
                 )
             )
 
-    if n8.get("skip_total", 0) >= th.get("ri_min_samples", 10):
+    # d_star 口径：优先用 N8 全量 d_star 分布（含 pass 样本）；
+    # 旧事件无 d_star 字段时回退 skip 原因占比，避免把「skip 全是 d_star_wait」误读为「d_star 恒 WAIT」。
+    _dstar = n8.get("d_star") or {}
+    _dstar_total = sum(_dstar.values())
+    if chain_ok and _dstar_total >= th.get("ri_min_samples", 10):
+        wait_all = ratio(_dstar.get("WAIT", 0), _dstar_total)
+        if wait_all >= th.get("dstar_all_wait_ratio", 0.95):
+            findings.append(
+                _finding(
+                    "23_DSTAR_WAIT",
+                    "P1",
+                    "23",
+                    f"N8 全量 d_star=WAIT（{wait_all}）",
+                    f"N8 共 {_dstar_total} 条，d_star 分布={_dstar}",
+                    "calibrated 中性区持续拒绝（方向代价未低于 wait×(1-margin)），或 wait_mode 未按预期生效",
+                    "核对 EVOLUTION_DSTAR_WAIT_MODE 与环境注入；用 N4 d_star_shadow 比较 legacy/calibrated",
+                )
+            )
+    elif chain_ok and n8.get("skip_total", 0) >= th.get("ri_min_samples", 10):
         wait_ratio = ratio(n8["skip_reasons"].get("d_star_wait", 0), n8["skip_total"])
         if wait_ratio >= th.get("dstar_wait_ratio", 0.8):
             findings.append(
@@ -668,14 +738,16 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
                     "P1",
                     "23",
                     f"d_star 恒 WAIT（{wait_ratio}）",
-                    f"N8 skip {n8['skip_total']} 次，d_star_wait 占 {wait_ratio}",
+                    f"N8 skip {n8['skip_total']} 次，d_star_wait 占 {wait_ratio}（无 d_star 分布字段，按 skip 口径）",
                     "wait 成本在平滑行情下恒低于开仓（F4 已修：calibrated 口径 + 30% 中性区，默认 legacy）",
                     "确认 EVOLUTION_DSTAR_WAIT_MODE=calibrated 已生效；若已生效仍全 WAIT，查 d_star_shadow 与 margin",
                 )
             )
 
-    if n9.get("reflection_eligible_ratio") == 0.0 and n9.get("ri", {}).get("count", 0) >= th.get(
-        "ri_min_samples", 10
+    if (
+        chain_ok
+        and n9.get("reflection_eligible_ratio") == 0.0
+        and n9.get("ri", {}).get("count", 0) >= th.get("ri_min_samples", 10)
     ):
         findings.append(
             _finding(
@@ -690,8 +762,10 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
         )
 
     n2 = chain["n2"]
-    if n2.get("count", 0) >= th.get("ri_min_samples", 10) and n2.get("degraded_ratio", 0) >= th.get(
-        "n2_degraded_ratio", 0.9
+    if (
+        chain_ok
+        and n2.get("count", 0) >= th.get("ri_min_samples", 10)
+        and n2.get("degraded_ratio", 0) >= th.get("n2_degraded_ratio", 0.9)
     ):
         findings.append(
             _finding(
@@ -705,7 +779,7 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
             )
         )
 
-    if chain["n10"]["count"] == 0:
+    if chain_ok and chain["n10"]["count"] == 0:
         findings.append(
             _finding(
                 "23_SIGNAL_SILENCE",
@@ -719,8 +793,10 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
         )
 
     cv = chain["n6"]
-    if cv.get("count", 0) >= th.get("ri_min_samples", 10) and cv.get("degraded_ratio", 0) >= th.get(
-        "cv_degraded_ratio", 0.5
+    if (
+        chain_ok
+        and cv.get("count", 0) >= th.get("ri_min_samples", 10)
+        and cv.get("degraded_ratio", 0) >= th.get("cv_degraded_ratio", 0.5)
     ):
         findings.append(
             _finding(
@@ -735,8 +811,10 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
         )
 
     g_missing = ratio(cv.get("g_dim_status", {}).get("no_price_series", 0), cv.get("count", 0))
-    if cv.get("count", 0) >= th.get("ri_min_samples", 10) and g_missing >= th.get(
-        "g_dim_missing_ratio", 0.5
+    if (
+        chain_ok
+        and cv.get("count", 0) >= th.get("ri_min_samples", 10)
+        and g_missing >= th.get("g_dim_missing_ratio", 0.5)
     ):
         findings.append(
             _finding(
@@ -1153,6 +1231,7 @@ def render_markdown(
         "### N8 门控分布",
         "",
         f"- skip 合计：{chain['n8']['skip_total']}；原因：{chain['n8']['skip_reasons']}",
+        f"- d_star 分布：{chain['n8'].get('d_star') or '-'}（WAIT 占比 {_fmt(chain['n8'].get('d_star_wait_ratio'))}）",
         f"- N8 ri 众数：{_fmt(chain['n8']['ri'].get('mode'))}（占比 {_fmt(chain['n8']['ri'].get('mode_ratio'))}）",
         "",
         "### N10 信号",

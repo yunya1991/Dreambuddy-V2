@@ -13,6 +13,13 @@ fail-closed 语义：
 
 NFR-4 依赖倒置：本模块不 import 任何策略层的 concrete OkxClient；
 调用方负责构造 raw_client（real/paper/mock）并通过构造器注入。
+
+保证金前置拦截（开仓，FAIL-OPEN）：
+  EXECUTION_MARGIN_PRECHECK   默认 on；off 时完全跳过
+  EXECUTION_MARGIN_LEVERAGE   默认 5（与 23 entry_loop 一致）；payload.leverage 优先
+  EXECUTION_MARGIN_BUFFER     默认 0.05（可用余额需留出的安全垫）
+  EXECUTION_MARGIN_CACHE_SEC  默认 30（余额快照缓存秒数，避免高频查询）
+  余额查询失败/无 get_balance → 放行，不改变原有交易语义。
 """
 
 from __future__ import annotations
@@ -531,6 +538,11 @@ class TradeExecutionGateway:
         self._decision_cache_lock = threading.Lock()
         self._decision_cache_ttl = float(os.getenv("GATEWAY_DECISION_CACHE_TTL_SEC", "3600"))
 
+        # 保证金前置拦截：余额快照缓存 + 本地拒单计数（避免交易所侧连败与无效重试）
+        self._margin_balance_cache: tuple[float, Optional[dict]] = (0.0, None)
+        self._margin_balance_lock = threading.Lock()
+        self._margin_reject_count = 0
+
         if audit_path is None:
             audit_path = REPO_ROOT / "22-执行引擎中心" / "audit" / "gateway.jsonl"
         self._audit_path = Path(audit_path)
@@ -723,6 +735,100 @@ class TradeExecutionGateway:
             self._cache_put(_did, result)
         self._record_ledger(sig, result)
         return result
+
+    # ── 保证金前置拦截（开仓） ────────────────────────────────────────
+    def margin_reject_count(self) -> int:
+        """进程内「可用保证金不足」本地拒单计数（供运维/指标读取）。"""
+        return self._margin_reject_count
+
+    def _available_usdt(self) -> Optional[float]:
+        """可用 USDT 余额（带短 TTL 缓存）。查询失败返回 None → FAIL-OPEN。"""
+        try:
+            cache_sec = float(os.getenv("EXECUTION_MARGIN_CACHE_SEC", "30"))
+        except (TypeError, ValueError):
+            cache_sec = 30.0
+        now = time.time()
+        cached_ts, cached = self._margin_balance_cache
+        if cached is not None and (now - cached_ts) < cache_sec:
+            return cached.get("avail")
+        fn = getattr(self._okx, "get_balance", None)
+        if not callable(fn):
+            return None
+        try:
+            bal = fn() or {}
+        except Exception as exc:  # noqa: BLE001 — 余额查询失败不阻断交易
+            logger.debug("[Gateway] margin precheck balance query fail (fail-open): %s", exc)
+            return None
+        if not bal.get("ok"):
+            logger.debug(
+                "[Gateway] margin precheck balance unavailable (fail-open): %s", bal.get("error")
+            )
+            return None
+        usdt = (bal.get("assets") or {}).get("USDT") or {}
+        avail = float(usdt.get("avail") or 0.0)
+        with self._margin_balance_lock:
+            self._margin_balance_cache = (now, {"avail": avail})
+        return avail
+
+    def _required_margin_usdt(self, sig: FinalDecisionSignal, sz: Any) -> Optional[float]:
+        """估算本单所需保证金：notional / leverage（缺省 5×，与 23 entry_loop 一致）。"""
+        payload = sig.payload if isinstance(sig.payload, dict) else {}
+        notional = float(payload.get("notional_usdt") or 0.0)
+        if notional <= 0 and sz is not None:
+            _px = float(sig.px or payload.get("price") or 0.0)
+            if _px > 0:
+                notional = abs(float(sz)) * _px
+        if notional <= 0:
+            return None
+        try:
+            leverage = float(payload.get("leverage") or os.getenv("EXECUTION_MARGIN_LEVERAGE", "5"))
+        except (TypeError, ValueError):
+            leverage = 5.0
+        if leverage <= 0:
+            leverage = 1.0
+        return notional / leverage
+
+    def _precheck_margin(self, sig: FinalDecisionSignal, sz: Any) -> Optional[ExecutionResult]:
+        """开仓前可用保证金校验：不足则本地拒单，不下发交易所（避免连败与无效重试）。"""
+        if str(os.getenv("EXECUTION_MARGIN_PRECHECK", "on")).strip().lower() in (
+            "0",
+            "off",
+            "false",
+            "no",
+        ):
+            return None
+        if sig.action in _CLOSE_ACTIONS:
+            return None
+        need = self._required_margin_usdt(sig, sz)
+        if need is None or need <= 0:
+            return None
+        avail = self._available_usdt()
+        if avail is None:
+            return None
+        try:
+            buffer = float(os.getenv("EXECUTION_MARGIN_BUFFER", "0.05"))
+        except (TypeError, ValueError):
+            buffer = 0.05
+        buffer = min(max(buffer, 0.0), 0.9)
+        spendable = avail * (1.0 - buffer)
+        if need <= spendable:
+            return None
+        self._margin_reject_count += 1
+        logger.warning(
+            "[Gateway] 可用保证金不足，本地拒单 %s %s: need=%.2f avail=%.2f spendable=%.2f (rejects=%d)",
+            sig.symbol,
+            sig.action,
+            need,
+            avail,
+            spendable,
+            self._margin_reject_count,
+        )
+        return ExecutionResult(
+            passed=False,
+            executed=False,
+            reason=f"insufficient_margin: need={need:.2f} avail={avail:.2f} spendable={spendable:.2f}",
+            reason_code="INSUFFICIENT_MARGIN",
+        )
 
     # ── 持仓账本（P2：22 为唯一真相源，NN 与 23 共用） ────────────────
     def _get_ledger(self):
@@ -1167,6 +1273,11 @@ class TradeExecutionGateway:
             import dataclasses as _dc
 
             sig_for_exec = _dc.replace(sig, sz=final_sz, sl_px=_sl_px, tp_px=_tp_px)
+
+        _margin_deny = self._precheck_margin(sig_for_exec, final_sz)
+        if _margin_deny is not None:
+            self._audit(sig, _margin_deny)
+            return _margin_deny
 
         order_result = self._place_order(sig_for_exec, position_modifier=position_modifier)
         executed = self._order_succeeded(order_result)

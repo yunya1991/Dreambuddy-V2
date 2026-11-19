@@ -194,8 +194,21 @@ class ExecutionOutbox:
     ) -> None:
         self._update_terminal(decision_id, STATE_FILLED, result=result, broker_ord_id=broker_ord_id)
 
-    def mark_failed(self, decision_id: str, error: str = "") -> None:
+    def mark_failed(self, decision_id: str, error: str = "", terminal: bool = False) -> None:
+        """标记失败。
+
+        ``terminal=True`` 时把 attempts 置满，``retry_pending`` 不再把它重置为 pending，
+        用于「本地已判定不可能成功」的拒单（如保证金不足），避免无效重试。
+        """
         with self._session() as conn:
+            if terminal:
+                conn.execute(
+                    """UPDATE execution_outbox
+                          SET state=?, last_error=?, attempts=?, updated_at=?
+                        WHERE decision_id=?""",
+                    (STATE_FAILED, str(error)[:500], self._max_attempts, _now(), decision_id),
+                )
+                return
             conn.execute(
                 """UPDATE execution_outbox
                       SET state=?, last_error=?, updated_at=?

@@ -608,3 +608,71 @@ def test_attached_sltp_failure_does_not_taint_main_order():
     assert result.sltp_result is not None
     assert result.sltp_result["ok"] is False
     assert "sltp api broken" in result.sltp_result["error"]
+
+
+def test_margin_precheck_blocks_open_before_order(tmp_path, monkeypatch):
+    """可用保证金不足：本地拒单，不下发交易所，并计数。"""
+    fake_okx = _FakeOkx()
+    fake_okx.get_balance = lambda: {"ok": True, "assets": {"USDT": {"avail": 20.0}}}
+    gw = TradeExecutionGateway(okx_client=fake_okx, audit_path=tmp_path / "gateway.jsonl")
+    monkeypatch.setenv("EXECUTION_MARGIN_CACHE_SEC", "0")
+
+    with patch.object(gw, "_gate") as gate:
+        gate.check.return_value = _allow()
+        result = gw.submit(
+            _sig(
+                source="23-evolution",
+                decision_id="dec-margin-001",
+                expires_at="2099-01-01T00:00:00Z",
+                payload={"notional_usdt": 400.0, "leverage": 5},
+            )
+        )
+
+    assert result.reason_code == "INSUFFICIENT_MARGIN"
+    assert result.executed is False
+    assert fake_okx.calls == []
+    assert gw.margin_reject_count() == 1
+
+
+def test_margin_precheck_allows_when_balance_enough(tmp_path, monkeypatch):
+    fake_okx = _FakeOkx()
+    fake_okx.get_balance = lambda: {"ok": True, "assets": {"USDT": {"avail": 500.0}}}
+    gw = TradeExecutionGateway(okx_client=fake_okx, audit_path=tmp_path / "gateway.jsonl")
+    monkeypatch.setenv("EXECUTION_MARGIN_CACHE_SEC", "0")
+
+    with patch.object(gw, "_gate") as gate:
+        gate.check.return_value = _allow()
+        result = gw.submit(
+            _sig(
+                source="23-evolution",
+                decision_id="dec-margin-002",
+                expires_at="2099-01-01T00:00:00Z",
+                payload={"notional_usdt": 400.0, "leverage": 5},
+            )
+        )
+
+    assert result.executed is True
+    assert len(fake_okx.calls) == 1
+    assert gw.margin_reject_count() == 0
+
+
+def test_margin_precheck_fail_open_when_balance_unavailable(tmp_path, monkeypatch):
+    """余额查询失败时不阻断交易（FAIL-OPEN 语义保持）。"""
+    fake_okx = _FakeOkx()
+    fake_okx.get_balance = lambda: {"ok": False, "error": "no credentials"}
+    gw = TradeExecutionGateway(okx_client=fake_okx, audit_path=tmp_path / "gateway.jsonl")
+    monkeypatch.setenv("EXECUTION_MARGIN_CACHE_SEC", "0")
+
+    with patch.object(gw, "_gate") as gate:
+        gate.check.return_value = _allow()
+        result = gw.submit(
+            _sig(
+                source="23-evolution",
+                decision_id="dec-margin-003",
+                expires_at="2099-01-01T00:00:00Z",
+                payload={"notional_usdt": 400.0, "leverage": 5},
+            )
+        )
+
+    assert result.executed is True
+    assert len(fake_okx.calls) == 1

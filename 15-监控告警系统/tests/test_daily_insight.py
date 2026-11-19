@@ -270,3 +270,47 @@ def test_render_marks_40_reserved():
     md = di.render_markdown("2026-11-17", win, metrics, [], None, {"ok": False, "error": "test"})
     assert "40 周期神经网络（预留）" in md
     assert "本期预留" in md
+
+
+def test_chain_stale_gate_suppresses_chain_findings():
+    """链路停跑时只报数据缺失，不再输出推理链降级类误报。"""
+    metrics = base_metrics()
+    metrics["chain_23"]["last_event_age_hours"] = 19.0
+    ids = {f["id"] for f in di.detect_findings(metrics, CFG)}
+    assert "23_CHAIN_STALE" in ids
+    assert "23_N2_DEGRADED" not in ids
+    assert "23_RI_CONSTANT" not in ids
+    assert "23_ESS_TOPDIR_EMPTY" not in ids
+    assert "23_DSTAR_WAIT" not in ids
+
+
+def test_chain_no_event_gate():
+    metrics = base_metrics()
+    chain = metrics["chain_23"]
+    chain["events"] = 0
+    chain["n9"] = {"count": 0, "ri": {"count": 0}, "tier": {}, "l4_v": {}}
+    chain["n2"] = {"count": 0, "degraded_ratio": 0.0}
+    chain["n10"] = {"count": 0}
+    ids = {f["id"] for f in di.detect_findings(metrics, CFG)}
+    assert "23_CHAIN_NO_EVENT" in ids
+    assert "23_SIGNAL_SILENCE" not in ids
+
+
+def test_dstar_uses_full_distribution_not_skip_reason():
+    """N8 有 pass 样本时，skip 原因全是 d_star_wait 不应报「恒 WAIT」。"""
+    metrics = base_metrics()
+    n8 = metrics["chain_23"]["n8"]
+    n8["d_star"] = {"long": 400, "WAIT": 100}
+    n8["d_star_wait_ratio"] = 0.2
+    ids = {f["id"] for f in di.detect_findings(metrics, CFG)}
+    assert "23_DSTAR_WAIT" not in ids
+
+
+def test_dstar_all_wait_flagged_by_distribution():
+    metrics = base_metrics()
+    n8 = metrics["chain_23"]["n8"]
+    n8["d_star"] = {"WAIT": 500}
+    n8["d_star_wait_ratio"] = 1.0
+    findings = {f["id"]: f for f in di.detect_findings(metrics, CFG)}
+    assert "23_DSTAR_WAIT" in findings
+    assert "全量 d_star=WAIT" in findings["23_DSTAR_WAIT"]["title"]

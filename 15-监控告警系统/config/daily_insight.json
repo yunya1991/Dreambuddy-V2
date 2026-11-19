@@ -27,6 +27,8 @@
     "ess_topdir_empty_ratio": 0.8,
     "probe_tier_ratio": 0.8,
     "dstar_wait_ratio": 0.8,
+    "dstar_all_wait_ratio": 0.95,
+    "chain_stale_hours": 2.0,
     "n2_degraded_ratio": 0.9,
     "cv_degraded_ratio": 0.5,
     "g_dim_missing_ratio": 0.5,
