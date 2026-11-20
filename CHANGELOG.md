@@ -15,7 +15,7 @@
 
 ### 核心 Bug 修复
 
-- **EPERM mkdir 越界写**: [task-manager.ts](3.1-FRONTEND/src/lib/task-manager.ts) 的 `resolveRepoRoot()` 改用项目根特征（同时存在 `3.1-FRONTEND` + `1-ARCHITECTURE`）识别，`ARTIFACTS_DIR` 固定为 `REPO_ROOT/artifacts`；之前 fallback 跳到 `~/WorkBuddy` 触发沙箱 EPERM。同步修复 [dream-universal-gateway/src/lib/task-manager.ts](3-FRONTEND/dream-universal-gateway/src/lib/task-manager.ts)
+- **EPERM mkdir 越界写**: [task-manager.ts](3.1-FRONTEND/src/lib/task-manager.ts) 的 `resolveRepoRoot()` 改用项目根特征（同时存在 `3.1-FRONTEND` + `1-ARCHITECTURE`）识别，`ARTIFACTS_DIR` 固定为 `REPO_ROOT/artifacts`；之前 fallback 跳到 `~/WorkBuddy` 触发沙箱 EPERM。同步修复 [dream-universal-gateway/src/lib/task-manager.ts](3.1-FRONTEND/src/lib/task-manager.ts)
 - **market_query 误判为复杂趋势分析**: [fallback-engine.ts](3.1-FRONTEND/src/lib/intent/fallback-engine.ts) 插入 Step 1.5 规则预过滤（confidence ≥ 0.85 直接返回，跳过 LLM）；[task-manager.ts](3.1-FRONTEND/src/lib/task-manager.ts) 在 `ExecutionPlanner` 调用前插入 `market_query` 快速路径直接返回价格卡片（从 `CLARIFY_INTENTS` 移除 market_query）
 - **Markdown 渲染倒退**: [MessageItem.tsx](3.1-FRONTEND/src/components/features/chat/MessageItem.tsx) 引入 `ReactMarkdown`，assistant 消息走 markdown 渲染；之前用 `<span>{content}</span>` 平铺导致被压成单行（package.json 装了 `react-markdown@10.1.0` 但代码从未 import）
 

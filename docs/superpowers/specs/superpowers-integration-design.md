@@ -654,8 +654,8 @@ Process Layer（Python 认知层）     vs     C 层 Methodology Gate（TypeScri
 
 | 文件 | 操作 | 改动点 |
 |------|------|--------|
-| [methodology-executor.ts](../../../6-图结构上下文压缩/planner/methodology-executor.ts) | 改名注释（不删代码） | 1. L1-L23 头部注释：把"Claude Code Superpowers 7阶段方法论"改为「C 层交易节点质量门禁（借鉴 Superpowers 理念，不等价于 Superpowers Skill 体系，与认知层 Process Layer 解耦）」。<br>2. L6 去除与 Superpowers 7 阶段的直接绑定声明。<br>3. L14-L18 注释加一句：「注：更完整的方法论在通用认知层 Process Layer（SKILL.md）；本文件仅做 Planner 节点级代码门禁。」 |
-| [superpowers-skill-adapter.ts](../../../6-图结构上下文压缩/planner/superpowers-skill-adapter.ts) | 注释澄清 + 可选改名 | 1. L1-L16 头部：注释改为「SKILL.md 格式解析器（TypeScript 版）——仅用于把外部标准 SKILL.md 文档解析为 SkillCapability 对象，不负责执行；通用认知层对应实现位于 4-MEMORY/ 的 Python SkillLoader」。<br>2. （可选，低优先级）文件名改名为 `skill-md-parser.ts`，去掉"superpowers"字样。**不做也不影响功能**，建议留到本轮迁移的最后再做。 |
+| [methodology-executor.ts](../../../24-图结构上下文压缩/planner/methodology-executor.ts) | 改名注释（不删代码） | 1. L1-L23 头部注释：把"Claude Code Superpowers 7阶段方法论"改为「C 层交易节点质量门禁（借鉴 Superpowers 理念，不等价于 Superpowers Skill 体系，与认知层 Process Layer 解耦）」。<br>2. L6 去除与 Superpowers 7 阶段的直接绑定声明。<br>3. L14-L18 注释加一句：「注：更完整的方法论在通用认知层 Process Layer（SKILL.md）；本文件仅做 Planner 节点级代码门禁。」 |
+| [superpowers-skill-adapter.ts](../../../24-图结构上下文压缩/planner/superpowers-skill-adapter.ts) | 注释澄清 + 可选改名 | 1. L1-L16 头部：注释改为「SKILL.md 格式解析器（TypeScript 版）——仅用于把外部标准 SKILL.md 文档解析为 SkillCapability 对象，不负责执行；通用认知层对应实现位于 4-MEMORY/ 的 Python SkillLoader」。<br>2. （可选，低优先级）文件名改名为 `skill-md-parser.ts`，去掉"superpowers"字样。**不做也不影响功能**，建议留到本轮迁移的最后再做。 |
 
 **不改造**：MethodologyExecutor 的 `wrapExecution` / `performTwoPhaseReview` 核心逻辑——它确实对交易开发节点有实际门禁价值（Spec 合规 + 置信度审查），保留它。
 

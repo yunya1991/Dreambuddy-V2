@@ -135,7 +135,7 @@ auto_exit_system.py::run_exit_evaluation_cycle()
 
 ## 3. 核心数据结构
 
-定义于 [types.py](../core/capital_control/types.py)。
+定义于 [types.py](../../13-通用风控模块/risk_capital/capital_control/types.py)。
 
 ### 3.1 CapitalMode 枚举
 
@@ -302,7 +302,7 @@ def register_capital(
 
 ## 5. 主组件 API
 
-定义于 [component.py](../core/capital_control/component.py)。
+定义于 [component.py](../../13-通用风控模块/risk_capital/capital_control/component.py)。
 
 ### 5.1 CapitalControlComponent 类
 
@@ -406,10 +406,10 @@ class CapitalControlComponent:
 
 | 规则名 | 模块 | 系统 | 账户类型 | priority | handler 关键逻辑 |
 |--------|------|------|---------|---------|----------------|
-| `capital.okx_live` | [okx_live_rule.py](../core/capital_control/capital_rules/okx_live_rule.py) | V15 马丁 | OKX 实盘 | 10 | 从 unified_position_query 结果提取 V15 equity（实盘账户，最高优先级） |
-| `capital.okx_simulated` | [okx_simulated_rule.py](../core/capital_control/capital_rules/okx_simulated_rule.py) | 易经推理 | OKX 模拟盘 | 20 | 从 unified_position_query 结果提取易经 equity |
-| `capital.hyperliquid` | [hyperliquid_rule.py](../core/capital_control/capital_rules/hyperliquid_rule.py) | Agent A/B/C | Hyperliquid | 30 | 一对多：返回 `Dict[str, CapitalResult]`，覆盖 3 个 HL 系统 |
-| `capital.aster` | [aster_rule.py](../core/capital_control/capital_rules/aster_rule.py) | 三屏趋势 | Aster | 40 | ml_trade_service 不可用时降级到静态 200 |
+| `capital.okx_live` | [okx_live_rule.py](../../13-通用风控模块/risk_capital/capital_control/capital_rules/okx_live_rule.py) | V15 马丁 | OKX 实盘 | 10 | 从 unified_position_query 结果提取 V15 equity（实盘账户，最高优先级） |
+| `capital.okx_simulated` | [okx_simulated_rule.py](../../13-通用风控模块/risk_capital/capital_control/capital_rules/okx_simulated_rule.py) | 易经推理 | OKX 模拟盘 | 20 | 从 unified_position_query 结果提取易经 equity |
+| `capital.hyperliquid` | [hyperliquid_rule.py](../../13-通用风控模块/risk_capital/capital_control/capital_rules/hyperliquid_rule.py) | Agent A/B/C | Hyperliquid | 30 | 一对多：返回 `Dict[str, CapitalResult]`，覆盖 3 个 HL 系统 |
+| `capital.aster` | [aster_rule.py](../../13-通用风控模块/risk_capital/capital_control/capital_rules/aster_rule.py) | 三屏趋势 | Aster | 40 | ml_trade_service 不可用时降级到静态 200 |
 
 ### 6.2 Handler 签名
 
@@ -439,7 +439,7 @@ def <name>_capital_handler(
 
 ### 6.3 共享辅助 `_shared.py`
 
-[build_result_from_system](../core/capital_control/capital_rules/_shared.py) 提供 4 条规则共用的降级与构建逻辑：
+[build_result_from_system](../../13-通用风控模块/risk_capital/capital_control/capital_rules/_shared.py) 提供 4 条规则共用的降级与构建逻辑：
 
 - FIXED 模式直接使用静态值
 - DYNAMIC 模式从 `positions_result["systems"][system]` 提取 equity
@@ -751,14 +751,14 @@ python -m pytest 16-调控系统/tests/capital_control/ -v
 | 文件 | 说明 |
 |------|------|
 | [core/capital_control/\_\_init\_\_.py](../core/capital_control/__init__.py) | 包入口，导出 `CapitalControlComponent` / `CapitalMode` |
-| [core/capital_control/types.py](../core/capital_control/types.py) | 数据结构（CapitalMode/AccountType/CapitalResult/CapitalSnapshot） |
-| [core/capital_control/component.py](../core/capital_control/component.py) | CapitalControlComponent 主类 |
-| [core/capital_control/capital_rules/\_\_init\_\_.py](../core/capital_control/capital_rules/__init__.py) | 规则包入口 |
-| [core/capital_control/capital_rules/_shared.py](../core/capital_control/capital_rules/_shared.py) | 共享辅助（build_result_from_system / _static_from_config） |
-| [core/capital_control/capital_rules/okx_live_rule.py](../core/capital_control/capital_rules/okx_live_rule.py) | V15 OKX 实盘规则（priority=10） |
-| [core/capital_control/capital_rules/okx_simulated_rule.py](../core/capital_control/capital_rules/okx_simulated_rule.py) | 易经 OKX 模拟盘规则（priority=20） |
-| [core/capital_control/capital_rules/hyperliquid_rule.py](../core/capital_control/capital_rules/hyperliquid_rule.py) | Agent A/B/C 规则（priority=30，一对多） |
-| [core/capital_control/capital_rules/aster_rule.py](../core/capital_control/capital_rules/aster_rule.py) | 三屏趋势规则（priority=40） |
+| [core/capital_control/types.py](../../13-通用风控模块/risk_capital/capital_control/types.py) | 数据结构（CapitalMode/AccountType/CapitalResult/CapitalSnapshot） |
+| [core/capital_control/component.py](../../13-通用风控模块/risk_capital/capital_control/component.py) | CapitalControlComponent 主类 |
+| [core/capital_control/capital_rules/\_\_init\_\_.py](../../13-通用风控模块/risk_capital/capital_control/capital_rules/__init__.py) | 规则包入口 |
+| [core/capital_control/capital_rules/_shared.py](../../13-通用风控模块/risk_capital/capital_control/capital_rules/_shared.py) | 共享辅助（build_result_from_system / _static_from_config） |
+| [core/capital_control/capital_rules/okx_live_rule.py](../../13-通用风控模块/risk_capital/capital_control/capital_rules/okx_live_rule.py) | V15 OKX 实盘规则（priority=10） |
+| [core/capital_control/capital_rules/okx_simulated_rule.py](../../13-通用风控模块/risk_capital/capital_control/capital_rules/okx_simulated_rule.py) | 易经 OKX 模拟盘规则（priority=20） |
+| [core/capital_control/capital_rules/hyperliquid_rule.py](../../13-通用风控模块/risk_capital/capital_control/capital_rules/hyperliquid_rule.py) | Agent A/B/C 规则（priority=30，一对多） |
+| [core/capital_control/capital_rules/aster_rule.py](../../13-通用风控模块/risk_capital/capital_control/capital_rules/aster_rule.py) | 三屏趋势规则（priority=40） |
 | [config/capital_control.json](../config/capital_control.json) | 主配置文件 |
 | [config/capital_control.example.json](../config/capital_control.example.json) | 示例配置 |
 | [tests/capital_control/\_\_init\_\_.py](../tests/capital_control/__init__.py) | 测试包入口 |

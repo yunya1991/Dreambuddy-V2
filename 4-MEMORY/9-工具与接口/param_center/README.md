@@ -165,9 +165,9 @@ ParamRepository.get() → 聚合缓存优先于静态表
 
 ## 关联文档
 
-- 所属子系统：[16-调控系统/docs/ENGINEERING_INDEX.md](../../docs/ENGINEERING_INDEX.md) v2.1
+- 所属子系统：`16-调控系统/docs/ENGINEERING_INDEX.md` v2.1
 - 三层架构 SSoT：[1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0
-- 变更记录：[16-调控系统/docs/CHANGELOG.md](../../docs/CHANGELOG.md) v2.1
+- 变更记录：`16-调控系统/docs/CHANGELOG.md` v2.1
 - 验收 SKILL：`dream-module-post-dev-verify-workflow` v1.0.0
 
 ## 变更历史

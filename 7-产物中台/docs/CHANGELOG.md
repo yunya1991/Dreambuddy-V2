@@ -19,7 +19,7 @@
 
 ## v0.2.0 — 2026-08-02
 
-> 来源：[`package.json`](../系统研究索引体系/package.json) 版本 `0.2.0` 与 [`docs/TECHNICAL_DESIGN.md`](./TECHNICAL_DESIGN.md) v1.0
+> 来源：``package.json`` 版本 `0.2.0` 与 [`docs/TECHNICAL_DESIGN.md`](./TECHNICAL_DESIGN.md) v1.0
 
 ### 技术设计文档
 - 补建 `docs/TECHNICAL_DESIGN.md` v1.0，对齐代码实现
@@ -50,7 +50,7 @@
 
 ## v0.0.1 — 2026-05-14
 
-> 来源：[`prisma/schema.prisma`](../系统研究索引体系/prisma/schema.prisma) 头部版本记录
+> 来源：``prisma/schema.prisma`` 头部版本记录
 
 ### 初始实现
 - 建立 Prisma Schema v1.0（基于 `USER_SYSTEM_DESIGN.md` v1.0）

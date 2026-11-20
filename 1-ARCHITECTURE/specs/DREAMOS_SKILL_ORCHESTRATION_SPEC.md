@@ -13,7 +13,7 @@
 > | [FRONTEND3_DREAMOS_DSH_GLOBAL_ARCH_SPEC.md](./FRONTEND3_DREAMOS_DSH_GLOBAL_ARCH_SPEC.md) (v1.2, 2026-09-29) | 三层 OS 架构 + 11 缺口现状 | **本 SPEC 是其§三 DreamOS SACG 编排层的演进方案**，不否定三层架构，只调整编排粒度 |
 > | [SYSTEM_ARCHITECTURE_OVERVIEW.md](../SYSTEM_ARCHITECTURE_OVERVIEW.md) (v2.3, 2026-07-03) | DreamOS 三层+SACG 四层职责表 | **本 SPEC §三 重定义 S/A 层职责**，C/G 层职责不变 |
 > | [DSH_SUBAGENT_ARCHITECTURE_SPEC.md](../dream-harness-bridge/docs/DSH_SUBAGENT_ARCHITECTURE_SPEC.md) (v0.2) | DSH 8 Subagent 详设 | **本 SPEC §四 复用其降级链模式**，不改动 subagent 实现 |
-> | [dream-science-framework-research](../skills/dream-science-framework-research/SKILL.md) | 多 Agent 辩论框架研究 | **本 SPEC 的论证方法论来源** |
+> | [dream-science-framework-research](../skills/research/dream-science-framework-research/SKILL.md) | 多 Agent 辩论框架研究 | **本 SPEC 的论证方法论来源** |
 > | 框架研究记忆 VM-1791390096373 | 节点编排 vs SKILL 编排评估结论 | **本 SPEC 的决策依据**（加权 6.55 vs 4.55） |
 >
 > **后续**: 同行评审通过 → 用户批准 → 进入阶段 1 实施（仅本 SPEC §六 范围）

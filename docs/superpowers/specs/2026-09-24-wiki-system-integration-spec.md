@@ -46,7 +46,7 @@ dreambuddy-v2 已实现基于 **Karpathy LLM Wiki Gist 模式** 的知识编译�
 |------|------|---------|
 | doc_lint.py | `0-系统文档管理/4-工具与自动化/` | 扫描目标目录所有 .md；`IGNORED_DIRS` 不含 wiki；命名规则为"大写+下划线"，Wiki 的 kebab-case 会产生 false positive |
 | doc_coverage.py | 同上 | 仅扫描 `NN-*/` 子系统 + L3_MODULES，检查 5 文档标准；Wiki 不适用此标准，**不应纳入** |
-| link_checker.py | 同上 | 提取 markdown 链接 `[text](path)`；Wiki 用 `[[wikilink]]` 语法，LINK_RE 无法匹配；可检查 Wiki 中的 markdown 外链 |
+| link_checker.py | 同上 | 提取 markdown 链接 ``text``；Wiki 用 `[[wikilink]]` 语法，LINK_RE 无法匹配；可检查 Wiki 中的 markdown 外链 |
 | wiki_compiler.py | `2-KNOWLEDGE/9-RAG-INFRA/evolution/` | ingest 后调用 `build_index(_KNOWLEDGE_DIR)` 同步 RAG；`_record_to_cognitive()` 写入认知记忆（source=wiki-compiler） |
 | 主 profile | `.dsh-home/profiles/web/package.json` | bundles 仅 dsh-base/dsh-web-app/browser-skill，**无 wiki plugin** |
 | headless profile | `dream-harness-bridge/.dsh-home/profiles/headless/` | 通过 `file:../../../packages/cordis-plugin-knowledge-wiki` 引用，cordis.patch.yml 中 enabled: true |

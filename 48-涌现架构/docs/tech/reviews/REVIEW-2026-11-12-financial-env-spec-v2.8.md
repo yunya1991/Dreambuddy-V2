@@ -67,7 +67,7 @@
 
 **本轮修复项**：
 
-1. **版本号统一**：文件名 `SPEC-EMERGENCE-FINANCIAL-ENV-v1.0.md` → `SPEC-EMERGENCE-FINANCIAL-ENV-v2.8.md`（`git mv` 保留历史）；同步更新 [README.md](../../README.md)、[factor_preregistration.json](../../configs/factor_preregistration.json)、[SPEC-9DOMAIN-HISTORY-CONTEXT-v1.1.md](../SPEC-9DOMAIN-HISTORY-CONTEXT-v1.1.md) 三处引用。reviews 历史报告与 `architecture_graph.json`（自动生成 artifact）不手动修改。
+1. **版本号统一**：文件名 `SPEC-EMERGENCE-FINANCIAL-ENV-v1.0.md` → `SPEC-EMERGENCE-FINANCIAL-ENV-v2.8.md`（`git mv` 保留历史）；同步更新 [README.md](../../../README.md)、[factor_preregistration.json](../../../configs/factor_preregistration.json)、[SPEC-9DOMAIN-HISTORY-CONTEXT-v1.1.md](../SPEC-9DOMAIN-HISTORY-CONTEXT-v1.1.md) 三处引用。reviews 历史报告与 `architecture_graph.json`（自动生成 artifact）不手动修改。
 
 2. **leader_form.py 同步云端**：开发端 `21-特征工程中心/feature_hub/modules/leader_form.py`（7542B）→ 云端同路径，属主 `luke:luke`。`financial_env_validate.py` 通过 `sys.path.append(_LEADER_FORM_ROOT)` + `from leader_form import compute` 动态导入，FAIL-OPEN 降级。
 

@@ -16,7 +16,7 @@
 
 ### 1.2 直接根因
 
-`EventDrivenStrategy.evaluate()` 在 [event_driven_strategy.py:89-98](./dreambuddy_evolution/engines/event_driven_strategy.py#L89-L98) 存在硬限制：
+`EventDrivenStrategy.evaluate()` 在 [event_driven_strategy.py:89-98](./dreambuddy_evolution/engines/event_driven_strategy.py) 存在硬限制：
 
 ```python
 # 仅在 FOMC 周期内激活
@@ -86,7 +86,7 @@ SERIES = (
 ```
 
 **理由**：
-- `EFFR` 替代当前 `_score_real_rate()` 中 `BASE_RATE_MIDPOINT=3.625` 硬编码（[event_driven_strategy.py:253](./dreambuddy_evolution/engines/event_driven_strategy.py#L253)），用真实有效联邦基金利率
+- `EFFR` 替代当前 `_score_real_rate()` 中 `BASE_RATE_MIDPOINT=3.625` 硬编码（[event_driven_strategy.py:253](./dreambuddy_evolution/engines/event_driven_strategy.py)），用真实有效联邦基金利率
 - `UNRATE` 是非农数据的核心反向指标（非农强→失业率降→加息预期升）
 - `DGS10` 补全跨资产验证维度（原 SPEC §4.5.1 affected_assets 含 us10y）
 
@@ -193,7 +193,7 @@ except Exception as e:
 
 #### 3.2.1 解除 EventDrivenStrategy in_fomc_cycle 硬限制
 
-**文件**：[23-四层闭环自进化交易架构/dreambuddy_evolution/engines/event_driven_strategy.py](./dreambuddy_evolution/engines/event_driven_strategy.py#L89-L98)
+**文件**：[23-四层闭环自进化交易架构/dreambuddy_evolution/engines/event_driven_strategy.py](./dreambuddy_evolution/engines/event_driven_strategy.py)
 
 **变更**：将 L89-98 的硬限制改为分支判断：
 

@@ -38,3 +38,7 @@
 | [test_strategy_exit_adapter.py](./test_strategy_exit_adapter.py) | 策略离场适配器测试 |
 | [stress_test_7scenarios.py](./stress_test_7scenarios.py) | 7 场景压力测试 |
 | [notebook_stress_test.py](./notebook_stress_test.py) | Notebook 压力测试 |
+
+## 脚本索引
+
+- [run_trailing_stop_runner.sh](run_trailing_stop_runner.sh) — 移动止盈调度器 — launchd / systemd 通用入口

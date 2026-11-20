@@ -219,8 +219,8 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 |---|---|---|
 | IntentEngine | [intent_engine.py](../../../1-ARCHITECTURE/dreamos/core/sense/intent_engine.py) | 规则+LLM+动态识别，7 型策略意图，置信度门控/澄清 |
 | IntentEvaluator | [intent_evaluator_agent.py](../../../1-ARCHITECTURE/dreamos/core/sense/evaluators/intent_evaluator_agent.py) | recall 历史 + jev/laya 重分类 + escalation |
-| 前端四级管线 | [intent-unified.ts](../../../3-FRONTEND/dream-universal-gateway/src/lib/intent/intent-unified.ts) | 35 型正典、追问检测、命令快路径、FC 识别、规则兜底 |
-| 影子探针 | [shadow-probe.ts](../../../3-FRONTEND/dream-universal-gateway/src/lib/intent/shadow-probe.ts) | 旧路径为准、200 样本、记忆污染封闭、失败静默 |
+| 前端四级管线 | `intent-unified.ts` | 35 型正典、追问检测、命令快路径、FC 识别、规则兜底 |
+| 影子探针 | `shadow-probe.ts` | 旧路径为准、200 样本、记忆污染封闭、失败静默 |
 | 复杂度分级 | `1-ARCHITECTURE/dreamos/core/sense/complexity_classifier.py` | T0-T3 编排深度 |
 | 认知记忆 | [SPEC-CognitiveSystem-Evolution.md](../../../35-广义认知系统协作模块/SPEC-CognitiveSystem-Evolution.md) | recall/record/verify、C1-C4 |
 | 评测协议 | [SPEC-评测系统.md](../../../45-评测系统/SPEC-评测系统.md) §9-10 | LLM 裁判校准、人工评测协议 |

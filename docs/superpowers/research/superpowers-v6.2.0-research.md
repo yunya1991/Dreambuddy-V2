@@ -803,7 +803,7 @@ find "$SRC" -name SKILL.md -type f | while read -r f; do
 done
 ```
 
-注意：这样会丢失 `writing-good-tests.md`、`root-cause-tracing.md` 等 reference 文件，以及 `implementer-prompt.md` 等 dispatch 模板——而这些文件被 SKILL.md 用相对路径引用（如 `subagent-driven-development/SKILL.md` L232 `[implementer-prompt.md](implementer-prompt.md)`）。**不建议最小化方案**，会破坏 SKILL.md 的引用完整性。
+注意：这样会丢失 `writing-good-tests.md`、`root-cause-tracing.md` 等 reference 文件，以及 `implementer-prompt.md` 等 dispatch 模板——而这些文件被 SKILL.md 用相对路径引用（如 `subagent-driven-development/SKILL.md` L232 `[implementer-prompt.md](../../../4-MEMORY/0-元记忆/superpowers/skills/subagent-driven-development/implementer-prompt.md)`）。**不建议最小化方案**，会破坏 SKILL.md 的引用完整性。
 
 ### 8.4 推荐方案：完整 skills/ 子树 + 适配层
 

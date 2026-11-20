@@ -70,7 +70,7 @@
 
 | 维度 | 证据 |
 |---|---|
-| 代码现状 | E5 当前判读（[e5_strong_primitives.py](../../experiments/e5_cbr_holdout/e5_strong_primitives.py#L43-L45)）：原语为 6 维状态（R_up/R_down/R_smooth/R_flow/R_reflexivity/quality_score）+ is_short，kNN 上限 53.6%。**注入接口 = 在特征向量上新增维度**，单个模式即一个二值/分位维度，技术上 1 个模式就能重跑 |
+| 代码现状 | E5 当前判读（[e5_strong_primitives.py](../../../experiments/e5_cbr_holdout/e5_strong_primitives.py)）：原语为 6 维状态（R_up/R_down/R_smooth/R_flow/R_reflexivity/quality_score）+ is_short，kNN 上限 53.6%。**注入接口 = 在特征向量上新增维度**，单个模式即一个二值/分位维度，技术上 1 个模式就能重跑 |
 | 统计实践 | 早注入的风险是"模式库自身的选择偏差污染 E5 结论"。三层防线已在模式侧把关（candidate 已要求 n≥8 + Holm 通过），E5 侧只需保持**同一 fold/holdout 协议**保证与 53.6% 基线可比 |
 | 工程实践 | E5 重测全 shadow、单次成本为分钟级脚本运行，失败成本≈0；"攒够 10 个"没有统计上的必要性，反而延迟信号获取 |
 

@@ -5,7 +5,7 @@
 - 验收时间：2026-11-16（Asia/Shanghai）
 - 验收人：AI
 - 关联 commit：未提交（本轮未要求 commit / push / 部署）
-- 契约依据：[SPEC-20261116 v1.0](../../../1-ARCHITECTURE/specs/SPEC-20261116-统计能力DSH插件化与统计算法系统.md)、[TASKS-20261116 55/55](../../../1-ARCHITECTURE/specs/TASKS-20261116-统计能力与算法系统落地清单.md)、[TECHNICAL_DESIGN v2.68](./../../../docs/TECHNICAL_DESIGN.md)
+- 契约依据：[SPEC-20261116 v1.0](../../../1-ARCHITECTURE/specs/SPEC-20261116-统计能力DSH插件化与统计算法系统.md)、[TASKS-20261116 55/55](../../../1-ARCHITECTURE/specs/TASKS-20261116-统计能力与算法系统落地清单.md)、[TECHNICAL_DESIGN v2.68](../../docs/TECHNICAL_DESIGN.md)
 
 ## 五维证据矩阵
 

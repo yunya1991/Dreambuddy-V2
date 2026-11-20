@@ -1,7 +1,7 @@
 # G0:dsh-superagent-prototype 契约核实清单 v0.1
 
 > **版本**: v0.1 ｜ **日期**: 2026-11-03 ｜ **状态**: 🟡 初稿——核实项已定义,原型源码**本地未找到**,待获取后执行
-> **定位**: [SACG_A_SUPERAGENT_CONNECTION_SPEC v0.2](../../1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md) §2.1 G0 前置交付物
+> **定位**: [SACG_A_SUPERAGENT_CONNECTION_SPEC v0.2](../../../1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md) §2.1 G0 前置交付物
 > **判定规则**: 本清单决定「借壳灌芯 A 步」是否可行——若核心核实项证伪,降级为「A 步仅借壳观察 + 灌芯走 B 步自研」(SPEC §五 风险表)
 > **实测记录**: 每项核实后回填「结果 / 证据(文件:行) / 结论」三列
 

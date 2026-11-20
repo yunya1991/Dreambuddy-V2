@@ -713,7 +713,7 @@ const reward = pnlPct;  // 直接用 PnL 当 reward
 - [dream-harness-bridge/PHASE0_REPORT.md](./dream-harness-bridge/PHASE0_REPORT.md) v2.0 — Phase 0 POC 验收
 - [RESEARCH_SACG_HARNESS_MAPPING.md](./RESEARCH_SACG_HARNESS_MAPPING.md) v0.1 — SACG 四层 → Harness 扩展点详细映射设计
 - [6-TRADING/TRADING_SYSTEM.md](../6-TRADING/TRADING_SYSTEM.md) v2.2 — 交易系统
-- [24-图结构上下文压缩/SPEC.md](../24-图结构上下文压缩/SPEC.md) v1.0 — 双维度编排
+- [24-图结构上下文压缩/SPEC.md](../24-图结构上下文压缩/docs/archive/SPEC.md) v1.0 — 双维度编排
 - [4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md](../4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md) v5.0 — 认知系统
 - [2-KNOWLEDGE/INDEX.md](../2-KNOWLEDGE/INDEX.md) — 知识库
 - [0-系统文档管理/INDEX.md](../0-系统文档管理/INDEX.md) v2.2 — 文档管理

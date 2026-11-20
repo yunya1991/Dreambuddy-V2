@@ -28,7 +28,7 @@
 
 ### 2.1 共性 P0：断网 / 超时直接抛栈
 
-**证据**：三个付费客户端 [pay.py](../../components/market-data/variants/pro/scripts/pay.py#L37-L51) 同一写法，只捕获 `HTTPError`：
+**证据**：三个付费客户端 `pay.py` 同一写法，只捕获 `HTTPError`：
 
 ```python
 try:
@@ -49,7 +49,7 @@ except urllib.error.HTTPError as exc:
 
 ### 2.2 共性 P0：参数被静默吞掉
 
-**证据**：[market-data-pro/scripts/pay.py](../../components/market-data/variants/pro/scripts/pay.py#L58-L68) 与 event-context-pro 同构：
+**证据**：`market-data-pro/scripts/pay.py` 与 event-context-pro 同构：
 
 ```python
 args, extra = p.parse_known_args(argv)
@@ -77,7 +77,7 @@ if key and key in COMMANDS[args.cmd]:
 
 ### 2.3 共性 P0：支付履约路径不完整
 
-**证据**：服务端 402 响应体只有 `out_trade_no / amount / currency / goods_name / resource_id / pay_before`（[app.js](../../platform/services/skillhub-audit-api/src/app.js#L278-L287)），**没有支付链接或二维码**；客户端只打印金额、订单号、截止时间。
+**证据**：服务端 402 响应体只有 `out_trade_no / amount / currency / goods_name / resource_id / pay_before`（`app.js`），**没有支付链接或二维码**；客户端只打印金额、订单号、截止时间。
 
 **对应评测**：E·内容完整度 4.0「从收到付款提示到最终完成付款的步骤还不够完整」；cogsteward-pro「支付凭证从哪里获得仍不够清楚」；开箱即用度 4.0–4.3。
 
@@ -89,7 +89,7 @@ if key and key in COMMANDS[args.cmd]:
 
 ### 2.4 规范性 P1：零返回样例 + 零 FAQ
 
-**证据**：三个 SKILL.md 均无成功返回样例；`market-data-pro` 的「支持的命令」表还漏了代码里已实现的 `context` 命令（[COMMANDS](../../components/market-data/variants/pro/scripts/pay.py#L28-L34) 五项，文档只写四项）。
+**证据**：三个 SKILL.md 均无成功返回样例；`market-data-pro` 的「支持的命令」表还漏了代码里已实现的 `context` 命令（`COMMANDS` 五项，文档只写四项）。
 
 **对应评测**：C·反模式与FAQ 3.3–3.5（三项最低）、C·文档质量 3.5–3.8。
 
@@ -100,7 +100,7 @@ if key and key in COMMANDS[args.cmd]:
 
 ### 2.5 认知管家 P1：输入不校验 +「缺测填 0」与承诺矛盾
 
-**证据**：[report.py](../../components/cogsteward/variants/pro/scripts/report.py#L48-L92) 直接信任 `--metrics`：
+**证据**：`report.py` 直接信任 `--metrics`：
 
 - 未知 key 静默忽略（拼错 `broken_link` → 不报错、不减分）；
 - 值为字符串/负数/`null` 时不校验，`value >= high_at` 可能直接抛 `TypeError`；

@@ -1,7 +1,7 @@
 # 56 总技术文档 — L2 大模型驱动层能力地图
 
 - **版本**: v1.27 ｜ **日期**: 2026-11-20 ｜ **状态**: 🟡 正式修订版（A0–A3 全链路 + preset 导出/加载 + 四类 probe 采集器 + Cordis loader 探针 + sandbox profile 实装挂载 + HCP H1/H2/H3/H4/H5 落地 + L2Envelope/l2_route 三出口接线）
-- **上游**: [SPEC-56-L2架构能力聚合层.md](../SPEC-56-L2架构能力聚合层.md)（ADR/契约/门禁/路线）、[3+3架构模块映射.md](../1-ARCHITECTURE/3+3架构模块映射.md) v1.2、[SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v4.2
+- **上游**: [SPEC-56-L2架构能力聚合层.md](../SPEC-56-L2架构能力聚合层.md)（ADR/契约/门禁/路线）、[3+3架构模块映射.md](../../1-ARCHITECTURE/3+3架构模块映射.md) v1.2、[SYSTEM_ARCHITECTURE_OVERVIEW.md](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v4.2
 - **下游**: 3.1 前端 L2 通道、DreamOS/DSH 实现、47 层级 MCP 注册表、48 涌现/54 统计层协作面
 - **协议层证据**: [REA-lobehub协议逆向解析-v0.1.md](./REA-lobehub协议逆向解析-v0.1.md)（52 协议事实 + GAP-17~23 + 对照实验设计）
 - **总装线对标**: [总装线对标-三源与DreamOS逐模块优化-v0.1.md](./总装线对标-三源与DreamOS逐模块优化-v0.1.md)（LobeHub/OpenAI/Claude 三源 + 7 段契约 + GAP-24~30）
@@ -15,13 +15,13 @@
 
 | 文档 | 角色 | 唯一负责的内容 | 版本 |
 |---|---|---|---|
-| [SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) | 架构 SSoT | L0/L1/L2 判据、新 SACG 定义、层级文档权威性 | v4.2 |
-| [3+3架构模块映射.md](../1-ARCHITECTURE/3+3架构模块映射.md) | 归层 SSoT | 53 个模块的层归属、L2 五子层、层级 MCP 治理结论 | v1.2 |
+| [SYSTEM_ARCHITECTURE_OVERVIEW.md](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) | 架构 SSoT | L0/L1/L2 判据、新 SACG 定义、层级文档权威性 | v4.2 |
+| [3+3架构模块映射.md](../../1-ARCHITECTURE/3+3架构模块映射.md) | 归层 SSoT | 53 个模块的层归属、L2 五子层、层级 MCP 治理结论 | v1.2 |
 | [SPEC-56-L2架构能力聚合层.md](../SPEC-56-L2架构能力聚合层.md) | **本域契约** | ADR-01~10、IF-1~IF-6、G-L2-1~9、路线 P0–P5 | v0.5 |
 | **本文 TECHNICAL_DESIGN.md** | **总技术文档 + 能力登记** | 能力 ID `L2-*`、状态列、缺口 GAP-*、推进顺序、部署与验收 | **v0.1** |
-| [SPEC-v1.4-L0L1L2-路由边界与认知裁决.md](../34-前端应用训练系统/SPEC-v1.4-L0L1L2-路由边界与认知裁决.md) | 路由边界 | 四道闸 G1–G4、`channel` 三值、10 行判定表、认知裁决层 | v1.4-r3 |
-| [SPEC-v1.2-SACG-orchestration.md](../34-前端应用训练系统/SPEC-v1.2-SACG-orchestration.md) | 内核编排 | S→A→C→G 流转、C-drive 双语义 | v1.2 |
-| [SPEC-L1L2-MCP-PACKAGING-v0.1.md](../47-MCP管理系统/docs/tech/SPEC-L1L2-MCP-PACKAGING-v0.1.md) | 层级 MCP | `l2.<domain>.mcp` 命名、分层配额、硬约束 H1/H2/H4/H8 | v0.1 |
+| [SPEC-v1.4-L0L1L2-路由边界与认知裁决.md](../../34-前端应用训练系统/SPEC-v1.4-L0L1L2-路由边界与认知裁决.md) | 路由边界 | 四道闸 G1–G4、`channel` 三值、10 行判定表、认知裁决层 | v1.4-r3 |
+| [SPEC-v1.2-SACG-orchestration.md](../../34-前端应用训练系统/SPEC-v1.2-SACG-orchestration.md) | 内核编排 | S→A→C→G 流转、C-drive 双语义 | v1.2 |
+| [SPEC-L1L2-MCP-PACKAGING-v0.1.md](../../47-MCP管理系统/docs/tech/SPEC-L1L2-MCP-PACKAGING-v0.1.md) | 层级 MCP | `l2.<domain>.mcp` 命名、分层配额、硬约束 H1/H2/H4/H8 | v0.1 |
 | 32/34/46/48/52/53/24 各模块 SPEC | 模块实现 | 各自算法、状态机、评分与实验口径 | 见各自文档 |
 
 **读法**：本文只登记「L2 能做什么、做到什么程度」，算法与实验细节一律回到模块 SPEC，不在此复述。

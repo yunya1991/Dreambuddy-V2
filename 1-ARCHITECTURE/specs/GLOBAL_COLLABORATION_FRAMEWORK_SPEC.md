@@ -141,7 +141,7 @@ AI 产物 → DreamOS scheduler_data/artifacts（前端 artifact-utils.ts 直读
 **证据**：
 | 位置 | 证据 |
 |------|------|
-| [bridge-client.ts](../../3.1-FRONTEND/src/lib/bridge-client.ts) L6-L7 | 前端统一入口默认 `http://127.0.0.1:3847`，`NEXT_PUBLIC_BRIDGE_URL` 可覆盖 |
+| [bridge-client.ts](../../24-图结构上下文压缩/planner/bridge-client.ts) L6-L7 | 前端统一入口默认 `http://127.0.0.1:3847`，`NEXT_PUBLIC_BRIDGE_URL` 可覆盖 |
 | run_api_server.py（未入库） L16-L21 | `DHB_API_PORT=3847`，DSH integration 层承担统一入口 |
 | run_api_server.py L148-L161 | 原 `6-TRADING/bridge` 的 market/trade/skill/bridge 蓝图已迁移注册 |
 | [CHAIN_INTEGRATION_SPEC.md](../dream-harness-bridge/docs/CHAIN_INTEGRATION_SPEC.md) L45/L159/L247 | 设计决策：DSH :3080 不暴露给前端，仅 IPC 内部调用；前端不直接请求 :3080 |

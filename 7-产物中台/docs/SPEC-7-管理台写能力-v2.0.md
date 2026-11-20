@@ -47,19 +47,19 @@
 
 | # | 事实 | 证据 |
 |---|---|---|
-| F1 | Prisma `provider=postgresql`，与主前端共用业务库，20+ 模型 | [schema.prisma](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系/prisma/schema.prisma#L10-L18) |
-| F2 | `User.role ∈ {FREE,PRO,ADMIN}`；`sessions` 字段 `id/uid/sessionToken/expiresAt`（非 Auth.js adapter 形状） | [schema.prisma](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系/prisma/schema.prisma#L577-L592) |
-| F3 | `/admin` 已有 11 个只读页面 | [AdminSidebar.tsx](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系/components/admin/AdminSidebar.tsx#L10-L22) |
-| F4 | `/api/admin/**` 全部只有 GET | [route.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系/app/api/admin/trading-params/route.ts#L7-L17) |
-| F5 | 无 `middleware.ts`、无登录态、无角色校验 | [layout.tsx](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系/app/admin/layout.tsx#L9-L23) |
+| F1 | Prisma `provider=postgresql`，与主前端共用业务库，20+ 模型 | `schema.prisma` |
+| F2 | `User.role ∈ {FREE,PRO,ADMIN}`；`sessions` 字段 `id/uid/sessionToken/expiresAt`（非 Auth.js adapter 形状） | `schema.prisma` |
+| F3 | `/admin` 已有 11 个只读页面 | `AdminSidebar.tsx` |
+| F4 | `/api/admin/**` 全部只有 GET | `route.ts` |
+| F5 | 无 `middleware.ts`、无登录态、无角色校验 | `layout.tsx` |
 | F6 | 文档已承诺 POST/PATCH，实现缺失 | [TECHNICAL_DESIGN.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/docs/TECHNICAL_DESIGN.md#L469-L478) |
 | F7 | `3.1` 用 next-auth **v5-beta + JWT**；写库后经 bridge PUT `27 /api/v1/config` | [auth.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND/src/lib/auth.ts#L117-L121)、[classic-system-bridge.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND/src/lib/classic-system-bridge.ts#L6-L36) |
 | F8 | `27` 有 `POST/GET /api/v1/approvals`、`GET /api/v1/approvals/<id>`、`GET .../ok`，**无 decide/executor** | [app.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/27-策略治理审批系统/app.py#L250-L317) |
 | F9 | 审计链为 `governance/audit/chain.py` + `audit_hash_chain.jsonl`，**无文件锁** | [chain.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/27-策略治理审批系统/governance/audit/chain.py#L60-L100) |
 | F10 | `param_center` 已实现，`repository.py` 读写 `sl_floor/tp_floor` 等；`data/` 仅 `aggregated_params.json` | [repository.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/param_center/repository.py#L110-L145) |
 | F11 | 监控每轮重建 `UnifiedMonitor()` 并重读配置 → 在线生效 | [scheduler.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/15-监控告警系统/scheduler.py#L189-L196)、[monitor_config.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/15-监控告警系统/config/monitor_config.json#L54-L55)（`interval_minutes=60`、`sync_interval_minutes=5`） |
-| F12 | `deploy.sh` 默认 `next dev`，缺库自动 `prisma db push` | [deploy.sh](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系/deploy.sh#L110-L111) |
-| F13 | 工程无 `next-auth/zod/bcryptjs`；测试为 `node --test` | [package.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/系统研究索引体系/package.json#L5-L39) |
+| F12 | `deploy.sh` 默认 `next dev`，缺库自动 `prisma db push` | `deploy.sh` |
+| F13 | 工程无 `next-auth/zod/bcryptjs`；测试为 `node --test` | `package.json` |
 
 ---
 

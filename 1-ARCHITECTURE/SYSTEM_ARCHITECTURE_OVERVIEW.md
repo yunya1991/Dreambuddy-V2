@@ -2191,7 +2191,7 @@ Validator 评分 ≥ 80   ← "难度校验通过"
 | **投票计算器** | voting-calculator.ts | [24-图结构上下文压缩/planner/](../24-图结构上下文压缩/planner/voting-calculator.ts) | 🟢 |
 | **Python实验版ChainPlanner** | chain_planner.py | [experiments/ab-trading/core/](../experiments/ab-trading/core/chain_planner.py) | 🟢 |
 | **Python版意图识别** | intent_gateway.py | [experiments/ab-trading/core/](../experiments/ab-trading/core/intent_gateway.py) | 🟢 |
-| **编排API** | route.ts | [app/api/orchestrate/](../3.1-FRONTEND/src/app/api/orchestrate/route.ts) | 🟡 |
+| **编排API** | route.ts | `app/api/orchestrate/route.ts`（文件已不存在） | 🟡 |
 | **前端动态链Runner** | runner.ts | [dynamic-chain/](../3.1-FRONTEND/src/lib/dynamic-chain/runner.ts) | 🟡 |
 | **前端反思引擎** | reflect-engine.ts | [dynamic-chain/](../3.1-FRONTEND/src/lib/dynamic-chain/reflect-engine.ts) | 🟢 |
 | **图-反思桥接** | graph-reflection-bridge.ts | [3.1-FRONTEND/src/lib/](../3.1-FRONTEND/src/lib/graph-reflection-bridge.ts) | 🟡 |

@@ -608,7 +608,7 @@ src/app/api/task/[id]/gate/route.ts          POST 确认 / 驳回（409 = 仍有
 | 9 | 审批卡必须显示证据摘要与版本 | 前端 `GateBar` |
 | 10 | 重复批准不计入 quorum | `approver.min_distinct` |
 
-> **多节点流程定义见总纲 [§6.9 GateFlow](../../../1-ARCHITECTURE/specs/SPEC-SYSTEM-ARCH-CAPABILITY-v1.0.md) / 调研 [§2.6](../RESEARCH-GATE-INSTITUTIONS-v0.1.md)**：本节只定义单门的 `GatePolicy`；当需要条件分支、并签、加签、转交、抄送、限时升级时，由 `GateFlow` 组合多个门并过编译期校验（必须终于 acceptance、超时不得自动通过）。
+> **多节点流程定义见总纲 [§6.9 GateFlow](../../../1-ARCHITECTURE/specs/SPEC-SYSTEM-ARCH-CAPABILITY-v1.0.md) / 调研 [§2.6](RESEARCH-GATE-INSTITUTIONS-v0.1.md)**：本节只定义单门的 `GatePolicy`；当需要条件分支、并签、加签、转交、抄送、限时升级时，由 `GateFlow` 组合多个门并过编译期校验（必须终于 acceptance、超时不得自动通过）。
 
 #### 11.8.7 三处入口，一份状态
 

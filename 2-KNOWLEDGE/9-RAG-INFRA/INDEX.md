@@ -107,3 +107,8 @@
 | v2.1 | 2026-10-11 | 数据统计更新：ChromaDB chunks 3699→4540（策略文档 chunks ~3300→~4100） |
 | v2.0 | 2026-09-10 | 补充桥接模块、热路径集成、CBR向量化、数据统计 |
 | v1.0 | 2026-08-15 | 初始版本：向量检索层+三阶段路线 |
+
+## 脚本索引
+
+- [__init__.py](__init__.py)
+- [index_query_service.py](index_query_service.py) — IndexQueryService — 索引语义查询服务

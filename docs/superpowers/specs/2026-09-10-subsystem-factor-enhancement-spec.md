@@ -100,7 +100,7 @@ def _fetch_snapshot_klines(coin: str) -> list:
 
 ### 2.1 ETF 流出权重提升
 
-[five_domain_feature_computer.py:436](../../../11-易经推理系统/scripts/memory_l4/five_domain_feature_computer.py#L436)
+[five_domain_feature_computer.py:436](../../../43-战略承接推演层/strategic_extension/five_domain_feature_computer.py)
 ```python
 # 改前
 deltas.append(float(flow_norm) * 0.05)

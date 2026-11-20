@@ -1,7 +1,7 @@
 # 评审报告 — SPEC-EMERGENCE-FINANCIAL-ENV v1.1（六维）
 
 - 评审日期：2026-11-11
-- 评审对象：[SPEC-EMERGENCE-FINANCIAL-ENV-v1.0.md](../SPEC-EMERGENCE-FINANCIAL-ENV-v1.0.md)（文件名 v1.0，内容版本 v1.1）
+- 评审对象：`SPEC-EMERGENCE-FINANCIAL-ENV-v1.0.md`（文件名 v1.0，内容版本 v1.1）
 - 评审依据：[REVIEW-CHECKLIST-v0.1.md](../REVIEW-CHECKLIST-v0.1.md) 六维检查清单
 - 评审方式：文档 vs 仓库现实（逐项核验文件存在性 / 数据分布 / 存量考古 / 强制点）
 - 结论：**不通过**。设计层成立，但存在 2 个数据前置性 P0（S 层样本不足、中文模型缺失），若不关闭则 v1 无法产出任何可信结论。文档已按本报告修订为 v1.2。

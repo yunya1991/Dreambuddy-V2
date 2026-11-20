@@ -22,3 +22,10 @@
 | `deploy.sh` | 一键部署入口 |
 | `git-sync.sh` / `git-setup-tracking.sh` | Git 同步 / 追踪配置 |
 | `hermes-gateway.service` / `hermes-dashboard.service` / `group-poller.service` | systemd 服务单元 |
+
+## 脚本索引
+
+- [02-clone-and-config.sh](02-clone-and-config.sh) — 6-TRADING 腾讯云部署 — 02 代码部署 + 配置
+- [03-systemd-services.sh](03-systemd-services.sh) — 6-TRADING 腾讯云部署 — 03 systemd 服务注册
+- [preflight-eval-gate.sh](preflight-eval-gate.sh) — 45 评测系统 — 部署前置门禁（P3-2 / SPEC §4 §13.4）
+- [quarterly-baseline.sh](quarterly-baseline.sh) — 45 评测系统 — 季度 golden set 回归（P4-6 / SPEC §8.3 §8.5）

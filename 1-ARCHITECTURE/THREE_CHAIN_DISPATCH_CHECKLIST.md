@@ -538,7 +538,7 @@ deployed_canary                            deployed_full
 ### 5.2 经典指标系统核心文档
 | 文档 | 路径 |
 |------|------|
-| 技术文档 | [技术文档.md](../10-经典指标系统/技术文档.md) |
+| 技术文档 | `技术文档.md` |
 | AI Agent技术文档2.0 | [交易AI Agent 技术文档2.0.md](../10-经典指标系统/交易AI Agent 技术文档2.0.md) |
 | 主服务文件 | [ml_trade_service.py](../10-经典指标系统/ml_trade_service.py) |
 

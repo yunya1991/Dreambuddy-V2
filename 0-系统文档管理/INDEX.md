@@ -347,3 +347,7 @@
 ---
 
 **维护说明**: 新增/删除文档时同步更新本索引；由 `4-工具与自动化/doc_coverage.py` + `link_checker.py` 自动校验（已建成）。
+
+## 脚本索引
+
+- [doc_coverage_checker.py](doc_coverage_checker.py) — 文档覆盖率与断链检查。

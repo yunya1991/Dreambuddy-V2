@@ -1,7 +1,7 @@
 # 评审报告 — SPEC-EMERGENCE-FINANCIAL-ENV v1.6（第二轮六维）
 
 - 评审日期：2026-11-11
-- 评审对象：[SPEC-EMERGENCE-FINANCIAL-ENV-v1.0.md](../SPEC-EMERGENCE-FINANCIAL-ENV-v1.0.md)（内容版本 v1.6，本轮修复后 v1.7）
+- 评审对象：`SPEC-EMERGENCE-FINANCIAL-ENV-v1.0.md`（内容版本 v1.6，本轮修复后 v1.7）
 - 评审依据：[REVIEW-CHECKLIST-v0.1.md](../REVIEW-CHECKLIST-v0.1.md) 六维检查清单
 - 上轮报告：[REVIEW-2026-11-11-financial-env-spec-v1.1.md](./REVIEW-2026-11-11-financial-env-spec-v1.1.md)（结论：不通过，P0×4 / P1×3）
 - 评审方式：文档 vs 仓库现实（逐项 grep/ls/sqlite 核验，不采信文档自述）

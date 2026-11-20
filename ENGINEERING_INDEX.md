@@ -910,7 +910,7 @@ cd 43-战略承接推演层 && python -m pytest tests -q
 |------|----------|----------|----------|
 | **Dream OS 内核** | [dreamos/docs/ENGINEERING_INDEX.md](./1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md) | [dreamos/docs/TECHNICAL_DESIGN.md](./1-ARCHITECTURE/dreamos/docs/TECHNICAL_DESIGN.md) | [dreamos/__init__.py](./1-ARCHITECTURE/dreamos/__init__.py) |
 | V15马丁策略 | [docs/ENGINEERING_INDEX.md](./14-V15经典马丁策略/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./14-V15经典马丁策略/docs/TECHNICAL_DESIGN.md) | [core/v15_trader.py](./14-V15经典马丁策略/core/v15_trader.py) |
-| 经典指标系统 | [docs/TECHNICAL_DESIGN.md](./10-经典指标系统/docs/TECHNICAL_DESIGN.md) | [技术文档.md](./10-经典指标系统/技术文档.md) | [ml_trade_service.py](./10-经典指标系统/ml_trade_service.py) |
+| 经典指标系统 | [docs/TECHNICAL_DESIGN.md](./10-经典指标系统/docs/TECHNICAL_DESIGN.md) | `技术文档.md` | [ml_trade_service.py](./10-经典指标系统/ml_trade_service.py) |
 | 三屏趋势系统 | [docs/ENGINEERING_INDEX.md](./12-三屏趋势系统/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./12-三屏趋势系统/docs/TECHNICAL_DESIGN.md) | [engine.py](./12-三屏趋势系统/engine.py) |
 | 通用风控模块 | [docs/ENGINEERING_INDEX.md](./13-通用风控模块/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./13-通用风控模块/docs/TECHNICAL_DESIGN.md) | [core/engine.py](./13-通用风控模块/core/engine.py) |
 | 易经推理系统 | [docs/ENGINEERING_INDEX.md](./11-易经推理系统/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./11-易经推理系统/docs/TECHNICAL_DESIGN.md) | [scripts/memory_l4/polling_trader.py](./11-易经推理系统/scripts/memory_l4/polling_trader.py) |

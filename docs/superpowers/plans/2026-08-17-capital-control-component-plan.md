@@ -169,7 +169,7 @@ python -m pytest 13-通用风控模块/tests/ -v
 
 ### 步骤 3：实现 types.py
 
-**目标：** 创建 [16-调控系统/core/capital\_control/types.py](../../../16-调控系统/core/capital_control/types.py)
+**目标：** 创建 [16-调控系统/core/capital\_control/types.py](../../../13-通用风控模块/risk_capital/capital_control/types.py)
 
 **子任务：**
 
@@ -255,7 +255,7 @@ python -m pytest 13-通用风控模块/tests/ -v
 
 ### 步骤 5：实现 CapitalControlComponent 主组件
 
-**目标：** 创建 [16-调控系统/core/capital\_control/component.py](../../../16-调控系统/core/capital_control/component.py)
+**目标：** 创建 [16-调控系统/core/capital\_control/component.py](../../../13-通用风控模块/risk_capital/capital_control/component.py)
 
 **子任务：**
 

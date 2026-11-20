@@ -118,7 +118,7 @@ python 0-系统文档管理/4-工具与自动化/index_generator.py 14-V15经典
 
 ## 4. link_checker.py — 跨文档链接校验
 
-扫描指定目录下所有 `.md` 文件的 markdown 链接 `[text](path)`，校验相对路径目标是否存在。跳过外部 URL（http/https/mailto/ftp）与纯锚点（`#xxx`）；链接中的锚点（`path#section`）只校验 path 是否存在。
+扫描指定目录下所有 `.md` 文件的 markdown 链接 ``text``，校验相对路径目标是否存在。跳过外部 URL（http/https/mailto/ftp）与纯锚点（`#xxx`）；链接中的锚点（`path#section`）只校验 path 是否存在。
 
 **用法：**
 

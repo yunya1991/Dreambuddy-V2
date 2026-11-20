@@ -186,7 +186,7 @@
 │      + 八卦形态(TREND_UP_STRONG/RANGE_BOUND/BREAKOUT) 共22键                   │
 │    - 未命中 → DEFAULT_REGIME_FACTOR=1.00（FAIL-OPEN 中性）                     │
 │    - calibration_bias = G6_seed × regime_factor × liquidity_factor            │
-│  代码锚点：[FiveDomainHeuristicScorer](../scripts/memory_l4/five_domain_*.py)│
+│  代码锚点：FiveDomainHeuristicScorer（scripts/memory_l4/five_domain_*.py）│
 │            [ForceVectorCalculator](../scripts/memory_l4/force_vector/)      │
 │            polling_trader._run_once_five_domain_daily_update()             │
 │  ★ 影子日志（v4.3.1）：_emit_shadow_logs() 输出 9 类字段，对齐 FiveDomainState │
@@ -224,7 +224,7 @@
 │  代码锚点：polling_trader._get_regime_pred_multipliers() H2 弹簧写入         │
 │            [three_layer_weighter.py](../scripts/memory_l4/three_layer_weighter.py)
 │            [elastic_gate_3l.py](../scripts/memory_l4/elastic_gate_3l.py#L212-L308) 方向校准
-│            [win_prob_engine.py](../scripts/memory_l4/win_prob_engine.py)
+│            win_prob_engine.py（已下线，文件不存在）
 └────────────────────────────────────┬───────────────────────────────────────┘
                                      ▼ 已校准仓位倍率 + Score_P/E/B
 ┌────────────────────────────────────────────────────────────────────────────┐

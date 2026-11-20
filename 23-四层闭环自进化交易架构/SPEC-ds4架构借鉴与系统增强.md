@@ -128,7 +128,7 @@ bool ds4_ssd_auto_cache_plan(..., ds4_ssd_cache_plan *out);
 |------|------|---------|
 | DeepReasoningEngine 内部 | 4 级降级链：torchsde → EM → GARCH → GBM | [deep_reasoning_engine.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/deep_reasoning_engine.py#L148-L220) |
 | Pipeline 层面 | 开关控制启用/禁用 + try/except FO | [evolution_pipeline.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L112-L124) |
-| 最小阻力搜索 | HJB → 变分法 → argmin | [deep_reasoning_engine.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/deep_reasoning_engine.py#L309-L354) |
+| 最小阻力搜索 | HJB → 变分法 → argmin | [deep_reasoning_engine.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/deep_reasoning_engine.py) |
 
 **特点**：已有模块内降级链，但 pipeline 层面是"开关控制 + 异常跳过"，缺少**资源感知的主动降级**。
 

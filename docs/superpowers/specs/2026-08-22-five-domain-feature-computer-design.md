@@ -10,7 +10,7 @@
 
 ### 现状
 
-`FiveDomainHeuristicScorer`（[five_domain_scorer.py](../../../11-易经推理系统/scripts/memory_l4/five_domain_scorer.py)）接收五维原始评分(0-100)并映射到决策（war_state/mask/cap/...），决策映射层（6个不等式）实现完整。但 **原始评分从未从市场数据计算过**：
+`FiveDomainHeuristicScorer`（`five_domain_scorer.py`）接收五维原始评分(0-100)并映射到决策（war_state/mask/cap/...），决策映射层（6个不等式）实现完整。但 **原始评分从未从市场数据计算过**：
 
 - [polling_trader.py:1100](../../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L1100) 调用 `score_and_decide(persist=True)` 不传 `raw_scores_by_class`
 - `enable_five_domain=False`，scorer 恒返回 fail-open 默认值 `{dao:50, tian:50, di:50, jiang:50, fa:70}`
@@ -79,7 +79,7 @@ else:
 
 ### 开关控制
 
-`enable_five_domain=False`（[strategy_algo_layer.py](../../../11-易经推理系统/scripts/memory_l4/strategy_algo_layer.py) 的总开关）时：
+`enable_five_domain=False`（[strategy_algo_layer.py](../../../43-战略承接推演层/strategic_extension/strategy_algo_layer.py) 的总开关）时：
 - feature computer 不执行
 - scorer 返回 fail-open 默认值
 - 字节等价「战略层不存在」
@@ -179,7 +179,7 @@ else:
 
 | 子指标 | 权重 | 量化方式 | 数据来源 | 本次实现 |
 |--------|------|----------|----------|----------|
-| 策略库完备性 | 20% | 6类策略是否实现 | [strategy_algo_layer.py](../../../11-易经推理系统/scripts/memory_l4/strategy_algo_layer.py) STYLE_ORDER | ✅ 计算 |
+| 策略库完备性 | 20% | 6类策略是否实现 | [strategy_algo_layer.py](../../../43-战略承接推演层/strategic_extension/strategy_algo_layer.py) STYLE_ORDER | ✅ 计算 |
 | 策略适配度 | 25% | 地形vs策略匹配 | allowed_style_mask | ✅ 计算 |
 | 风控规则完整度 | 25% | 止损/回撤/仓位/相关性 | RiskManager | ✅ 计算 |
 | 回测验证度 | 20% | 样本外/夏普/最大回撤/换手率 | backtest_result.json（链接失效） | ✅ 计算 |
@@ -187,7 +187,7 @@ else:
 
 ### 评分标准化
 
-§八 L1160：每个子指标统一用 Z-score/分位数/tanh 映射到 0~100，复用现有 `_normalize_0_100`（[strategy_algo_layer.py:26](../../../11-易经推理系统/scripts/memory_l4/strategy_algo_layer.py#L26)）。
+§八 L1160：每个子指标统一用 Z-score/分位数/tanh 映射到 0~100，复用现有 `_normalize_0_100`（[strategy_algo_layer.py:26](../../../43-战略承接推演层/strategic_extension/strategy_algo_layer.py)）。
 
 ### 庙算总分（§五 L968-970）
 

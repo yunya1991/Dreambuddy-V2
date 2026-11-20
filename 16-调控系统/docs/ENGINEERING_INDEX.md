@@ -5,7 +5,7 @@
 >
 > **v2.3 变更：** 资金双轨（`core/capital_control/` + `core/capital_allocator/`）迁出至 `13-通用风控模块/risk_capital/`，旧路径保留 MetaPathFinder 别名 shim；参数中心（`scripts/param_center/`）迁出至 `4-MEMORY/9-工具与接口/param_center/`，旧路径保留 `__path__` 重定向 shim。本域保留 `core/trailing_stop/`、`core/exit_executor/`、`core/unified_position_query.py`、科研/AI 面（a9_exit_decision + auto_exit_system）。
 >
-> **v2.2 变更：** 新增 §11 参数中心（Param Center）子模块（`scripts/param_center/`），含对外 API `get_sltp_params` + BMA/KL散度聚合 + Bayesian 四条件门禁 + Ray Tune 大规模并行优化 + 影子校准，45/45 测试 GREEN，trailing_stop 与 polling_trader 已接入。详见 [scripts/param_center/README.md](../scripts/param_center/README.md)。
+> **v2.2 变更：** 新增 §11 参数中心（Param Center）子模块（`scripts/param_center/`），含对外 API `get_sltp_params` + BMA/KL散度聚合 + Bayesian 四条件门禁 + Ray Tune 大规模并行优化 + 影子校准，45/45 测试 GREEN，trailing_stop 与 polling_trader 已接入。详见 [scripts/param_center/README.md](../../4-MEMORY/9-工具与接口/param_center/README.md)。
 >
 > **v2.1 变更：** 新增 L1.5 资金调控层（`core/capital_control/`），含 1 个主组件 + 4 条资金规则 + 配置/示例/测试套件；`unified_position_query.py` 补齐 equity 字段与 `total_equity` 聚合；`auto_exit_system.py` 新增步骤 1.5 挂载 + `_write_capital_report` + `--dry-run`。详见 [CAPITAL_CONTROL_DESIGN.md](./CAPITAL_CONTROL_DESIGN.md)。
 
@@ -443,7 +443,7 @@ enhanced_evolution（增强闭环）
 
 ## 11. 参数中心（Param Center）
 
-> **v2.2 新增**：参数中心子模块落地于 `scripts/param_center/`，是"参数中心化、执行去中心化"架构的 Layer 2。详见 [scripts/param_center/README.md](../scripts/param_center/README.md)。
+> **v2.2 新增**：参数中心子模块落地于 `scripts/param_center/`，是"参数中心化、执行去中心化"架构的 Layer 2。详见 [scripts/param_center/README.md](../../4-MEMORY/9-工具与接口/param_center/README.md)。
 
 ### 11.1 模块定位
 
@@ -491,7 +491,7 @@ enhanced_evolution（增强闭环）
 
 ### 11.6 关联文档
 
-- 模块 README：[scripts/param_center/README.md](../scripts/param_center/README.md) v1.0
+- 模块 README：[scripts/param_center/README.md](../../4-MEMORY/9-工具与接口/param_center/README.md) v1.0
 - 三层架构 SSoT：[1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0
 - 验收 SKILL：`dream-module-post-dev-verify-workflow` v1.0.0
 
