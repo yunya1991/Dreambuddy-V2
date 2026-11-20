@@ -72,8 +72,8 @@ python3 -m http.server 8099
 
 ## 部署状态（49.233.123.96）
 
-> 2026-11-20 已完成 S0/S1 上线；V10b 运行时验收（8082 未认证 401、8081 后台路径非 200）
-> 已在云端通过，外网浏览器确认仍待完成（见「待办」）。
+> 2026-11-20 完成 S0–S2 上线并通过外网验收；2026-11-21 增加公网 HTTPS（IP 证书）。
+> 域名 `dreamos.online` 被腾讯云网络层拦截（未备案），暂不能用，详见「待办」。
 
 | 项 | 值 |
 |---|---|
@@ -81,7 +81,9 @@ python3 -m http.server 8099
 | SSH | `ubuntu@49.233.123.96`（免密 sudo） |
 | 后端目录 | `/opt/skillhub-audit/app`，systemd `skillhub-audit-api`（8788 公开 / 8789 管理） |
 | 站点目录 | `/opt/dreambuddy-59-site`（由本目录同步） |
-| 入口 | 公网 `http://49.233.123.96:8081`；后台 `127.0.0.1:8082`（Basic Auth） |
+| 入口 | 公网 `https://49.233.123.96`（443，TLS/HTTP2）与 `http://49.233.123.96:8081`；后台 `127.0.0.1:8082`（Basic Auth） |
+| HTTPS | Let's Encrypt **IP 证书**（`shortlived`，6 天有效），`/etc/letsencrypt/live/49.233.123.96/` |
+| 续期 | `certbot.timer`（每日 00/12 点）+ `/etc/systemd/system/certbot.service.d/override.conf` 指向 `/opt/certbot-venv/bin/certbot`，续期后 reload nginx |
 | nginx | `/etc/nginx/sites-available/dreambuddy-59-site` → `sites-enabled` |
 | 后端 env | `/etc/skillhub-audit/audit.env`（644，含全部下表变量） |
 | 部署克隆 | `/home/ubuntu/deploy-src/dreambuddy`（GitHub 抖动时停在 `26b41bd`，恢复后 `fetch + merge --ff-only` 即可） |
@@ -119,13 +121,23 @@ ssh ubuntu@49.233.123.96 'cd /home/ubuntu/deploy-src/dreambuddy \
 回滚：站点用上一次 `/opt/dreambuddy-59-site` 备份覆盖；后端 `git revert` 后按上面的
 「后端」流程重新 pull + 重启；数据库新增表对旧代码无影响（SPEC §7）。
 
-**待办（TLS）**
+**HTTPS 与域名**
 
-- 外网 `http://49.233.123.96:8081` 已于 2026-11-20 放行并复核：四页 + 4 个 `p/` 详情页 200，
-  `/data/`、`/admin.html` 404，trial 参数校验 400、`/api/audit` 402（带 `Payment-Needed`）、
-  beacon 同源 204 / 异源 403；8082、8789 公网仍不可达。
-- `8082` 只能走 SSH 隧道：`ssh -L 8082:127.0.0.1:8082 ubuntu@49.233.123.96`。
-- 公网正式启用前必须切 HTTPS（SPEC §5.7），本轮未执行。
+- 已启用 `https://49.233.123.96`：Let's Encrypt IP 证书（`shortlived`，6 天），
+  `certbot renew --dry-run` 通过；续期由 `certbot.timer` 驱动，renew 后 `systemctl reload nginx`。
+- 系统自带的 apt 版 certbot 在本机跑不起来（`python3` 已升到 3.12，dist-packages 依赖错配），
+  因此证书工具固定在 venv：`/opt/certbot-venv/bin/certbot`，`certbot.service` 用 drop-in 覆盖。
+- 域名 `dreamos.online` / `www.dreamos.online` 解析正确，但访问被腾讯云网络层 302 到
+  `dnspod.qcloud.com/static/webblock.html`（未 ICP 备案拦截），80/8081 均被劫持。
+  **备案通过前不要用该域名**；通过后把域名 A 记录保留在本机，再加 443 的 `server_name`
+  与域名证书，`SITE_ORIGIN` 改为 `https://<域名>`。
+
+**外网验收（2026-11-21）**
+
+- `https://49.233.123.96/` 200、TLS 校验通过、HTTP/2；`/p/*.html` 200；
+  `/admin.html`、`/data/` 404；`/api/audit` 402（带 `Payment-Needed`）；
+  beacon 新源 204 / 旧 http 源 204 / 异源 403。
+- `8082` 只能走 SSH 隧道：`ssh -L 8082:127.0.0.1:8082 ubuntu@49.233.123.96`；8082/8789 公网不可达。
 
 ## 环境变量（audit-api）
 
