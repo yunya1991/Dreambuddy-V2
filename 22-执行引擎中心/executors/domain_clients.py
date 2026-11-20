@@ -77,11 +77,15 @@ def shadow_decision(action: str, inst_id: str, pos_side: str, reason: str, sz: A
     否则 22 网关会按 alert-only 记录 GatewayContractViolation（P1 噪音）。
     """
     _pos_side = str(pos_side or "").lower()
+    _sym = str(inst_id or "").strip()
+    if not _sym:
+        # v1.2 symbol 正则只接受真实标的；MULTI 既不是合约也不是 MACRO。
+        raise ValueError("shadow_decision: inst_id 为空，禁止 MULTI 占位符")
     direction = _pos_side if _pos_side in ("long", "short") else "long"
     return {
         "signal_id": f"23-evolution|{int(time.time() * 1000)}",
         "source": "23-evolution",
-        "symbol": str(inst_id or "MULTI"),
+        "symbol": _sym,
         "direction": direction,
         "confidence": 0.5,
         "action": action,
@@ -137,12 +141,16 @@ class DomainTaggedOkxClient:
         gw = object.__getattribute__(self, "_gateway")
         if gw is None:
             return None
+        # 无标的时不存在可执行的单笔信号（如 cancel_algo 全撤）：不允许用
+        # 占位符 MULTI 提交，否则既过不了 v1.2 symbol 正则，也会产生伪订单。
+        if not str(inst_id or "").strip():
+            return {"ok": False, "error": "inst_id_required"}
         decision = shadow_decision(action, inst_id, pos_side, reason, sz)
         decision["source"] = "23-evolution"
         decision["decision_id"] = (
             str(decision_id)
             if decision_id
-            else (f"dec-23-{inst_id or 'MULTI'}-{action}-{uuid.uuid4().hex[:8]}")
+            else (f"dec-23-{str(inst_id).strip()}-{action}-{uuid.uuid4().hex[:8]}")
         )
         decision["expires_at"] = (
             str(expires_at)
@@ -199,7 +207,8 @@ class DomainTaggedOkxClient:
         self, action: str, inst_id: Any, pos_side: str, reason: str, sz: Any = None
     ) -> None:
         gw = object.__getattribute__(self, "_shadow_gw")
-        if gw is None:
+        if gw is None or not str(inst_id or "").strip():
+            # 无标的（如 cancel_algo 全撤）不做单笔影子校验；MULTI 不是合法标的。
             return
         try:
             gw.submit(shadow_decision(action, inst_id, pos_side, reason, sz))

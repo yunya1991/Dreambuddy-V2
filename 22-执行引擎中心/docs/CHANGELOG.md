@@ -1,5 +1,15 @@
 # 执行引擎中心 — 变更记录
 
+## v1.9.4（2026-11-20）— 移除 MULTI 占位标的
+
+### 修复
+- `executors/domain_clients.shadow_decision`：`inst_id` 为空时直接 `ValueError`，不再回退为 `symbol="MULTI"`
+  （v1.2 symbol 正则只接受 `*-USDT-SWAP` 或 `MACRO`，占位符会产生契约违规与伪订单）。
+- `executors/domain_clients._submit_via_gateway`：无标的时 fail-closed 返回 `{"ok": false, "error": "inst_id_required"}`，
+  不再向网关提交单笔决策；`decision_id` 同步移除 MULTI 兜底。
+- `executors/domain_clients._shadow_check`：无标的（如 `cancel_algo` 全撤）跳过单笔影子校验。
+- 测试：`tests/test_domain_clients_contract.py` 新增 3 项（fail-closed / 影子跳过 / 空标的拒绝）。
+
 ## v1.9.3（2026-11-20）— 执行层决策补齐 v1.2 契约
 
 ### 修复

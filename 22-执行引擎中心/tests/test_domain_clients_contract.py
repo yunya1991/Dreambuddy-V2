@@ -18,7 +18,7 @@ _GW_DIR = Path(__file__).resolve().parents[1]
 if str(_GW_DIR) not in sys.path:
     sys.path.insert(0, str(_GW_DIR))
 
-from executors.domain_clients import DomainTaggedOkxClient  # noqa: E402
+from executors.domain_clients import DomainTaggedOkxClient, shadow_decision  # noqa: E402
 
 _SCHEMA_PATH = _GW_DIR.parent / "49-交易框架协议" / "contracts" / "final_decision_signal.v1.2.json"
 _REQUIRED_PAYLOAD = (
@@ -92,3 +92,49 @@ def test_execution_decisions_satisfy_v12_schema() -> None:
         assert "px" not in decision
         for field in _REQUIRED_PAYLOAD:
             assert field in decision["payload"], f"payload 缺少 {field}"
+
+
+def test_missing_inst_id_fails_closed_without_submit() -> None:
+    gw, client = _client()
+
+    out = client._submit_via_gateway("open", None, "long", "entry", 1.0)
+
+    assert out == {"ok": False, "error": "inst_id_required"}
+    assert gw.decisions == [], "无标的时不得提交 MULTI 占位决策"
+
+
+def test_shadow_check_skips_missing_inst_id() -> None:
+    class _ShadowGateway:
+        def __init__(self) -> None:
+            self.decisions: list[dict] = []
+
+        def submit(self, decision: dict) -> None:
+            self.decisions.append(decision)
+
+    shadow = _ShadowGateway()
+    client = DomainTaggedOkxClient(raw=object(), shadow_gateway=shadow)
+
+    client._shadow_check("cancel_algo", None, "", "cancel all")
+
+    assert shadow.decisions == []
+
+
+def test_shadow_decision_rejects_empty_inst_id() -> None:
+    with pytest.raises(ValueError, match="inst_id"):
+        shadow_decision("open", "", "long", "entry")
+
+
+def test_cancel_all_still_routes_to_gateway_without_inst_id() -> None:
+    class _Gateway:
+        def __init__(self) -> None:
+            self.calls: list[tuple] = []
+
+        def cancel_algo_orders(self, inst_id=None, source=None) -> dict:
+            self.calls.append((inst_id, source))
+            return {"ok": True}
+
+    gw = _Gateway()
+    client = DomainTaggedOkxClient(raw=object(), gateway=gw)
+
+    assert client.cancel_algo_orders(None) == {"ok": True}
+    assert gw.calls == [(None, "23-evolution")]
