@@ -950,6 +950,82 @@ class CollectionScheduler:
                 interval_sec=21600,  # 6 小时
             )
         )
+        # ── 币安 Web3 公开榜单（crypto-market-rank，无需 Key）──────────
+        #    趋势/搜索/Alpha 榜：每币一条记录，sub_category=web3_<榜单>_<symbol>，
+        #    metrics 含 dev/sniper/insider/bundler/聪明钱/KOL/Pro 持仓占比 + 审计税/风险，
+        #    是当前唯一提供「地址结构因子」的免费源。
+        tasks.append(
+            CollectionTask(
+                name="binance_web3_rank",
+                category="chain",
+                source="binance_web3_market",
+                params={"route": "rank", "chain_id": "56", "size": 30, "rank_types": [10, 11, 20]},
+                interval_sec=900,  # 15min
+            )
+        )
+        #    社交热度榜：真实社交热度指数 + 情绪 + AI 摘要（替代新闻计数代理）
+        tasks.append(
+            CollectionTask(
+                name="binance_web3_social",
+                category="chain",
+                source="binance_web3_market",
+                params={"route": "social_hype", "chain_id": "56"},
+                interval_sec=900,
+            )
+        )
+        #    聪明钱净流入榜：inflow/traders/风险等级
+        tasks.append(
+            CollectionTask(
+                name="binance_web3_smart_money",
+                category="chain",
+                source="binance_web3_market",
+                params={"route": "smart_money", "chain_id": "56", "period": "24h"},
+                interval_sec=900,
+            )
+        )
+        #    memecoin 算法评分榜（Pulse exclusive，更新慢，30min）
+        tasks.append(
+            CollectionTask(
+                name="binance_web3_meme",
+                category="chain",
+                source="binance_web3_market",
+                params={"route": "meme_rank", "chain_id": "56"},
+                interval_sec=1800,
+            )
+        )
+        #    叙事热点（Topic Rush）：净流入 + AI 摘要 + 关联币（Solana 生态更活跃）
+        tasks.append(
+            CollectionTask(
+                name="binance_web3_narrative",
+                category="chain",
+                source="binance_web3_market",
+                params={"route": "narrative", "chain_id": "CT_501", "rank_type": 30, "sort": 30},
+                interval_sec=1800,
+            )
+        )
+        # ── 币安 Web3 横截面聚合（23/40 域因子源）
+        #    把 趋势/搜索/社交/聪明钱/meme/叙事 六路榜单压成一条 web3_market 记录；
+        #    19 回填只放行这一条，逐币记录留 18 供前端深挖，避免污染 mm_metrics。
+        tasks.append(
+            CollectionTask(
+                name="binance_web3_aggregate",
+                category="chain",
+                source="binance_web3_agg",
+                params={"chain_id": "56", "size": 30, "period": "24h"},
+                interval_sec=1800,  # 30min
+            )
+        )
+        # ── 币安 Web3 单币画像 + 安全审计（query-token-info/audit）
+        #    跟随趋势榜 top10 自动深挖：动态行情 104 字段 + 蜜罐/税费/风险命中
+        tasks.append(
+            CollectionTask(
+                name="binance_web3_token_watchlist",
+                category="chain",
+                source="binance_web3_token",
+                params={"route": "watchlist", "chain_id": "56", "limit": 10},
+                interval_sec=1800,  # 30min
+            )
+        )
         # 环境级禁用：DC_DISABLED_SOURCES="theblockbeats_dataview,xxx" 时剔除对应任务。
         # 云端（腾讯云机房 IP 被 theblockbeats CDN 封，TCP 超时）用它关掉不可达源，消除噪音日志。
         disabled = {

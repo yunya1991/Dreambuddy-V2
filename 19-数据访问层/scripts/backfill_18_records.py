@@ -43,6 +43,12 @@ from dreambuddy_dal.implementations.sqlite_unified.vintage import append_vintage
 DEFAULT_SRC = REPO_ROOT / "18-数据获取中心" / "data_center.db"
 DEFAULT_DST = DAL_ROOT / "data" / "dreambuddy_core.db"
 
+# 币安 Web3：逐币榜单快照（数百个 BSC 小币 × 20+ 指标）不进 mm_metrics，
+# 只放行 18 域聚合器产出的单条横截面记录 web3_market（23 域因子源）。
+_WEB3_PER_TOKEN_SOURCES = ("binance_web3_market", "binance_web3_token")
+_WEB3_AGG_SOURCES = ("binance_web3_agg",)
+_WEB3_AGG_SUB_CATEGORY = "web3_market"
+
 
 def _to_unix_sec(ts_text: str) -> int | None:
     """把 18 records 的 timestamp 文本转成 unix 秒。"""
@@ -155,6 +161,10 @@ def _iter_metric_rows(src_db: str) -> Iterable[tuple]:
         """)
     for source, sub_category, ts_text, metrics_json, ts_json in cur:
         if not sub_category:
+            continue
+        if source in _WEB3_PER_TOKEN_SOURCES:
+            continue
+        if source in _WEB3_AGG_SOURCES and sub_category != _WEB3_AGG_SUB_CATEGORY:
             continue
         unix_ts = _to_unix_sec(ts_text)
         if unix_ts is None:

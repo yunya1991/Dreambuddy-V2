@@ -50,6 +50,7 @@ _ARTIFACTS = {
     "washout_verdicts": "washout_verdicts.json",
     "cross_asset_matrix": "cross_asset_matrix.json",
     "leader_resonance": "leader_resonance.json",
+    "meme_platform": "meme_platform.json",
 }
 
 _GRANGER_ALPHA = 0.05
@@ -177,7 +178,13 @@ class ResonanceSensor:
             sector = self._cache.get("sector_transmission") or {}
             washout = self._cache.get("washout_verdicts") or {}
 
-            forces = compute_macro_forces(cycle_state, resonance, sector, washout)
+            forces = compute_macro_forces(
+                cycle_state,
+                resonance,
+                sector,
+                washout,
+                self._cache.get("meme_platform") or {},
+            )
             cross = self._cache.get("cross_asset_matrix") or {}
             cross_assets = cross.get("assets") or {}
             cross_forces = compute_cross_class_forces(cross, cycle_state)

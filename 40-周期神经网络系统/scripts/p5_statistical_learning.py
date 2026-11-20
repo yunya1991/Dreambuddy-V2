@@ -74,6 +74,8 @@ def extract_feature_vector(features: dict) -> dict:
     ff = features.get("fund_flow.json", {})
     st = features.get("sector_transmission.json", {})
     wv = features.get("washout_verdicts.json", {})
+    mp = features.get("meme_platform.json", {})
+    web3 = mp.get("binance_web3_bsc") or {}
     vec = {
         # 周期状态特征
         "cycle_state": cs.get("real_cycle", {}).get("state"),
@@ -103,6 +105,17 @@ def extract_feature_vector(features: dict) -> dict:
         # 洗盘判定特征（BTC 触发状态与标签）
         "btc_washout_label": wv.get("verdicts", {}).get("BTC/USDT", {}).get("label"),
         "btc_washout_trigger": wv.get("verdicts", {}).get("BTC/USDT", {}).get("trigger_activated"),
+        # Web3 链上小币横截面（18 binance_web3_agg 聚合 → meme_platform.json）
+        # 口径：新钱包占比/高危占比=投机风险偏好，社交热度/meme 评分=投机情绪，聪明钱净流入=资金面
+        "web3_new_wallet_pct": web3.get("web3_new_wallet_pct_med"),
+        "web3_high_risk_ratio": web3.get("web3_high_risk_ratio"),
+        "web3_social_hype": web3.get("web3_hype_med"),
+        "web3_meme_score": web3.get("web3_meme_score_med"),
+        "web3_smart_money_inflow": web3.get("web3_smart_money_net_inflow_usd"),
+        # L4_meme 层合成（p3_meme_platform_monitor.build_meme_layer_metrics）
+        "meme_temperature": (mp.get("meme_layer") or {}).get("meme_temperature"),
+        "meme_structure_risk": (mp.get("meme_layer") or {}).get("structure_risk"),
+        "meme_heat_composite": (mp.get("meme_layer") or {}).get("meme_heat_composite"),
     }
     return vec
 

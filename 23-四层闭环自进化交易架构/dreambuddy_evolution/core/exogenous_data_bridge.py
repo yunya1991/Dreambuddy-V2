@@ -578,6 +578,40 @@ CROSS_ATTENTION_FACTOR_METRICS: list[tuple[str, str, str, str]] = [
     ("social_volume", "total_news_records", "total_news_records", "news"),
 ]
 
+# ----------------------------------------------------------------------
+# Web3 链上小币横截面因子（默认关闭）
+# ----------------------------------------------------------------------
+# 来源：18 域 BinanceWeb3MarketAggregator → 19 mm_metrics sub_category=web3_market。
+# 为什么默认关闭：drift_net 的 cross-attention 因子投影宽度由 ckpt 的
+# exogenous_factor_dim 决定（当前 36）；直接追加会让因子矩阵 (N, 46) 与 ckpt
+# 的 q_proj 宽度不一致。开启后必须重新训练 ckpt 并保存新的 factor_head_mask，
+# 训练与推理侧同时设置 EVO_WEB3_FACTORS=1 才能保持一致。
+WEB3_FACTOR_METRICS: list[tuple[str, str, str, str]] = [
+    # C1 资金面
+    ("web3_market", "web3_smart_money_net_inflow_usd", "web3_smart_money_inflow", "C1"),
+    ("web3_market", "web3_buy_sell_vol_ratio", "web3_buy_sell_ratio", "C1"),
+    # C2 情绪面（新钱包追高）
+    ("web3_market", "web3_new_wallet_pct_med", "web3_new_wallet_pct", "C2"),
+    # C3 技术面（链上筹码结构）
+    ("web3_market", "web3_sniper_bundler_pct_med", "web3_sniper_bundler", "C3"),
+    ("web3_market", "web3_dev_holding_pct_med", "web3_dev_holding", "C3"),
+    # C7 广度 / 叙事
+    ("web3_market", "web3_narrative_net_inflow_med", "web3_narrative_inflow", "C7"),
+]
+# 注：web3_top10_conc_med / web3_hype_med / web3_sentiment_mean / web3_high_risk_ratio /
+# web3_meme_score_med 属于 L4_meme 层口径（BSC 小币投机温度/筹码结构/双链热度），
+# 2026-11-20 用户确认改由 40 域 meme 模块承接（scripts/p3_meme_platform_monitor.py
+# 的 build_meme_layer_metrics），不再在此处注册，避免同一指标两处口径。
+
+
+def web3_factors_enabled() -> bool:
+    """EVO_WEB3_FACTORS=1/true/yes 时启用 Web3 因子（训练与推理侧需同步）。"""
+    return os.environ.get("EVO_WEB3_FACTORS", "").strip().lower() in ("1", "true", "yes")
+
+
+if web3_factors_enabled():
+    CROSS_ATTENTION_FACTOR_METRICS = [*CROSS_ATTENTION_FACTOR_METRICS, *WEB3_FACTOR_METRICS]
+
 
 def build_factor_head_mask(
     metrics: Optional[list[tuple]] = None,

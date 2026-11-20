@@ -5,7 +5,7 @@ SPEC-各维度矛盾计算重建 v0.4 实现。
 
 维度体系（八维，每维多信号合成，FAIL-OPEN 降级）:
   D1 宏观利率: CPI surprise(0.5) + fedwatch 加息概率(0.2) + WALCL 联储表30d动量(0.2) + PPIACO 通胀z-score(0.1)
-  D2 资金流:   多空比 + 资金费率(OKX fallback) + OKX 主动买卖比 + 持仓量 + 清算
+  D2 资金流:   多空比 + 资金费率(OKX fallback) + 主动买卖比(OKX 场内 ⊕ Web3 链上) + Web3 链上资金(聪明钱净流入/新钱包占比) + 持仓量 + 清算
   D3 技术:     由调用方传入（现有路径共振），本评估器不计算
   D4 市场情绪: 恐惧贪婪指数（极端反转） + 期权 put/call ratio + fear_greed_enhanced.capital_flow
   C6 估值:     BTC 市值 z-score(0.6) + ETF 净流入 latest_total_flow_btc(0.4)
@@ -15,8 +15,11 @@ SPEC-各维度矛盾计算重建 v0.4 实现。
 
 数据源: 19 DAL mm_metrics（CPI/fedwatch/WALCL/PPIACO/long_short_ratio/funding_rate/
         okx_derivatives/options/fear_greed_enhanced/bitcoin/etf_flow/stablecoin_hist_*/
-        exchanges_whales/utxo_age_distribution/DGS10/DTWEXBGS/SP500/VIXCLS/newsflash）
+        exchanges_whales/utxo_age_distribution/DGS10/DTWEXBGS/SP500/VIXCLS/newsflash/
+        web3_market）
         + 40 域 cross_asset_matrix.json。
+        web3_market 为 18 域币安 Web3 横截面聚合条（BSC 小币），在 D2 中作为既有资金流
+        指标的增强项直接并入（不新增维度、不新增因子槽位）。
 
 设计要点:
   • 只读 19 DAL 通用指标表 mm_metrics（不写库）
@@ -54,6 +57,15 @@ class DimensionForceEvaluator:
     MIN_SAMPLES_D1 = 8
     MIN_SAMPLES_D2 = 30
     MIN_SAMPLES_D4 = 30
+
+    # ── Web3 链上增强（D2 既有资金流指标的增益项）──
+    # 数据来自 18 域 BinanceWeb3MarketAggregator 的横截面聚合条（19 mm_metrics
+    # sub_category=web3_market），口径固定为「BSC 热门小币横截面中位数/比率」。
+    # 量纲饱和阈值可用环境变量覆盖；历史样本足够后可改为 z-score。
+    WEB3_SUB_CATEGORY = "web3_market"
+    WEB3_BS_SCALE = 0.05  # 买卖量比偏离 1 的 ±5% 视为饱和
+    WEB3_SMART_SCALE_USD = 200_000.0  # 聪明钱净流入 ±20 万 USD 视为饱和
+    WEB3_NEW_WALLET_SCALE_PCT = 3.0  # 新钱包持仓占比 ±3 个百分点视为饱和
 
     def __init__(self, db_path: str | None = None) -> None:
         if db_path is None:
@@ -300,6 +312,64 @@ class DimensionForceEvaluator:
             return self._neutral("d1-error")
 
     # ------------------------------------------------------------------
+    # Web3 链上增强读取
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _env_float(name: str, default: float) -> float:
+        """环境变量覆盖量纲阈值（非法值回退默认）。"""
+        try:
+            v = float(os.environ.get(name, default))
+        except (TypeError, ValueError):
+            return default
+        return v if v > 0 else default
+
+    def _web3_flow_parts(self, now: int) -> tuple[float | None, float | None, dict[str, Any]]:
+        """读 web3_market 聚合条 → (场内买卖比 part, 链上资金 part, components).
+
+        sign 与 D2 一致：raw>0 → 空头力量，raw<0 → 多头力量。
+          - web3_buy_sell_vol_ratio：链上主动买/卖量比；>1 买入占优 → 多头(负)
+          - web3_smart_money_net_inflow_usd：聪明钱净流入；流入 → 多头(负)
+          - web3_new_wallet_pct_med：新钱包持仓占比；新钱涌入 → 风险偏好上行 → 多头(负)
+        量纲饱和（环境变量可调）：买卖比 ±5%、净流入 ±20 万 USD、新钱包 ±3pct。
+        FAIL-OPEN：任一指标缺失/陈旧 → 仅跳过该指标。
+        """
+        comps: dict[str, Any] = {}
+        bs_part: float | None = None
+        chain_parts: list[float] = []
+
+        bs = self._query_latest(self.WEB3_SUB_CATEGORY, "web3_buy_sell_vol_ratio")
+        if bs is not None and now - bs[1] < _STALE_SEC:
+            scale = self._env_float("WEB3_BS_SCALE", self.WEB3_BS_SCALE)
+            bs_part = max(-1.0, min(1.0, -(float(bs[0]) - 1.0) / scale))
+            comps["web3_buy_sell_vol_ratio"] = {
+                "ratio": round(float(bs[0]), 4),
+                "part": round(bs_part, 3),
+            }
+
+        sm = self._query_latest(self.WEB3_SUB_CATEGORY, "web3_smart_money_net_inflow_usd")
+        if sm is not None and now - sm[1] < _STALE_SEC:
+            scale = self._env_float("WEB3_SMART_SCALE_USD", self.WEB3_SMART_SCALE_USD)
+            part = max(-1.0, min(1.0, -float(sm[0]) / scale))
+            chain_parts.append(part)
+            comps["web3_smart_money_net_inflow_usd"] = {
+                "usd": round(float(sm[0]), 2),
+                "part": round(part, 3),
+            }
+
+        nw = self._query_latest(self.WEB3_SUB_CATEGORY, "web3_new_wallet_pct_med")
+        if nw is not None and now - nw[1] < _STALE_SEC:
+            scale = self._env_float("WEB3_NEW_WALLET_SCALE_PCT", self.WEB3_NEW_WALLET_SCALE_PCT)
+            part = max(-1.0, min(1.0, -float(nw[0]) / scale))
+            chain_parts.append(part)
+            comps["web3_new_wallet_pct_med"] = {
+                "pct": round(float(nw[0]), 4),
+                "part": round(part, 3),
+            }
+
+        chain_part = sum(chain_parts) / len(chain_parts) if chain_parts else None
+        return bs_part, chain_part, comps
+
+    # ------------------------------------------------------------------
     # D2 资金流维度
     # ------------------------------------------------------------------
     def evaluate_d2(self, symbol: str | None = None) -> dict[str, Any]:
@@ -312,6 +382,8 @@ class DimensionForceEvaluator:
         symbol = symbol or os.environ.get("DIMENSION_FORCE_SYMBOL", "BTC")
         try:
             now = int(time.time())
+            from dreambuddy_evolution.agi_config import get_switch
+
             components: dict[str, Any] = {}
             ls_part: float | None = None
             fr_part: float | None = None
@@ -361,6 +433,26 @@ class DimensionForceEvaluator:
             else:
                 taker_part = None
 
+            # ── Web3 链上增强：直接并入既有资金流指标（默认开启）──
+            #  · web3_buy_sell_vol_ratio 增强「主动买卖比」：OKX 在场时 0.7/0.3 混合，
+            #    OKX 缺失时直接顶替（口径同为主动买卖力量）
+            #  · web3_smart_money_net_inflow_usd + web3_new_wallet_pct_med 合成「链上资金」
+            #    参与 D2 合成（与多空比/资金费率/主动买卖比同权，不新增维度）
+            web3_chain_part: float | None = None
+            if get_switch("enable_d2_web3_flow", True):
+                _bs_part, web3_chain_part, _web3_comps = self._web3_flow_parts(now)
+                if _web3_comps:
+                    components.update(_web3_comps)
+                if _bs_part is not None:
+                    if taker_part is None:
+                        taker_part = _bs_part
+                        components["taker_source"] = "web3_buy_sell_vol_ratio"
+                    else:
+                        taker_part = 0.7 * taker_part + 0.3 * _bs_part
+                        components["taker_source"] = "okx+web3_blend"
+                        if "taker_buy_sell_ratio" in components:
+                            components["taker_buy_sell_ratio"]["part"] = round(taker_part, 3)
+
             oi = self._query_open_interest(symbol)
             if (
                 oi is not None
@@ -391,21 +483,21 @@ class DimensionForceEvaluator:
                     "part": round(liq_part, 3),
                 }
 
+            # coverage 只统计 4 个核心分量（多空比/资金费率/持仓量/清算），
+            # 主动买卖比与 Web3 链上增强属于可选增项，不计入分母，
+            # 否则「核心数据齐全」会被永远报成 <1.0。
             coverage = round(
                 sum(
                     (
                         ls_part is not None,
                         fr_part is not None,
-                        taker_part is not None,
                         oi_available,
                         liq_part is not None,
                     )
                 )
-                / 5.0,
+                / 4.0,
                 3,
             )
-
-            from dreambuddy_evolution.agi_config import get_switch
 
             if get_switch("enable_d2_oi_liq", False):
                 weighted = []
@@ -415,6 +507,7 @@ class DimensionForceEvaluator:
                     (taker_part, 0.15),
                     (oi_part, 0.20),
                     (liq_part, 0.15),
+                    (web3_chain_part, 0.10),
                 ):
                     if part is not None:
                         weighted.append((part, weight))
@@ -425,7 +518,11 @@ class DimensionForceEvaluator:
                     else None
                 )
             else:
-                legacy = [part for part in (ls_part, fr_part, taker_part) if part is not None]
+                legacy = [
+                    part
+                    for part in (ls_part, fr_part, taker_part, web3_chain_part)
+                    if part is not None
+                ]
                 raw = sum(legacy) / len(legacy) if legacy else None
 
             if raw is None:

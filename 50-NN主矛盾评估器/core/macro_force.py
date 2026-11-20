@@ -15,6 +15,7 @@
   - resonance_matrix.json   → R(s)={corr0, lag_profile, beta, down_corr, granger_p}
   - sector_transmission.json→ layer / layer_median_momentum / transmission.state / meme_gap
   - washout_verdicts.json   → 每标的 washout verdict
+  - meme_platform.json      → L4_meme 层情绪增强（meme_layer.meme_temperature / structure_risk）
 
 fail-open：任何数据缺失 → 对应分量为 0 或恒等传导（corr0=1.0），
 degraded 列表记录原因，不抛异常。
@@ -64,6 +65,12 @@ GRANGER_ALPHA = 0.05
 MEME_GAP_FULL_PCT = 15.0
 # 层动量差归一化分母（20% = 满量程资金信号）
 LAYER_MOM_DIFF_FULL_PCT = 20.0
+
+# ── L4_meme 层的 meme 温度/结构增强（数据源：40/meme_platform.json → meme_layer）──
+# meme_temperature：0-1 投机温度，0.5 为中性；>0.5 过热 → 情绪分量转空，<0.5 冰点 → 转多
+MEME_TEMP_SENTIMENT_WEIGHT = 0.35  # 温度在 L4 情绪因子中的占比（其余仍由 meme_gap 提供）
+MEME_TEMP_DEADBAND = 0.10  # 温度偏离 0.5 小于该值视为无信号
+MEME_STRUCT_DISCOUNT = 0.30  # structure_risk=1 时对 L4 情绪力的最大折扣
 
 
 @dataclass
@@ -164,6 +171,7 @@ def compute_macro_forces(
     resonance_matrix: dict | None,
     sector_transmission: dict | None,
     washout_verdicts: dict | None,
+    meme_platform: dict | None = None,
 ) -> dict[str, MacroForce]:
     """计算每个标的的宏观力向量。
 
@@ -172,6 +180,8 @@ def compute_macro_forces(
         resonance_matrix: 40 resonance_matrix.json 内容（可空）
         sector_transmission: 40 sector_transmission.json 内容（可空）
         washout_verdicts: 40 washout_verdicts.json 内容（可空）
+        meme_platform: 40 meme_platform.json 内容（可空）；其 meme_layer 块用于
+            L4_meme 层的情绪增强（温度 + 筹码结构折扣），缺失时行为与旧版一致
 
     Returns:
         {normalized_symbol: MacroForce}
@@ -185,6 +195,15 @@ def compute_macro_forces(
     meme_gap = _to_float(transmission.get("meme_vs_major_gap_pct"), 0.0)
     layer_medians = (sector_transmission or {}).get("layer_median_momentum_3m_pct") or {}
     l1_median = _to_float(layer_medians.get("L1_anchor"), 0.0)
+
+    meme_layer = (meme_platform or {}).get("meme_layer") or {}
+    meme_temp: float | None = None
+    meme_struct: float | None = None
+    if meme_layer and not meme_layer.get("degraded"):
+        t = meme_layer.get("meme_temperature")
+        s = meme_layer.get("structure_risk")
+        meme_temp = float(t) if isinstance(t, (int, float)) and not isinstance(t, bool) else None
+        meme_struct = float(s) if isinstance(s, (int, float)) and not isinstance(s, bool) else None
 
     res_assets = (resonance_matrix or {}).get("assets") or {}
     washout = washout_verdicts or {}
@@ -230,6 +249,24 @@ def compute_macro_forces(
             # D4 情绪力：meme_gap 为正（meme 跑赢主流）= 过热 → 看空情绪
             sentiment_factor = _clamp(-meme_gap / MEME_GAP_FULL_PCT)
             d4 = _clamp(base * weights["D4"] * sentiment_factor)
+
+            # L4_meme 增强：meme 温度并入情绪因子，筹码结构风险做信号折扣
+            if layer_name == "L4_meme":
+                if meme_layer.get("degraded"):
+                    degraded.append("meme_layer_degraded")
+                if meme_temp is not None:
+                    dev = meme_temp - 0.5
+                    temp_factor = (
+                        -_clamp(dev / (0.5 - MEME_TEMP_DEADBAND))
+                        if abs(dev) > MEME_TEMP_DEADBAND
+                        else 0.0
+                    )
+                    blended = (
+                        1.0 - MEME_TEMP_SENTIMENT_WEIGHT
+                    ) * sentiment_factor + MEME_TEMP_SENTIMENT_WEIGHT * temp_factor
+                    d4 = _clamp(base * weights["D4"] * blended)
+                if meme_struct is not None:
+                    d4 = _clamp(d4 * (1.0 - MEME_STRUCT_DISCOUNT * _clamp(meme_struct)))
 
             # 洗盘力：washout verdict → 反转意图
             wv = washout.get(raw_sym) or washout.get(sym) or {}

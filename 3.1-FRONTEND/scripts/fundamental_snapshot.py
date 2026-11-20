@@ -795,6 +795,20 @@ def _build_news(news_raw: dict, ts: str) -> dict:
     }
 
 
+def _build_web3(ts: str) -> dict:
+    """web3: 币安 Web3 榜单/单币画像（见 scripts/fundamental_web3.py）。
+
+    独立模块：数据为榜单快照结构，不适合进 19-DAL mm_metrics 数值表，
+    由该模块直读 18 的 PG/SQLite（只读、fail-open）。
+    """
+    _here = os.path.dirname(os.path.abspath(__file__))
+    if _here not in sys.path:
+        sys.path.insert(0, _here)
+    from fundamental_web3 import build_web3
+
+    return build_web3(ts)
+
+
 def _build_calendar(calendar_raw: dict, ts: str) -> dict:
     """calendar: 经济日历 (19-DAL mm_events: FOMC/CPI/非农/PPI 官方日程).
 
@@ -976,6 +990,7 @@ def main():
         "news": _build_news(news_raw, ts),
         "narrative": _build_narrative(narrative_raw, ts),
         "calendar": _build_calendar(calendar_raw, ts),
+        "web3": _build_web3(ts),
     }
 
     # ── 3. S1: 挂载真实历史序列（模块主序列，无合成数据） ────────────

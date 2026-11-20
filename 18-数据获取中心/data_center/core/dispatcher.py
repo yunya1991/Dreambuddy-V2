@@ -55,6 +55,15 @@ def _register_defaults(reg: Registry) -> None:
     from data_center.collectors.chain.binance_funding_rate_collector import (
         BinanceFundingRateCollector,
     )
+    from data_center.collectors.chain.binance_web3_aggregator import (
+        BinanceWeb3MarketAggregator,
+    )
+    from data_center.collectors.chain.binance_web3_market_collector import (
+        BinanceWeb3MarketCollector,
+    )
+    from data_center.collectors.chain.binance_web3_token_collector import (
+        BinanceWeb3TokenCollector,
+    )
     from data_center.collectors.chain.blockchain_info_collector import BlockchainInfoCollector
     from data_center.collectors.chain.blockscout_collector import BlockscoutCollector
     from data_center.collectors.chain.ccxt_collector import CcxtCollector
@@ -179,6 +188,11 @@ def _register_defaults(reg: Registry) -> None:
     reg.register("chain", "okx_derivatives", OkxDerivativesCollector)
     reg.register("chain", "utxo_age_distribution", UTXOAgeDistributionCollector)
     reg.register("chain", "social_volume", SocialVolumeCollector)
+    # 币安 Web3 公开榜单/画像（crypto-market-rank + query-token-*）
+    reg.register("chain", "binance_web3_market", BinanceWeb3MarketCollector)
+    # 横截面聚合：仅此一条记录会进 19-DAL mm_metrics 作为因子（逐币记录不进）
+    reg.register("chain", "binance_web3_agg", BinanceWeb3MarketAggregator)
+    reg.register("chain", "binance_web3_token", BinanceWeb3TokenCollector)
 
 
 class DataCenter:

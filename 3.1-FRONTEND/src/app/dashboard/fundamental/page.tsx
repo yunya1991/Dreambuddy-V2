@@ -10,6 +10,7 @@ import { ValuationPanel } from '@/components/features/fundamental/ValuationPanel
 import { OverviewPanel } from '@/components/features/fundamental/OverviewPanel';
 import { IntermarketPanel } from '@/components/features/fundamental/IntermarketPanel';
 import { BreadthPanel } from '@/components/features/fundamental/BreadthPanel';
+import { Web3Panel } from '@/components/features/fundamental/Web3Panel';
 
 const tabModules: Record<string, string> = {
   flow: 'flow',
@@ -26,6 +27,7 @@ const tabs = [
   { id: 'macro', label: '宏观指标' },
   { id: 'sentiment', label: '市场情绪' },
   { id: 'flow', label: '资金流向' },
+  { id: 'web3', label: '链上资金' },
   { id: 'valuation', label: '估值模型' },
   { id: 'narrative', label: '叙事分析' },
   { id: 'breadth', label: '市场广度' },
@@ -56,6 +58,7 @@ export default function FundamentalPage() {
         {activeTab === 'macro' && <MacroPanel />}
         {activeTab === 'sentiment' && <SentimentPanel />}
         {activeTab === 'flow' && <FlowPanel />}
+        {activeTab === 'web3' && <Web3Panel />}
         {activeTab === 'intermarket' && <IntermarketPanel />}
         {activeTab === 'breadth' && <BreadthPanel />}
         {activeTab === 'valuation' && (

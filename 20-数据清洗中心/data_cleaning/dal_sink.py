@@ -109,6 +109,12 @@ _GENERIC_METRIC_ROUTES = {
     "crypto_sentiment",
 }
 
+# 币安 Web3 逐币记录不进 DAL（体量大且与 23/40 交易标的不同链），
+# 只放行聚合条 web3_market —— 与 19/scripts/backfill_18_records.py 的白名单保持一致。
+_WEB3_PER_TOKEN_SOURCES = {"binance_web3_market", "binance_web3_token"}
+_WEB3_AGG_SOURCES = {"binance_web3_agg"}
+_WEB3_AGG_SUB_CATEGORY = "web3_market"
+
 
 class DalSink:
     """SilverRecord → DAL 写入桥。
@@ -142,6 +148,14 @@ class DalSink:
             成功写入的行数。
         """
         if not silver.gate_passed:
+            return 0
+
+        # 币安 Web3：逐币榜单快照（数百个 BSC 小币 × 20+ 指标）不进 mm_metrics，
+        # 只放行 18 域 BinanceWeb3MarketAggregator 产出的横截面聚合条 web3_market。
+        # 说明：19 回填脚本 backfill_18_records 有同名白名单，此处是 Silver 直写通道的对应闸门。
+        if source in _WEB3_PER_TOKEN_SOURCES:
+            return 0
+        if source in _WEB3_AGG_SOURCES and sub_category != _WEB3_AGG_SUB_CATEGORY:
             return 0
         if silver.df is None or silver.df.empty:
             return 0
