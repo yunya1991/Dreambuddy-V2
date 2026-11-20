@@ -1,6 +1,6 @@
 # SPEC — 通用组件管理架构重构 v0.1
 
-> **版本**: v0.6（P0–P5 完成，P6 待执行） | **日期**: 2026-11-20
+> **版本**: v0.7（P0–P6 完成） | **日期**: 2026-11-20
 > **范围**: `59-通用组件管理/` 全模块的目录结构、契约层、共享内核、分发构建与治理闸门
 > **依据**: [INDEX.md](../INDEX.md) v0.7、[ARCH 评估结论](#1-背景)（2026-11-20 对话）
 > **不改动**: 任何组件的对外输出契约语义（数值、字段、红线措辞），只改「代码与文档如何组织」
@@ -176,7 +176,7 @@ components/<name>/
 | 源 | 现状 | 裁定 |
 |---|---|---|
 | FRED / SEC / 公共 RPC | 已登记 Public Domain | 保持 |
-| 腾讯行情 `web.ifzq.gtimg.cn` | 数据服务默认不接，日报在用（`facts.py:25`） | **书面例外（DC-1）**：日报保留前复权日线；台账写明用途仅限「已发布收盘价的统计描述」、不二次分发原始行情；`market-data-hub` 措辞改为「默认不接，例外见授权台账」 |
+| 腾讯行情 `web.ifzq.gtimg.cn` | 数据服务默认不接，日报在用（`facts.py:25`） | **书面例外（DC-1）✅ 已落地**：日报保留前复权日线；台账写明用途仅限「已发布收盘价的统计描述」、不二次分发原始行情；`market-data-hub` 措辞已改为「默认不接，例外见授权台账」 |
 
 ### 5.5 `contracts/forbidden_refs.yaml`
 
@@ -289,7 +289,7 @@ python3 tools/build_product.py --all   # 全量构建
 | **P3 kernel 抽取** ✅ | 4 个 kernel 模块（endpoint / handoff / pay_gate / headers）+ `tools/sync_kernel.py` 注入机制 | 重复实现 0 份：`cloud.py` 115→41 行（仅剩声明式配置）、`handoff.py` 与 `pay.py`×3 的共享逻辑全部入 kernel；`sync_kernel --check` 8 个 scripts 目录一致；四组件 94 项测试、沙箱 16/16、改造前后输出逐字段 diff 一致 |
 | **P4 产品构建** ✅ | `products/*.yaml`（4 份）+ `build_product.py`（overlay 叠加、按引用注入 kernel、`--all`） | 4 个商品族 × 8 个变体全部可构建（`--all` 失败 0）；8 份产物 SKILL.md 与源码逐字节一致；入口脚本可执行、`report.py`/`pay.py` 实跑通过 |
 | **P5 闸门接入** ✅ | `Makefile` 的 `check`（sync_kernel + G1–G7 + gen_index）/`release`；G1 增加 SKILL name/slug 别名；清零 G3、G6 存量违规 | 正常树 7/7 PASS、0 违规；`--all` 构建 8/8；负例注入（G1–G7 各 1 例）全部被拦 |
-| **P6 红线收敛** | `data-sources.yaml` 裁定腾讯源；`handoff` target 改契约 | 日报与数据服务口径一致或有书面例外；`forbidden_refs` 无命中 |
+| **P6 红线收敛** ✅ | `data-sources.yaml` 裁定腾讯源；`handoff` target 改契约 | DC-1 复核记录在台账（`reviewed_at`/`review_result`）；数据服务措辞改为「默认不接，例外见台账」，日报免责声明与 DC-1 范围对齐；`handoff` target 已为 `cogsteward.pack@1.0`；`forbidden_refs` 0 命中 |
 
 **回归基线（每个阶段结束必跑）**
 

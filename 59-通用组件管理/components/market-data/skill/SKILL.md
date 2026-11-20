@@ -2,7 +2,7 @@
 name: market-data-hub
 slug: dreambuddy-market-data-hub
 displayName: 数据服务（宏观·披露·链上·上下文）
-version: 1.0.1
+version: 1.0.2
 summary: 海外宏观、美股披露、公有链指标三类开放数据，加数据上下文与交叉统计，每条附方法ID与样本量。
 license: MIT
 allowed-tools: Bash, Read
@@ -121,7 +121,7 @@ Markdown 模式表尾固定五行：
 - 公共 RPC 允许匿名但有限速；已内置主备两源，失败即标原因码
 - FRED 用 `.` 表示缺失值，脚本已跳过，不计入样本量
 - TLS 抖动偶发，脚本对单次失败最多重试 2 次（退避 0.8s / 1.6s），仍失败则记 `E_NET/E_TLS`
-- **不接**：腾讯/新浪/东财行情、Yahoo Finance、CoinGecko 等禁止商用再分发的源
+- **默认不接**：腾讯/新浪/东财行情、Yahoo Finance、CoinGecko 等禁止商用再分发的源；书面例外须在 `contracts/data-sources.yaml` 登记（如 DC-1 仅限市场事实日报的统计描述），本组件不适用
 
 **国内源**：政府统计类（统计局 / 央行 / 外汇局 / 海关）正在逐源核实「可再分发商用」条款，未登记前不接入；交易所行情与中证指数需信息经营许可，不接。
 
@@ -179,4 +179,5 @@ python3 scripts/handoff.py --series DGS10,CPIAUCSL --json
 
 | 版本 | 变更 |
 |---|---|
+| 1.0.2 | 数据源措辞与《数据源授权台账》对齐：腾讯/新浪/东财改为「默认不接，例外须登记」（DC-1 仅限市场事实日报，本组件不适用）；handoff `target` 改为契约值 `cogsteward.pack@1.0` |
 | 1.0.0 | 首个订阅版本：D1 宏观 / D2 披露 / D5 链上 / A-2 上下文 / A-3 交叉统计 / handoff 可装配指针 |

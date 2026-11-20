@@ -1,6 +1,6 @@
 name: market-data
 display_name: 数据服务（宏观·披露·链上·上下文）
-version: 1.0.1
+version: 1.0.2
 family: market-data
 lifecycle: active
 summary: 海外宏观、美股披露、公有链指标三类开放数据，加数据上下文与交叉统计，每条附方法ID与样本量。

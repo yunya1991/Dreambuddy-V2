@@ -26,7 +26,7 @@ import urllib.request
 from datetime import datetime
 
 TENCENT = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
-VERSION = "1.0.2"
+VERSION = "1.0.3"
 LIMITS = "以上均为已发生数据的统计描述，不构成投资建议，不含任何预测。"
 SOURCE_LICENSE = "未声明开放许可（按书面例外授权）"
 METHOD_IDS = ["M01", "M02", "M03", "M04", "M05"]
