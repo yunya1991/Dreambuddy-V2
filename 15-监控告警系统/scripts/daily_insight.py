@@ -1396,6 +1396,19 @@ def collect_all(repo: Path, win: dict, cfg: dict) -> dict:
     }
 
 
+def push_decision(metrics: dict, requested: bool, allow_empty: bool) -> tuple[bool, str]:
+    """空窗抑制：窗口内没有 23 链路事件时不推送。
+
+    本机没有 entry23 时，日报只能读到陈旧的本地 runtime，零事件会直接判 critical，
+    推进飞书就是纯噪声；报告照常落盘，需要人工推送时用 --push-empty 覆盖。
+    """
+    if not requested:
+        return False, "not requested"
+    if not allow_empty and int((metrics.get("chain_23") or {}).get("events") or 0) == 0:
+        return False, "skipped: 窗口内无 23 链路事件（本机无 entry23 或未落盘）"
+    return True, "ok"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="DreamBuddy 交易链路监控日报")
     parser.add_argument(
@@ -1409,6 +1422,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out-dir", default=str(BASE_DIR / "logs/daily-insight"))
     parser.add_argument("--no-llm", action="store_true", help="只用规则引擎，不调用大模型")
     parser.add_argument("--push", action="store_true", help="推送飞书")
+    parser.add_argument(
+        "--push-empty", action="store_true", help="窗口内无 23 事件时仍推送（默认抑制）"
+    )
     parser.add_argument("--json", action="store_true", help="stdout 输出 JSON 摘要")
     args = parser.parse_args(argv)
 
@@ -1451,8 +1467,9 @@ def main(argv: list[str] | None = None) -> int:
         encoding="utf-8",
     )
 
-    pushed, push_detail = (False, "not requested")
-    if args.push:
+    push_ok, push_reason = push_decision(metrics, args.push, args.push_empty)
+    pushed, push_detail = (False, push_reason)
+    if push_ok:
         text = build_card_text(
             report_date.isoformat(),
             metrics,

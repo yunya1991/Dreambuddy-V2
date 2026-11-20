@@ -265,6 +265,19 @@ def test_detect_findings_outbox_prefers_window_ratio():
     assert "22_OUTBOX_FAILED" in ids
 
 
+def test_push_decision_suppresses_empty_window():
+    metrics = base_metrics()
+    assert di.push_decision(metrics, True, False) == (True, "ok")
+    assert di.push_decision(metrics, False, False) == (False, "not requested")
+
+    metrics["chain_23"]["events"] = 0
+    ok, reason = di.push_decision(metrics, True, False)
+    assert ok is False
+    assert "无 23 链路事件" in reason
+    # 显式覆盖仍然可推
+    assert di.push_decision(metrics, True, True) == (True, "ok")
+
+
 def test_render_marks_40_reserved():
     metrics = base_metrics()
     win = di.window_for(date(2026, 11, 17), "Asia/Shanghai")
