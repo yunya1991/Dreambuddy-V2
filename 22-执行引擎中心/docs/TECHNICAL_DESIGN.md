@@ -173,9 +173,15 @@ SQLite 单库 `22-执行引擎中心/runtime/position_ledger.db`，可用 `POSIT
 
 ### 7.3 幽灵仓清零 close_ghost_position()
 
-`TradeExecutionGateway.close_ghost_position(inst_id, pos_side, exit_px, source="23-evolution")`：
-交易所已无持仓但账本仍开着时，按传入价（缺省用账本均价）全平，`exit_reason=ghost_exchange_flat`。
-23 `exit_runner` 的 `on_ghost` 回调直接调用，保证一次告警后账本归零。
+`TradeExecutionGateway.close_ghost_position(inst_id, pos_side, exit_px, source="23-evolution", exit_reason="ghost_exchange_flat")`：
+交易所已无持仓但账本仍开着时，按传入价（缺省用账本均价）全平并写入 cooldown。`exit_reason` 由调用方归因：
+
+- `exchange_sltp`：23 `exit_loop._resolve_ghost_exit()` 取到交易所真实成交价（SL/TP 或外部平仓的正常回填），
+  属预期路径，只做账本对齐；
+- `ghost_exchange_flat`：无成交或成交价失真（偏离入场价 >30%），无法解释的账本残留，需人工核对。
+
+23 `exit_runner` 的 `on_ghost(pos, px, exit_reason)` 回调直接透传，保证一次告警后账本归零。
+监控侧据此拆分 `ledger_exchange_sltp_24h`（仅观察）与 `ledger_ghost_exchange_flat_24h`（P2 告警）。
 
 ### 7.4 SL/TP 补挂 reconcile_sltp()
 

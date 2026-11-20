@@ -1,7 +1,10 @@
-"""幽灵仓落账价测试（2026-11-14）
+"""幽灵仓落账价与归因测试（2026-11-20）
 
 原实现用 entry_price 作为 ghost 平仓价，导致被交易所 SL/TP 成交的仓位
-在账本上记为"平进平出"。修复后优先使用交易所真实成交价。
+在账本上记为"平进平出"。修复后优先使用交易所真实成交价，并区分归因：
+
+- 取到真实成交价 → exchange_sltp（SL/TP 正常回填，不告警）
+- 无成交/脏数据 → ghost_exchange_flat（无法解释的残留，需人工核对）
 """
 
 from __future__ import annotations
@@ -36,22 +39,22 @@ def _run_ghost(okx):
                 "position_usdt": 0.0,
             }
         ],
-        on_ghost=lambda pos, px: seen.append(px),
+        on_ghost=lambda pos, px, reason: seen.append((px, reason)),
     )
     return seen
 
 
 def test_ghost_uses_exchange_fill_price():
     seen = _run_ghost(_GhostOkx(fill_px=95.0))
-    assert seen == [95.0]
+    assert seen == [(95.0, "exchange_sltp")]
 
 
 def test_ghost_falls_back_to_entry_when_no_fills():
     seen = _run_ghost(_GhostOkx(fill_px=0.0))
-    assert seen == [100.0]
+    assert seen == [(100.0, "ghost_exchange_flat")]
 
 
 def test_ghost_falls_back_when_fill_price_is_dirty():
     """偏离入场价 30% 以上的成交价视为脏数据。"""
     seen = _run_ghost(_GhostOkx(fill_px=10.0))
-    assert seen == [100.0]
+    assert seen == [(100.0, "ghost_exchange_flat")]

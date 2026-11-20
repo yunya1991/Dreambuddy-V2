@@ -309,6 +309,7 @@ class Collector:
                 _metric("ledger_ghost_closed_24h", 0),
                 _metric("ledger_ghost_stale_24h", 0),
                 _metric("ledger_ghost_exchange_flat_24h", 0),
+                _metric("ledger_exchange_sltp_24h", 0),
             ]
         try:
             conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=2)
@@ -321,12 +322,14 @@ class Collector:
             ).fetchone()[0]
             _ghost_rows = cur.execute(
                 "SELECT exit_reason, COUNT(*) FROM cooldowns WHERE exit_reason IN"
-                " ('ghost_stale','ghost_exchange_flat') AND close_ts >= ? GROUP BY exit_reason",
+                " ('ghost_stale','ghost_exchange_flat','exchange_sltp') AND close_ts >= ?"
+                " GROUP BY exit_reason",
                 (_iso_utc(_now() - 86400),),
             ).fetchall()
             _ghost_map = {str(r[0]): int(r[1]) for r in _ghost_rows}
             ghost_stale = _ghost_map.get("ghost_stale", 0)
             ghost_flat = _ghost_map.get("ghost_exchange_flat", 0)
+            exchange_sltp = _ghost_map.get("exchange_sltp", 0)
             ghost = ghost_stale + ghost_flat
             conn.close()
         except sqlite3.Error:
@@ -339,6 +342,7 @@ class Collector:
             _metric("ledger_ghost_closed_24h", ghost),
             _metric("ledger_ghost_stale_24h", ghost_stale),
             _metric("ledger_ghost_exchange_flat_24h", ghost_flat),
+            _metric("ledger_exchange_sltp_24h", exchange_sltp),
         ]
 
     def _sltp_metrics(self, ex: dict) -> list[str]:

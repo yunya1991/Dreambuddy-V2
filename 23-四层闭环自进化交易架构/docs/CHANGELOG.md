@@ -1,7 +1,27 @@
 # 23-四层闭环自进化交易架构 — 变更日志
 
-> **版本**: v1.22 | **更新日期**: 2026-11-18
+> **版本**: v1.23 | **更新日期**: 2026-11-20
 > **定位**: 模块级变更日志，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+
+---
+
+## [v1.23] - 2026-11-20 (幽灵仓归因：exchange_sltp 与 ghost_exchange_flat 分离)
+
+### 修复
+
+- **问题**：`GhostPositionCleaned`(P2) 自 2026-11-17 长期 firing。云端 24h 内 12 次
+  `ghost_exchange_flat` 实际全部是 50-nn 实盘 1.5%/3% 交易所 OCO 成交后的正常回填
+  （回填发生在成交同一分钟），滚动计数恒 >0 即永久告警。
+- **修复**：`exit_loop._resolve_ghost_exit()` 回填时归因并返回 `(px, exit_reason)`
+  - 取到交易所真实成交价 → `exchange_sltp`（正常路径，仅 `ledger_exchange_sltp_24h` 观察）；
+  - 无成交或成交价偏离入场价 >30% → `ghost_exchange_flat`（无法解释的残留，保留 P2）。
+  `on_ghost(pos, px, exit_reason)` → `gateway.close_ghost_position(..., exit_reason=...)`
+  透传到 22 账本 cooldown。
+
+### 测试
+
+- `dreambuddy_evolution/tests/test_exit_loop_ghost_fill.py`：3 项归因断言；
+- `tests/test_evolution_exit_loop.py::test_ghost_position_calls_hook` 同步三参回调契约。
 
 ---
 

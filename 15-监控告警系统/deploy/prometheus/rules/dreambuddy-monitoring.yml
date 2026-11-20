@@ -396,6 +396,9 @@ groups:
           summary: "22 账本 1h 内被对账校正 >3 次，数量/均价持续漂移"
           runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#138-11-交易循环退役后的监控对齐v210-2026-11-18"
 
+      # exchange_sltp（交易所侧 SL/TP 成交、已按真实成交价回填）属正常路径，
+      # 仅导出 dreambuddy_ledger_exchange_sltp_24h 供 Grafana 观察，不告警；
+      # 本规则只对「无成交可回填」的 ghost_exchange_flat 触发。
       - alert: GhostPositionCleaned
         expr: dreambuddy_ledger_ghost_exchange_flat_24h > 0
         for: 10m
@@ -403,7 +406,7 @@ groups:
           severity: P2
           channel: alert
         annotations:
-          summary: "24h 内出现交易所已平仓但账本仍持仓（ghost_exchange_flat），需核对成交回填"
+          summary: "24h 内出现交易所已平仓但账本仍持仓且无真实成交可回填（ghost_exchange_flat），需人工核对"
           runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#138-11-交易循环退役后的监控对齐v210-2026-11-18"
 
       - alert: GhostStaleBulkCleanup

@@ -246,7 +246,7 @@
 | E3 | 影子记录 | `_record_shadow` | shadow 样本、reward | `symbol` |
 | E4 | 平仓信号构造 | `build_exit_decision` + `_resolve_close_sz`/`_lot_sz` | `decision_id`、`action=close/reduce`、`sz`（交易所→账本→名义回退，按 lotSz 向下对齐） | 平仓 `chain_id` |
 | E5 | 提交/风控/成交 | `EvolutionSignalDispatcher.dispatch` → 22 → 13 | `executed/reason_code/order_result` | `decision_id` |
-| E6 | 部分减仓刷新/全平清理/落账 | `_refresh_partial_size`、`_cleanup_engine_state`、`on_closed`；幽灵仓 `on_ghost` → `gateway.close_ghost_position` | 剩余仓位、PnL、反馈样本、`ghost_exchange_flat` | `decision_id` |
+| E6 | 部分减仓刷新/全平清理/落账 | `_refresh_partial_size`、`_cleanup_engine_state`、`on_closed`；幽灵仓 `on_ghost` → `gateway.close_ghost_position` | 剩余仓位、PnL、反馈样本、`exchange_sltp`（真实成交回填）/`ghost_exchange_flat`（无成交可回填） | `decision_id` |
 
 ### 4.3 紧耦合 7 步闭环（TightCouplingOrchestrator）
 

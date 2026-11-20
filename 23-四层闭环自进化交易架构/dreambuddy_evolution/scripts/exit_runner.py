@@ -315,14 +315,25 @@ def run_once(loop: EvolutionExitLoop, gateway: Any, okx: Any, args) -> Dict[str,
         except Exception as exc:  # noqa: BLE001 — 反思失败不影响已完成的平仓
             logger.debug("[settle] 结算反思失败(FAIL-OPEN): %s", exc)
 
-    def _on_ghost(pos, px) -> None:
+    def _on_ghost(pos, px, exit_reason: str = "ghost_exchange_flat") -> None:
         inst_id = str(pos.get("inst_id") or "")
         pos_side = str(pos.get("pos_side") or "")
-        logger.warning("幽灵仓 %s 落账价 %.6f（交易所已无持仓，关闭账本残留）", inst_id, px)
+        logger.warning(
+            "幽灵仓 %s %s 落账价 %.6f（交易所已无持仓，关闭账本残留）",
+            inst_id,
+            exit_reason,
+            px,
+        )
         try:
-            _r = gateway.close_ghost_position(inst_id, pos_side, float(px or 0))
+            _r = gateway.close_ghost_position(
+                inst_id, pos_side, float(px or 0), exit_reason=exit_reason
+            )
             logger.info(
-                "[ghost] %s 账本清零 ok=%s reason=%s", inst_id, _r.get("ok"), _r.get("reason")
+                "[ghost] %s 账本清零 ok=%s reason=%s exit_reason=%s",
+                inst_id,
+                _r.get("ok"),
+                _r.get("reason"),
+                exit_reason,
             )
         except Exception as exc:  # noqa: BLE001
             logger.debug("[ghost] 账本清零失败(FAIL-OPEN): %s", exc)

@@ -1265,7 +1265,8 @@ python -m pytest tests/test_chain_events_and_signal_params.py tests/test_decisio
 | `ledger_positions` | `22/runtime/position_ledger.db` → `positions` | 当前非零持仓行数 |
 | `ledger_last_write_age_seconds` | `fills` 最新 `ts` | 账本最近写入距今秒数（仅观察） |
 | `ledger_reconcile_updated_1h` | `fills.action=reconcile_update` | 近 1h 数量/均价校正次数 |
-| `ledger_ghost_closed_24h` | `cooldowns.exit_reason ∈ {ghost_stale,ghost_exchange_flat}` | 24h 内清理的幽灵/陈旧仓 |
+| `ledger_ghost_closed_24h` | `cooldowns.exit_reason ∈ {ghost_stale,ghost_exchange_flat}` | 24h 内清理的无法解释残留/陈旧仓 |
+| `ledger_exchange_sltp_24h` | `cooldowns.exit_reason=exchange_sltp` | 24h 内交易所 SL/TP 成交的账本回填数（正常路径，仅观察） |
 | `sltp_reconcile_age_seconds` | `22/audit/sltp_reconcile.jsonl` mtime | SL/TP 补挂巡检新鲜度（每轮写 `kind=summary`，无补挂动作也更新） |
 | `sltp_reconcile_patched_1h` / `_failed_1h` | 同上 `kind=summary` 行；无 summary 时回退逐条明细 | 近 1h 补挂成功/失败数 |
 
@@ -1275,7 +1276,8 @@ python -m pytest tests/test_chain_events_and_signal_params.py tests/test_decisio
    因为稳定持仓时对账本来就不会写 fills。
 2. `exit23_active=0` → P0（`Exit23Down`，平仓与对账同时停机）。
 3. `ledger_reconcile_updated_1h > 3` 持续 30min → P2（账本与交易所持续漂移，对账在频繁校正）。
-4. `ledger_ghost_closed_24h > 0` → P2 通知（存在账本残留，已被自动清零；需复盘归属）。
+4. `ledger_ghost_exchange_flat_24h > 0` → P2 通知（无成交可回填的账本残留，需人工核对）；
+   `ledger_exchange_sltp_24h` 只观察不告警（交易所 SL/TP 正常回填）。
 5. `sltp_reconcile_failed_1h > 0` → P1（存量仓缺少止损保护）。
 6. `exit23_active=1 且 ledger_positions>0 且 sltp_reconcile_age_seconds>600` → P2（有持仓但补挂巡检停摆）。
 
@@ -1301,6 +1303,11 @@ python -m pytest tests/test_chain_events_and_signal_params.py tests/test_decisio
 | `SltpReconcileFailed` | `dreambuddy_sltp_reconcile_failed_1h > 0` for 10m | P1 |
 | `SltpReconcileStale` | `dreambuddy_exit23_active == 1 and dreambuddy_ledger_positions > 0 and dreambuddy_sltp_reconcile_age_seconds > 600` for 15m | P2 |
 
+**幽灵仓归因口径（v2.23，2026-11-20）**：`ghost_exchange_flat` 曾把「交易所侧 SL/TP 成交后的正常回填」与
+「无成交可回填的异常残留」混在一起，导致 50-nn 实盘 1.5%/3% OCO 每天触发十几次时 P2 告警长期 firing。
+现由 23 `exit_loop` 在回填时归因：取到真实成交价 → `exchange_sltp`（只导出 `ledger_exchange_sltp_24h`，不告警）；
+无成交/价格失真 → `ghost_exchange_flat`（触发 `GhostPositionCleaned`，`for: 10m`）。
+
 #### 13.8.6 watchdog 扩展
 
 在原有 entry23/exit23 存活、entry23 日志 10min、审计 24h、磁盘 90% 之外，新增：
@@ -1318,7 +1325,8 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 1. `curl :9101/metrics` 可看到 `entry23_active`、`exit23_active`、`ledger_*`、`sltp_*`。
 2. 11 停用后 `EvolutionScanStalled/Failed/PoolShrunk` 不再产生告警（指标不再输出）。
 3. 手动 `systemctl stop dreambuddy-exit23` → 5min 内触发 `Exit23Down`(P0)。
-4. 账本/交易所一致时 `ledger_positions` 与交易所持仓数相同；出现幽灵仓时 `ledger_ghost_closed_24h` 增长并触发 P2。
+4. 账本/交易所一致时 `ledger_positions` 与交易所持仓数相同；交易所 SL/TP 成交回填计入
+   `ledger_exchange_sltp_24h`（不告警）；仅「无成交可回填」的 `ledger_ghost_exchange_flat_24h` 增长并触发 P2。
 5. `chain_events` 的 E0/E4/E5 指标与 22 账本/审计可 join，复盘不依赖 11 日志。
 
 ### 13.9 监控点 ↔ 交易链路节点锚定索引（v2.11，2026-11-18）
@@ -1398,7 +1406,7 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 | 告警 | 复盘结论 | 处置 |
 |---|---|---|
 | `ArtifactStale` | 真实问题，但根因是**运行时产物被 git 跟踪**：部署 `git pull` 会把 40/48 新生成的 `cycle_state.json`、`sector_transmission.json`、`40_feedback.json` 覆盖回仓库旧版本（三文件 mtime 同一秒），下一次日更前必然 stale | 告警保留；部署后需重跑 `40/scripts/run_daily_pipeline.sh`（crontab `2 0 * * *` 亦可自愈）。长期建议将这些产物从 git 索引移除 |
-| `GhostPositionCleaned` | 13 笔/24h = 12 `ghost_stale`（11 笔零/微 PnL，`source=22-reconciled` 的历史残留批量清理）+ 1 `ghost_exchange_flat`（BTC short，真实交易所侧平仓，+516.29 USDT）。前者是自愈动作，后者才是需复盘的资金事件 | 拆分为 `ledger_ghost_stale_24h` 与 `ledger_ghost_exchange_flat_24h`；`GhostPositionCleaned` 仅对 exchange_flat 触发，新增 `GhostStaleBulkCleanup`（stale>20/24h） |
+| `GhostPositionCleaned` | 2026-11-20 复盘：规则本身工作，但把「交易所侧 SL/TP 正常回填」也算作幽灵仓——50-nn 实盘 1.5%/3% OCO 每天触发 12 次，24h 计数永远 >0，告警自 11-17 起长期 firing；回填实际发生在成交同一分钟内 | 23 回填时归因：真实成交价 → `exchange_sltp`（仅 `ledger_exchange_sltp_24h` 观察，不告警）；无成交/脏价 → `ghost_exchange_flat`（保留 P2）。规则表达式不变，命中范围收敛为「无法解释的残留」 |
 | `CrossValidationDegraded` | `attention_only`/`granger_only` 是设计内单链路降级（`enable_degraded_mode` 默认 True），不是故障；仅 `both_none` 才是双链路失效 | 规则改为 `count(dreambuddy_cv_degraded_mode{mode="both_none"}) > 0` |
 | `Watchdog` | `expr: vector(1)` 是刻意常驻，供外部死手开关读取 Prometheus；但会按 P3 每日推送飞书 | 保留规则；Alertmanager 新增 `channel="meta"` → `blackhole` 路由，不再进飞书 |
 
@@ -1424,6 +1432,7 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
 | v1.0 | 2026-08-02 | 初始版本：按 DOC_STANDARD §3.2 补建技术设计文档，覆盖概述/架构/算法/数据流/接口/状态/配置/错误处理/扩展性 9 章节 |
+| v2.23 | 2026-11-20 | 幽灵仓归因拆分：`exchange_sltp`（交易所 SL/TP 正常回填，仅观察）与 `ghost_exchange_flat`（无成交可回填，P2）；新增 `ledger_exchange_sltp_24h`；更新 §13.8.3/§13.8.5/§13.8.7/§13.9.5 |
 | v2.11 | 2026-11-18 | 新增 §13.9 监控点↔链路节点锚定索引（N0–N15/E0–E6 → 指标 → 告警 → 证据/命令 + 四步定位法）；修正 §13.2/§13.3 平仓链旧口径（E0 对账、E4 sz 解析、E0/E6 指标名） |
 | v2.10 | 2026-11-18 | 新增 §13.8：11 交易循环退役后的监控对齐（监控对象、停用 universe 三条规则、E0/E6+SLTP 新指标、E4 数量口径、6 条新告警、watchdog 扩展、验收） |
 | v2.8 | 2026-11-17 | 落地 §13：新增 chain_events 事件写入；修复 G1–G7（trace_id、pc/cv 返回值、regime/ri/l4_v 透传、WAIT 归因、chain_id、平仓链事件）；导出器新增 chain_*/exit_* 指标；新增 5 条告警规则 |
@@ -1435,5 +1444,5 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 
 ---
 
-**文档版本**: v2.11
-**最后更新**: 2026-11-18
+**文档版本**: v2.23
+**最后更新**: 2026-11-20

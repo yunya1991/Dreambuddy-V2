@@ -349,3 +349,69 @@ def test_latest_fill_filters_by_side_and_age(tmp_path):
 
     stale = gw._latest_fill("LINK-USDT-SWAP", "long", side="sell", max_age_sec=0.5)
     assert stale is None
+
+
+class _OkxFillAfterOneMiss:
+    """首次查询成交索引为空（模拟 OKX 秒级延迟），重试后才返回。"""
+
+    def __init__(self):
+        self.calls = 0
+
+    def get_positions(self, inst_id=None):
+        return {"ok": True, "positions": []}
+
+    def get_recent_fills(self, inst_id=None, limit=20):
+        self.calls += 1
+        if self.calls == 1:
+            return {"ok": True, "fills": []}
+        return {
+            "ok": True,
+            "fills": [
+                {
+                    "side": "sell",
+                    "pos_side": "long",
+                    "fill_px": 110.0,
+                    "fill_sz": 40.0,
+                    "fee": 0.5,
+                    "ts": int(time.time() * 1000),
+                },
+            ],
+        }
+
+
+def test_gateway_retries_fill_lookup_for_reduce(tmp_path):
+    """成交索引延迟时重试，避免 reduce 落账 px=0 导致盈亏失真。"""
+    led = _ledger(tmp_path)
+    led.record_open("ETH-USDT-SWAP", "long", 100, 100.0)
+    okx = _OkxFillAfterOneMiss()
+    gw = TradeExecutionGateway(okx_client=okx, ledger=led, audit_path=tmp_path / "audit.jsonl")
+    sig = FinalDecisionSignal.from_dict(
+        {
+            "symbol": "ETH-USDT-SWAP",
+            "pos_side": "long",
+            "direction": "long",
+            "action": "reduce",
+            "sz": 40,
+            "source": "23-evolution",
+            "decision_id": "dec-retry-1",
+        }
+    )
+
+    gw._record_ledger(sig, ExecutionResult(passed=True, executed=True, reason="", reason_code=""))
+
+    assert okx.calls >= 2
+    last = led.recent_fills(1)[0]
+    assert last["px"] == 110.0
+    assert last["realized_pnl"] == 399.5
+
+
+def test_gateway_close_ghost_position_keeps_exit_reason(tmp_path, monkeypatch):
+    """幽灵仓归因由调用方传入：exchange_sltp 与 ghost_exchange_flat 分开统计。"""
+    monkeypatch.setenv("POSITION_LEDGER_PATH", str(tmp_path / "ghost_reason.db"))
+    gw = TradeExecutionGateway(okx_client=_OkxWithPositions(), audit_path=tmp_path / "a.jsonl")
+    gw._get_ledger().record_open("ETH-USDT-SWAP", "long", 1.0, 100.0, source="23-evolution")
+
+    out = gw.close_ghost_position("ETH-USDT-SWAP", "long", 95.0, exit_reason="exchange_sltp")
+
+    assert out["ok"] is True
+    assert gw.get_cooldown("ETH-USDT-SWAP")["exit_reason"] == "exchange_sltp"

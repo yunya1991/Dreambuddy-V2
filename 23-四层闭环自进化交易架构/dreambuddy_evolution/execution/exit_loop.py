@@ -269,7 +269,8 @@ class EvolutionExitLoop:
                 current_price, position_usdt = _gone
                 if current_price <= 0:
                     if on_ghost is not None:
-                        on_ghost(pos, self._resolve_ghost_exit_px(inst_id, entry_price))
+                        _ghost_px, _ghost_reason = self._resolve_ghost_exit(inst_id, entry_price)
+                        on_ghost(pos, _ghost_px, _ghost_reason)
                     self._cleanup_engine_state(pos)
                     return {"status": "skipped", "reason": "ghost_position"}
         if current_price <= 0:
@@ -370,31 +371,38 @@ class EvolutionExitLoop:
         return {"status": "skipped", "reason": f"unsupported_action:{decision.action}"}
 
     # ── 子步骤 ────────────────────────────────────────────────────
-    def _resolve_ghost_exit_px(self, inst_id: str, entry_price: float) -> float:
-        """幽灵仓落账价：优先用交易所真实成交价，缺失才回退入场价。
+    def _resolve_ghost_exit(self, inst_id: str, entry_price: float) -> tuple[float, str]:
+        """幽灵仓落账价与归因。
+
+        返回 ``(px, exit_reason)``：
+
+        - 取到交易所真实成交价 → ``exchange_sltp``：交易所侧 SL/TP/外部平仓的
+          正常成交回填，属预期行为，只做账本对齐，不应当作异常告警；
+        - 无成交或成交价失真 → ``ghost_exchange_flat``：无法解释的账本残留，
+          需要人工核对成交回填。
 
         原实现直接用 entry_price，导致所有被交易所 SL/TP 成交的仓位
         在账本上记为"平进平出"，已实现盈亏与反思样本失真。
         """
-        if not inst_id or self._okx is None:
-            return entry_price
+        if not inst_id or self._okx is None or entry_price <= 0:
+            return entry_price, "ghost_exchange_flat"
         fn = getattr(self._okx, "get_recent_fills", None)
         if not callable(fn):
-            return entry_price
+            return entry_price, "ghost_exchange_flat"
         try:
             _r = fn(inst_id, limit=10)
             _fills = (_r or {}).get("fills") or []
             if not _fills:
-                return entry_price
+                return entry_price, "ghost_exchange_flat"
             _px = float(_fills[0].get("fill_px") or 0)
             # 安全网：偏离入场价 >30% 视为脏数据，回退
             if _px <= 0 or abs(_px - entry_price) / entry_price > 0.30:
-                return entry_price
+                return entry_price, "ghost_exchange_flat"
             self._log(f"[ExitLoop] {inst_id} 幽灵仓使用真实成交价 {_px} 落账", "INFO")
-            return _px
+            return _px, "exchange_sltp"
         except Exception as e:  # noqa: BLE001
             self._log(f"[ExitLoop] 成交价查询失败(FAIL-OPEN): {e}", "DEBUG")
-            return entry_price
+            return entry_price, "ghost_exchange_flat"
 
     def _sync_from_exchange(self, pos, current_price: float, position_usdt: float):
         """用 OKX 持仓补齐价格/名义；确认无仓返回 (0, 0) 表示幽灵仓。"""

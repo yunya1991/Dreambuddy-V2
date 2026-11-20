@@ -24,6 +24,7 @@ def _make_ledger(root: Path) -> None:
     conn.execute("INSERT INTO fills VALUES ('2026-11-18T00:00:00Z','close')")
     rows = [("BTC-USDT-SWAP", "ghost_stale") for _ in range(12)]
     rows.append(("ETH-USDT-SWAP", "ghost_exchange_flat"))
+    rows.extend([("XAG-USDT-SWAP", "exchange_sltp"), ("UNI-USDT-SWAP", "exchange_sltp")])
     conn.executemany("INSERT INTO cooldowns VALUES (?, ?, '2099-01-01T00:00:00Z')", rows)
     conn.commit()
     conn.close()
@@ -36,4 +37,5 @@ def test_ghost_metrics_split_by_reason(tmp_path: Path) -> None:
 
     assert "dreambuddy_ledger_ghost_stale_24h 12" in text
     assert "dreambuddy_ledger_ghost_exchange_flat_24h 1" in text
+    assert "dreambuddy_ledger_exchange_sltp_24h 2" in text
     assert "dreambuddy_ledger_ghost_closed_24h 13" in text

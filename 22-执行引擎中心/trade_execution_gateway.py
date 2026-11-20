@@ -865,15 +865,37 @@ class TradeExecutionGateway:
                 else ("sell" if _side == "long" else "buy")
             )
             _fill = self._latest_fill(sig.symbol, _side, side=_expect_side)
+            # 成交索引有秒级延迟：平仓/减仓落账前重试，避免 px=0 导致已实现盈亏失真
+            if _fill is None and _action in ("close", "reduce", "reduce_only"):
+                for _ in range(2):
+                    time.sleep(0.4)
+                    _fill = self._latest_fill(sig.symbol, _side, side=_expect_side)
+                    if _fill is not None:
+                        break
             _order = result.order_result or {}
-            _qty = float((_fill or {}).get("fill_sz") or _order.get("filled_sz") or sig.sz or 0.0)
+            _qty = float(
+                (_fill or {}).get("fill_sz")
+                or _order.get("filled_sz")
+                or _order.get("accFillSz")
+                or sig.sz
+                or 0.0
+            )
             _px = float(
                 (_fill or {}).get("fill_px")
                 or _order.get("avg_px")
+                or _order.get("avgPx")
+                or _order.get("fillPx")
                 or _order.get("px")
                 or sig.px
                 or 0.0
             )
+            if _px <= 0 and _action in ("close", "reduce", "reduce_only"):
+                logger.warning(
+                    "[Gateway] %s %s 成交价回填失败(px=0)，已实现盈亏记为未知 decision_id=%s",
+                    sig.symbol,
+                    _action,
+                    sig.decision_id,
+                )
             if _action == "open":
                 if _qty <= 0:
                     _qty = self._current_position_qty(sig.symbol, _side)
@@ -976,9 +998,19 @@ class TradeExecutionGateway:
         return (datetime.now(timezone.utc).timestamp() - _close_ts) < float(cooldown_sec)
 
     def close_ghost_position(
-        self, inst_id: str, pos_side: str, exit_px: float = 0.0, source: str = "23-evolution"
+        self,
+        inst_id: str,
+        pos_side: str,
+        exit_px: float = 0.0,
+        source: str = "23-evolution",
+        exit_reason: str = "ghost_exchange_flat",
     ) -> Dict[str, Any]:
-        """交易所已无持仓但账本仍开着：按幽灵价全平，避免每轮重复告警。"""
+        """交易所已无持仓但账本仍开着：按幽灵价全平，避免每轮重复告警。
+
+        exit_reason 区分归因：
+        - ``exchange_sltp``：取到交易所真实成交价，属 SL/TP 正常回填；
+        - ``ghost_exchange_flat``：无成交可回填，需人工核对。
+        """
         ledger = self._get_ledger()
         if ledger is None:
             return {"ok": False, "reason": "ledger_disabled"}
@@ -992,7 +1024,7 @@ class TradeExecutionGateway:
             px=float(exit_px or row.get("avg_entry") or 0),
             ratio=1.0,
             source=source,
-            exit_reason="ghost_exchange_flat",
+            exit_reason=exit_reason,
         )
 
     def reconcile_ledger(self, source: str = "22-reconciled") -> Dict[str, Any]:

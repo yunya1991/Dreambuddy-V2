@@ -164,10 +164,11 @@ def test_ghost_position_calls_hook(tmp_path):
     okx = _Okx([])
     loop = _loop(tmp_path, _Engine("hold"), okx=okx)
     report = loop.run(
-        [_pos(current_price=0, position_usdt=0)], on_ghost=lambda pos, px: ghosts.append(px)
+        [_pos(current_price=0, position_usdt=0)],
+        on_ghost=lambda pos, px, reason: ghosts.append((px, reason)),
     )
     assert report["skipped"] == 1
-    assert ghosts == [100.0]
+    assert ghosts == [(100.0, "ghost_exchange_flat")]
 
 
 def test_adjust_sl_tp_routes_to_okx(tmp_path):

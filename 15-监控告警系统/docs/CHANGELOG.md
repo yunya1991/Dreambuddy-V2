@@ -1,6 +1,6 @@
 # 变更记录 — 15-监控告警系统
 
-> **版本**: v2.22 | **更新日期**: 2026-11-18
+> **版本**: v2.23 | **更新日期**: 2026-11-20
 
 ---
 
@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 变更内容 | 影响范围 |
 |------|------|----------|----------|
+| v2.23 | 2026-11-20 | `GhostPositionCleaned` 归因纠偏：复盘发现 24h 内 12 次 `ghost_exchange_flat` 全部是 50-nn 实盘 1.5%/3% 交易所 OCO 成交后的正常回填（回填发生在成交同一分钟），24h 滚动计数恒 >0 导致 P2 自 11-17 长期 firing。改为 23 `exit_loop._resolve_ghost_exit()` 回填时归因：真实成交价 → `exchange_sltp`（新增 `ledger_exchange_sltp_24h`，仅观察不告警）；无成交/脏价 → `ghost_exchange_flat`（保留 P2）。规则表达式不变；另修复 close/reduce 成交索引延迟导致落账 px=0（2 次重试 + camelCase 字段兜底） | 代码+规则+测试+文档 |
 | v2.22 | 2026-11-18 | 补齐最后两项任务打点：① `bus_42` 在 `48/bus/run_shadow_probe.py` 每轮成功后 `push_job.sh bus_42 success`（FAIL-OPEN）；② 核查 `shadow-driver.timer` active+enabled（每 10min、exit 0，未退役），补 `ExecStopPost` → `shadow_50`。至此 5 个 job 全部有 series | 代码+配置+文档 |
 | v2.21 | 2026-11-18 | 补任务打点：Pushgateway 原有 0 条 `dreambuddy_job_*` series，导致 6 条 JobFailed/*Stale 规则静默失效。新增 40 日更 cron 包装器（退出码→`push_job.sh 40_daily`），并为 publish_43/live_50 增加 `ExecStopPost` 打点（`deploy/systemd/install-job-push.sh`）；bus_42/shadow_50 待定（常驻/疑似退役）；TD §13.9.6 记录维护约定 | 配置+脚本+文档 |
 | v2.20 | 2026-11-18 | 告警降噪四项：① `GhostPositionCleaned` 改用 `ledger_ghost_exchange_flat_24h`，新增 `GhostStaleBulkCleanup`（stale>20/24h），导出器拆分 ghost 指标；② `CrossValidationDegraded` 只对 `both_none` 触发（attention_only/granger_only 属设计内降级）；③ Watchdog(meta) 路由到 blackhole 不进飞书；④ TD §13.9.5 记录 ArtifactStale 根因（运行时产物被 git 跟踪，pull 覆盖新鲜产物，部署后需重跑 40 流水线）；新增 ghost 指标单测 | 代码+规则+文档 |
