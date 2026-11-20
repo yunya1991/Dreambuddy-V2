@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>59 通用组件管理 · 可分发能力组件</title>
+<meta name="description" content="59 通用组件管理：把可复用能力抽成可登记、可版本化、可分发、可体检的 Skill 组件。">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/logo.jpg" alt="logo">
+      <span>59 通用组件管理</span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html" class="active">产品介绍</a>
+      <a href="trial.html">免费体检</a>
+      <a href="guide.html">使用说明</a>
+      <a href="admin.html">管理后台</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="badge">COMPONENT HUB · 一份源码，多形态分发</div>
+    <h1>把可复用的能力，做成可登记、可升级、可分发的组件</h1>
+    <p>
+      业务模块里反复出现的扫描登记、上下文装配、行情与宏观取数，不该在每个模块里各写一遍。
+      59 通用组件管理负责把它们抽出来：统一登记、版本语义、边界治理、打包分发，
+      并对外提供可体检、可下载的 Skill 形态。
+    </p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="trial.html">免费体检我的 Skill</a>
+      <a class="btn btn-ghost" href="https://skillhub.cn/dashboard" target="_blank" rel="noopener">去 SkillHub 下载</a>
+      <a class="btn btn-ghost" href="guide.html">查看使用说明</a>
+    </div>
+  </div>
+</section>
+
+<main>
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>我们解决的四个问题</h2>
+        <p>组件不是代码片段，而是有生命周期、有契约、有边界的可分发单元。</p>
+      </div>
+      <div class="grid grid-4">
+        <div class="card">
+          <span class="tag">登记</span>
+          <h3>统一清单</h3>
+          <p>名称、来源模块、版本、依赖、入口与产出契约集中声明，索引由脚本生成，禁止手工漂移。</p>
+        </div>
+        <div class="card">
+          <span class="tag">版本</span>
+          <h3>升级与废弃</h3>
+          <p>版本语义 + 变更记录 + 生命周期状态（active / deprecated），避免各业务模块复制粘贴。</p>
+        </div>
+        <div class="card">
+          <span class="tag">分发</span>
+          <h3>一份源码多形态</h3>
+          <p>同一份实现构建出 Skill、CLI 与对外商品形态，分发变体由构建脚本生成而非手改。</p>
+        </div>
+        <div class="card">
+          <span class="tag">边界</span>
+          <h3>独立性闸门</h3>
+          <p>组件不得反向依赖交易域私有 Schema、绝对路径与内部数据，边界检查进构建流程。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>已登记组件</h2>
+        <p>全部组件可在 SkillHub 控制台下载安装；版本以管理后台的登记清单为准。</p>
+      </div>
+      <div class="grid grid-2">
+        <div class="card">
+          <span class="tag">cogsteward</span>
+          <h3>认知管家 CogSteward</h3>
+          <p>上下文治理：工作区扫描登记、指标体检、路由归属与最小上下文打包。纯本地运行，零外部依赖。</p>
+        </div>
+        <div class="card">
+          <span class="tag">event-context</span>
+          <h3>事件上下文（官方源·五层装配）</h3>
+          <p>把官方事件源按五层结构装配成统一上下文，供调研、风控与复盘链路直接消费。</p>
+        </div>
+        <div class="card">
+          <span class="tag">market-data</span>
+          <h3>数据服务（宏观·披露·链上·上下文）</h3>
+          <p>统一的取数入口：宏观序列、披露数据、链上指标与上下文快照，按资源粒度计费与限流。</p>
+        </div>
+        <div class="card">
+          <span class="tag">market-facts-daily</span>
+          <h3>每日市场事实</h3>
+          <p>把当日市场事实整理成结构化条目，作为日报与决策链路的稳定输入。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="grid grid-2" style="align-items:center">
+        <div>
+          <div class="section-head">
+            <h2>先体检，再上架</h2>
+            <p>提交 SKILL.md（或整个 Skill 包），立即拿到结构与合规体检报告：版本与描述是否完整、示例是否可执行、是否泄露本机路径或密钥。免费额度内直接出分，超限按次付费。</p>
+          </div>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="trial.html">开始免费体检</a>
+            <a class="btn btn-outline" href="guide.html#audit">了解 {{PUBLIC_RULE_COUNT}} 项检查</a>
+          </div>
+        </div>
+        <div class="card">
+          <h3>报告包含</h3>
+          <p>
+            · 总分与结论（通过 / 建议修改 / 存在阻断项）<br>
+            · 逐项检查明细与修复建议<br>
+            · 收费型 Skill 的额外校验提示<br>
+            · 不替代平台官方审核，但能提前拦掉大部分退回原因
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="background:#fff;border-top:1px solid var(--line)">
+    <div class="wrap" style="text-align:center">
+      <div class="section-head">
+        <h2>下载并安装</h2>
+        <p>组件统一在 SkillHub 控制台分发，安装后即可在本地 Skill 目录直接使用。</p>
+      </div>
+      <a class="btn btn-primary" href="https://skillhub.cn/dashboard" target="_blank" rel="noopener">前往 SkillHub 控制台下载</a>
+      <p class="hint" style="margin-top:14px">安装步骤与常见问题见 <a href="guide.html">使用说明</a>。</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>59 通用组件管理 · 组件登记 / 版本 / 分发 / 边界治理</span>
+    <span><a href="https://skillhub.cn/dashboard" target="_blank" rel="noopener">SkillHub 控制台</a> · <a href="privacy.html">隐私说明</a> · <a href="admin.html">管理后台</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

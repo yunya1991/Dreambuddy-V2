@@ -1,0 +1,205 @@
+{
+  "rules_version": 3,
+  "score_formula_version": "v2",
+  "public_rule_count": 22,
+  "public_rules": [
+    {
+      "id": "DOC001",
+      "title": "SKILL.md 内容",
+      "severity": "blocker",
+      "stage": "enforce",
+      "category": "结构",
+      "item": "SKILL.md 内容与体积",
+      "consequence": "内容为空或超过 200KB，无法完成体检"
+    },
+    {
+      "id": "FM000",
+      "title": "Frontmatter",
+      "severity": "blocker",
+      "stage": "enforce",
+      "category": "结构",
+      "item": "frontmatter 是否可解析",
+      "consequence": "平台无法解析，直接退回"
+    },
+    {
+      "id": "FM001",
+      "title": "slug",
+      "severity": "blocker",
+      "stage": "enforce",
+      "category": "结构",
+      "item": "slug 格式与长度（kebab-case，2–128）",
+      "consequence": "无法生成稳定标识，直接退回"
+    },
+    {
+      "id": "FM002",
+      "title": "version",
+      "severity": "blocker",
+      "stage": "enforce",
+      "category": "结构",
+      "item": "version 语义化版本",
+      "consequence": "版本不可比较，升级与回滚链路失效"
+    },
+    {
+      "id": "FM003",
+      "title": "displayName",
+      "severity": "blocker",
+      "stage": "enforce",
+      "category": "结构",
+      "item": "displayName 必填",
+      "consequence": "列表页无法展示，直接退回"
+    },
+    {
+      "id": "FM004",
+      "title": "summary / description",
+      "severity": "warn",
+      "stage": "enforce",
+      "category": "描述",
+      "item": "summary / description 完整",
+      "consequence": "检索与详情页可读性差，转化低"
+    },
+    {
+      "id": "FM005",
+      "title": "license",
+      "severity": "warn",
+      "stage": "enforce",
+      "category": "描述",
+      "item": "license 声明",
+      "consequence": "授权不明，分发受阻"
+    },
+    {
+      "id": "FM006",
+      "title": "name",
+      "severity": "blocker",
+      "stage": "enforce",
+      "category": "结构",
+      "item": "name 规范（≤64、kebab-case、无保留词）",
+      "consequence": "与平台命名规则冲突，直接退回"
+    },
+    {
+      "id": "FM007",
+      "title": "description 触发短语",
+      "severity": "warn",
+      "stage": "gray",
+      "category": "描述",
+      "item": "description 长度与触发短语",
+      "consequence": "检索命中低，用户不知道何时触发"
+    },
+    {
+      "id": "DOC002",
+      "title": "使用 / 示例 / 限制结构",
+      "severity": "warn",
+      "stage": "gray",
+      "category": "文档",
+      "item": "使用、示例、限制三段结构",
+      "consequence": "安装后无法自助上手"
+    },
+    {
+      "id": "EX001",
+      "title": "可执行示例",
+      "severity": "warn",
+      "stage": "gray",
+      "category": "文档",
+      "item": "提供代码块或命令示例",
+      "consequence": "用户与审核都难以验证可用性"
+    },
+    {
+      "id": "FAQ001",
+      "title": "FAQ",
+      "severity": "info",
+      "stage": "gray",
+      "category": "文档",
+      "item": "FAQ 段落或文件",
+      "consequence": "常见问题无人解答，支持成本高"
+    },
+    {
+      "id": "SEC001",
+      "title": "敏感文件",
+      "severity": "blocker",
+      "stage": "enforce",
+      "category": "安全",
+      "item": "敏感文件（.env、私钥、证书）",
+      "consequence": "泄露凭据，禁止上架"
+    },
+    {
+      "id": "SEC002",
+      "title": "内部绝对路径",
+      "severity": "blocker",
+      "stage": "enforce",
+      "category": "安全",
+      "item": "本机绝对路径（/Users、/home、/root）",
+      "consequence": "泄露环境信息，审核阻断"
+    },
+    {
+      "id": "SEC003",
+      "title": "密钥泄露",
+      "severity": "blocker",
+      "stage": "enforce",
+      "category": "安全",
+      "item": "常见密钥特征（AK、私钥、Token）",
+      "consequence": "严重违规，禁止上架"
+    },
+    {
+      "id": "PKG001",
+      "title": "文件数量",
+      "severity": "blocker",
+      "stage": "enforce",
+      "category": "规模",
+      "item": "文件数量上限（200）",
+      "consequence": "包过大，安装与解析失败"
+    },
+    {
+      "id": "PKG002",
+      "title": "包体积",
+      "severity": "warn",
+      "stage": "enforce",
+      "category": "规模",
+      "item": "包体积上限（10MB）",
+      "consequence": "包过大，安装与解析失败"
+    },
+    {
+      "id": "PAY001",
+      "title": "402 账单下发",
+      "severity": "blocker",
+      "stage": "enforce",
+      "category": "计费",
+      "item": "402 账单下发",
+      "consequence": "无法进入付费链路"
+    },
+    {
+      "id": "PAY002",
+      "title": "Payment-Needed 账单头",
+      "severity": "blocker",
+      "stage": "enforce",
+      "category": "计费",
+      "item": "Payment-Needed 账单头",
+      "consequence": "客户端拿不到账单"
+    },
+    {
+      "id": "PAY003",
+      "title": "Payment-Proof 凭证重试",
+      "severity": "blocker",
+      "stage": "enforce",
+      "category": "计费",
+      "item": "Payment-Proof 凭证重试",
+      "consequence": "付款后无法取回结果"
+    },
+    {
+      "id": "PAY004",
+      "title": "服务端验付调用",
+      "severity": "blocker",
+      "stage": "enforce",
+      "category": "计费",
+      "item": "服务端验付",
+      "consequence": "无法确认支付真实性"
+    },
+    {
+      "id": "PAY005",
+      "title": "履约确认",
+      "severity": "blocker",
+      "stage": "enforce",
+      "category": "计费",
+      "item": "履约确认",
+      "consequence": "交付无法对账"
+    }
+  ]
+}

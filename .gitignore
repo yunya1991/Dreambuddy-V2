@@ -27,6 +27,9 @@ threshold
 # 例外：59 通用组件管理的 skill templates 目录（templates 被 temp*/ 误伤）
 !59-通用组件管理/components/*/skill/templates/
 !59-通用组件管理/components/*/skill/templates/**
+# 例外：59 站点的页面模板（templates 被 temp*/ 误伤）
+!59-通用组件管理/platform/site/templates/
+!59-通用组件管理/platform/site/templates/**
 # 例外：44 三端协作系统的 GitHub 模板目录（templates 被 temp*/ 误伤）
 !44-三端协作架构系统/github/templates/
 !44-三端协作架构系统/github/templates/**
@@ -319,3 +322,8 @@ scheduler_data/
 
 # 管理台写能力：文件配置写入快照（运行期产物）
 /.admin-backups/
+
+# 例外：59 站点运行数据与 logo（需覆盖上面的 data/ 与 *.jpg）
+!59-通用组件管理/platform/site/data/
+!59-通用组件管理/platform/site/data/**
+!59-通用组件管理/platform/site/assets/logo.jpg
