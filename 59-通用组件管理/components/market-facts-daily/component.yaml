@@ -1,0 +1,14 @@
+name: market-facts-daily
+display_name: 市场事实日报
+version: 1.0.2
+family: market-facts
+lifecycle: active
+summary: 把公开行情折算成一页可复核的数字事实：涨跌幅、分位、波动、回撤，全部标注方法ID与样本量。
+entrypoints:
+  - scripts/facts.py
+kernel_deps: []
+output_contract: data.v1
+products: []
+tests:
+  dir: tests
+  entry: python3 -m unittest discover -s tests -v
