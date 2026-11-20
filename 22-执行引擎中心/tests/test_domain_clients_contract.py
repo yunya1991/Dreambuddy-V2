@@ -1,19 +1,40 @@
-"""23 域 → 22 网关决策契约：px=None 时不得写入根节点。
+"""23 域 → 22 网关决策契约：执行层决策必须满足 v1.2。
 
-背景：v1.2 schema 根节点无 `px`，止损/止盈单每个巡检周期都会产生一条
-`Additional properties are not allowed ('px' was unexpected)` 契约违规。
+背景：执行适配层复用 `shadow_decision()` 构造 stop_loss/take_profit/open 决策，
+此前缺少 v1.2 顶层 ts/horizon/risk_exposure_hint/mode 与 payload 12 字段，
+导致 22 网关每个止损巡检周期都记录 `GatewayContractViolation`(P1)；
+同时限价 px 被写在根节点，与 `additionalProperties=false` 冲突。
 """
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
+
+import pytest
 
 _GW_DIR = Path(__file__).resolve().parents[1]
 if str(_GW_DIR) not in sys.path:
     sys.path.insert(0, str(_GW_DIR))
 
 from executors.domain_clients import DomainTaggedOkxClient  # noqa: E402
+
+_SCHEMA_PATH = _GW_DIR.parent / "49-交易框架协议" / "contracts" / "final_decision_signal.v1.2.json"
+_REQUIRED_PAYLOAD = (
+    "action",
+    "position_tier",
+    "position_mult",
+    "d_star",
+    "ri",
+    "l4_v",
+    "regime",
+    "primary_contradiction",
+    "contradiction_shift",
+    "elastic_result",
+    "cross_validation",
+    "path",
+)
 
 
 class _FakeResult:
@@ -32,9 +53,13 @@ class _FakeGateway:
         return _FakeResult()
 
 
-def test_stop_loss_decision_omits_null_px() -> None:
+def _client() -> tuple[_FakeGateway, DomainTaggedOkxClient]:
     gw = _FakeGateway()
-    client = DomainTaggedOkxClient(raw=object(), gateway=gw)
+    return gw, DomainTaggedOkxClient(raw=object(), gateway=gw)
+
+
+def test_stop_loss_decision_omits_null_px() -> None:
+    gw, client = _client()
 
     client._submit_via_gateway("stop_loss", "XAG-USDT-SWAP", "long", "sl", 1.0)
     client._submit_via_gateway("take_profit", "XAG-USDT-SWAP", "long", "tp", 1.0)
@@ -43,10 +68,27 @@ def test_stop_loss_decision_omits_null_px() -> None:
     assert all("px" not in d for d in gw.decisions), "px=None 不应写入决策根节点"
 
 
-def test_open_decision_keeps_limit_px() -> None:
-    gw = _FakeGateway()
-    client = DomainTaggedOkxClient(raw=object(), gateway=gw)
+def test_open_decision_keeps_limit_px_in_payload() -> None:
+    gw, client = _client()
 
     client._submit_via_gateway("open", "BTC-USDT-SWAP", "long", "entry", 1.0, px=100.0)
 
-    assert gw.decisions[0]["px"] == 100.0
+    assert "px" not in gw.decisions[0], "契约根节点禁止 px"
+    assert gw.decisions[0]["payload"]["px"] == 100.0
+
+
+def test_execution_decisions_satisfy_v12_schema() -> None:
+    jsonschema = pytest.importorskip("jsonschema")
+    schema = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
+    gw, client = _client()
+
+    client._submit_via_gateway("stop_loss", "XAG-USDT-SWAP", "long", "sl", 1.0, sl_px=30.0)
+    client._submit_via_gateway("take_profit", "BTC-USDT-SWAP", "short", "tp", 1.0, tp_px=90000.0)
+    client._submit_via_gateway("open", "ETH-USDT-SWAP", "long", "entry", 1.0, px=3000.0)
+
+    assert len(gw.decisions) == 3
+    for decision in gw.decisions:
+        jsonschema.validate(instance=decision, schema=schema)
+        assert "px" not in decision
+        for field in _REQUIRED_PAYLOAD:
+            assert field in decision["payload"], f"payload 缺少 {field}"

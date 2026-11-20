@@ -1,5 +1,18 @@
 # 执行引擎中心 — 变更记录
 
+## v1.9.3（2026-11-20）— 执行层决策补齐 v1.2 契约
+
+### 修复
+- `executors/domain_clients.shadow_decision`：补齐 v1.2 顶层 `ts/horizon/risk_exposure_hint/mode` 与 `payload` 12 字段
+  （缺省 `unknown/0/{}`，`position_tier=none` 标识执行适配层来源），消除 22 网关
+  `GatewayContractViolation`(P1)：此前止损/止盈单每轮巡检都因 `'ts' is a required property` 记录违规。
+- `executors/domain_clients._submit_via_gateway`：`payload` 改为合并写入，限价 `px` 从根节点移入 `payload.px`
+  （`FinalDecisionSignal.from_dict` 已支持回退读取，执行行为不变）。
+- 测试：`tests/test_domain_clients_contract.py` 新增 v1.2 Schema 全量校验，覆盖 stop_loss/take_profit/open。
+
+### 验收
+- 本地 22 相关测试 44 项通过；云端发布后观察 `dreambuddy_contract_violations_1h` 归零。
+
 ## v1.9.2（2026-11-18）— 23 域决策 px 空值契约修复
 
 ### 修复

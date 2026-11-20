@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import os
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -22,6 +23,44 @@ EVOLUTION_OKX_TAG = "evo23"  # OKX order tag 仅允许字母/数字且 ≤16 字
 NN_OKX_TAG = "yijingsim"  # 神经网络系统沿用默认标签
 # 23 域兜底决策有效期（秒）：expires_at 必须晚于提交时刻，否则 22 网关按过期直接拒单
 EVOLUTION_DECISION_TTL_SEC = 900
+_VALID_MODES = {"live", "paper", "shadow"}
+
+
+def _signal_mode() -> str:
+    _m = str(os.getenv("EVOLUTION_SIGNAL_MODE", "live")).strip().lower()
+    return _m if _m in _VALID_MODES else "live"
+
+
+def _execution_contract_fields(action: str, direction: str, now: datetime) -> dict:
+    """执行层决策的 v1.2 必填字段（22 网关按 source=23-evolution 做 Schema 校验）。
+
+    缺省值显式写 unknown/0/{}，不伪造推理结论；position_tier=none 表示
+    该信号来自执行适配层，而非 23 推理链的开平仓决策。
+    """
+    return {
+        "ts": now.isoformat(),
+        "horizon": "minutes",
+        "risk_exposure_hint": 0.0,
+        "mode": _signal_mode(),
+        "payload": {
+            "action": str(action),
+            "position_tier": "none",
+            "position_mult": 0.0,
+            "d_star": "unknown",
+            "ri": 0.0,
+            "l4_v": 0.0,
+            "regime": "unknown",
+            "primary_contradiction": {
+                "dimension": "execution",
+                "direction": str(direction or "neutral"),
+                "strength": 0.5,
+            },
+            "contradiction_shift": {},
+            "elastic_result": {},
+            "cross_validation": {},
+            "path": {"optimal_path": "unknown"},
+        },
+    }
 
 
 def tag_reason(reason: str, domain_tag: str = EVOLUTION_DOMAIN_TAG) -> str:
@@ -32,7 +71,11 @@ def tag_reason(reason: str, domain_tag: str = EVOLUTION_DOMAIN_TAG) -> str:
 
 
 def shadow_decision(action: str, inst_id: str, pos_side: str, reason: str, sz: Any = None) -> dict:
-    """构造 13 只读影子校验用的决策（source 固定 23-evolution）。"""
+    """构造 13 只读影子校验 / 22 网关提交用的执行层决策（source 固定 23-evolution）。
+
+    必须满足 v1.2 契约：顶层 ts/horizon/risk_exposure_hint/mode + payload 12 字段，
+    否则 22 网关会按 alert-only 记录 GatewayContractViolation（P1 噪音）。
+    """
     _pos_side = str(pos_side or "").lower()
     direction = _pos_side if _pos_side in ("long", "short") else "long"
     return {
@@ -45,6 +88,7 @@ def shadow_decision(action: str, inst_id: str, pos_side: str, reason: str, sz: A
         "sz": sz,
         "pos_side": _pos_side or None,
         "reason": tag_reason(reason),
+        **_execution_contract_fields(action, direction, datetime.now(timezone.utc)),
     }
 
 
@@ -107,16 +151,19 @@ class DomainTaggedOkxClient:
                 datetime.now(timezone.utc) + timedelta(seconds=EVOLUTION_DECISION_TTL_SEC)
             ).isoformat()
         )
-        # v1.2 契约根节点无 px 字段；px=None 时若仍写入会触发
-        # "Additional properties are not allowed ('px' was unexpected)"（止损/止盈单每轮必犯）
-        if px is not None:
-            decision["px"] = px
+        # v1.2 契约根节点 additionalProperties=false，无 px 字段；限价写入 payload.px，
+        # 由 22 FinalDecisionSignal.from_dict 回退读取，执行行为不变。
         decision["sl_px"] = sl_px
         decision["tp_px"] = tp_px
-        decision["payload"] = {
-            "tag": object.__getattribute__(self, "_okx_tag"),
-            "domain": "23",
-        }
+        payload = decision["payload"]
+        payload.update(
+            {
+                "tag": object.__getattribute__(self, "_okx_tag"),
+                "domain": "23",
+            }
+        )
+        if px is not None:
+            payload["px"] = px
         try:
             res = gw.submit(decision)
         except Exception as exc:  # noqa: BLE001 — 网关异常 fail-closed
