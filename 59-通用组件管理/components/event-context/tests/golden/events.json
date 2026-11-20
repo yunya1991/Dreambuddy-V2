@@ -1,0 +1,280 @@
+{
+  "skill": "event-context",
+  "version": "1.0.0",
+  "generated_at": "2026-11-20T18:23:50+08:00",
+  "data_date": "2026-11-19",
+  "data_route": "local",
+  "scope": {
+    "subject": "AAPL",
+    "feed": null,
+    "since_days": 30
+  },
+  "rows": [
+    {
+      "event_id": "9d0bea9d9e448859",
+      "source_key": "sec-submissions",
+      "time": "2026-11-19",
+      "source": "SEC EDGAR",
+      "type": "4",
+      "subject": {
+        "ticker": "AAPL",
+        "cik": "0000320193",
+        "name": "Apple Inc."
+      },
+      "facts": [
+        "提交 4",
+        "报告期 2026-11-17"
+      ],
+      "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126044952/xslF345X06/form4.xml",
+      "license": "Public Domain"
+    },
+    {
+      "event_id": "d3ee0cf5e2ff64f6",
+      "source_key": "sec-submissions",
+      "time": "2026-11-18",
+      "source": "SEC EDGAR",
+      "type": "4",
+      "subject": {
+        "ticker": "AAPL",
+        "cik": "0000320193",
+        "name": "Apple Inc."
+      },
+      "facts": [
+        "提交 4",
+        "报告期 2026-11-16"
+      ],
+      "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126044773/xslF345X06/form4.xml",
+      "license": "Public Domain"
+    },
+    {
+      "event_id": "7dbc4b8310f8ddc6",
+      "source_key": "sec-submissions",
+      "time": "2026-11-16",
+      "source": "SEC EDGAR",
+      "type": "144",
+      "subject": {
+        "ticker": "AAPL",
+        "cik": "0000320193",
+        "name": "Apple Inc."
+      },
+      "facts": [
+        "提交 144"
+      ],
+      "url": "https://www.sec.gov/Archives/edgar/data/320193/000192109426001188/xsl144X01/primary_doc.xml",
+      "license": "Public Domain"
+    },
+    {
+      "event_id": "db0a761d2d8cd10e",
+      "source_key": "sec-submissions",
+      "time": "2026-11-12",
+      "source": "SEC EDGAR",
+      "type": "4",
+      "subject": {
+        "ticker": "AAPL",
+        "cik": "0000320193",
+        "name": "Apple Inc."
+      },
+      "facts": [
+        "提交 4",
+        "报告期 2026-11-10"
+      ],
+      "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126043484/xslF345X06/form4.xml",
+      "license": "Public Domain"
+    },
+    {
+      "event_id": "6f542149ab37e46d",
+      "source_key": "sec-submissions",
+      "time": "2026-11-09",
+      "source": "SEC EDGAR",
+      "type": "25-NSE",
+      "subject": {
+        "ticker": "AAPL",
+        "cik": "0000320193",
+        "name": "Apple Inc."
+      },
+      "facts": [
+        "提交 25-NSE"
+      ],
+      "url": "https://www.sec.gov/Archives/edgar/data/320193/000135445726001062/xslF25X02/primary_doc.xml",
+      "license": "Public Domain"
+    },
+    {
+      "event_id": "f864a21d48073019",
+      "source_key": "sec-submissions",
+      "time": "2026-11-09",
+      "source": "SEC EDGAR",
+      "type": "8-K",
+      "subject": {
+        "ticker": "AAPL",
+        "cik": "0000320193",
+        "name": "Apple Inc."
+      },
+      "facts": [
+        "提交 8-K",
+        "事项编号 8.01,9.01",
+        "报告期 2026-11-05"
+      ],
+      "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126042798/ef20085077_8k.htm",
+      "license": "Public Domain"
+    },
+    {
+      "event_id": "65656bc1c0026836",
+      "source_key": "sec-submissions",
+      "time": "2026-11-06",
+      "source": "SEC EDGAR",
+      "type": "424B2",
+      "subject": {
+        "ticker": "AAPL",
+        "cik": "0000320193",
+        "name": "Apple Inc."
+      },
+      "facts": [
+        "提交 424B2"
+      ],
+      "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126042505/ny20084621x2_424b2.htm",
+      "license": "Public Domain"
+    },
+    {
+      "event_id": "7095fa4605bf8649",
+      "source_key": "sec-submissions",
+      "time": "2026-11-06",
+      "source": "SEC EDGAR",
+      "type": "FWP",
+      "subject": {
+        "ticker": "AAPL",
+        "cik": "0000320193",
+        "name": "Apple Inc."
+      },
+      "facts": [
+        "提交 FWP"
+      ],
+      "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126042173/ny20084621x3_fwp.htm",
+      "license": "Public Domain"
+    },
+    {
+      "event_id": "a54814cde6b3fe30",
+      "source_key": "sec-submissions",
+      "time": "2026-11-05",
+      "source": "SEC EDGAR",
+      "type": "4",
+      "subject": {
+        "ticker": "AAPL",
+        "cik": "0000320193",
+        "name": "Apple Inc."
+      },
+      "facts": [
+        "提交 4",
+        "报告期 2026-11-03"
+      ],
+      "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126042149/xslF345X06/form4.xml",
+      "license": "Public Domain"
+    },
+    {
+      "event_id": "0df283201f2ef6b8",
+      "source_key": "sec-submissions",
+      "time": "2026-11-05",
+      "source": "SEC EDGAR",
+      "type": "424B2",
+      "subject": {
+        "ticker": "AAPL",
+        "cik": "0000320193",
+        "name": "Apple Inc."
+      },
+      "facts": [
+        "提交 424B2"
+      ],
+      "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126042046/ny20084621x1_424b2.htm",
+      "license": "Public Domain"
+    },
+    {
+      "event_id": "ae97fc745f46afa8",
+      "source_key": "sec-submissions",
+      "time": "2026-11-03",
+      "source": "SEC EDGAR",
+      "type": "10-K",
+      "subject": {
+        "ticker": "AAPL",
+        "cik": "0000320193",
+        "name": "Apple Inc."
+      },
+      "facts": [
+        "提交 10-K",
+        "报告期 2026-09-26"
+      ],
+      "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm",
+      "license": "Public Domain"
+    },
+    {
+      "event_id": "322b685072f2eba8",
+      "source_key": "sec-submissions",
+      "time": "2026-11-02",
+      "source": "SEC EDGAR",
+      "type": "8-K",
+      "subject": {
+        "ticker": "AAPL",
+        "cik": "0000320193",
+        "name": "Apple Inc."
+      },
+      "facts": [
+        "提交 8-K",
+        "事项编号 2.02,9.01",
+        "报告期 2026-11-02"
+      ],
+      "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000024/aapl-20261102.htm",
+      "license": "Public Domain"
+    },
+    {
+      "event_id": "be8bd54796c1cf79",
+      "source_key": "sec-submissions",
+      "time": "2026-10-29",
+      "source": "SEC EDGAR",
+      "type": "4",
+      "subject": {
+        "ticker": "AAPL",
+        "cik": "0000320193",
+        "name": "Apple Inc."
+      },
+      "facts": [
+        "提交 4",
+        "报告期 2026-10-27"
+      ],
+      "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126041201/xslF345X06/form4.xml",
+      "license": "Public Domain"
+    },
+    {
+      "event_id": "22f2b4e476df2e26",
+      "source_key": "sec-submissions",
+      "time": "2026-10-22",
+      "source": "SEC EDGAR",
+      "type": "4",
+      "subject": {
+        "ticker": "AAPL",
+        "cik": "0000320193",
+        "name": "Apple Inc."
+      },
+      "facts": [
+        "提交 4",
+        "报告期 2026-10-20"
+      ],
+      "url": "https://www.sec.gov/Archives/edgar/data/320193/000114036126040540/xslF345X06/form4.xml",
+      "license": "Public Domain"
+    }
+  ],
+  "missing": [],
+  "method_ids": [
+    "E01"
+  ],
+  "sources": [
+    {
+      "name": "SEC EDGAR",
+      "url": "https://www.sec.gov/edgar/",
+      "license": "Public Domain"
+    },
+    {
+      "name": "Federal Reserve",
+      "url": "https://www.federalreserve.gov/feeds/",
+      "license": "Public Domain"
+    }
+  ],
+  "limits": "仅提供已发生事实与来源，不含影响判断、方向判断或建议。"
+}
