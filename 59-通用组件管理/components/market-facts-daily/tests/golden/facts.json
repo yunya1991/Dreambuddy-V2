@@ -1,5 +1,8 @@
 {
-  "generated_at": "2026-11-20T18:23:54",
+  "skill": "market-facts-daily",
+  "version": "1.0.2",
+  "generated_at": "2026-11-20T19:08:05",
+  "data_date": "2026-11-20",
   "window": 30,
   "rows": [
     {
@@ -7,6 +10,7 @@
       "name": "上证综指",
       "source": "腾讯行情(前复权)",
       "date": "2026-11-20",
+      "n": 320,
       "close": 3533.79,
       "d1": -0.01225116138662019,
       "d5": -0.02766932188699489,
@@ -20,5 +24,20 @@
     }
   ],
   "missing": [],
+  "method_ids": [
+    "M01",
+    "M02",
+    "M03",
+    "M04",
+    "M05"
+  ],
+  "sources": [
+    {
+      "name": "腾讯行情(前复权)",
+      "url": "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get",
+      "license": "未声明开放许可（按书面例外授权）"
+    }
+  ],
+  "limits": "以上均为已发生数据的统计描述，不构成投资建议，不含任何预测。",
   "hint": null
 }

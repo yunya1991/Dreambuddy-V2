@@ -25,7 +25,7 @@
 
 | 文档 | 版本 | 职责 | 状态 |
 |---|---|---|---|
-| [docs/SPEC-通用组件管理-架构重构-v0.1.md](./docs/SPEC-通用组件管理-架构重构-v0.1.md) | v0.5 | **模块级**：目录重构、契约层、共享内核、一份源码构建生成、独立性闸门、分阶段验收 | ✅ P0–P4 完成 |
+| [docs/SPEC-通用组件管理-架构重构-v0.1.md](./docs/SPEC-通用组件管理-架构重构-v0.1.md) | v0.6 | **模块级**：目录重构、契约层、共享内核、一份源码构建生成、独立性闸门、分阶段验收 | ✅ P0–P5 完成 |
 | [docs/PLAN-20261120-SkillHub评测优化与沙箱测试-v0.1.md](./docs/PLAN-20261120-SkillHub评测优化与沙箱测试-v0.1.md) | v0.1 | 三个已上线 Skill 的 TRACE 评测问题清单、优化动作（P0/P1）、`platform/sandbox/` 本地测试环境方案（16 场景） | 🟡 待确认，未改代码 |
 | [components/cogsteward/docs/ENGINEERING_INDEX.md](./components/cogsteward/docs/ENGINEERING_INDEX.md) | v1.4 | 认知管家工程索引：文件级清单、流程锚点、测试体系与 M1/M2/M2b/M3/契约治理验收证据 | ✅ 0.7.0 |
 | [components/cogsteward/docs/TECHNICAL_DESIGN.md](./components/cogsteward/docs/TECHNICAL_DESIGN.md) | v1.4 | 技术设计：分层架构、扫描/路由/准入/回滚/打包/分拣/评估/索引/技能检查算法、数据流、V9 异常、契约治理与 SPEC 偏差 | ✅ 0.7.0 |
@@ -104,4 +104,4 @@
 4. 本模块 INDEX 变更 → 同步更新 [0-系统文档管理/INDEX.md](../0-系统文档管理/INDEX.md)
 5. 任何 Skill 发新版本 → 按 `platform/tools-skills/skillpay-workflow/SKILL.md` §8 检查单执行，并在 §3.1 更新版本号
 6. 内部工具与服务 → 登记 §3.2 平台工程，不进入组件依赖图与 golden 校验
-7. 任何组件发版前 → 必须跑 `python3 tools/check_boundaries.py`（G1–G7）与 `python3 tools/gen_index.py --check`，全绿才允许打包
+7. 任何组件发版前 → 必须跑 `make check`（`sync_kernel --check` + G1–G7 + `gen_index --check`），全绿才允许 `make build` 打包

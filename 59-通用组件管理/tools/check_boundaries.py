@@ -193,14 +193,34 @@ def read_frontmatter(path: Path) -> dict:
     return {}
 
 
+def component_aliases(comp: Component) -> set[str]:
+    """目录名 + component.yaml name + SKILL.md 的 name/slug（仅 ASCII 标识符）。"""
+    manifest = comp.manifest or {}
+    aliases = {comp.name, comp.name.replace("-", "_")}
+    candidates = [str(manifest.get("name") or "")]
+    skill_dir = comp.path / str(manifest.get("skill_dir") or "skill")
+    front = read_frontmatter(skill_dir / "SKILL.md")
+    candidates.extend(str(front.get(key) or "") for key in ("name", "slug"))
+    for value in candidates:
+        if re.fullmatch(r"[a-z][a-z0-9_-]*", value):
+            aliases.add(value)
+            aliases.add(value.replace("-", "_"))
+    return aliases
+
+
 def check_component_refs(components: list[Component]) -> RuleResult:
     result = RuleResult("G1", "组件内不得引用其他组件")
     if not components:
         result.skip("components/ 尚未迁移（P2），无组件可检")
         return result
+    aliases = {comp.name: component_aliases(comp) for comp in components}
     for comp in components:
-        others = [c.name for c in components if c.name != comp.name]
-        others += [name.replace("-", "_") for name in others]
+        own = aliases[comp.name]
+        foreign = set()
+        for other_comp in components:
+            if other_comp.name != comp.name:
+                foreign |= aliases[other_comp.name]
+        others = sorted(foreign - own)
         for path in sorted(comp.path.rglob("*.py")):
             if "__pycache__" in path.parts:
                 continue

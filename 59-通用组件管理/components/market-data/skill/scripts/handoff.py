@@ -82,7 +82,7 @@ def main(argv=None):
 
     result = handoff.envelope(
         skill="market-data-hub",
-        target="cogsteward/pack",
+        target="cogsteward.pack@1.0",
         budget=a.budget,
         items=picked,
         missing=missing,

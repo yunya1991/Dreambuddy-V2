@@ -1,6 +1,6 @@
 # SPEC — 通用组件管理架构重构 v0.1
 
-> **版本**: v0.5（P0–P4 完成，P5 待执行） | **日期**: 2026-11-20
+> **版本**: v0.6（P0–P5 完成，P6 待执行） | **日期**: 2026-11-20
 > **范围**: `59-通用组件管理/` 全模块的目录结构、契约层、共享内核、分发构建与治理闸门
 > **依据**: [INDEX.md](../INDEX.md) v0.7、[ARCH 评估结论](#1-背景)（2026-11-20 对话）
 > **不改动**: 任何组件的对外输出契约语义（数值、字段、红线措辞），只改「代码与文档如何组织」
@@ -182,7 +182,7 @@ components/<name>/
 
 禁用引用清单，初始内容：
 
-- `cogsteward/pack`（`handoff.py` 写死的跨组件目标）→ 改为 `contracts` 中的 `handoff_target: cogsteward.pack@1.0`
+- ~~`cogsteward/pack`（`handoff.py` 写死的跨组件目标）~~ → 已改为契约值 `cogsteward.pack@1.0`（P5 落地，`handoff.v1` 的 `target` 正则已允许）
 - 绝对路径前缀 `/Users/`、`/opt/`、`/home/`
 - 组件间包名互引（如 `import market_data_hub`）
 
@@ -266,7 +266,7 @@ python3 tools/build_product.py --all   # 全量构建
 
 | # | 规则 | 判定方式 |
 |---|---|---|
-| G1 | 组件内不得引用其他组件 | AST import + 字符串匹配组件名/路径 |
+| G1 | 组件内不得引用其他组件 | AST import + 字符串匹配组件名/路径（含目录名、`component.yaml` name、SKILL.md name/slug 别名） |
 | G2 | 不得写死绝对路径 | 正则 `/Users/`、`/opt/`、`/home/`、`C:\\` |
 | G3 | 不得出现 `forbidden_refs.yaml` 条目 | 文本匹配 |
 | G4 | 依赖必须单向 | `kernel_deps` ⊆ `kernel/*`；kernel 不得 import 任何 components |
@@ -274,7 +274,7 @@ python3 tools/build_product.py --all   # 全量构建
 | G6 | 每个组件至少 1 份 golden 输出通过 `output.schema.json` | 运行 `tests/golden/` |
 | G7 | 每个组件 `tests/` 非空且入口可执行 | 目录 + 命令存在性 |
 
-接入：`gen_index.py`（由 component.yaml 生成 INDEX §3）与 `check_boundaries.py` 组成 `make check`，发版前必跑。
+接入：`gen_index.py`（由 component.yaml 生成 INDEX §3）与 `check_boundaries.py` 组成 `make check`，发版前必跑（`make release` = `check` + `build`）。`make check` 额外包含 `sync_kernel.py --check`，防止 `_kernel/` 注入副本过期。
 
 ---
 
@@ -288,7 +288,7 @@ python3 tools/build_product.py --all   # 全量构建
 | **P2 目录迁移** ✅ | 按 §4 映射 `git mv` | 映射表 100% 落地（4 组件 + platform + docs）；根目录只剩 INDEX/contracts/kernel/components/products/platform/tools/docs/assets；`git log --follow` 可见历史；`check_boundaries.py` G5/G7 由 SKIP 转为 PASS |
 | **P3 kernel 抽取** ✅ | 4 个 kernel 模块（endpoint / handoff / pay_gate / headers）+ `tools/sync_kernel.py` 注入机制 | 重复实现 0 份：`cloud.py` 115→41 行（仅剩声明式配置）、`handoff.py` 与 `pay.py`×3 的共享逻辑全部入 kernel；`sync_kernel --check` 8 个 scripts 目录一致；四组件 94 项测试、沙箱 16/16、改造前后输出逐字段 diff 一致 |
 | **P4 产品构建** ✅ | `products/*.yaml`（4 份）+ `build_product.py`（overlay 叠加、按引用注入 kernel、`--all`） | 4 个商品族 × 8 个变体全部可构建（`--all` 失败 0）；8 份产物 SKILL.md 与源码逐字节一致；入口脚本可执行、`report.py`/`pay.py` 实跑通过 |
-| **P5 闸门接入** | `check_boundaries.py` 接入发版流程 | 故意注入 G1–G7 各 1 例，全部被拦；正常树 0 违规 |
+| **P5 闸门接入** ✅ | `Makefile` 的 `check`（sync_kernel + G1–G7 + gen_index）/`release`；G1 增加 SKILL name/slug 别名；清零 G3、G6 存量违规 | 正常树 7/7 PASS、0 违规；`--all` 构建 8/8；负例注入（G1–G7 各 1 例）全部被拦 |
 | **P6 红线收敛** | `data-sources.yaml` 裁定腾讯源；`handoff` target 改契约 | 日报与数据服务口径一致或有书面例外；`forbidden_refs` 无命中 |
 
 **回归基线（每个阶段结束必跑）**

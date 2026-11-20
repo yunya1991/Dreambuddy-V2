@@ -17,12 +17,19 @@ import argparse
 import json
 import math
 import re
+import socket
+import ssl
 import sys
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime
 
 TENCENT = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
+VERSION = "1.0.2"
+LIMITS = "以上均为已发生数据的统计描述，不构成投资建议，不含任何预测。"
+SOURCE_LICENSE = "未声明开放许可（按书面例外授权）"
+METHOD_IDS = ["M01", "M02", "M03", "M04", "M05"]
 CN_SYMBOL = re.compile(r"^(sh|sz|bj)\d{6}$", re.I)
 US_SYMBOL = re.compile(r"^us[A-Za-z.]+$", re.I)
 SYMBOL_HINT = (
@@ -121,6 +128,20 @@ def fmt_plain(value, digits=2):
     return "—" if value is None else "{:.{}f}".format(value, digits)
 
 
+def err_code(exc):
+    if isinstance(exc, (socket.timeout, TimeoutError)):
+        return "E_NET"
+    if isinstance(exc, ssl.SSLError):
+        return "E_TLS"
+    if isinstance(exc, urllib.error.HTTPError):
+        return "E_HTTP_4XX"
+    if isinstance(exc, urllib.error.URLError):
+        return "E_NET"
+    if isinstance(exc, ValueError):
+        return "E_EMPTY"
+    return "E_SCHEMA"
+
+
 def build_row(symbol, series, source, window):
     closes = [c for _, c in series]
     n = len(closes)
@@ -129,6 +150,7 @@ def build_row(symbol, series, source, window):
         "name": NAMES.get(symbol.lower(), symbol),
         "source": source,
         "date": series[-1][0],
+        "n": n,
         "close": round(closes[-1], 3),
         "d1": pct_change(closes, 1),
         "d5": pct_change(closes, 5),
@@ -193,26 +215,40 @@ def main(argv=None):
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
 
-    rows, missing, format_errors = [], [], []
+    rows, missing, format_errors, missing_items = [], [], [], []
     for symbol in [s.strip() for s in args.symbols.split(",") if s.strip()]:
         if not (CN_SYMBOL.match(symbol) or US_SYMBOL.match(symbol)):
             missing.append(symbol)
             format_errors.append(symbol)
+            missing_items.append({"key": symbol, "code": "E_INPUT", "detail": "符号格式不合法"})
             continue
         try:
             series, source = fetch_series(symbol)
             rows.append(build_row(symbol, series, source, args.window))
         except Exception as exc:  # 单标的失败不影响整体
             missing.append("{}({})".format(symbol, type(exc).__name__))
+            missing_items.append(
+                {"key": symbol, "code": err_code(exc), "detail": type(exc).__name__}
+            )
 
     if args.json:
+        dates = sorted({r["date"] for r in rows if r.get("date")})
         print(
             json.dumps(
                 {
+                    "skill": "market-facts-daily",
+                    "version": VERSION,
                     "generated_at": datetime.now().isoformat(timespec="seconds"),
+                    "data_date": dates[-1] if dates else None,
                     "window": args.window,
                     "rows": rows,
-                    "missing": missing,
+                    "missing": missing_items,
+                    "method_ids": METHOD_IDS,
+                    "sources": [
+                        {"name": name, "url": TENCENT, "license": SOURCE_LICENSE}
+                        for name in sorted({r["source"] for r in rows})
+                    ],
+                    "limits": LIMITS,
                     "hint": SYMBOL_HINT if format_errors else None,
                 },
                 ensure_ascii=False,
