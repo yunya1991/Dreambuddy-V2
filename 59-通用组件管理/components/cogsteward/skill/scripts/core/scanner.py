@@ -211,7 +211,14 @@ def _strip_code_fences(text: str) -> str:
 
 
 def extract_links(text: str):
-    return [match.group(1) for match in LINK_RE.finditer(_strip_code_fences(text))]
+    links = []
+    for match in LINK_RE.finditer(_strip_code_fences(text)):
+        target = match.group(1)
+        # 纯词/占位符（如 path、args、**kwargs）既非文件也无扩展名，不当作链接。
+        if not any(ch in target for ch in "/.\\"):
+            continue
+        links.append(target)
+    return links
 
 
 def resolve_link(src_rel: str, target: str, root=None):
@@ -341,7 +348,7 @@ def scan(root, config: dict, conn, full: bool = False) -> dict:
     max_text = int(config.get("max_text_bytes") or 10 * 1024 * 1024)
 
     existing_docs = {row["path"]: row for row in conn.execute("SELECT path, size, mtime FROM docs")}
-    existing_skills = {row["path"]: row for row in conn.execute("SELECT path FROM skills")}
+    existing_skills = {row["path"]: row for row in conn.execute("SELECT path, sha256 FROM skills")}
     seen_docs, seen_skills = set(), set()
 
     stats = {
@@ -368,7 +375,14 @@ def scan(root, config: dict, conn, full: bool = False) -> dict:
 
         is_skill = path.name.lower() == "skill.md"
         if is_skill:
-            if rel_path in existing_skills and not full:
+            # 技能按内容摘要判定变化，避免增量扫描漏掉 frontmatter 更新。
+            try:
+                digest = sha256_file(path)
+            except OSError:
+                stats["errors"] += 1
+                continue
+            previous = existing_skills.get(rel_path)
+            if previous and not full and previous["sha256"] == digest:
                 seen_skills.add(rel_path)
                 stats["unchanged"] += 1
                 continue
@@ -378,12 +392,11 @@ def scan(root, config: dict, conn, full: bool = False) -> dict:
                 seen_docs.add(rel_path)
                 stats["unchanged"] += 1
                 continue
-
-        try:
-            digest = sha256_file(path)
-        except OSError:
-            stats["errors"] += 1
-            continue
+            try:
+                digest = sha256_file(path)
+            except OSError:
+                stats["errors"] += 1
+                continue
 
         stats["scanned"] += 1
         stats["bytes"] += stat.st_size
@@ -449,6 +462,8 @@ def scan(root, config: dict, conn, full: bool = False) -> dict:
     missing_docs = [path for path in existing_docs if path not in seen_docs]
     for rel_path in missing_docs:
         conn.execute("UPDATE docs SET status='orphan' WHERE path=?", (rel_path,))
+        # 文件已消失，其引用边一并清除，避免体检持续报旧链接。
+        conn.execute("DELETE FROM edges WHERE src=?", (rel_path,))
     for rel_path in existing_skills:
         if rel_path not in seen_skills:
             conn.execute("UPDATE skills SET status='orphan' WHERE path=?", (rel_path,))

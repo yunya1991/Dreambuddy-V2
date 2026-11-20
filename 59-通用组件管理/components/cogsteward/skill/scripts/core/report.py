@@ -57,7 +57,7 @@ def doctor(root, config: dict, conn) -> dict:
 
     # 3. 索引漂移：哈希不一致或文件已消失
     drift = []
-    for row in conn.execute("SELECT path, sha256 FROM docs"):
+    for row in conn.execute("SELECT path, sha256 FROM docs WHERE status != 'orphan'"):
         path = root / row["path"]
         if not path.exists():
             drift.append({"path": row["path"], "reason": "missing"})
@@ -67,7 +67,7 @@ def doctor(root, config: dict, conn) -> dict:
                 drift.append({"path": row["path"], "reason": "hash_mismatch"})
         except OSError:
             drift.append({"path": row["path"], "reason": "unreadable"})
-    for row in conn.execute("SELECT path, sha256 FROM skills"):
+    for row in conn.execute("SELECT path, sha256 FROM skills WHERE status != 'orphan'"):
         path = root / row["path"]
         if not path.exists():
             drift.append({"path": row["path"], "reason": "missing"})
