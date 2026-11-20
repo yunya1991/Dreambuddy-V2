@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: safe-service-restart
 description: 服务重启硬门禁流程：commit → 验证工作区干净 → 重启 → 验证前后代码一致。Invoke whenever a backend/frontend
   service needs to be restarted after code changes, to prevent regression from uncommitted

@@ -109,3 +109,7 @@ const multiResult = await orchestrator.run({
 - 首次运行会从Tavily获取数据，需设置`TAVILY_API_KEY`
 - 无API Key时使用模拟数据
 - 建议定期运行以跟踪周期变化
+
+## 脚本索引
+
+- [demo.ts](demo.ts) — 资产调研演示脚本

@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: 6-trading-screen1-framework
 description: Screen1 七维牛熊检测框架。以 MA200 三日确认为方向锚，七维度加权评分（技术指标检测器 40分 + 减半周期/矿工经济/链上估值/宏观金融/跨市场），输出
   BULL/BEAR/NEUTRAL。

@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 category: trading
 title: '第一屏: 周线决策 SKILL v1.0'
 summary: 三屏交易体系战略层 - 周线方向判断 + 双轨策略选择 + 交易记录回验 + 回测数据支撑

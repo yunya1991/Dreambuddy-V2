@@ -19,7 +19,7 @@ provides: [paper-writing, style-calibration]
 
 > **双位置存储**：
 > - `.trae/skills/dream-science-paper-writing/SKILL.md`（TRAE 调用入口）
-> - `1-ARCHITECTURE/skills/research/dream-science-paper-writing/SKILL.md`（项目级索引副本）
+> - `1-ARCHITECTURE/skills/research/dream-science-paper-writing/SKILL.md`（项目级索引副本，本文件）
 
 ---
 

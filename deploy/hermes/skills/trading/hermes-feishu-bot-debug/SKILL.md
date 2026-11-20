@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: hermes-feishu-bot-debug
 description: 诊断和修复 Hermes Bot 飞书双向通信问题。涵盖 Gateway 配置、WebSocket 事件订阅、Channel Directory
   管理、App 发布流程。

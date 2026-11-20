@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: polling-trader-reload
 description: 'Reload polling_trader after code changes: kill old → wait flock release
   → start new with same config → verify pidfile + main loop. Invoke when polling_trader.py

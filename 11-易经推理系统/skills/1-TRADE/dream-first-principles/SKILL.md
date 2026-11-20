@@ -1151,9 +1151,11 @@ Phase 8: 顾问评审 (MR + TR)
 
 ---
 
-## 研报API推送规范 (v2.0)
+## 研报API推送规范 (v2.1)
 
-> **⚠️ 2026-04-24更新**: A2产物完整工作流：落盘原始文件 → 生成小白版 → 按规范推送
+> **⚠️ 2026-05-10更新**: A2产物完整工作流：落盘原始文件 → 生成小白版 → 同步到展示页面
+> 
+> **🔴 强制要求**: 小白版必须同步到 `http://8.209.238.108/market-research`，此URL已写死在SKILL中
 
 ### 完整工作流 (1:30执行)
 
@@ -1162,58 +1164,96 @@ Step 1: 落盘原始文件
     ↓
 Step 2: 生成小白版（按v4小白版模板）
     ↓
-Step 3: 调用推送脚本（只推小白版）
+Step 3: 同步到展示页面 http://8.209.238.108/market-research ← 新增
     ↓
 完成
 ```
 
 ### Step 1: 落盘原始文件
 
-**目标目录**: `reports/strategy/`
+**目标目录**: `reports/trading/`
 
-**文件名**: `a2_first_principles_{YYYYMMDD}_v{n}.md`
+**文件名**: `a2_first_principles_{YYYYMMDD}_{HHMM}.md`
 
 **版本号规则**: v1=初稿, v2=修订, v3=顾问评审后终稿
 
 ### Step 2: 生成小白版
 
 > **⚠️ 必须生成**: 每个A2报告必须同时生成小白版，供对外展示
+> 
+> **🔴 自动同步目标**: `http://8.209.238.108/market-research` (已写死，无需手动指定)
 
-**文件名**: `a2_first_principles_{YYYYMMDD}_v{n}_小白版.md`
+**文件名**: `a2_first_principles_{YYYYMMDD}_{HHMM}_小白版.md`
 
-**输出位置**: `reports/strategy/`
+**输出位置**: `reports/trading/`
 
 **小白版模板**: 见下方"小白版模板(v4.0)"章节
+
+### Step 3: 同步到展示页面
+
+> **🔴 强制同步**: 小白版生成后，必须自动同步到展示页面
+> 
+> **目标URL**: `http://8.209.238.108/market-research` (硬编码，不可修改)
+
+**同步命令**:
+```bash
+# 方式1: 使用推送脚本（推荐）
+cd /Users/zhangjiangtao/WorkBuddy/20260415144304
+python3 scripts/push_reports_to_api.py --days 1 --target market-research
+
+# 方式2: 直接API调用
+python3 << EOF
+import requests
+import os
+
+API_BASE = "http://8.209.238.108"
+API_KEY = "<DREAM_API_KEY>"
+
+# 读取小白版内容
+with open('reports/trading/a2_first_principles_$(date +%Y%m%d)_小白版.md', 'r') as f:
+    content = f.read()
+
+# 推送到展示页面
+payload = {
+    "title": "BTC 行情分析报告",
+    "content": content,
+    "category": "market-analysis",
+    "tags": ["BTC", "A2", "第一性原理", "$(date +%Y-%m-%d)"]
+}
+
+headers = {"X-API-Key": API_KEY, "Content-Type": "application/json"}
+r = requests.post(f"{API_BASE}/api/v1/admin/reports", json=payload, headers=headers)
+print(f"推送状态: {r.status_code}")
+print(f"响应: {r.text}")
+EOF
+```
+
+**推送验证**:
+```bash
+# 验证展示页面是否更新
+curl -s http://8.209.238.108/market-research | grep -o "A2第一性原理" && echo "✅ 同步成功" || echo "❌ 同步失败"
+```
+
+**推送范围**:
+
+| 文件类型 | 是否推送 | 目标URL | 说明 |
+|:---------|:--------:|:-------|:-----|
+| `a2_first_principles_*_小白版.md` | ✅ 是 | `http://8.209.238.108/market-research` | A2小白版（**唯一推送对象**） |
+| `a2_first_principles_*.md` (专业版) | ❌ 否 | - | 仅存档，不推送 |
+| `*_小白版.md` (其他) | ❌ 否 | - | 仅为A2小白版推送 |
+| `*research*.md` (A1) | ❌ 否 | - | A1调研报告 |
+| `*strategy*.md` (A3) | ❌ 否 | - | A3战略报告 |
+| `daily_market_intel_*.md` | ❌ 否 | - | 高频日报不推送 |
 
 ### API配置
 
 | 项目 | 值 |
 |:-----|:---|
 | **API地址** | `http://8.209.238.108/api/v1/admin/reports` |
+| **展示页面** | `http://8.209.238.108/market-research` (硬编码) |
 | **鉴权方式** | `X-API-Key` Header |
-| **API Key** | `8F_yf4C57w13-HaF3Wlw40uRYcica4Tfn-c93EocnLo` |
+| **API Key** | `<DREAM_API_KEY>` |
 | **Key存储** | 记忆(MEMORY.md) + 用户环境变量 `INTERNAL_API_KEY` |
-
-### Step 3: 推送小白版
-
-> **⚠️ 只推送小白版**：专业版存档不推送，只推送小白版对外展示
-
-**推送命令**:
-```bash
-cd /Users/zhangjiangtao/WorkBuddy/20260415144304
-python3 scripts/push_reports_to_api.py --days 3
-```
-
-**推送范围**:
-
-| 文件类型 | 是否推送 | 说明 |
-|:---------|:--------:|:-----|
-| `a2_first_principles_*_小白版.md` | ✅ 是 | A2小白版（**唯一推送对象**） |
-| `a2_first_principles_*.md` (专业版) | ❌ 否 | 仅存档，不推送 |
-| `*_小白版.md` (其他) | ❌ 否 | 仅为A2小白版推送 |
-| `*research*.md` (A1) | ❌ 否 | A1调研报告 |
-| `*strategy*.md` (A3) | ❌ 否 | A3战略报告 |
-| `daily_market_intel_*.md` | ❌ 否 | 高频日报不推送 |
 
 ### 推送前审查 (隐私保护)
 
@@ -1242,7 +1282,7 @@ python3 scripts/push_reports_to_api.py --days 3
 import requests
 
 API_BASE = "http://8.209.238.108/api/v1"
-API_KEY = "8F_yf4C57w13-HaF3Wlw40uRYcica4Tfn-c93EocnLo"
+API_KEY = "<DREAM_API_KEY>"
 
 payload = {
     "title": "A2第一性原理分析 {日期}",
@@ -1352,9 +1392,11 @@ r = requests.post(f"{API_BASE}/admin/reports", json=payload, headers=headers)
 
 ## 今日重点
 
-1. {重点一}
-2. {重点二}
-3. {重点三}
+- {重点一}
+
+- {重点二}
+
+- {重点三}
 
 ---
 

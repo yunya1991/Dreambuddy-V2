@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: debate-classic-methodology-—-oxford-式经典辩论赛制
 category: meta
 status: active

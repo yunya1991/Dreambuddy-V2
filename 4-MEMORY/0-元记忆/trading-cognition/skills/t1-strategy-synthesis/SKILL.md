@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: t1-strategy-synthesis
 description: Synthesize strategic directive, three-scenario Bayesian deduction, and
   contingency plan from T0 market cognition output.

@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: t2-trade-execution
 description: 'Tactical validation, position execution and four-layer exit decision
   flow for live trading. Merges A4 (tactical validation) + A5 (execution) + A9 (exit

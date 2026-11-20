@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: memory-manager
 description: Local memory management for agents. Compression detection, auto-snapshots,
   and semantic search. Use when agents need to detect compression risk before memory

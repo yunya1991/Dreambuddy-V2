@@ -56,7 +56,7 @@ category: research
 
 ### API Key
 ```
-sk-c233489e73e94b9591e4776d89ec8cb8
+<DASHSCOPE_API_KEY>
 ```
 
 ### Base URL
@@ -77,7 +77,7 @@ import urllib.request
 import json
 
 def call_bailian(messages, model="qwen3.6-35b-a3b"):
-    api_key = "sk-c233489e73e94b9591e4776d89ec8cb8"
+    api_key = "<DASHSCOPE_API_KEY>"
     url = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
 
     data = {

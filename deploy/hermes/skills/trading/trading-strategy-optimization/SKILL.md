@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: trading-strategy-optimization
 description: End-to-end workflow for optimizing 6-TRADING backtest strategies. Covers code archaeology, root-cause diagnosis, proposal design within V9 constraints, implementation, and backtest execution. Used when user asks to improve strategy metrics (Sharpe, MaxDD, returns) for specific coins or market regimes.
 category: trading

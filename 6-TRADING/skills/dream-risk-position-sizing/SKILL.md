@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: dream-risk-position-sizing
 description: 基于风险预算与波动率缩放，将评分结果映射为仓位名义、杠杆、止损金额与账户级风险占用，并输出可审计的仓位建议。
 license: Internal

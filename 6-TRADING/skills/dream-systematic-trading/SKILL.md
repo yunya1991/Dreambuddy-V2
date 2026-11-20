@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 category: trading
 title: 系统交易策略 SKILL v2.0 (协调器)
 summary: 三屏交易体系总入口/调度器 - 编排第一屏+第二屏+第三屏的完整执行流程

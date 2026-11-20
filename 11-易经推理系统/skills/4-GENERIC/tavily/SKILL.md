@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: tavily
 description: AI-optimized web search using Tavily Search API. Use when you need comprehensive
   web research, current events lookup, domain-specific search, or AI-generated answer

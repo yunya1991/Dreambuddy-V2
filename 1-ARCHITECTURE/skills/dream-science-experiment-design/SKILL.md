@@ -19,7 +19,7 @@ provides: [experiment-design, reproducibility]
 
 > **双位置存储**：
 > - `.trae/skills/dream-science-experiment-design/SKILL.md`（TRAE 调用入口）
-> - `1-ARCHITECTURE/skills/research/dream-science-experiment-design/SKILL.md`（项目级索引副本）
+> - `1-ARCHITECTURE/skills/research/dream-science-experiment-design/SKILL.md`（项目级索引副本，本文件）
 
 ---
 

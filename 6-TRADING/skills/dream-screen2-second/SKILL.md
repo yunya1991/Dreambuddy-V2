@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 category: trading
 title: '第二屏: 日线预设 SKILL v1.0'
 summary: 三屏交易体系战术层 - 日线预设 + 三大预设 + 信号强度评估 + 回测验证 + 贝叶斯参数优化 + AAM投递

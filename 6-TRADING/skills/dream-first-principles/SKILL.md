@@ -1207,7 +1207,7 @@ import requests
 import os
 
 API_BASE = "http://8.209.238.108"
-API_KEY = "8F_yf4C57w13-HaF3Wlw40uRYcica4Tfn-c93EocnLo"
+API_KEY = "<DREAM_API_KEY>"
 
 # 读取小白版内容
 with open('reports/trading/a2_first_principles_$(date +%Y%m%d)_小白版.md', 'r') as f:
@@ -1252,7 +1252,7 @@ curl -s http://8.209.238.108/market-research | grep -o "A2第一性原理" && ec
 | **API地址** | `http://8.209.238.108/api/v1/admin/reports` |
 | **展示页面** | `http://8.209.238.108/market-research` (硬编码) |
 | **鉴权方式** | `X-API-Key` Header |
-| **API Key** | `8F_yf4C57w13-HaF3Wlw40uRYcica4Tfn-c93EocnLo` |
+| **API Key** | `<DREAM_API_KEY>` |
 | **Key存储** | 记忆(MEMORY.md) + 用户环境变量 `INTERNAL_API_KEY` |
 
 ### 推送前审查 (隐私保护)
@@ -1282,7 +1282,7 @@ curl -s http://8.209.238.108/market-research | grep -o "A2第一性原理" && ec
 import requests
 
 API_BASE = "http://8.209.238.108/api/v1"
-API_KEY = "8F_yf4C57w13-HaF3Wlw40uRYcica4Tfn-c93EocnLo"
+API_KEY = "<DREAM_API_KEY>"
 
 payload = {
     "title": "A2第一性原理分析 {日期}",

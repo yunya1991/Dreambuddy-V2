@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: screen2-trigger
 description: 每日 Screen2 日线预设触发调度。优先委托 dream-screen2-second SKILL，缺失时降级到 web_search + 内联 A1/A2/A3 分析。
 category: trading

@@ -327,3 +327,7 @@ cron:
 | v1.0 | 2026-06-25 | 初始版本 |
 
 ---
+
+## 脚本索引
+
+- [health-check.ts](health-check.ts) — 系统维护 SKILL - 架构健康检查脚本

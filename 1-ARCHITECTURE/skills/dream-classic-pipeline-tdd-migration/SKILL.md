@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: dream-classic-pipeline-tdd-migration
 description: 'Orchestrates Classic Pipeline C0-C8 nine-node TDD migration: RED test
   (assert real business logic) → GREEN impl (simplified extraction from ml_trade_service.py)

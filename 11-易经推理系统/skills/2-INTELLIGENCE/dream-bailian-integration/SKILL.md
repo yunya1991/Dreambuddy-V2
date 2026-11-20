@@ -14,17 +14,19 @@ category: research
 ## Autonomy Boundary
 
 可自主执行：
-- 情报收集与整理
-- 数据分析与报告生成
-- 知识库检索与匹配
-- 市场情绪与资金流分析
+- 市场数据查询、技术指标计算
+- 策略信号生成与验证
+- 风险评估与仓位计算建议
+- 回测与历史数据分析
 
-需用户确认：
-- 无（分析类操作均可自主执行）
+需用户确认（escalation_required）：
+- 任何实盘交易操作（开仓/平仓/加仓/减仓）
+- 修改交易参数（止损/止盈/仓位大小）
+- 调用交易所 API 执行订单
 
-禁止：
-- 输出未经验证的虚假信息
-- 将分析结论直接作为交易指令执行
+禁止自主执行：
+- 未经用户确认直接下单
+- 绕过风控网关执行交易
 
 
 # Dream-MultiSkill 百炼集成中心 v1.0
@@ -54,7 +56,7 @@ category: research
 
 ### API Key
 ```
-sk-c233489e73e94b9591e4776d89ec8cb8
+<DASHSCOPE_API_KEY>
 ```
 
 ### Base URL
@@ -75,7 +77,7 @@ import urllib.request
 import json
 
 def call_bailian(messages, model="qwen3.6-35b-a3b"):
-    api_key = "sk-c233489e73e94b9591e4776d89ec8cb8"
+    api_key = "<DASHSCOPE_API_KEY>"
     url = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
 
     data = {

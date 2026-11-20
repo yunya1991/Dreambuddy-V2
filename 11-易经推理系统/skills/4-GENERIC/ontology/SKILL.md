@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: ontology
 description: Typed knowledge graph for structured agent memory and composable skills.
   Use when creating/querying entities (Person, Project, Task, Event, Document), linking

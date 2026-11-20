@@ -142,7 +142,7 @@ category: orchestration
 | 系统阶段 | SKILL / 能力 | 调用方式 | 状态 |
 |---------|-------------|---------|------|
 | **A0 矛盾识别** | `dream-contradiction-theory` | 读取 `6-TRADING/skills/dream-contradiction-theory/SKILL.md` | ✅ |
-| **A1 深度调研** | `dream-strategy-research` | 读 A1 Feed：`http://49.233.123.96:3456/feed` | ✅ |
+| **A1 深度调研** | `dream-strategy-research` | 读本地 A1 研报目录 `experiments/ab-trading/A系列研报/A1研报/` | ✅ |
 | **A2 第一性原理** | `dream-first-principles` | 读取 `6-TRADING/skills/dream-first-principles/SKILL.md` | ✅ |
 | **A3 沙盘推演** | `master-seminar` | 读取 `6-TRADING/skills/master-seminar/SKILL.md` | ✅ |
 | **A4 战术验证** | `dream-tactical-validator` | 读取 `6-TRADING/skills/dream-tactical-validator/SKILL.md` | ✅ |
@@ -161,8 +161,6 @@ category: orchestration
 | 域 | 基础路径 | 主要端点 |
 |---|---------|---------|
 | **经典指标系统** | `http://127.0.0.1:8092` | 14 指标 + 7 策略 + 回测 + 评估 |
-| **基本面分析** | `http://49.233.123.96:3456` | 情绪/信号/资金流/新闻/宏观 |
-| **A1 产物中心** | `http://49.233.123.96:3456/feed` | 调研报告输入 |
 
 ---
 
@@ -210,12 +208,13 @@ plan = orchestrator.plan(intent, mkt, memory)
 # plan.plan_rationale  : 规划理由
 ```
 
-**蓝图构建（蓝图阶段）**：读 A1 Feed 作为核心输入
+**蓝图构建（蓝图阶段）**：读本地 A1 研报作为核心输入
 ```python
-import requests
+import glob, json
 
-feed = requests.get("http://49.233.123.96:3456/feed", timeout=10).json()
-# 解析 feed 中的 A1 调研报告内容 → 市场判断 + 策略方向
+reports = sorted(glob.glob("experiments/ab-trading/A系列研报/A1研报/a1_regime_*.json"))
+latest = json.load(open(reports[-1], encoding="utf-8")) if reports else {}
+# 解析 A1 调研报告内容 → 市场判断 + 策略方向
 ```
 
 **结合**：
@@ -689,7 +688,6 @@ log = {
 
 | 接口 | 用途 | 密钥 |
 |------|------|------|
-| `http://49.233.123.96:3456/feed` | A1 产物中心 | 无 |
 | `http://127.0.0.1:8092` | 经典指标系统 | 无 |
 
 ---

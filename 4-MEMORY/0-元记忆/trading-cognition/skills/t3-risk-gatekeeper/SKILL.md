@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: t3-risk-gatekeeper
 description: Pre-trade gatekeeping, in-trade circuit breaker and post-trade attribution.
   The hard gate itself — all checks are non-negotiable constraints derived from A7

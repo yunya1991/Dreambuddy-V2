@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: feishu-gateway-setup
 description: Feishu Bot 与 Hermes Gateway 的双向通信配置与排错。涵盖 App 创建、权限配置、事件订阅、发布流程、Gateway
   config.yaml、频道目录持久化、以及群聊/单聊消息收发调试。

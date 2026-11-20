@@ -1,26 +1,50 @@
 ---
 name: skill-creator
-description: Guide for creating effective skills. This skill should be used when users
-  want to create a new skill (or update an existing skill) that extends Claude's capabilities
-  with specialized knowledge, workflows, or tool integrations.
+description: Guide for creating effective skills with mandatory multi-domain research.
+  Use when users want to create a new skill or update an existing skill that extends
+  Claude's capabilities with specialized knowledge, workflows, or tool integrations.
+  Enforces 5-domain research (AI/finance/product/engineering/GitHub) before skill
+  formation per project hard constraint VM-1790765308904.
+version: 2.0.0
+created: 2026-09-21
+updated: 2026-10-01
 license: Complete terms in LICENSE.txt
+status: active
 category: tooling
+triggers:
+- 创建 skill
+- 新建 skill
+- 生成 skill
+- 更新 skill
+- skill-creator
+- 创建技能
+depends_on:
+- dream-skill-index-governance
+provides:
+- skill-creation
+- skill-iteration
+- multi-domain-research
+cognitive_links:
+- VM-1790765308904-4f460e48
+- VM-1790864180936-faa44e02
 ---
 
 ## Autonomy Boundary
 
 可自主执行：
-- 工具调用与数据转换
-- 文档格式转换（Markdown/JSON/CSV）
-- 通用查询与搜索操作
-- 技能发现与注册
+- 治理规则检查与合规报告
+- SKILL 索引与生命周期管理
+- 架构同步校验
+- 代码审查与合并建议
 
 需用户确认：
-- 无（通用工具操作可自主执行）
+- 执行代码合并（merge 到主分支）
+- 修改治理规则本身
+- 执行系统级重启或部署
 
 禁止：
-- 执行破坏性操作（删除/覆盖重要文件）
-- 访问未授权的外部资源
+- 未经审查直接合并到主分支
+- 修改核心治理规则而不经过审批
 
 
 # Skill Creator
@@ -223,13 +247,14 @@ Claude reads REDLINING.md or OOXML.md only when the user needs those features.
 Skill creation involves these steps:
 
 1. Understand the skill with concrete examples
-2. Plan reusable skill contents (scripts, references, assets)
-3. Initialize the skill (run init_skill.py)
-4. Edit the skill (implement resources and write SKILL.md)
-5. Package the skill (run package_skill.py)
-6. Iterate based on real usage
+2. **Multi-domain research** (mandatory — project hard constraint VM-1790765308904)
+3. Plan reusable skill contents (scripts, references, assets)
+4. Initialize the skill (run init_skill.py)
+5. Edit the skill (implement resources and write SKILL.md)
+6. Package the skill (run package_skill.py)
+7. Iterate based on real usage
 
-Follow these steps in order, skipping only if there is a clear reason why they are not applicable.
+Follow these steps in order, skipping only if there is a clear reason why they are not applicable. **Step 2 (multi-domain research) is mandatory and cannot be skipped** — it ensures the skill draws on industry best practices rather than narrow design.
 
 ### Step 1: Understanding the Skill with Concrete Examples
 
@@ -248,7 +273,34 @@ To avoid overwhelming users, avoid asking too many questions in a single message
 
 Conclude this step when there is a clear sense of the functionality the skill should support.
 
-### Step 2: Planning the Reusable Skill Contents
+### Step 2: Multi-Domain Research (Mandatory)
+
+> **Project hard constraint** (VM-1790765308904): Before forming any skill, you MUST research corresponding multi-domain experiences based on the skill's category. Skipping this step results in narrow skill design lacking industry best-practice support.
+
+**Purpose**: Draw on mature patterns from 5 domains to ensure the new skill is robust, well-structured, and aligned with industry standards.
+
+**Research matrix by skill category**:
+
+| Skill Category | Domains to Research | Key References |
+|----------------|---------------------|----------------|
+| AI / Agent / Orchestration | AI赛道 + 技术开发 + GitHub生态 | LangChain/CrewAI/MAF multi-agent patterns, LLM orchestration, AI-assisted classification; Linux Kernel MAINTAINERS, K8s Diátaxis; open-source doc tree, OWNERS mechanism |
+| Trading / Finance / Risk | 传统金融 + 技术开发 + AI赛道 | Bloomberg tiered release, Goldman data governance, SOX WORM retention, Basel III compliance; code standards; agent frameworks |
+| Product / Workflow / Process | 产品管理 + 传统金融 + 技术开发 | Amazon PR/FAQ, Google Design Doc lifecycle, Atlassian content classification; retention policies; Diátaxis four-type |
+| Engineering / DevOps / Infra | 技术开发 + GitHub生态 + 产品管理 | Linux Kernel MAINTAINERS Status, K8s Diátaxis, Microsoft Purview; OWNERS, contributor docs; Design Doc lifecycle |
+| Research / Analysis | AI赛道 + 产品管理 + GitHub生态 | LLM reasoning patterns, AI classification; PR/FAQ, Design Doc; open-source research docs |
+| Generic / Meta (e.g. this skill) | All 5 domains | Full matrix above |
+
+**Execution**:
+
+1. Identify the skill's primary category from the matrix above
+2. Research at least 2 of the listed domains (3+ preferred for complex skills)
+3. Extract 2-3 concrete patterns/principles from each domain that apply to this skill
+4. Document the research findings in the skill's `references/` directory (e.g. `references/domain-research.md`) or inline in SKILL.md
+5. Map the findings to skill design decisions (triggers, workflow steps, validation gates)
+
+**Output**: A short research note listing the domains consulted, key patterns extracted, and how they influenced the skill design.
+
+### Step 3: Planning the Reusable Skill Contents
 
 To turn concrete examples into an effective skill, analyze each example by:
 
@@ -272,7 +324,7 @@ Example: When building a `big-query` skill to handle queries like "How many user
 
 To establish the skill's contents, analyze each concrete example to create a list of the reusable resources to include: scripts, references, and assets.
 
-### Step 3: Initializing the Skill
+### Step 4: Initializing the Skill
 
 At this point, it is time to actually create the skill.
 
@@ -295,7 +347,7 @@ The script:
 
 After initialization, customize or remove the generated SKILL.md and example files as needed.
 
-### Step 4: Edit the Skill
+### Step 5: Edit the Skill
 
 When editing the (newly-generated or existing) skill, remember that the skill is being created for another instance of Claude to use. Include information that would be beneficial and non-obvious to Claude. Consider what procedural knowledge, domain-specific details, or reusable assets would help another Claude instance execute these tasks more effectively.
 
@@ -322,7 +374,7 @@ Any example files and directories not needed for the skill should be deleted. Th
 
 ##### Frontmatter
 
-Write the YAML frontmatter with `name` and `description`:
+Write the YAML frontmatter with `name` and `description` as core fields, plus project lifecycle fields:
 
 - `name`: The skill name
 - `description`: This is the primary triggering mechanism for your skill, and helps Claude understand when to use the skill.
@@ -330,13 +382,32 @@ Write the YAML frontmatter with `name` and `description`:
   - Include all "when to use" information here - Not in the body. The body is only loaded after triggering, so "When to Use This Skill" sections in the body are not helpful to Claude.
   - Example description for a `docx` skill: "Comprehensive document creation, editing, and analysis with support for tracked changes, comments, formatting preservation, and text extraction. Use when Claude needs to work with professional documents (.docx files) for: (1) Creating new documents, (2) Modifying or editing content, (3) Working with tracked changes, (4) Adding comments, or any other document tasks"
 
-Do not include any other fields in YAML frontmatter.
+**Project lifecycle fields** (recommended for all dream-* skills, enables governance by `dream-skill-index-governance`):
+
+```yaml
+---
+name: my-skill
+description: "...what it does + when to use..."
+version: 0.1.0
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+license: Internal
+status: proposed        # proposed → shadow → active → deprecated → archived
+category: other          # trading|technical|orchestration|research|meta|bugfix|development|other
+triggers: [触发词1, 触发词2]
+depends_on: []           # skills this one depends on
+provides: []             # capabilities this skill provides
+cognitive_links: []      # VM-xxx memory IDs from cognitive system
+---
+```
+
+> Note: The generic Claude skill spec only requires `name` and `description`. The extended fields above are project conventions that enable lifecycle management, conflict detection, and cognitive integration. They are optional but strongly recommended.
 
 ##### Body
 
 Write instructions for using the skill and its bundled resources.
 
-### Step 5: Packaging a Skill
+### Step 6: Packaging a Skill
 
 Once development of the skill is complete, it must be packaged into a distributable .skill file that gets shared with the user. The packaging process automatically validates the skill first to ensure it meets all requirements:
 
@@ -363,7 +434,7 @@ The packaging script will:
 
 If validation fails, the script will report the errors and exit without creating a package. Fix any validation errors and run the packaging command again.
 
-### Step 6: Iterate
+### Step 7: Iterate
 
 After testing the skill, users may request improvements. Often this happens right after using the skill, with fresh context of how the skill performed.
 
@@ -373,3 +444,32 @@ After testing the skill, users may request improvements. Often this happens righ
 2. Notice struggles or inefficiencies
 3. Identify how SKILL.md or bundled resources should be updated
 4. Implement changes and test again
+
+### Step 8: Register to Governance System (Mandatory · 双保险·AI层)
+
+> **硬约束（不可跳过）**：新 SKILL 创建完成后，必须注册到治理系统，否则不得宣称"创建完成"。
+> 本步骤与 git post-commit hook（机器层）构成双保险，任一触发即完成注册。
+
+**执行命令**（在项目根目录）：
+
+```bash
+# 显式注册新创建的 SKILL（推荐）
+python3 1-ARCHITECTURE/skills/dream-skill-index-governance/auto_register_skill.py \
+    --no-auto-detect \
+    .trae/skills/<skill-name>
+
+# 若使用双位置存储，两个位置都会被自动扫描，只需指定其中一个即可
+```
+
+**注册成功标志**：
+- 报告 `status: success` 或 `completed_with_red_flags`
+- `registry.json` 中 `total_count` 增加
+- 新 SKILL 出现在 `registry.json` 中，`parse_error: null`
+
+**若注册失败**：
+1. 检查 SKILL.md frontmatter 格式（必填字段 name/description/version）
+2. 检查双位置存储是否一致（`.trae/skills/` 与 `1-ARCHITECTURE/skills/`）
+3. 修复后重新运行注册命令
+
+**日志**：`1-ARCHITECTURE/skills/dream-skill-index-governance/auto_register.log`
+

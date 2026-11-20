@@ -581,3 +581,7 @@ recall(context="反爬虫案例 千问评估", top_k=3)  # 命中则复用，否
 - 符号链接指向 `.trae/skills/<name>`，源 skill 更新时 30 系统自动同步（零漂移）
 - 30 系统不修改源 skill 内容，只做调用方
 - 若需 30 系统专属逻辑，在 `core/` 新建模块，不污染源 skill
+
+## 脚本索引
+
+- [start_chrome.sh](start_chrome.sh) — 启动真实 Chrome 浏览器（在 TRAE 沙箱外运行）

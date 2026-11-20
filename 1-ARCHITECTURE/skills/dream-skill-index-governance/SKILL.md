@@ -623,3 +623,25 @@ skill-indexer lifecycle-advance --cognitive-link VM-xxx
 | 零回归 | ✅ | 渐进增强，旧 SKILL 零改动 |
 | 稳定优先模式 | ✅ | 不强制升级，渐进增强 |
 | hermes 反思决策树 | ✅ | 本 SKILL 生命周期入口对齐 hermes 反思 |
+
+## 脚本索引
+
+- [auto_sync_dispatcher.py](auto_sync_dispatcher.py) — 四大系统自动同步分发器 — 变更驱动的机器层双保险。
+- [batch_enrich_frontmatter.py](batch_enrich_frontmatter.py) — 批量补全 SKILL.md frontmatter 缺失字段。
+- [skill_affinity_maturator.py](skill_affinity_maturator.py) — SKILL 亲和力成熟 — 基于 usage 统计调整 triggers / 建议 deprecated
+- [skill_auto_applicator.py](skill_auto_applicator.py) — SKILL 自动 apply — 减少人工干预
+- [skill_candidate_miner.py](skill_candidate_miner.py) — SKILL 候选挖掘器 — 从认知记忆中自动挖掘可复用为 SKILL 的 task pattern
+- [skill_circulation_stats.py](skill_circulation_stats.py) — Skill Circulation Stats — SKILL 调用统计，驱动生命周期决策。
+- [skill_facets.py](skill_facets.py) — Skill Facets — 分面分类推断。
+- [skill_index_generator.py](skill_index_generator.py) — Skill Index Generator — 从 registry.json 自动生成 SKILL_INDEX.md。
+- [skill_indexer.py](skill_indexer.py) — skill-indexer 构建器 MVP
+- [skill_lifecycle_writer.py](skill_lifecycle_writer.py) — Skill Lifecycle Writer — 把生命周期状态实际写回 SKILL.md frontmatter。
+- [skill_operon.py](skill_operon.py) — SKILL 操纵子（Operon）— SKILL 套件协同加载
+- [skill_recall_bridge.py](skill_recall_bridge.py) — Skill Recall Bridge — 集成 skill_indexer.recall_hook 到认知系统 rec
+- [skill_semantic_evaluator.py](skill_semantic_evaluator.py) — SKILL 语义评估层 — 复用 dream-qwen-eval-collab 的千问评估环节
+- [skill_thesaurus.py](skill_thesaurus.py) — Skill Thesaurus — 触发词权威词表。
+- [test_p0_cognitive_loop.py](test_p0_cognitive_loop.py) — P0 认知闭环 + 生命周期写回 测试 — TDD RED 阶段
+- [test_p1_facets_thesaurus_drift.py](test_p1_facets_thesaurus_drift.py) — P1 分面分类 + 权威词表 + 漂移修复 测试 — TDD RED 阶段
+- [test_p2_automation_pipeline.py](test_p2_automation_pipeline.py) — P2 SKILL创建自动化管道 测试 — TDD RED 阶段
+- [test_p3_semantic_eval_auto_apply.py](test_p3_semantic_eval_auto_apply.py) — P3 语义评估层 + 自动 apply 测试 — TDD RED 阶段
+- [test_skill_indexer.py](test_skill_indexer.py) — skill-indexer 构建器 MVP 测试 — TDD RED 阶段

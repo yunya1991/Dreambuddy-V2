@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: markdown-new
 description: Convert public web pages into clean Markdown with markdown.new for AI
   workflows. Use when tasks require URL-to-Markdown conversion for summarization,

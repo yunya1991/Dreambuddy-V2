@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 status: completed
 category: orchestration
 title: 老板秘书 SKILL (boss-secretary)
@@ -4122,3 +4123,7 @@ auto-repair-scheduler (每2h)     secretary-workflow-trigger (每4h)
 ---
 
 *本文档由老板秘书系统自动维护 | 最后更新: 2026-04-22 20:54 v4.10*
+
+## 脚本索引
+
+- [test_department_reports.sh](test_department_reports.sh) — 部门报告生成与同步脚本

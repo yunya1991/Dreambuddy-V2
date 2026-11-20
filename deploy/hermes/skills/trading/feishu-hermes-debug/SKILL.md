@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: feishu-hermes-debug
 description: Diagnose and fix Hermes Agent ↔ Feishu Bot communication issues. Covers WebSocket connectivity, send_message tool, channel directory, inbound message events, app publishing, scope management, and gateway restart procedures.
 category: trading

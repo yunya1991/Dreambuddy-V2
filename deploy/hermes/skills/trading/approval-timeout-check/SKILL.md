@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: approval-timeout-check
 description: 审批超时守卫 — 检查 PENDING 审批单，超时后触发 AI 兜底决策。每 10 分钟 cron 触发。
 category: trading

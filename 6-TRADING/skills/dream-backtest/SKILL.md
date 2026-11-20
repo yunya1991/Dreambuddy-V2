@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 category: trading
 title: 回测引擎 SKILL v2.0
 summary: 独立回测能力：支持被Screen2调用或3AM自动化独立运行，输出结构化报告到邮箱

@@ -39,7 +39,7 @@ provides:
 
 > **双位置存储**：本 SKILL 同时存在于：
 > - `.trae/skills/dream-science-orchestrator/SKILL.md`（TRAE 调用入口）
-> - `1-ARCHITECTURE/skills/research/dream-science-orchestrator/SKILL.md`（项目级索引副本）
+> - `1-ARCHITECTURE/skills/research/dream-science-orchestrator/SKILL.md`（项目级索引副本，本文件）
 
 ---
 

@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: dream-signal-scoring-spec
 description: 将多源输入（技术/宏观/记忆/团队评审）标准化为可复现的三维评分与冲突判定，输出结构化评分与理由码，供 dream-multiSkill
   调度。

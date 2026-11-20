@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: dream-self-iteration-workflow
 description: 'Orchestrates L4 self-iteration: hermes reflection (trace analysis →
   skill-creator) + param optimization (Bayesian + walk-forward) + case ingest gate

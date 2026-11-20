@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: t0-market-cognition
 description: 'Multi-dimensional market cognition: information collection, conflict
   analysis, path-of-least-resistance, regime classification, and direction determination.'

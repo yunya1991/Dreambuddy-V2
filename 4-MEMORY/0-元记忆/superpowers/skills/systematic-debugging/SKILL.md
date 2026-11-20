@@ -1,4 +1,5 @@
 ---
+version: 0.1.0
 name: systematic-debugging
 description: Use when encountering any bug, test failure, or unexpected behavior,
   before proposing fixes
@@ -300,3 +301,8 @@ These techniques are part of systematic debugging and available in this director
 - **`root-cause-tracing.md`** - Trace bugs backward through call stack to find original trigger
 - **`defense-in-depth.md`** - Add validation at multiple layers after finding root cause
 - **`condition-based-waiting.md`** - Replace arbitrary timeouts with condition polling
+
+## 脚本索引
+
+- [condition-based-waiting-example.ts](condition-based-waiting-example.ts) — Complete implementation of condition-based waiting utilities
+- [find-polluter.sh](find-polluter.sh) — Bisection script to find which test creates unwanted files/s
