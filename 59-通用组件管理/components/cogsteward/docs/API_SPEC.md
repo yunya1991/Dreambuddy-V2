@@ -1,7 +1,7 @@
 # 认知管家（CogSteward）— 接口规格
 
 > **版本**: v1.4 | **更新日期**: 2026-11-20
-> **定位**: 认知管家 CLI 对外的命令与数据契约，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.3
+> **定位**: 认知管家 CLI 对外的命令与数据契约，对齐 [DOC_STANDARD.md](../../../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.3
 > **实现范围**: M2 / M2b / M3 / 契约治理（`init` / `scan` / `doctor` / `route` / `pack` / `triage` / `mark-done` / `rollback` / `config` / `index` / `skill lint` / `selfcheck`，以及独立脚本 `eval_golden.py` / `release_check.py`）
 
 ---

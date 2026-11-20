@@ -1,8 +1,8 @@
 # 认知管家（CogSteward）— 工程索引
 
 > **版本**: v1.4 | **更新日期**: 2026-11-20
-> **定位**: 59-通用组件管理 下认知管家组件的文件级工程索引（L3），对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
-> **对应 SPEC**: [SPEC v0.5](../SPEC-认知管家-WorkBuddy技能封装-v0.5.md)
+> **定位**: 59-通用组件管理 下认知管家组件的文件级工程索引（L3），对齐 [DOC_STANDARD.md](../../../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+> **对应 SPEC**: [SPEC v0.5](../specs/SPEC-认知管家-WorkBuddy技能封装-v0.5.md)
 
 ---
 
@@ -13,7 +13,7 @@
 | 模块编号 | 59（通用组件管理） |
 | 组件名称 | 认知管家 CogSteward（工程名 cognition-manager） |
 | 核心职责 | 工作区上下文治理：扫描登记、断链/孤儿/漂移检测、技能冲突检测、体检报告、主载体路由与安全写入 |
-| 主入口 | `cognition-manager/scripts/cm_cli.py` → `main()` |
+| 主入口 | `skill/scripts/cm_cli.py` → `main()` |
 | 运行形态 | WorkBuddy Skill（本地安装），零第三方依赖 |
 | 依赖关系 | 上游：Python 3.10+、SQLite（FTS5 可选）；下游：无 |
 | 当前阶段 | M3 + 契约治理（0.7.0：指标契约单一源 / `selfcheck` / `release_check`） |
@@ -24,55 +24,58 @@
 ## 2. 目录地图
 
 ```
-59-通用组件管理/
-├── INDEX.md                          # 模块索引
-├── SPEC-认知管家-...-v0.5.md          # 产品 SPEC（M0 收口）
-├── SPIKE-...md / PRETEST-...md        # 平台取证 / 定性前测
-├── docs/                             # 本目录（工程文档）
+components/cogsteward/                # 组件根（一目录一商品族）
+├── component.yaml                    # 组件元数据（版本 / 入口 / 契约 / 测试）
+├── skill/                            # 可分发的 Skill 包（唯一打包源）
+│   ├── SKILL.md                      # 平台入口（frontmatter + 流程）
+│   ├── manifest.yaml                 # 版本 / 模式 / 权限 / 依赖
+│   ├── scripts/
+│   │   ├── cm_cli.py                 # 统一入口
+│   │   ├── eval_golden.py            # 黄金集评估（独立只读脚本）
+│   │   ├── release_check.py          # 发布前一致性闸门（三端契约 / 版本 / 口径）
+│   │   ├── core/
+│   │   │   ├── __init__.py           # 版本号
+│   │   │   ├── store.py              # SQLite + FTS5 + 配置
+│   │   │   ├── scanner.py            # 扫描 / 分类 / 链接
+│   │   │   ├── report.py             # 体检 + 人类可读报告
+│   │   │   ├── contract.py           # 指标契约加载 / 校验 / health
+│   │   │   ├── selfcheck.py          # 安装自检（cm selfcheck）
+│   │   │   ├── signature.py          # 意图指纹归一化 + 加盐哈希
+│   │   │   ├── admission.py          # 记忆准入四问
+│   │   │   ├── router.py             # 判定树 / confidence / patch
+│   │   │   ├── apply.py              # 快照 / 落盘 / 逆序回滚
+│   │   │   ├── pack.py               # token 预算打包（只读）
+│   │   │   ├── triage.py             # 会话 / 待定项分拣
+│   │   │   ├── indexer.py            # 索引总览（cm index）
+│   │   │   └── skill_lint.py         # 技能规范检查（cm skill lint）
+│   │   └── modes/
+│   │       ├── dev.yaml              # Dev 阈值与词表
+│   │       └── office.yaml           # Office 阈值与词表
+│   ├── references/
+│   │   ├── metrics-contract.json     # 九项指标 / 占比唯一口径源（三端副本一致）
+│   │   ├── schema.md                 # 数据表 / 状态机 / 隐私
+│   │   ├── routing-matrix.md         # 判定树 / 关系 / confidence
+│   │   ├── confidence.md             # confidence 计算规范
+│   │   ├── intent-signature.md       # 指纹归一化规范
+│   │   ├── admission-rules.md        # 记忆准入四问
+│   │   ├── pack.md                   # 打包评分与预算规范
+│   │   ├── triage.md                 # 分拣状态迁移规范
+│   │   └── golden/
+│   │       ├── README.md             # 黄金集目录约定
+│   │       └── labeling-guide.md     # 双人标注与分歧裁定
+│   └── templates/                    # SPEC / ADR / INDEX / SKILL / 纪要
+├── docs/                             # 工程文档（不进包）
 │   ├── ENGINEERING_INDEX.md          # 本文件
 │   ├── TECHNICAL_DESIGN.md           # 技术设计
 │   ├── API_SPEC.md                   # CLI 接口规格
-│   └── CHANGELOG.md                  # 变更日志
-└── cognition-manager/                # 可分发的 Skill 包
-    ├── SKILL.md                      # 平台入口（frontmatter + 流程）
-    ├── manifest.yaml                 # 版本 / 模式 / 权限 / 依赖
-    ├── scripts/
-    │   ├── cm_cli.py                 # 统一入口
-    │   ├── eval_golden.py            # 黄金集评估（独立只读脚本）
-    │   ├── release_check.py          # 发布前一致性闸门（三端契约 / 版本 / 口径）
-    │   ├── core/
-    │   │   ├── __init__.py           # 版本号
-    │   │   ├── store.py              # SQLite + FTS5 + 配置
-    │   │   ├── scanner.py            # 扫描 / 分类 / 链接
-    │   │   ├── report.py             # 体检 + 人类可读报告
-    │   │   ├── contract.py           # 指标契约加载 / 校验 / health
-    │   │   ├── selfcheck.py          # 安装自检（cm selfcheck）
-    │   │   ├── signature.py          # 意图指纹归一化 + 加盐哈希
-    │   │   ├── admission.py          # 记忆准入四问
-    │   │   ├── router.py             # 判定树 / confidence / patch
-    │   │   ├── apply.py              # 快照 / 落盘 / 逆序回滚
-    │   │   ├── pack.py               # token 预算打包（只读）
-    │   │   ├── triage.py             # 会话 / 待定项分拣
-    │   │   ├── indexer.py            # 索引总览（cm index）
-    │   │   └── skill_lint.py         # 技能规范检查（cm skill lint）
-    │   ├── modes/
-    │   │   ├── dev.yaml              # Dev 阈值与词表
-    │   │   └── office.yaml           # Office 阈值与词表
-    │   └── tests/
-    │       └── test_core.py          # 85 项自检（含 2 项 V9 N/A 跳过）
-    ├── references/
-    │   ├── metrics-contract.json     # 九项指标 / 占比唯一口径源（三端副本一致）
-    │   ├── schema.md                 # 数据表 / 状态机 / 隐私
-    │   ├── routing-matrix.md         # 判定树 / 关系 / confidence
-    │   ├── confidence.md             # confidence 计算规范
-    │   ├── intent-signature.md       # 指纹归一化规范
-    │   ├── admission-rules.md        # 记忆准入四问
-    │   ├── pack.md                   # 打包评分与预算规范
-    │   ├── triage.md                 # 分拣状态迁移规范
-    │   └── golden/
-    │       ├── README.md             # 黄金集目录约定
-    │       └── labeling-guide.md     # 双人标注与分歧裁定
-    └── templates/                    # SPEC / ADR / INDEX / SKILL / 纪要
+│   ├── CHANGELOG.md                  # 变更日志（v1.4 主线）
+│   └── CHANGELOG-skill.md            # 技能包内 0.5.x–0.6.x 记录（归档）
+├── specs/                            # SPEC / REVIEW / SPIKE / PRETEST 归档
+├── tests/                            # 组件回归（不进包）
+│   ├── test_core.py                  # 88 项自检（2 项 V9 N/A 跳过）
+│   ├── test_codemap.py               # cm map 单元测试
+│   └── golden/doctor.json            # golden 输出样本（cogsteward.v1）
+└── variants/                         # 分发变体（pro / pro-pay）
 ```
 
 **代码统计**：核心 Python 文件 18 个（入口 1 + 评估器 1 + 闸门 1 + core 14 + 自检 1），共约 5300 行（其中自检约 1360 行）。
@@ -119,7 +122,7 @@
 
 | 文件 | 用例数 | 职责 | 关键覆盖 |
 |------|--------|------|----------|
-| `scripts/tests/test_core.py` | 85 | 功能 / 路由 / 打包 / 分拣 / 评估 / M3 / 契约 / 异常 / 约束 / 性能十类自检（2 项 V9 N/A 跳过） | 分类忽略、增量幂等、断链 30 条精确计数、漂移/孤儿、技能冲突、指纹一致、准入四问、confidence 复算、plan 不落盘、D1 两次执行、confirm 不计执行、幂等 5 次仅写 1 次、三类 op 回滚哈希还原、冲突中止、pack 预算与只读、triage 状态迁移、eval_golden P/R/F1 与 κ、index 增量/check、skill lint 五类问题、契约结构/三端副本/selfcheck/release_check/Pro coverage、V9 十二例、CLI 退出码、V1/V2/V6/V8 |
+| `tests/test_core.py` | 85 | 功能 / 路由 / 打包 / 分拣 / 评估 / M3 / 契约 / 异常 / 约束 / 性能十类自检（2 项 V9 N/A 跳过） | 分类忽略、增量幂等、断链 30 条精确计数、漂移/孤儿、技能冲突、指纹一致、准入四问、confidence 复算、plan 不落盘、D1 两次执行、confirm 不计执行、幂等 5 次仅写 1 次、三类 op 回滚哈希还原、冲突中止、pack 预算与只读、triage 状态迁移、eval_golden P/R/F1 与 κ、index 增量/check、skill lint 五类问题、契约结构/三端副本/selfcheck/release_check/Pro coverage、V9 十二例、CLI 退出码、V1/V2/V6/V8 |
 
 ---
 
@@ -270,9 +273,9 @@ scripts/modes/<mode>.yaml（仅 init 时读取）
 运行方式（需在仓库外副本执行，工作区不可信）：
 
 ```bash
-cp -R cognition-manager /tmp/cm-verify
-cd /tmp/cm-verify
-python3 -m unittest discover -s scripts/tests -v
+cp -R components/cogsteward /tmp/cogsteward-verify
+cd /tmp/cogsteward-verify
+python3 -m unittest discover -s tests -v
 ```
 
 | 类别 | 用例 | 结果 |
@@ -338,12 +341,12 @@ python3 -m unittest discover -s scripts/tests -v
 
 | 想了解 | 去看 |
 |---|---|
-| 产品契约与验收标准 | [SPEC v0.5](../SPEC-认知管家-WorkBuddy技能封装-v0.5.md) |
+| 产品契约与验收标准 | [SPEC v0.5](../specs/SPEC-认知管家-WorkBuddy技能封装-v0.5.md) |
 | 架构、算法、数据流、异常与扩展 | [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) |
 | 命令参数、JSON 输出、退出码 | [API_SPEC.md](./API_SPEC.md) |
 | 每次变更的原因与回滚 | [CHANGELOG.md](./CHANGELOG.md) |
-| 数据表与状态机 | [references/schema.md](../cognition-manager/references/schema.md) |
-| 路由判定与 confidence | [references/routing-matrix.md](../cognition-manager/references/routing-matrix.md) |
+| 数据表与状态机 | [references/schema.md](../skill/references/schema.md) |
+| 路由判定与 confidence | [references/routing-matrix.md](../skill/references/routing-matrix.md) |
 
 ---
 

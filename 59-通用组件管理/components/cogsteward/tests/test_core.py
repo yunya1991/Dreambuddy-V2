@@ -1,7 +1,7 @@
 """CogSteward 自检：功能用例 + V1 / V6 / V8 可复核校验 + M2 路由 / 回滚。
 
-运行：
-    python3 -m unittest discover -s scripts/tests -v
+运行（在组件根 `components/cogsteward/` 下）：
+    python3 -m unittest discover -s tests -v
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ import time
 import unittest
 from pathlib import Path
 
-PACKAGE_ROOT = Path(__file__).resolve().parents[2]
+PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "skill"
 SCRIPTS_DIR = PACKAGE_ROOT / "scripts"
 CLI = SCRIPTS_DIR / "cm_cli.py"
 EVAL = SCRIPTS_DIR / "eval_golden.py"
@@ -43,7 +43,8 @@ from core import (  # noqa: E402
     apply as apply_engine,
 )
 
-MODULE_ROOT = PACKAGE_ROOT.parent
+COMPONENT_ROOT = PACKAGE_ROOT.parent
+MODULE_ROOT = PACKAGE_ROOT.parents[2]
 
 
 def write_text(path: Path, text: str):
@@ -1447,8 +1448,19 @@ class ContractCase(unittest.TestCase):
     def test_three_copies_are_identical(self):
         copies = [
             PACKAGE_ROOT / "references" / "metrics-contract.json",
-            MODULE_ROOT / "skills" / "cogsteward-pro" / "references" / "metrics-contract.json",
-            MODULE_ROOT / "services" / "skillhub-audit-api" / "src" / "metrics-contract.json",
+            MODULE_ROOT
+            / "components"
+            / "cogsteward"
+            / "variants"
+            / "pro"
+            / "references"
+            / "metrics-contract.json",
+            MODULE_ROOT
+            / "platform"
+            / "services"
+            / "skillhub-audit-api"
+            / "src"
+            / "metrics-contract.json",
         ]
         digests = {hashlib.sha256(path.read_bytes()).hexdigest() for path in copies}
         self.assertEqual(len(digests), 1, "三端契约副本不一致：{}".format(copies))
@@ -1462,7 +1474,7 @@ class ContractCase(unittest.TestCase):
         self.assertTrue(result["ok"], result)
 
     def test_pro_report_reads_contract_and_flags_coverage(self):
-        pro = MODULE_ROOT / "skills" / "cogsteward-pro" / "scripts" / "report.py"
+        pro = COMPONENT_ROOT / "variants" / "pro" / "scripts" / "report.py"
         payload = json.dumps(
             {"metrics": {"broken_links": 3, "doc_drift": 4}, "inventory": {"documents": 100}}
         )

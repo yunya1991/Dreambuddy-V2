@@ -1,0 +1,22 @@
+name: cogsteward
+display_name: 认知管家 CogSteward
+version: 0.7.0
+family: cogsteward
+lifecycle: active
+summary: 上下文治理：扫描登记、工作区体检、路由归属与最小上下文打包，纯本地运行零依赖。
+entrypoints:
+  - scripts/cm_cli.py
+  - scripts/eval_golden.py
+  - scripts/release_check.py
+kernel_deps: []
+output_contract: cogsteward.v1
+products: []
+tests:
+  dir: tests
+  entry: python3 -m unittest discover -s tests -v
+docs:
+  - docs/TECHNICAL_DESIGN.md
+  - docs/API_SPEC.md
+  - docs/ENGINEERING_INDEX.md
+  - docs/CHANGELOG.md
+  - docs/CHANGELOG-skill.md

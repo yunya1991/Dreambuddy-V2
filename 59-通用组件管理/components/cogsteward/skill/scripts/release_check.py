@@ -28,12 +28,18 @@ if str(SCRIPT_DIR) not in sys.path:
 from core import __version__, contract, report  # noqa: E402
 
 PACKAGE_ROOT = SCRIPT_DIR.parent
-MODULE_ROOT = PACKAGE_ROOT.parent
+COMPONENT_ROOT = PACKAGE_ROOT.parent
+MODULE_ROOT = PACKAGE_ROOT.parents[2]
 
 CONTRACT_COPIES = {
     "free": PACKAGE_ROOT / "references" / "metrics-contract.json",
-    "pro": MODULE_ROOT / "skills" / "cogsteward-pro" / "references" / "metrics-contract.json",
-    "backend": MODULE_ROOT / "services" / "skillhub-audit-api" / "src" / "metrics-contract.json",
+    "pro": COMPONENT_ROOT / "variants" / "pro" / "references" / "metrics-contract.json",
+    "backend": MODULE_ROOT
+    / "platform"
+    / "services"
+    / "skillhub-audit-api"
+    / "src"
+    / "metrics-contract.json",
 }
 
 HEALTH_SAMPLES = (

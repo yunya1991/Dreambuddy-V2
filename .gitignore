@@ -24,6 +24,9 @@ temp*/
 tmp.*
 _tmp*
 threshold
+# 例外：59 通用组件管理的 skill templates 目录（templates 被 temp*/ 误伤）
+!59-通用组件管理/components/*/skill/templates/
+!59-通用组件管理/components/*/skill/templates/**
 # 例外：44 三端协作系统的 GitHub 模板目录（templates 被 temp*/ 误伤）
 !44-三端协作架构系统/github/templates/
 !44-三端协作架构系统/github/templates/**

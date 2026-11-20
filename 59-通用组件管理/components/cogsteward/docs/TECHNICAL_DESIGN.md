@@ -1,7 +1,7 @@
 # 认知管家（CogSteward）— 技术设计
 
 > **版本**: v1.4 | **更新日期**: 2026-11-20
-> **定位**: 认知管家组件技术架构设计，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.2
+> **定位**: 认知管家组件技术架构设计，对齐 [DOC_STANDARD.md](../../../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.2
 > **实现范围**: M2（`init` / `scan` / `doctor` / `route` / `mark-done` / `rollback` / `config`）
 
 ---
