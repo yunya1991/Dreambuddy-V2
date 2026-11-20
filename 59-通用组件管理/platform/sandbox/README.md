@@ -1,12 +1,12 @@
 # 沙箱测试环境（SkillHub 付费 Skill）
 
 > 版本：v0.1　日期：2026-11-20
-> 方案：[PLAN-20261120-SkillHub评测优化与沙箱测试-v0.1.md](../PLAN-20261120-SkillHub评测优化与沙箱测试-v0.1.md)
+> 方案：[PLAN-20261120-SkillHub评测优化与沙箱测试-v0.1.md](../../docs/PLAN-20261120-SkillHub评测优化与沙箱测试-v0.1.md)
 > 基线：[BASELINE-20261120.md](./BASELINE-20261120.md)
 
 ## 1. 目的
 
-在本地复刻 `services/skillhub-audit-api` 的付费协议与返回结构，对三个已上线 Skill 做**可重复、可断言**的回归：
+在本地复刻 `platform/services/skillhub-audit-api` 的付费协议与返回结构，对三个已上线 Skill 做**可重复、可断言**的回归：
 
 - 402 挑战 → 凭证重试 → 200 交付 → 幂等重放
 - 断网 / 超时 / 502 / 非 JSON / 参数错误
@@ -17,7 +17,7 @@
 ## 2. 目录
 
 ```
-sandbox/
+platform/sandbox/
 ├── mock/paid_api.py          # 复刻 app.js：402/Payment-Needed/验付/200/400/413/502/断连/延迟
 ├── fixtures/                 # 返回结构样本（可替换为云端脱敏真实样本）
 ├── cases/cases.json          # 16 条场景与期望
@@ -32,13 +32,13 @@ sandbox/
 cd 59-通用组件管理
 
 # 全量
-python3 sandbox/run_cases.py
+python3 platform/sandbox/run_cases.py
 
 # 单组 + 打印输出与请求体
-python3 sandbox/run_cases.py --only mdp- --verbose
+python3 platform/sandbox/run_cases.py --only mdp- --verbose
 
 # 更新基线报告
-python3 sandbox/run_cases.py --report sandbox/BASELINE-$(date +%Y%m%d).md
+python3 platform/sandbox/run_cases.py --report platform/sandbox/BASELINE-$(date +%Y%m%d).md
 ```
 
 退出码：全部通过为 0，存在失败为 1。
@@ -74,4 +74,4 @@ python3 sandbox/run_cases.py --report sandbox/BASELINE-$(date +%Y%m%d).md
 
 - 不连接生产端点：所有场景通过 `MDP_ENDPOINT` / `ECP_ENDPOINT` / `COGSTEWARD_ENDPOINT` 指向本地；
 - 不改 Skill 包，不引入第三方依赖（仅标准库）；
-- mock 的 402 报文与 `Payment-Needed` 结构以 `services/skillhub-audit-api` 为准，服务端变更时同步更新。
+- mock 的 402 报文与 `Payment-Needed` 结构以 `platform/services/skillhub-audit-api` 为准，服务端变更时同步更新。

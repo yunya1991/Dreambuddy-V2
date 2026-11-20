@@ -6,9 +6,9 @@
 - 输出 PASS/FAIL 汇总，可写 markdown 基线报告
 
 用法:
-    python3 sandbox/run_cases.py
-    python3 sandbox/run_cases.py --only mdp- --verbose
-    python3 sandbox/run_cases.py --report sandbox/BASELINE-20261120.md
+    python3 platform/sandbox/run_cases.py
+    python3 platform/sandbox/run_cases.py --only mdp- --verbose
+    python3 platform/sandbox/run_cases.py --report platform/sandbox/BASELINE-20261120.md
 """
 
 import argparse
@@ -22,7 +22,7 @@ import urllib.request
 from pathlib import Path
 
 SANDBOX = Path(__file__).resolve().parent
-ROOT = SANDBOX.parent
+ROOT = SANDBOX.parents[1]
 MOCK = SANDBOX / "mock" / "paid_api.py"
 CASES = SANDBOX / "cases" / "cases.json"
 

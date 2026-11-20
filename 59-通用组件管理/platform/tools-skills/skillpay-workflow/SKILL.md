@@ -42,7 +42,7 @@ allowed-tools: Read, Write, Bash
 ## 2. 开工顺序（默认路径）
 
 ```bash
-cd 59-通用组件管理/skills/skillpay-workflow
+cd 59-通用组件管理/platform/tools-skills/skillpay-workflow
 
 # ① 平台侧状态（一条命令看清：登录态 + 应用审核状态）
 bash scripts/alipay.sh status

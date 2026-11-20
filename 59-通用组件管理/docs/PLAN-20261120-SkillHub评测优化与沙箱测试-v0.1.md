@@ -4,7 +4,7 @@
 > **日期**: 2026-11-20
 > **评测来源**: https://skillhub.cn/dashboard → 各 Skill「评测报告」（作者可见版）
 > **范围**: `market-data-pro`、`event-context-pro`、`cogsteward-pro`（SkillHub 已上线的三个付费/专业版）
-> **沙箱落点**: `59-通用组件管理/sandbox/`（新建，不改现有 Skill 包）
+> **沙箱落点**: `59-通用组件管理/platform/sandbox/`（新建，不改现有 Skill 包）
 
 ---
 
@@ -28,7 +28,7 @@
 
 ### 2.1 共性 P0：断网 / 超时直接抛栈
 
-**证据**：三个付费客户端 [pay.py](../../skills/market-data-pro/scripts/pay.py#L37-L51) 同一写法，只捕获 `HTTPError`：
+**证据**：三个付费客户端 [pay.py](../../components/market-data/variants/pro/scripts/pay.py#L37-L51) 同一写法，只捕获 `HTTPError`：
 
 ```python
 try:
@@ -49,7 +49,7 @@ except urllib.error.HTTPError as exc:
 
 ### 2.2 共性 P0：参数被静默吞掉
 
-**证据**：[market-data-pro/scripts/pay.py](../../skills/market-data-pro/scripts/pay.py#L58-L68) 与 event-context-pro 同构：
+**证据**：[market-data-pro/scripts/pay.py](../../components/market-data/variants/pro/scripts/pay.py#L58-L68) 与 event-context-pro 同构：
 
 ```python
 args, extra = p.parse_known_args(argv)
@@ -77,7 +77,7 @@ if key and key in COMMANDS[args.cmd]:
 
 ### 2.3 共性 P0：支付履约路径不完整
 
-**证据**：服务端 402 响应体只有 `out_trade_no / amount / currency / goods_name / resource_id / pay_before`（[app.js](../../services/skillhub-audit-api/src/app.js#L278-L287)），**没有支付链接或二维码**；客户端只打印金额、订单号、截止时间。
+**证据**：服务端 402 响应体只有 `out_trade_no / amount / currency / goods_name / resource_id / pay_before`（[app.js](../../platform/services/skillhub-audit-api/src/app.js#L278-L287)），**没有支付链接或二维码**；客户端只打印金额、订单号、截止时间。
 
 **对应评测**：E·内容完整度 4.0「从收到付款提示到最终完成付款的步骤还不够完整」；cogsteward-pro「支付凭证从哪里获得仍不够清楚」；开箱即用度 4.0–4.3。
 
@@ -89,7 +89,7 @@ if key and key in COMMANDS[args.cmd]:
 
 ### 2.4 规范性 P1：零返回样例 + 零 FAQ
 
-**证据**：三个 SKILL.md 均无成功返回样例；`market-data-pro` 的「支持的命令」表还漏了代码里已实现的 `context` 命令（[COMMANDS](../../skills/market-data-pro/scripts/pay.py#L28-L34) 五项，文档只写四项）。
+**证据**：三个 SKILL.md 均无成功返回样例；`market-data-pro` 的「支持的命令」表还漏了代码里已实现的 `context` 命令（[COMMANDS](../../components/market-data/variants/pro/scripts/pay.py#L28-L34) 五项，文档只写四项）。
 
 **对应评测**：C·反模式与FAQ 3.3–3.5（三项最低）、C·文档质量 3.5–3.8。
 
@@ -100,7 +100,7 @@ if key and key in COMMANDS[args.cmd]:
 
 ### 2.5 认知管家 P1：输入不校验 +「缺测填 0」与承诺矛盾
 
-**证据**：[report.py](../../skills/cogsteward-pro/scripts/report.py#L48-L92) 直接信任 `--metrics`：
+**证据**：[report.py](../../components/cogsteward/variants/pro/scripts/report.py#L48-L92) 直接信任 `--metrics`：
 
 - 未知 key 静默忽略（拼错 `broken_link` → 不报错、不减分）；
 - 值为字符串/负数/`null` 时不校验，`value >= high_at` 可能直接抛 `TypeError`；
@@ -129,7 +129,7 @@ if key and key in COMMANDS[args.cmd]:
 
 ### 3.1 设计原则
 
-1. **协议同源**：Mock 服务按 `services/skillhub-audit-api` 的真实契约实现（402 body 字段、`Payment-Needed` 头、400/413/502 形状、`already_fulfilled`），不自造协议。
+1. **协议同源**：Mock 服务按 `platform/services/skillhub-audit-api` 的真实契约实现（402 body 字段、`Payment-Needed` 头、400/413/502 形状、`already_fulfilled`），不自造协议。
 2. **零侵入**：不改 Skill 包；沙箱通过既有环境变量把客户端指向本地：`MDP_ENDPOINT` / `ECP_ENDPOINT` / `COGSTEWARD_ENDPOINT`。
 3. **样本来自真实环境**：fixtures 从云端 `49.233.123.96` 的订单库 `service_result` 导出脱敏副本（只读，不新增订单），保证返回结构与线上一致。
 4. **故障可注入**：断网、超时、502、非法 JSON、慢响应，全部由 mock 开关控制。
@@ -137,7 +137,7 @@ if key and key in COMMANDS[args.cmd]:
 ### 3.2 目录结构
 
 ```
-59-通用组件管理/sandbox/
+platform/sandbox/
 ├── README.md                  # 运行方式与场景说明
 ├── mock/paid_api.py           # 复刻 402/验付/200/400/413/502/延迟/断连
 ├── fixtures/
@@ -175,16 +175,16 @@ if key and key in COMMANDS[args.cmd]:
 | 14 | 认知管家缺测 | 省略 3 项 | 三项标 `unavailable`，不参与评分 |
 | 15 | 工作区样本采集 | `workspace_fixture/` | 断链 1 / 重名 1 / 孤儿 ≥1，等级符合预期 |
 
-执行：`python3 sandbox/run_cases.py --suite market-data-pro`，输出通过/失败计数与非零退出。
+执行：`python3 platform/sandbox/run_cases.py --suite market-data-pro`，输出通过/失败计数与非零退出。
 **基线先行**：先对当前代码跑一遍，把场景 1/5/6/9/10/11/13/14 的失败固化为「优化前证据」，再进入实现。
 
 ### 3.4 与真实环境的对应关系
 
 | 沙箱要素 | 真实环境来源 |
 |---|---|
-| 402 / 验付 / 履约确认 | `services/skillhub-audit-api/src/app.js` + `alipay.js` |
+| 402 / 验付 / 履约确认 | `platform/services/skillhub-audit-api/src/app.js` + `alipay.js` |
 | 数据返回结构 | 云端订单表 `service_result` 脱敏导出 |
-| 认知管家契约 | `skills/cogsteward-pro/references/metrics-contract.json`（三端逐字节一致） |
+| 认知管家契约 | `components/cogsteward/variants/pro/references/metrics-contract.json`（三端逐字节一致） |
 | 端点覆盖 | 各 SKILL 已支持的 `*_ENDPOINT` 环境变量 |
 
 ---

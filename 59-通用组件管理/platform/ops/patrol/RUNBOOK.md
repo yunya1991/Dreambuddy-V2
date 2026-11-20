@@ -4,7 +4,7 @@
 
 ## 触发条件（任一满足即接管）
 
-- `python3 ops/patrol/incident.py list` 有未关闭事件
+- `python3 platform/ops/patrol/incident.py list` 有未关闭事件
 - macOS 弹出「付费服务巡检异常」通知
 - `~/.local/share/dreambuddy/patrol/latest.json` 中 `ok=false`
 
@@ -12,8 +12,8 @@
 
 ### S1 认领
 ```bash
-python3 ops/patrol/incident.py show <id>      # 看证据：issues / billing / upstream / diagnosis
-python3 ops/patrol/incident.py ack <id> --note "开始定位"
+python3 platform/ops/patrol/incident.py show <id>      # 看证据：issues / billing / upstream / diagnosis
+python3 platform/ops/patrol/incident.py ack <id> --note "开始定位"
 ```
 先读 `evidence.diagnosis`（千问初诊），它只是线索，不是结论。
 
@@ -40,7 +40,7 @@ python3 ops/patrol/incident.py ack <id> --note "开始定位"
 
 ### S4 回归
 ```bash
-python3 ops/patrol/patrol.py            # 期望 exit=0，三个入口 402、上游 200
+python3 platform/ops/patrol/patrol.py            # 期望 exit=0，三个入口 402、上游 200
 ```
 若事件未自动关闭，说明异常仍在，回到 S2。
 
@@ -49,7 +49,7 @@ python3 ops/patrol/patrol.py            # 期望 exit=0，三个入口 402、上
 统一走部署脚本，不再手写 scp + restart：
 
 ```bash
-bash skills/skillpay-workflow/scripts/audit.sh deploy
+bash platform/tools-skills/skillpay-workflow/scripts/audit.sh deploy
 ```
 
 脚本行为：
@@ -69,7 +69,7 @@ python3 cognition-manager/scripts/release_check.py      # 三端契约 / 版本 
 
 ### S6 关闭事件
 ```bash
-python3 ops/patrol/incident.py close <id> --note "根因:xxx; 修复:xxx; 证据:patrol 03:15 恢复正常"
+python3 platform/ops/patrol/incident.py close <id> --note "根因:xxx; 修复:xxx; 证据:patrol 03:15 恢复正常"
 ```
 `close_reason` 必须能回答「为什么不会再发生」，否则保持 open。
 

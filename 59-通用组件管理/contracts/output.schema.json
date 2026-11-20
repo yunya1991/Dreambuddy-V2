@@ -78,8 +78,9 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^M\\d{2}$"
-          }
+            "pattern": "^[A-Z]\\d{2}$"
+          },
+          "description": "方法 ID：市场数据 M 系列、事件上下文 E 系列等，统一为「一个大写字母 + 两位数字」"
         },
         "sources": {
           "type": "array",

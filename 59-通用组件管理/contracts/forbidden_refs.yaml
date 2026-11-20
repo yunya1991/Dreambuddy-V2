@@ -28,7 +28,7 @@ rules:
     pattern: "/Users/"
     reason: "本机绝对路径不可移植，分发到他人机器必然失效"
     replacement: "相对组件根解析，或用 --root / 环境变量"
-    allow_globs: ["platform/**", "ops/**", "**/tests/**", "**/test_*.py"]
+    allow_globs: ["platform/**", "**/tests/**", "**/test_*.py"]
 
   - id: FR-003
     gate: G2
@@ -36,8 +36,7 @@ rules:
     pattern: "/home/"
     reason: "服务器家目录不属于分发契约"
     replacement: "部署模板改用占位符，由部署脚本替换"
-    allow_globs:
-      ["platform/**", "ops/**", "services/**", "skills/skillpay-workflow/**", "**/deploy/**"]
+    allow_globs: ["platform/**", "**/deploy/**"]
 
   - id: FR-004
     gate: G2
@@ -45,8 +44,7 @@ rules:
     pattern: "/opt/"
     reason: "服务器部署路径不得写进分发源码"
     replacement: "部署模板改用占位符，由部署脚本替换"
-    allow_globs:
-      ["platform/**", "ops/**", "services/**", "skills/skillpay-workflow/**", "**/deploy/**"]
+    allow_globs: ["platform/**", "**/deploy/**"]
 
   - id: FR-005
     gate: G2

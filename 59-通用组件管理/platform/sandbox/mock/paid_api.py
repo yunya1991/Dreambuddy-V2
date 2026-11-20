@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """本地沙箱：复刻 skillhub-audit-api 的付费协议（仅标准库）。
 
-对齐的真实实现：services/skillhub-audit-api/src/app.js
+对齐的真实实现：platform/services/skillhub-audit-api/src/app.js
 - 402 + `Payment-Needed`（base64url 账单）→ 携带 `Payment-Proof` 重试 → 200
 - 400 INVALID_REQUEST / 413 PAYLOAD_TOO_LARGE / 502 履约确认失败
 - 同一 proof 重复提交返回首次结果（already_fulfilled=true）
@@ -15,7 +15,7 @@
 沙箱专用凭证：sbx-ok 通过；sbx-invalid 视为凭证无效；sbx-502 触发 502。
 
 用法:
-    python3 sandbox/mock/paid_api.py --port 0 --mode ok --delay 0
+    python3 platform/sandbox/mock/paid_api.py --port 0 --mode ok --delay 0
     # 启动后打印 "PORT <数字>"，供 run_cases.py 读取
 """
 

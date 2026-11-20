@@ -7,7 +7,7 @@
   <key>ProgramArguments</key>
   <array>
     <string>/usr/bin/python3</string>
-    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/59-通用组件管理/ops/patrol/patrol.py</string>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/59-通用组件管理/platform/ops/patrol/patrol.py</string>
     <string>--auto-fix</string>
     <string>--quiet</string>
   </array>
