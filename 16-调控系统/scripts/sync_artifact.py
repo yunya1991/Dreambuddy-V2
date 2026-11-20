@@ -56,7 +56,7 @@ from datetime import datetime, timedelta, timezone
 TENCENT_CLOUD_ENABLED = True  # 是否启用腾讯云同步
 TENCENT_CLOUD_SERVER = "49.233.123.96"
 TENCENT_CLOUD_USER = "ubuntu"
-TENCENT_CLOUD_KEY = os.path.expanduser("~/Desktop/yunya.pem")
+TENCENT_CLOUD_KEY = os.path.expanduser("~/.ssh/yunya.pem")
 TENCENT_CLOUD_REMOTE_ROOT = "/home/ubuntu/.workbuddy/artifacts"
 
 
