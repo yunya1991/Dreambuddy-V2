@@ -1,0 +1,83 @@
+# 跨组件禁用引用黑名单（唯一源）
+#
+# 依据：SPEC-通用组件管理-架构重构 v0.2 §5.5、§8
+# 使用：tools/check_boundaries.py 的 G2（绝对路径）与 G3（禁用引用）均从此读取，
+#       禁止在检查脚本里另写一份规则。
+version: "1.0"
+updated: "2026-11-20"
+
+meta:
+  # 只扫源码与配置，不扫文档（文档合法包含 file:/// 绝对链接）
+  scan_suffixes: [".py", ".sh", ".js", ".json", ".yaml", ".yml", ".plist", ".service"]
+  exclude_dirs:
+    [".git", "__pycache__", "dist", "node_modules", ".pytest_cache", ".cm", "sandbox"]
+  exclude_roots: [contracts, tools, docs, assets]
+
+rules:
+  - id: FR-001
+    gate: G3
+    match: literal
+    pattern: "cogsteward/pack"
+    reason: "跨组件写死移交目标；组件间不得知道对方命令路径"
+    replacement: "handoff_target: cogsteward.pack@1.0（由 contracts 注入，P6 落地）"
+    allow_globs: []
+
+  - id: FR-002
+    gate: G2
+    match: literal
+    pattern: "/Users/"
+    reason: "本机绝对路径不可移植，分发到他人机器必然失效"
+    replacement: "相对组件根解析，或用 --root / 环境变量"
+    allow_globs: ["platform/**", "ops/**", "**/tests/**", "**/test_*.py"]
+
+  - id: FR-003
+    gate: G2
+    match: literal
+    pattern: "/home/"
+    reason: "服务器家目录不属于分发契约"
+    replacement: "部署模板改用占位符，由部署脚本替换"
+    allow_globs:
+      ["platform/**", "ops/**", "services/**", "skills/skillpay-workflow/**", "**/deploy/**"]
+
+  - id: FR-004
+    gate: G2
+    match: literal
+    pattern: "/opt/"
+    reason: "服务器部署路径不得写进分发源码"
+    replacement: "部署模板改用占位符，由部署脚本替换"
+    allow_globs:
+      ["platform/**", "ops/**", "services/**", "skills/skillpay-workflow/**", "**/deploy/**"]
+
+  - id: FR-005
+    gate: G2
+    match: regex
+    # 盘符需在行首、空白或引号之后，避免把 version:\s 这类正则字面量误判为路径
+    pattern: "(^|[\\s\"'(])[A-Za-z]:\\\\"
+    reason: "Windows 盘符绝对路径"
+    replacement: "相对路径"
+    allow_globs: []
+
+  - id: FR-006
+    gate: G3
+    match: cross_import
+    targets:
+      [
+        cognition-manager,
+        cogsteward,
+        market-data-hub,
+        market-data,
+        event-context,
+        market-facts-daily,
+      ]
+    reason: "组件间不得互相 import；共享逻辑只能进 kernel/"
+    replacement: "kernel/<module>（构建期内联）"
+    allow_globs: []
+
+  - id: FR-007
+    gate: G3
+    match: literal_set
+    patterns:
+      ["4-MEMORY", "35-广义认知系统协作模块", "41-文件索引系统", "VM-"]
+    reason: "分发物不得依赖交易域私有目录与内部 ID 前缀"
+    replacement: "改读参数或契约文件"
+    allow_globs: ["**/tests/**", "**/test_*.py"]

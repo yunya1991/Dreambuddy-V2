@@ -1,0 +1,261 @@
+{
+  "schema_version": "1.0",
+  "description": "统一输出外壳（唯一源）。依据 SPEC-通用组件管理-架构重构 v0.2 §5.2。组件在 component.yaml 的 output_contract 声明使用哪个 profile；只允许裁剪可选字段，不得新增不兼容字段。数值型 row 必须带 n（样本量），事件型 row 必须带 event_id。",
+  "profiles": {
+    "data.v1": {
+      "title": "数据类输出（市场数据 / 事件上下文 / 市场事实日报）",
+      "type": "object",
+      "required": [
+        "skill",
+        "version",
+        "generated_at",
+        "data_date",
+        "rows",
+        "missing",
+        "method_ids",
+        "sources",
+        "limits"
+      ],
+      "properties": {
+        "skill": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "generated_at": {
+          "type": "string",
+          "minLength": 10
+        },
+        "data_date": {
+          "type": ["string", "null"],
+          "description": "数据自身的时间戳；无数据时为 null，禁止用生成时间顶替"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "anyOf": [
+              {
+                "required": ["n"]
+              },
+              {
+                "required": ["event_id"]
+              }
+            ]
+          },
+          "description": "数值行必须带样本量 n；事件行必须带 event_id"
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["key", "code"],
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "code": {
+                "enum": [
+                  "E_NET",
+                  "E_TLS",
+                  "E_HTTP_4XX",
+                  "E_SCHEMA",
+                  "E_EMPTY",
+                  "E_INPUT",
+                  "E_LICENSE"
+                ]
+              },
+              "detail": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "method_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^M\\d{2}$"
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "license"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "license": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "limits": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data_route": {
+          "enum": ["cloud", "local", "none"],
+          "description": "取数通道；云端失败时不得静默降级为本地"
+        }
+      },
+      "additionalProperties": true
+    },
+    "handoff.v1": {
+      "title": "可装配指针清单（跨组件移交）",
+      "type": "object",
+      "required": [
+        "handoff_version",
+        "skill",
+        "target",
+        "generated_at",
+        "budget",
+        "items",
+        "total_tokens",
+        "read_only",
+        "limits"
+      ],
+      "properties": {
+        "handoff_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+$"
+        },
+        "skill": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+[./][a-z0-9-]+(@\\d+\\.\\d+)?$",
+          "description": "P6 前为 <component>/<command>（历史值 cogsteward/pack）；P6 起改为 <component>.<command>@<contract-version>"
+        },
+        "generated_at": {
+          "type": "string",
+          "minLength": 10
+        },
+        "budget": {
+          "type": "integer",
+          "minimum": 100
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "kind", "title", "license", "estimated_tokens"],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "license": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "method_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "data_date": {
+                "type": ["string", "null"]
+              },
+              "estimated_tokens": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["key", "code"],
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "read_only": {
+          "const": true
+        },
+        "limits": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "cogsteward.v1": {
+      "title": "认知管家报告类输出（doctor / index / triage / pack / route 等）",
+      "type": "object",
+      "required": ["schema_version", "command", "generated_at"],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+$"
+        },
+        "command": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generated_at": {
+          "type": "string",
+          "minLength": 10
+        },
+        "workspace": {
+          "type": "string"
+        },
+        "mode": {
+          "enum": ["dev", "office"]
+        },
+        "metrics": {
+          "type": "object"
+        },
+        "details": {
+          "type": "object"
+        },
+        "recommendations": {
+          "type": "array"
+        },
+        "health": {
+          "enum": ["good", "attention", "poor"]
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

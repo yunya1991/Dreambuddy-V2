@@ -1,0 +1,106 @@
+# 数据源授权台账（唯一裁定）
+#
+# 依据：SPEC-通用组件管理-架构重构 v0.2 §5.4、决策 DC-1（2026-11-20 用户确认）
+# 规则：
+#   1. 只有 status=active 且 commercial_use ∈ {allowed, exception} 的源允许进入对外输出
+#   2. 未登记源一律视为不可商用；新增源必须先在此登记，再写代码
+#   3. exception 必须写明 scope 与 restrictions，并对每次商品发版复核
+version: "1.0"
+updated: "2026-11-20"
+default_policy: "未登记源一律不可商用，禁止接入；违反记 E_LICENSE"
+
+sources:
+  - id: fred
+    name: FRED / Federal Reserve Bank of St. Louis
+    endpoint: "https://fred.stlouisfed.org/graph/fredgraph.csv?id="
+    license: Public Domain
+    commercial_use: allowed
+    status: active
+    used_by: [market-data]
+    notes:
+      - "缺失值以 . 表示，脚本跳过且不计入样本量"
+
+  - id: sec_edgar
+    name: SEC EDGAR（submissions / companyfacts）
+    endpoint: "https://data.sec.gov/submissions/ ; https://data.sec.gov/api/xbrl/companyfacts/"
+    license: Public Domain
+    commercial_use: allowed
+    status: active
+    used_by: [market-data, event-context]
+    notes:
+      - "必须使用声明式 UA；伪装浏览器 UA 会被 TLS 断连"
+
+  - id: sec_ticker_map
+    name: SEC ticker 映射
+    endpoint: "https://www.sec.gov/files/company_tickers.json"
+    license: Public Domain
+    commercial_use: allowed
+    status: active
+    used_by: [market-data]
+
+  - id: fed_press_rss
+    name: 美联储官方新闻 RSS
+    endpoint: "https://www.federalreserve.gov/feeds/press_all.xml"
+    license: Public Domain
+    commercial_use: allowed
+    status: active
+    used_by: [event-context]
+    notes:
+      - "TLS 偶发抖动，最多重试 2 次（退避 0.8s / 1.6s），仍失败记 E_TLS/E_NET"
+
+  - id: ethereum_public_rpc
+    name: 以太坊公共 RPC（主备两源）
+    endpoint: "https://ethereum.publicnode.com （主） ; https://rpc.flashbots.net （备）"
+    license: 公有链自采（无需授权）
+    commercial_use: allowed
+    status: active
+    used_by: [market-data]
+    notes:
+      - "匿名可用但有限速；失败即标原因码，不静默换源"
+
+  - id: tencent_quote
+    name: 腾讯行情（前复权日线）
+    endpoint: "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
+    license: 未声明开放许可（按书面例外授权）
+    commercial_use: exception
+    status: active
+    used_by: [market-facts-daily]
+    notes:
+      - "数据服务（market-data）默认不接；本条为例外登记，例外范围仅限 market-facts-daily"
+    exception:
+      id: DC-1
+      approved_by: "用户（2026-11-20 对话确认）"
+      approved_at: "2026-11-20"
+      scope: "仅 market-facts-daily 对「已发布收盘价」做统计描述：涨跌幅、分位、年化波动、最大回撤、均线偏离"
+      restrictions:
+        - "不二次分发原始行情序列；对外输出仅限派生统计量、方法ID 与样本量"
+        - "不用于行情预测、评级、目标价、买卖建议"
+        - "换源或扩大用途必须重新登记并经用户确认"
+      review: "每次商品发版复核一次；复核人记录在发版检查单"
+
+  - id: gov_stats_cn
+    name: 国内政府统计（统计局 / 央行 / 外汇局 / 海关）
+    license: 待核实
+    commercial_use: pending
+    status: pending
+    used_by: []
+    notes:
+      - "逐源核实「可再分发商用」条款；未登记前不接入"
+
+  - id: cn_exchange_quotes
+    name: 交易所行情 / 中证指数
+    license: 需信息经营许可
+    commercial_use: forbidden
+    status: forbidden
+    used_by: []
+    notes:
+      - "无许可不得商用与再分发；如需接入必须走商务授权"
+
+  - id: foreign_commercial_market
+    name: 商业行情与媒体源
+    license: 禁止再分发
+    commercial_use: forbidden
+    status: forbidden
+    used_by: []
+    notes:
+      - "Yahoo Finance / CoinGecko / Reuters / Bloomberg / 新浪财经 / 东方财富 一律不接"

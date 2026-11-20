@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://neodrm.local/59/contracts/component.schema.json",
+  "title": "通用组件元数据（components/<name>/component.yaml）",
+  "description": "依据 SPEC-通用组件管理-架构重构 v0.2 §5.1。每个组件目录必须有且仅有一份 component.yaml；version 必须与 skill/SKILL.md frontmatter 的 version 完全一致（由 tools/check_boundaries.py G5 校验）。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "version",
+    "family",
+    "lifecycle",
+    "entrypoints",
+    "kernel_deps",
+    "output_contract",
+    "tests"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "description": "唯一标识，小写连字符，必须与所在目录名一致"
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "对外展示名（可中文），仅用于 INDEX 与分发产物"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "SemVer；必须与 skill/SKILL.md frontmatter 一致，否则 G5 失败"
+    },
+    "family": {
+      "enum": ["cogsteward", "market-data", "event-context", "market-facts"],
+      "description": "商品族，决定构建变体与共用契约 profile"
+    },
+    "lifecycle": {
+      "enum": ["draft", "active", "deprecated", "archived"],
+      "description": "生命周期；archived 组件不参与构建"
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "一句话能力描述，写入生成的 INDEX 表"
+    },
+    "skill_dir": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9._-]+$",
+      "default": "skill",
+      "description": "打包源目录名，默认 skill；该目录内容才允许进分发物"
+    },
+    "entrypoints": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^scripts/[A-Za-z0-9._/-]+\\.py$"
+      },
+      "description": "对外入口脚本，相对 skill/ 的路径"
+    },
+    "kernel_deps": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["endpoint", "handoff", "pay_gate", "headers"]
+      },
+      "description": "只允许引用 kernel/ 下模块名；源码期不得直接 import kernel，由构建期内联"
+    },
+    "output_contract": {
+      "type": "string",
+      "pattern": "^(data|handoff|cogsteward)\\.v1$",
+      "description": "output.schema.json 中的 profile 名；不得私自定义新 profile"
+    },
+    "products": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$"
+      },
+      "description": "对应的 products/<name>.yaml；无分发变体时为空数组"
+    },
+    "tests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dir", "entry"],
+      "properties": {
+        "dir": {
+          "type": "string",
+          "pattern": "^tests/?$"
+        },
+        "entry": {
+          "type": "string",
+          "minLength": 1,
+          "description": "可直接在组件根执行的测试命令"
+        }
+      }
+    },
+    "docs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "组件文档相对路径清单（不进分发包）"
+    }
+  }
+}
