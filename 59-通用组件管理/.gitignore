@@ -9,6 +9,9 @@ __pycache__/
 # 构建产物
 dist/
 
+# kernel 注入副本（生成物，由 tools/sync_kernel.py 写入）
+_kernel/
+
 # Node
 node_modules/
 

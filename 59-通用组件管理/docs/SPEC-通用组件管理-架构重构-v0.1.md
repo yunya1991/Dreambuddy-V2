@@ -1,6 +1,6 @@
 # SPEC — 通用组件管理架构重构 v0.1
 
-> **版本**: v0.3（3 项决策已确认，P0–P2 完成，P3 待执行） | **日期**: 2026-11-20
+> **版本**: v0.4（P0–P3 完成，P4 待执行） | **日期**: 2026-11-20
 > **范围**: `59-通用组件管理/` 全模块的目录结构、契约层、共享内核、分发构建与治理闸门
 > **依据**: [INDEX.md](../INDEX.md) v0.7、[ARCH 评估结论](#1-背景)（2026-11-20 对话）
 > **不改动**: 任何组件的对外输出契约语义（数值、字段、红线措辞），只改「代码与文档如何组织」
@@ -279,7 +279,7 @@ python3 tools/build_product.py --product cogsteward --variant pro
 | **P0b 规范归一** ✅ | `ruff --fix` + `black` + 手工修复 E402 / B904 / B905 / F841 / B007 / C416；`zip` 统一 `strict=False` 保持原行为 | ruff 0 告警、black 38 文件通过、认知管家 84 通过 2 跳过（与基线一致） |
 | **P1 契约层** ✅ | 5 份契约 + 3 个 tools 骨架 | `contracts/` 五份文件齐备，三份 schema 通过 Draft-07 自校验，合成正/负例均按预期通过/拦截，真实 `handoff --json` 与 `cm doctor --json` 分别通过 `handoff.v1` / `cogsteward.v1`；`check_boundaries.py` 基线：G2 PASS，G3 FAIL 2 处（`cogsteward/pack`），G1/G4–G7 SKIP（待 P2） |
 | **P2 目录迁移** ✅ | 按 §4 映射 `git mv` | 映射表 100% 落地（4 组件 + platform + docs）；根目录只剩 INDEX/contracts/kernel/components/products/platform/tools/docs/assets；`git log --follow` 可见历史；`check_boundaries.py` G5/G7 由 SKIP 转为 PASS |
-| **P3 kernel 抽取** | 4 个 kernel 模块 + 注入机制 | 源码期同名副本 0 份（`find` 校验）；认知管家 85 项自检、后端 13 项测试全绿 |
+| **P3 kernel 抽取** ✅ | 4 个 kernel 模块（endpoint / handoff / pay_gate / headers）+ `tools/sync_kernel.py` 注入机制 | 重复实现 0 份：`cloud.py` 115→41 行（仅剩声明式配置）、`handoff.py` 与 `pay.py`×3 的共享逻辑全部入 kernel；`sync_kernel --check` 8 个 scripts 目录一致；四组件 94 项测试、沙箱 16/16、改造前后输出逐字段 diff 一致 |
 | **P4 产品构建** | `products/*.yaml` + `build_product.py` | 4 个商品族 × 8 个变体全部可构建；产物命令表与现网一致 |
 | **P5 闸门接入** | `check_boundaries.py` 接入发版流程 | 故意注入 G1–G7 各 1 例，全部被拦；正常树 0 违规 |
 | **P6 红线收敛** | `data-sources.yaml` 裁定腾讯源；`handoff` target 改契约 | 日报与数据服务口径一致或有书面例外；`forbidden_refs` 无命中 |

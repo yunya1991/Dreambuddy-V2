@@ -23,6 +23,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from sync_kernel import resolve_deps
+
 try:
     import yaml
 except ImportError:  # pragma: no cover
@@ -152,7 +154,7 @@ def main(argv=None) -> int:
         FRONT_KEYS[key]: variant[key] for key in FRONT_KEYS if variant.get(key) is not None
     }
     entrypoints = manifest.get("entrypoints") or []
-    kernel_deps = manifest.get("kernel_deps") or []
+    kernel_deps = resolve_deps(manifest.get("kernel_deps") or [])
 
     plan = [
         "component: {}".format(component_dir.relative_to(ROOT)),

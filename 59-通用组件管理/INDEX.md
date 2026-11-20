@@ -17,7 +17,7 @@
 
 **不负责**：具体业务逻辑实现、交易策略、数据采集。组件的实现仍在各自源模块，本模块只管「如何抽出、如何升级、如何分发」。
 
-**目录结构**（v1.0 起，P2 迁移完成）：`contracts/`（唯一契约层）、`kernel/`（共享内核，P3）、`components/`（一目录一商品族）、`products/`（分发表，P4）、`platform/`（内部工程）、`tools/`（闸门与构建）、`docs/`（模块级文档）、`assets/`、`dist/`（构建产物）。
+**目录结构**（v1.0 起，P3 完成）：`contracts/`（唯一契约层）、`kernel/`（共享内核，构建期注入）、`components/`（一目录一商品族）、`products/`（分发表，P4）、`platform/`（内部工程）、`tools/`（闸门与构建）、`docs/`（模块级文档）、`assets/`、`dist/`（构建产物）。
 
 ---
 
@@ -25,7 +25,7 @@
 
 | 文档 | 版本 | 职责 | 状态 |
 |---|---|---|---|
-| [docs/SPEC-通用组件管理-架构重构-v0.1.md](./docs/SPEC-通用组件管理-架构重构-v0.1.md) | v0.2 | **模块级**：目录重构、契约层、共享内核、一份源码构建生成、独立性闸门、分阶段验收 | ✅ P0–P2 完成 |
+| [docs/SPEC-通用组件管理-架构重构-v0.1.md](./docs/SPEC-通用组件管理-架构重构-v0.1.md) | v0.4 | **模块级**：目录重构、契约层、共享内核、一份源码构建生成、独立性闸门、分阶段验收 | ✅ P0–P3 完成 |
 | [docs/PLAN-20261120-SkillHub评测优化与沙箱测试-v0.1.md](./docs/PLAN-20261120-SkillHub评测优化与沙箱测试-v0.1.md) | v0.1 | 三个已上线 Skill 的 TRACE 评测问题清单、优化动作（P0/P1）、`platform/sandbox/` 本地测试环境方案（16 场景） | 🟡 待确认，未改代码 |
 | [components/cogsteward/docs/ENGINEERING_INDEX.md](./components/cogsteward/docs/ENGINEERING_INDEX.md) | v1.4 | 认知管家工程索引：文件级清单、流程锚点、测试体系与 M1/M2/M2b/M3/契约治理验收证据 | ✅ 0.7.0 |
 | [components/cogsteward/docs/TECHNICAL_DESIGN.md](./components/cogsteward/docs/TECHNICAL_DESIGN.md) | v1.4 | 技术设计：分层架构、扫描/路由/准入/回滚/打包/分拣/评估/索引/技能检查算法、数据流、V9 异常、契约治理与 SPEC 偏差 | ✅ 0.7.0 |
