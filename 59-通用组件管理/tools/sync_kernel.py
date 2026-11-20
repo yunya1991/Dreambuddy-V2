@@ -90,6 +90,20 @@ def uses_kernel(scripts_dir: Path) -> bool:
     return False
 
 
+def referenced_modules(script_dirs) -> list[str]:
+    """扫描脚本实际引用的 `_kernel` 模块，并展开模块间依赖。"""
+    names = []
+    for scripts_dir in script_dirs:
+        for path in Path(scripts_dir).rglob("*.py"):
+            if "_kernel" in path.parts or "__pycache__" in path.parts:
+                continue
+            text = path.read_text(encoding="utf-8", errors="replace")
+            for match in DEP_RE.finditer(text):
+                raw = match.group(1) or match.group(2) or ""
+                names.extend(name for name in re.split(r"[,\s]+", raw) if name)
+    return resolve_deps(names)
+
+
 def render_package(deps: list[str]) -> dict[str, bytes]:
     files = {"__init__.py": GENERATED_INIT.encode("utf-8")}
     for module in deps:

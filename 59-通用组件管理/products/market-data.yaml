@@ -1,0 +1,31 @@
+# 数据服务商品族分发表（SPEC §7）
+product: market-data
+component: components/market-data
+contract_profile: data.v1
+
+variants:
+  free:
+    target: skill
+    channel: skillpay-subscription
+    product_id: P0806000213882316
+    price: 19.9/月
+    name: market-data-hub
+    display_name: 数据服务（宏观·披露·链上·上下文）
+    license: MIT
+    entrypoints:
+      - scripts/macro.py
+      - scripts/filings.py
+      - scripts/onchain.py
+      - scripts/context.py
+      - scripts/handoff.py
+      - scripts/quotes.py
+
+  pro:
+    target: skill
+    channel: skillhub-pay
+    price: 2.99/次
+    name: market-data-pro
+    display_name: 数据服务专业版（按次付费）
+    license: 商业授权（按次计费）
+    overlay: variants/pro
+    entrypoints: [scripts/pay.py]

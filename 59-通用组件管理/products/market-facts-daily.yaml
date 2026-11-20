@@ -1,0 +1,15 @@
+# 市场事实日报商品族分发表（SPEC §7）
+product: market-facts-daily
+component: components/market-facts-daily
+contract_profile: data.v1
+
+variants:
+  free:
+    target: skill
+    channel: skillpay-once
+    product_id: P0806000213874311
+    price: 0.99
+    name: market-facts-daily
+    display_name: 市场事实日报
+    license: MIT
+    entrypoints: [scripts/facts.py]

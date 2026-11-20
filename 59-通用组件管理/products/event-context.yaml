@@ -1,0 +1,28 @@
+# 事件上下文商品族分发表（SPEC §7）
+product: event-context
+component: components/event-context
+contract_profile: data.v1
+
+variants:
+  free:
+    target: skill
+    channel: skillpay-subscription
+    product_id: P0806000213878529
+    price: 19.9/月
+    name: event-context
+    display_name: 事件上下文（官方源·五层装配）
+    license: MIT
+    entrypoints:
+      - scripts/events.py
+      - scripts/context.py
+      - scripts/handoff.py
+
+  pro:
+    target: skill
+    channel: skillhub-pay
+    price: 2.99/次
+    name: event-context-pro
+    display_name: 事件上下文专业版（按次付费）
+    license: 商业授权（按次计费）
+    overlay: variants/pro
+    entrypoints: [scripts/pay.py]

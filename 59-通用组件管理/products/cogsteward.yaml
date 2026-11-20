@@ -1,0 +1,39 @@
+# 认知管家商品族分发表（SPEC §7）
+#
+# 只声明差异，不写第二份代码：源码在 components/cogsteward/，
+# `overlay` 为该变体的增量文件目录，构建期叠加到 skill/ 之上。
+product: cogsteward
+component: components/cogsteward
+contract_profile: cogsteward.v1
+
+variants:
+  free:
+    target: skill
+    channel: workbuddy-local
+    name: cognition-manager
+    display_name: 认知管家
+    license: MIT
+    entrypoints: [scripts/cm_cli.py]
+    metrics_contract: true
+
+  pro:
+    target: skill
+    channel: skillpay-subscription
+    product_id: P0806000213876724
+    price: 2.99/月
+    name: cogsteward-pro
+    display_name: 认知管家 Pro
+    license: 商业授权（订阅制）
+    overlay: variants/pro
+    entrypoints: [scripts/report.py]
+    metrics_contract: true
+
+  pro-pay:
+    target: skill
+    channel: skillhub-pay
+    price: 0.99/次
+    name: cogsteward-pro
+    display_name: 认知管家 Pro（按次付费）
+    license: 商业授权（按次计费）
+    overlay: variants/pro-pay
+    entrypoints: [scripts/pay.py]

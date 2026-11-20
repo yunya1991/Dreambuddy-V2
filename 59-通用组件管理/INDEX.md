@@ -17,7 +17,7 @@
 
 **不负责**：具体业务逻辑实现、交易策略、数据采集。组件的实现仍在各自源模块，本模块只管「如何抽出、如何升级、如何分发」。
 
-**目录结构**（v1.0 起，P3 完成）：`contracts/`（唯一契约层）、`kernel/`（共享内核，构建期注入）、`components/`（一目录一商品族）、`products/`（分发表，P4）、`platform/`（内部工程）、`tools/`（闸门与构建）、`docs/`（模块级文档）、`assets/`、`dist/`（构建产物）。
+**目录结构**（v1.0 起，P4 完成）：`contracts/`（唯一契约层）、`kernel/`（共享内核，构建期注入）、`components/`（一目录一商品族）、`products/`（分发表，驱动 `build_product.py`）、`platform/`（内部工程）、`tools/`（闸门与构建）、`docs/`（模块级文档）、`assets/`、`dist/`（构建产物）。
 
 ---
 
@@ -25,7 +25,7 @@
 
 | 文档 | 版本 | 职责 | 状态 |
 |---|---|---|---|
-| [docs/SPEC-通用组件管理-架构重构-v0.1.md](./docs/SPEC-通用组件管理-架构重构-v0.1.md) | v0.4 | **模块级**：目录重构、契约层、共享内核、一份源码构建生成、独立性闸门、分阶段验收 | ✅ P0–P3 完成 |
+| [docs/SPEC-通用组件管理-架构重构-v0.1.md](./docs/SPEC-通用组件管理-架构重构-v0.1.md) | v0.5 | **模块级**：目录重构、契约层、共享内核、一份源码构建生成、独立性闸门、分阶段验收 | ✅ P0–P4 完成 |
 | [docs/PLAN-20261120-SkillHub评测优化与沙箱测试-v0.1.md](./docs/PLAN-20261120-SkillHub评测优化与沙箱测试-v0.1.md) | v0.1 | 三个已上线 Skill 的 TRACE 评测问题清单、优化动作（P0/P1）、`platform/sandbox/` 本地测试环境方案（16 场景） | 🟡 待确认，未改代码 |
 | [components/cogsteward/docs/ENGINEERING_INDEX.md](./components/cogsteward/docs/ENGINEERING_INDEX.md) | v1.4 | 认知管家工程索引：文件级清单、流程锚点、测试体系与 M1/M2/M2b/M3/契约治理验收证据 | ✅ 0.7.0 |
 | [components/cogsteward/docs/TECHNICAL_DESIGN.md](./components/cogsteward/docs/TECHNICAL_DESIGN.md) | v1.4 | 技术设计：分层架构、扫描/路由/准入/回滚/打包/分拣/评估/索引/技能检查算法、数据流、V9 异常、契约治理与 SPEC 偏差 | ✅ 0.7.0 |
@@ -44,6 +44,7 @@
 | [components/cogsteward/specs/REVIEW-20261119-商品叠加认知管家评估.md](./components/cogsteward/specs/REVIEW-20261119-商品叠加认知管家评估.md) | v1.0 | 商品叠加评估：免费版 / Pro / 按次版的能力边界与复用结论 | ✅ 已出报告 |
 | [contracts/](./contracts/) | v1.0 | **契约层（唯一源）**：组件元数据与输出外壳 schema、九项指标口径、数据源授权台账、全局红线、禁用引用黑名单 | ✅ P1 完成 |
 | [tools/](./tools/) | v1.0 | **闸门与构建**：`check_boundaries.py`（G1–G7）、`gen_index.py`（INDEX 生成）、`build_product.py`（分发构建） | ✅ P1 完成 |
+| [platform/site/](./platform/site/README.md) | v1.0 | **对外站点**：产品介绍、免费体检（每日额度 + 402 付费）、使用说明、只读管理后台；静态页 + 复用 `skillhub-audit-api`，nginx 8081 | ✅ 2026-11-20 |
 
 ---
 
