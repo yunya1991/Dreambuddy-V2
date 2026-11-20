@@ -1,0 +1,73 @@
+{
+  "skill": "market-data-hub",
+  "version": "1.0.0",
+  "module": "D1",
+  "generated_at": "2026-11-20T18:23:35",
+  "data_date": "2026-11-18",
+  "data_route": "local",
+  "window": 30,
+  "rows": [
+    {
+      "series": "DGS10",
+      "name": "美国10年期国债收益率(%)",
+      "n": 30,
+      "observations": 16205,
+      "date": "2026-11-18",
+      "latest": 5.07,
+      "unit": "%",
+      "chg_1m_bp": -8.000000000000007,
+      "chg_1m": null,
+      "chg_3m_bp": 36.00000000000003,
+      "chg_3m": null,
+      "pctile": 0.5,
+      "pctile_n": 30,
+      "vol": 0.2045760051821548
+    },
+    {
+      "series": "CPIAUCSL",
+      "name": "美国CPI指数",
+      "n": 30,
+      "observations": 957,
+      "date": "2026-10-01",
+      "latest": 337.476,
+      "unit": "index",
+      "chg_1m_bp": null,
+      "chg_1m": 19.872000000000014,
+      "chg_3m_bp": null,
+      "chg_3m": 66.822,
+      "pctile": 1.0,
+      "pctile_n": 30,
+      "vol": 0.041916597584852
+    },
+    {
+      "series": "UNRATE",
+      "name": "美国失业率(%)",
+      "n": 30,
+      "observations": 945,
+      "date": "2026-10-01",
+      "latest": 4.1,
+      "unit": "%",
+      "chg_1m_bp": 0.0,
+      "chg_1m": null,
+      "chg_3m_bp": -180.00000000000006,
+      "chg_3m": null,
+      "pctile": 0.36666666666666664,
+      "pctile_n": 30,
+      "vol": 0.4130011198193695
+    }
+  ],
+  "missing": [],
+  "method_ids": [
+    "M11",
+    "M12",
+    "M13"
+  ],
+  "sources": [
+    {
+      "name": "FRED / Federal Reserve Bank of St. Louis",
+      "url": "https://fred.stlouisfed.org/",
+      "license": "Public Domain"
+    }
+  ],
+  "limits": "仅提供已发布数据的统计描述，不含方向判断、预测或建议。"
+}

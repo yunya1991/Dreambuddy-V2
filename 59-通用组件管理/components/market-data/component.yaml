@@ -1,0 +1,19 @@
+name: market-data
+display_name: 数据服务（宏观·披露·链上·上下文）
+version: 1.0.1
+family: market-data
+lifecycle: active
+summary: 海外宏观、美股披露、公有链指标三类开放数据，加数据上下文与交叉统计，每条附方法ID与样本量。
+entrypoints:
+  - scripts/macro.py
+  - scripts/filings.py
+  - scripts/onchain.py
+  - scripts/context.py
+  - scripts/handoff.py
+  - scripts/quotes.py
+kernel_deps: []
+output_contract: data.v1
+products: []
+tests:
+  dir: tests
+  entry: python3 -m unittest discover -s tests -v
