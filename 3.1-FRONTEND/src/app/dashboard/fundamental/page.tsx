@@ -27,7 +27,7 @@ const tabs = [
   { id: 'macro', label: '宏观指标' },
   { id: 'sentiment', label: '市场情绪' },
   { id: 'flow', label: '资金流向' },
-  { id: 'web3', label: '链上资金' },
+  { id: 'web3', label: '聪明钱与持仓监控' },
   { id: 'valuation', label: '估值模型' },
   { id: 'narrative', label: '叙事分析' },
   { id: 'breadth', label: '市场广度' },
