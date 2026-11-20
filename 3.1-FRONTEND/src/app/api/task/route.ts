@@ -17,6 +17,7 @@ import {
 } from '@/lib/task-manager';
 import { emitMonitorEvent } from '@/lib/monitor-bus';
 import { collectStrategyTaskOrderFeedItems } from '@/lib/strategy-artifacts';
+import { getSkillPromptMeta } from '@/lib/orchestration/node-prompts';
 import * as fs from 'fs';
 import * as path from 'path';
 import { spawn } from 'child_process';
@@ -477,6 +478,8 @@ export async function GET(request: NextRequest) {
         thinking_mode: task.thinking_mode,
         created_at: task.created_at,
         updated_at: task.updated_at,
+        // SPEC-57 P6：任务结果携带 L2 提示词七字段，线上可核对宪法版本
+        prompt_meta: getSkillPromptMeta(),
       };
 
       // 如果有结果，附加结果内容
