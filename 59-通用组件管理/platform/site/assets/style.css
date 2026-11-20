@@ -327,3 +327,15 @@ code.inline { background: #f1f5f9; padding: 2px 6px; border-radius: 5px; font-si
   .trial-layout { grid-template-columns: 1fr; }
   .trial-side { order: 2; }
 }
+
+/* 商品详情页：三问选择器与变体卡高亮（无 JS 时全部静态可见） */
+.opt {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--bg); font-size: 14px; cursor: pointer;
+}
+.opt input { accent-color: var(--accent); }
+.variant.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}

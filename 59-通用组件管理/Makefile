@@ -13,7 +13,7 @@ check:
 	python3 tools/gen_index.py --check
 	python3 tools/sync_rules.py --check
 	python3 platform/site/scripts/build_site.py --check
-	node --test platform/services/skillhub-audit-api/test/rules.test.js
+	node --test platform/services/skillhub-audit-api/test/*.test.js
 
 build:
 	python3 tools/build_product.py --all

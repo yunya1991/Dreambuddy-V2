@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-11-20T12:24:30Z",
+  "generated_at": "2026-11-20T13:27:24Z",
   "source": "59-通用组件管理/components/*/component.yaml",
   "components": [
     {
@@ -73,7 +73,7 @@
     {
       "name": "reservation-assist",
       "display_name": "预约助手 Reservation Assist",
-      "version": "0.5.0",
+      "version": "0.8.0",
       "family": "reservation-assist",
       "lifecycle": "draft",
       "summary": "本地常驻的余票/号源监控与通知工具：对时调度、命中去重、官方深链跳转，默认不自动提交。",

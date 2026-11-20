@@ -68,14 +68,17 @@ function normalizeInput(body) {
   return { skillMd, files };
 }
 
-/** 免费额度只给结论与前若干问题项，完整报告仍需走 /api/audit 付费链路。 */
+/** 免费额度只给阻断项 + 前 6 条建议，完整报告（含 patches）仍需走 /api/audit 付费链路。 */
 function trimReport(report) {
   const checks = report.checks || [];
   const visible = checks.filter((c) => c.status !== 'skipped');
-  const ordered = [
-    ...visible.filter((c) => c.status !== 'pass'),
-    ...visible.filter((c) => c.status === 'pass')
-  ].slice(0, FREE_CHECK_LIMIT);
+  const blockers = visible.filter((c) => c.status === 'fail');
+  const warns = visible.filter((c) => c.status === 'warn').slice(0, FREE_CHECK_LIMIT);
+  const ordered = [...blockers, ...warns];
+  if (ordered.length < FREE_CHECK_LIMIT) {
+    const passes = visible.filter((c) => c.status === 'pass');
+    ordered.push(...passes.slice(0, FREE_CHECK_LIMIT - ordered.length));
+  }
 
   return {
     service: report.service,

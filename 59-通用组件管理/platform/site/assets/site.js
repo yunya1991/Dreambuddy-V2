@@ -58,6 +58,29 @@
     }, true);
   }
 
+  /* ---------------- 商品页三问选择器（无 JS 时保留全部静态内容） ---------------- */
+
+  function initVariantSelector() {
+    var picks = document.querySelectorAll('[data-variant-pick]');
+    if (!picks.length) return;
+    var cards = document.querySelectorAll('.variant[data-variant]');
+    function highlight() {
+      var selected = {};
+      Array.prototype.forEach.call(picks, function (input) {
+        if (input.checked) selected[input.getAttribute('data-variant-pick')] = true;
+      });
+      Array.prototype.forEach.call(cards, function (card) {
+        var key = card.getAttribute('data-variant');
+        if (selected[key]) card.classList.add('active');
+        else card.classList.remove('active');
+      });
+    }
+    Array.prototype.forEach.call(picks, function (input) {
+      input.addEventListener('change', highlight);
+    });
+    highlight();
+  }
+
   /* ---------------- ZIP 解析（仅提取 SKILL.md 与文件清单） ---------------- */
 
   function readU16(dv, o) { return dv.getUint16(o, true); }
@@ -460,6 +483,7 @@
             '</div>' +
             '<div class="result-actions">' +
               '<button class="btn btn-plain" type="button" id="copy-report">复制报告</button>' +
+              '<button class="btn btn-plain" type="button" id="download-report">下载 JSON</button>' +
               '<button class="btn btn-outline" type="button" id="pay-report">完整报告</button>' +
               '<a class="btn btn-primary" target="_blank" rel="noopener" href="' + DOWNLOAD_URL + '">去下载</a>' +
             '</div>' +
@@ -496,6 +520,25 @@
               setTimeout(function () { copyBtn.textContent = '复制报告'; }, 1600);
             })
             .catch(function () { showNotice(notice, 'err', '复制失败，请手动选择文本。'); });
+        });
+      }
+
+      var downloadBtn = $('#download-report');
+      if (downloadBtn) {
+        downloadBtn.addEventListener('click', function () {
+          try {
+            var blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var link = document.createElement('a');
+            link.href = url;
+            link.download = 'skill-audit-' + (report.audited_at || '').replace(/[^0-9]/g, '').slice(0, 14) + '.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+          } catch (_) {
+            showNotice(notice, 'err', '下载失败，请改用复制报告。');
+          }
         });
       }
 
@@ -670,5 +713,6 @@
     initBeacon();
     initTrial();
     initAdmin();
+    initVariantSelector();
   });
 })();

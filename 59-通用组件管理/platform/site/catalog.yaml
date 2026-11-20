@@ -1,0 +1,162 @@
+# 商品展示目录（SPEC §5.3 / §5.4）
+#
+# 只放展示文案与入口链接；version / price / product_id 一律以 products/*.yaml 为准。
+# 本文件出现 version、price 或未声明的键，build_site.py --check 直接失败。
+#
+# 允许的族键：title / tagline / audience / capabilities / sample / selector / variants
+# 允许的变体键：copy / install / link
+# 链接按渠道校验：skillhub-* 必填且必须是 https://skillhub.cn/；
+#                 workbuddy-local 可留空；其余渠道必填且必须是 https:// 开头。
+
+families:
+  cogsteward:
+    title: 认知管家 CogSteward
+    tagline: 上下文治理：扫描登记、工作区体检、路由归属与最小上下文打包，纯本地运行零依赖。
+    audience: 适合在一台电脑上管理多个工作区、希望 AI 只读必要上下文的个人开发者。
+    sample: assets/samples/sample-pass.md
+    capabilities:
+      - 工作区扫描与登记：把散落的项目目录变成可复核的登记表，索引由脚本生成。
+      - 上下文打包：按任务裁剪最小上下文，避免把整个仓库塞给模型。
+      - 指标体检：metrics-contract.json 单一源，一条命令查完结构与契约。
+    selector:
+      - question: 你打算怎么使用？
+        options:
+          - text: 只在自己的电脑上管理个人工作区
+            variant: free
+          - text: 团队长期共用，需要持续体检与报告
+            variant: pro
+          - text: 临时项目，先按次试用
+            variant: pro-pay
+      - question: 是否需要定期生成体检报告？
+        options:
+          - text: 不需要，自己跑一次就行
+            variant: free
+          - text: 需要，每周固定出一份
+            variant: pro
+          - text: 偶尔需要，按次购买
+            variant: pro-pay
+      - question: 你的付费方式偏好？
+        options:
+          - text: 不付费，先用免费版
+            variant: free
+          - text: 订阅制，按月固定支出
+            variant: pro
+          - text: 按次付费，用多少买多少
+            variant: pro-pay
+    variants:
+      free:
+        copy: 本地 WorkBuddy 直接安装，零配置，适合单人工作区。
+        install: python3 ~/.skills/cogsteward/scripts/cm_cli.py scan
+        link: ""
+      pro:
+        copy: 订阅制，包含定期体检与报告脚本，适合团队长期共用。
+        install: python3 ~/.skills/cogsteward-pro/scripts/report.py run
+        link: https://skillhub.cn/dashboard
+      pro-pay:
+        copy: 按次付费，单次调用计费，适合临时项目与试用。
+        install: python3 ~/.skills/cogsteward-pro/scripts/pay.py audit
+        link: https://skillhub.cn/dashboard
+
+  event-context:
+    title: 事件上下文（官方源·五层装配）
+    tagline: 从 SEC 与美联储官方公开源拉取公告与声明，装配成事件事实、涉及实体、同类事件次数、来源许可、边界声明五层结构。
+    audience: 需要把官方事件转成可复核上下文的调研、风控与复盘链路。
+    sample: assets/samples/sample-pass.md
+    capabilities:
+      - 官方源直取：只依赖 SEC 与美联储公开接口，不接第三方转载。
+      - 五层装配：事件事实、涉及实体、同类事件次数、来源许可、边界声明逐层可查。
+      - 上下文交接：输出带来源与许可，可直接交给下游链路消费。
+    selector:
+      - question: 你的调用频率？
+        options:
+          - text: 每天固定跑，长期使用
+            variant: free
+          - text: 偶尔查一次，按次付费
+            variant: pro
+      - question: 是否需要本地保存历史结果？
+        options:
+          - text: 需要，长期跟踪事件变化
+            variant: free
+          - text: 不需要，查完即用
+            variant: pro
+      - question: 你的付费方式偏好？
+        options:
+          - text: 订阅制，按月固定支出
+            variant: free
+          - text: 按次付费，用多少买多少
+            variant: pro
+    variants:
+      free:
+        copy: 订阅制，适合每天固定运行的事件跟踪链路。
+        install: python3 ~/.skills/event-context/scripts/events.py pull
+        link: https://skillhub.cn/dashboard
+      pro:
+        copy: 按次付费，单次装配完整五层上下文。
+        install: python3 ~/.skills/event-context-pro/scripts/pay.py context
+        link: https://skillhub.cn/dashboard
+
+  market-data:
+    title: 数据服务（宏观·披露·链上·上下文）
+    tagline: 海外宏观、美股披露、公有链指标三类开放数据，加数据上下文与交叉统计，每条附方法ID与样本量。
+    audience: 需要稳定取数口径、并能追溯到方法说明的量化与研究链路。
+    sample: assets/samples/sample-pass.md
+    capabilities:
+      - 宏观序列：海外利率、通胀与就业等公开序列，统一口径。
+      - 披露与链上：美股披露与公有链指标，按资源粒度限流。
+      - 方法可追溯：每条结果附方法ID与样本量，便于复核。
+    selector:
+      - question: 你需要的资源量级？
+        options:
+          - text: 每天多类资源持续取数
+            variant: free
+          - text: 偶尔缺某个指标，按次补
+            variant: pro
+      - question: 是否需要固定配额与优先级？
+        options:
+          - text: 需要，纳入日常流水线
+            variant: free
+          - text: 不需要，临时调用
+            variant: pro
+      - question: 你的付费方式偏好？
+        options:
+          - text: 订阅制，覆盖日常取数
+            variant: free
+          - text: 按次付费，临时补数据
+            variant: pro
+    variants:
+      free:
+        copy: 订阅制，覆盖宏观、披露、链上三类资源的日常取数。
+        install: python3 ~/.skills/market-data-hub/scripts/macro.py series DGS10
+        link: https://skillhub.cn/dashboard
+      pro:
+        copy: 按次付费，单次取数或交叉统计，适合临时补数据。
+        install: python3 ~/.skills/market-data-pro/scripts/pay.py quote
+        link: https://skillhub.cn/dashboard
+
+  market-facts-daily:
+    title: 市场事实日报
+    tagline: 把公开行情折算成一页可复核的数字事实：涨跌幅、分位、波动、回撤，全部标注方法ID与样本量。
+    audience: 需要每天一份稳定事实底稿的复盘、日报与决策链路。
+    sample: assets/samples/sample-pass.md
+    capabilities:
+      - 数字事实：涨跌幅、分位、波动与回撤按统一方法计算。
+      - 可复核：每个数字附方法ID与样本量，不用猜口径。
+      - 一页输出：直接作为日报或复盘的事实底稿。
+    selector:
+      - question: 你的使用节奏？
+        options:
+          - text: 每天看一次，买断长期使用
+            variant: free
+      - question: 是否需要自动生成？
+        options:
+          - text: 需要，每天定时产出
+            variant: free
+      - question: 你的付费方式偏好？
+        options:
+          - text: 一次买断，长期使用
+            variant: free
+    variants:
+      free:
+        copy: 买断制，一次购买长期使用，每天生成一份事实日报。
+        install: python3 ~/.skills/market-facts-daily/scripts/facts.py today
+        link: https://skillhub.cn/dashboard

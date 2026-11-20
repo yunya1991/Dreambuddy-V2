@@ -1,0 +1,130 @@
+{
+  "generated_at": "2026-11-20",
+  "rules_version": 3,
+  "score_formula_version": "v2",
+  "allowed_changes": {},
+  "skus": {
+    "cogsteward/free": {
+      "score": 94,
+      "verdict": "needs_work",
+      "failing": [],
+      "warn": [
+        "DOC002",
+        "FAQ001"
+      ],
+      "skipped": [
+        "FM008"
+      ]
+    },
+    "cogsteward/pro": {
+      "score": 5,
+      "verdict": "fail",
+      "failing": [
+        "FM006",
+        "PAY001",
+        "PAY002",
+        "PAY003",
+        "PAY004",
+        "PAY005"
+      ],
+      "warn": [
+        "DOC002"
+      ],
+      "skipped": [
+        "FM008"
+      ]
+    },
+    "cogsteward/pro-pay": {
+      "score": 94,
+      "verdict": "needs_work",
+      "failing": [],
+      "warn": [
+        "DOC002",
+        "FAQ001"
+      ],
+      "skipped": [
+        "FM008"
+      ]
+    },
+    "event-context/free": {
+      "score": 14,
+      "verdict": "fail",
+      "failing": [
+        "PAY001",
+        "PAY002",
+        "PAY003",
+        "PAY004",
+        "PAY005"
+      ],
+      "warn": [
+        "DOC002",
+        "FAQ001",
+        "FM007"
+      ],
+      "skipped": [
+        "FM008"
+      ]
+    },
+    "event-context/pro": {
+      "score": 90,
+      "verdict": "needs_work",
+      "failing": [],
+      "warn": [
+        "DOC002",
+        "FM007"
+      ],
+      "skipped": [
+        "FM008"
+      ]
+    },
+    "market-data/free": {
+      "score": 14,
+      "verdict": "fail",
+      "failing": [
+        "PAY001",
+        "PAY002",
+        "PAY003",
+        "PAY004",
+        "PAY005"
+      ],
+      "warn": [
+        "DOC002",
+        "FAQ001",
+        "FM007"
+      ],
+      "skipped": [
+        "FM008"
+      ]
+    },
+    "market-data/pro": {
+      "score": 90,
+      "verdict": "needs_work",
+      "failing": [],
+      "warn": [
+        "DOC002",
+        "FM007"
+      ],
+      "skipped": [
+        "FM008"
+      ]
+    },
+    "market-facts-daily/free": {
+      "score": 19,
+      "verdict": "fail",
+      "failing": [
+        "PAY001",
+        "PAY002",
+        "PAY003",
+        "PAY004",
+        "PAY005"
+      ],
+      "warn": [
+        "DOC002",
+        "FAQ001"
+      ],
+      "skipped": [
+        "FM008"
+      ]
+    }
+  }
+}

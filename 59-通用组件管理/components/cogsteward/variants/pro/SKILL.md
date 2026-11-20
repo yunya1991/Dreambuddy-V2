@@ -1,5 +1,5 @@
 ---
-name: 认知管家 Pro
+name: cogsteward-pro
 slug: cogsteward-pro
 displayName: 认知管家 Pro
 version: 1.1.1

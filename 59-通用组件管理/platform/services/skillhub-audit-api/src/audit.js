@@ -14,6 +14,10 @@ const PAY_MARKERS = spec.pay_markers;
 const RULES_VERSION = spec.version;
 const SCORE_FORMULA_VERSION = spec.score.formula;
 const RULES_CHANGED = latestChanged(spec.changelog);
+const RULE_BY_ID = {};
+spec.rules.forEach((rule) => {
+  RULE_BY_ID[rule.id] = rule;
+});
 
 function latestChanged(changelog) {
   const list = changelog || [];
@@ -83,6 +87,12 @@ function auditSkill(input) {
   score = Math.max(0, score);
 
   const verdict = error > 0 ? 'fail' : warning > 0 ? 'needs_work' : 'pass';
+  const dimensions = summarizeDimensions(results);
+  const remediationPlan = buildRemediationPlan(results);
+  const patches = buildPatches(results, { meta: front.data, packageRoot });
+  const skippedDetail = results
+    .filter((result) => result.status === 'skipped')
+    .map((result) => ({ rule_id: result.id, title: result.title, reason: result.detail }));
 
   return {
     service: 'SkillHub Skill 上架体检',
@@ -100,13 +110,147 @@ function auditSkill(input) {
     score_formula_version: SCORE_FORMULA_VERSION,
     blockers: error,
     counts: { error, warning, skipped, total: checks.length },
+    dimensions,
+    coverage: {
+      assessed: Object.keys(dimensions).filter((key) => dimensions[key].assessed > 0),
+      not_assessed: ['效果与收益', '兼容性'],
+      note: '只报告可静态核验的维度与覆盖度，不输出五维总分'
+    },
     checks,
-    next_actions: checks
-      .filter((c) => c.status !== 'pass' && c.status !== 'skipped')
-      .map((c) => `${c.id} ${c.title}：${c.detail}`),
+    patches,
+    remediation_plan: remediationPlan,
+    skipped: skippedDetail,
+    next_actions: remediationPlan.items.slice(0, 3).map((item) => `${item.rule_id} ${item.title}：${item.fix}`),
     disclaimer: '本报告基于提交内容做结构与合规体检，不替代 SkillHub 官方审核，也不能证明收费后端已真实可用。',
     audited_at: new Date().toISOString()
   };
+}
+
+const SEVERITY_RANK = { blocker: 0, warn: 1, info: 2 };
+
+function summarizeDimensions(results) {
+  const labels = spec.dimensions || {};
+  const summary = {};
+  Object.keys(labels).forEach((key) => {
+    const related = results.filter((result) => (RULE_BY_ID[result.id] || {}).dimension === key);
+    const assessed = related.filter((result) => result.status !== 'skipped').length;
+    summary[key] = {
+      label: labels[key].label || key,
+      checks: related.length,
+      assessed,
+      coverage: related.length ? Number((assessed / related.length).toFixed(2)) : 0
+    };
+  });
+  return summary;
+}
+
+/** remediation_plan 是唯一源，next_actions 只取前 3 条标题。 */
+function buildRemediationPlan(results) {
+  const items = results
+    .filter((result) => result.status !== 'pass' && result.status !== 'skipped')
+    .map((result) => {
+      const rule = RULE_BY_ID[result.id] || {};
+      const severity =
+        result.status === 'fail' ? rule.severity || 'blocker' : rule.severity === 'info' ? 'info' : 'warn';
+      return {
+        rule_id: result.id,
+        severity,
+        order: 0,
+        title: result.title,
+        fix: (rule.messages && rule.messages.fix) || result.detail,
+        detail: result.detail,
+        visible_in_free: false
+      };
+    })
+    .sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity] || a.rule_id.localeCompare(b.rule_id));
+
+  items.forEach((item, index) => {
+    item.order = index + 1;
+    item.visible_in_free = index < 3;
+  });
+  return { version: '1.0', items };
+}
+
+/** 付费报告的可粘贴补丁（SPEC §5.2）：frontmatter_field / description_rewrite / package_tree。 */
+function buildPatches(results, ctx) {
+  const patches = [];
+  results.forEach((result) => {
+    if (result.status === 'pass' || result.status === 'skipped') return;
+    const rule = RULE_BY_ID[result.id];
+    if (!rule || !rule.patchable || !rule.patch) return;
+    const patch = buildPatch(rule, ctx);
+    if (patch) patches.push(patch);
+  });
+  return patches;
+}
+
+function buildPatch(rule, ctx) {
+  const kind = rule.patch.kind;
+  if (kind === 'frontmatter_field') {
+    const field = rule.patch.field;
+    const after = suggestFieldValue(field, ctx);
+    if (!after) return null;
+    return {
+      rule_id: rule.id,
+      target: 'SKILL.md',
+      kind,
+      before: ctx.meta[String(field).toLowerCase()] || null,
+      after: `${field}: ${after}`,
+      apply_hint: '粘贴到 SKILL.md frontmatter 的对应位置后重新体检'
+    };
+  }
+  if (kind === 'description_rewrite') {
+    const before = ctx.meta.description || '';
+    const name = ctx.meta.displayname || ctx.meta.name || ctx.packageRoot || '本技能';
+    const after = `description: 当用户需要${name}相关能力时使用本技能。${before}`.slice(0, 1024);
+    return {
+      rule_id: rule.id,
+      target: 'SKILL.md',
+      kind,
+      before: before || null,
+      after,
+      apply_hint: '用 after 整体替换 frontmatter 的 description 行'
+    };
+  }
+  if (kind === 'package_tree') {
+    return {
+      rule_id: rule.id,
+      target: '包结构',
+      kind,
+      before: null,
+      after: 'SKILL.md\nscripts/\nreferences/\nassets/',
+      apply_hint: '把脚本移入 scripts/、参考资料移入 references/、图片移入 assets/ 后重新打包'
+    };
+  }
+  return null;
+}
+
+function suggestFieldValue(field, ctx) {
+  const name = ctx.meta.name || ctx.packageRoot || 'my-skill';
+  switch (String(field).toLowerCase()) {
+    case 'slug':
+    case 'name':
+      return slugify(name);
+    case 'version':
+      return '1.0.0';
+    case 'displayname':
+      return ctx.meta.displayname || name;
+    case 'summary':
+      return String(ctx.meta.description || '一句话说明本技能能做什么').slice(0, 60);
+    case 'license':
+      return 'MIT';
+    default:
+      return '';
+  }
+}
+
+function slugify(value) {
+  const slug = String(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 64);
+  return slug || 'my-skill';
 }
 
 function appliesTo(rule, isPay) {

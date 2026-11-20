@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}} · 59 通用组件管理</title>
+<meta name="description" content="{{TAGLINE}}">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../index.html">
+      <img src="../assets/logo.jpg" alt="logo">
+      <span>59 通用组件管理</span>
+    </a>
+    <nav class="nav-links">
+      <a href="../index.html">产品介绍</a>
+      <a href="../trial.html">免费体检</a>
+      <a href="../guide.html">使用说明</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="badge">{{FAMILY}} · 当前版本 {{VERSION}}</div>
+    <h1>{{TITLE}}</h1>
+    <p>{{TAGLINE}}</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="../trial.html">免费体检我的 Skill</a>
+      <a class="btn btn-ghost" href="#variants">查看版本与价格</a>
+      <a class="btn btn-ghost" href="../index.html">返回组件列表</a>
+    </div>
+  </div>
+</section>
+
+<main>
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>能做什么</h2>
+        <p>{{AUDIENCE}}</p>
+      </div>
+      <div class="grid grid-3">
+<!-- GEN:CAPABILITIES:BEGIN -->
+<!-- GEN:CAPABILITIES:END -->
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="selector" style="background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>三问选版本</h2>
+        <p>按使用方式、频率与付费偏好选一次；页面不会提交任何数据，选择只用于高亮匹配的版本卡。</p>
+      </div>
+<!-- GEN:SELECTOR:BEGIN -->
+<!-- GEN:SELECTOR:END -->
+    </div>
+  </section>
+
+  <section class="section" id="variants">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>版本与价格</h2>
+        <p>价格与商品 ID 以分发表为准，本页只做展示；安装后在本地 Skill 目录直接运行。</p>
+      </div>
+      <div class="grid grid-2">
+<!-- GEN:VARIANTS:BEGIN -->
+<!-- GEN:VARIANTS:END -->
+      </div>
+      <p class="hint" style="margin-top:16px">
+        示例样本：<a href="../{{SAMPLE}}">查看一份合规 SKILL.md</a>。
+        体检覆盖项见<a href="../guide.html#audit">使用说明</a>。
+      </p>
+    </div>
+  </section>
+
+  <section class="section" style="background:#fff;border-top:1px solid var(--line)">
+    <div class="wrap" style="text-align:center">
+      <div class="section-head">
+        <h2>先体检，再上架</h2>
+        <p>提交 SKILL.md 或整个 Skill 包，免费额度内直接拿到结构与合规体检报告。</p>
+      </div>
+      <a class="btn btn-primary" href="../trial.html">开始免费体检</a>
+      <p class="hint" style="margin-top:14px">体检不替代平台官方审核，但能提前拦掉大部分退回原因。</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>59 通用组件管理 · {{TITLE}}</span>
+    <span><a href="https://skillhub.cn/dashboard" target="_blank" rel="noopener">SkillHub 控制台</a> · <a href="../privacy.html">隐私说明</a></span>
+  </div>
+</footer>
+
+<script src="../assets/site.js"></script>
+</body>
+</html>

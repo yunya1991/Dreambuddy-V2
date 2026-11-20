@@ -27,6 +27,15 @@
 |---|---|---|---|
 | [docs/SPEC-通用组件管理-架构重构-v0.1.md](./docs/SPEC-通用组件管理-架构重构-v0.1.md) | v0.7 | **模块级**：目录重构、契约层、共享内核、一份源码构建生成、独立性闸门、分阶段验收 | ✅ P0–P6 完成 |
 | [docs/PLAN-20261120-SkillHub评测优化与沙箱测试-v0.1.md](./docs/PLAN-20261120-SkillHub评测优化与沙箱测试-v0.1.md) | v0.1 | 三个已上线 Skill 的 TRACE 评测问题清单、优化动作（P0/P1）、`platform/sandbox/` 本地测试环境方案（16 场景） | 🟡 待确认，未改代码 |
+| [docs/SPEC-20261120-59站点与体检产品化改造-v0.3.md](./docs/SPEC-20261120-59站点与体检产品化改造-v0.3.md) | v0.3 | **站点与体检产品化改造（当前版）**：必填项禁灰度、文案生成清单、`patches[]` 付费交付、全局额度单事务、基线门禁、S0a/S0b 拆步、规则结构校验、范围冻结到 S2 | 🟡 S0a/S0b/S1/S2 已完成；S1 于 2026-11-20 部署 49.233.123.96（V10b 云端通过），S2 待随下次发布上线 |
+| [docs/SPEC-20261120-59站点与体检产品化改造-v0.2.md](./docs/SPEC-20261120-59站点与体检产品化改造-v0.2.md) | v0.2 | 已被 v0.3 取代（保留审计痕迹） | 🗄 归档 |
+| [docs/SPEC-20261120-59站点与体检产品化改造-v0.1.md](./docs/SPEC-20261120-59站点与体检产品化改造-v0.1.md) | v0.1 | 初稿（已被 v0.2 取代，保留审计痕迹） | 🗄 归档 |
+| [docs/REVIEW-20261120-SPEC-59站点与体检产品化改造-v0.1.md](./docs/REVIEW-20261120-SPEC-59站点与体检产品化改造-v0.1.md) | v1.0 | 初稿评审：4 项阻断、8 项 Major、15 项 Minor；关闭核对见 SPEC v0.2 §13 | ✅ 已关闭 |
+| [docs/REVIEW-20261120-SPEC-59站点与体检产品化改造-v0.2-复审.md](./docs/REVIEW-20261120-SPEC-59站点与体检产品化改造-v0.2-复审.md) | v1.0 | 复审：3 项阻断、7 项 Major、15 项 Minor；关闭核对见 SPEC v0.3 §13 | ✅ 已关闭 |
+| [docs/RESEARCH-20261120-预约与抢票工具-GitHub调研-v0.1.md](./docs/RESEARCH-20261120-预约与抢票工具-GitHub调研-v0.1.md) | v0.1 | **新组件前置调研**：9 个成熟项目对比、七层能力抽象、四条技术路线、合规红线与 `reservation-assist` 落地建议 | ✅ 已落地为 reservation-assist 0.2.0 |
+| [docs/SPEC-20261120-预约助手-reservation-assist-v0.2.md](./docs/SPEC-20261120-预约助手-reservation-assist-v0.2.md) | v0.2 | **新组件 SPEC（当前版）**：8 阻断全关闭；`reservation.v1` 契约、6 适配器协议、虚拟时钟、grant 门禁、launchd 模板、P0–P3 验收 | 🟡 P0/P1 已落地（0.2.0）；P2/P3 待施工 |
+| [docs/SPEC-20261120-预约助手-reservation-assist-v0.1.md](./docs/SPEC-20261120-预约助手-reservation-assist-v0.1.md) | v0.1 | 历史版本：首版架构与门禁设计（已被 v0.2 取代） | 🗄 归档 |
+| [docs/REVIEW-20261120-SPEC-预约助手-reservation-assist-v0.1.md](./docs/REVIEW-20261120-SPEC-预约助手-reservation-assist-v0.1.md) | v0.1 | **三视角评审报告**（架构/合规/工程）：8 阻断 + 10 重要 + 6 次要，含 SPEC v0.2 修订清单与 3 项待拍板决策 | ✅ 已出报告 |
 | [components/cogsteward/docs/ENGINEERING_INDEX.md](./components/cogsteward/docs/ENGINEERING_INDEX.md) | v1.4 | 认知管家工程索引：文件级清单、流程锚点、测试体系与 M1/M2/M2b/M3/契约治理验收证据 | ✅ 0.7.0 |
 | [components/cogsteward/docs/TECHNICAL_DESIGN.md](./components/cogsteward/docs/TECHNICAL_DESIGN.md) | v1.4 | 技术设计：分层架构、扫描/路由/准入/回滚/打包/分拣/评估/索引/技能检查算法、数据流、V9 异常、契约治理与 SPEC 偏差 | ✅ 0.7.0 |
 | [components/cogsteward/docs/API_SPEC.md](./components/cogsteward/docs/API_SPEC.md) | v1.4 | CLI 契约：12 个命令 + 2 个独立脚本、JSON 字段、退出码、幂等与并发 | ✅ 0.7.0 |
@@ -44,7 +53,7 @@
 | [components/cogsteward/specs/REVIEW-20261119-商品叠加认知管家评估.md](./components/cogsteward/specs/REVIEW-20261119-商品叠加认知管家评估.md) | v1.0 | 商品叠加评估：免费版 / Pro / 按次版的能力边界与复用结论 | ✅ 已出报告 |
 | [contracts/](./contracts/) | v1.0 | **契约层（唯一源）**：组件元数据与输出外壳 schema、九项指标口径、数据源授权台账、全局红线、禁用引用黑名单 | ✅ P1 完成 |
 | [tools/](./tools/) | v1.0 | **闸门与构建**：`check_boundaries.py`（G1–G7）、`gen_index.py`（INDEX 生成）、`build_product.py`（分发构建） | ✅ P1 完成 |
-| [platform/site/](./platform/site/README.md) | v1.0 | **对外站点**：产品介绍、免费体检（每日额度 + 402 付费）、使用说明、只读管理后台；静态页 + 复用 `skillhub-audit-api`，nginx 8081 | ✅ 2026-11-20 |
+| [platform/site/](./platform/site/README.md) | v1.2 | **对外站点**：产品介绍、免费体检（SQLite 额度/UTC+8/防刷）、使用说明、隐私说明、商品详情页（`catalog.yaml` → `p/<family>.html`）；静态页 + `skillhub-audit-api`；公网 8081，后台 8082（loopback + Basic Auth + 8789 token），匿名埋点 | ✅ 2026-11-20 |
 
 ---
 
@@ -60,6 +69,7 @@
 | 事件上下文（官方源·五层装配） `event-context` | components/event-context/ | v1.0.1 | active | — | 3 个 |
 | 数据服务（宏观·披露·链上·上下文） `market-data` | components/market-data/ | v1.0.2 | active | — | 6 个 |
 | 市场事实日报 `market-facts-daily` | components/market-facts-daily/ | v1.0.3 | active | — | 1 个 |
+| 预约助手 Reservation Assist `reservation-assist` | components/reservation-assist/ | v0.8.0 | draft | — | 1 个 |
 <!-- GEN:COMPONENT-REGISTRY:END -->
 
 ---
@@ -87,7 +97,7 @@
 
 | 单元 | 路径 | 版本 | 职责 |
 |---|---|---|---|
-| SkillHub 体检收费后端 `skillhub-audit-api` | `platform/services/skillhub-audit-api/` | v1.2.0 | 402 付费后端：契约驱动九项体检，已部署 49.233.123.96 |
+| SkillHub 体检收费后端 `skillhub-audit-api` | `platform/services/skillhub-audit-api/` | v1.2.0+ | 402 付费后端：规则 YAML v3 驱动（公开检查项数见 `platform/site/data/rules.json`），含免费额度/限流/埋点/管理口；已部署 49.233.123.96（8788 公开、8789 loopback） |
 | 巡检 `patrol` | `platform/ops/patrol/` | — | 定时巡检与事故记录 |
 | 沙箱测试 `sandbox` | `platform/sandbox/` | v0.1 | 复刻 402 付费协议的本地回归：16 场景、mock 服务、fixtures、基线报告（不改 Skill） |
 | 发布交互 `skillhub-publisher` | `platform/tools-skills/skillhub-publisher/` | v1.1.0 | SkillHub 免费/付费发布协议 |
@@ -98,10 +108,11 @@
 
 ## 4. 维护规则
 
-1. 新增组件 → 先建 `components/<name>/component.yaml` 并跑 `python3 tools/gen_index.py --write`，再建目录与 SPEC
+1. 新增组件 → 先建 `components/<name>/component.yaml` 并跑 `python3 tools/gen_index.py --write` 与 `python3 platform/site/scripts/build_site.py --write`，再建目录与 SPEC
 2. 组件升级 → 更新版本号（`component.yaml` 与 `skill/SKILL.md` 必须一致）+ CHANGELOG + §3.1 状态
 3. 组件对外分发 → 必须通过「不依赖内部私有路径/数据」检查
 4. 本模块 INDEX 变更 → 同步更新 [0-系统文档管理/INDEX.md](../0-系统文档管理/INDEX.md)
 5. 任何 Skill 发新版本 → 按 `platform/tools-skills/skillpay-workflow/SKILL.md` §8 检查单执行，并在 §3.1 更新版本号
 6. 内部工具与服务 → 登记 §3.2 平台工程，不进入组件依赖图与 golden 校验
-7. 任何组件发版前 → 必须跑 `make check`（`sync_kernel --check` + G1–G7 + `gen_index --check`），全绿才允许 `make build` 打包
+7. 任何组件发版前 → 必须跑 `make check`（`sync_kernel --check` + G1–G7 + `gen_index --check` + `sync_rules --check` + `build_site --check` + 规则测试），全绿才允许 `make build` 打包
+8. 体检规则变更 → 只改 `contracts/skill-quality-rules.yaml`（bump version + changelog），再跑 `python3 tools/sync_rules.py --write` 与 `python3 platform/site/scripts/build_site.py --write`，禁止手改生成物

@@ -1,0 +1,123 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-11-20T13:27:24Z",
+  "build": {
+    "rules_version": 3,
+    "score_formula_version": "v2",
+    "generated_at": "2026-11-20T13:27:24Z"
+  },
+  "components": [
+    {
+      "family": "cogsteward",
+      "name": "cogsteward",
+      "display_name": "认知管家 CogSteward",
+      "version": "0.7.0",
+      "lifecycle": "active",
+      "summary": "上下文治理：扫描登记、工作区体检、路由归属与最小上下文打包，纯本地运行零依赖。",
+      "tagline": "上下文治理：扫描登记、工作区体检、路由归属与最小上下文打包，纯本地运行零依赖。",
+      "sample": "assets/samples/sample-pass.md",
+      "variants": [
+        {
+          "key": "free",
+          "display_name": "认知管家",
+          "channel": "workbuddy-local",
+          "price": "",
+          "link": "",
+          "copy": "本地 WorkBuddy 直接安装，零配置，适合单人工作区。"
+        },
+        {
+          "key": "pro",
+          "display_name": "认知管家 Pro",
+          "channel": "skillpay-subscription",
+          "price": "2.99/月",
+          "link": "https://skillhub.cn/dashboard",
+          "copy": "订阅制，包含定期体检与报告脚本，适合团队长期共用。"
+        },
+        {
+          "key": "pro-pay",
+          "display_name": "认知管家 Pro（按次付费）",
+          "channel": "skillhub-pay",
+          "price": "0.99/次",
+          "link": "https://skillhub.cn/dashboard",
+          "copy": "按次付费，单次调用计费，适合临时项目与试用。"
+        }
+      ]
+    },
+    {
+      "family": "event-context",
+      "name": "event-context",
+      "display_name": "事件上下文（官方源·五层装配）",
+      "version": "1.0.1",
+      "lifecycle": "active",
+      "summary": "从 SEC 与美联储官方公开源拉取公告与声明，装配成事件事实、涉及实体、同类事件次数、来源许可、边界声明五层结构。",
+      "tagline": "从 SEC 与美联储官方公开源拉取公告与声明，装配成事件事实、涉及实体、同类事件次数、来源许可、边界声明五层结构。",
+      "sample": "assets/samples/sample-pass.md",
+      "variants": [
+        {
+          "key": "free",
+          "display_name": "事件上下文（官方源·五层装配）",
+          "channel": "skillpay-subscription",
+          "price": "19.9/月",
+          "link": "https://skillhub.cn/dashboard",
+          "copy": "订阅制，适合每天固定运行的事件跟踪链路。"
+        },
+        {
+          "key": "pro",
+          "display_name": "事件上下文专业版（按次付费）",
+          "channel": "skillhub-pay",
+          "price": "2.99/次",
+          "link": "https://skillhub.cn/dashboard",
+          "copy": "按次付费，单次装配完整五层上下文。"
+        }
+      ]
+    },
+    {
+      "family": "market-data",
+      "name": "market-data",
+      "display_name": "数据服务（宏观·披露·链上·上下文）",
+      "version": "1.0.2",
+      "lifecycle": "active",
+      "summary": "海外宏观、美股披露、公有链指标三类开放数据，加数据上下文与交叉统计，每条附方法ID与样本量。",
+      "tagline": "海外宏观、美股披露、公有链指标三类开放数据，加数据上下文与交叉统计，每条附方法ID与样本量。",
+      "sample": "assets/samples/sample-pass.md",
+      "variants": [
+        {
+          "key": "free",
+          "display_name": "数据服务（宏观·披露·链上·上下文）",
+          "channel": "skillpay-subscription",
+          "price": "19.9/月",
+          "link": "https://skillhub.cn/dashboard",
+          "copy": "订阅制，覆盖宏观、披露、链上三类资源的日常取数。"
+        },
+        {
+          "key": "pro",
+          "display_name": "数据服务专业版（按次付费）",
+          "channel": "skillhub-pay",
+          "price": "2.99/次",
+          "link": "https://skillhub.cn/dashboard",
+          "copy": "按次付费，单次取数或交叉统计，适合临时补数据。"
+        }
+      ]
+    },
+    {
+      "family": "market-facts-daily",
+      "name": "market-facts-daily",
+      "display_name": "市场事实日报",
+      "version": "1.0.3",
+      "lifecycle": "active",
+      "summary": "把公开行情折算成一页可复核的数字事实：涨跌幅、分位、波动、回撤，全部标注方法ID与样本量。",
+      "tagline": "把公开行情折算成一页可复核的数字事实：涨跌幅、分位、波动、回撤，全部标注方法ID与样本量。",
+      "sample": "assets/samples/sample-pass.md",
+      "variants": [
+        {
+          "key": "free",
+          "display_name": "市场事实日报",
+          "channel": "skillpay-once",
+          "price": "0.99",
+          "link": "https://skillhub.cn/dashboard",
+          "copy": "买断制，一次购买长期使用，每天生成一份事实日报。"
+        }
+      ]
+    }
+  ]
+}
