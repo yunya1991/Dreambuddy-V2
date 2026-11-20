@@ -206,6 +206,16 @@ export interface RouteConfidenceSignal {
   /** true = recall 空/C4 降级/静态兜底等 FAIL-OPEN 状态 */
   degraded: boolean;
   reasons?: string[];
+  /**
+   * 认知裁决（P1-1）：域内外 verdict + L2 路线选择。
+   * 仅 decision=L2_HANDOFF 时由 Python 侧注入，前端原样透传到执行 trace。
+   */
+  cognition_signal?: {
+    coverage?: number;
+    source?: string;
+    verdict?: 'in_scope' | 'unknown' | 'out_of_scope';
+    l2_route?: string;
+  };
 }
 
 /** 信号类型守卫（防御非法/半结构 payload，失败则走静态兜底）。 */

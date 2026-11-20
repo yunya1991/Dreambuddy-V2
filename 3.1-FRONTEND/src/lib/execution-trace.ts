@@ -38,6 +38,11 @@ export interface TraceStageRecord {
   /** 验收结论：pass / fail */
   verdict?: string;
   duration_ms?: number;
+  /**
+   * SACG 段（P1-1 trace 侧）：route 为认知裁决的 L2 路线
+   * （retrieval_augmented / deep_reasoning / unspecified）。
+   */
+  sagc?: { route?: string; [key: string]: unknown };
   meta?: Record<string, unknown>;
 }
 

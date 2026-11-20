@@ -12,6 +12,7 @@ import {
   type RouteConfidenceSignal,
 } from '@/lib/l1-intent-registry';
 import { newTraceId } from '@/lib/trace-id';
+import { l2RouteFromRouteSignal } from '@/lib/l2-route';
 
 // 9 个子组件
 import { MessageItem } from './MessageItem';
@@ -88,7 +89,7 @@ export function ChatPanel() {
   // 组件卸载不再关闭任务流：连接由 task-stream-manager 模块单例持有，切页不断流。
 
   // 发送消息到 /api/task/stream（连接生命周期由 task-stream-manager 管理）
-  const sendToTaskStream = useCallback((userContent: string, sessionId: string, l1IntentHint?: string, traceId?: string) => {
+  const sendToTaskStream = useCallback((userContent: string, sessionId: string, l1IntentHint?: string, traceId?: string, l2Route?: string) => {
     // 重置链路状态
     resetChain();
 
@@ -100,6 +101,8 @@ export function ChatPanel() {
       trading_mode: 'ai_skill',
       // 交接协议 (SPEC v1.1 §4.2-3): L1 意图预测结果作为 L2 上下文
       ...(l1IntentHint ? { l1_intent_hint: l1IntentHint } : {}),
+      // P1-1 trace 侧：认知裁决的 L2 路线随任务流透传，落 execution trace 的 sagc.route
+      ...(l2Route ? { l2_route: l2Route } : {}),
       // 执行链 SPEC §6.2：入口生成、L1→L2 原样透传的跨链 trace
       ...(traceId ? { trace_id: traceId } : {}),
     });
@@ -173,6 +176,8 @@ export function ChatPanel() {
       const traceId = newTraceId();
       // L1 意图预测结果声明在 try 外，保证 L2 交接时可透传 l1_intent_hint
       let l1Intent: string | undefined;
+      // 认知裁决的 L2 路线（P1-1）：随 L2 任务流透传，落 execution trace 的 sagc.route
+      let l2Route: string | undefined;
       try {
         // 前端注册表先验（8 个 fallbackPattern 意图；通用意图由后端补充识别）
         const predictedIntent = fallbackIntent(content);
@@ -187,6 +192,7 @@ export function ChatPanel() {
           if (d?.intent && d.intent !== 'unknown') l1Intent = d.intent;
           // 门控消费：合法 route_signal 以信号 decision/置信度为准，非法/缺失退回静态门控
           const routeSignal: RouteConfidenceSignal | null = d?.route_signal ?? null;
+          l2Route = l2RouteFromRouteSignal(routeSignal);
           const canL1 = !!l1Intent && canHandleL1WithSignal(l1Intent, content, routeSignal);
           // L2 交接：展示后端建议问法（仅提示，不参与判决；点击重发即重新走 L1 门控）
           if (!(canL1 && d?.handled)) {
@@ -215,7 +221,7 @@ export function ChatPanel() {
       }
       // L1 未命中 → 走 L2 SSE 链路（交接协议: 携带 L1 意图预测上下文 + 同一 trace）
       useSessionStore.getState().setStreaming(true, '');
-      sendToTaskStream(content, sessionId, l1Intent, traceId);
+      sendToTaskStream(content, sessionId, l1Intent, traceId, l2Route);
     })();
   }, [isStreaming, brainstormBusy, brainstormMode, sendToTaskStream]);
 

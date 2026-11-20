@@ -9,6 +9,7 @@ import {
 } from '@/lib/task-manager';
 import { emitMonitorEvent } from '@/lib/monitor-bus';
 import { newTraceId, traceStage } from '@/lib/execution-trace';
+import { normalizeL2Route } from '@/lib/l2-route';
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
@@ -82,7 +83,9 @@ export async function POST(request: NextRequest) {
   (async () => {
     try {
       const body = await request.json();
-      const { message, thinking_mode, session_id, llm_model, intent_method, lang, trading_mode, l1_intent_hint, trace_id } = body;
+      const { message, thinking_mode, session_id, llm_model, intent_method, lang, trading_mode, l1_intent_hint, l2_route, trace_id } = body;
+      // P1-1 trace 侧：L2 路线由调用方（L1 门控）透传，缺省/非法记 unspecified
+      const l2Route = normalizeL2Route(l2_route);
 
       if (!message || typeof message !== 'string') {
         sendEvent('error', { error: 'message is required and must be a string' });
@@ -185,6 +188,7 @@ export async function POST(request: NextRequest) {
         stage: 'route',
         intent: task.intent.type,
         route_decision: task.metadata?.l1_intent_hint ? 'l2_handoff' : 'l2_direct',
+        sagc: { route: l2Route },
         meta: { l1_intent_hint: task.metadata?.l1_intent_hint || null },
       });
 

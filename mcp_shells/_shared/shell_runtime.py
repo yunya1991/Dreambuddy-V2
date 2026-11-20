@@ -37,6 +37,7 @@ except ImportError:  # pragma: no cover - 环境缺依赖时由壳启动失败�
     yaml = None  # type: ignore[assignment]
 
 from mcp_shells._shared.envelope_wrap import wrap
+from mcp_shells._shared.l2_meta import attach_l2_meta
 from mcp_shells._shared.shadow_hook import observe_envelope
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -202,8 +203,9 @@ def handle_request(
                 "error": {"code": -32601, "message": f"Method not found: {name}"},
             }
         started = time.perf_counter()
+        arguments = params.get("arguments") or {}
         try:
-            envelope = _normalize_result(handler(params.get("arguments") or {}), shell_id)
+            envelope = _normalize_result(handler(arguments), shell_id)
         except Exception as exc:  # 壳内兜底：主功能不可 FAIL-OPEN 伪装无结果
             envelope = wrap(
                 None,
@@ -212,10 +214,19 @@ def handle_request(
                 error_code="unavailable",
                 meta={"reason": str(exc)},
             )
+        latency_ms = round((time.perf_counter() - started) * 1000.0, 3)
+        # P0-1：L2 壳补齐 meta.model/tokens_used/budget_remaining（非 L2 壳原样）
+        envelope = attach_l2_meta(
+            envelope,
+            shell_id=shell_id,
+            tool_name=name,
+            arguments=arguments,
+            latency_ms=latency_ms,
+        )
         result_text = _envelope_text(envelope)
         observe_envelope(
             result_text,
-            latency_ms=round((time.perf_counter() - started) * 1000.0, 3),
+            latency_ms=latency_ms,
             action=name,
         )
         return {

@@ -18,7 +18,7 @@
 1. **L2 已有可运行骨架**：DreamOS Flask 服务（`0.0.0.0:8000`，12 个 `/api/v1/*` 端点）、34-core 的 Router/Ticket/Mandate 编排件（`router_loop` / `ticket_*` / `mandate_gate` / `gate_45_adapter` / `shell_handles`）、SACG 编排骨架（`sacg_orchestrator` + `okr_nodes` + `okr_acceptance` + `okr_ticket_bridge`）。
 2. **L2 已有 5 个层级壳**：`l2.dreamos.mcp`（5 工具）/ `l2.debate.mcp`（3）/ `l2.train.mcp`（3）/ `l2.emergence.mcp`（3）/ 兼容别名 `agent.debate.mcp`（3，deprecated）——L2 活跃工具 **14**，分层配额 L2:30，余量 16。
 3. **L2 当前最大缺口不是能力，而是「统一信封 + token 计量 + trace」**。没有 `meta.tokens_used / budget_remaining / model`，层级成本审计与证据边界无法闭合，这也是本文 ADR-03 的由来。
-4. **L1 侧准入已可机器判定**（四道闸 G1–G4 + 10 行判定表 + `channel` 三值）；但 **L2 侧的认知裁决与路线选择尚未实现**——`cognition_signal` / `l2_route` 全仓零命中，仅存在于契约文档（GAP-13）。
+4. **L1 侧准入已可机器判定**（四道闸 G1–G4 + 10 行判定表 + `channel` 三值）；**L2 侧的认知裁决与路线选择已落地**——`cognition_signal` / `l2_route` 由 `runtime/l2_route.py` 裁定、`core/l2_cognition_route.py` 注入，前端落 execution trace 的 `sagc.route`（GAP-13 Closed）。
 5. 本文冻结 **10 条 ADR + 6 组接口契约 + 9 道门禁**；能力清单、缺口与推进顺序不在本文，统一登记在 TECHNICAL_DESIGN §2/§6/§7。
 
 ---
@@ -193,8 +193,8 @@ L2 侧必须消费的字段（当前落地情况）：
 | `decision` | 是否进入 SACG | ✅ `sacg_orchestrator` 消费 |
 | `route_confidence` | 门控阈值唯一来源 | ✅ 复用 `core/route_confidence.py` |
 | `reasons` | trace 归因 | 🟡 部分透传 |
-| `cognition_signal.verdict` | 域内外裁决 → L2 路线 | ⬜ 契约已定义、实现为零（全仓 `cognition_signal` 零命中，GAP-13） |
-| `l2_route`（**待新增**） | `retrieval_augmented` / `deep_reasoning` | ⬜ 未定义（GAP-02） |
+| `cognition_signal.verdict` | 域内外裁决 → L2 路线 | ✅ 已实现：`56/runtime/l2_route.py`（裁定）+ `34/core/l2_cognition_route.py`（SACG 与 `l1_route_signal` 出口注入） |
+| `l2_route` | `retrieval_augmented` / `deep_reasoning` | ✅ 已实现（闭合四字段；前端 `l2-route.ts` 收敛后落 execution trace `sagc.route`） |
 
 ### 4.2 IF-2：A 层 OKR 节点契约
 

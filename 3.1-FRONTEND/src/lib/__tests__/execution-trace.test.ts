@@ -68,6 +68,18 @@ describe('execution-trace 台账', () => {
     expect(row.degraded_reason).toBe('cognitive_unavailable');
   });
 
+  it('route 行落 sagc.route（P1-1 trace 侧）', () => {
+    traceStage({
+      task_id: 'task_4',
+      trace_id: '20261113-120000-FE-jkl00000',
+      stage: 'route',
+      route_decision: 'l2_handoff',
+      sagc: { route: 'retrieval_augmented' },
+    });
+    const row = JSON.parse(fs.readFileSync(ledger, 'utf-8').trim());
+    expect(row.sagc).toEqual({ route: 'retrieval_augmented' });
+  });
+
   it('写入失败不抛出（FAIL-OPEN）', () => {
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     process.env.BCL_TRACE_RECORDS_PATH = path.join('/dev/null', 'cannot_write.jsonl');

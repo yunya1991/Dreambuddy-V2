@@ -26,6 +26,8 @@ export interface TaskStreamRequest {
   lang?: string;
   trading_mode?: string;
   l1_intent_hint?: string;
+  /** 认知裁决的 L2 路线（P1-1）：retrieval_augmented / deep_reasoning；缺省 unspecified */
+  l2_route?: string;
   /** 跨链 trace（入口生成，L1→L2 原样透传；禁止 L2 侧重新生成） */
   trace_id?: string;
 }

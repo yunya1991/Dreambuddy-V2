@@ -110,6 +110,7 @@ if _L1_SEMANTIC_ENABLED:
 
 from core.cognitive_router import evaluate_match  # noqa: E402
 from core.l0_foundation import get_l0  # noqa: E402
+from core.l2_cognition_route import attach_to_route_result  # noqa: E402
 from core.route_confidence import (  # noqa: E402
     L1_DIRECT,
     L2_HANDOFF,
@@ -1077,7 +1078,7 @@ def _route_query_impl(message: str, intent: str = "", trace_id: str = "") -> dic
 
 def route_query(message: str, intent: str = "", trace_id: str = "") -> dict:
     """对外入口：L2 交接挂建议器实盘建议 + 建议器影子记录（均可关闭）。"""
-    out = _route_query_impl(message, intent, trace_id)
+    out = attach_to_route_result(_route_query_impl(message, intent, trace_id))
     if not out.get("handled"):
         try:
             import l1_suggest as _suggest  # noqa: PLC0415 — 可选依赖

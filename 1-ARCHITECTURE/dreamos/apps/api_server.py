@@ -33,6 +33,7 @@ from typing import Any, Dict, Optional
 from flask import Flask, jsonify, request
 
 from dreamos.apps.trading_agent import TradingAgent
+from dreamos.core.capability import l2_http_envelope as l2env
 
 
 def _parse_phase(raw: Any) -> Optional[int]:
@@ -91,6 +92,14 @@ def create_app(agent: Optional[TradingAgent] = None, budget_mode: str = "standar
     # Agent 实例
     _agent = agent or TradingAgent(budget_mode=budget_mode)
 
+    def _budget_remaining() -> int:
+        """当前剩余预算（per_day 累计口径），供 L2Envelope.meta.budget_remaining 使用。"""
+        try:
+            per_day = (_agent.budget.status() or {}).get("per_day") or {}
+            return max(0, int(per_day.get("remaining", 0)))
+        except Exception:  # noqa: BLE001 — 计量失败不阻断端点
+            return 0
+
     # ============================================================
     # 路由
     # ============================================================
@@ -99,38 +108,44 @@ def create_app(agent: Optional[TradingAgent] = None, budget_mode: str = "standar
     def health():
         """健康检查"""
         return jsonify(
-            {
-                "status": "ok",
-                "service": "dreambuddy-os",
-                "version": "0.1.0",
-            }
+            l2env.enrich_static(
+                {
+                    "status": "ok",
+                    "service": "dreambuddy-os",
+                    "version": "0.1.0",
+                },
+                budget_remaining=_budget_remaining(),
+            )
         )
 
     @app.get("/api/v1/status")
     def get_status():
         """Agent 运行状态"""
-        return jsonify(_agent.status())
+        return jsonify(l2env.enrich_static(_agent.status(), budget_remaining=_budget_remaining()))
 
     @app.get("/api/v1/nodes")
     def list_nodes():
         """列出所有已注册节点"""
         nodes = _agent.registry.list_nodes()
         return jsonify(
-            {
-                "total": len(nodes),
-                "nodes": [
-                    {
-                        "node_id": n.node_id,
-                        "name": n.name,
-                        "chain": n.chain,
-                        "description": n.description,
-                        "tags": list(n.tags or []),
-                        "estimated_tokens": n.estimated_tokens,
-                        "estimated_latency_ms": n.estimated_latency_ms,
-                    }
-                    for n in nodes
-                ],
-            }
+            l2env.enrich_static(
+                {
+                    "total": len(nodes),
+                    "nodes": [
+                        {
+                            "node_id": n.node_id,
+                            "name": n.name,
+                            "chain": n.chain,
+                            "description": n.description,
+                            "tags": list(n.tags or []),
+                            "estimated_tokens": n.estimated_tokens,
+                            "estimated_latency_ms": n.estimated_latency_ms,
+                        }
+                        for n in nodes
+                    ],
+                },
+                budget_remaining=_budget_remaining(),
+            )
         )
 
     @app.post("/api/v1/run")
@@ -153,7 +168,16 @@ def create_app(agent: Optional[TradingAgent] = None, budget_mode: str = "standar
         phase = _parse_phase(data.get("phase"))
 
         if not market_data and not user_input:
-            return jsonify({"error": "user_input or market_data required"}), 400
+            return (
+                jsonify(
+                    l2env.enrich_error(
+                        {"error": "user_input or market_data required"},
+                        status_code=400,
+                        budget_remaining=_budget_remaining(),
+                    )
+                ),
+                400,
+            )
 
         market_data = _enrich_market_data(market_data)
 
@@ -165,9 +189,18 @@ def create_app(agent: Optional[TradingAgent] = None, budget_mode: str = "standar
                 intent_hint=intent_hint if isinstance(intent_hint, dict) else None,
                 phase=phase,
             )
-            return jsonify(result)
+            return jsonify(l2env.enrich_agent_result(result, budget_remaining=_budget_remaining()))
         except Exception as e:
-            return jsonify({"error": f"执行失败: {str(e)}"}), 500
+            return (
+                jsonify(
+                    l2env.enrich_error(
+                        {"error": f"执行失败: {str(e)}"},
+                        status_code=500,
+                        budget_remaining=_budget_remaining(),
+                    )
+                ),
+                500,
+            )
 
     # ── 异步编排（20260829-bridge S7）：提交即返，轮询取果 ──
     # 解决同步 /run 54s 级延迟阻塞前端的问题。
@@ -195,7 +228,16 @@ def create_app(agent: Optional[TradingAgent] = None, budget_mode: str = "standar
         phase = _parse_phase(data.get("phase"))
 
         if not market_data and not user_input:
-            return jsonify({"error": "user_input or market_data required"}), 400
+            return (
+                jsonify(
+                    l2env.enrich_error(
+                        {"error": "user_input or market_data required"},
+                        status_code=400,
+                        budget_remaining=_budget_remaining(),
+                    )
+                ),
+                400,
+            )
 
         market_data = _enrich_market_data(market_data)
 
@@ -246,7 +288,17 @@ def create_app(agent: Optional[TradingAgent] = None, budget_mode: str = "standar
             name=f"dreamos-async-{async_cycle_id}",
             daemon=True,
         ).start()
-        return jsonify({"cycle_id": async_cycle_id, "status": "accepted"}), 202
+        return (
+            jsonify(
+                l2env.enrich_static(
+                    {"cycle_id": async_cycle_id, "status": "accepted"},
+                    budget_remaining=_budget_remaining(),
+                    route="L2_HANDOFF",
+                    evidence="none",
+                )
+            ),
+            202,
+        )
 
     @app.get("/api/v1/result/<cycle_id>")
     def get_async_result(cycle_id: str):
@@ -255,8 +307,35 @@ def create_app(agent: Optional[TradingAgent] = None, budget_mode: str = "standar
         with _async_lock:
             entry = _async_results.get(cycle_id)
             if entry is None:
-                return jsonify({"error": f"unknown cycle_id: {cycle_id}"}), 404
-            return jsonify({"cycle_id": cycle_id, **entry})
+                return (
+                    jsonify(
+                        l2env.enrich_error(
+                            {"error": f"unknown cycle_id: {cycle_id}"},
+                            status_code=404,
+                            budget_remaining=_budget_remaining(),
+                        )
+                    ),
+                    404,
+                )
+
+        inner = entry.get("result") if entry.get("status") == "done" else None
+        if isinstance(inner, dict):
+            enriched = l2env.enrich_agent_result(
+                {**inner, "cycle_id": cycle_id},
+                budget_remaining=_budget_remaining(),
+            )
+            payload = {"cycle_id": cycle_id, **entry}
+            for key in ("ok", "meta", "trace", "quality"):
+                if key in enriched:  # FAIL-OPEN：信封不可用时只用原始结构
+                    payload[key] = enriched[key]
+        else:
+            payload = l2env.enrich_static(
+                {"cycle_id": cycle_id, **entry},
+                budget_remaining=_budget_remaining(),
+                route="L2_HANDOFF",
+                evidence="none",
+            )
+        return jsonify(payload)
 
     @app.post("/api/v1/intent")
     def recognize_intent():
@@ -277,7 +356,16 @@ def create_app(agent: Optional[TradingAgent] = None, budget_mode: str = "standar
         context = data.get("context", {})
 
         if not user_input and not market_data:
-            return jsonify({"error": "user_input or market_data required"}), 400
+            return (
+                jsonify(
+                    l2env.enrich_error(
+                        {"error": "user_input or market_data required"},
+                        status_code=400,
+                        budget_remaining=_budget_remaining(),
+                    )
+                ),
+                400,
+            )
 
         try:
             intent_result = _agent.intent_engine.recognize(
@@ -285,23 +373,38 @@ def create_app(agent: Optional[TradingAgent] = None, budget_mode: str = "standar
                 market=market_data,
                 context=context,
             )
+            payload = {
+                "intent_type": intent_result.intent_type,
+                "confidence": intent_result.confidence,
+                "recommended_chain": intent_result.recommended_chain,
+                "base_chain": getattr(intent_result, "base_chain", []),
+                "extend_nodes": getattr(intent_result, "extend_nodes", []),
+                "rationale": getattr(intent_result, "rationale", ""),
+                "recognizers_used": getattr(intent_result, "recognizers_used", []),
+                "total_tokens": getattr(intent_result, "total_tokens", 0),
+                "total_latency_ms": getattr(intent_result, "total_latency_ms", 0),
+                "clarify_needed": getattr(intent_result, "clarify_needed", False),
+                "clarify_question": getattr(intent_result, "clarify_question", ""),
+            }
             return jsonify(
-                {
-                    "intent_type": intent_result.intent_type,
-                    "confidence": intent_result.confidence,
-                    "recommended_chain": intent_result.recommended_chain,
-                    "base_chain": getattr(intent_result, "base_chain", []),
-                    "extend_nodes": getattr(intent_result, "extend_nodes", []),
-                    "rationale": getattr(intent_result, "rationale", ""),
-                    "recognizers_used": getattr(intent_result, "recognizers_used", []),
-                    "total_tokens": getattr(intent_result, "total_tokens", 0),
-                    "total_latency_ms": getattr(intent_result, "total_latency_ms", 0),
-                    "clarify_needed": getattr(intent_result, "clarify_needed", False),
-                    "clarify_question": getattr(intent_result, "clarify_question", ""),
-                }
+                l2env.enrich_agent_result(
+                    payload,
+                    tokens_key="total_tokens",
+                    budget_remaining=_budget_remaining(),
+                    sagc={"S": "done", "A": "skipped", "C": "skipped", "G": "skipped"},
+                )
             )
         except Exception as e:
-            return jsonify({"error": f"意图识别失败: {str(e)}"}), 500
+            return (
+                jsonify(
+                    l2env.enrich_error(
+                        {"error": f"意图识别失败: {str(e)}"},
+                        status_code=500,
+                        budget_remaining=_budget_remaining(),
+                    )
+                ),
+                500,
+            )
 
     @app.post("/api/v1/analyze")
     def analyze():
@@ -320,7 +423,16 @@ def create_app(agent: Optional[TradingAgent] = None, budget_mode: str = "standar
         context = data.get("context", {})
 
         if not market_data and not user_input:
-            return jsonify({"error": "market_data or user_input required"}), 400
+            return (
+                jsonify(
+                    l2env.enrich_error(
+                        {"error": "market_data or user_input required"},
+                        status_code=400,
+                        budget_remaining=_budget_remaining(),
+                    )
+                ),
+                400,
+            )
 
         try:
             result = _agent.run(
@@ -328,9 +440,18 @@ def create_app(agent: Optional[TradingAgent] = None, budget_mode: str = "standar
                 market_data=market_data,
                 context=context,
             )
-            return jsonify(result)
+            return jsonify(l2env.enrich_agent_result(result, budget_remaining=_budget_remaining()))
         except Exception as e:
-            return jsonify({"error": f"分析失败: {str(e)}"}), 500
+            return (
+                jsonify(
+                    l2env.enrich_error(
+                        {"error": f"分析失败: {str(e)}"},
+                        status_code=500,
+                        budget_remaining=_budget_remaining(),
+                    )
+                ),
+                500,
+            )
 
     @app.post("/api/v1/chat")
     def chat():
@@ -347,13 +468,31 @@ def create_app(agent: Optional[TradingAgent] = None, budget_mode: str = "standar
         market_data = data.get("market_data", {})
 
         if not message:
-            return jsonify({"error": "message required"}), 400
+            return (
+                jsonify(
+                    l2env.enrich_error(
+                        {"error": "message required"},
+                        status_code=400,
+                        budget_remaining=_budget_remaining(),
+                    )
+                ),
+                400,
+            )
 
         try:
             result = _agent.chat(message=message, market_data=market_data)
-            return jsonify(result)
+            return jsonify(l2env.enrich_agent_result(result, budget_remaining=_budget_remaining()))
         except Exception as e:
-            return jsonify({"error": f"对话失败: {str(e)}"}), 500
+            return (
+                jsonify(
+                    l2env.enrich_error(
+                        {"error": f"对话失败: {str(e)}"},
+                        status_code=500,
+                        budget_remaining=_budget_remaining(),
+                    )
+                ),
+                500,
+            )
 
     @app.get("/api/v1/history")
     def get_history():
@@ -366,28 +505,48 @@ def create_app(agent: Optional[TradingAgent] = None, budget_mode: str = "standar
             limit = int(request.args.get("limit", 10))
             limit = min(max(limit, 1), 100)
             entries = _agent.history(limit=limit)
-            return jsonify(
-                {
-                    "total": len(entries),
-                    "entries": entries,
-                }
-            )
+            payload = {
+                "total": len(entries),
+                "entries": entries,
+            }
+            return jsonify(l2env.enrich_static(payload, budget_remaining=_budget_remaining()))
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            return (
+                jsonify(
+                    l2env.enrich_error(
+                        {"error": str(e)},
+                        status_code=500,
+                        budget_remaining=_budget_remaining(),
+                    )
+                ),
+                500,
+            )
 
     @app.post("/api/v1/budget/reset")
     def reset_budget():
         """重置预算"""
         try:
             _agent.budget.reset()
-            return jsonify({"status": "ok", "budget": _agent.budget.status()})
+            payload = {"status": "ok", "budget": _agent.budget.status()}
+            return jsonify(l2env.enrich_static(payload, budget_remaining=_budget_remaining()))
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            return (
+                jsonify(
+                    l2env.enrich_error(
+                        {"error": str(e)},
+                        status_code=500,
+                        budget_remaining=_budget_remaining(),
+                    )
+                ),
+                500,
+            )
 
     @app.get("/api/v1/budget")
     def get_budget():
         """获取预算状态"""
-        return jsonify(_agent.budget.status())
+        return jsonify(
+            l2env.enrich_static(_agent.budget.status(), budget_remaining=_budget_remaining())
+        )
 
     # ============================================================
     # 错误处理
@@ -395,15 +554,42 @@ def create_app(agent: Optional[TradingAgent] = None, budget_mode: str = "standar
 
     @app.errorhandler(404)
     def not_found(e):
-        return jsonify({"error": "not found"}), 404
+        return (
+            jsonify(
+                l2env.enrich_error(
+                    {"error": "not found"},
+                    status_code=404,
+                    budget_remaining=_budget_remaining(),
+                )
+            ),
+            404,
+        )
 
     @app.errorhandler(405)
     def method_not_allowed(e):
-        return jsonify({"error": "method not allowed"}), 405
+        return (
+            jsonify(
+                l2env.enrich_error(
+                    {"error": "method not allowed"},
+                    status_code=405,
+                    budget_remaining=_budget_remaining(),
+                )
+            ),
+            405,
+        )
 
     @app.errorhandler(500)
     def server_error(e):
-        return jsonify({"error": "internal server error"}), 500
+        return (
+            jsonify(
+                l2env.enrich_error(
+                    {"error": "internal server error"},
+                    status_code=500,
+                    budget_remaining=_budget_remaining(),
+                )
+            ),
+            500,
+        )
 
     return app
 

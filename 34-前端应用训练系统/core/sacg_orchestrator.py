@@ -30,6 +30,7 @@ from typing import Any, Callable, Dict, List, Optional
 from core.c_drive_v3_router import CDriveV3Router
 from core.cognitive_loop import close_loop
 from core.event_emitter import emit_event
+from core.l2_cognition_route import attach_cognition_route
 from core.okr_acceptance import VERDICT_PASS, evaluate_nodes
 from core.okr_nodes import decompose_okr_nodes
 from core.route_confidence import L1_DIRECT, L2_HANDOFF, evaluate_route
@@ -562,7 +563,8 @@ class SACGOrchestrator:
             memories = self._do_recall(message, l1_intent_hint)
 
         signal = evaluate_route(memories)
-        signal_dict = signal.to_dict()
+        # P1-1：认知裁决 → l2_route（FAIL-OPEN，桥接不可用则保持原信号）
+        signal_dict = attach_cognition_route(signal.to_dict())
 
         if signal.decision == L1_DIRECT:
             return {
