@@ -8,7 +8,7 @@ entrypoints:
   - scripts/cm_cli.py
   - scripts/eval_golden.py
   - scripts/release_check.py
-kernel_deps: []
+kernel_deps: [pay_gate, headers]
 output_contract: cogsteward.v1
 products: []
 tests:

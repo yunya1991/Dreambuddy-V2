@@ -11,7 +11,7 @@ entrypoints:
   - scripts/context.py
   - scripts/handoff.py
   - scripts/quotes.py
-kernel_deps: []
+kernel_deps: [endpoint, handoff, pay_gate, headers]
 output_contract: data.v1
 products: []
 tests:

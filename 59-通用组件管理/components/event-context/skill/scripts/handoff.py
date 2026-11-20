@@ -18,19 +18,15 @@ import argparse
 import json
 import os
 import sys
-from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _kernel import handoff  # noqa: E402
+
 import events as ev  # noqa: E402
 
 VERSION = "1.0.0"
-HANDOFF_VERSION = "1.0"
+HANDOFF_VERSION = handoff.HANDOFF_VERSION
 LIMITS = "仅提供可装配指针，不含判断与建议。"
-
-
-def estimate_tokens(obj):
-    raw = json.dumps(obj, ensure_ascii=False).encode("utf-8")
-    return max(1, round((len(raw) / 3.0) / 1.5))
 
 
 def to_items(rows):
@@ -49,21 +45,9 @@ def to_items(rows):
             "source": r["source"],
             "type": r["type"],
         }
-        it["estimated_tokens"] = estimate_tokens(it)
+        it["estimated_tokens"] = handoff.estimate_tokens(it)
         items.append(it)
     return items
-
-
-def pack(items, budget):
-    picked, skipped, used = [], 0, 0
-    for it in items:
-        cost = it["estimated_tokens"]
-        if used + cost <= budget:
-            picked.append(it)
-            used += cost
-        else:
-            skipped += 1
-    return picked, skipped, used
 
 
 def main(argv=None):
@@ -109,20 +93,17 @@ def main(argv=None):
             {"key": a.subject or a.feed, "code": ev.err_code(exc), "detail": type(exc).__name__}
         )
 
-    picked, skipped, used = pack(items, a.budget)
-    result = {
-        "handoff_version": HANDOFF_VERSION,
-        "skill": "event-context",
-        "target": "cogsteward/pack",
-        "generated_at": datetime.now().isoformat(timespec="seconds"),
-        "budget": a.budget,
-        "items": picked,
-        "missing": missing,
-        "skipped": skipped,
-        "total_tokens": used,
-        "read_only": True,
-        "limits": LIMITS,
-    }
+    picked, skipped, used = handoff.pack(items, a.budget)
+    result = handoff.envelope(
+        skill="event-context",
+        target="cogsteward/pack",
+        budget=a.budget,
+        items=picked,
+        missing=missing,
+        skipped=skipped,
+        used=used,
+        limits=LIMITS,
+    )
 
     if a.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))

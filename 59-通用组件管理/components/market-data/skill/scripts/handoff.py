@@ -17,10 +17,11 @@
 import argparse
 import json
 import sys
-from datetime import datetime
+
+from _kernel import handoff
 
 VERSION = "1.0.0"
-HANDOFF_VERSION = "1.0"
+HANDOFF_VERSION = handoff.HANDOFF_VERSION
 LICENSE = "Public Domain"
 SOURCE_NAME = "FRED / Federal Reserve Bank of St. Louis"
 SOURCE_URL = "https://fred.stlouisfed.org/"
@@ -36,11 +37,6 @@ REGISTRY = {
     "GDPC1": ("美国实际GDP", 32, ["M11", "M12"]),
     "DTWEXBGS": ("美元贸易加权指数", 36, ["M02", "M11", "M12"]),
 }
-
-
-def estimate_tokens(obj):
-    raw = json.dumps(obj, ensure_ascii=False).encode("utf-8")
-    return max(1, round((len(raw) / 3.0) / 1.5))
 
 
 def build_items(series_list):
@@ -60,21 +56,9 @@ def build_items(series_list):
             "method_ids": methods,
             "data_date": None,
         }
-        item["estimated_tokens"] = estimate_tokens(item)
+        item["estimated_tokens"] = handoff.estimate_tokens(item)
         items.append(item)
     return items, missing
-
-
-def pack(items, budget):
-    picked, skipped, used = [], 0, 0
-    for it in items:
-        cost = it["estimated_tokens"]
-        if used + cost <= budget:
-            picked.append(it)
-            used += cost
-        else:
-            skipped += 1
-    return picked, skipped, used
 
 
 def main(argv=None):
@@ -94,21 +78,18 @@ def main(argv=None):
         return 2
 
     items, missing = build_items(series_list)
-    picked, skipped, used = pack(items, a.budget)
+    picked, skipped, used = handoff.pack(items, a.budget)
 
-    result = {
-        "handoff_version": HANDOFF_VERSION,
-        "skill": "market-data-hub",
-        "target": "cogsteward/pack",
-        "generated_at": datetime.now().isoformat(timespec="seconds"),
-        "budget": a.budget,
-        "items": picked,
-        "missing": missing,
-        "skipped": skipped,
-        "total_tokens": used,
-        "read_only": True,
-        "limits": LIMITS,
-    }
+    result = handoff.envelope(
+        skill="market-data-hub",
+        target="cogsteward/pack",
+        budget=a.budget,
+        items=picked,
+        missing=missing,
+        skipped=skipped,
+        used=used,
+        limits=LIMITS,
+    )
 
     if a.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
