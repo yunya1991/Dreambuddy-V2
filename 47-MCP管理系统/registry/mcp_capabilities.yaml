@@ -802,6 +802,49 @@ shells:
     annotations:
       readOnlyHint: true
       destructiveHint: false
+- shell_id: l2.dsh.mcp
+  capability_id: l2.dsh
+  transport: stdio
+  shell_path: mcp_shells/l2_dsh/server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: available
+  layer: L2
+  capability_domain: dsh
+  exposure: readonly-observe
+  source_modules:
+  - 34-前端应用训练系统
+  plugin_ready: true
+  llm_dependency: none
+  capabilities:
+    shadow_capable: false
+    training_hooks: []
+    oracle_verifiable: false
+  tools:
+  - name: get_router_summary
+    port: analysis
+    domain: cognition
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_ticket_status
+    port: analysis
+    domain: cognition
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_worker_roster
+    port: analysis
+    domain: cognition
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
 - shell_id: l2.dreamos.mcp
   capability_id: l2.dreamos
   transport: stdio
