@@ -1131,6 +1131,14 @@ worker_roles:
     - get_training_status
     - get_positions
     - get_balance
+  l2_orchestration:
+    description: L2 编排观察 Worker——DSH Router/Ticket/Worker 只读（不触发执行/写）
+    shells:
+    - l2.dsh.mcp
+    tools:
+    - get_router_summary
+    - get_ticket_status
+    - get_worker_roster
   lobehub_frontend:
     description: 52-LobeHub 前台叠加层——认知检索（恒只读，SPEC v0.4.0 R1/R3）
     shells:

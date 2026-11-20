@@ -1026,6 +1026,91 @@
         "write_tools_require_mandate": true
       }
     },
+    "l2_orchestration": {
+      "schema_version": "1.1-agent-card",
+      "name": "l0-l2_orchestration",
+      "display_name": "L0 l2_orchestration capability gateway",
+      "description": "L2 编排观察 Worker——DSH Router/Ticket/Worker 只读（不触发执行/写）",
+      "version": "0.1",
+      "protocol": {
+        "name": "mcp",
+        "versions": [
+          "2024-11-05",
+          "2025-03-26",
+          "2025-06-18",
+          "2025-11-25"
+        ],
+        "transport": "stdio"
+      },
+      "server": {
+        "command": "<PYTHON>",
+        "args": [
+          "<REPO_ROOT>/mcp_shells/l0_gateway/server.py",
+          "--role",
+          "l2_orchestration"
+        ],
+        "env": {
+          "PYTHONPATH": "<REPO_ROOT>",
+          "PYTHONIOENCODING": "utf-8"
+        }
+      },
+      "capabilities": {
+        "tools": [
+          {
+            "name": "get_router_summary",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l2.dsh.mcp",
+            "layer": "L2",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "34-前端应用训练系统"
+            ]
+          },
+          {
+            "name": "get_ticket_status",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l2.dsh.mcp",
+            "layer": "L2",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "34-前端应用训练系统"
+            ]
+          },
+          {
+            "name": "get_worker_roster",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l2.dsh.mcp",
+            "layer": "L2",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "34-前端应用训练系统"
+            ]
+          }
+        ],
+        "tool_count": 3,
+        "read_only": true,
+        "covered_layers": [
+          "L2"
+        ]
+      },
+      "registry": {
+        "schema_version": "1.2-mcp",
+        "registry_version": "0.5"
+      },
+      "security": {
+        "worker_read_only": true,
+        "write_tools_require_mandate": true
+      }
+    },
     "lobehub_frontend": {
       "schema_version": "1.1-agent-card",
       "name": "l0-lobehub_frontend",
