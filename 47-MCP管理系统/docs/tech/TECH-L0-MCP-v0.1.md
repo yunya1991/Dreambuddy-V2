@@ -610,7 +610,8 @@ L0 测试               pytest mcp_shells dreambuddy_l0 → EXIT=0 全绿
 | fis-continual-training.service | running | 34 continual training (v0.5) |
 | signal-scanner.service | running | 12-trend 每 300s |
 | product-hub.service | running | Next.js 14 port 3456 |
-| dreambuddy-frontend.service | running | Next.js 15 |
+| dreambuddy-frontend@3001.service | running | Next.js 15 模板实例，`next start -p %i`，Nginx upstream `dreambuddy_next` |
+| dreambuddy-frontend@3002.service | running | 同上，与 3001 共同负载均衡；**不存在** `dreambuddy-frontend.service` 普通单元 |
 
 **硬约束**：MCP 壳本身**不是**独立 systemd 服务——stdio 模式由上层按需拉起，ssh-stdio 模式通过 `dreambuddy-remote` SSH 连接直接执行。
 
