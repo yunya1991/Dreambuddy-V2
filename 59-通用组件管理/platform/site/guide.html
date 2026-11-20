@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<!-- AUTO-GENERATED from templates/guide.html — 禁止手改；改模板后跑 build_site.py --write -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>使用说明 · 59 通用组件管理</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/logo.jpg" alt="logo">
+      <span>59 通用组件管理</span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html">产品介绍</a>
+      <a href="trial.html">免费体检</a>
+      <a href="guide.html" class="active">使用说明</a>
+      <a href="admin.html">管理后台</a>
+    </nav>
+  </div>
+</header>
+
+<main class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>使用说明</h2>
+      <p>从下载、安装到体检上架，整个流程只需四步。</p>
+    </div>
+
+    <div class="grid grid-4">
+      <div class="card"><span class="tag">第 1 步</span><h3>下载</h3><p>登录 <a href="https://skillhub.cn/dashboard" target="_blank" rel="noopener">SkillHub 控制台</a>，在已购/已授权列表下载组件包。</p></div>
+      <div class="card"><span class="tag">第 2 步</span><h3>安装</h3><p>解压到宿主 Skill 目录，保持包内 <code class="inline">SKILL.md</code> 与脚本的相对结构不变。</p></div>
+      <div class="card"><span class="tag">第 3 步</span><h3>体检</h3><p>在 <a href="trial.html">免费体检</a> 页上传包或粘贴 SKILL.md，按报告修复阻断项。</p></div>
+      <div class="card"><span class="tag">第 4 步</span><h3>上架</h3><p>体检通过后回控制台提交上架，收费型 Skill 需补齐计费声明与验付配置。</p></div>
+    </div>
+
+    <h3 style="margin-top:44px">安装与验证</h3>
+    <div class="panel">
+      <p class="hint">以下路径以常见本地 Skill 目录为例，按你的宿主实际目录替换。</p>
+<pre style="overflow:auto;background:#0b1220;color:#e2e8f0;padding:16px;border-radius:10px;font-size:13px;line-height:1.6">
+# 1) 解压到 skill 目录
+unzip <组件包>.zip -d ~/.skills/
+
+# 2) 确认结构（SKILL.md 必须在包根目录）
+ls ~/.skills/&lt;组件名&gt;/SKILL.md
+
+# 3) 认知管家：跑一次工作区体检
+python3 ~/.skills/cogsteward/scripts/cm_cli.py scan
+python3 ~/.skills/cogsteward/scripts/cm_cli.py index --check
+
+# 4) 数据服务：按资源调用（示例：宏观序列 DGS10）
+curl -sS -X POST http://127.0.0.1:8788/api/data \
+  -H 'Content-Type: application/json' \
+  -H 'Payment-Proof: &lt;已支付凭证&gt;' \
+  -d '{"skill":"market-data-pro","cmd":"macro","params":{"series":"DGS10"}}'
+</pre>
+    </div>
+
+    <h3 id="audit" style="margin-top:40px">上架体检：检查项说明</h3>
+    <table>
+      <thead><tr><th>类别</th><th>检查内容</th><th>不通过的后果</th></tr></thead>
+      <tbody>
+<!-- GEN:RULES:BEGIN -->
+        <tr><td>结构</td><td>SKILL.md 内容与体积</td><td>内容为空或超过 200KB，无法完成体检</td></tr>
+        <tr><td>结构</td><td>frontmatter 是否可解析</td><td>平台无法解析，直接退回</td></tr>
+        <tr><td>结构</td><td>slug 格式与长度（kebab-case，2–128）</td><td>无法生成稳定标识，直接退回</td></tr>
+        <tr><td>结构</td><td>version 语义化版本</td><td>版本不可比较，升级与回滚链路失效</td></tr>
+        <tr><td>结构</td><td>displayName 必填</td><td>列表页无法展示，直接退回</td></tr>
+        <tr><td>描述</td><td>summary / description 完整</td><td>检索与详情页可读性差，转化低</td></tr>
+        <tr><td>描述</td><td>license 声明</td><td>授权不明，分发受阻</td></tr>
+        <tr><td>结构</td><td>name 规范（≤64、kebab-case、无保留词）</td><td>与平台命名规则冲突，直接退回</td></tr>
+        <tr><td>描述</td><td>description 长度与触发短语</td><td>检索命中低，用户不知道何时触发</td></tr>
+        <tr><td>文档</td><td>使用、示例、限制三段结构</td><td>安装后无法自助上手</td></tr>
+        <tr><td>文档</td><td>提供代码块或命令示例</td><td>用户与审核都难以验证可用性</td></tr>
+        <tr><td>文档</td><td>FAQ 段落或文件</td><td>常见问题无人解答，支持成本高</td></tr>
+        <tr><td>安全</td><td>敏感文件（.env、私钥、证书）</td><td>泄露凭据，禁止上架</td></tr>
+        <tr><td>安全</td><td>本机绝对路径（/Users、/home、/root）</td><td>泄露环境信息，审核阻断</td></tr>
+        <tr><td>安全</td><td>常见密钥特征（AK、私钥、Token）</td><td>严重违规，禁止上架</td></tr>
+        <tr><td>规模</td><td>文件数量上限（200）</td><td>包过大，安装与解析失败</td></tr>
+        <tr><td>规模</td><td>包体积上限（10MB）</td><td>包过大，安装与解析失败</td></tr>
+        <tr><td>计费</td><td>402 账单下发</td><td>无法进入付费链路</td></tr>
+        <tr><td>计费</td><td>Payment-Needed 账单头</td><td>客户端拿不到账单</td></tr>
+        <tr><td>计费</td><td>Payment-Proof 凭证重试</td><td>付款后无法取回结果</td></tr>
+        <tr><td>计费</td><td>服务端验付</td><td>无法确认支付真实性</td></tr>
+        <tr><td>计费</td><td>履约确认</td><td>交付无法对账</td></tr>
+<!-- GEN:RULES:END -->
+      </tbody>
+    </table>
+
+    <h3 style="margin-top:40px">常见问题</h3>
+    <div class="grid grid-2">
+      <div class="card"><h3>体检报告说泄露了本机路径</h3><p>把 <code class="inline">/Users/xxx</code>、<code class="inline">/home/xxx</code> 换为 <code class="inline">~</code> 或相对路径，脚本内读取路径改为参数传入。</p></div>
+      <div class="card"><h3>提示存在阻断项还能上架吗</h3><p>不能。阻断项对应平台硬性规则，修复重新体检直到结论为「通过」。</p></div>
+      <div class="card"><h3>免费额度用完怎么办</h3><p>按次付费获取完整报告；或在控制台订阅后使用已授权组件，额度按账号计算。</p></div>
+      <div class="card"><h3>付费接口返回 402</h3><p>这是预期协议：先按返回的订单号完成支付，再用同一 Payment-Proof 重试，服务会自动取回已完成的结果，不会重复扣费。</p></div>
+    </div>
+
+    <h3 style="margin-top:40px">边界与安全</h3>
+    <div class="card">
+      <p>
+        组件只依赖 <code class="inline">contracts/</code> 声明的对外契约，禁止反向引用交易域私有 Schema、绝对路径与内部数据；
+        凭据一律从环境变量读取，不写入仓库、不打印到日志。安装后若发现组件尝试访问未声明的外部服务，请立即停用并在控制台反馈。
+      </p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>59 通用组件管理 · 使用说明</span>
+    <span><a href="https://skillhub.cn/dashboard" target="_blank" rel="noopener">SkillHub 控制台</a> · <a href="privacy.html">隐私说明</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

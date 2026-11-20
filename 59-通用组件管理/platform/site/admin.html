@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>管理后台 · 59 通用组件管理</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/logo.jpg" alt="logo">
+      <span>59 管理后台</span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html">产品介绍</a>
+      <a href="trial.html">免费体检</a>
+      <a href="guide.html">使用说明</a>
+      <a href="admin.html" class="active">管理后台</a>
+    </nav>
+  </div>
+</header>
+
+<main class="section" id="admin">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>只读总览</h2>
+      <p id="admin-meta">加载中…</p>
+    </div>
+
+    <h3>服务健康</h3>
+    <div id="admin-health">
+      <div class="notice show info">正在探测 audit-api…</div>
+    </div>
+
+    <h3 style="margin-top:40px">运行统计</h3>
+    <div id="admin-stats">
+      <div class="notice show info">正在读取 /api/stats…</div>
+    </div>
+
+    <h3 style="margin-top:40px">组件登记清单</h3>
+    <p class="hint">数据由 <code class="inline">scripts/build_site.py</code> 从各组件 <code class="inline">component.yaml</code> 生成，本页只读。</p>
+    <table>
+      <thead>
+        <tr><th>组件</th><th>版本</th><th>生命周期</th><th>组件族</th><th>入口</th></tr>
+      </thead>
+      <tbody id="admin-components">
+        <tr><td colspan="5">加载中…</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-top:40px">运维命令</h3>
+    <div class="panel">
+<pre style="overflow:auto;background:#0b1220;color:#e2e8f0;padding:16px;border-radius:10px;font-size:13px;line-height:1.6">
+# 重新生成登记清单与页面（组件增删、改模板后必跑）
+python3 59-通用组件管理/platform/site/scripts/build_site.py --write
+
+# 体检服务状态（公开）
+systemctl status skillhub-audit-api
+curl -s http://127.0.0.1:8788/health
+
+# 管理接口（仅 loopback，需要 token；token 不与 8082 的 Basic Auth 共用）
+curl -s -H "X-Admin-Token: $ADMIN_TOKEN" http://127.0.0.1:8789/api/stats
+
+# 站点配置（nginx；8081 公网、8082 后台）
+nginx -t && systemctl reload nginx
+</pre>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>59 通用组件管理 · 只读管理后台（Basic Auth 保护）</span>
+    <span><a href="privacy.html">隐私说明</a> · <a href="index.html">返回产品介绍</a></span>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

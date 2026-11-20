@@ -15,5 +15,8 @@
     "alipay-sdk": "^4.13.0",
     "better-sqlite3": "^11.5.0",
     "express": "^4.21.0"
+  },
+  "allowScripts": {
+    "better-sqlite3@11.10.0": true
   }
 }

@@ -11,9 +11,11 @@ const { normalizeCogstewardInput, buildCogstewardReport } = require('../src/cogs
 const { base64UrlEncode, base64UrlDecode } = require('../src/alipay');
 
 const VALID_SKILL_MD = `---
+name: demo-audit-skill
 slug: demo-audit-skill
 displayName: 示例技能
 version: 1.0.0
+description: 当用户需要验证体检链路时使用本示例技能，覆盖结构、示例与限制。
 summary: 用于测试的示例技能
 license: MIT
 ---
@@ -24,6 +26,25 @@ license: MIT
 它描述触发条件、输入输出、执行步骤与错误处理，确保 Agent 能按步骤执行。
 当用户请求示例能力时使用本技能；不使用于无关场景。
 错误处理：遇到缺失参数时先向用户确认，再执行。
+
+## 使用
+
+按示例命令运行。
+
+## 示例
+
+\`\`\`bash
+python3 scripts/demo.py
+\`\`\`
+
+## 限制
+
+仅用于测试。
+
+## FAQ
+
+Q: 为什么需要这份文档？
+A: 用于验证体检链路。
 `;
 
 function buildConfig() {

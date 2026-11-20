@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<!-- AUTO-GENERATED from templates/trial.html — 禁止手改；改模板后跑 build_site.py --write -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>免费体检 · 59 通用组件管理</title>
+<meta name="description" content="上传 Skill 包或粘贴 SKILL.md，立即获得结构与合规体检报告。">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/logo.jpg" alt="logo">
+      <span>59 通用组件管理</span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html">产品介绍</a>
+      <a href="trial.html" class="active">免费体检</a>
+      <a href="guide.html">使用说明</a>
+      <a href="admin.html">管理后台</a>
+    </nav>
+  </div>
+</header>
+
+<main class="section">
+  <div class="wrap">
+    <div class="section-head trial-head">
+      <div>
+        <h2>Skill 上架体检</h2>
+        <p>上传 Skill 包或粘贴 SKILL.md，先看结论再上架。检查结构完整性、示例可执行性与合规风险。</p>
+      </div>
+      <div class="quota-badge" id="quota-badge">今日免费额度 <b>—</b></div>
+    </div>
+
+    <div class="trial-layout">
+      <!-- 左侧：输入区 -->
+      <section class="panel trial-panel">
+        <div class="trial-tabs" role="tablist">
+          <button class="trial-tab active" type="button" data-mode="upload" role="tab">上传 Skill 包</button>
+          <button class="trial-tab" type="button" data-mode="paste" role="tab">粘贴 SKILL.md</button>
+        </div>
+
+        <div class="trial-pane active" data-pane="upload">
+          <label class="dropzone" id="dropzone" for="skill-file">
+            <span class="dz-icon">↑</span>
+            <b>拖拽 .zip / .md 到这里，或点击选择文件</b>
+            <span>zip 会自动读取包内 SKILL.md 并统计文件清单 · 单文件上限 1MB</span>
+            <input id="skill-file" type="file" accept=".zip,.md,.markdown,.txt" hidden>
+          </label>
+          <div class="file-chip" id="file-chip">
+            <span id="file-name">—</span>
+            <span class="size" id="file-size"></span>
+            <button class="chip-x" id="file-remove" type="button" title="移除">×</button>
+          </div>
+        </div>
+
+        <div class="trial-pane" data-pane="paste">
+          <div class="editor-head">
+            <label for="skill-md" style="margin:0">SKILL.md 内容</label>
+            <span class="hint" id="md-count">0 字符 · 0 KB</span>
+          </div>
+          <textarea id="skill-md" spellcheck="false" placeholder="---&#10;name: my-skill&#10;description: 一句话说明这个 Skill 解决什么问题&#10;version: 1.0.0&#10;---&#10;&#10;# 使用说明……"></textarea>
+        </div>
+
+        <div class="trial-actions">
+          <button id="trial-submit" class="btn btn-primary" type="button">开始免费体检</button>
+          <button id="trial-clear" class="btn btn-plain" type="button">清空</button>
+          <span class="spacer"></span>
+          <span class="hint">⌘ / Ctrl + Enter 快速提交</span>
+        </div>
+      </section>
+
+      <!-- 右侧：说明 -->
+      <aside class="trial-side">
+        <div class="card">
+          <h3>检查什么</h3>
+          <p>
+<!-- GEN:TRIAL-RULES:BEGIN -->
+            · SKILL.md 内容与体积<br>
+            · frontmatter 是否可解析<br>
+            · slug 格式与长度（kebab-case，2–128）<br>
+            · version 语义化版本<br>
+            · displayName 必填<br>
+            · 共 22 项检查
+<!-- GEN:TRIAL-RULES:END -->
+          </p>
+        </div>
+        <div class="card" style="margin-top:18px">
+          <h3>免费额度</h3>
+          <p>按访问 IP 每日计数，额度内直接出分。用完后可到控制台下载已授权组件，或按次付费获取完整报告（0.99 元/次，以接口返回为准）。</p>
+        </div>
+        <div class="card" style="margin-top:18px">
+          <h3>体检通过后</h3>
+          <p>到 <a href="https://skillhub.cn/dashboard" target="_blank" rel="noopener">SkillHub 控制台</a> 提交上架。体检不替代官方审核，但能提前拦掉大部分退回原因。</p>
+        </div>
+      </aside>
+    </div>
+
+    <div id="trial-notice" class="notice"></div>
+    <section id="trial-result" class="trial-result"></section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>59 通用组件管理 · Skill 上架体检</span>
+    <span><a href="https://skillhub.cn/dashboard" target="_blank" rel="noopener">SkillHub 控制台</a> · <a href="privacy.html">隐私说明</a></span>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

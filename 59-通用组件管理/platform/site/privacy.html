@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>隐私说明 · 59 通用组件管理</title>
+<meta name="description" content="免费体检与站点埋点的数据处理说明：内容仅内存处理、日志无正文、IP 哈希 30 天删除。">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/logo.jpg" alt="logo">
+      <span>59 通用组件管理</span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html">产品介绍</a>
+      <a href="trial.html">免费体检</a>
+      <a href="guide.html">使用说明</a>
+      <a href="privacy.html" class="active">隐私说明</a>
+    </nav>
+  </div>
+</header>
+
+<main class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>隐私说明</h2>
+      <p>本页说明免费体检、站点埋点与订单记录分别处理哪些数据、保存多久、如何删除。最后更新：2026-11-20。</p>
+    </div>
+
+    <div class="panel">
+      <h3>1. 体检内容只在内存中处理</h3>
+      <p>提交的 <code class="inline">SKILL.md</code> 正文与包内文件清单（路径、大小）只用于本次体检计算，处理完成后不落盘、不入库、不用于训练，也不会出现在访问日志中。服务端错误日志只记录错误类型与规则编号，不记录正文。</p>
+
+      <h3>2. IP 哈希与免费额度</h3>
+      <p>为限制免费额度，我们读取反向代理传入的客户端 IP，并按以下方式处理：</p>
+      <ul>
+        <li>先做网段归一：IPv4 按单个 IP，IPv6 按 <code class="inline">/64</code> 网段；</li>
+        <li>再计算 <code class="inline">sha256(IP + 服务端私盐)</code>，只保存前 16 字节的十六进制哈希，不保存明文 IP；</li>
+        <li>哈希与日期、次数一起保存在额度表中，<b>30 天后自动删除</b>；</li>
+        <li>同一网段共享额度，公共网络下可能出现「额度被他人用完」的情况，可在文末联系方式申诉。</li>
+      </ul>
+      <p>自然日按 UTC+8 计算，每日零点重置。</p>
+
+      <h3>3. 站点埋点</h3>
+      <p>站点只记录以下匿名事件：<code class="inline">page_view</code>、<code class="inline">trial_submit</code>、<code class="inline">trial_success</code>、<code class="inline">trial_quota_exceeded</code>、<code class="inline">trial_global_cap</code>、<code class="inline">cta_skillhub</code>、<code class="inline">guide_view</code>。每条只包含事件名、页面路径、来源站点、时间、规则版本与规则变更摘要；<b>不记录 IP、User-Agent、Cookie、表单正文或任何可识别个人的信息</b>。事件日志保留 30 天后删除。</p>
+
+      <h3>4. 订单记录</h3>
+      <p>付费报告会生成订单号、金额、资源标识、支付状态与时间，用于对账与幂等交付。未支付订单在 7 天后自动清理；已支付与已履约订单为对账需要保留，不参与清理。</p>
+
+      <h3>5. 第三方</h3>
+      <p>支付环节由支付宝处理，具体数据范围以支付宝隐私政策为准；组件下载由 SkillHub 提供，适用其平台规则。本站不向其他第三方出售或共享上述数据。</p>
+
+      <h3>6. 联系方式</h3>
+      <p>如需查询或删除与额度哈希相关的记录，请通过 <a href="https://skillhub.cn/dashboard" target="_blank" rel="noopener">SkillHub 控制台</a> 联系我们，并说明大致访问时间与网络环境；因不保存明文 IP，我们只能按时间段协助排查。</p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>59 通用组件管理 · 隐私说明</span>
+    <span><a href="index.html">产品介绍</a> · <a href="trial.html">免费体检</a> · <a href="guide.html">使用说明</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -6,13 +6,45 @@ const { auditSkill } = require('./audit');
 const { buildPaymentNeeded, decodePaymentProof, formatPayBefore, base64UrlEncode } = require('./alipay');
 const { normalizeDataInput, runDataQuery } = require('./data');
 const { normalizeCogstewardInput, buildCogstewardReport } = require('./cogsteward');
+const { mountTrial } = require('./trial');
+const { createBeaconHandler, createBeaconLogger } = require('./beacon');
+const { createRateLimiter } = require('./ratelimit');
+const { createMetrics } = require('./metrics');
+const spec = require('./rules.generated');
 
 const RESOURCE_PATH = '/api/audit';
 const MAX_BODY = '1mb';
+const BEACON_MAX_BODY = '2kb';
 
-function createApp({ config, repository, alipay }) {
+function createApp({ config, repository, alipay, metrics }) {
   const app = express();
   app.disable('x-powered-by');
+
+  const reportMetrics = metrics || createMetrics();
+  const rulesChanged = latestRulesChanged();
+  const beaconLog =
+    config.beacon && config.beacon.logPath
+      ? createBeaconLogger({
+          filePath: config.beacon.logPath,
+          rulesVersion: spec.version,
+          rulesChanged
+        })
+      : null;
+
+  // 埋点必须在全局 json 解析之前挂载，才能独立执行 2KB 上限。
+  if (config.beacon && config.beacon.logPath) {
+    app.post(
+      '/api/beacon',
+      express.json({ limit: BEACON_MAX_BODY }),
+      createBeaconHandler({
+        filePath: config.beacon.logPath,
+        origins: config.beacon.origins,
+        rulesVersion: spec.version,
+        rulesChanged
+      })
+    );
+  }
+
   app.use(express.json({ limit: MAX_BODY }));
   app.use((req, res, next) => {
     res.set('Cache-Control', 'no-store');
@@ -22,14 +54,15 @@ function createApp({ config, repository, alipay }) {
   const resources = buildResources(config);
 
   app.get('/health', (req, res) => {
-    const stats = repository.stats();
     res.json({
       status: 'ok',
       service: 'skillhub-audit-api',
       price: config.price,
       currency: config.currency,
       resources: resources.map((r) => ({ path: r.path, price: r.price })),
-      orders: stats
+      rules_version: spec.version,
+      score_formula_version: spec.score.formula,
+      rate_limit_mode: 'memory'
     });
   });
 
@@ -45,17 +78,32 @@ function createApp({ config, repository, alipay }) {
       })),
       usage_audit: 'POST {"skill_md":"<SKILL.md 内容>","files":[{"path":"SKILL.md","size":123}],"target":"auto|free|pay"}',
       usage_data: 'POST {"skill":"market-data-pro","cmd":"macro","params":{"series":"DGS10"}}',
-      usage_cogsteward: 'POST {"metrics":{"broken_links":2,"orphan_files":7,"index_drift":0,"skill_conflicts":1,"stale_sessions":3,"pending_backlog":12},"inventory":{"documents":400,"skills":45,"sessions":80},"mode":"dev"}'
+      usage_cogsteward: 'POST {"metrics":{"broken_links":2,"orphan_files":7,"index_drift":0,"skill_conflicts":1,"stale_sessions":3,"pending_backlog":12},"inventory":{"documents":400,"skills":45,"sessions":80},"mode":"dev"}',
+      usage_trial: config.trial
+        ? `POST /api/trial {"skill_md":"<SKILL.md 内容>","files":[{"path":"SKILL.md","size":123}]} （免费额度 ${config.trial.dailyQuota} 次/日/IP）`
+        : '未启用（TRIAL_DAILY_QUOTA<=0）'
     });
   });
 
+  mountTrial(app, config, {
+    store: repository,
+    onEvent: beaconLog ? (event) => beaconLog(event) : null
+  });
+
+  const limiter = createRateLimiter({
+    max: (config.rateLimit && config.rateLimit.max) || 20,
+    windowMs: (config.rateLimit && config.rateLimit.windowMs) || 60 * 60 * 1000
+  });
+
   for (const resource of resources) {
-    app.post(resource.path, (req, res) => handlePaid(req, res, { config, repository, alipay, resource }));
+    app.post(resource.path, limiter, (req, res) =>
+      handlePaid(req, res, { config, repository, alipay, resource, metrics: reportMetrics })
+    );
   }
 
   app.use((err, req, res, next) => {
     if (err && err.type === 'entity.too.large') {
-      return res.status(413).json({ code: 'PAYLOAD_TOO_LARGE', message: '请求体过大（上限 1MB）' });
+      return res.status(413).json({ code: 'PAYLOAD_TOO_LARGE', message: '请求体过大' });
     }
     console.error('[error]', err && err.message);
     return res.status(500).json({ code: 'INTERNAL_ERROR', message: '服务异常' });
@@ -124,7 +172,7 @@ function normalizeInput(body) {
   return { skillMd, files, target };
 }
 
-async function handlePaid(req, res, { config, repository, alipay, resource }) {
+async function handlePaid(req, res, { config, repository, alipay, resource, metrics }) {
   const input = resource.normalize(req.body);
   if (input.error) {
     return res.status(400).json({ code: 'INVALID_REQUEST', message: input.error });
@@ -195,6 +243,7 @@ async function handlePaid(req, res, { config, repository, alipay, resource }) {
   let content;
   try {
     content = await resource.execute(input);
+    if (metrics && content && content.rules_version) metrics.recordPaidReport(content.rules_version);
   } catch (error) {
     console.error('[exec] 资源生成失败:', error.code || '', error.message);
     return res.status(error.status && error.status < 500 ? 503 : 502).json({
@@ -300,6 +349,14 @@ function sendSuccess(res, { tradeNo, outTradeNo, resourceId, report, alreadyFulf
     already_fulfilled: alreadyFulfilled,
     fulfillment_confirmed: true
   });
+}
+
+function latestRulesChanged() {
+  const changelog = spec.changelog || [];
+  const last = changelog[changelog.length - 1];
+  if (!last) return '';
+  if (Array.isArray(last.changed)) return last.changed.join('；');
+  return String(last.summary || '');
 }
 
 function normalizeAmount(value) {

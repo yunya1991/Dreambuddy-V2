@@ -1,6 +1,8 @@
 'use strict';
 
 const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const crypto = require('node:crypto');
 
 const SANDBOX_GATEWAY = 'https://openapi-sandbox.dl.alipaydev.com/gateway.do';
@@ -75,9 +77,68 @@ function loadConfig(env = process.env) {
 
   config.sandboxExact = config.gateway === SANDBOX_GATEWAY && config.serviceId === SANDBOX_SERVICE_ID;
 
+  config.trial = buildTrialResource(env);
   config.data = buildDataResource(env, config);
   config.cogsteward = buildCogstewardResource(env, config);
+  config.beacon = buildBeaconResource(env);
+  config.admin = buildAdminResource(env);
+  config.rateLimit = buildRateLimit(env);
+  config.publicJsonPath = env.PUBLIC_JSON_PATH || '';
   return config;
+}
+
+/** 免费体检额度（/api/trial）：TRIAL_DAILY_QUOTA<=0 时不挂载该路由。 */
+function buildTrialResource(env) {
+  const dailyQuota = Number(env.TRIAL_DAILY_QUOTA ?? 5);
+  if (!Number.isFinite(dailyQuota) || dailyQuota <= 0) return null;
+
+  const ipSalt = String(env.TRIAL_IP_SALT || '');
+  if (ipSalt.length < 16) {
+    throw new Error('启用免费体检（TRIAL_DAILY_QUOTA>0）时必须设置 TRIAL_IP_SALT，且长度不少于 16 字符');
+  }
+  const globalDaily = Number(env.TRIAL_GLOBAL_DAILY ?? 200);
+  if (!Number.isInteger(globalDaily) || globalDaily <= 0) {
+    throw new Error(`TRIAL_GLOBAL_DAILY 必须是正整数：${env.TRIAL_GLOBAL_DAILY}`);
+  }
+  return {
+    dailyQuota: Math.floor(dailyQuota),
+    globalDaily,
+    ipSalt,
+    retentionDays: 30
+  };
+}
+
+/** 最小埋点：Origin 白名单 + JSONL 路径。 */
+function buildBeaconResource(env) {
+  const origins = [env.SITE_ORIGIN, ...String(env.SITE_ORIGIN_ALLOW || 'http://127.0.0.1:8099').split(',')]
+    .map((item) => String(item || '').trim())
+    .filter(Boolean);
+  const dbPath = env.DB_PATH || '/var/lib/skillhub-audit/orders.db';
+  const logPath =
+    env.BEACON_LOG_PATH ||
+    (dbPath === ':memory:'
+      ? path.join(os.tmpdir(), `skillhub-events-${process.pid}.jsonl`)
+      : path.join(path.dirname(dbPath), 'events.jsonl'));
+  return { origins, logPath, retentionDays: 30 };
+}
+
+/** 管理后台监听（8789）：未设置 ADMIN_TOKEN 时不启动。 */
+function buildAdminResource(env) {
+  const token = String(env.ADMIN_TOKEN || '').trim();
+  if (!token) return null;
+  const port = Number(env.ADMIN_PORT || 8789);
+  if (!Number.isInteger(port) || port <= 0) {
+    throw new Error(`ADMIN_PORT 非法：${env.ADMIN_PORT}`);
+  }
+  return { host: '127.0.0.1', port, token };
+}
+
+function buildRateLimit(env) {
+  const max = Number(env.ANON_RATE_LIMIT || 20);
+  if (!Number.isInteger(max) || max <= 0) {
+    throw new Error(`ANON_RATE_LIMIT 必须是正整数：${env.ANON_RATE_LIMIT}`);
+  }
+  return { max, windowMs: 60 * 60 * 1000 };
 }
 
 /** 认知管家体检资源（/api/cogsteward）：未配置 COGSTEWARD_PRICE_YUAN 时不挂载。 */

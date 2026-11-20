@@ -21,6 +21,16 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at     TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_orders_trade_no ON orders(trade_no);
+CREATE INDEX IF NOT EXISTS idx_orders_pending ON orders(order_status, fulfill_status, created_at);
+
+CREATE TABLE IF NOT EXISTS trial_usage (
+  ip_hash    TEXT NOT NULL,
+  day        TEXT NOT NULL,
+  count      INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (ip_hash, day)
+);
+CREATE INDEX IF NOT EXISTS idx_trial_usage_day ON trial_usage(day);
 `;
 
 class SqliteOrderRepository {
@@ -120,6 +130,114 @@ class SqliteOrderRepository {
          FROM orders`
       )
       .get();
+  }
+
+  orderStats(now = new Date()) {
+    const pendingCutoff = new Date(Number(now) - 7 * 24 * 60 * 60 * 1000).toISOString();
+    return this.db
+      .prepare(
+        `SELECT COUNT(*) AS total,
+                COALESCE(SUM(CASE WHEN fulfill_status = 'FULFILLED' THEN 1 ELSE 0 END), 0) AS fulfilled,
+                COALESCE(SUM(CASE WHEN order_status = 'PENDING_PAYMENT'
+                                   AND fulfill_status = 'UNFULFILLED'
+                                   AND created_at >= @pendingCutoff THEN 1 ELSE 0 END), 0) AS pending_7d
+         FROM orders`
+      )
+      .get({ pendingCutoff });
+  }
+
+  /**
+   * 原子占用一次免费额度：同事务内完成「个人额度判定 + 全局额度判定 + 自增」，
+   * 并发下不会越过 TRIAL_GLOBAL_DAILY。
+   */
+  consumeTrial({ ipHash, day, dailyQuota, globalDaily, now = new Date() }) {
+    const tx = this.db.transaction(() => {
+      const row = this.db
+        .prepare('SELECT count FROM trial_usage WHERE ip_hash = ? AND day = ?')
+        .get(ipHash, day);
+      const used = row ? row.count : 0;
+      const globalUsed = this.db
+        .prepare('SELECT COALESCE(SUM(count), 0) AS total FROM trial_usage WHERE day = ?')
+        .get(day).total;
+
+      if (used >= dailyQuota) {
+        return { allowed: false, reason: 'ip', remaining: 0, used, globalUsed };
+      }
+      if (globalUsed >= globalDaily) {
+        return {
+          allowed: false,
+          reason: 'global',
+          remaining: Math.max(0, dailyQuota - used),
+          used,
+          globalUsed
+        };
+      }
+
+      this.db
+        .prepare(
+          `INSERT INTO trial_usage (ip_hash, day, count, updated_at)
+           VALUES (@ipHash, @day, 1, @now)
+           ON CONFLICT(ip_hash, day) DO UPDATE SET
+             count = trial_usage.count + 1,
+             updated_at = excluded.updated_at`
+        )
+        .run({ ipHash, day, now: new Date(now).toISOString() });
+
+      return { allowed: true, reason: null, remaining: dailyQuota - used - 1, used: used + 1, globalUsed: globalUsed + 1 };
+    });
+    return tx.immediate();
+  }
+
+  /** 体检执行失败时归还额度，避免用户因服务异常被扣次数。 */
+  releaseTrial(ipHash, day) {
+    this.db
+      .prepare(
+        `UPDATE trial_usage SET count = count - 1, updated_at = @now
+         WHERE ip_hash = @ipHash AND day = @day AND count > 0`
+      )
+      .run({ ipHash, day, now: new Date().toISOString() });
+  }
+
+  trialUsageForDay(day) {
+    const row = this.db
+      .prepare('SELECT COALESCE(SUM(count), 0) AS total, COUNT(*) AS uniqueIps FROM trial_usage WHERE day = ?')
+      .get(day);
+    return { total: row.total, uniqueIps: row.uniqueIps };
+  }
+
+  purgeTrialUsageBefore(cutoffDay, batchSize = 500) {
+    return this._purgeByIds(
+      'SELECT rowid FROM trial_usage WHERE day < ? LIMIT ?',
+      'DELETE FROM trial_usage WHERE rowid IN (SELECT rowid FROM trial_usage WHERE day < ? LIMIT ?)',
+      cutoffDay,
+      batchSize
+    );
+  }
+
+  purgeStalePendingOrders(cutoffIso, batchSize = 500) {
+    return this._purgeByIds(
+      `SELECT rowid FROM orders
+        WHERE order_status = 'PENDING_PAYMENT' AND fulfill_status = 'UNFULFILLED' AND created_at < ?
+        LIMIT ?`,
+      `DELETE FROM orders WHERE rowid IN (
+         SELECT rowid FROM orders
+          WHERE order_status = 'PENDING_PAYMENT' AND fulfill_status = 'UNFULFILLED' AND created_at < ?
+          LIMIT ?)`,
+      cutoffIso,
+      batchSize
+    );
+  }
+
+  _purgeByIds(selectSql, deleteSql, cutoff, batchSize) {
+    let removed = 0;
+    for (;;) {
+      const rows = this.db.prepare(selectSql).all(cutoff, batchSize);
+      if (!rows.length) break;
+      const info = this.db.prepare(deleteSql).run(cutoff, batchSize);
+      removed += info.changes;
+      if (rows.length < batchSize) break;
+    }
+    return removed;
   }
 
   close() {
