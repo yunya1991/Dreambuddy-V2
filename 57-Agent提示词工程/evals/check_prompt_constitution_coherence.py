@@ -24,6 +24,7 @@ import argparse
 import json
 import subprocess
 import sys
+import time
 import urllib.request
 from pathlib import Path
 from typing import Any, List, Tuple
@@ -155,13 +156,28 @@ def check_owner_wrappers() -> Tuple[bool, str]:
 
 def check_online(base_url: str) -> Tuple[bool, str]:
     url = base_url.rstrip("/") + "/api/prompts/meta"
-    try:
-        with urllib.request.urlopen(url, timeout=20) as resp:
-            if resp.status != 200:
-                return False, f"{url} HTTP {resp.status}"
-            doc = json.loads(resp.read().decode("utf-8"))
-    except Exception as exc:  # noqa: BLE001
-        return False, f"{url} 不可达: {type(exc).__name__}: {exc}"
+    doc: Any = None
+    last_error = ""
+    for _ in range(3):
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "Accept": "application/json",
+                    "User-Agent": "dreambuddy-coherence-check/1.0",
+                    "Connection": "close",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                if resp.status != 200:
+                    return False, f"{url} HTTP {resp.status}"
+                doc = json.loads(resp.read().decode("utf-8"))
+            break
+        except Exception as exc:  # noqa: BLE001 — nginx 偶发断连，重试
+            last_error = f"{type(exc).__name__}: {exc}"
+            time.sleep(2)
+    if doc is None:
+        return False, f"{url} 不可达: {last_error}"
 
     meta = doc.get("prompt_meta") or {}
     if any(not meta.get(k) for k in META_FIELDS):
