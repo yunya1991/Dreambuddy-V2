@@ -18,6 +18,7 @@
 | R11 | 2026-11-21 | SkillHub 上架字段（description / tags / summary / displayName） | —（无平台曝光数据） | — | — | — | 4 个免费 Skill 预检通过；转化需平台数据 |
 | R12 | 2026-11-21 | 同一配置（full / 强模型）复跑 3 次 | 100% × 3 | 73.3% × 3 | 0 × 3 | 0% × 3 | 选择 0 翻转；时延 σ≈2.2s，单次时延差异不可作结论 |
 | R14 | 2026-11-21 | 压力集 15 条（超短意图 + 看似相关越界） | 90%（9/10） | 60.0% | 0 | 0%（0/5） | 仅 p08 失败，属能力边界：无实时余票查询 |
+| R15 | 2026-11-21 | 实际发布 4 个免费 Skill 到 SkillHub | —（待审核） | — | — | — | 4/4 上架成功；审核 pending，搜索索引 0 |
 
 ## R1 明细
 
@@ -94,7 +95,7 @@ python3 platform/bench/routing/run_bench.py --router qwen \
 
 | 编号 | 变量 | 预期 | 判定 |
 |---|---|---|---|
-| R15 | 实际上架 + 平台曝光/安装数据 | 验证 listing 转化 | 安装率/曝光率有基准 |
+| R15b | 审核通过后回填曝光/安装数据 | 建立 listing 基线 | 有 installs/downloads 数值 |
 | R16 | 温度/采样参数敏感性（0.2 vs 0.7） | 评估稳定性边界 | 覆盖不降、翻转数可解释 |
 
 ## R10 明细
@@ -144,6 +145,26 @@ python3 platform/bench/routing/run_bench.py --router qwen \
   1. 超短意图 9/10 可路由，命名与实体的作用在极短输入下仍然成立；
   2. 剩余差距是**能力边界**，不是描述问题；禁止用"可查余票"这类文案硬抢，除非真的接入实时查询；
   3. 压力集失败先分类：路由失败（改文案/命名）vs 能力边界（改期望或补能力）。
+
+## R15 明细
+
+- 账号：`user_a64c9d1d`；4 个免费 Skill 实际发布成功：
+
+| Skill | slug | skillId | version |
+|---|---|---|---|
+| market-data | dreambuddy-market-data-hub | 328545 | 1.0.3 |
+| cogsteward | cogsteward | 327222 | 0.7.1 |
+| event-context | dreambuddy-event-context | 328546 | 1.0.2 |
+| market-facts-daily | dreambuddy-market-facts-daily | 328548 | 1.0.4 |
+
+- 上架状态：4/4 `reviewStatus=pending`、`contentAuditStatus=pending`、`securityScanStatus=pending`；tags 全部被平台接收（含中文标签与 `latest`）。
+- 限频：连续发布第 4 个触发 429，等待 75s 后重试成功。
+- 发现性基线：`skillhub search "market" --search-limit 50` 返回 50 条，我们的 slug 命中 **0**；`skill rankings` 各榜（hot/featured/newest/recommended/trending/paid）均未收录。公开页 `https://skillhub.cn/skills/<slug>` 返回 200 但为 SPA 壳，无 installs/downloads 数据。
+- 结论：
+  1. **审核 pending 期间不进入搜索索引**，"搜不到"不是发布失败；
+  2. 发布必须先金丝雀 1 个，再批量；连续请求要留 ≥75s 间隔；
+  3. 记录 skillId/slug/version 作为审核通过后回填曝光/安装数据的锚点；
+  4. 平台暂未提供 CLI 统计接口，R15b 需在审核通过后用搜索/榜单或平台后台取数。
 
 ## 记录模板
 
