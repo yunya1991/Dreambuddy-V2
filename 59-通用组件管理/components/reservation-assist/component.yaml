@@ -1,0 +1,52 @@
+name: reservation-assist
+display_name: 预约助手 Reservation Assist
+version: 0.11.2
+family: reservation-assist
+lifecycle: draft
+summary: 本地常驻的余票/号源监控与通知工具：对时调度、命中去重、官方深链跳转，默认不自动提交。
+entrypoints:
+  - scripts/ra.py
+kernel_deps: []
+output_contract: reservation.v1
+products: []
+tests:
+  dir: tests
+  entry: python3 -m unittest discover -s tests -v
+docs:
+  - docs/ENGINEERING_INDEX.md
+  - docs/TECHNICAL_DESIGN.md
+  - docs/API_SPEC.md
+  - docs/CHANGELOG.md
+actions:
+  - name: doctor
+    description: "预约助手环境自检：检查登录态、通知与运行依赖"
+    when_to_use: "预约助手环境自检、登录态与通知依赖检查"
+    not_for: "不查任务清单或生成报告"
+    script: scripts/ra.py
+    args: [doctor]
+    safety: read
+    output: json
+    mcp: {expose: true, tier: extended}
+    params: []
+  - name: list
+    description: "列出正在监控的余票/号源任务（国博、演出票等）"
+    when_to_use: "查网页端余票/号源监控任务清单（国博、演出票等）"
+    not_for: "不生成预约计划或监控报告"
+    script: scripts/ra.py
+    args: [watch, list]
+    safety: read
+    output: json
+    mcp: {expose: true, tier: extended, name: ticket_monitor_list}
+    params: []
+  - {name: status, script: scripts/ra.py, args: [switch-status], safety: read, description: "查看预约助手开关与运行状态"}
+  - name: report
+    description: "生成余票监控报告：命中记录、成功率与任务状态"
+    when_to_use: "生成余票监控报告（命中记录、成功率、任务状态）"
+    not_for: "不列任务清单或生成新预约计划"
+    script: scripts/ra.py
+    args: [report]
+    safety: read
+    output: json
+    mcp: {expose: true, tier: extended, name: ticket_monitor_report}
+    params: []
+  - {name: inbox, script: scripts/ra.py, args: [inbox, show], safety: read, description: "查看余票命中收件箱"}

@@ -1,6 +1,6 @@
 name: cogsteward
 display_name: 认知管家 CogSteward
-version: 0.7.0
+version: 0.7.1
 family: cogsteward
 lifecycle: active
 summary: 上下文治理：扫描登记、工作区体检、路由归属与最小上下文打包，纯本地运行零依赖。
@@ -20,3 +20,8 @@ docs:
   - docs/ENGINEERING_INDEX.md
   - docs/CHANGELOG.md
   - docs/CHANGELOG-skill.md
+actions:
+  - {name: doctor, script: scripts/cm_cli.py, args: [doctor], safety: read, description: 认知管家自检}
+  - {name: lint, script: scripts/cm_cli.py, args: [skill, lint], safety: read, output: json, description: 规则与结构检查}
+  - {name: selfcheck, script: scripts/cm_cli.py, args: [selfcheck], safety: read, description: 自检}
+  - {name: index, script: scripts/cm_cli.py, args: [index], safety: read, description: 索引视图}

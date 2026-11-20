@@ -1,6 +1,6 @@
 name: market-facts-daily
 display_name: 市场事实日报
-version: 1.0.3
+version: 1.0.4
 family: market-facts
 lifecycle: active
 summary: 把公开行情折算成一页可复核的数字事实：涨跌幅、分位、波动、回撤，全部标注方法ID与样本量。
@@ -12,3 +12,16 @@ products: []
 tests:
   dir: tests
   entry: python3 -m unittest discover -s tests -v
+actions:
+  - name: facts
+    description: "A 股主要指数一页数字事实：上证/深证/创业板涨跌幅、分位、波动与回撤"
+    when_to_use: "生成 A 股一页数字事实：当日涨跌幅、分位、波动与回撤"
+    not_for: "不查个股、美股或历史长序列"
+    script: scripts/facts.py
+    args: []
+    safety: read
+    output: json
+    mcp: {expose: true, tier: hot, name: a_share_index_facts}
+    params:
+      - {name: symbols, flag: "--symbols", type: string, default: "sh000001,sz399001,sh000300", description: 逗号分隔指数代码}
+      - {name: window, flag: "--window", type: integer, default: 250, description: 统计窗口天数}

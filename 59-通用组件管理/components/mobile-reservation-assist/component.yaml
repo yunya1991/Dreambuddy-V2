@@ -1,0 +1,45 @@
+name: mobile-reservation-assist
+display_name: 手机预约助手 Mobile Reservation Assist
+version: 0.2.0
+family: reservation-assist
+lifecycle: draft
+summary: 消费预约助手命中，经本地 HTTP 网关把预约动作下发到手机端 Agent（Auto.js）执行，停在官方下单页、不代付不锁座。
+entrypoints:
+  - scripts/mra.py
+kernel_deps: []
+output_contract: reservation.v1
+products: []
+tests:
+  dir: tests
+  entry: python3 -m unittest discover -s tests -v
+docs:
+  - docs/ENGINEERING_INDEX.md
+  - docs/TECHNICAL_DESIGN.md
+  - docs/API_SPEC.md
+  - docs/CHANGELOG.md
+actions:
+  - {name: doctor, script: scripts/mra.py, args: [doctor], safety: read, description: 环境自检}
+  - name: jobs
+    description: "查看预约作业清单与状态：正在监控的余票、放票任务"
+    when_to_use: "查手机预约助手的预约作业（提交与结果）清单"
+    not_for: "余票监控清单交给 ticket_monitor_list"
+    script: scripts/mra.py
+    args: [jobs]
+    safety: read
+    output: json
+    mcp: {expose: true, tier: hot, name: reservation_job_list}
+    params:
+      - {name: state, flag: "--state", type: string, enum: [pending, dispatched, done, failed, unknown, cooldown], description: 按状态过滤}
+  - {name: report, script: scripts/mra.py, args: [report], safety: read, description: 生成报告}
+  - {name: patrol, script: scripts/mra.py, args: [patrol], safety: read, description: 巡检诊断}
+  - name: ask
+    description: "演出/博物馆门票预约计划：把“国博 12 月 25 日还能约吗”解析为白名单计划（只解析不执行）"
+    when_to_use: "判断国博/演出等门票能否预约，生成预约计划"
+    not_for: "不查已监控任务或监控报告"
+    script: scripts/mra.py
+    args: [ask]
+    safety: read
+    output: json
+    mcp: {expose: true, tier: hot, name: ticket_reservation}
+    params:
+      - {name: text, type: string, required: true, description: 自然语言预约指令（只出白名单计划，不执行）}

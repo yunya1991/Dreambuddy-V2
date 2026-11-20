@@ -1,17 +1,17 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-11-20T13:27:24Z",
+  "generated_at": "2026-11-20T19:21:04Z",
   "build": {
     "rules_version": 3,
     "score_formula_version": "v2",
-    "generated_at": "2026-11-20T13:27:24Z"
+    "generated_at": "2026-11-20T19:21:04Z"
   },
   "components": [
     {
       "family": "cogsteward",
       "name": "cogsteward",
       "display_name": "认知管家 CogSteward",
-      "version": "0.7.0",
+      "version": "0.7.1",
       "lifecycle": "active",
       "summary": "上下文治理：扫描登记、工作区体检、路由归属与最小上下文打包，纯本地运行零依赖。",
       "tagline": "上下文治理：扫描登记、工作区体检、路由归属与最小上下文打包，纯本地运行零依赖。",
@@ -47,7 +47,7 @@
       "family": "event-context",
       "name": "event-context",
       "display_name": "事件上下文（官方源·五层装配）",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "lifecycle": "active",
       "summary": "从 SEC 与美联储官方公开源拉取公告与声明，装配成事件事实、涉及实体、同类事件次数、来源许可、边界声明五层结构。",
       "tagline": "从 SEC 与美联储官方公开源拉取公告与声明，装配成事件事实、涉及实体、同类事件次数、来源许可、边界声明五层结构。",
@@ -75,7 +75,7 @@
       "family": "market-data",
       "name": "market-data",
       "display_name": "数据服务（宏观·披露·链上·上下文）",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "lifecycle": "active",
       "summary": "海外宏观、美股披露、公有链指标三类开放数据，加数据上下文与交叉统计，每条附方法ID与样本量。",
       "tagline": "海外宏观、美股披露、公有链指标三类开放数据，加数据上下文与交叉统计，每条附方法ID与样本量。",
@@ -103,7 +103,7 @@
       "family": "market-facts-daily",
       "name": "market-facts-daily",
       "display_name": "市场事实日报",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "lifecycle": "active",
       "summary": "把公开行情折算成一页可复核的数字事实：涨跌幅、分位、波动、回撤，全部标注方法ID与样本量。",
       "tagline": "把公开行情折算成一页可复核的数字事实：涨跌幅、分位、波动、回撤，全部标注方法ID与样本量。",

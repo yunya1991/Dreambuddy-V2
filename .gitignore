@@ -61,7 +61,8 @@ threshold
 .asset-research-history/
 .research-scheduler
 .sandbox-home
-.trae/
+.trae/*
+!.trae/skills/
 .claude/
 .codebuddy/
 .workbuddy/

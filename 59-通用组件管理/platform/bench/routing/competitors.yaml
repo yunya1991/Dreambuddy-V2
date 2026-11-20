@@ -1,0 +1,13 @@
+# 竞品工具夹具（模拟"用户已经装了一堆 skill"的环境）
+# 名称与描述只用于路由对比，不代表真实产品评价；可按实测替换。
+version: 1
+
+competitors:
+  - name: a_share_market
+    description: "A股实时行情、历史 K 线、财务指标、龙虎榜、资金流向"
+  - name: global_assets
+    description: "美股、港股、加密货币实时价格，汇率与商品行情"
+  - name: sec_reader
+    description: "美股 SEC 公告检索、10-K/10-Q 解读与财报摘要"
+  - name: ticket_monitor
+    description: "演出与博物馆门票余票监控、开票提醒与预约辅助"

@@ -329,7 +329,7 @@ def check_manifests(components: list[Component]) -> RuleResult:
             if manifest.get(key) not in allowed:
                 result.fail(comp.path, "{} 取值非法：{}".format(key, manifest.get(key)))
         contract = str(manifest.get("output_contract") or "")
-        if not re.fullmatch(r"(data|handoff|cogsteward)\.v1", contract):
+        if not re.fullmatch(r"(data|handoff|cogsteward|reservation)\.v1", contract):
             result.fail(comp.path, "output_contract 非法：{}".format(contract))
         skill_dir = comp.path / str(manifest.get("skill_dir") or "skill")
         front = read_frontmatter(skill_dir / "SKILL.md")

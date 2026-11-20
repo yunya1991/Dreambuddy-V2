@@ -32,7 +32,7 @@
       "description": "SemVer；必须与 skill/SKILL.md frontmatter 一致，否则 G5 失败"
     },
     "family": {
-      "enum": ["cogsteward", "market-data", "event-context", "market-facts"],
+      "enum": ["cogsteward", "market-data", "event-context", "market-facts", "reservation-assist"],
       "description": "商品族，决定构建变体与共用契约 profile"
     },
     "lifecycle": {
@@ -60,6 +60,110 @@
       },
       "description": "对外入口脚本，相对 skill/ 的路径"
     },
+    "actions": {
+      "type": "array",
+      "description": "可被 dreambuddy 调用的动作清单（只读优先，供统一 CLI 编排）",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "script", "safety"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "when_to_use": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "not_for": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "script": {
+            "type": "string",
+            "pattern": "^scripts/[A-Za-z0-9._/-]+\\.py$"
+          },
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "safety": {
+            "enum": ["read", "write"]
+          },
+          "output": {
+            "enum": ["json", "text"],
+            "default": "text",
+            "description": "调用时是否强制追加 --json 并输出结构化结果；MCP 工具必须为 json"
+          },
+          "params": {
+            "type": "array",
+            "description": "动作入参声明（唯一源）：同时生成 MCP inputSchema 与 Skill 参数表；未声明则只能通过 CLI 透传",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "type"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "flag": {
+                  "type": ["string", "null"],
+                  "pattern": "^--[a-z][a-z0-9-]*$",
+                  "description": "命令行 flag；省略或 null 表示位置参数"
+                },
+                "type": {
+                  "enum": ["string", "integer", "number", "boolean", "array"]
+                },
+                "required": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "default": {},
+                "enum": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 200
+                }
+              }
+            }
+          },
+          "mcp": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "MCP 投影开关；expose=true 才会生成工具",
+            "properties": {
+              "expose": {
+                "type": "boolean",
+                "default": false
+              },
+              "tier": {
+                "enum": ["hot", "extended"],
+                "default": "extended",
+                "description": "hot 进默认工具集，extended 需 --profile all"
+              },
+              "name": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$",
+                "description": "工具名覆盖；默认 <component>_<action>"
+              }
+            }
+          }
+        }
+      }
+    },
     "kernel_deps": {
       "type": "array",
       "uniqueItems": true,
@@ -70,7 +174,7 @@
     },
     "output_contract": {
       "type": "string",
-      "pattern": "^(data|handoff|cogsteward)\\.v1$",
+      "pattern": "^(data|handoff|cogsteward|reservation)\\.v1$",
       "description": "output.schema.json 中的 profile 名；不得私自定义新 profile"
     },
     "products": {

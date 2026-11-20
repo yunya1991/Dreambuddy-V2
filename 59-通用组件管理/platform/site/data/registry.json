@@ -1,12 +1,12 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-11-20T13:27:24Z",
+  "generated_at": "2026-11-20T19:21:04Z",
   "source": "59-通用组件管理/components/*/component.yaml",
   "components": [
     {
       "name": "cogsteward",
       "display_name": "认知管家 CogSteward",
-      "version": "0.7.0",
+      "version": "0.7.1",
       "family": "cogsteward",
       "lifecycle": "active",
       "summary": "上下文治理：扫描登记、工作区体检、路由归属与最小上下文打包，纯本地运行零依赖。",
@@ -27,7 +27,7 @@
     {
       "name": "event-context",
       "display_name": "事件上下文（官方源·五层装配）",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "family": "event-context",
       "lifecycle": "active",
       "summary": "从 SEC 与美联储官方公开源拉取公告与声明，装配成事件事实、涉及实体、同类事件次数、来源许可、边界声明五层结构。",
@@ -42,7 +42,7 @@
     {
       "name": "market-data",
       "display_name": "数据服务（宏观·披露·链上·上下文）",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "family": "market-data",
       "lifecycle": "active",
       "summary": "海外宏观、美股披露、公有链指标三类开放数据，加数据上下文与交叉统计，每条附方法ID与样本量。",
@@ -60,7 +60,7 @@
     {
       "name": "market-facts-daily",
       "display_name": "市场事实日报",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "family": "market-facts",
       "lifecycle": "active",
       "summary": "把公开行情折算成一页可复核的数字事实：涨跌幅、分位、波动、回撤，全部标注方法ID与样本量。",
@@ -71,9 +71,27 @@
       "source": "components/market-facts-daily/component.yaml"
     },
     {
+      "name": "mobile-reservation-assist",
+      "display_name": "手机预约助手 Mobile Reservation Assist",
+      "version": "0.2.0",
+      "family": "reservation-assist",
+      "lifecycle": "draft",
+      "summary": "消费预约助手命中，经本地 HTTP 网关把预约动作下发到手机端 Agent（Auto.js）执行，停在官方下单页、不代付不锁座。",
+      "entrypoints": [
+        "scripts/mra.py"
+      ],
+      "docs": [
+        "docs/ENGINEERING_INDEX.md",
+        "docs/TECHNICAL_DESIGN.md",
+        "docs/API_SPEC.md",
+        "docs/CHANGELOG.md"
+      ],
+      "source": "components/mobile-reservation-assist/component.yaml"
+    },
+    {
       "name": "reservation-assist",
       "display_name": "预约助手 Reservation Assist",
-      "version": "0.8.0",
+      "version": "0.11.2",
       "family": "reservation-assist",
       "lifecycle": "draft",
       "summary": "本地常驻的余票/号源监控与通知工具：对时调度、命中去重、官方深链跳转，默认不自动提交。",

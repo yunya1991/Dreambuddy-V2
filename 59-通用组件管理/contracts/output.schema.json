@@ -257,6 +257,134 @@
         }
       },
       "additionalProperties": true
+    },
+    "reservation.v1": {
+      "title": "预约助手输出（watch / report / doctor / reconcile）",
+      "type": "object",
+      "required": [
+        "schema_version",
+        "command",
+        "generated_at",
+        "tasks",
+        "hits",
+        "events",
+        "limits"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+$"
+        },
+        "command": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generated_at": {
+          "type": "string",
+          "minLength": 10
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "adapter", "status", "window_start", "window_end"],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "adapter": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "window_start": {
+                "type": ["integer", "null"]
+              },
+              "window_end": {
+                "type": ["integer", "null"]
+              },
+              "submit_enabled": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "hits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["task_id", "fingerprint", "at", "result"],
+            "properties": {
+              "task_id": {
+                "type": "string"
+              },
+              "fingerprint": {
+                "type": "string"
+              },
+              "at": {
+                "type": "integer"
+              },
+              "result": {
+                "type": "string"
+              },
+              "notified_at": {
+                "type": ["integer", "null"]
+              },
+              "submit_state": {
+                "type": ["string", "null"]
+              }
+            }
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["at", "level", "code"],
+            "properties": {
+              "at": {
+                "type": "integer"
+              },
+              "level": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              },
+              "task_id": {
+                "type": ["string", "null"]
+              },
+              "payload": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["key", "code"],
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "limits": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
     }
   }
 }

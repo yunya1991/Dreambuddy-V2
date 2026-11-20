@@ -8,7 +8,8 @@ description: "上下文治理：判定信息的主载体与从属归属，分流
 description_zh: 把资料、技能、要点和本次任务分开管，生成可读的工作区体检报告。
 description_en: Context governance for skills, docs and memory, with a readable workspace health report.
 summary: 把资料、技能、要点、本次任务分开管：扫描登记、工作区体检、路由归属、最小上下文打包，纯本地运行零依赖。
-version: 0.7.0
+tags: [上下文治理, 工作区体检, 文档管理, 技能治理, 记忆管理, context-governance]
+version: 0.7.1
 license: MIT
 author: CogSteward
 allowed-tools: Read, Write, Glob, Grep, Bash

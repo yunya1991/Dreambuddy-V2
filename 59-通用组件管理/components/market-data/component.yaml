@@ -1,6 +1,6 @@
 name: market-data
 display_name: 数据服务（宏观·披露·链上·上下文）
-version: 1.0.2
+version: 1.0.3
 family: market-data
 lifecycle: active
 summary: 海外宏观、美股披露、公有链指标三类开放数据，加数据上下文与交叉统计，每条附方法ID与样本量。
@@ -17,3 +17,68 @@ products: []
 tests:
   dir: tests
   entry: python3 -m unittest discover -s tests -v
+actions:
+  - name: macro
+    description: "美国宏观数据：10 年期国债收益率、CPI、失业率等 FRED 序列走势"
+    when_to_use: "查美国宏观指标的历史序列与走势"
+    not_for: "不要用于公司公告或美联储声明等单条事件"
+    script: scripts/macro.py
+    args: []
+    safety: read
+    output: json
+    mcp: {expose: true, tier: hot}
+    params:
+      - {name: series, flag: "--series", type: string, default: "DGS10,CPIAUCSL,UNRATE", description: 逗号分隔的 FRED 序列}
+      - {name: window, flag: "--window", type: integer, default: 250, description: 滚动窗口天数（≥30）}
+      - {name: endpoint, flag: "--endpoint", type: string, enum: [auto, cloud, local], default: auto, description: 数据通道}
+  - name: quotes
+    description: "A 股实时行情快照：查贵州茅台、宁德时代、比亚迪等 A 股现价与涨跌幅（代码如 sh600519）"
+    when_to_use: "查 A 股个股现价、涨跌幅（如贵州茅台、宁德时代）"
+    not_for: "不查指数汇总、美股或宏观数据"
+    script: scripts/quotes.py
+    args: []
+    safety: read
+    output: json
+    mcp: {expose: true, tier: hot, name: a_share_quote}
+    params:
+      - {name: symbols, flag: "--symbols", type: string, default: sh600519, description: "逗号分隔 A 股代码，如 sh600519,sz000001"}
+      - {name: window, flag: "--window", type: integer, default: 250, description: 历史窗口天数}
+  - name: filings
+    description: "美股 SEC 披露检索：8-K/10-K/10-Q 公告清单与 us-gaap 财务字段（苹果、特斯拉、NVDA）"
+    when_to_use: "按 8-K/10-K/10-Q 列美股披露清单与 us-gaap 财务字段"
+    not_for: "不做事件时间线、宏观序列或个股行情"
+    script: scripts/filings.py
+    args: []
+    safety: read
+    output: json
+    mcp: {expose: true, tier: hot, name: sec_filing_reader}
+    params:
+      - {name: ticker, flag: "--ticker", type: string, required: true, description: 美股代码，如 AAPL}
+      - {name: form, flag: "--form", type: string, description: 表单类型，如 8-K / 10-K / 10-Q}
+      - {name: limit, flag: "--limit", type: integer, default: 10, description: 条数（1–100）}
+      - {name: facts, flag: "--facts", type: string, description: us-gaap 字段，逗号分隔}
+      - {name: endpoint, flag: "--endpoint", type: string, enum: [auto, cloud, local], default: auto, description: 数据通道}
+  - name: onchain
+    description: "公有链链上指标：以太坊/比特币区块、活跃地址与交易数（不含币价）"
+    when_to_use: "查以太坊/比特币区块、活跃地址与交易数"
+    not_for: "不查币价、行情或公司披露"
+    script: scripts/onchain.py
+    args: []
+    safety: read
+    output: json
+    mcp: {expose: true, tier: hot}
+    params:
+      - {name: chain, flag: "--chain", type: string, default: eth, description: 链名，如 eth / bitcoin}
+      - {name: blocks, flag: "--blocks", type: integer, default: 50, description: 回看区块数}
+      - {name: endpoint, flag: "--endpoint", type: string, enum: [auto, cloud, local], default: auto, description: 数据通道}
+  - {name: context, script: scripts/context.py, args: [], safety: read, description: 数据上下文}
+  - name: handoff
+    description: "产出数据交接包（写动作）"
+    script: scripts/handoff.py
+    args: []
+    safety: write
+    output: json
+    mcp: {expose: true, tier: extended}
+    params:
+      - {name: series, flag: "--series", type: string, description: 序列，逗号分隔}
+      - {name: budget, flag: "--budget", type: integer, default: 2000, description: token 预算}

@@ -106,3 +106,115 @@ sources:
     used_by: []
     notes:
       - "Yahoo Finance / CoinGecko / Reuters / Bloomberg / 新浪财经 / 东方财富 一律不接"
+
+  # --- DC-2 内部例外：预约助手（reservation-assist）---------------------------
+  # 仅内部自用，不对外分发；只读取用户自己账号可见的余票/号源页面，
+  # 不抓取他人数据、不绕过验证码、不再分发原始页面。每次用途变化必须重新登记。
+
+  - id: railway_12306
+    name: 中国铁路 12306 余票与候补页面
+    endpoint: "https://www.12306.cn/"
+    license: 平台服务条款（未声明开放许可，按 DC-2 内部例外）
+    commercial_use: exception
+    status: active
+    used_by: [reservation-assist]
+    exception:
+      id: DC-2
+      approved_by: "用户（2026-11-20 对话确认）"
+      approved_at: "2026-11-20"
+      scope: "仅 reservation-assist 内部自用：读取当前登录账号可见的余票/候补状态并通知"
+      restrictions:
+        - "不得再分发原始页面、余票明细或账号数据；只输出场次摘要与官方深链"
+        - "探测间隔不低于 1500ms，单账号单任务，禁止并发多开"
+        - "不代抢、不转售、不加价，不托管支付"
+      review: "每次用途变化复核一次"
+
+  - id: damai
+    name: 大麦网演出票页面
+    endpoint: "https://www.damai.cn/"
+    license: 平台服务条款（未声明开放许可，按 DC-2 内部例外）
+    commercial_use: exception
+    status: active
+    used_by: [reservation-assist]
+    exception:
+      id: DC-2
+      approved_by: "用户（2026-11-20 对话确认）"
+      approved_at: "2026-11-20"
+      scope: "仅 reservation-assist 内部自用：读取用户可见的场次/票档状态并通知"
+      restrictions:
+        - "不得再分发原始页面与票档明细；只输出场次摘要与官方深链"
+        - "探测间隔不低于 1000ms，识别到风控页即冷却 24h"
+        - "不代抢、不转售、不加价，不托管支付"
+      review: "每次用途变化复核一次"
+
+  - id: bilibili_mall
+    name: B站会员购票务页面
+    endpoint: "https://show.bilibili.com/"
+    license: 平台服务条款（未声明开放许可，按 DC-2 内部例外）
+    commercial_use: exception
+    status: active
+    used_by: [reservation-assist]
+    exception:
+      id: DC-2
+      approved_by: "用户（2026-11-20 对话确认）"
+      approved_at: "2026-11-20"
+      scope: "仅 reservation-assist 内部自用：读取用户可见的场次/票档状态并通知"
+      restrictions:
+        - "不得再分发原始页面与票档明细；只输出场次摘要与官方深链"
+        - "探测间隔不低于 1000ms，单账号单任务"
+        - "不代抢、不转售、不加价，不托管支付"
+      review: "每次用途变化复核一次"
+
+  - id: maoyan
+    name: 猫眼演出票务页面
+    endpoint: "https://www.maoyan.com/"
+    license: 平台服务条款（未声明开放许可，按 DC-2 内部例外）
+    commercial_use: exception
+    status: active
+    used_by: [reservation-assist]
+    exception:
+      id: DC-2
+      approved_by: "用户（2026-11-20 对话确认）"
+      approved_at: "2026-11-20"
+      scope: "仅 reservation-assist 内部自用：读取用户可见的场次/票档状态并通知"
+      restrictions:
+        - "不得再分发原始页面与票档明细；只输出场次摘要与官方深链"
+        - "探测间隔不低于 1500ms，单账号单任务"
+        - "不代抢、不转售、不加价，不托管支付"
+      review: "每次用途变化复核一次"
+
+  - id: hospital_h5
+    name: 医院官方预约挂号 H5 页面
+    endpoint: "各医院官方预约渠道（运行时由用户填入目标 URL）"
+    license: 平台服务条款（未声明开放许可，按 DC-2 内部例外）
+    commercial_use: exception
+    status: active
+    used_by: [reservation-assist]
+    exception:
+      id: DC-2
+      approved_by: "用户（2026-11-20 对话确认）"
+      approved_at: "2026-11-20"
+      scope: "仅 reservation-assist 内部自用：读取用户本人账号可见的号源状态并通知"
+      restrictions:
+        - "不得再分发原始页面与就诊人信息；只输出科室/医生摘要与官方深链"
+        - "探测间隔不低于 3000ms；仅限用户本人就诊需求"
+        - "不代抢号、不转售号源、不托管支付"
+      review: "每次用途变化复核一次"
+
+  - id: gov_portal
+    name: 政务/签证/车管所/场馆官方预约页面
+    endpoint: "各政务与场馆官方预约渠道（运行时由用户填入目标 URL）"
+    license: 平台服务条款（未声明开放许可，按 DC-2 内部例外）
+    commercial_use: exception
+    status: active
+    used_by: [reservation-assist]
+    exception:
+      id: DC-2
+      approved_by: "用户（2026-11-20 对话确认）"
+      approved_at: "2026-11-20"
+      scope: "仅 reservation-assist 内部自用：读取用户可见的可预约时段并通知"
+      restrictions:
+        - "不得再分发原始页面与个人信息；只输出时段摘要与官方深链"
+        - "探测间隔不低于 5000ms；禁止自动填写身份证明材料"
+        - "不代约、不转售名额、不托管支付"
+      review: "每次用途变化复核一次"

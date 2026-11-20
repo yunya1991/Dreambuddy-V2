@@ -1,6 +1,6 @@
 name: event-context
 display_name: 事件上下文（官方源·五层装配）
-version: 1.0.1
+version: 1.0.2
 family: event-context
 lifecycle: active
 summary: 从 SEC 与美联储官方公开源拉取公告与声明，装配成事件事实、涉及实体、同类事件次数、来源许可、边界声明五层结构。
@@ -14,3 +14,50 @@ products: []
 tests:
   dir: tests
   entry: python3 -m unittest discover -s tests -v
+actions:
+  - name: events
+    description: "官方源事件归一：特斯拉/苹果等公司 SEC 公告、美联储声明，按公司或信息源检索"
+    when_to_use: "查公司/机构的官方声明、事件时间线与事件背景"
+    not_for: "8-K/10-K/10-Q 文件清单交给 sec_filing_reader；不做宏观序列"
+    script: scripts/events.py
+    args: []
+    safety: read
+    output: json
+    mcp: {expose: true, tier: hot, name: official_fed_sec_event_search}
+    params:
+      - {name: subject, flag: "--subject", type: string, description: 股票代码，如 AAPL（与 feed 二选一）}
+      - {name: feed, flag: "--feed", type: string, description: 官方源名称（与 subject 二选一）}
+      - {name: types, flag: "--types", type: string, description: "表单类型，逗号分隔，如 8-K,10-Q"}
+      - {name: since, flag: "--since", type: integer, default: 30, description: 回看天数（1–3650）}
+      - {name: endpoint, flag: "--endpoint", type: string, enum: [auto, cloud, local], default: auto, description: 数据通道}
+  - name: context
+    description: "把一条官方事件展开成五层上下文：事件事实、实体、同类历史次数、来源许可与边界"
+    when_to_use: "把一条已确认的官方事件展开为五层上下文与历史次数"
+    not_for: "不要用于查找事件或 SEC 文件清单"
+    script: scripts/context.py
+    args: []
+    safety: read
+    output: json
+    mcp: {expose: true, tier: extended}
+    params:
+      - {name: event_id, flag: "--event-id", type: string, description: 指定事件 ID}
+      - {name: subject, flag: "--subject", type: string, description: 股票代码，如 AAPL}
+      - {name: feed, flag: "--feed", type: string, description: 官方源名称}
+      - {name: latest, flag: "--latest", type: boolean, description: 取最新一条}
+      - {name: types, flag: "--types", type: string, description: 表单类型，逗号分隔}
+      - {name: since, flag: "--since", type: integer, default: 60, description: 回看天数}
+      - {name: endpoint, flag: "--endpoint", type: string, enum: [auto, cloud, local], default: auto, description: 数据通道}
+  - name: handoff
+    description: "产出事件上下文交接包（写动作）"
+    script: scripts/handoff.py
+    args: []
+    safety: write
+    output: json
+    mcp: {expose: true, tier: extended}
+    params:
+      - {name: subject, flag: "--subject", type: string, description: 股票代码，如 AAPL}
+      - {name: feed, flag: "--feed", type: string, description: 官方源名称}
+      - {name: types, flag: "--types", type: string, description: 表单类型，逗号分隔}
+      - {name: since, flag: "--since", type: integer, default: 30, description: 回看天数}
+      - {name: budget, flag: "--budget", type: integer, default: 2000, description: token 预算}
+      - {name: endpoint, flag: "--endpoint", type: string, enum: [auto, cloud, local], default: auto, description: 数据通道}

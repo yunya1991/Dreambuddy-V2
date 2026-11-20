@@ -1,0 +1,51 @@
+# 路由基准意图集（可发现性评测的唯一源）
+# expect_tool: 期望选中的 59 域 MCP 工具名；null 表示"不该选我们"（选 none 或竞品都算正确）
+# category: 用于分类统计；difficulty: easy / medium / hard
+version: 1
+
+intents:
+  # ---- 行情（a_share_quote）----
+  - {id: q01, text: "贵州茅台现在多少钱", expect_tool: a_share_quote, category: quote, difficulty: easy}
+  - {id: q02, text: "sh600519 今天的涨跌", expect_tool: a_share_quote, category: quote, difficulty: easy}
+  - {id: q03, text: "比亚迪最近股价怎么样", expect_tool: a_share_quote, category: quote, difficulty: easy}
+  - {id: q04, text: "帮我看下宁德时代行情", expect_tool: a_share_quote, category: quote, difficulty: easy}
+  - {id: q05, text: "招商银行 A 股现价", expect_tool: a_share_quote, category: quote, difficulty: easy}
+
+  # ---- 宏观（market_data_macro）----
+  - {id: m01, text: "美国 10 年期国债收益率最近走势", expect_tool: market_data_macro, category: macro, difficulty: medium}
+  - {id: m02, text: "美国 CPI 和失业率最新数据", expect_tool: market_data_macro, category: macro, difficulty: medium}
+  - {id: m03, text: "美联储关注的宏观指标现在什么水平", expect_tool: market_data_macro, category: macro, difficulty: medium}
+
+  # ---- 美股披露（sec_filing_reader）----
+  - {id: f01, text: "苹果最近提交了哪些 8-K", expect_tool: sec_filing_reader, category: filings, difficulty: medium}
+  - {id: f02, text: "特斯拉最新 10-Q 里的关键财务字段", expect_tool: sec_filing_reader, category: filings, difficulty: medium}
+  - {id: f03, text: "查一下 NVDA 的 SEC 披露", expect_tool: sec_filing_reader, category: filings, difficulty: easy}
+
+  # ---- 链上（market_data_onchain）----
+  - {id: o01, text: "以太坊最近区块数和活跃地址", expect_tool: market_data_onchain, category: onchain, difficulty: medium}
+  - {id: o02, text: "比特币链上指标，不要价格", expect_tool: market_data_onchain, category: onchain, difficulty: hard}
+
+  # ---- 市场数字事实（a_share_index_facts）----
+  - {id: n01, text: "今天上证深证创业板涨跌幅和分位", expect_tool: a_share_index_facts, category: facts, difficulty: medium}
+  - {id: n02, text: "给我一页今天的市场数字事实", expect_tool: a_share_index_facts, category: facts, difficulty: easy}
+
+  # ---- 事件（official_fed_sec_event_search / context）----
+  - {id: e01, text: "特斯拉最近的 SEC 公告和事件", expect_tool: official_fed_sec_event_search, category: event, difficulty: medium}
+  - {id: e02, text: "美联储最新声明事件", expect_tool: official_fed_sec_event_search, category: event, difficulty: medium}
+  - {id: e03, text: "把这条 SEC 事件展开成五层上下文", expect_tool: event_context_context, category: event, difficulty: hard}
+
+  # ---- 预约助手（ticket_reservation）----
+  - {id: r01, text: "帮我看看国博 12 月 25 日还能不能约", expect_tool: ticket_reservation, category: reservation, difficulty: medium}
+  - {id: r02, text: "下个月演唱会门票怎么安排预约", expect_tool: ticket_reservation, category: reservation, difficulty: medium}
+  - {id: r03, text: "我现在都在监控哪些余票任务", expect_tool: ticket_monitor_list, category: reservation, difficulty: medium}
+  - {id: r04, text: "给我一份余票监控报告", expect_tool: ticket_monitor_report, category: reservation, difficulty: medium}
+
+  # ---- 越界：不该选我们（选 none 或竞品都算正确）----
+  - {id: x01, text: "比特币现在多少钱", expect_tool: null, category: out-of-scope, difficulty: easy}
+  - {id: x02, text: "美股 AAPL 实时价格", expect_tool: null, category: out-of-scope, difficulty: easy}
+  - {id: x03, text: "帮我写一份 Python 爬虫", expect_tool: null, category: out-of-scope, difficulty: easy}
+  - {id: x04, text: "明天北京天气怎么样", expect_tool: null, category: out-of-scope, difficulty: easy}
+  - {id: x05, text: "推荐几只明天会涨的股票", expect_tool: null, category: out-of-scope, difficulty: hard}
+  - {id: x06, text: "茅台和五粮液哪个更值得买", expect_tool: null, category: out-of-scope, difficulty: hard}
+  - {id: x07, text: "帮我把这段年报翻译成中文", expect_tool: null, category: out-of-scope, difficulty: easy}
+  - {id: x08, text: "查一下某只基金的净值", expect_tool: null, category: out-of-scope, difficulty: medium}

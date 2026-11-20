@@ -1036,6 +1036,133 @@ shells:
     annotations:
       readOnlyHint: true
       destructiveHint: false
+- shell_id: l0.components.mcp
+  capability_id: l0.components
+  transport: stdio
+  shell_path: mcp_shells/l0_components/server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: available
+  layer: L0
+  capability_domain: data
+  exposure: control
+  source_modules:
+  - 59-通用组件管理
+  plugin_ready: true
+  llm_dependency: none
+  tools:
+  - name: a_share_quote
+    port: analysis
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: market_data_macro
+    port: analysis
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: sec_filing_reader
+    port: analysis
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: market_data_onchain
+    port: analysis
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: a_share_index_facts
+    port: analysis
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: official_fed_sec_event_search
+    port: collector
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: event_context_context
+    port: collector
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: ticket_reservation
+    port: event
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: reservation_job_list
+    port: store
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: reservation_assist_doctor
+    port: store
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: ticket_monitor_list
+    port: store
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: ticket_monitor_report
+    port: store
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: market_data_handoff
+    port: analysis
+    domain: data
+    read_write: write
+    requires_mandate: true
+    annotations:
+      readOnlyHint: false
+      destructiveHint: true
+  - name: event_context_handoff
+    port: collector
+    domain: data
+    read_write: write
+    requires_mandate: true
+    annotations:
+      readOnlyHint: false
+      destructiveHint: true
 worker_roles:
   research:
     description: 研究 Worker——认知检索 / 金融语义 / REA 分析（只读）
