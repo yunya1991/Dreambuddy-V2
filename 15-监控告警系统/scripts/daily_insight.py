@@ -370,8 +370,9 @@ def collect_outbox(repo: Path, win: dict, stuck_after: float) -> dict:
     db = repo / "23-四层闭环自进化交易架构/runtime/execution_outbox.db"
     if not db.exists():
         return {"present": False}
-    # submitted 是生产终态（mark_filled 未接线），因此同样不参与 stuck 统计
-    terminal = {"filled", "failed", "cancelled", "canceled", "done", "submitted"}
+    # submitted 是生产终态（mark_filled 未接线），因此同样不参与 stuck 统计；
+    # archived 为人工归档的历史失败存量，同样是终态，不参与 stuck 判定
+    terminal = {"filled", "failed", "cancelled", "canceled", "done", "submitted", "archived"}
     try:
         conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=2)
         cur = conn.cursor()

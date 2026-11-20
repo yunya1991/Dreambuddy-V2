@@ -233,6 +233,7 @@ def test_collect_outbox_stuck_only_pending(tmp_path: Path):
         ("pending", stale, stale),
         ("submitting", stale, stale),
         ("submitted", stale, stale),
+        ("archived", stale, stale),
     ]
     repo = _outbox_db(tmp_path, rows)
     win = di.window_for(date(2026, 11, 17), "Asia/Shanghai")
