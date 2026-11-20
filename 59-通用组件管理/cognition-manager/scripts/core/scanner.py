@@ -221,7 +221,7 @@ def resolve_link(src_rel: str, target: str, root=None):
     lowered = raw.lower()
     if lowered.startswith("file://"):
         # file:///abs/path 与工作区内的绝对路径，统一换算为工作区相对路径
-        raw = unquote(raw[7:])
+        raw = unquote(raw[7:]).split("#", 1)[0].split("?", 1)[0]
         if raw.startswith("/") and root is not None:
             try:
                 relative = os.path.relpath(raw, str(root))
@@ -237,7 +237,7 @@ def resolve_link(src_rel: str, target: str, root=None):
         if root is None:
             return None
         try:
-            relative = os.path.relpath(unquote(raw), str(root))
+            relative = os.path.relpath(unquote(raw).split("#", 1)[0].split("?", 1)[0], str(root))
         except ValueError:
             return None
         if relative == ".." or relative.startswith("../"):
@@ -341,7 +341,7 @@ def scan(root, config: dict, conn, full: bool = False) -> dict:
     max_text = int(config.get("max_text_bytes") or 10 * 1024 * 1024)
 
     existing_docs = {row["path"]: row for row in conn.execute("SELECT path, size, mtime FROM docs")}
-    existing_skills = {row["path"]: row for row in conn.execute("SELECT path, sha256 FROM skills")}
+    existing_skills = {row["path"]: row for row in conn.execute("SELECT path FROM skills")}
     seen_docs, seen_skills = set(), set()
 
     stats = {
@@ -354,6 +354,9 @@ def scan(root, config: dict, conn, full: bool = False) -> dict:
         "bytes": 0,
     }
     now = time.time()
+    if full:
+        # 全量重建时清空引用边，避免已删除/已改名文档的旧边残留。
+        conn.execute("DELETE FROM edges WHERE kind='references'")
 
     for path in iter_files(root, ignore):
         rel_path = path.relative_to(root).as_posix()
@@ -365,13 +368,7 @@ def scan(root, config: dict, conn, full: bool = False) -> dict:
 
         is_skill = path.name.lower() == "skill.md"
         if is_skill:
-            try:
-                digest = sha256_file(path)
-            except OSError:
-                stats["errors"] += 1
-                continue
-            previous = existing_skills.get(rel_path)
-            if previous and not full and previous["sha256"] == digest:
+            if rel_path in existing_skills and not full:
                 seen_skills.add(rel_path)
                 stats["unchanged"] += 1
                 continue
@@ -382,12 +379,11 @@ def scan(root, config: dict, conn, full: bool = False) -> dict:
                 stats["unchanged"] += 1
                 continue
 
-        if not is_skill:
-            try:
-                digest = sha256_file(path)
-            except OSError:
-                stats["errors"] += 1
-                continue
+        try:
+            digest = sha256_file(path)
+        except OSError:
+            stats["errors"] += 1
+            continue
 
         stats["scanned"] += 1
         stats["bytes"] += stat.st_size
@@ -414,7 +410,6 @@ def scan(root, config: dict, conn, full: bool = False) -> dict:
                 sha256=digest,
                 now=now,
             )
-            _replace_links(conn, rel_path, text, root, now)
             stats["skills"] += 1
             continue
 

@@ -30,6 +30,7 @@ if str(SCRIPTS_DIR) not in sys.path:
 import release_check  # noqa: E402
 from core import (  # noqa: E402
     admission,
+    codemap,
     contract,
     report,
     router,
@@ -186,6 +187,28 @@ class CoreCase(unittest.TestCase):
             "[另一个](README.md)\n"
         )
         self.assertEqual(scanner.extract_links(text), ["docs/guide.md", "README.md"])
+
+    def test_resolve_link_strips_file_url_fragment(self):
+        target = "file://" + str(self.root / "pkg" / "tool.py") + "#L3-L4"
+        self.assertEqual(scanner.resolve_link("docs/a.md", target, self.root), "pkg/tool.py")
+
+    def test_codemap_accepts_script_named_in_module_doc(self):
+        write_text(
+            self.root / "mod" / "SKILL.md",
+            (
+                "---\nname: mod\nversion: 0.1.0\n---\n\n## 脚本\n\n"
+                "| 文件 | 用途 |\n| tool.py | 已文档化 |\n"
+            ),
+        )
+        write_text(self.root / "mod" / "tool.py", "print('a')\n")
+        write_text(self.root / "mod" / "other.py", "print('b')\n")
+        conn = store.connect(self.root)
+        try:
+            result = codemap.analyze(self.root, store.load_config(self.root), conn)
+        finally:
+            conn.close()
+        self.assertEqual(result["metrics"]["code_without_doc"], 1)
+        self.assertEqual(result["details"]["code_without_doc"], ["mod/other.py"])
 
     def test_scan_incremental_is_idempotent(self):
         first = self.scan()
@@ -1451,7 +1474,8 @@ class ContractCase(unittest.TestCase):
         )
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn("契约 v1.0", proc.stdout)
-        self.assertIn("未提供孤儿文件指标", proc.stdout)
+        self.assertIn("orphan_files 未采集", proc.stdout)
+        self.assertIn("该项不参与评分", proc.stdout)
 
         full = json.dumps(
             {"metrics": {"broken_links": 3, "orphan_files": 1}, "inventory": {"documents": 100}}
@@ -1463,7 +1487,7 @@ class ContractCase(unittest.TestCase):
             timeout=60,
         )
         self.assertEqual(proc.returncode, 0, proc.stderr)
-        self.assertNotIn("未提供孤儿文件指标", proc.stdout)
+        self.assertNotIn("orphan_files 未采集", proc.stdout)
 
 
 if __name__ == "__main__":

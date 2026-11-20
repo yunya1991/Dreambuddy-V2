@@ -2,7 +2,7 @@
 name: cogsteward-pro
 slug: cogsteward-pro
 displayName: 认知管家 Pro（按次付费）
-version: 1.1.0
+version: 1.1.1
 summary: 按次付费的工作区体检：Agent 用可见工具采集断链、孤儿、技能冲突与代码-文档对应等九项指标，云端做基准对比，返回 A–D 等级、占比与 P0/P1 整改动作。
 description: 按次付费的工作区体检：由 Agent 使用自身只读工具采集断链、孤儿文件、技能冲突、行号越界、无文档代码、文档漂移等九项指标，不上传文档正文；云端返回 A–D 等级、占比与按优先级排序的整改动作。
 license: 商业授权（按次计费）
@@ -38,7 +38,7 @@ license: 商业授权（按次计费）
 | `metrics.code_without_doc` | 仅统计 `.py`/`.js`/`.ts`/`.tsx`/`.jsx`/`.sh`；仅限含 `INDEX.md` 或 `SKILL.md` 的目录；未被任何已索引文档链接引用者计 1；符号链接与忽略目录不计 |
 | `metrics.doc_drift` | 被引用文件 mtime 比引用文档晚 ≥3 天才计；`CHANGELOG.md`/`INDEX.md`/`ENGINEERING_INDEX.md` 作为来源不计；同一（文档, 目标）只计 1 次 |
 
-`index_drift` / `stale_sessions` / `pending_backlog` 仅在用户明确要求时采集；无法确定时填 `0`。
+`index_drift` / `stale_sessions` / `pending_backlog` 仅在用户明确要求时采集；**未采集就直接省略该字段**，不要填 `0`（填 0 会被当成健康项，服务端按 0 计分）。
 
 汇总成一份 JSON（**只含计数，不含路径、文件名与正文**）：
 
@@ -63,6 +63,15 @@ python3 scripts/pay.py --metrics '<上一步的 JSON>' --proof <Payment-Proof>
 ```
 
 服务地址：`https://www.neodrm.com/api/paid/cogsteward`（可用环境变量 `COGSTEWARD_ENDPOINT` 覆盖）。
+
+| 参数 | 说明 |
+|---|---|
+| `--proof` | 支付完成后回传的凭证；同一凭证重复提交不重复计费 |
+| `--timeout` | 单次请求超时秒数，默认 45 |
+| `--retries` | 带凭证时的重试次数，默认 2；无凭证调用不自动重试 |
+| `--describe` | 只打印请求体，不联网、不产生订单 |
+
+网络错误会映射为 `E_NET` / `E_TIMEOUT` / `E_SSL` / `E_JSON`，不会抛 Python 栈；凭证来源：支付结果、平台订单页、支付回调或支付结果邮件。
 
 ## 输出约定
 

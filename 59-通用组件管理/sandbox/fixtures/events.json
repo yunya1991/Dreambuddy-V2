@@ -1,0 +1,23 @@
+{
+  "_note": "结构样例，字段对齐服务端 service_result",
+  "resource_id": "/api/paid/data",
+  "skill": "event-context",
+  "cmd": "events",
+  "rows": [
+    {
+      "event_id": "e3b0c44298fc1c14",
+      "occurred_at": "2026-10-30",
+      "source": "SEC EDGAR",
+      "type": "10-K",
+      "subject": "AAPL",
+      "key_facts": ["Revenues 412.3B", "NetIncomeLoss 102.4B"],
+      "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000123/aapl-20260930.htm",
+      "license": "public-domain",
+      "retrieved_at": "2026-11-20T01:00:00+08:00"
+    }
+  ],
+  "missing": [],
+  "data_date": "2026-11-20",
+  "sources": [{"name": "SEC EDGAR", "license": "public-domain"}],
+  "method_ids": ["events.list_by_subject.v1"]
+}

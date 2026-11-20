@@ -1,0 +1,155 @@
+{
+  "version": "0.1",
+  "note": "目标行为基线：当前实现应当有多条 FAIL，作为优化前证据。script 相对 59-通用组件管理 根目录。",
+  "cases": [
+    {
+      "id": "mdp-first-402",
+      "title": "首次调用返回 402 并给出订单/金额/截止",
+      "script": "skills/market-data-pro/scripts/pay.py",
+      "args": ["--cmd", "macro", "--series", "DGS10,CPIAUCSL"],
+      "endpoint_env": "MDP_ENDPOINT",
+      "endpoint_path": "/api/paid/data",
+      "mock": {"mode": "ok"},
+      "expect": {"code": 2, "contains": ["需要按次付费", "PAY_", "元"], "requests": {"min": 1}}
+    },
+    {
+      "id": "mdp-proof-ok",
+      "title": "凭证有效时返回结构化结果",
+      "script": "skills/market-data-pro/scripts/pay.py",
+      "args": ["--cmd", "macro", "--series", "DGS10", "--proof", "sbx-ok"],
+      "endpoint_env": "MDP_ENDPOINT",
+      "endpoint_path": "/api/paid/data",
+      "mock": {"mode": "ok"},
+      "expect": {"code": 0, "contains": ["rows", "method_ids", "data_date"], "requests": {"min": 1}}
+    },
+    {
+      "id": "mdp-replay",
+      "title": "同一凭证重复提交提示幂等、不重复扣费",
+      "script": "skills/market-data-pro/scripts/pay.py",
+      "args": ["--cmd", "macro", "--series", "DGS10", "--proof", "sbx-ok"],
+      "endpoint_env": "MDP_ENDPOINT",
+      "endpoint_path": "/api/paid/data",
+      "mock": {"mode": "ok"},
+      "repeat": 2,
+      "expect": {"code": 0, "contains": ["幂等"], "requests": {"min": 2}}
+    },
+    {
+      "id": "mdp-proof-invalid",
+      "title": "凭证无效时给出重新获取指引",
+      "script": "skills/market-data-pro/scripts/pay.py",
+      "args": ["--cmd", "macro", "--series", "DGS10", "--proof", "sbx-invalid"],
+      "endpoint_env": "MDP_ENDPOINT",
+      "endpoint_path": "/api/paid/data",
+      "mock": {"mode": "ok"},
+      "expect": {"code": 2, "contains": ["无效或已过期"], "requests": {"min": 1}}
+    },
+    {
+      "id": "mdp-offline",
+      "title": "断网时给出中文提示而非 traceback",
+      "script": "skills/market-data-pro/scripts/pay.py",
+      "args": ["--cmd", "macro", "--series", "DGS10"],
+      "endpoint_env": "MDP_ENDPOINT",
+      "endpoint_path": "/api/paid/data",
+      "mock": {"mode": "offline"},
+      "expect": {"code": 1, "contains": ["网络"], "not_contains": ["Traceback"]}
+    },
+    {
+      "id": "mdp-timeout",
+      "title": "--timeout 生效并在超时后提示",
+      "script": "skills/market-data-pro/scripts/pay.py",
+      "args": ["--cmd", "macro", "--series", "DGS10", "--timeout", "2"],
+      "endpoint_env": "MDP_ENDPOINT",
+      "endpoint_path": "/api/paid/data",
+      "mock": {"mode": "ok", "delay": 3},
+      "expect": {"code": 1, "contains": ["超时"], "not_contains": ["Traceback"]}
+    },
+    {
+      "id": "mdp-502",
+      "title": "履约确认失败时提示同一凭证重试",
+      "script": "skills/market-data-pro/scripts/pay.py",
+      "args": ["--cmd", "macro", "--series", "DGS10", "--proof", "sbx-502"],
+      "endpoint_env": "MDP_ENDPOINT",
+      "endpoint_path": "/api/paid/data",
+      "mock": {"mode": "ok"},
+      "expect": {"code": 1, "contains": ["重试"], "not_contains": ["Traceback"]}
+    },
+    {
+      "id": "mdp-html",
+      "title": "服务端返回非 JSON 时给出格式错误提示",
+      "script": "skills/market-data-pro/scripts/pay.py",
+      "args": ["--cmd", "macro", "--series", "DGS10"],
+      "endpoint_env": "MDP_ENDPOINT",
+      "endpoint_path": "/api/paid/data",
+      "mock": {"mode": "html"},
+      "expect": {"code": 1, "contains": ["格式"], "not_contains": ["Traceback"]}
+    },
+    {
+      "id": "mdp-missing-param",
+      "title": "缺必填参数在本地拦截，不发请求",
+      "script": "skills/market-data-pro/scripts/pay.py",
+      "args": ["--cmd", "macro"],
+      "endpoint_env": "MDP_ENDPOINT",
+      "endpoint_path": "/api/paid/data",
+      "mock": {"mode": "ok"},
+      "expect": {"code": 1, "contains": ["缺少必填"], "requests": {"max": 0}}
+    },
+    {
+      "id": "mdp-typo-param",
+      "title": "参数拼错时本地报错并提示正确写法",
+      "script": "skills/market-data-pro/scripts/pay.py",
+      "args": ["--cmd", "macro", "--seris", "DGS10"],
+      "endpoint_env": "MDP_ENDPOINT",
+      "endpoint_path": "/api/paid/data",
+      "mock": {"mode": "ok"},
+      "expect": {"code": 1, "contains": ["未知参数"], "requests": {"max": 0}}
+    },
+    {
+      "id": "ecp-latest",
+      "title": "--latest 布尔开关真实进入请求体",
+      "script": "skills/event-context-pro/scripts/pay.py",
+      "args": ["--cmd", "event-context", "--subject", "AAPL", "--latest"],
+      "endpoint_env": "ECP_ENDPOINT",
+      "endpoint_path": "/api/paid/data",
+      "mock": {"mode": "ok"},
+      "expect": {"code": 2, "body_params": {"latest": true}, "requests": {"min": 1}}
+    },
+    {
+      "id": "ecp-events-ok",
+      "title": "events 命令返回可复核事件清单",
+      "script": "skills/event-context-pro/scripts/pay.py",
+      "args": ["--cmd", "events", "--subject", "AAPL", "--since", "30", "--proof", "sbx-ok"],
+      "endpoint_env": "ECP_ENDPOINT",
+      "endpoint_path": "/api/paid/data",
+      "mock": {"mode": "ok"},
+      "expect": {"code": 0, "contains": ["event_id", "license", "retrieved_at"], "requests": {"min": 1}}
+    },
+    {
+      "id": "cs-valid-report",
+      "title": "认知管家合法指标产出等级/评分",
+      "script": "skills/cogsteward-pro/scripts/report.py",
+      "args": ["--metrics", "{\"metrics\":{\"broken_links\":1,\"orphan_files\":2,\"skill_conflicts\":1},\"inventory\":{\"documents\":10,\"skills\":2}}"],
+      "expect": {"code": 0, "contains": ["等级 B", "评分 75"]}
+    },
+    {
+      "id": "cs-unknown-key",
+      "title": "未知指标给出警告而非静默忽略",
+      "script": "skills/cogsteward-pro/scripts/report.py",
+      "args": ["--metrics", "{\"metrics\":{\"broken_link\":3},\"inventory\":{\"documents\":10}}"],
+      "expect": {"code": 0, "contains": ["未知指标"]}
+    },
+    {
+      "id": "cs-missing-metrics",
+      "title": "缺测指标标记 unavailable 且不参与评分",
+      "script": "skills/cogsteward-pro/scripts/report.py",
+      "args": ["--metrics", "{\"metrics\":{\"broken_links\":0},\"inventory\":{\"documents\":10}}"],
+      "expect": {"code": 0, "contains": ["unavailable", "index_drift", "pending_backlog"]}
+    },
+    {
+      "id": "cs-workspace-fixture",
+      "title": "固定工作区样本的采集结果映射为预期等级",
+      "script": "skills/cogsteward-pro/scripts/report.py",
+      "args": ["--metrics", "{\"metrics\":{\"broken_links\":1,\"orphan_files\":1,\"skill_conflicts\":1,\"anchor_out_of_range\":1},\"inventory\":{\"documents\":4,\"skills\":2},\"mode\":\"dev\"}"],
+      "expect": {"code": 0, "contains": ["等级 C", "状态 poor"]}
+    }
+  ]
+}

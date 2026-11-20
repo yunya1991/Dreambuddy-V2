@@ -1,0 +1,20 @@
+{
+  "_note": "结构样例，字段对齐服务端 service_result",
+  "resource_id": "/api/paid/data",
+  "skill": "market-data-pro",
+  "cmd": "onchain",
+  "rows": [
+    {
+      "chain": "bitcoin",
+      "height": 921340,
+      "block_interval_sec": 601,
+      "tx_count_24h": 412893,
+      "gas_used_ratio": null,
+      "n": 144
+    }
+  ],
+  "missing": [],
+  "data_date": "2026-11-19",
+  "sources": [{"name": "blockchain-node", "license": "public-domain"}],
+  "method_ids": ["onchain.block_stats.v1"]
+}

@@ -2,7 +2,7 @@
 name: event-context-pro
 slug: event-context-pro
 displayName: 事件上下文专业版（按次付费）
-version: 1.0.0
+version: 1.0.1
 summary: 按次付费的事件上下文服务：从 SEC 与美联储官方公开源按主体或事件装配五层事实结构，输出事件、实体、同类事件次数、来源许可与边界声明。
 description: 按次付费的事件上下文服务：从 SEC 与美联储官方公开源按主体或事件装配五层事实结构，输出事件、实体、同类事件次数、来源许可与边界声明，全部可复核。
 license: 商业授权（按次计费）
@@ -33,6 +33,20 @@ python3 scripts/pay.py --cmd event-context --subject AAPL --latest
 
 服务地址：`https://www.neodrm.com/api/paid/data`（可用环境变量 `ECP_ENDPOINT` 覆盖）。
 
+### 通用参数
+
+| 参数 | 说明 |
+|---|---|
+| `--proof` | 支付完成后回传的凭证；同一凭证重复提交不重复计费 |
+| `--timeout` | 单次请求超时秒数，默认 60 |
+| `--retries` | 带凭证时的重试次数，默认 2；无凭证调用不自动重试 |
+| `--describe` | 只打印请求体，不联网、不产生订单 |
+
+`--latest` 是布尔开关，不接受取值；参数在本地校验，拼错或缺失会直接报错且不发出请求。
+
+- 返回样例与字段说明：[references/examples.md](./references/examples.md)
+- 支付、`--latest`、断网、参数错误的处理：[references/faq.md](./references/faq.md)
+
 ## 支持的命令
 
 | cmd | 参数 | 返回内容 |
@@ -60,3 +74,10 @@ python3 scripts/pay.py --cmd event-context --subject AAPL --latest
 
 - 只装配已发生的官方事实与同类事件计数；不含影响判断、方向判断或建议。
 - 付费凭证与订单绑定，同一凭证重复使用返回首次结果，不重复计费。
+
+## 版本记录
+
+| 版本 | 日期 | 说明 |
+|---|---|---|
+| 1.0.1 | 2026-11-20 | 评测整改：`--latest` 改为布尔开关并真实进入请求体、网络异常映射（不再抛栈）、`--timeout`/`--retries`/`--describe`、参数本地校验、支付凭证来源与失效提示；新增 examples / FAQ |
+| 1.0.0 | 2026-11-19 | 首次发布 |

@@ -2,7 +2,7 @@
 name: market-data-pro
 slug: market-data-pro
 displayName: 数据服务专业版（按次付费）
-version: 1.0.2
+version: 1.0.3
 summary: 按次付费的数据服务：海外宏观、美股披露、A股/港股/美股行情与链上数据，全部返回可复核的结构化事实。
 description: 按次付费的数据服务：海外宏观、美股披露、A股/港股/美股行情与链上数据，全部返回可复核的结构化事实。
 license: 商业授权（按次计费）
@@ -29,6 +29,20 @@ python3 scripts/pay.py --cmd macro --series DGS10,CPIAUCSL --proof <Payment-Proo
 ```
 
 服务地址：`https://www.neodrm.com/api/paid/data`（可用环境变量 `MDP_ENDPOINT` 覆盖）。
+
+### 通用参数
+
+| 参数 | 说明 |
+|---|---|
+| `--proof` | 支付完成后回传的凭证；同一凭证重复提交不重复计费 |
+| `--timeout` | 单次请求超时秒数，默认 60 |
+| `--retries` | 带凭证时的重试次数，默认 2；无凭证调用不自动重试（会生成新订单） |
+| `--describe` | 只打印请求体，不联网、不产生订单 |
+
+参数在本地校验：拼错或缺失会直接报错并给出正确写法，不会发出请求。
+
+- 返回样例与字段说明：[references/examples.md](./references/examples.md)
+- 支付、断网、502、参数错误的处理：[references/faq.md](./references/faq.md)
 
 ## 支持的命令
 
@@ -61,5 +75,6 @@ python3 scripts/pay.py --cmd macro --series DGS10,CPIAUCSL --proof <Payment-Proo
 
 | 版本 | 日期 | 说明 |
 |---|---|---|
+| 1.0.3 | 2026-11-20 | 评测整改：网络异常映射（E_NET/E_TIMEOUT/E_SSL/E_JSON，不再抛栈）、`--timeout`/`--retries`/`--describe`、参数本地校验、支付凭证来源与失效提示、幂等提示；新增 examples / FAQ |
 | 1.0.1 | 2026-11-20 | 补 `description` 字段；新增「服务端付费协议」说明（402 挑战 / 验付调用 / 幂等交付 / 履约确认） |
 | 1.0.0 | 2026-11-19 | 首次发布 |

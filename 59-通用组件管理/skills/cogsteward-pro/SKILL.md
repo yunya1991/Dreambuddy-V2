@@ -2,7 +2,7 @@
 name: 认知管家 Pro
 slug: cogsteward-pro
 displayName: 认知管家 Pro
-version: 1.1.0
+version: 1.1.1
 summary: 本地零上传的工作区体检：Agent 用可见工具采集断链、孤儿文件、技能重名、行号越界、无文档代码、文档漂移等指标，脚本只做纯计算，输出 A–D 等级、四类占比与 P0/P1 整改动作。
 description: 本地零上传的工作区体检：由 Agent 使用自身只读工具采集断链、孤儿文件、技能重名、行号越界、无文档代码、文档漂移等指标，脚本只做纯计算并给出 A–D 等级、占比与按优先级排序的整改动作。不联网、不上传任何数据。
 license: 商业授权（订阅制）
@@ -34,7 +34,7 @@ license: 商业授权（订阅制）
 | `metrics.code_without_doc` | 仅统计扩展名 `.py`/`.js`/`.ts`/`.tsx`/`.jsx`/`.sh` 的源码；仅限含 `INDEX.md` 或 `SKILL.md` 的目录；未被任何已索引文档链接引用者计 1；符号链接与 `node_modules`/`dist`/`.git` 不计 |
 | `metrics.doc_drift` | 被引用文件 mtime 比引用文档 mtime 晚 ≥3 天才计；`CHANGELOG.md`/`INDEX.md`/`ENGINEERING_INDEX.md` 作为来源文档不计；同一（文档, 目标）只计 1 次；目标不存在不计 |
 
-`index_drift` / `stale_sessions` / `pending_backlog` 仅在用户要求时采集，无法确定时填 `0`。
+`index_drift` / `stale_sessions` / `pending_backlog` 仅在用户要求时采集；**未采集就直接省略该字段**，不要填 `0`（填 0 会被当成健康项，抬高评分）。报告会把缺失项标记为 `coverage.<指标>=unavailable` 且不参与评分。
 
 汇总成一份 JSON（**只含计数，不含路径、文件名与正文**）：
 
@@ -50,9 +50,19 @@ license: 商业授权（订阅制）
 
 ```bash
 python3 scripts/report.py --metrics '<上一步的 JSON>'
+python3 scripts/report.py --metrics @metrics.json --format json --top 10   # 机器可读 / 展开全部整改项
 ```
 
 脚本只接收命令行里的 JSON，不读工作区文件。
+
+脚本会按 `references/metrics-contract.json` 校验输入：
+
+- 未知指标 → `WARN 未知指标：xxx（已忽略）`，不会静默吞掉；
+- 负数、非整数、布尔值 → `ERR` 并以退出码 1 结束；
+- 未采集指标 → 输出「覆盖：… 未采集（unavailable），不参与评分」；
+- `--top N` 控制整改项展示条数（默认 3），`--format json` 输出完整结构化报告。
+
+排错见 [references/faq.md](./references/faq.md)。
 
 ## 输出约定
 

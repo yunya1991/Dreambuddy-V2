@@ -1,0 +1,34 @@
+{
+  "_note": "结构样例，对齐 services/skillhub-audit-api/src/cogsteward.js 的输出",
+  "schema_version": "1.0",
+  "command": "cogsteward-report",
+  "mode": "dev",
+  "generated_at": "2026-11-20T01:00:00+08:00",
+  "grade": "C",
+  "score": 60,
+  "health": "attention",
+  "coverage": {"orphan": "complete"},
+  "metrics": {
+    "broken_links": 3,
+    "orphan_files": 29,
+    "index_drift": 0,
+    "skill_conflicts": 0,
+    "stale_sessions": 0,
+    "pending_backlog": 0,
+    "anchor_out_of_range": 0,
+    "code_without_doc": 0,
+    "doc_drift": 0
+  },
+  "inventory": {"documents": 47, "skills": 9},
+  "ratios": {
+    "broken_link_rate": {"id": "broken_link_rate", "label": "断链占比", "value": 6.38, "status": "high", "warn_at": 1, "high_at": 5},
+    "orphan_rate": {"id": "orphan_rate", "label": "孤儿文件占比", "value": 61.7, "status": "high", "warn_at": 5, "high_at": 15}
+  },
+  "findings": [
+    {"id": "broken_links", "priority": "P0", "value": 3, "action": "cm index --check 定位失效链接，逐个修复或移入归档目录"},
+    {"id": "orphan_files", "priority": "P0", "value": 29, "action": "cm scan 重新登记未入索引文件；长期无引用的移出工作区"}
+  ],
+  "total_findings": 2,
+  "notes": [],
+  "disclaimer": "仅基于客户端上报的指标与指针计算，不读取文档正文；比率在分母为 0 时留空。"
+}

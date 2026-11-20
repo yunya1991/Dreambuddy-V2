@@ -1,0 +1,36 @@
+{
+  "_note": "结构样例，字段对齐服务端 service_result；可用云端订单库同名字段脱敏覆盖",
+  "resource_id": "/api/paid/data",
+  "skill": "market-data-pro",
+  "cmd": "macro",
+  "rows": [
+    {
+      "series": "DGS10",
+      "label": "10-Year Treasury Constant Maturity Rate",
+      "latest": {"date": "2026-11-18", "value": 4.12},
+      "change_1m": -0.08,
+      "change_3m": 0.21,
+      "percentile_1y": 62.5,
+      "vol_annual": 0.83,
+      "n": 252
+    },
+    {
+      "series": "CPIAUCSL",
+      "label": "Consumer Price Index: All Urban Consumers",
+      "latest": {"date": "2026-10-01", "value": 322.145},
+      "change_1m": 0.24,
+      "change_3m": 0.71,
+      "percentile_1y": 71.2,
+      "vol_annual": 0.029,
+      "n": 120
+    }
+  ],
+  "missing": [],
+  "data_date": "2026-11-18",
+  "sources": [
+    {"name": "FRED", "series_url": "https://fred.stlouisfed.org/series/DGS10", "license": "public-domain"},
+    {"name": "BLS", "series_url": "https://fred.stlouisfed.org/series/CPIAUCSL", "license": "public-domain"}
+  ],
+  "method_ids": ["macro.latest_change_percentile.v1"],
+  "generated_at": "2026-11-20T01:00:00+08:00"
+}

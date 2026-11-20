@@ -1,0 +1,34 @@
+{
+  "_note": "结构样例，字段对齐服务端 service_result",
+  "resource_id": "/api/paid/data",
+  "skill": "market-data-pro",
+  "cmd": "quotes",
+  "rows": [
+    {
+      "symbol": "sh600519",
+      "close": 1512.3,
+      "change_1d": 0.0123,
+      "change_5d": -0.0245,
+      "change_20d": 0.0812,
+      "percentile_1y": 44.6,
+      "vol_annual": 0.286,
+      "max_drawdown_1y": -0.312,
+      "n": 242
+    },
+    {
+      "symbol": "hk00700",
+      "close": 402.6,
+      "change_1d": -0.0067,
+      "change_5d": 0.0152,
+      "change_20d": 0.0523,
+      "percentile_1y": 58.1,
+      "vol_annual": 0.334,
+      "max_drawdown_1y": -0.401,
+      "n": 240
+    }
+  ],
+  "missing": [],
+  "data_date": "2026-11-19",
+  "sources": [{"name": "exchange-daily", "license": "commercial-redistribution"}],
+  "method_ids": ["quotes.close_change_percentile.v1"]
+}

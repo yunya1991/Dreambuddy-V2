@@ -89,9 +89,31 @@ def analyze(root, config, conn):
         for d in module_docs
         if (root / d / "INDEX.md").exists() or (root / d / "SKILL.md").exists()
     }
-    gaps = [
-        rel for rel in code_files if dirname(rel) in documented_modules and rel not in referenced
-    ]
+
+    text_cache = {}
+
+    def module_text(doc_dir: str) -> str:
+        if doc_dir not in text_cache:
+            parts = []
+            for name in ("SKILL.md", "INDEX.md", "README.md"):
+                doc = root / doc_dir / name
+                if doc.exists():
+                    try:
+                        parts.append(doc.read_text(encoding="utf-8", errors="ignore"))
+                    except OSError:
+                        pass
+            text_cache[doc_dir] = "\n".join(parts)
+        return text_cache[doc_dir]
+
+    gaps = []
+    for rel in code_files:
+        module = dirname(rel)
+        if module not in documented_modules or rel in referenced:
+            continue
+        # 同目录文档里点名（如脚本表）也算已文档化，不强制写成链接。
+        if os.path.basename(rel) in module_text(module):
+            continue
+        gaps.append(rel)
 
     drift = []
     seen_drift = set()
