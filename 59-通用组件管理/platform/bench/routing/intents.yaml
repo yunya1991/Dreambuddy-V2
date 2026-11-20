@@ -40,6 +40,25 @@ intents:
   - {id: r03, text: "我现在都在监控哪些余票任务", expect_tool: ticket_monitor_list, category: reservation, difficulty: medium}
   - {id: r04, text: "给我一份余票监控报告", expect_tool: ticket_monitor_report, category: reservation, difficulty: medium}
 
+  # ---- 压力集：超短意图（用户真实口语，缺主语/动词）----
+  - {id: p01, text: "茅台多少", expect_tool: a_share_quote, category: pressure, difficulty: hard}
+  - {id: p02, text: "宁德咋样", expect_tool: a_share_quote, category: pressure, difficulty: hard}
+  - {id: p03, text: "苹果 8-K", expect_tool: sec_filing_reader, category: pressure, difficulty: hard}
+  - {id: p04, text: "特斯拉 10-Q 营收", expect_tool: sec_filing_reader, category: pressure, difficulty: hard}
+  - {id: p05, text: "美国失业率", expect_tool: market_data_macro, category: pressure, difficulty: medium}
+  - {id: p06, text: "ETH 活跃地址", expect_tool: market_data_onchain, category: pressure, difficulty: medium}
+  - {id: p07, text: "上证跌了多少", expect_tool: a_share_index_facts, category: pressure, difficulty: medium}
+  - {id: p08, text: "国博还有票吗", expect_tool: ticket_reservation, category: pressure, difficulty: hard}
+  - {id: p09, text: "我监控了啥", expect_tool: ticket_monitor_list, category: pressure, difficulty: hard}
+  - {id: p10, text: "美联储说啥了", expect_tool: official_fed_sec_event_search, category: pressure, difficulty: hard}
+
+  # ---- 压力集越界：看似相关但不该接 ----
+  - {id: p11, text: "茅台明天能涨停吗", expect_tool: null, category: pressure-oos, difficulty: hard}
+  - {id: p12, text: "帮我自动抢国博票", expect_tool: null, category: pressure-oos, difficulty: hard}
+  - {id: p13, text: "BTC 现价", expect_tool: null, category: pressure-oos, difficulty: easy}
+  - {id: p14, text: "给我推荐个基金", expect_tool: null, category: pressure-oos, difficulty: medium}
+  - {id: p15, text: "写个量化策略", expect_tool: null, category: pressure-oos, difficulty: easy}
+
   # ---- 越界：不该选我们（选 none 或竞品都算正确）----
   - {id: x01, text: "比特币现在多少钱", expect_tool: null, category: out-of-scope, difficulty: easy}
   - {id: x02, text: "美股 AAPL 实时价格", expect_tool: null, category: out-of-scope, difficulty: easy}
