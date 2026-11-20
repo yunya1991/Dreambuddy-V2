@@ -43,7 +43,9 @@ def post(endpoint, payload, proof=None):
 
 def main(argv=None):
     p = argparse.ArgumentParser(description="认知管家 Pro 按次付费客户端（仅发送指标 JSON）")
-    p.add_argument("--metrics", required=True, help="指标 JSON，例如 {\"metrics\":{...},\"inventory\":{...}}")
+    p.add_argument(
+        "--metrics", required=True, help='指标 JSON，例如 {"metrics":{...},"inventory":{...}}'
+    )
     p.add_argument("--metrics-file", default="", help="可选：从显式指定文件读取同一份 JSON")
     p.add_argument("--proof", default="", help="支付宝支付完成后返回的 Payment-Proof 头")
     p.add_argument("--endpoint", default=os.environ.get("COGSTEWARD_ENDPOINT", DEFAULT_ENDPOINT))
@@ -63,13 +65,19 @@ def main(argv=None):
     status, result = post(args.endpoint, payload, args.proof.strip() or None)
 
     if status == 402:
-        print("需要按次付费（金额 {} 元，订单 {}，请在 {} 前完成）".format(
-            result.get("amount"), result.get("out_trade_no"), result.get("pay_before")))
+        print(
+            "需要按次付费（金额 {} 元，订单 {}，请在 {} 前完成）".format(
+                result.get("amount"), result.get("out_trade_no"), result.get("pay_before")
+            )
+        )
         print("完成支付后，将支付凭证通过 --proof 重试同一命令。")
         return 2
 
     if status != 200:
-        print("调用失败（HTTP {}）：{}".format(status, result.get("message") or result), file=sys.stderr)
+        print(
+            "调用失败（HTTP {}）：{}".format(status, result.get("message") or result),
+            file=sys.stderr,
+        )
         return 1
 
     print(json.dumps(result.get("content", result), ensure_ascii=False, indent=2))

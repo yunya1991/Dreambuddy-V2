@@ -61,9 +61,11 @@ def pctile(values, window):
 def vol(values, window=20):
     if len(values) < window + 1:
         return None
-    rets = [math.log(values[i] / values[i - 1])
-            for i in range(len(values) - window, len(values))
-            if values[i - 1] > 0 and values[i] > 0]
+    rets = [
+        math.log(values[i] / values[i - 1])
+        for i in range(len(values) - window, len(values))
+        if values[i - 1] > 0 and values[i] > 0
+    ]
     if len(rets) < 2:
         return None
     mean = sum(rets) / len(rets)
@@ -106,18 +108,34 @@ def fmt_pct(x, digits=2):
 
 def render(rows, missing, window):
     lines = [
-        "行情事实 · 数据日期 {} · 生成于 {}".format(rows[0]["date"] if rows else "—",
-                                             datetime.now().strftime("%Y-%m-%d %H:%M")),
+        "行情事实 · 数据日期 {} · 生成于 {}".format(
+            rows[0]["date"] if rows else "—", datetime.now().strftime("%Y-%m-%d %H:%M")
+        ),
         "",
-        "| 标的 | 收盘 | 1日 | 5日 | 20日 | {}期分位 | 20日波动(年化) | {}期最大回撤 | 样本量 |".format(window, window),
+        "| 标的 | 收盘 | 1日 | 5日 | 20日 | {}期分位 | 20日波动(年化) | {}期最大回撤 | 样本量 |".format(
+            window, window
+        ),
         "|---|---|---|---|---|---|---|---|---|",
     ]
     for r in rows:
-        p = "—" if r["pctile"] is None else "{:.1f}% (n={})".format(r["pctile"] * 100, r["pctile_n"])
-        lines.append("| {} | {:.3f} | {} | {} | {} | {} | {} | {} | {} |".format(
-            r["symbol"], r["close"], fmt_pct(r["chg_1d"]), fmt_pct(r["chg_5d"]), fmt_pct(r["chg_20d"]),
-            p, "—" if r["vol_20d"] is None else "{:.1f}%".format(r["vol_20d"] * 100),
-            fmt_pct(r["max_drawdown"]), r["observations"]))
+        p = (
+            "—"
+            if r["pctile"] is None
+            else "{:.1f}% (n={})".format(r["pctile"] * 100, r["pctile_n"])
+        )
+        lines.append(
+            "| {} | {:.3f} | {} | {} | {} | {} | {} | {} | {} |".format(
+                r["symbol"],
+                r["close"],
+                fmt_pct(r["chg_1d"]),
+                fmt_pct(r["chg_5d"]),
+                fmt_pct(r["chg_20d"]),
+                p,
+                "—" if r["vol_20d"] is None else "{:.1f}%".format(r["vol_20d"] * 100),
+                fmt_pct(r["max_drawdown"]),
+                r["observations"],
+            )
+        )
     lines += [
         "",
         "方法ID：M11 区间变动 / M12 序列分位 / M13 年化波动 / M14 最大回撤",
@@ -145,15 +163,21 @@ def main(argv=None):
             missing.append("{}({})".format(s, type(exc).__name__))
 
     if a.json:
-        print(json.dumps({
-            "module": "D4",
-            "generated_at": datetime.now().isoformat(timespec="seconds"),
-            "window": a.window,
-            "rows": rows,
-            "missing": missing,
-            "sources": [{"name": "腾讯行情公开日线", "url": KLINE, "license": LICENSE}],
-            "method_ids": ["M11", "M12", "M13", "M14"],
-        }, ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                {
+                    "module": "D4",
+                    "generated_at": datetime.now().isoformat(timespec="seconds"),
+                    "window": a.window,
+                    "rows": rows,
+                    "missing": missing,
+                    "sources": [{"name": "腾讯行情公开日线", "url": KLINE, "license": LICENSE}],
+                    "method_ids": ["M11", "M12", "M13", "M14"],
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
         return 0 if rows else 1
 
     if not rows:

@@ -275,7 +275,8 @@ python3 tools/build_product.py --product cogsteward --variant pro
 
 | 阶段 | 内容 | 验收标准 |
 |---|---|---|
-| **P0 纳管** | `git add 59-通用组件管理/` + `.gitignore`（`__pycache__/`、`.cm/`、`dist/`、`node_modules/`） | 基线 commit 完成；`git ls-files` ≥ 100；`__pycache__` 不入库 |
+| **P0 纳管** ✅ | `git add 59-通用组件管理/` + `.gitignore`（`__pycache__/`、`.cm/`、`dist/`、`node_modules/`、`.env`） | 基线 commit `a0f6dd4725`（109 文件 / 20460 行），tag `pre-restructure`；`__pycache__` 未入库 |
+| **P0b 规范归一** ✅ | `ruff --fix` + `black` + 手工修复 E402 / B904 / B905 / F841 / B007 / C416；`zip` 统一 `strict=False` 保持原行为 | ruff 0 告警、black 38 文件通过、认知管家 84 通过 2 跳过（与基线一致） |
 | **P1 契约层** | 5 份契约 + 3 个 tools 骨架 | 契约结构校验通过；`check_boundaries.py` 对现状跑出违规清单（作为改造前基线） |
 | **P2 目录迁移** | 按 §4 映射 `git mv` | 映射表 100% 落地；根目录只剩 INDEX/contracts/kernel/components/products/platform/tools/docs/assets/dist；`git log --follow` 可见历史 |
 | **P3 kernel 抽取** | 4 个 kernel 模块 + 注入机制 | 源码期同名副本 0 份（`find` 校验）；认知管家 85 项自检、后端 13 项测试全绿 |

@@ -100,7 +100,7 @@ def pack(root, config: dict, conn, query: str, budget: int = DEFAULT_BUDGET) -> 
     try:
         budget = int(budget)
     except (TypeError, ValueError):
-        raise store.CmError(store.EXIT_USAGE, "预算必须是整数")
+        raise store.CmError(store.EXIT_USAGE, "预算必须是整数") from None
     if budget <= 0:
         raise store.CmError(store.EXIT_USAGE, "预算必须大于 0")
 
@@ -110,9 +110,7 @@ def pack(root, config: dict, conn, query: str, budget: int = DEFAULT_BUDGET) -> 
 
     scores, reasons, meta = {}, {}, {}
 
-    for row in conn.execute(
-        "SELECT path, title, doc_type, size FROM docs WHERE status = 'active'"
-    ):
+    for row in conn.execute("SELECT path, title, doc_type, size FROM docs WHERE status = 'active'"):
         score, row_reasons = _score_row(row["title"], row["path"], keywords)
         if score <= 0:
             continue

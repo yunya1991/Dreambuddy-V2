@@ -20,25 +20,86 @@ from urllib.parse import unquote
 from . import store
 
 TEXT_EXTS = {
-    ".md", ".markdown", ".txt", ".rst",
-    ".yaml", ".yml", ".json", ".jsonl", ".toml", ".ini", ".cfg", ".conf",
-    ".py", ".sh", ".bash", ".zsh", ".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx",
-    ".html", ".htm", ".css", ".scss", ".sql", ".xml", ".csv", ".rs", ".go",
-    ".java", ".kt", ".c", ".h", ".cpp", ".hpp", ".rb", ".php", ".lua", ".vue",
-    ".svg", ".tex", ".bat", ".ps1", ".dockerfile", ".makefile", ".gitignore",
+    ".md",
+    ".markdown",
+    ".txt",
+    ".rst",
+    ".yaml",
+    ".yml",
+    ".json",
+    ".jsonl",
+    ".toml",
+    ".ini",
+    ".cfg",
+    ".conf",
+    ".py",
+    ".sh",
+    ".bash",
+    ".zsh",
+    ".js",
+    ".mjs",
+    ".cjs",
+    ".ts",
+    ".tsx",
+    ".jsx",
+    ".html",
+    ".htm",
+    ".css",
+    ".scss",
+    ".sql",
+    ".xml",
+    ".csv",
+    ".rs",
+    ".go",
+    ".java",
+    ".kt",
+    ".c",
+    ".h",
+    ".cpp",
+    ".hpp",
+    ".rb",
+    ".php",
+    ".lua",
+    ".vue",
+    ".svg",
+    ".tex",
+    ".bat",
+    ".ps1",
+    ".dockerfile",
+    ".makefile",
+    ".gitignore",
 }
 
 BINARY_EXTS = {
     ".pdf": "pdf",
-    ".png": "image", ".jpg": "image", ".jpeg": "image", ".gif": "image",
-    ".webp": "image", ".bmp": "image", ".ico": "image", ".tiff": "image",
-    ".xlsx": "sheet", ".xls": "sheet", ".csvx": "sheet",
-    ".docx": "doc", ".doc": "doc",
-    ".pptx": "slide", ".ppt": "slide",
-    ".zip": "archive", ".tar": "archive", ".gz": "archive", ".7z": "archive",
+    ".png": "image",
+    ".jpg": "image",
+    ".jpeg": "image",
+    ".gif": "image",
+    ".webp": "image",
+    ".bmp": "image",
+    ".ico": "image",
+    ".tiff": "image",
+    ".xlsx": "sheet",
+    ".xls": "sheet",
+    ".csvx": "sheet",
+    ".docx": "doc",
+    ".doc": "doc",
+    ".pptx": "slide",
+    ".ppt": "slide",
+    ".zip": "archive",
+    ".tar": "archive",
+    ".gz": "archive",
+    ".7z": "archive",
     ".rar": "archive",
-    ".mp4": "media", ".mov": "media", ".mp3": "media", ".wav": "media",
-    ".db": "data", ".sqlite": "data", ".npy": "data", ".parquet": "data",
+    ".mp4": "media",
+    ".mov": "media",
+    ".mp3": "media",
+    ".wav": "media",
+    ".db": "data",
+    ".sqlite": "data",
+    ".npy": "data",
+    ".parquet": "data",
 }
 
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
@@ -46,11 +107,27 @@ SKIP_SCHEMES = ("http://", "https://", "mailto:", "tel:", "ftp://", "data:", "ja
 LINK_DOC_EXT = {".md", ".markdown", ".mdx"}
 
 DOC_TYPE_BY_EXT = {
-    ".md": "doc", ".markdown": "doc", ".txt": "note", ".rst": "doc",
-    ".yaml": "config", ".yml": "config", ".json": "config", ".jsonl": "config",
-    ".toml": "config", ".ini": "config", ".cfg": "config", ".conf": "config",
-    ".py": "code", ".sh": "code", ".js": "code", ".ts": "code", ".tsx": "code",
-    ".jsx": "code", ".rs": "code", ".go": "code", ".java": "code",
+    ".md": "doc",
+    ".markdown": "doc",
+    ".txt": "note",
+    ".rst": "doc",
+    ".yaml": "config",
+    ".yml": "config",
+    ".json": "config",
+    ".jsonl": "config",
+    ".toml": "config",
+    ".ini": "config",
+    ".cfg": "config",
+    ".conf": "config",
+    ".py": "code",
+    ".sh": "code",
+    ".js": "code",
+    ".ts": "code",
+    ".tsx": "code",
+    ".jsx": "code",
+    ".rs": "code",
+    ".go": "code",
+    ".java": "code",
 }
 
 
@@ -181,7 +258,8 @@ def iter_files(root: Path, ignore):
     ignore_set = {str(item).lower() for item in ignore}
     for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
         dirnames[:] = sorted(
-            name for name in dirnames
+            name
+            for name in dirnames
             if name.lower() not in ignore_set and not name.startswith(".cm")
         )
         for name in sorted(filenames):
@@ -194,8 +272,18 @@ def iter_files(root: Path, ignore):
             yield path
 
 
-def _upsert_doc(conn, rel_path: str, *, title: str, doc_type: str, module: str,
-                sha256: str, size: int, mtime: float, now: float):
+def _upsert_doc(
+    conn,
+    rel_path: str,
+    *,
+    title: str,
+    doc_type: str,
+    module: str,
+    sha256: str,
+    size: int,
+    mtime: float,
+    now: float,
+):
     conn.execute(
         """
         INSERT INTO docs(path, title, doc_type, module, tags, sha256, size, mtime, indexed_at, status)
@@ -214,8 +302,9 @@ def _upsert_doc(conn, rel_path: str, *, title: str, doc_type: str, module: str,
         pass  # FTS5 不可用时自动降级，不影响核心登记
 
 
-def _upsert_skill(conn, rel_path: str, *, name: str, version: str, triggers,
-                  sha256: str, now: float):
+def _upsert_skill(
+    conn, rel_path: str, *, name: str, version: str, triggers, sha256: str, now: float
+):
     conn.execute(
         """
         INSERT INTO skills(name, path, version, triggers_json, depends_on_json, provides_json,
@@ -251,17 +340,18 @@ def scan(root, config: dict, conn, full: bool = False) -> dict:
     ignore = config.get("ignore") or []
     max_text = int(config.get("max_text_bytes") or 10 * 1024 * 1024)
 
-    existing_docs = {
-        row["path"]: row for row in conn.execute("SELECT path, size, mtime FROM docs")
-    }
-    existing_skills = {
-        row["path"]: row for row in conn.execute("SELECT path, sha256 FROM skills")
-    }
+    existing_docs = {row["path"]: row for row in conn.execute("SELECT path, size, mtime FROM docs")}
+    existing_skills = {row["path"]: row for row in conn.execute("SELECT path, sha256 FROM skills")}
     seen_docs, seen_skills = set(), set()
 
     stats = {
-        "scanned": 0, "text": 0, "binary": 0, "skills": 0,
-        "unchanged": 0, "errors": 0, "bytes": 0,
+        "scanned": 0,
+        "text": 0,
+        "binary": 0,
+        "skills": 0,
+        "unchanged": 0,
+        "errors": 0,
+        "bytes": 0,
     }
     now = time.time()
 
@@ -316,7 +406,8 @@ def scan(root, config: dict, conn, full: bool = False) -> dict:
             if isinstance(triggers, str):
                 triggers = [item.strip() for item in re.split(r"[,，]", triggers) if item.strip()]
             _upsert_skill(
-                conn, rel_path,
+                conn,
+                rel_path,
                 name=str(meta.get("name") or path.parent.name),
                 version=str(meta.get("version") or ""),
                 triggers=triggers,
@@ -336,7 +427,8 @@ def scan(root, config: dict, conn, full: bool = False) -> dict:
             except OSError:
                 text = ""
             _upsert_doc(
-                conn, rel_path,
+                conn,
+                rel_path,
                 title=title_of(path, text),
                 doc_type=doc_type_of(path, kind),
                 module=module_of(rel_path),
@@ -348,7 +440,8 @@ def scan(root, config: dict, conn, full: bool = False) -> dict:
             _replace_links(conn, rel_path, text, root, now)
         else:
             _upsert_doc(
-                conn, rel_path,
+                conn,
+                rel_path,
                 title=path.stem[:200],
                 doc_type=doc_type_of(path, kind),
                 module=module_of(rel_path),

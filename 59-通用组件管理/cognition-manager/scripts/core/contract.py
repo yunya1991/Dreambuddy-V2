@@ -12,10 +12,23 @@ from pathlib import Path
 CONTRACT_PATH = Path(__file__).resolve().parents[2] / "references" / "metrics-contract.json"
 DENOMINATORS = ("documents", "skills", "sessions")
 REQUIRED_METRIC_FIELDS = (
-    "key", "label", "definition", "warn_at", "high_at", "weight", "action",
+    "key",
+    "label",
+    "definition",
+    "warn_at",
+    "high_at",
+    "weight",
+    "action",
 )
 REQUIRED_RATIO_FIELDS = (
-    "id", "label", "metric", "denominator", "warn_at", "high_at", "weight", "action",
+    "id",
+    "label",
+    "metric",
+    "denominator",
+    "warn_at",
+    "high_at",
+    "weight",
+    "action",
 )
 
 
@@ -28,11 +41,11 @@ def load(path=None) -> dict:
     try:
         raw = target.read_text(encoding="utf-8")
     except OSError as exc:
-        raise ContractError("指标契约不可读：{}（{}）".format(target, exc))
+        raise ContractError("指标契约不可读：{}（{}）".format(target, exc)) from exc
     try:
         data = json.loads(raw)
     except ValueError as exc:
-        raise ContractError("指标契约不是合法 JSON：{}（{}）".format(target, exc))
+        raise ContractError("指标契约不是合法 JSON：{}（{}）".format(target, exc)) from exc
     validate(data)
     return data
 
@@ -56,7 +69,9 @@ def validate(data: dict) -> None:
             raise ContractError("metrics 元素必须是对象")
         missing = [field for field in REQUIRED_METRIC_FIELDS if field not in item]
         if missing:
-            raise ContractError("指标 {} 缺少字段：{}".format(item.get("key", "?"), ", ".join(missing)))
+            raise ContractError(
+                "指标 {} 缺少字段：{}".format(item.get("key", "?"), ", ".join(missing))
+            )
         key = item["key"]
         if key in keys:
             raise ContractError("指标 key 重复：{}".format(key))
@@ -77,7 +92,9 @@ def validate(data: dict) -> None:
             raise ContractError("ratios 元素必须是对象")
         missing = [field for field in REQUIRED_RATIO_FIELDS if field not in item]
         if missing:
-            raise ContractError("占比 {} 缺少字段：{}".format(item.get("id", "?"), ", ".join(missing)))
+            raise ContractError(
+                "占比 {} 缺少字段：{}".format(item.get("id", "?"), ", ".join(missing))
+            )
         if item["id"] in ratio_ids:
             raise ContractError("占比 id 重复：{}".format(item["id"]))
         ratio_ids.append(item["id"])

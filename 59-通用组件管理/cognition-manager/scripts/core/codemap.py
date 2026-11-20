@@ -5,7 +5,6 @@
 
 import os
 import re
-import sqlite3
 from pathlib import Path
 from posixpath import dirname, join, normpath
 
@@ -46,14 +45,18 @@ def analyze(root, config, conn):
 
     anchors = []
     seen_anchor = set()
-    docs = [rel for rel in walk(root, ignore, {".md", ".markdown", ".mdx"})]
+    docs = list(walk(root, ignore, {".md", ".markdown", ".mdx"}))
     for rel in docs:
         try:
             text = (root / rel).read_text(encoding="utf-8", errors="ignore")
         except OSError:
             continue
         for match in ANCHOR_RE.finditer(text):
-            target, start, end = match.group(1), int(match.group(2)), int(match.group(3) or match.group(2))
+            target, start, end = (
+                match.group(1),
+                int(match.group(2)),
+                int(match.group(3) or match.group(2)),
+            )
             resolved = normpath(join(dirname(rel), target)) if target else rel
             full = root / resolved
             if not full.exists():
@@ -64,22 +67,31 @@ def analyze(root, config, conn):
                 if key in seen_anchor:
                     continue
                 seen_anchor.add(key)
-                anchors.append({
-                    "doc": rel, "target": target, "lines": [start, end], "file_lines": total,
-                })
+                anchors.append(
+                    {
+                        "doc": rel,
+                        "target": target,
+                        "lines": [start, end],
+                        "file_lines": total,
+                    }
+                )
 
     referenced = set()
     for (dst,) in conn.execute("SELECT DISTINCT dst FROM edges WHERE kind='references'"):
         referenced.add(dst)
 
     module_docs = set()
-    code_files = [rel for rel in walk(root, ignore, CODE_EXT)]
+    code_files = list(walk(root, ignore, CODE_EXT))
     for rel in code_files:
         module_docs.add(dirname(rel))
-    documented_modules = {d for d in module_docs
-                          if (root / d / "INDEX.md").exists() or (root / d / "SKILL.md").exists()}
-    gaps = [rel for rel in code_files
-            if dirname(rel) in documented_modules and rel not in referenced]
+    documented_modules = {
+        d
+        for d in module_docs
+        if (root / d / "INDEX.md").exists() or (root / d / "SKILL.md").exists()
+    }
+    gaps = [
+        rel for rel in code_files if dirname(rel) in documented_modules and rel not in referenced
+    ]
 
     drift = []
     seen_drift = set()
@@ -101,8 +113,13 @@ def analyze(root, config, conn):
             continue
         if src_mtime and dst_mtime - float(src_mtime) >= 3 * 86400:
             seen_drift.add((src, dst))
-            drift.append({"doc": src, "target": dst,
-                          "doc_age_days": round((dst_mtime - float(src_mtime)) / 86400, 1)})
+            drift.append(
+                {
+                    "doc": src,
+                    "target": dst,
+                    "doc_age_days": round((dst_mtime - float(src_mtime)) / 86400, 1),
+                }
+            )
 
     return {
         "metrics": {
@@ -126,9 +143,11 @@ def format_map(result, gaps_only=False):
         "无文档代码  {}".format(metrics["code_without_doc"]),
         "文档漂移    {}".format(metrics["doc_drift"]),
     ]
-    for key, title in (("anchor_out_of_range", "行号越界"),
-                       ("code_without_doc", "无文档代码"),
-                       ("doc_drift", "文档漂移")):
+    for key, title in (
+        ("anchor_out_of_range", "行号越界"),
+        ("code_without_doc", "无文档代码"),
+        ("doc_drift", "文档漂移"),
+    ):
         items = result["details"].get(key) or []
         if not items:
             continue
@@ -138,9 +157,19 @@ def format_map(result, gaps_only=False):
             if key == "code_without_doc":
                 lines.append("  - " + item)
             elif key == "doc_drift":
-                lines.append("  - {} → {}（文件比文档新 {} 天）".format(
-                    item["doc"], item["target"], item["doc_age_days"]))
+                lines.append(
+                    "  - {} → {}（文件比文档新 {} 天）".format(
+                        item["doc"], item["target"], item["doc_age_days"]
+                    )
+                )
             else:
-                lines.append("  - {} → {} 引用 L{}-L{}，文件仅 {} 行".format(
-                    item["doc"], item["target"], item["lines"][0], item["lines"][1], item["file_lines"]))
+                lines.append(
+                    "  - {} → {} 引用 L{}-L{}，文件仅 {} 行".format(
+                        item["doc"],
+                        item["target"],
+                        item["lines"][0],
+                        item["lines"][1],
+                        item["file_lines"],
+                    )
+                )
     return "\n".join(lines)

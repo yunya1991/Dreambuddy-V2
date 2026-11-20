@@ -104,16 +104,21 @@ def list_filings(cik, form, limit):
             continue
         acc = recent["accessionNumber"][i]
         doc = recent["primaryDocument"][i]
-        rows.append({
-            "form": f,
-            "filing_date": recent["filingDate"][i],
-            "report_date": recent["reportDate"][i] if i < len(recent.get("reportDate", [])) else None,
-            "items": recent.get("items", [None] * len(forms))[i],
-            "accession": acc,
-            "url": "https://www.sec.gov/Archives/edgar/data/{}/{}/{}".format(
-                int(cik), acc.replace("-", ""), doc),
-            "n": 1,
-        })
+        rows.append(
+            {
+                "form": f,
+                "filing_date": recent["filingDate"][i],
+                "report_date": (
+                    recent["reportDate"][i] if i < len(recent.get("reportDate", [])) else None
+                ),
+                "items": recent.get("items", [None] * len(forms))[i],
+                "accession": acc,
+                "url": "https://www.sec.gov/Archives/edgar/data/{}/{}/{}".format(
+                    int(cik), acc.replace("-", ""), doc
+                ),
+                "n": 1,
+            }
+        )
         if len(rows) >= limit:
             break
     return data.get("name"), data.get("sicDescription"), rows
@@ -148,8 +153,9 @@ def pick_periods(entries):
     max_end = deduped[-1]["end"]
     quarterly = [e for e in deduped if e.get("fp") in ("Q1", "Q2", "Q3", "Q4")]
     annual = [e for e in deduped if e.get("fp") == "FY" or e.get("form") == "10-K"]
-    latest_is_q = any(e["end"] == max_end and e.get("fp") in ("Q1", "Q2", "Q3", "Q4")
-                      for e in deduped)
+    latest_is_q = any(
+        e["end"] == max_end and e.get("fp") in ("Q1", "Q2", "Q3", "Q4") for e in deduped
+    )
     if latest_is_q and quarterly:
         return quarterly, "quarterly"
     if annual:
@@ -172,26 +178,32 @@ def facts_rows(gaap, concepts):
         fp, fy = last.get("fp"), last.get("fy")
         if isinstance(fy, int):
             for p in periods:
-                same = (p.get("fp") == fp) if period_type == "quarterly" else (p.get("form") == "10-K" or p.get("fp") == "FY")
+                same = (
+                    (p.get("fp") == fp)
+                    if period_type == "quarterly"
+                    else (p.get("form") == "10-K" or p.get("fp") == "FY")
+                )
                 if same and p.get("fy") == fy - 1 and p.get("val"):
                     yoy = last["val"] / p["val"] - 1
                     break
         age_days = (datetime.now() - datetime.strptime(last["end"], "%Y-%m-%d")).days
-        rows.append({
-            "concept": c,
-            "label": concept.get("label", c),
-            "unit": unit,
-            "latest": last["val"],
-            "period_end": last["end"],
-            "period_type": period_type,
-            "fy": fy,
-            "fp": fp,
-            "form": last.get("form"),
-            "yoy": yoy,
-            "stale": age_days > 540,
-            "n": len(periods),
-            "recent": [{"end": p["end"], "val": p["val"]} for p in periods[-5:]],
-        })
+        rows.append(
+            {
+                "concept": c,
+                "label": concept.get("label", c),
+                "unit": unit,
+                "latest": last["val"],
+                "period_end": last["end"],
+                "period_type": period_type,
+                "fy": fy,
+                "fp": fp,
+                "form": last.get("form"),
+                "yoy": yoy,
+                "stale": age_days > 540,
+                "n": len(periods),
+                "recent": [{"end": p["end"], "val": p["val"]} for p in periods[-5:]],
+            }
+        )
     return rows
 
 
@@ -202,20 +214,25 @@ def fmt_pct(x):
 def render_filings(ticker, name, sic, rows, missing, data_date, channel="local"):
     lines = [
         "{} 披露事实 · 数据日期 {} · 生成于 {}".format(
-            ticker.upper(), data_date, datetime.now().strftime("%Y-%m-%d %H:%M")),
+            ticker.upper(), data_date, datetime.now().strftime("%Y-%m-%d %H:%M")
+        ),
         "",
         "| 披露日 | 表单 | 报告期 | 事项 | 样本量 |",
         "|---|---|---|---|---|",
     ]
     for r in rows:
-        lines.append("| {} | {} | {} | {} | 1 |".format(
-            r["filing_date"], r["form"], r["report_date"] or "—", r["items"] or "—"))
+        lines.append(
+            "| {} | {} | {} | {} | 1 |".format(
+                r["filing_date"], r["form"], r["report_date"] or "—", r["items"] or "—"
+            )
+        )
     lines += [
         "",
         "主体：{}（SIC：{}）".format(name or ticker.upper(), sic or "—"),
         "方法ID：M19 披露清单归一",
-        "数据源：{}（{}）｜ 通道：{}".format(SOURCE_NAME, SOURCE_URL,
-                                          "云端" if channel == "cloud" else "本地直连"),
+        "数据源：{}（{}）｜ 通道：{}".format(
+            SOURCE_NAME, SOURCE_URL, "云端" if channel == "cloud" else "本地直连"
+        ),
         "许可：{}".format(LICENSE),
         "缺失：{}".format("、".join(missing) if missing else "无"),
         "说明：{}".format(LIMITS),
@@ -226,22 +243,33 @@ def render_filings(ticker, name, sic, rows, missing, data_date, channel="local")
 def render_facts(ticker, rows, missing, data_date, channel="local"):
     lines = [
         "{} 披露字段 · 数据日期 {} · 生成于 {}".format(
-            ticker.upper(), data_date, datetime.now().strftime("%Y-%m-%d %H:%M")),
+            ticker.upper(), data_date, datetime.now().strftime("%Y-%m-%d %H:%M")
+        ),
         "",
         "| 字段 | 最新值 | 单位 | 截止期 | 口径 | 财年/季度 | 同比 | 样本量 |",
         "|---|---|---|---|---|---|---|---|",
     ]
     for r in rows:
-        lines.append("| {} | {} | {} | {}{} | {} | {} {} | {} | {} |".format(
-            r["label"], r["latest"], r["unit"], r["period_end"],
-            "（陈旧）" if r.get("stale") else "",
-            "年度" if r.get("period_type") == "annual" else "季度",
-            r["fy"] or "—", r["fp"] or "—", fmt_pct(r["yoy"]), r["n"]))
+        lines.append(
+            "| {} | {} | {} | {}{} | {} | {} {} | {} | {} |".format(
+                r["label"],
+                r["latest"],
+                r["unit"],
+                r["period_end"],
+                "（陈旧）" if r.get("stale") else "",
+                "年度" if r.get("period_type") == "annual" else "季度",
+                r["fy"] or "—",
+                r["fp"] or "—",
+                fmt_pct(r["yoy"]),
+                r["n"],
+            )
+        )
     lines += [
         "",
         "方法ID：M18 披露字段同比",
-        "数据源：{}（{}）｜ 通道：{}".format(SOURCE_NAME, SOURCE_URL,
-                                          "云端" if channel == "cloud" else "本地直连"),
+        "数据源：{}（{}）｜ 通道：{}".format(
+            SOURCE_NAME, SOURCE_URL, "云端" if channel == "cloud" else "本地直连"
+        ),
         "许可：{}".format(LICENSE),
         "缺失：{}".format("、".join(missing) if missing else "无"),
         "说明：{}".format(LIMITS),
@@ -256,8 +284,12 @@ def main(argv=None):
     p.add_argument("--limit", type=int, default=10)
     p.add_argument("--facts", default=None, help="us-gaap 字段，逗号分隔")
     p.add_argument("--json", action="store_true")
-    p.add_argument("--endpoint", default="auto", choices=["auto", "cloud", "local"],
-                   help="数据通道：auto 云端优先并自动回退本地")
+    p.add_argument(
+        "--endpoint",
+        default="auto",
+        choices=["auto", "cloud", "local"],
+        help="数据通道：auto 云端优先并自动回退本地",
+    )
     p.add_argument("--version", action="version", version="market-data-hub " + VERSION)
     a = p.parse_args(argv)
 
@@ -270,8 +302,9 @@ def main(argv=None):
     mode = "facts" if a.facts else "filings"
 
     if a.endpoint != "local":
-        payload = cloud.call("filings", {"ticker": a.ticker, "form": a.form,
-                                         "limit": a.limit, "facts": a.facts})
+        payload = cloud.call(
+            "filings", {"ticker": a.ticker, "form": a.form, "limit": a.limit, "facts": a.facts}
+        )
         if payload:
             rows = payload.get("rows", [])
             missing = payload.get("missing", [])
@@ -288,8 +321,10 @@ def main(argv=None):
         try:
             cik, name = resolve(a.ticker)
         except UnknownTicker:
-            print("E_INPUT：未收录的 ticker「{}」，请使用美股代码，如 AAPL / MSFT".format(a.ticker),
-                  file=sys.stderr)
+            print(
+                "E_INPUT：未收录的 ticker「{}」，请使用美股代码，如 AAPL / MSFT".format(a.ticker),
+                file=sys.stderr,
+            )
             return 2
         except Exception as exc:
             missing.append({"key": a.ticker, "code": err_code(exc), "detail": type(exc).__name__})
@@ -303,7 +338,9 @@ def main(argv=None):
                 if not rows:
                     missing.append({"key": a.ticker, "code": "E_EMPTY", "detail": "no filings"})
             except Exception as exc:
-                missing.append({"key": a.ticker, "code": err_code(exc), "detail": type(exc).__name__})
+                missing.append(
+                    {"key": a.ticker, "code": err_code(exc), "detail": type(exc).__name__}
+                )
         else:
             concepts = [x.strip() for x in a.facts.split(",") if x.strip()]
             try:
@@ -311,7 +348,9 @@ def main(argv=None):
                 if not gaap:
                     raise KeyError("us-gaap facts missing")
             except Exception as exc:
-                missing.append({"key": a.ticker, "code": err_code(exc), "detail": type(exc).__name__})
+                missing.append(
+                    {"key": a.ticker, "code": err_code(exc), "detail": type(exc).__name__}
+                )
                 gaap = None
             for c in (concepts if gaap is not None else []):
                 try:
@@ -324,22 +363,28 @@ def main(argv=None):
                 data_date = max(r["period_end"] for r in rows)
 
     if a.json:
-        print(json.dumps({
-            "skill": "market-data-hub",
-            "version": VERSION,
-            "module": "D2",
-            "mode": mode,
-            "ticker": a.ticker.upper(),
-            "entity": {"name": name, "sic": sic, "cik": cik if not missing else None},
-            "generated_at": datetime.now().isoformat(timespec="seconds"),
-            "data_date": data_date,
-            "data_route": used,
-            "rows": rows,
-            "missing": missing,
-            "method_ids": ["M18"] if mode == "facts" else ["M19"],
-            "sources": [{"name": SOURCE_NAME, "url": SOURCE_URL, "license": LICENSE}],
-            "limits": LIMITS,
-        }, ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                {
+                    "skill": "market-data-hub",
+                    "version": VERSION,
+                    "module": "D2",
+                    "mode": mode,
+                    "ticker": a.ticker.upper(),
+                    "entity": {"name": name, "sic": sic, "cik": cik if not missing else None},
+                    "generated_at": datetime.now().isoformat(timespec="seconds"),
+                    "data_date": data_date,
+                    "data_route": used,
+                    "rows": rows,
+                    "missing": missing,
+                    "method_ids": ["M18"] if mode == "facts" else ["M19"],
+                    "sources": [{"name": SOURCE_NAME, "url": SOURCE_URL, "license": LICENSE}],
+                    "limits": LIMITS,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
         return 0 if rows else 1
 
     if not rows:
@@ -348,7 +393,9 @@ def main(argv=None):
     if mode == "facts":
         print(render_facts(a.ticker, rows, [m["key"] for m in missing], data_date, used))
     else:
-        print(render_filings(a.ticker, name, sic, rows, [m["key"] for m in missing], data_date, used))
+        print(
+            render_filings(a.ticker, name, sic, rows, [m["key"] for m in missing], data_date, used)
+        )
     return 0
 
 

@@ -139,8 +139,9 @@ def cutoff_date(days):
 def company_events(ticker, days, types):
     global LAST_ROUTE
     if ROUTE != "local":
-        payload = cloud.call("events", {"subject": ticker, "since": days,
-                                        "types": ",".join(types or [])})
+        payload = cloud.call(
+            "events", {"subject": ticker, "since": days, "types": ",".join(types or [])}
+        )
         if payload and payload.get("rows") is not None:
             LAST_ROUTE = "cloud"
             return payload.get("rows", []), None
@@ -168,18 +169,21 @@ def company_events(ticker, days, types):
         rdate = recent.get("reportDate", [""] * len(forms))[i]
         if rdate:
             facts.append("报告期 {}".format(rdate))
-        rows.append({
-            "event_id": make_id("sec-submissions", form, acc),
-            "source_key": "sec-submissions",
-            "time": fdate,
-            "source": "SEC EDGAR",
-            "type": form,
-            "subject": {"ticker": ticker.upper(), "cik": cik, "name": data.get("name", name)},
-            "facts": facts,
-            "url": "https://www.sec.gov/Archives/edgar/data/{}/{}/{}".format(
-                int(cik), acc.replace("-", ""), doc),
-            "license": LICENSE,
-        })
+        rows.append(
+            {
+                "event_id": make_id("sec-submissions", form, acc),
+                "source_key": "sec-submissions",
+                "time": fdate,
+                "source": "SEC EDGAR",
+                "type": form,
+                "subject": {"ticker": ticker.upper(), "cik": cik, "name": data.get("name", name)},
+                "facts": facts,
+                "url": "https://www.sec.gov/Archives/edgar/data/{}/{}/{}".format(
+                    int(cik), acc.replace("-", ""), doc
+                ),
+                "license": LICENSE,
+            }
+        )
     return rows, data
 
 
@@ -214,35 +218,38 @@ def feed_events(feed, days):
         if dt < since:
             continue
         guid = it.findtext("guid") or link
-        rows.append({
-            "event_id": make_id(feed, meta["type"], guid),
-            "source_key": feed,
-            "time": dt.astimezone().isoformat(timespec="seconds"),
-            "source": meta["source"],
-            "type": meta["type"],
-            "subject": meta["subject"],
-            "facts": ["标题：{}".format(title[:80])],
-            "title": title,
-            "url": link,
-            "license": meta["license"],
-        })
+        rows.append(
+            {
+                "event_id": make_id(feed, meta["type"], guid),
+                "source_key": feed,
+                "time": dt.astimezone().isoformat(timespec="seconds"),
+                "source": meta["source"],
+                "type": meta["type"],
+                "subject": meta["subject"],
+                "facts": ["标题：{}".format(title[:80])],
+                "title": title,
+                "url": link,
+                "license": meta["license"],
+            }
+        )
     rows.sort(key=lambda r: r["time"], reverse=True)
     return rows
 
 
 def render(rows, title, missing, channel="local"):
-    out = [title, "",
-           "| 时间 | 来源 | 类型 | 主体 | 事实要点 |",
-           "|---|---|---|---|---|"]
+    out = [title, "", "| 时间 | 来源 | 类型 | 主体 | 事实要点 |", "|---|---|---|---|---|"]
     for r in rows:
         subj = r["subject"].get("ticker") or r["subject"].get("name") or "—"
         facts = "；".join(r["facts"])[:120]
-        out.append("| {} | {} | {} | {} | {} |".format(r["time"], r["source"], r["type"], subj, facts))
+        out.append(
+            "| {} | {} | {} | {} | {} |".format(r["time"], r["source"], r["type"], subj, facts)
+        )
     out += [
         "",
         "方法ID：E01 事件归一",
         "数据源：SEC EDGAR / 美联储（均为官方公开文件）｜ 通道：{}".format(
-            "云端" if channel == "cloud" else "本地直连"),
+            "云端" if channel == "cloud" else "本地直连"
+        ),
         "许可：Public Domain",
         "缺失：{}".format("、".join(missing) if missing else "无"),
         "说明：{}".format(LIMITS),
@@ -257,8 +264,12 @@ def main(argv=None):
     p.add_argument("--types", default="", help="表单类型，逗号分隔，如 8-K,10-Q")
     p.add_argument("--since", type=int, default=30)
     p.add_argument("--json", action="store_true")
-    p.add_argument("--endpoint", default="auto", choices=["auto", "cloud", "local"],
-                   help="数据通道：auto 云端优先并自动回退本地")
+    p.add_argument(
+        "--endpoint",
+        default="auto",
+        choices=["auto", "cloud", "local"],
+        help="数据通道：auto 云端优先并自动回退本地",
+    )
     p.add_argument("--version", action="version", version="event-context " + VERSION)
     a = p.parse_args(argv)
 
@@ -278,39 +289,61 @@ def main(argv=None):
         if a.subject:
             rows, _ = company_events(a.subject, a.since, types)
             title = "{} 事件清单 · 近 {} 天 · 生成于 {}".format(
-                a.subject.upper(), a.since, datetime.now().strftime("%Y-%m-%d %H:%M"))
+                a.subject.upper(), a.since, datetime.now().strftime("%Y-%m-%d %H:%M")
+            )
             if not rows:
-                missing.append({"key": a.subject, "code": "E_EMPTY", "detail": "no events in window"})
+                missing.append(
+                    {"key": a.subject, "code": "E_EMPTY", "detail": "no events in window"}
+                )
         else:
             rows = feed_events(a.feed, a.since)
             title = "{} 事件清单 · 近 {} 天 · 生成于 {}".format(
-                FEEDS[a.feed]["source"], a.since, datetime.now().strftime("%Y-%m-%d %H:%M"))
+                FEEDS[a.feed]["source"], a.since, datetime.now().strftime("%Y-%m-%d %H:%M")
+            )
             if not rows:
                 missing.append({"key": a.feed, "code": "E_EMPTY", "detail": "no events in window"})
     except UnknownTicker:
-        print("E_INPUT：未收录的 ticker「{}」，请使用美股代码，如 AAPL / MSFT".format(a.subject),
-              file=sys.stderr)
+        print(
+            "E_INPUT：未收录的 ticker「{}」，请使用美股代码，如 AAPL / MSFT".format(a.subject),
+            file=sys.stderr,
+        )
         return 2
     except Exception as exc:
-        missing.append({"key": a.subject or a.feed, "code": err_code(exc),
-                        "detail": type(exc).__name__})
+        missing.append(
+            {"key": a.subject or a.feed, "code": err_code(exc), "detail": type(exc).__name__}
+        )
 
     if a.json:
-        print(json.dumps({
-            "skill": "event-context",
-            "version": VERSION,
-            "generated_at": iso_now(),
-            "data_date": rows[0]["time"] if rows else None,
-            "data_route": LAST_ROUTE,
-            "scope": {"subject": a.subject, "feed": a.feed, "since_days": a.since},
-            "rows": rows,
-            "missing": missing,
-            "method_ids": ["E01"],
-            "sources": [{"name": "SEC EDGAR", "url": "https://www.sec.gov/edgar/", "license": LICENSE},
-                        {"name": "Federal Reserve", "url": "https://www.federalreserve.gov/feeds/",
-                         "license": LICENSE}],
-            "limits": LIMITS,
-        }, ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                {
+                    "skill": "event-context",
+                    "version": VERSION,
+                    "generated_at": iso_now(),
+                    "data_date": rows[0]["time"] if rows else None,
+                    "data_route": LAST_ROUTE,
+                    "scope": {"subject": a.subject, "feed": a.feed, "since_days": a.since},
+                    "rows": rows,
+                    "missing": missing,
+                    "method_ids": ["E01"],
+                    "sources": [
+                        {
+                            "name": "SEC EDGAR",
+                            "url": "https://www.sec.gov/edgar/",
+                            "license": LICENSE,
+                        },
+                        {
+                            "name": "Federal Reserve",
+                            "url": "https://www.federalreserve.gov/feeds/",
+                            "license": LICENSE,
+                        },
+                    ],
+                    "limits": LIMITS,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
         return 0 if rows else 1
 
     if not rows:

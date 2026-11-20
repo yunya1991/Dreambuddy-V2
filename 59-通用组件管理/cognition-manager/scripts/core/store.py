@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-import json
 import re
 import secrets
 import sqlite3
@@ -245,8 +244,7 @@ def write_config(root, config: dict) -> Path:
     path = config_path(root)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        "# CogSteward 工作区配置（由 cm init 生成，可手工修改）\n"
-        + format_flat_yaml(config),
+        "# CogSteward 工作区配置（由 cm init 生成，可手工修改）\n" + format_flat_yaml(config),
         encoding="utf-8",
     )
     return path
@@ -284,9 +282,7 @@ def connect(root) -> sqlite3.Connection:
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
     """幂等补齐表结构，旧工作区无需重新 init。"""
-    row = conn.execute(
-        "SELECT value FROM meta WHERE key = 'schema_version'"
-    ).fetchone()
+    row = conn.execute("SELECT value FROM meta WHERE key = 'schema_version'").fetchone()
     if row and str(row["value"]).isdigit() and int(row["value"]) >= SCHEMA_VERSION:
         return
     conn.executescript(_SCHEMA)

@@ -25,8 +25,10 @@ from datetime import datetime
 TENCENT = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
 CN_SYMBOL = re.compile(r"^(sh|sz|bj)\d{6}$", re.I)
 US_SYMBOL = re.compile(r"^us[A-Za-z.]+$", re.I)
-SYMBOL_HINT = ("标的格式：A股/指数用 sh/sz/bj + 6 位数字（如 sh600519、sz000001），"
-               "美股用 us + 代码（如 usAAPL.OQ）；不支持 BTCUSDT、600519、000001、AAPL 这类写法")
+SYMBOL_HINT = (
+    "标的格式：A股/指数用 sh/sz/bj + 6 位数字（如 sh600519、sz000001），"
+    "美股用 us + 代码（如 usAAPL.OQ）；不支持 BTCUSDT、600519、000001、AAPL 这类写法"
+)
 NAMES = {
     "sh000001": "上证综指",
     "sz399001": "深证成指",
@@ -34,8 +36,10 @@ NAMES = {
     "sz399006": "创业板指",
     "sh000905": "中证500",
 }
-UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"}
+UA = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+}
 
 
 def _get_json(url, timeout=12):
@@ -84,8 +88,7 @@ def percentile(closes, window):
 def annualized_vol(closes, window=20):
     if len(closes) < window + 1:
         return None
-    rets = [math.log(closes[i] / closes[i - 1])
-            for i in range(len(closes) - window, len(closes))]
+    rets = [math.log(closes[i] / closes[i - 1]) for i in range(len(closes) - window, len(closes))]
     mean = sum(rets) / len(rets)
     var = sum((x - mean) ** 2 for x in rets) / (len(rets) - 1)
     return math.sqrt(var) * math.sqrt(252)
@@ -145,7 +148,9 @@ def render_markdown(rows, missing, window):
     lines = [
         "市场事实日报 · 数据日期 {} · 生成于 {}".format(data_date, now),
         "",
-        "| 标的 | 收盘 | 1D | 5D | 20D | {}日分位 | 20日年化波动 | {}日最大回撤 | 60日均线偏离 |".format(window, window),
+        "| 标的 | 收盘 | 1D | 5D | 20D | {}日分位 | 20日年化波动 | {}日最大回撤 | 60日均线偏离 |".format(
+            window, window
+        ),
         "|------|------|----|----|-----|-----------|--------------|----------------|--------------|",
     ]
     for r in rows:
@@ -153,11 +158,23 @@ def render_markdown(rows, missing, window):
         if r["pctile"] is not None:
             pct_cell = "{:.1f}% (n={})".format(r["pctile"] * 100, r["pctile_n"])
         vol_cell = fmt_pct(r["vol"]) + (" (n=21)" if r["vol"] is not None else "")
-        mdd_cell = fmt_pct(r["mdd"]) + (" (n={})".format(r["mdd_n"]) if r["mdd"] is not None else "")
+        mdd_cell = fmt_pct(r["mdd"]) + (
+            " (n={})".format(r["mdd_n"]) if r["mdd"] is not None else ""
+        )
         ma_cell = fmt_pct(r["ma60"]) + (" (n=60)" if r["ma60"] is not None else "")
-        lines.append("| {} | {} | {} | {} | {} | {} | {} | {} | {} |".format(
-            r["name"], fmt_plain(r["close"]), fmt_pct(r["d1"]), fmt_pct(r["d5"]),
-            fmt_pct(r["d20"]), pct_cell, vol_cell, mdd_cell, ma_cell))
+        lines.append(
+            "| {} | {} | {} | {} | {} | {} | {} | {} | {} |".format(
+                r["name"],
+                fmt_plain(r["close"]),
+                fmt_pct(r["d1"]),
+                fmt_pct(r["d5"]),
+                fmt_pct(r["d20"]),
+                pct_cell,
+                vol_cell,
+                mdd_cell,
+                ma_cell,
+            )
+        )
     sources = "、".join(sorted({r["source"] for r in rows})) or "—"
     lines += [
         "",
@@ -189,18 +206,23 @@ def main(argv=None):
             missing.append("{}({})".format(symbol, type(exc).__name__))
 
     if args.json:
-        print(json.dumps({
-            "generated_at": datetime.now().isoformat(timespec="seconds"),
-            "window": args.window,
-            "rows": rows,
-            "missing": missing,
-            "hint": SYMBOL_HINT if format_errors else None,
-        }, ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                {
+                    "generated_at": datetime.now().isoformat(timespec="seconds"),
+                    "window": args.window,
+                    "rows": rows,
+                    "missing": missing,
+                    "hint": SYMBOL_HINT if format_errors else None,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
         return 0 if rows else 1
 
     if format_errors:
-        print("格式提示：{} 无法识别。{}".format(
-            "、".join(format_errors), SYMBOL_HINT))
+        print("格式提示：{} 无法识别。{}".format("、".join(format_errors), SYMBOL_HINT))
 
     if not rows:
         print("数据不可用：全部标的数据获取失败（{}）".format("、".join(missing)))

@@ -61,13 +61,32 @@ def build(payload, contract=None):
             continue
         value = metrics[key]
         state = "high" if value >= rule["high_at"] else "warn" if value >= rule["warn_at"] else "ok"
-        score -= rule["weight"] if state == "high" else int(rule["weight"] * 0.5) if state == "warn" else 0
-        benchmarks.append({"metric": key, "label": rule["label"], "value": value,
-                           "warn_at": rule["warn_at"], "high_at": rule["high_at"], "status": state})
+        score -= (
+            rule["weight"]
+            if state == "high"
+            else int(rule["weight"] * 0.5) if state == "warn" else 0
+        )
+        benchmarks.append(
+            {
+                "metric": key,
+                "label": rule["label"],
+                "value": value,
+                "warn_at": rule["warn_at"],
+                "high_at": rule["high_at"],
+                "status": state,
+            }
+        )
         if state != "ok":
-            findings.append({"id": key, "label": rule["label"], "priority": "P0" if state == "high" else "P1",
-                             "value": value, "threshold": "{}/{}".format(rule["warn_at"], rule["high_at"]),
-                             "action": rule["action"]})
+            findings.append(
+                {
+                    "id": key,
+                    "label": rule["label"],
+                    "priority": "P0" if state == "high" else "P1",
+                    "value": value,
+                    "threshold": "{}/{}".format(rule["warn_at"], rule["high_at"]),
+                    "action": rule["action"],
+                }
+            )
 
     for rule in contract["ratios"]:
         rid = rule["id"]
@@ -75,9 +94,16 @@ def build(payload, contract=None):
         if value is None:
             continue
         state = "high" if value >= rule["high_at"] else "warn" if value >= rule["warn_at"] else "ok"
-        ratios[rid] = {"id": rid, "label": rule["label"], "metric": rule["metric"], "value": value,
-                       "warn_at": rule["warn_at"], "high_at": rule["high_at"], "status": state,
-                       "informational": bool(rule.get("informational"))}
+        ratios[rid] = {
+            "id": rid,
+            "label": rule["label"],
+            "metric": rule["metric"],
+            "value": value,
+            "warn_at": rule["warn_at"],
+            "high_at": rule["high_at"],
+            "status": state,
+            "informational": bool(rule.get("informational")),
+        }
 
     score = max(0, min(100, score))
     grade = "A" if score >= 90 else "B" if score >= 75 else "C" if score >= 60 else "D"
@@ -125,14 +151,19 @@ def main(argv=None):
     print("  等级 {}  评分 {}  状态 {}".format(report["grade"], report["score"], report["health"]))
     for item in report["ratios"].values():
         suffix = "（参考）" if item.get("informational") else ""
-        print("  {:<8} {:>6.2f}%  [{}]{}".format(item["label"], item["value"], item["status"], suffix))
+        print(
+            "  {:<8} {:>6.2f}%  [{}]{}".format(item["label"], item["value"], item["status"], suffix)
+        )
     if report["coverage"]["orphan"] == "unavailable":
         print("\n覆盖：未提供孤儿文件指标（缺少可读的 .cm/index.db），该项不参与评分。")
     if report["findings"]:
         print("\n优先修复")
         for index, item in enumerate(report["findings"], 1):
-            print("  {}. [{}] {} = {}（阈值 {}）".format(
-                index, item["priority"], item["label"], item["value"], item["threshold"]))
+            print(
+                "  {}. [{}] {} = {}（阈值 {}）".format(
+                    index, item["priority"], item["label"], item["value"], item["threshold"]
+                )
+            )
             print("     动作：{}".format(item["action"]))
     else:
         print("\n无异常项。")

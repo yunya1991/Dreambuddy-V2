@@ -72,8 +72,11 @@ def token():
 def get(url, headers, connect_timeout=CONNECT_TIMEOUT, read_timeout=READ_TIMEOUT):
     parsed = urllib.parse.urlparse(url)
     conn = http.client.HTTPSConnection(
-        parsed.hostname, parsed.port or 443,
-        timeout=connect_timeout, context=ssl.create_default_context())
+        parsed.hostname,
+        parsed.port or 443,
+        timeout=connect_timeout,
+        context=ssl.create_default_context(),
+    )
     try:
         conn.connect()
         conn.sock.settimeout(read_timeout)
@@ -93,8 +96,7 @@ def call(cmd, params):
     if not tok:
         _reason = "no_token"
         return None
-    query = urllib.parse.urlencode(
-        {k: v for k, v in params.items() if v not in (None, "", False)})
+    query = urllib.parse.urlencode({k: v for k, v in params.items() if v not in (None, "", False)})
     url = "{}/run?skill=market-data-hub&cmd={}&{}".format(BASE, cmd, query)
     headers = dict(UA)
     headers["X-Partner-Token"] = tok

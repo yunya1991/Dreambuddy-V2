@@ -18,15 +18,15 @@ import hashlib
 import json
 import os
 import sys
-import time
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 TZ = timezone(timedelta(hours=8))
 
 
 def state_dir():
     return os.environ.get("PATROL_STATE_DIR") or os.path.expanduser(
-        "~/.local/share/dreambuddy/patrol")
+        "~/.local/share/dreambuddy/patrol"
+    )
 
 
 def incident_dir():
@@ -128,7 +128,8 @@ def resolve_open(reason):
             record["closed_at"] = now()
             record["close_reason"] = reason
             record.setdefault("history", []).append(
-                {"ts": now(), "action": "closed_by_patrol", "note": reason})
+                {"ts": now(), "action": "closed_by_patrol", "note": reason}
+            )
             save(record)
             closed.append(record["id"])
     return closed
@@ -161,9 +162,15 @@ def main(argv=None):
             return 0
         for incident_id in ids:
             record = load(incident_id)
-            print("{}  [{}]  {} 次  {}  {}".format(
-                record["id"], record["status"], record.get("occurrences", 1),
-                record.get("last_seen"), ",".join(record.get("checks") or [])))
+            print(
+                "{}  [{}]  {} 次  {}  {}".format(
+                    record["id"],
+                    record["status"],
+                    record.get("occurrences", 1),
+                    record.get("last_seen"),
+                    ",".join(record.get("checks") or []),
+                )
+            )
         return 0
 
     if args.cmd == "show":
@@ -186,7 +193,8 @@ def main(argv=None):
             record["closed_at"] = now()
             record["close_reason"] = args.note or "agent closed"
         record.setdefault("history", []).append(
-            {"ts": now(), "action": args.cmd, "note": args.note})
+            {"ts": now(), "action": args.cmd, "note": args.note}
+        )
         save(record)
         print("{} → {}".format(args.id, status))
         return 0
@@ -198,8 +206,11 @@ def main(argv=None):
         print("总事件 {}  未关闭 {}  已关闭 {}".format(len(records), open_count, len(closed)))
         if records:
             latest = max(records, key=lambda r: r.get("last_seen") or "")
-            print("最近一次: {}  {}  {}".format(
-                latest["id"], latest.get("last_seen"), ",".join(latest.get("checks") or [])))
+            print(
+                "最近一次: {}  {}  {}".format(
+                    latest["id"], latest.get("last_seen"), ",".join(latest.get("checks") or [])
+                )
+            )
         return 0
 
     return 2

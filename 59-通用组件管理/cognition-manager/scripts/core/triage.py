@@ -11,8 +11,6 @@ from __future__ import annotations
 
 import time
 
-from . import store
-
 PENDING_DROP_REVIEWS = 3
 ITEM_LIMIT = 20
 
@@ -43,8 +41,9 @@ def _pending_items(rows) -> list:
     ]
 
 
-def triage(root, config: dict, conn, *, expire_sessions: bool = False,
-           drop_pending: bool = False) -> dict:
+def triage(
+    root, config: dict, conn, *, expire_sessions: bool = False, drop_pending: bool = False
+) -> dict:
     """列出并（可选）处理过期会话与待定项。"""
     now = time.time()
 
@@ -64,19 +63,20 @@ def triage(root, config: dict, conn, *, expire_sessions: bool = False,
     if expire_sessions and expired_rows:
         ids = [row["id"] for row in expired_rows]
         placeholders = ",".join("?" for _ in ids)
-        marked_expired = conn.execute(
-            "UPDATE sessions SET triaged_at = ? WHERE id IN ({})".format(placeholders),
-            (now, *ids),
-        ).rowcount or 0
+        marked_expired = (
+            conn.execute(
+                "UPDATE sessions SET triaged_at = ? WHERE id IN ({})".format(placeholders),
+                (now, *ids),
+            ).rowcount
+            or 0
+        )
 
     dropped, incremented = [], []
     if drop_pending:
         for row in pending_rows:
             count = int(row["review_count"] or 0)
             if count >= PENDING_DROP_REVIEWS:
-                conn.execute(
-                    "UPDATE pending SET state = 'dropped' WHERE id = ?", (row["id"],)
-                )
+                conn.execute("UPDATE pending SET state = 'dropped' WHERE id = ?", (row["id"],))
                 dropped.append(row["payload_ref"] or str(row["id"]))
             else:
                 conn.execute(

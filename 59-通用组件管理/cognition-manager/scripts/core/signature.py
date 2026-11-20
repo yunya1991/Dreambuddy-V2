@@ -15,13 +15,46 @@ import unicodedata
 SIGNATURE_VERSION = "1"
 
 STOPWORDS_ZH = {
-    "的", "了", "着", "过", "一下", "一个", "一份", "这个", "那个",
-    "请", "帮我", "麻烦", "看看", "如何", "怎么", "什么", "需要", "进行",
+    "的",
+    "了",
+    "着",
+    "过",
+    "一下",
+    "一个",
+    "一份",
+    "这个",
+    "那个",
+    "请",
+    "帮我",
+    "麻烦",
+    "看看",
+    "如何",
+    "怎么",
+    "什么",
+    "需要",
+    "进行",
 }
 
 STOPWORDS_EN = {
-    "a", "an", "the", "to", "of", "for", "and", "or", "with", "on",
-    "in", "at", "is", "are", "be", "do", "please", "help", "me",
+    "a",
+    "an",
+    "the",
+    "to",
+    "of",
+    "for",
+    "and",
+    "or",
+    "with",
+    "on",
+    "in",
+    "at",
+    "is",
+    "are",
+    "be",
+    "do",
+    "please",
+    "help",
+    "me",
 }
 
 # 说法 → 规范动词；同一规范动词的多个说法必须放在同一组
@@ -80,11 +113,7 @@ VERB_GROUPS = [
 
 # 长说法优先，避免「初始化」被「初始」截断之类的部分替换
 _VERB_RULES = sorted(
-    (
-        (phrase, canonical)
-        for phrases, canonical in VERB_GROUPS
-        for phrase in phrases
-    ),
+    ((phrase, canonical) for phrases, canonical in VERB_GROUPS for phrase in phrases),
     key=lambda item: len(item[0]),
     reverse=True,
 )
@@ -98,10 +127,7 @@ _TOKEN_RE = re.compile(r"[a-z0-9]+|[{0}]+".format(_CJK))
 def clean(text: str) -> str:
     """全角转半角、小写、去标点与不可见字符，保留中英文与数字。"""
     normalized = unicodedata.normalize("NFKC", text or "")
-    normalized = "".join(
-        char for char in normalized
-        if char.isprintable() or char in "\n\t"
-    )
+    normalized = "".join(char for char in normalized if char.isprintable() or char in "\n\t")
     normalized = normalized.lower()
     normalized = _CLEAN_RE.sub(" ", normalized)
     return _SPACE_RE.sub(" ", normalized).strip()
@@ -130,7 +156,7 @@ def tokenize(text: str) -> list:
                 tokens.append(piece)
             continue
         for index in range(len(piece) - 1):
-            bigram = piece[index:index + 2]
+            bigram = piece[index : index + 2]
             if bigram not in STOPWORDS_ZH:
                 tokens.append(bigram)
     return tokens

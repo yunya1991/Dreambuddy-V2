@@ -135,7 +135,7 @@ def pearson(xs, ys):
     if n < 3:
         return None
     mx, my = sum(xs) / n, sum(ys) / n
-    num = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+    num = sum((x - mx) * (y - my) for x, y in zip(xs, ys, strict=False))
     dx = math.sqrt(sum((x - mx) ** 2 for x in xs))
     dy = math.sqrt(sum((y - my) ** 2 for y in ys))
     if dx == 0 or dy == 0:
@@ -157,9 +157,12 @@ def describe(series, window, peers):
         "latest": latest,
         "latest_date": obs[-1][0],
         "distribution": {
-            "window": window, "n": len(sample),
-            "p05": quantile(sample, 0.05), "p25": quantile(sample, 0.25),
-            "p50": quantile(sample, 0.50), "p75": quantile(sample, 0.75),
+            "window": window,
+            "n": len(sample),
+            "p05": quantile(sample, 0.05),
+            "p25": quantile(sample, 0.25),
+            "p50": quantile(sample, 0.50),
+            "p75": quantile(sample, 0.75),
             "p95": quantile(sample, 0.95),
             "latest_pctile": pctile(vals, window),
         },
@@ -169,15 +172,26 @@ def describe(series, window, peers):
     for p in peers:
         try:
             px, py, keys = align(obs, fetch(p))
-            row["comparables"].append({
-                "series": p, "name": NAMES.get(p, p),
-                "corr": pearson(px[-60:], py[-60:]),
-                "window": 60, "n": min(len(keys), 60),
-            })
+            row["comparables"].append(
+                {
+                    "series": p,
+                    "name": NAMES.get(p, p),
+                    "corr": pearson(px[-60:], py[-60:]),
+                    "window": 60,
+                    "n": min(len(keys), 60),
+                }
+            )
         except Exception as exc:
-            row["comparables"].append({"series": p, "name": NAMES.get(p, p),
-                                       "corr": None, "window": 60, "n": 0,
-                                       "code": err_code(exc)})
+            row["comparables"].append(
+                {
+                    "series": p,
+                    "name": NAMES.get(p, p),
+                    "corr": None,
+                    "window": 60,
+                    "n": 0,
+                    "code": err_code(exc),
+                }
+            )
     return row
 
 
@@ -186,7 +200,7 @@ def cross(x_series, y_series, bucket):
     if not keys:
         raise ValueError("no overlapping dates")
     groups = {}
-    for x, y, k in zip(xa, ya, keys):
+    for x, y, k in zip(xa, ya, keys, strict=False):
         b = k[:4] if bucket == "year" else k[:7]
         g = groups.setdefault(b, {"x": [], "y": []})
         g["x"].append(x)
@@ -194,15 +208,21 @@ def cross(x_series, y_series, bucket):
     rows = []
     for b in sorted(groups):
         g = groups[b]
-        rows.append({
-            "bucket": b, "n": len(g["x"]),
-            "x_mean": sum(g["x"]) / len(g["x"]),
-            "y_mean": sum(g["y"]) / len(g["y"]),
-            "corr": pearson(g["x"], g["y"]) if len(g["x"]) >= 5 else None,
-        })
+        rows.append(
+            {
+                "bucket": b,
+                "n": len(g["x"]),
+                "x_mean": sum(g["x"]) / len(g["x"]),
+                "y_mean": sum(g["y"]) / len(g["y"]),
+                "corr": pearson(g["x"], g["y"]) if len(g["x"]) >= 5 else None,
+            }
+        )
     return {
-        "x": x_series, "y": y_series, "bucket": bucket,
-        "overall_corr": pearson(xa, ya), "overall_n": len(keys),
+        "x": x_series,
+        "y": y_series,
+        "bucket": bucket,
+        "overall_corr": pearson(xa, ya),
+        "overall_n": len(keys),
         "groups": rows,
         "order": "按时间升序排列，非评价性排序",
     }
@@ -267,15 +287,21 @@ def main(argv=None):
     try:
         if a.describe:
             peers = [x.strip() for x in a.peers.split(",") if x.strip()]
-            payload = {"mode": "describe", "data": describe(a.describe.strip(), a.window, peers),
-                       "method_ids": ["M02", "M14", "M16"]}
+            payload = {
+                "mode": "describe",
+                "data": describe(a.describe.strip(), a.window, peers),
+                "method_ids": ["M02", "M14", "M16"],
+            }
         elif a.cross:
             parts = [x.strip() for x in a.cross.split(",") if x.strip()]
             if len(parts) != 2:
                 print("E_INPUT：--cross 需要两个序列，如 DGS10,CPIAUCSL", file=sys.stderr)
                 return 2
-            payload = {"mode": "cross", "data": cross(parts[0], parts[1], a.bucket),
-                       "method_ids": ["M15", "M16"]}
+            payload = {
+                "mode": "cross",
+                "data": cross(parts[0], parts[1], a.bucket),
+                "method_ids": ["M15", "M16"],
+            }
         else:
             parts = [x.strip() for x in a.basket.split(",") if x.strip()]
             if len(parts) < 2:
@@ -283,22 +309,33 @@ def main(argv=None):
                 return 2
             payload = {"mode": "basket", "data": basket(parts), "method_ids": ["M16"]}
     except Exception as exc:
-        missing.append({"key": a.describe or a.cross or a.basket,
-                        "code": err_code(exc), "detail": type(exc).__name__})
+        missing.append(
+            {
+                "key": a.describe or a.cross or a.basket,
+                "code": err_code(exc),
+                "detail": type(exc).__name__,
+            }
+        )
 
     if a.json:
-        print(json.dumps({
-            "skill": "market-data-hub",
-            "version": VERSION,
-            "generated_at": datetime.now().isoformat(timespec="seconds"),
-            "data_date": datetime.now().strftime("%Y-%m-%d"),
-            "rows": [] if not payload else [payload["data"]],
-            "missing": missing,
-            "mode": payload.get("mode"),
-            "method_ids": payload.get("method_ids", []),
-            "sources": [{"name": SOURCE_NAME, "url": SOURCE_URL, "license": LICENSE}],
-            "limits": LIMITS,
-        }, ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                {
+                    "skill": "market-data-hub",
+                    "version": VERSION,
+                    "generated_at": datetime.now().isoformat(timespec="seconds"),
+                    "data_date": datetime.now().strftime("%Y-%m-%d"),
+                    "rows": [] if not payload else [payload["data"]],
+                    "missing": missing,
+                    "mode": payload.get("mode"),
+                    "method_ids": payload.get("method_ids", []),
+                    "sources": [{"name": SOURCE_NAME, "url": SOURCE_URL, "license": LICENSE}],
+                    "limits": LIMITS,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
         return 0 if payload else 1
 
     if not payload:
@@ -315,14 +352,22 @@ def main(argv=None):
         out.append("| 序列 | {} |".format(d["series"]))
         out.append("| 单位 | {} |".format(d["unit"]))
         out.append("| 频率 | {} |".format(d["frequency"]))
-        out.append("| 样本区间 | {} → {}（n={}） |".format(
-            d["range"]["start"], d["range"]["end"], d["range"]["n"]))
+        out.append(
+            "| 样本区间 | {} → {}（n={}） |".format(
+                d["range"]["start"], d["range"]["end"], d["range"]["n"]
+            )
+        )
         out.append("| 最新值 | {} |".format(d["latest"]))
         dist = d["distribution"]
         for k in ("p05", "p25", "p50", "p75", "p95"):
             out.append("| {} 分位（{}期） | {} |".format(k.upper(), dist["window"], f4(dist[k])))
-        out.append("| 最新值位置 | {} |".format(
-            "—" if dist["latest_pctile"] is None else "{:.1f}%".format(dist["latest_pctile"] * 100)))
+        out.append(
+            "| 最新值位置 | {} |".format(
+                "—"
+                if dist["latest_pctile"] is None
+                else "{:.1f}%".format(dist["latest_pctile"] * 100)
+            )
+        )
         if d["comparables"]:
             out.append("")
             out.append("| 可比序列 | 60期相关 | 样本量 |")
@@ -336,15 +381,23 @@ def main(argv=None):
 
     if payload["mode"] == "cross":
         d = payload["data"]
-        out.append("{} × {} 分组统计（按 {}） · 数据日期 {}".format(
-            NAMES.get(d["x"], d["x"]), NAMES.get(d["y"], d["y"]),
-            "年" if d["bucket"] == "year" else "月", datetime.now().strftime("%Y-%m-%d")))
+        out.append(
+            "{} × {} 分组统计（按 {}） · 数据日期 {}".format(
+                NAMES.get(d["x"], d["x"]),
+                NAMES.get(d["y"], d["y"]),
+                "年" if d["bucket"] == "year" else "月",
+                datetime.now().strftime("%Y-%m-%d"),
+            )
+        )
         out.append("")
         out.append("| 分组 | 样本量 | {} 均值 | {} 均值 | 组内相关 |".format(d["x"], d["y"]))
         out.append("|---|---|---|---|---|")
         for g in d["groups"]:
-            out.append("| {} | {} | {} | {} | {} |".format(
-                g["bucket"], g["n"], f4(g["x_mean"]), f4(g["y_mean"]), f4(g["corr"])))
+            out.append(
+                "| {} | {} | {} | {} | {} |".format(
+                    g["bucket"], g["n"], f4(g["x_mean"]), f4(g["y_mean"]), f4(g["corr"])
+                )
+            )
         out.append("")
         out.append("整体相关：{}（n={}）".format(f4(d["overall_corr"]), d["overall_n"]))
         out.append("排序说明：{}".format(d["order"]))
@@ -354,14 +407,14 @@ def main(argv=None):
         return 0
 
     d = payload["data"]
-    out.append("相关矩阵 · 对齐样本 n={} · 数据日期 {}".format(
-        d["n"], datetime.now().strftime("%Y-%m-%d")))
+    out.append(
+        "相关矩阵 · 对齐样本 n={} · 数据日期 {}".format(d["n"], datetime.now().strftime("%Y-%m-%d"))
+    )
     out.append("")
     out.append("| 序列 | " + " | ".join(d["series"]) + " |")
     out.append("|---" * (len(d["series"]) + 1) + "|")
     for row in d["matrix"]:
-        out.append("| {} | {} |".format(
-            row["series"], " | ".join(f4(x) for x in row["corr"])))
+        out.append("| {} | {} |".format(row["series"], " | ".join(f4(x) for x in row["corr"])))
     out.append("")
     out.append(footer([("方法ID", "M16 Pearson 相关")], []))
     print("\n".join(out))

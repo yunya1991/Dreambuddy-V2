@@ -25,12 +25,8 @@ def index(root, config: dict, conn, check: bool = False) -> dict:
         scan_stats = scanner.scan(root, config, conn, full=False)
 
     health = report.doctor(root, config, conn)
-    docs_row = conn.execute(
-        "SELECT COUNT(*) AS n FROM docs WHERE status='active'"
-    ).fetchone()
-    skills_row = conn.execute(
-        "SELECT COUNT(*) AS n FROM skills WHERE status='active'"
-    ).fetchone()
+    docs_row = conn.execute("SELECT COUNT(*) AS n FROM docs WHERE status='active'").fetchone()
+    skills_row = conn.execute("SELECT COUNT(*) AS n FROM skills WHERE status='active'").fetchone()
 
     counts = {
         "docs": docs_row["n"],
@@ -49,8 +45,11 @@ def index(root, config: dict, conn, check: bool = False) -> dict:
     if check:
         notes.append("check 模式：只读校验，未重建索引（cm index 可增量重建）")
     else:
-        notes.append("已执行增量扫描：新登记 {}，未变化 {}".format(
-            scan_stats["scanned"], scan_stats["unchanged"]))
+        notes.append(
+            "已执行增量扫描：新登记 {}，未变化 {}".format(
+                scan_stats["scanned"], scan_stats["unchanged"]
+            )
+        )
     if counts["index_drift"]:
         notes.append("存在索引漂移，执行 cm scan --full 重建")
 

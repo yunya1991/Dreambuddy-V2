@@ -113,15 +113,24 @@ def main(argv=None):
     if a.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
-        print("可装配指针 · target={} · 预算 {} tokens · 已用 {}".format(
-            result["target"], a.budget, used))
+        print(
+            "可装配指针 · target={} · 预算 {} tokens · 已用 {}".format(
+                result["target"], a.budget, used
+            )
+        )
         print("")
         print("| id | 标题 | 许可 | token | 方法ID |")
         print("|---|---|---|---|---|")
         for it in picked:
-            print("| {} | {} | {} | {} | {} |".format(
-                it["id"], it["title"], it["license"], it["estimated_tokens"],
-                ",".join(it["method_ids"])))
+            print(
+                "| {} | {} | {} | {} | {} |".format(
+                    it["id"],
+                    it["title"],
+                    it["license"],
+                    it["estimated_tokens"],
+                    ",".join(it["method_ids"]),
+                )
+            )
         if missing:
             print("")
             print("缺失：{}".format("、".join(m["key"] for m in missing)))

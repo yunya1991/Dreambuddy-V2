@@ -82,8 +82,7 @@ def _validate(patch: dict) -> list:
     if not files:
         raise store.CmError(store.EXIT_USAGE, "patch 为空，禁止 apply")
     if len(files) > MAX_FILES:
-        raise store.CmError(store.EXIT_USAGE,
-                            "patch 超过 {} 个文件，禁止 apply".format(MAX_FILES))
+        raise store.CmError(store.EXIT_USAGE, "patch 超过 {} 个文件，禁止 apply".format(MAX_FILES))
     seen = set()
     for entry in files:
         op = entry.get("op")
@@ -98,8 +97,7 @@ def _validate(patch: dict) -> list:
         if op in ("create", "modify"):
             expected = _sha256_text(entry.get("content") or "")
             if entry.get("sha256") and entry["sha256"] != expected:
-                raise store.CmError(store.EXIT_USAGE,
-                                    "patch 哈希不一致：{}".format(path))
+                raise store.CmError(store.EXIT_USAGE, "patch 哈希不一致：{}".format(path))
     return files
 
 
@@ -135,16 +133,20 @@ def apply_patch(root, run_id: str, idempotency_key: str, patch: dict, conn=None)
             backup_path = backup_files / entry["path"]
             backup_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(target, backup_path)
-        prepared.append({
-            "op": op,
-            "path": entry["path"],
-            "after_sha256": _sha256_text(entry.get("content") or "") if op != "delete" else None,
-            "before": {
-                "existed": existed,
-                "sha256": before_sha,
-                "backup": str(backup_path.relative_to(backup_root)) if backup_path else None,
-            },
-        })
+        prepared.append(
+            {
+                "op": op,
+                "path": entry["path"],
+                "after_sha256": (
+                    _sha256_text(entry.get("content") or "") if op != "delete" else None
+                ),
+                "before": {
+                    "existed": existed,
+                    "sha256": before_sha,
+                    "backup": str(backup_path.relative_to(backup_root)) if backup_path else None,
+                },
+            }
+        )
 
     manifest = {
         "run_id": run_id,
@@ -154,10 +156,9 @@ def apply_patch(root, run_id: str, idempotency_key: str, patch: dict, conn=None)
         "files": prepared,
     }
     manifest_file = _manifest_path(root, run_id)
-    manifest_file.write_text(json.dumps(manifest, ensure_ascii=False, indent=2),
-                             encoding="utf-8")
+    manifest_file.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    for entry, item in zip(files, prepared):
+    for entry, item in zip(files, prepared, strict=False):
         target = _safe_path(root, item["path"])
         if item["op"] == "delete":
             target.unlink()
@@ -169,17 +170,20 @@ def apply_patch(root, run_id: str, idempotency_key: str, patch: dict, conn=None)
 
     manifest["status"] = "applied"
     manifest["applied_at"] = time.time()
-    manifest_file.write_text(json.dumps(manifest, ensure_ascii=False, indent=2),
-                             encoding="utf-8")
+    manifest_file.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
     if conn is not None:
         conn.execute(
             "INSERT INTO apply_runs(run_id, idempotency_key, created_at, mode, "
             "files_json, manifest_ref, rolled_back_at) "
             "VALUES(?, ?, ?, 'apply', ?, ?, NULL)",
-            (run_id, idempotency_key, manifest["created_at"],
-             json.dumps([item["path"] for item in prepared], ensure_ascii=False),
-             str(manifest_file.relative_to(root))),
+            (
+                run_id,
+                idempotency_key,
+                manifest["created_at"],
+                json.dumps([item["path"] for item in prepared], ensure_ascii=False),
+                str(manifest_file.relative_to(root)),
+            ),
         )
         conn.commit()
 
@@ -201,8 +205,9 @@ def rollback(root, run_id: str, conn=None) -> dict:
         raise store.CmError(store.EXIT_USAGE, "未找到备份：{}".format(run_id))
     manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
     if manifest.get("status") != "applied":
-        raise store.CmError(store.EXIT_USAGE,
-                            "run {} 状态为 {}，无法回滚".format(run_id, manifest.get("status")))
+        raise store.CmError(
+            store.EXIT_USAGE, "run {} 状态为 {}，无法回滚".format(run_id, manifest.get("status"))
+        )
 
     conflicts = []
     for item in manifest.get("files", []):
@@ -249,11 +254,12 @@ def rollback(root, run_id: str, conn=None) -> dict:
 
     manifest["status"] = "rolled_back"
     manifest["rolled_back_at"] = time.time()
-    manifest_file.write_text(json.dumps(manifest, ensure_ascii=False, indent=2),
-                             encoding="utf-8")
+    manifest_file.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     if conn is not None:
-        conn.execute("UPDATE apply_runs SET rolled_back_at = ? WHERE run_id = ?",
-                     (manifest["rolled_back_at"], run_id))
+        conn.execute(
+            "UPDATE apply_runs SET rolled_back_at = ? WHERE run_id = ?",
+            (manifest["rolled_back_at"], run_id),
+        )
         conn.commit()
 
     return {

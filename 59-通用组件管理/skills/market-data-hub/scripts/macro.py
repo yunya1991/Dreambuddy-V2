@@ -110,9 +110,11 @@ def pctile(values, window):
 def vol(values, window=20):
     if len(values) < window + 1:
         return None
-    rets = [math.log(values[i] / values[i - 1])
-            for i in range(len(values) - window, len(values))
-            if values[i - 1] > 0]
+    rets = [
+        math.log(values[i] / values[i - 1])
+        for i in range(len(values) - window, len(values))
+        if values[i - 1] > 0
+    ]
     if len(rets) < 2:
         return None
     mean = sum(rets) / len(rets)
@@ -163,15 +165,28 @@ def render(rows, missing, window, data_date, channel="local"):
     for r in rows:
         c1 = fmt_signed(r["chg_1m_bp"], 1, "bp") if r["unit"] == "%" else fmt_signed(r["chg_1m"])
         c2 = fmt_signed(r["chg_3m_bp"], 1, "bp") if r["unit"] == "%" else fmt_signed(r["chg_3m"])
-        p = "—" if r["pctile"] is None else "{:.1f}% (n={})".format(r["pctile"] * 100, r["pctile_n"])
-        lines.append("| {} | {} | {} | {} | {} | {} | {} |".format(
-            r["name"], fmt(r["latest"]), c1, c2, p,
-            "—" if r["vol"] is None else "{:.1f}%".format(r["vol"] * 100), r["observations"]))
+        p = (
+            "—"
+            if r["pctile"] is None
+            else "{:.1f}% (n={})".format(r["pctile"] * 100, r["pctile_n"])
+        )
+        lines.append(
+            "| {} | {} | {} | {} | {} | {} | {} |".format(
+                r["name"],
+                fmt(r["latest"]),
+                c1,
+                c2,
+                p,
+                "—" if r["vol"] is None else "{:.1f}%".format(r["vol"] * 100),
+                r["observations"],
+            )
+        )
     lines += [
         "",
         "方法ID：M11 区间变动 / M12 序列分位 / M13 年化波动",
-        "数据源：{}（{}）｜ 通道：{}".format(SOURCE_NAME, SOURCE_URL,
-                                          "云端" if channel == "cloud" else "本地直连"),
+        "数据源：{}（{}）｜ 通道：{}".format(
+            SOURCE_NAME, SOURCE_URL, "云端" if channel == "cloud" else "本地直连"
+        ),
         "许可：{}".format(LICENSE),
         "缺失：{}".format("、".join(missing) if missing else "无"),
         "说明：{}".format(LIMITS),
@@ -184,8 +199,12 @@ def main(argv=None):
     p.add_argument("--series", default="DGS10,CPIAUCSL,UNRATE")
     p.add_argument("--window", type=int, default=250)
     p.add_argument("--json", action="store_true")
-    p.add_argument("--endpoint", default="auto", choices=["auto", "cloud", "local"],
-                   help="数据通道：auto 云端优先并自动回退本地")
+    p.add_argument(
+        "--endpoint",
+        default="auto",
+        choices=["auto", "cloud", "local"],
+        help="数据通道：auto 云端优先并自动回退本地",
+    )
     p.add_argument("--version", action="version", version="market-data-hub " + VERSION)
     a = p.parse_args(argv)
 
@@ -214,20 +233,26 @@ def main(argv=None):
         data_date = max([r["date"] for r in rows], default=None)
 
     if a.json:
-        print(json.dumps({
-            "skill": "market-data-hub",
-            "version": VERSION,
-            "module": "D1",
-            "generated_at": datetime.now().isoformat(timespec="seconds"),
-            "data_date": data_date,
-            "data_route": used,
-            "window": a.window,
-            "rows": rows,
-            "missing": missing,
-            "method_ids": METHODS,
-            "sources": [{"name": SOURCE_NAME, "url": SOURCE_URL, "license": LICENSE}],
-            "limits": LIMITS,
-        }, ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                {
+                    "skill": "market-data-hub",
+                    "version": VERSION,
+                    "module": "D1",
+                    "generated_at": datetime.now().isoformat(timespec="seconds"),
+                    "data_date": data_date,
+                    "data_route": used,
+                    "window": a.window,
+                    "rows": rows,
+                    "missing": missing,
+                    "method_ids": METHODS,
+                    "sources": [{"name": SOURCE_NAME, "url": SOURCE_URL, "license": LICENSE}],
+                    "limits": LIMITS,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
         return 0 if rows else 1
 
     if not rows:

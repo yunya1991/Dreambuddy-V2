@@ -19,16 +19,40 @@ import sys
 from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import events as ev  # noqa: E402
 import cloud  # noqa: E402
+
+import events as ev  # noqa: E402
 
 VERSION = "1.0.0"
 RULE_VERSION = "v1"
 LIMITS = "仅装配已发生事实与同类事件次数，不含影响判断、方向判断或建议。"
 
-BANNED = ["利多", "利空", "利好", "看多", "看空", "看涨", "看跌", "强势", "弱势",
-          "机会", "值得关注", "影响有限", "建议买入", "建议卖出", "目标价", "评级",
-          "推荐", "优选", "最佳", "首选", "明日", "后市", "预计", "有望"]
+BANNED = [
+    "利多",
+    "利空",
+    "利好",
+    "看多",
+    "看空",
+    "看涨",
+    "看跌",
+    "强势",
+    "弱势",
+    "机会",
+    "值得关注",
+    "影响有限",
+    "建议买入",
+    "建议卖出",
+    "目标价",
+    "评级",
+    "推荐",
+    "优选",
+    "最佳",
+    "首选",
+    "明日",
+    "后市",
+    "预计",
+    "有望",
+]
 
 
 def scan(obj):
@@ -76,28 +100,48 @@ def count_analogues(row, info, subject, since):
             if recent["filingDate"][i] < since_date:
                 continue
             if item:
-                items = (recent.get("items", [""] * len(forms))[i] or "")
+                items = recent.get("items", [""] * len(forms))[i] or ""
                 if item not in items:
                     continue
             n += 1
-        return {"key": {"source": row["source"], "type": row["type"], "item": item},
-                "n": n, "window": "24m", "stat": None, "stat_window": "T+5",
-                "note": "n 为同类事件次数；收益类统计依赖行情授权，本期未启用"}
+        return {
+            "key": {"source": row["source"], "type": row["type"], "item": item},
+            "n": n,
+            "window": "24m",
+            "stat": None,
+            "stat_window": "T+5",
+            "note": "n 为同类事件次数；收益类统计依赖行情授权，本期未启用",
+        }
     if row["source_key"] in ev.FEEDS:
         n = 0
         for r in ev.feed_events(row["source_key"], months):
             if r["type"] == row["type"]:
                 n += 1
-        return {"key": {"source": row["source"], "type": row["type"], "item": None},
-                "n": n, "window": "24m", "stat": None, "stat_window": "T+5",
-                "note": "n 为已发布条目数；收益类统计依赖行情授权，本期未启用"}
-    return {"key": {"source": row["source"], "type": row["type"], "item": item}, "n": 0,
-            "window": "24m", "stat": None, "stat_window": "T+5", "note": "无法统计同类事件"}
+        return {
+            "key": {"source": row["source"], "type": row["type"], "item": None},
+            "n": n,
+            "window": "24m",
+            "stat": None,
+            "stat_window": "T+5",
+            "note": "n 为已发布条目数；收益类统计依赖行情授权，本期未启用",
+        }
+    return {
+        "key": {"source": row["source"], "type": row["type"], "item": item},
+        "n": 0,
+        "window": "24m",
+        "stat": None,
+        "stat_window": "T+5",
+        "note": "无法统计同类事件",
+    }
 
 
 def build(row, info, subject, since):
-    entities = {"tickers": [], "sector": None, "supply_chain": [],
-                "entity_source": "SEC company_tickers / SIC"}
+    entities = {
+        "tickers": [],
+        "sector": None,
+        "supply_chain": [],
+        "entity_source": "SEC company_tickers / SIC",
+    }
     if row["subject"].get("ticker"):
         entities["tickers"] = [row["subject"]["ticker"]]
     if info and info.get("sicDescription"):
@@ -120,12 +164,14 @@ def build(row, info, subject, since):
         },
         "entities": entities,
         "analogues": analogues,
-        "sources": [{
-            "title": title[:120],
-            "url": row["url"],
-            "license": row["license"],
-            "retrieved_at": ev.iso_now(),
-        }],
+        "sources": [
+            {
+                "title": title[:120],
+                "url": row["url"],
+                "license": row["license"],
+                "retrieved_at": ev.iso_now(),
+            }
+        ],
         "assembly": {
             "rule_version": RULE_VERSION,
             "fields_filled": 0,
@@ -171,18 +217,28 @@ def render(p, data_date):
     ent = p["entities"]
     out.append("- 标的：{}".format("、".join(ent["tickers"]) if ent["tickers"] else "—"))
     out.append("- 行业：{}".format(ent["sector"]["label"] if ent["sector"] else "—"))
-    out.append("- 上下游：{}".format("、".join(ent["supply_chain"]) if ent["supply_chain"] else "未提供"))
+    out.append(
+        "- 上下游：{}".format("、".join(ent["supply_chain"]) if ent["supply_chain"] else "未提供")
+    )
     a = p["analogues"]
-    out += ["", "## 3 同类事件",
-            "- 计数口径：{} 内 {} 类事件共 {} 次".format(a["window"], a["key"]["type"], a["n"]),
-            "- 收益统计：{}".format("未启用（需行情授权）" if a["stat"] is None else a["stat"]),
-            "- 说明：{}".format(a["note"]),
-            "", "## 4 来源"]
+    out += [
+        "",
+        "## 3 同类事件",
+        "- 计数口径：{} 内 {} 类事件共 {} 次".format(a["window"], a["key"]["type"], a["n"]),
+        "- 收益统计：{}".format("未启用（需行情授权）" if a["stat"] is None else a["stat"]),
+        "- 说明：{}".format(a["note"]),
+        "",
+        "## 4 来源",
+    ]
     for s in p["sources"]:
         out.append("- {}（{}）".format(s["title"], s["license"]))
         out.append("  {}".format(s["url"]))
-    out += ["", "## 5 边界", p["limits"],
-            "- 数据通道：{}".format("云端" if p.get("data_route") == "cloud" else "本地直连")]
+    out += [
+        "",
+        "## 5 边界",
+        p["limits"],
+        "- 数据通道：{}".format("云端" if p.get("data_route") == "cloud" else "本地直连"),
+    ]
     return "\n".join(out)
 
 
@@ -195,24 +251,41 @@ def main(argv=None):
     p.add_argument("--types", default="")
     p.add_argument("--since", type=int, default=60)
     p.add_argument("--json", action="store_true")
-    p.add_argument("--endpoint", default="auto", choices=["auto", "cloud", "local"],
-                   help="数据通道：auto 云端优先并自动回退本地")
+    p.add_argument(
+        "--endpoint",
+        default="auto",
+        choices=["auto", "cloud", "local"],
+        help="数据通道：auto 云端优先并自动回退本地",
+    )
     p.add_argument("--version", action="version", version="event-context " + VERSION)
     a = p.parse_args(argv)
 
     if a.endpoint != "local":
-        cp = cloud.call("event-context", {
-            "event_id": a.event_id, "subject": a.subject, "feed": a.feed,
-            "latest": 1 if a.latest else None, "since": a.since, "types": a.types})
+        cp = cloud.call(
+            "event-context",
+            {
+                "event_id": a.event_id,
+                "subject": a.subject,
+                "feed": a.feed,
+                "latest": 1 if a.latest else None,
+                "since": a.since,
+                "types": a.types,
+            },
+        )
         if cp and cp.get("event"):
             cp["data_route"] = "cloud"
             hits = scan(cp)
             if hits:
-                print("E_SCHEMA：装配结果命中红线词表（{}），已拒绝输出".format("、".join(hits)),
-                      file=sys.stderr)
+                print(
+                    "E_SCHEMA：装配结果命中红线词表（{}），已拒绝输出".format("、".join(hits)),
+                    file=sys.stderr,
+                )
                 return 1
-            print(json.dumps(cp, ensure_ascii=False, indent=2) if a.json
-                  else render(cp, cp["event"]["time"]))
+            print(
+                json.dumps(cp, ensure_ascii=False, indent=2)
+                if a.json
+                else render(cp, cp["event"]["time"])
+            )
             return 0
         if a.endpoint == "cloud":
             print("数据不可用：云端通道不可用（{}）".format(cloud.describe()))
@@ -226,8 +299,11 @@ def main(argv=None):
         if a.event_id:
             row, info = find_event(a.event_id, a.subject, a.feed, a.since, types)
             if row is None:
-                print("E_INPUT：未找到该 event_id；请补充范围提示（--subject 或 --feed），"
-                      "或用 events.py 重新列出事件", file=sys.stderr)
+                print(
+                    "E_INPUT：未找到该 event_id；请补充范围提示（--subject 或 --feed），"
+                    "或用 events.py 重新列出事件",
+                    file=sys.stderr,
+                )
                 return 2
         elif a.subject and a.latest:
             rows, info = ev.company_events(a.subject, a.since, types)
@@ -242,21 +318,37 @@ def main(argv=None):
             else:
                 row = rows[0]
         else:
-            print("E_INPUT：用法为 --subject X --latest 或 --event-id <id> [--subject X|--feed F]",
-                  file=sys.stderr)
+            print(
+                "E_INPUT：用法为 --subject X --latest 或 --event-id <id> [--subject X|--feed F]",
+                file=sys.stderr,
+            )
             return 2
     except ev.UnknownTicker:
-        print("E_INPUT：未收录的 ticker「{}」，请使用美股代码，如 AAPL / MSFT".format(a.subject),
-              file=sys.stderr)
+        print(
+            "E_INPUT：未收录的 ticker「{}」，请使用美股代码，如 AAPL / MSFT".format(a.subject),
+            file=sys.stderr,
+        )
         return 2
     except Exception as exc:
-        missing.append({"key": a.subject or a.feed, "code": ev.err_code(exc),
-                        "detail": type(exc).__name__})
+        missing.append(
+            {"key": a.subject or a.feed, "code": ev.err_code(exc), "detail": type(exc).__name__}
+        )
 
     if row is None:
         if a.json:
-            print(json.dumps({"skill": "event-context", "version": VERSION, "rows": [],
-                              "missing": missing, "limits": LIMITS}, ensure_ascii=False, indent=2))
+            print(
+                json.dumps(
+                    {
+                        "skill": "event-context",
+                        "version": VERSION,
+                        "rows": [],
+                        "missing": missing,
+                        "limits": LIMITS,
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
         else:
             print("数据不可用：{}".format("、".join(m["key"] for m in missing) or "无匹配事件"))
         return 1
@@ -264,8 +356,10 @@ def main(argv=None):
     payload = build(row, info, a.subject, a.since)
     hits = scan(payload)
     if hits:
-        print("E_SCHEMA：装配结果命中红线词表（{}），已拒绝输出，请修复模板".format("、".join(hits)),
-              file=sys.stderr)
+        print(
+            "E_SCHEMA：装配结果命中红线词表（{}），已拒绝输出，请修复模板".format("、".join(hits)),
+            file=sys.stderr,
+        )
         return 1
 
     if a.json:

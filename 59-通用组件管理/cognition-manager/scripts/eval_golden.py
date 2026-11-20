@@ -51,7 +51,7 @@ def _read_jsonl(path: Path) -> list:
     try:
         text = path.read_text(encoding="utf-8")
     except OSError as exc:
-        raise EvalError(EXIT_DATA, "无法读取黄金集：{}（{}）".format(path, exc))
+        raise EvalError(EXIT_DATA, "无法读取黄金集：{}（{}）".format(path, exc)) from exc
     for line_no, line in enumerate(text.splitlines(), 1):
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
@@ -59,7 +59,7 @@ def _read_jsonl(path: Path) -> list:
         try:
             row = json.loads(stripped)
         except ValueError as exc:
-            raise EvalError(EXIT_DATA, "第 {} 行不是合法 JSON：{}".format(line_no, exc))
+            raise EvalError(EXIT_DATA, "第 {} 行不是合法 JSON：{}".format(line_no, exc)) from exc
         if not isinstance(row, dict):
             raise EvalError(EXIT_DATA, "第 {} 行应为对象".format(line_no))
         rows.append(row)
@@ -73,7 +73,7 @@ def _read_predictions(path: Path) -> dict:
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError) as exc:
-            raise EvalError(EXIT_DATA, "预测 JSON 不可用：{}".format(exc))
+            raise EvalError(EXIT_DATA, "预测 JSON 不可用：{}".format(exc)) from exc
         result = {}
         for key, value in (data or {}).items():
             if isinstance(value, dict):
@@ -135,7 +135,9 @@ def _prf(reference: dict, predictions: dict, label: str) -> dict:
     return {
         "label": label,
         "support": tp + fn,
-        "tp": tp, "fp": fp, "fn": fn,
+        "tp": tp,
+        "fp": fp,
+        "fn": fn,
         "precision": round(precision, 4),
         "recall": round(recall, 4),
         "f1": round(f1, 4),
@@ -143,10 +145,7 @@ def _prf(reference: dict, predictions: dict, label: str) -> dict:
 
 
 def _kappa(annotations: dict) -> dict:
-    pair_ids = [
-        item_id for item_id, labels in annotations.items()
-        if len(labels) >= 2
-    ]
+    pair_ids = [item_id for item_id, labels in annotations.items() if len(labels) >= 2]
     if not pair_ids:
         return {"value": None, "pairs": 0, "note": "需人工标注：缺少同一 id 的双人标注"}
 
@@ -155,7 +154,7 @@ def _kappa(annotations: dict) -> dict:
     left = [annotations[item_id][left_name] for item_id in pair_ids]
     right = [annotations[item_id][right_name] for item_id in pair_ids]
     total = len(pair_ids)
-    observed = sum(1 for a, b in zip(left, right) if a == b) / total
+    observed = sum(1 for a, b in zip(left, right, strict=False) if a == b) / total
 
     left_counts, right_counts = {}, {}
     for value in left:
@@ -197,8 +196,11 @@ def _calibration(reference: dict, predictions: dict, bins: int) -> dict:
 
     if not samples:
         return {
-            "ece": None, "bins": 0, "samples": 0,
-            "high_precision": None, "high_count": 0,
+            "ece": None,
+            "bins": 0,
+            "samples": 0,
+            "high_precision": None,
+            "high_count": 0,
             "note": "需人工标注：缺少 confidence，无法计算校准",
         }
 
@@ -219,12 +221,14 @@ def _calibration(reference: dict, predictions: dict, bins: int) -> dict:
         accuracy = entry["correct"] / entry["count"]
         share = entry["count"] / total
         ece += abs(accuracy - average_confidence) * share
-        details.append({
-            "bin": index,
-            "count": entry["count"],
-            "avg_confidence": round(average_confidence, 4),
-            "accuracy": round(accuracy, 4),
-        })
+        details.append(
+            {
+                "bin": index,
+                "count": entry["count"],
+                "avg_confidence": round(average_confidence, 4),
+                "accuracy": round(accuracy, 4),
+            }
+        )
 
     high = [correct for confidence, correct in samples if confidence >= HIGH_CONFIDENCE]
     high_precision = sum(high) / len(high) if high else None
@@ -236,24 +240,21 @@ def _calibration(reference: dict, predictions: dict, bins: int) -> dict:
         "high_count": len(high),
         "high_threshold": HIGH_CONFIDENCE,
         "details": details,
-        "note": "" if high else "高置信分组为空：没有 confidence ≥ {} 的预测".format(
-            HIGH_CONFIDENCE),
+        "note": (
+            "" if high else "高置信分组为空：没有 confidence ≥ {} 的预测".format(HIGH_CONFIDENCE)
+        ),
     }
 
 
 def evaluate(reference: dict, predictions: dict, annotations: dict, bins: int) -> dict:
     per_class = [_prf(reference, predictions, label) for label in LABELS]
     # 宏平均只统计真实出现过的类别（有标注或预测），避免空类别把均值拉低
-    active = [
-        item for item in per_class
-        if item["support"] > 0 or item["tp"] + item["fp"] > 0
-    ]
-    macro_f1 = (
-        sum(item["f1"] for item in active) / len(active) if active else 0.0
-    )
+    active = [item for item in per_class if item["support"] > 0 or item["tp"] + item["fp"] > 0]
+    macro_f1 = sum(item["f1"] for item in active) / len(active) if active else 0.0
 
     correct = sum(
-        1 for item_id, gold in reference.items()
+        1
+        for item_id, gold in reference.items()
         if (predictions.get(item_id) or {}).get("predicted") == gold
     )
     accuracy = correct / len(reference) if reference else 0.0
@@ -315,25 +316,43 @@ def format_report(result: dict) -> str:
         "类别        P       R      F1     支持",
     ]
     for item in metrics["per_class"]:
-        lines.append("{:<10} {:>7} {:>7} {:>7} {:>6}".format(
-            item["label"], _fmt(item["precision"]), _fmt(item["recall"]),
-            _fmt(item["f1"]), item["support"]))
-    lines.extend([
-        "",
-        "宏平均 F1：{}".format(_fmt(metrics["macro_f1"])),
-        "准确率：{}".format(_fmt(metrics["accuracy"])),
-    ])
+        lines.append(
+            "{:<10} {:>7} {:>7} {:>7} {:>6}".format(
+                item["label"],
+                _fmt(item["precision"]),
+                _fmt(item["recall"]),
+                _fmt(item["f1"]),
+                item["support"],
+            )
+        )
+    lines.extend(
+        [
+            "",
+            "宏平均 F1：{}".format(_fmt(metrics["macro_f1"])),
+            "准确率：{}".format(_fmt(metrics["accuracy"])),
+        ]
+    )
     calibration = result["calibration"]
-    lines.append("高分组精确率：{}（n={}）".format(
-        _fmt(calibration.get("high_precision")), calibration.get("high_count", 0)))
-    lines.append("ECE：{}（{} 桶）".format(
-        _fmt(calibration.get("ece")), calibration.get("bins", 0)))
+    lines.append(
+        "高分组精确率：{}（n={}）".format(
+            _fmt(calibration.get("high_precision")), calibration.get("high_count", 0)
+        )
+    )
+    lines.append(
+        "ECE：{}（{} 桶）".format(_fmt(calibration.get("ece")), calibration.get("bins", 0))
+    )
     agreement = result["agreement"]
-    lines.append("Cohen's κ：{}（{} 对双标注）{}".format(
-        _fmt(agreement.get("value")), agreement.get("pairs", 0),
-        "  " + agreement["note"] if agreement.get("note") else ""))
+    lines.append(
+        "Cohen's κ：{}（{} 对双标注）{}".format(
+            _fmt(agreement.get("value")),
+            agreement.get("pairs", 0),
+            "  " + agreement["note"] if agreement.get("note") else "",
+        )
+    )
     status_text = {
-        "pass": "达标", "below_threshold": "未达标", "insufficient": "数据不足",
+        "pass": "达标",
+        "below_threshold": "未达标",
+        "insufficient": "数据不足",
     }
     lines.append("")
     lines.append("结论：{}".format(status_text.get(result["status"], result["status"])))

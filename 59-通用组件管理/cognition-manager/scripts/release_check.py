@@ -62,7 +62,8 @@ def check_contract_copies() -> tuple:
     digests = {name: _digest(path) for name, path in CONTRACT_COPIES.items()}
     if len(set(digests.values())) != 1:
         return False, "契约副本不一致：{}".format(
-            ", ".join("{}={}".format(name, digest[:12]) for name, digest in digests.items()))
+            ", ".join("{}={}".format(name, digest[:12]) for name, digest in digests.items())
+        )
     return True, "三端契约一致（sha256 {}）".format(next(iter(digests.values()))[:12])
 
 
@@ -72,7 +73,8 @@ def check_contract_structure() -> tuple:
     except contract.ContractError as exc:
         return False, str(exc)
     return True, "契约 v{}，{} 项指标 / {} 项占比".format(
-        data["schema_version"], len(data["metrics"]), len(data["ratios"]))
+        data["schema_version"], len(data["metrics"]), len(data["ratios"])
+    )
 
 
 def check_versions() -> tuple:
@@ -82,7 +84,8 @@ def check_versions() -> tuple:
     unique = set(found.values())
     if len(unique) != 1 or "" in unique:
         return False, "版本号不一致：{}".format(
-            ", ".join("{}={}".format(name, value or "<空>") for name, value in found.items()))
+            ", ".join("{}={}".format(name, value or "<空>") for name, value in found.items())
+        )
     return True, "版本号一致：{}".format(__version__)
 
 
@@ -132,7 +135,11 @@ def main(argv=None) -> int:
     else:
         print("认知管家 · 发布前一致性闸门（v{}）".format(result["version"]))
         for item in result["checks"]:
-            print("  [{}] {}：{}".format("PASS" if item["ok"] else "FAIL", item["check"], item["detail"]))
+            print(
+                "  [{}] {}：{}".format(
+                    "PASS" if item["ok"] else "FAIL", item["check"], item["detail"]
+                )
+            )
         print("结论：{}".format("通过" if result["ok"] else "未通过"))
     return 0 if result["ok"] else 1
 

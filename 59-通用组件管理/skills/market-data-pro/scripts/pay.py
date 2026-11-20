@@ -70,11 +70,17 @@ def main(argv=None):
     status, payload = post({"skill": SKILL, "cmd": args.cmd, "params": params}, args.proof or None)
 
     if status == 402:
-        print("需要按次付费（金额 {} 元，订单 {}，请在 {} 前完成）".format(
-            payload.get("amount"), payload.get("out_trade_no"), payload.get("pay_before")))
+        print(
+            "需要按次付费（金额 {} 元，订单 {}，请在 {} 前完成）".format(
+                payload.get("amount"), payload.get("out_trade_no"), payload.get("pay_before")
+            )
+        )
         print("完成支付后，将支付凭证通过 --proof 重试同一命令：")
-        print("  python3 pay.py --cmd {} {} --proof <Payment-Proof>".format(
-            args.cmd, " ".join("--{} {}".format(k, v) for k, v in params.items())))
+        print(
+            "  python3 pay.py --cmd {} {} --proof <Payment-Proof>".format(
+                args.cmd, " ".join("--{} {}".format(k, v) for k, v in params.items())
+            )
+        )
         return 2
 
     if status != 200:

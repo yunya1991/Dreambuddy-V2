@@ -37,7 +37,8 @@ def to_items(rows):
     items = []
     for r in rows:
         title = r.get("title") or "{} - {}".format(
-            r["type"], r["subject"].get("ticker") or r["subject"].get("name") or "")
+            r["type"], r["subject"].get("ticker") or r["subject"].get("name") or ""
+        )
         it = {
             "id": "event:" + r["event_id"],
             "kind": "event",
@@ -73,8 +74,12 @@ def main(argv=None):
     p.add_argument("--since", type=int, default=30)
     p.add_argument("--budget", type=int, default=2000)
     p.add_argument("--json", action="store_true")
-    p.add_argument("--endpoint", default="auto", choices=["auto", "cloud", "local"],
-                   help="数据通道：auto 云端优先并自动回退本地")
+    p.add_argument(
+        "--endpoint",
+        default="auto",
+        choices=["auto", "cloud", "local"],
+        help="数据通道：auto 云端优先并自动回退本地",
+    )
     p.add_argument("--version", action="version", version="event-context " + VERSION)
     a = p.parse_args(argv)
 
@@ -96,11 +101,13 @@ def main(argv=None):
             rows = ev.feed_events(a.feed, a.since)
         items = to_items(rows)
         if not items:
-            missing.append({"key": a.subject or a.feed, "code": "E_EMPTY",
-                            "detail": "no events in window"})
+            missing.append(
+                {"key": a.subject or a.feed, "code": "E_EMPTY", "detail": "no events in window"}
+            )
     except Exception as exc:
-        missing.append({"key": a.subject or a.feed, "code": ev.err_code(exc),
-                        "detail": type(exc).__name__})
+        missing.append(
+            {"key": a.subject or a.feed, "code": ev.err_code(exc), "detail": type(exc).__name__}
+        )
 
     picked, skipped, used = pack(items, a.budget)
     result = {
@@ -120,14 +127,20 @@ def main(argv=None):
     if a.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
-        print("可装配指针 · target={} · 预算 {} tokens · 已用 {}".format(
-            result["target"], a.budget, used))
+        print(
+            "可装配指针 · target={} · 预算 {} tokens · 已用 {}".format(
+                result["target"], a.budget, used
+            )
+        )
         print("")
         print("| id | 标题 | 来源 | 时间 | token |")
         print("|---|---|---|---|---|")
         for it in picked:
-            print("| {} | {} | {} | {} | {} |".format(
-                it["id"], it["title"], it["source"], it["event_time"], it["estimated_tokens"]))
+            print(
+                "| {} | {} | {} | {} | {} |".format(
+                    it["id"], it["title"], it["source"], it["event_time"], it["estimated_tokens"]
+                )
+            )
         if missing:
             print("")
             print("缺失：{}".format("、".join(m["key"] for m in missing)))

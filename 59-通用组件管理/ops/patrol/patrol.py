@@ -18,7 +18,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import incident  # noqa: E402
@@ -26,16 +26,30 @@ import incident  # noqa: E402
 BASE = "https://www.neodrm.com"
 SSH_HOST = os.environ.get("PATROL_SSH", "tencent-cloud")
 ENV_FILE = os.path.expanduser("~/.local/share/dreambuddy/qwen.env")
-LOG_DIR = os.environ.get("PATROL_STATE_DIR") or os.path.expanduser("~/.local/share/dreambuddy/patrol")
+LOG_DIR = os.environ.get("PATROL_STATE_DIR") or os.path.expanduser(
+    "~/.local/share/dreambuddy/patrol"
+)
 TZ = timezone(timedelta(hours=8))
 
 ENDPOINTS = [
-    ("market-data", "/api/paid/data",
-     {"skill": "market-data-hub", "cmd": "macro", "params": {"series": "DGS10"}}, "2.99"),
-    ("event-context", "/api/paid/data",
-     {"skill": "event-context", "cmd": "events", "params": {"subject": "AAPL", "since": "30"}}, "2.99"),
-    ("cogsteward", "/api/paid/cogsteward",
-     {"metrics": {"broken_links": 0}, "inventory": {"documents": 10}}, "0.99"),
+    (
+        "market-data",
+        "/api/paid/data",
+        {"skill": "market-data-hub", "cmd": "macro", "params": {"series": "DGS10"}},
+        "2.99",
+    ),
+    (
+        "event-context",
+        "/api/paid/data",
+        {"skill": "event-context", "cmd": "events", "params": {"subject": "AAPL", "since": "30"}},
+        "2.99",
+    ),
+    (
+        "cogsteward",
+        "/api/paid/cogsteward",
+        {"metrics": {"broken_links": 0}, "inventory": {"documents": 10}},
+        "0.99",
+    ),
 ]
 
 
@@ -53,7 +67,12 @@ def http_json(url, payload=None, timeout=25, headers=None):
     start = time.time()
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return resp.status, resp.headers, json.loads(resp.read().decode()), round((time.time() - start) * 1000)
+            return (
+                resp.status,
+                resp.headers,
+                json.loads(resp.read().decode()),
+                round((time.time() - start) * 1000),
+            )
     except urllib.error.HTTPError as exc:
         raw = exc.read().decode(errors="replace")
         try:
@@ -62,16 +81,29 @@ def http_json(url, payload=None, timeout=25, headers=None):
             body = {"raw": raw[:300]}
         return exc.code, exc.headers, body, round((time.time() - start) * 1000)
     except Exception as exc:  # 超时/连接失败
-        return 0, {}, {"error": type(exc).__name__, "detail": str(exc)[:200]}, round((time.time() - start) * 1000)
+        return (
+            0,
+            {},
+            {"error": type(exc).__name__, "detail": str(exc)[:200]},
+            round((time.time() - start) * 1000),
+        )
 
 
 def ssh(cmd, timeout=25, attempts=2):
     last = (0, "", "ssh failed")
     for index in range(attempts):
         try:
-            out = subprocess.run(["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", SSH_HOST, cmd],
-                                 capture_output=True, text=True, timeout=timeout)
-            result = (out.returncode, (out.stdout or "").strip()[:500], (out.stderr or "").strip()[:300])
+            out = subprocess.run(
+                ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", SSH_HOST, cmd],
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+            )
+            result = (
+                out.returncode,
+                (out.stdout or "").strip()[:500],
+                (out.stderr or "").strip()[:300],
+            )
         except subprocess.TimeoutExpired:
             result = (124, "", "ssh timeout")
         except FileNotFoundError:
@@ -97,11 +129,17 @@ def check_service():
         try:
             payload = json.loads(health)
             paths = {r.get("path") for r in payload.get("resources", [])}
-            missing = {"/api/paid/data", "/api/paid/cogsteward", "/api/audit"} - paths - {"/api/data", "/api/cogsteward"}
+            missing = (
+                {"/api/paid/data", "/api/paid/cogsteward", "/api/audit"}
+                - paths
+                - {"/api/data", "/api/cogsteward"}
+            )
             if payload.get("status") != "ok":
                 issues.append({"check": "health", "detail": "status=" + str(payload.get("status"))})
             if not {"/api/data", "/api/cogsteward"} <= paths:
-                issues.append({"check": "resources", "detail": "missing " + ",".join(sorted(missing))})
+                issues.append(
+                    {"check": "resources", "detail": "missing " + ",".join(sorted(missing))}
+                )
         except json.JSONDecodeError:
             issues.append({"check": "health", "detail": "non-json"})
 
@@ -122,7 +160,12 @@ def check_endpoints():
         ok = status == 402 and str(body.get("amount")) == expect
         results.append({"name": name, "http": status, "ms": ms, "amount": body.get("amount")})
         if not ok:
-            issues.append({"check": "billing:" + name, "detail": "http={} amount={}".format(status, body.get("amount"))})
+            issues.append(
+                {
+                    "check": "billing:" + name,
+                    "detail": "http={} amount={}".format(status, body.get("amount")),
+                }
+            )
             continue
         try:
             bill = headers.get("payment-needed") or ""
@@ -137,10 +180,10 @@ def check_upstream():
     """上游取数只在服务器侧探（需要 PARTNER_TOKEN）。"""
     script = (
         "sudo -n bash -c 'set -a; . /etc/skillhub-audit/audit.env 2>/dev/null; set +a; "
-        "for q in \"skill=market-data-pro&cmd=macro&series=DGS10\" "
-        "\"skill=event-context&cmd=events&subject=AAPL&since=30\"; do "
-        "curl -sS -m 30 -o /dev/null -w \"%{http_code} \" "
-        "-H \"X-Partner-Token: $PARTNER_TOKEN\" \"https://www.neodrm.com/api/partner/v1/run?$q\"; done'"
+        'for q in "skill=market-data-pro&cmd=macro&series=DGS10" '
+        '"skill=event-context&cmd=events&subject=AAPL&since=30"; do '
+        'curl -sS -m 30 -o /dev/null -w "%{http_code} " '
+        '-H "X-Partner-Token: $PARTNER_TOKEN" "https://www.neodrm.com/api/partner/v1/run?$q"; done\''
     )
     code, out, err = ssh(script, timeout=75)
     codes = out.split()
@@ -148,7 +191,7 @@ def check_upstream():
     if code != 0 or len(codes) < 2:
         issues.append({"check": "upstream", "detail": (err or out or "ssh failed")[:160]})
     else:
-        for label, value in zip(("market-data", "event-context"), codes):
+        for label, value in zip(("market-data", "event-context"), codes, strict=False):
             if value != "200":
                 issues.append({"check": "upstream:" + label, "detail": "http=" + value})
     return {"codes": codes}, issues
@@ -180,9 +223,11 @@ def diagnose(qwen, evidence):
     )
     status, _, body, ms = http_json(
         qwen["QWEN_BASE_URL"].rstrip("/") + "/chat/completions",
-        {"model": qwen.get("QWEN_DEFAULT_MODEL", "qwen3.7-plus"),
-         "messages": [{"role": "user", "content": prompt}],
-         "max_tokens": 600},
+        {
+            "model": qwen.get("QWEN_DEFAULT_MODEL", "qwen3.7-plus"),
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 600,
+        },
         timeout=60,
         headers={"Authorization": "Bearer " + qwen["QWEN_API_KEY"]},
     )
@@ -199,14 +244,18 @@ def auto_fix(issues):
     if detail.startswith("ssh") or "timed out" in detail or "端" in detail:
         # 连不上主机时不做任何动作，避免网络抖动触发误重启
         return False, "ssh 不可达，跳过重启：" + detail
-    code, out, err = ssh("sudo -n systemctl restart skillhub-audit-api && sleep 3 && systemctl is-active skillhub-audit-api")
+    code, out, err = ssh(
+        "sudo -n systemctl restart skillhub-audit-api && sleep 3 && systemctl is-active skillhub-audit-api"
+    )
     return code == 0 and out == "active", (out or err or "restart failed")
 
 
 def notify(item):
     """新事件时弹一条本地通知，失败不影响巡检。"""
     text = "{}：{}".format(item["id"], ",".join(item.get("checks") or []))
-    script = 'display notification "{}" with title "付费服务巡检异常"'.format(text.replace('"', "'"))
+    script = 'display notification "{}" with title "付费服务巡检异常"'.format(
+        text.replace('"', "'")
+    )
     try:
         subprocess.run(["osascript", "-e", script], capture_output=True, timeout=5)
     except Exception:
@@ -276,8 +325,11 @@ def main(argv=None):
     if closed:
         print("[{}] 巡检恢复，关闭事件：{}".format(record["ts"], ", ".join(closed)))
     if not args.quiet:
-        print("[{}] 巡检正常：3 个入口 402 正确，上游 200，服务 active，耗时 {}s".format(
-            record["ts"], record["elapsed_s"]))
+        print(
+            "[{}] 巡检正常：3 个入口 402 正确，上游 200，服务 active，耗时 {}s".format(
+                record["ts"], record["elapsed_s"]
+            )
+        )
     return 0
 
 

@@ -27,20 +27,20 @@ EVAL = SCRIPTS_DIR / "eval_golden.py"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
+import release_check  # noqa: E402
 from core import (  # noqa: E402
     admission,
-    apply as apply_engine,
     contract,
-    indexer,
     report,
     router,
     scanner,
     selfcheck,
     signature,
-    skill_lint,
     store,
 )
-import release_check  # noqa: E402
+from core import (  # noqa: E402
+    apply as apply_engine,
+)
 
 MODULE_ROOT = PACKAGE_ROOT.parent
 
@@ -63,10 +63,13 @@ def build_fixture(root: Path):
         links.append("- [正常 {}]({})".format(i, target))
     write_text(root / "specs" / "links.md", "\n".join(links) + "\n")
 
-    write_text(root / "skills" / "demo" / "SKILL.md", (
-        "---\nname: demo\ndisplay_name: 演示\nversion: 0.1.0\n"
-        "triggers: [日报, 汇报]\n---\n\n# 演示技能\n"
-    ))
+    write_text(
+        root / "skills" / "demo" / "SKILL.md",
+        (
+            "---\nname: demo\ndisplay_name: 演示\nversion: 0.1.0\n"
+            "triggers: [日报, 汇报]\n---\n\n# 演示技能\n"
+        ),
+    )
 
     (root / "assets").mkdir(parents=True, exist_ok=True)
     (root / "assets" / "logo.png").write_bytes(b"\x89PNG\r\n\x1a\n demo")
@@ -80,7 +83,9 @@ def build_fixture(root: Path):
 def run_cli(root: Path, *argv):
     return subprocess.run(
         [sys.executable, str(CLI), "--root", str(root), *argv],
-        capture_output=True, text=True, timeout=120,
+        capture_output=True,
+        text=True,
+        timeout=120,
     )
 
 
@@ -243,12 +248,14 @@ class CoreCase(unittest.TestCase):
         self.assertIn("missing", reasons)
 
     def test_skill_conflicts(self):
-        write_text(self.root / "skills" / "other" / "SKILL.md", (
-            "---\nname: demo\nversion: 0.2.0\ntriggers: [汇报, 周报]\n---\n\n# 另一个技能\n"
-        ))
-        write_text(self.root / "skills" / "no-version" / "SKILL.md", (
-            "---\nname: no-version\n---\n\n# 无版本\n"
-        ))
+        write_text(
+            self.root / "skills" / "other" / "SKILL.md",
+            ("---\nname: demo\nversion: 0.2.0\ntriggers: [汇报, 周报]\n---\n\n# 另一个技能\n"),
+        )
+        write_text(
+            self.root / "skills" / "no-version" / "SKILL.md",
+            ("---\nname: no-version\n---\n\n# 无版本\n"),
+        )
         self.scan()
         result = self.doctor()
         kinds = {item["kind"] for item in result["details"]["skill_conflicts"]}
@@ -263,10 +270,14 @@ class CoreCase(unittest.TestCase):
             now = time.time()
             conn.execute(
                 "INSERT INTO sessions(content_ref, created_at, expires_at, triaged_at) "
-                "VALUES('s1', ?, ?, NULL)", (now - 8 * 86400, now + 6 * 86400))
+                "VALUES('s1', ?, ?, NULL)",
+                (now - 8 * 86400, now + 6 * 86400),
+            )
             conn.execute(
                 "INSERT INTO pending(kind, payload_ref, created_at, review_count, state) "
-                "VALUES('memory', 'p1', ?, 0, 'open')", (now - 48 * 3600,))
+                "VALUES('memory', 'p1', ?, 0, 'open')",
+                (now - 48 * 3600,),
+            )
             conn.commit()
         finally:
             conn.close()
@@ -351,43 +362,59 @@ class AdmissionCase(unittest.TestCase):
         self.assertFalse(result["pending"])
 
     def test_not_derivable_passes(self):
-        result = admission.evaluate(self.root, "memory", {
-            "a1": {"result": "not_derivable"},
-            "a2": {"result": "none"},
-            "a3": {"result": "evidence_ref", "ref": "docs/guide.md"},
-            "a4": {"result": "yes"},
-        })
+        result = admission.evaluate(
+            self.root,
+            "memory",
+            {
+                "a1": {"result": "not_derivable"},
+                "a2": {"result": "none"},
+                "a3": {"result": "evidence_ref", "ref": "docs/guide.md"},
+                "a4": {"result": "yes"},
+            },
+        )
         self.assertTrue(result["passed"])
         self.assertFalse(result["pending"])
         self.assertEqual(result["decision"], "accept")
 
     def test_derivable_missing_path_goes_pending(self):
-        result = admission.evaluate(self.root, "memory", {
-            "a1": {"result": "derivable_from", "paths": ["docs/missing.md"]},
-            "a2": {"result": "none"},
-            "a3": {"result": "none"},
-            "a4": {"result": "yes"},
-        })
+        result = admission.evaluate(
+            self.root,
+            "memory",
+            {
+                "a1": {"result": "derivable_from", "paths": ["docs/missing.md"]},
+                "a2": {"result": "none"},
+                "a3": {"result": "none"},
+                "a4": {"result": "yes"},
+            },
+        )
         self.assertTrue(result["pending"])
         self.assertEqual(result["checks"]["A1"]["result"], "unknown")
 
     def test_a4_no_blocks(self):
-        result = admission.evaluate(self.root, "memory", {
-            "a1": {"result": "not_derivable"},
-            "a2": {"result": "none"},
-            "a3": {"result": "evidence_ref", "ref": "docs/guide.md"},
-            "a4": {"result": "no"},
-        })
+        result = admission.evaluate(
+            self.root,
+            "memory",
+            {
+                "a1": {"result": "not_derivable"},
+                "a2": {"result": "none"},
+                "a3": {"result": "evidence_ref", "ref": "docs/guide.md"},
+                "a4": {"result": "no"},
+            },
+        )
         self.assertTrue(result["blocked"])
         self.assertEqual(result["decision"], "reject")
 
     def test_a3_none_caps_confidence(self):
-        result = admission.evaluate(self.root, "memory", {
-            "a1": {"result": "not_derivable"},
-            "a2": {"result": "none"},
-            "a3": {"result": "none"},
-            "a4": {"result": "yes"},
-        })
+        result = admission.evaluate(
+            self.root,
+            "memory",
+            {
+                "a1": {"result": "not_derivable"},
+                "a2": {"result": "none"},
+                "a3": {"result": "none"},
+                "a4": {"result": "yes"},
+            },
+        )
         self.assertEqual(result["kind"], "observation")
         self.assertEqual(result["confidence_cap"], 0.5)
 
@@ -458,11 +485,9 @@ class RouterCase(unittest.TestCase):
         router.mark_done(self.root, self.config, self.conn, content)
         confirmed = self.route(content, confirm=True)
         self.assertFalse(confirmed["requires_user_confirm"])
-        count = self.conn.execute(
-            "SELECT COUNT(*) AS n FROM executions").fetchone()["n"]
+        count = self.conn.execute("SELECT COUNT(*) AS n FROM executions").fetchone()["n"]
         self.assertEqual(count, 1)
-        confirm_row = self.conn.execute(
-            "SELECT COUNT(*) AS n FROM intent_confirms").fetchone()["n"]
+        confirm_row = self.conn.execute("SELECT COUNT(*) AS n FROM intent_confirms").fetchone()["n"]
         self.assertEqual(confirm_row, 1)
 
     def test_low_confidence_returns_no_patch(self):
@@ -477,8 +502,7 @@ class RouterCase(unittest.TestCase):
         self.assertEqual(result["primary"], "memory")
         self.assertEqual(result["next_action"], "write_pending")
         self.assertTrue(result["admission"]["pending"])
-        row = self.conn.execute(
-            "SELECT COUNT(*) AS n FROM pending WHERE state='open'").fetchone()
+        row = self.conn.execute("SELECT COUNT(*) AS n FROM pending WHERE state='open'").fetchone()
         self.assertEqual(row["n"], 1)
 
     def test_memory_write_memory_with_facts(self):
@@ -510,25 +534,28 @@ class RouterCase(unittest.TestCase):
             self.assertEqual(item["apply_mode"], "plan")
             self.assertTrue(item["apply"]["replayed"])
             self.assertFalse(item["apply"]["applied"])
-        applied = self.conn.execute(
-            "SELECT COUNT(*) AS n FROM apply_runs").fetchone()["n"]
+        applied = self.conn.execute("SELECT COUNT(*) AS n FROM apply_runs").fetchone()["n"]
         self.assertEqual(applied, 1)
 
     def test_patch_over_ten_files_degrades_to_plan(self):
         apply_engine.MAX_FILES = 10
         store.update_config(self.root, {"apply": True})
-        config = store.load_config(self.root)
         patch = {
             "summary": "超限",
             "files": [
-                {"op": "create", "path": "docs/over-{}.md".format(index),
-                 "content": "x", "sha256": hashlib.sha256(b"x").hexdigest()}
+                {
+                    "op": "create",
+                    "path": "docs/over-{}.md".format(index),
+                    "content": "x",
+                    "sha256": hashlib.sha256(b"x").hexdigest(),
+                }
                 for index in range(11)
             ],
         }
         with self.assertRaises(store.CmError):
-            apply_engine.apply_patch(self.root, "rt-20261119-9999", "sha256:over-limit",
-                                     patch, conn=None)
+            apply_engine.apply_patch(
+                self.root, "rt-20261119-9999", "sha256:over-limit", patch, conn=None
+            )
 
 
 class ApplyRollbackCase(unittest.TestCase):
@@ -555,17 +582,26 @@ class ApplyRollbackCase(unittest.TestCase):
         patch = {
             "summary": "三类操作",
             "files": [
-                {"op": "create", "path": "docs/new.md", "content": new_content,
-                 "sha256": hashlib.sha256(new_content.encode()).hexdigest()},
-                {"op": "modify", "path": "docs/a.md", "content": modified,
-                 "sha256": hashlib.sha256(modified.encode()).hexdigest()},
+                {
+                    "op": "create",
+                    "path": "docs/new.md",
+                    "content": new_content,
+                    "sha256": hashlib.sha256(new_content.encode()).hexdigest(),
+                },
+                {
+                    "op": "modify",
+                    "path": "docs/a.md",
+                    "content": modified,
+                    "sha256": hashlib.sha256(modified.encode()).hexdigest(),
+                },
                 {"op": "delete", "path": "docs/b.md", "content": "", "sha256": ""},
             ],
         }
         conn = store.connect(self.root)
         try:
             applied = apply_engine.apply_patch(
-                self.root, "rt-20261119-0001", "sha256:rollback-test", patch, conn=conn)
+                self.root, "rt-20261119-0001", "sha256:rollback-test", patch, conn=conn
+            )
             self.assertTrue(applied["applied"])
             self.assertTrue((self.root / "docs" / "new.md").exists())
             self.assertEqual((self.root / "docs" / "a.md").read_text(encoding="utf-8"), modified)
@@ -582,8 +618,7 @@ class ApplyRollbackCase(unittest.TestCase):
             self.assertFalse((self.root / "docs" / "new.md").exists())
             self.assertEqual((self.root / "docs" / "a.md").read_bytes(), self.original_a)
             self.assertTrue((self.root / "docs" / "b.md").exists())
-            self.assertEqual(
-                (self.root / "docs" / "b.md").read_bytes(), self.original_b)
+            self.assertEqual((self.root / "docs" / "b.md").read_bytes(), self.original_b)
         finally:
             conn.close()
 
@@ -592,20 +627,24 @@ class ApplyRollbackCase(unittest.TestCase):
         patch = {
             "summary": "仅修改",
             "files": [
-                {"op": "modify", "path": "docs/a.md", "content": modified,
-                 "sha256": hashlib.sha256(modified.encode()).hexdigest()},
+                {
+                    "op": "modify",
+                    "path": "docs/a.md",
+                    "content": modified,
+                    "sha256": hashlib.sha256(modified.encode()).hexdigest(),
+                },
             ],
         }
         conn = store.connect(self.root)
         try:
             apply_engine.apply_patch(
-                self.root, "rt-20261119-0002", "sha256:conflict-test", patch, conn=conn)
+                self.root, "rt-20261119-0002", "sha256:conflict-test", patch, conn=conn
+            )
             write_text(self.root / "docs" / "a.md", "# A\n\n补丁后被手改\n")
             rolled = apply_engine.rollback(self.root, "rt-20261119-0002", conn=conn)
             self.assertFalse(rolled["rolled_back"])
             self.assertEqual(rolled["conflicts"][0]["reason"], "hash_mismatch")
-            self.assertIn("补丁后被手改",
-                          (self.root / "docs" / "a.md").read_text(encoding="utf-8"))
+            self.assertIn("补丁后被手改", (self.root / "docs" / "a.md").read_text(encoding="utf-8"))
         finally:
             conn.close()
 
@@ -634,8 +673,7 @@ class M2CliCase(unittest.TestCase):
         config = json.loads(proc.stdout)["config"]
         self.assertTrue(config["apply"])
 
-        proc = run_cli(self.root, "route", "接口规范说明：读取 docs/guide.md",
-                       "--apply", "--json")
+        proc = run_cli(self.root, "route", "接口规范说明：读取 docs/guide.md", "--apply", "--json")
         self.assertEqual(proc.returncode, 0, proc.stderr)
         payload = json.loads(proc.stdout)
         self.assertEqual(payload["apply_mode"], "apply")
@@ -685,14 +723,12 @@ class M3Case(unittest.TestCase):
         run_cli(self.root, "index", "--json")
         write_text(self.root / "notes" / "late.md", "# 后来\n")
 
-        checked = json.loads(
-            run_cli(self.root, "index", "--check", "--json").stdout)
+        checked = json.loads(run_cli(self.root, "index", "--check", "--json").stdout)
         self.assertEqual(checked["mode"], "check")
         self.assertEqual(checked["counts"]["orphan_files"], 1)
         self.assertEqual(checked["counts"]["docs"], 6)
 
-        rebuilt = json.loads(
-            run_cli(self.root, "index", "--json").stdout)
+        rebuilt = json.loads(run_cli(self.root, "index", "--json").stdout)
         self.assertEqual(rebuilt["counts"]["orphan_files"], 0)
         self.assertEqual(rebuilt["counts"]["docs"], 7)
 
@@ -711,14 +747,20 @@ class M3Case(unittest.TestCase):
         self.assertEqual(payload["issues"], [])
 
     def test_skill_lint_detects_issues(self):
-        write_text(self.root / "skills" / "bad" / "SKILL.md", (
-            "---\nname: demo\ntriggers: 日报, 周报\n"
-            "depends_on: [不存在的技能]\n---\n\n# 坏技能\n"
-        ))
-        write_text(self.root / "skills" / "user" / "SKILL.md", (
-            "---\nname: user\nversion: 0.1.0\ntriggers: [复盘]\n"
-            "depends_on: [demo]\n---\n\n# 使用演示\n"
-        ))
+        write_text(
+            self.root / "skills" / "bad" / "SKILL.md",
+            (
+                "---\nname: demo\ntriggers: 日报, 周报\n"
+                "depends_on: [不存在的技能]\n---\n\n# 坏技能\n"
+            ),
+        )
+        write_text(
+            self.root / "skills" / "user" / "SKILL.md",
+            (
+                "---\nname: user\nversion: 0.1.0\ntriggers: [复盘]\n"
+                "depends_on: [demo]\n---\n\n# 使用演示\n"
+            ),
+        )
         proc = run_cli(self.root, "skill", "lint", "--json")
         self.assertEqual(proc.returncode, 0, proc.stderr)
         payload = json.loads(proc.stdout)
@@ -729,16 +771,11 @@ class M3Case(unittest.TestCase):
         self.assertIn("missing_dependency", kinds)
         self.assertIn("trigger_overlap", kinds)
         self.assertGreaterEqual(payload["summary"]["error"], 2)
-        missing = [
-            item for item in payload["issues"]
-            if item["kind"] == "missing_dependency"
-        ]
+        missing = [item for item in payload["issues"] if item["kind"] == "missing_dependency"]
         self.assertEqual([item["skills"] for item in missing], [["demo"]])
 
     def test_skill_lint_ignores_identical_cross_module_copy(self):
-        content = (
-            "---\nname: mirror\nversion: 1.0.0\ntriggers: [镜像]\n---\n\n# 镜像技能\n"
-        )
+        content = "---\nname: mirror\nversion: 1.0.0\ntriggers: [镜像]\n---\n\n# 镜像技能\n"
         write_text(self.root / "skills" / "mod-a" / "mirror" / "SKILL.md", content)
         write_text(self.root / "skills" / "mod-b" / "mirror" / "SKILL.md", content)
         proc = run_cli(self.root, "skill", "lint", "--json")
@@ -834,16 +871,24 @@ class TriageCase(unittest.TestCase):
         try:
             conn.execute(
                 "INSERT INTO sessions(content_ref, created_at, expires_at, triaged_at) "
-                "VALUES('sig-old', ?, ?, NULL)", (now - 10 * 86400, now - 3 * 86400))
+                "VALUES('sig-old', ?, ?, NULL)",
+                (now - 10 * 86400, now - 3 * 86400),
+            )
             conn.execute(
                 "INSERT INTO sessions(content_ref, created_at, expires_at, triaged_at) "
-                "VALUES('sig-new', ?, ?, NULL)", (now, now + 3 * 86400))
+                "VALUES('sig-new', ?, ?, NULL)",
+                (now, now + 3 * 86400),
+            )
             conn.execute(
                 "INSERT INTO pending(kind, payload_ref, created_at, review_count, state) "
-                "VALUES('memory', 'p-new', ?, 0, 'open')", (now,))
+                "VALUES('memory', 'p-new', ?, 0, 'open')",
+                (now,),
+            )
             conn.execute(
                 "INSERT INTO pending(kind, payload_ref, created_at, review_count, state) "
-                "VALUES('memory', 'p-old', ?, 3, 'open')", (now,))
+                "VALUES('memory', 'p-old', ?, 3, 'open')",
+                (now,),
+            )
             conn.commit()
         finally:
             conn.close()
@@ -928,7 +973,9 @@ class EvalGoldenCase(unittest.TestCase):
     def _run(self, *argv):
         return subprocess.run(
             [sys.executable, str(EVAL), *argv],
-            capture_output=True, text=True, timeout=60,
+            capture_output=True,
+            text=True,
+            timeout=60,
         )
 
     def test_metrics_kappa_and_below_threshold(self):
@@ -936,8 +983,20 @@ class EvalGoldenCase(unittest.TestCase):
             {"id": "g1", "label": "skill", "labeler": "A", "predicted": "skill", "confidence": 0.9},
             {"id": "g2", "label": "skill", "labeler": "A", "predicted": "doc", "confidence": 0.85},
             {"id": "g3", "label": "doc", "labeler": "A", "predicted": "doc", "confidence": 0.7},
-            {"id": "g4", "label": "memory", "labeler": "A", "predicted": "memory", "confidence": 0.6},
-            {"id": "g5", "label": "session", "labeler": "A", "predicted": "session", "confidence": 0.4},
+            {
+                "id": "g4",
+                "label": "memory",
+                "labeler": "A",
+                "predicted": "memory",
+                "confidence": 0.6,
+            },
+            {
+                "id": "g5",
+                "label": "session",
+                "labeler": "A",
+                "predicted": "session",
+                "confidence": 0.4,
+            },
             {"id": "g1", "label": "skill", "labeler": "B"},
             {"id": "g2", "label": "doc", "labeler": "B"},
             {"id": "g3", "label": "doc", "labeler": "B"},
@@ -963,8 +1022,13 @@ class EvalGoldenCase(unittest.TestCase):
 
     def test_pass_threshold(self):
         rows = [
-            {"id": "p{}".format(i), "label": label, "labeler": "A",
-             "predicted": label, "confidence": 0.9}
+            {
+                "id": "p{}".format(i),
+                "label": label,
+                "labeler": "A",
+                "predicted": label,
+                "confidence": 0.9,
+            }
             for i, label in enumerate(("skill", "doc", "memory", "session"))
         ]
         golden = self._write("pass.jsonl", rows)
@@ -986,10 +1050,13 @@ class EvalGoldenCase(unittest.TestCase):
         self.assertIn("需人工标注", proc.stderr)
 
     def test_no_predictions_is_insufficient(self):
-        golden = self._write("labels.jsonl", [
-            {"id": "a", "label": "skill", "labeler": "A"},
-            {"id": "b", "label": "doc", "labeler": "A"},
-        ])
+        golden = self._write(
+            "labels.jsonl",
+            [
+                {"id": "a", "label": "skill", "labeler": "A"},
+                {"id": "b", "label": "doc", "labeler": "A"},
+            ],
+        )
         proc = self._run("--golden", str(golden), "--json")
         self.assertEqual(proc.returncode, 2, proc.stderr)
         payload = json.loads(proc.stdout)
@@ -1002,9 +1069,19 @@ class ConstraintCase(unittest.TestCase):
 
     def test_v6_no_third_party_imports(self):
         allowed = set(sys.stdlib_module_names) | {
-            "core", "store", "scanner", "report", "cm_cli",
-            "signature", "admission", "router", "apply", "pack", "triage",
-            "indexer", "skill_lint",
+            "core",
+            "store",
+            "scanner",
+            "report",
+            "cm_cli",
+            "signature",
+            "admission",
+            "router",
+            "apply",
+            "pack",
+            "triage",
+            "indexer",
+            "skill_lint",
         }
         targets = list((SCRIPTS_DIR / "core").glob("*.py")) + [CLI]
         self.assertTrue(targets)
@@ -1041,17 +1118,28 @@ class ConstraintCase(unittest.TestCase):
 
     def test_package_layout_matches_platform(self):
         names = {path.name for path in PACKAGE_ROOT.iterdir()}
-        self.assertTrue({"SKILL.md", "manifest.yaml", "scripts",
-                         "references", "templates"}.issubset(names))
+        self.assertTrue(
+            {"SKILL.md", "manifest.yaml", "scripts", "references", "templates"}.issubset(names)
+        )
         self.assertNotIn("assets", names)
         self.assertFalse((PACKAGE_ROOT / "assets").exists())
 
     def test_skill_frontmatter_required_fields(self):
         text = (PACKAGE_ROOT / "SKILL.md").read_text(encoding="utf-8")
         meta = store.parse_flat_yaml(text.split("---", 2)[1])
-        for field in ("name", "display_name", "display_name_en", "description",
-                      "description_zh", "description_en", "version", "author"):
-            self.assertTrue(str(meta.get(field, "")).strip(), "缺少 frontmatter 字段：{}".format(field))
+        for field in (
+            "name",
+            "display_name",
+            "display_name_en",
+            "description",
+            "description_zh",
+            "description_en",
+            "version",
+            "author",
+        ):
+            self.assertTrue(
+                str(meta.get(field, "")).strip(), "缺少 frontmatter 字段：{}".format(field)
+            )
         self.assertRegex(str(meta["version"]), r"^\d+\.\d+\.\d+$")
 
 
@@ -1110,8 +1198,7 @@ class V9ExceptionCase(unittest.TestCase):
 
         conn = store.connect(self.root)
         try:
-            row = conn.execute(
-                "SELECT doc_type, title FROM docs WHERE path='big.md'").fetchone()
+            row = conn.execute("SELECT doc_type, title FROM docs WHERE path='big.md'").fetchone()
             edges = conn.execute("SELECT COUNT(*) AS n FROM edges").fetchone()["n"]
         finally:
             conn.close()
@@ -1122,8 +1209,7 @@ class V9ExceptionCase(unittest.TestCase):
     # 4. 非 UTF-8 文本
     def test_v9_04_non_utf8_text(self):
         store.init_workspace(self.root, mode="dev")
-        (self.root / "legacy.md").write_bytes(
-            "# 旧文件\n".encode("gbk") + b"\xff\xfe\x00bad")
+        (self.root / "legacy.md").write_bytes("# 旧文件\n".encode("gbk") + b"\xff\xfe\x00bad")
         proc = run_cli(self.root, "scan", "--full", "--json")
         self.assertEqual(proc.returncode, 0, proc.stderr)
         stats = json.loads(proc.stdout)
@@ -1132,8 +1218,7 @@ class V9ExceptionCase(unittest.TestCase):
 
         conn = store.connect(self.root)
         try:
-            row = conn.execute(
-                "SELECT title FROM docs WHERE path='legacy.md'").fetchone()
+            row = conn.execute("SELECT title FROM docs WHERE path='legacy.md'").fetchone()
         finally:
             conn.close()
         self.assertTrue(row["title"])
@@ -1144,8 +1229,7 @@ class V9ExceptionCase(unittest.TestCase):
         write_text(self.root / "docs" / "guide.md", "# 指南\n")
         try:
             os.symlink(self.root, self.root / "docs" / "loop")
-            os.symlink(self.root / "docs" / "guide.md",
-                       self.root / "docs" / "guide-link.md")
+            os.symlink(self.root / "docs" / "guide.md", self.root / "docs" / "guide-link.md")
         except (OSError, NotImplementedError):
             self.skipTest("symlink 不可用")
         proc = run_cli(self.root, "scan", "--full", "--json")
@@ -1216,8 +1300,9 @@ class V9ExceptionCase(unittest.TestCase):
     def test_v9_10_concurrent_scan(self):
         store.init_workspace(self.root, mode="dev")
         for index in range(120):
-            write_text(self.root / "mod" / "doc-{:03d}.md".format(index),
-                       "# 文档 {}\n".format(index))
+            write_text(
+                self.root / "mod" / "doc-{:03d}.md".format(index), "# 文档 {}\n".format(index)
+            )
 
         errors = []
 
@@ -1241,8 +1326,9 @@ class V9ExceptionCase(unittest.TestCase):
 
         conn = store.connect(self.root)
         try:
-            count = conn.execute(
-                "SELECT COUNT(*) AS n FROM docs WHERE status='active'").fetchone()["n"]
+            count = conn.execute("SELECT COUNT(*) AS n FROM docs WHERE status='active'").fetchone()[
+                "n"
+            ]
         finally:
             conn.close()
         self.assertEqual(count, 120)
@@ -1252,14 +1338,16 @@ class V9ExceptionCase(unittest.TestCase):
         """构造方法：mock os.write 抛 ENOSPC，或把小容量 tmpfs 挂到工作区。"""
         self.skipTest(
             "N/A：写路径集中在单个 SQLite 文件与 WAL，ENOSPC 需 mock os.write 注入；"
-            "现有回归不覆盖磁盘配额")
+            "现有回归不覆盖磁盘配额"
+        )
 
     # 12. 中断恢复（N/A）
     def test_v9_12_interrupt_recovery_na(self):
         """构造方法：在 scanner.scan 提交事务前注入 KeyboardInterrupt，再重跑校验幂等。"""
         self.skipTest(
             "N/A：增量扫描幂等（size 未变即跳过），中断后重跑可自愈；"
-            "SIGINT 注入需在产线代码加故障点，未实施")
+            "SIGINT 注入需在产线代码加故障点，未实施"
+        )
 
 
 class PerformanceCase(unittest.TestCase):
@@ -1352,18 +1440,28 @@ class ContractCase(unittest.TestCase):
 
     def test_pro_report_reads_contract_and_flags_coverage(self):
         pro = MODULE_ROOT / "skills" / "cogsteward-pro" / "scripts" / "report.py"
-        payload = json.dumps({"metrics": {"broken_links": 3, "doc_drift": 4},
-                              "inventory": {"documents": 100}})
-        proc = subprocess.run([sys.executable, str(pro), "--metrics", payload],
-                              capture_output=True, text=True, timeout=60)
+        payload = json.dumps(
+            {"metrics": {"broken_links": 3, "doc_drift": 4}, "inventory": {"documents": 100}}
+        )
+        proc = subprocess.run(
+            [sys.executable, str(pro), "--metrics", payload],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn("契约 v1.0", proc.stdout)
         self.assertIn("未提供孤儿文件指标", proc.stdout)
 
-        full = json.dumps({"metrics": {"broken_links": 3, "orphan_files": 1},
-                           "inventory": {"documents": 100}})
-        proc = subprocess.run([sys.executable, str(pro), "--metrics", full],
-                              capture_output=True, text=True, timeout=60)
+        full = json.dumps(
+            {"metrics": {"broken_links": 3, "orphan_files": 1}, "inventory": {"documents": 100}}
+        )
+        proc = subprocess.run(
+            [sys.executable, str(pro), "--metrics", full],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertNotIn("未提供孤儿文件指标", proc.stdout)
 

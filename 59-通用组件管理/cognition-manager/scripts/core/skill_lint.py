@@ -63,11 +63,7 @@ def _as_list(value) -> list:
     if isinstance(value, list):
         return [str(item).strip() for item in value if str(item).strip()]
     if isinstance(value, str) and value.strip():
-        return [
-            item.strip()
-            for item in value.replace("，", ",").split(",")
-            if item.strip()
-        ]
+        return [item.strip() for item in value.replace("，", ",").split(",") if item.strip()]
     return []
 
 
@@ -90,14 +86,16 @@ def _collect(root: Path, config: dict) -> list:
         except OSError:
             text = ""
         meta = _parse_frontmatter(text)
-        entries.append({
-            "path": rel_path,
-            "dir_name": path.parent.name,
-            "name": str(meta.get("name") or path.parent.name).strip(),
-            "version": str(meta.get("version") or "").strip(),
-            "triggers": meta.get("triggers"),
-            "depends_on": meta.get("depends_on"),
-        })
+        entries.append(
+            {
+                "path": rel_path,
+                "dir_name": path.parent.name,
+                "name": str(meta.get("name") or path.parent.name).strip(),
+                "version": str(meta.get("version") or "").strip(),
+                "triggers": meta.get("triggers"),
+                "depends_on": meta.get("depends_on"),
+            }
+        )
     return entries
 
 
@@ -113,20 +111,24 @@ def lint(root, config: dict) -> dict:
     # 1. 缺版本号 / 触发词非列表
     for entry in entries:
         if not entry["version"]:
-            issues.append({
-                "severity": SEVERITY_WARNING,
-                "kind": "missing_version",
-                "skills": [entry["name"]],
-                "detail": "{} 缺少 version 字段".format(entry["path"]),
-            })
+            issues.append(
+                {
+                    "severity": SEVERITY_WARNING,
+                    "kind": "missing_version",
+                    "skills": [entry["name"]],
+                    "detail": "{} 缺少 version 字段".format(entry["path"]),
+                }
+            )
         triggers = entry["triggers"]
         if triggers is not None and not isinstance(triggers, list):
-            issues.append({
-                "severity": SEVERITY_WARNING,
-                "kind": "triggers_not_list",
-                "skills": [entry["name"]],
-                "detail": "{} 的 triggers 应为列表".format(entry["path"]),
-            })
+            issues.append(
+                {
+                    "severity": SEVERITY_WARNING,
+                    "kind": "triggers_not_list",
+                    "skills": [entry["name"]],
+                    "detail": "{} 的 triggers 应为列表".format(entry["path"]),
+                }
+            )
 
     # 2. 重名
     by_name = {}
@@ -137,29 +139,33 @@ def lint(root, config: dict) -> dict:
             # 跨模块同名且内容完全一致：属于有意保留的双份，不报错。
             if len({_content_digest(root / path) for path in grouped}) == 1:
                 continue
-            issues.append({
-                "severity": SEVERITY_ERROR,
-                "kind": "duplicate_name",
-                "skills": [name],
-                "detail": "同名技能：{}".format("、".join(sorted(grouped))),
-            })
+            issues.append(
+                {
+                    "severity": SEVERITY_ERROR,
+                    "kind": "duplicate_name",
+                    "skills": [name],
+                    "detail": "同名技能：{}".format("、".join(sorted(grouped))),
+                }
+            )
 
     # 3. 触发词重叠
     normalized = [
-        (entry["name"], entry["path"], set(_as_list(entry["triggers"])))
-        for entry in entries
+        (entry["name"], entry["path"], set(_as_list(entry["triggers"]))) for entry in entries
     ]
     for position, (left_name, left_path, left_triggers) in enumerate(normalized):
-        for right_name, right_path, right_triggers in normalized[position + 1:]:
+        for right_name, right_path, right_triggers in normalized[position + 1 :]:
             overlap = left_triggers & right_triggers
             if overlap:
-                issues.append({
-                    "severity": SEVERITY_WARNING,
-                    "kind": "trigger_overlap",
-                    "skills": sorted([left_name, right_name]),
-                    "detail": "触发词重叠：{}（{} 与 {}）".format(
-                        "、".join(sorted(overlap)), left_path, right_path),
-                })
+                issues.append(
+                    {
+                        "severity": SEVERITY_WARNING,
+                        "kind": "trigger_overlap",
+                        "skills": sorted([left_name, right_name]),
+                        "detail": "触发词重叠：{}（{} 与 {}）".format(
+                            "、".join(sorted(overlap)), left_path, right_path
+                        ),
+                    }
+                )
 
     # 4. depends_on 指向不存在的技能
     for entry in entries:
@@ -168,13 +174,16 @@ def lint(root, config: dict) -> dict:
                 continue
             if (root / dep).exists():
                 continue
-            issues.append({
-                "severity": SEVERITY_ERROR,
-                "kind": "missing_dependency",
-                "skills": [entry["name"]],
-                "detail": "{} 依赖的 {} 不存在（按名称或路径均未找到）".format(
-                    entry["path"], dep),
-            })
+            issues.append(
+                {
+                    "severity": SEVERITY_ERROR,
+                    "kind": "missing_dependency",
+                    "skills": [entry["name"]],
+                    "detail": "{} 依赖的 {} 不存在（按名称或路径均未找到）".format(
+                        entry["path"], dep
+                    ),
+                }
+            )
 
     summary = {
         "skills": len(entries),

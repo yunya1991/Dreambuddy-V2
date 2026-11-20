@@ -32,7 +32,8 @@ def run(root=None) -> dict:
         nonlocal data
         data = contract.load()
         return True, "契约 v{}：{} 项指标 / {} 项占比".format(
-            data["schema_version"], len(data["metrics"]), len(data["ratios"]))
+            data["schema_version"], len(data["metrics"]), len(data["ratios"])
+        )
 
     def report_alignment():
         problems = contract.problem_keys(data)
@@ -48,7 +49,9 @@ def run(root=None) -> dict:
         for values, expected in HEALTH_SAMPLES:
             actual = report.health_of(values)
             if actual != expected:
-                return False, "health 抽样不一致：{} → {}（期望 {}）".format(values, actual, expected)
+                return False, "health 抽样不一致：{} → {}（期望 {}）".format(
+                    values, actual, expected
+                )
         return True, "health 三档抽样一致"
 
     attempt("指标契约", contract_structure)
@@ -58,7 +61,9 @@ def run(root=None) -> dict:
     workspace = {"initialized": False}
     if root is not None:
         cm_dir = Path(root).expanduser() / ".cm"
-        workspace["initialized"] = (cm_dir / "config.yaml").exists() and (cm_dir / "index.db").exists()
+        workspace["initialized"] = (cm_dir / "config.yaml").exists() and (
+            cm_dir / "index.db"
+        ).exists()
         workspace["path"] = str(cm_dir)
 
     return {
@@ -75,10 +80,15 @@ def format_selfcheck(result: dict) -> str:
     if result.get("contract_version"):
         lines.append("指标契约：v{}".format(result["contract_version"]))
     for item in result["checks"]:
-        lines.append("  [{}] {}：{}".format("PASS" if item["ok"] else "FAIL", item["check"], item["detail"]))
+        lines.append(
+            "  [{}] {}：{}".format("PASS" if item["ok"] else "FAIL", item["check"], item["detail"])
+        )
     workspace = result.get("workspace") or {}
     if "path" in workspace:
-        lines.append("工作区：{}（{}）".format(
-            workspace["path"], "已初始化" if workspace["initialized"] else "未初始化"))
+        lines.append(
+            "工作区：{}（{}）".format(
+                workspace["path"], "已初始化" if workspace["initialized"] else "未初始化"
+            )
+        )
     lines.append("结论：{}".format("通过" if result["ok"] else "未通过"))
     return "\n".join(lines)

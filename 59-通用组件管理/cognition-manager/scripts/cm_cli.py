@@ -28,22 +28,33 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from core import (  # noqa: E402
     __version__,
-    apply as apply_engine,
     codemap,
     indexer,
-    pack as pack_engine,
     report,
     router,
     scanner,
     selfcheck,
     skill_lint,
     store,
+)
+from core import (  # noqa: E402
+    apply as apply_engine,
+)
+from core import (  # noqa: E402
+    pack as pack_engine,
+)
+from core import (  # noqa: E402
     triage as triage_engine,
 )
 
 CONFIG_KEYS = {
-    "apply", "high_threshold", "low_threshold",
-    "session_ttl_days", "materialize", "max_attachments", "traces_summary",
+    "apply",
+    "high_threshold",
+    "low_threshold",
+    "session_ttl_days",
+    "materialize",
+    "max_attachments",
+    "traces_summary",
 }
 
 
@@ -53,13 +64,15 @@ def build_parser() -> argparse.ArgumentParser:
         description="认知管家 CogSteward — 工作区上下文治理（M2：路由 / 打包 / 分拣 / 回滚）",
     )
     parser.add_argument("--root", default=None, help="工作区根目录（默认当前目录）")
-    parser.add_argument("--version", action="version",
-                        version="认知管家 CogSteward {}".format(__version__))
+    parser.add_argument(
+        "--version", action="version", version="认知管家 CogSteward {}".format(__version__)
+    )
     sub = parser.add_subparsers(dest="command")
 
     p_init = sub.add_parser("init", help="初始化工作区状态目录 .cm/")
-    p_init.add_argument("--mode", choices=["dev", "office"], default="dev",
-                        help="版本模式（默认 dev）")
+    p_init.add_argument(
+        "--mode", choices=["dev", "office"], default="dev", help="版本模式（默认 dev）"
+    )
     p_init.add_argument("--scan", action="store_true", help="初始化后立即扫描")
     p_init.add_argument("--doctor", action="store_true", help="初始化后立即体检（可配合 --scan）")
     p_init.add_argument("--full", action="store_true", help="扫描时忽略增量缓存")
@@ -76,24 +89,28 @@ def build_parser() -> argparse.ArgumentParser:
     p_route = sub.add_parser("route", help="路由一条新信息（默认 plan，不落盘）")
     p_route.add_argument("content", nargs="+", help="待路由的内容 / 描述")
     p_route.add_argument("--json", action="store_true", help="输出 JSON")
-    p_route.add_argument("--apply", action="store_true",
-                         help="请求落盘（需先 cm config apply=on）")
-    p_route.add_argument("--confirm", action="store_true",
-                         help="写入用户确认（豁免确认，不计执行次数）")
-    p_route.add_argument("--facts", default=None,
-                         help="记忆准入事实 JSON，如 {\"a1\":{\"result\":\"not_derivable\"}}")
+    p_route.add_argument("--apply", action="store_true", help="请求落盘（需先 cm config apply=on）")
+    p_route.add_argument(
+        "--confirm", action="store_true", help="写入用户确认（豁免确认，不计执行次数）"
+    )
+    p_route.add_argument(
+        "--facts", default=None, help='记忆准入事实 JSON，如 {"a1":{"result":"not_derivable"}}'
+    )
 
     p_pack = sub.add_parser("pack", help="按 token 预算打包上下文指针（只读）")
     p_pack.add_argument("query", nargs="+", help="检索关键词 / 任务描述")
-    p_pack.add_argument("--budget", type=int, default=pack_engine.DEFAULT_BUDGET,
-                        help="token 预算（默认 2000）")
+    p_pack.add_argument(
+        "--budget", type=int, default=pack_engine.DEFAULT_BUDGET, help="token 预算（默认 2000）"
+    )
     p_pack.add_argument("--json", action="store_true", help="输出 JSON")
 
     p_triage = sub.add_parser("triage", help="列出并处理过期会话 / 待定项")
-    p_triage.add_argument("--expire-sessions", action="store_true",
-                          help="把超过 TTL 的会话标记为已回收")
-    p_triage.add_argument("--drop-pending", action="store_true",
-                          help="复核满 3 次的待定项置 dropped，其余复核次数 +1")
+    p_triage.add_argument(
+        "--expire-sessions", action="store_true", help="把超过 TTL 的会话标记为已回收"
+    )
+    p_triage.add_argument(
+        "--drop-pending", action="store_true", help="复核满 3 次的待定项置 dropped，其余复核次数 +1"
+    )
     p_triage.add_argument("--json", action="store_true", help="输出 JSON")
 
     p_mark = sub.add_parser("mark-done", help="登记一次真实执行（D1 计数来源）")
@@ -110,8 +127,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_config.add_argument("--json", action="store_true", help="输出 JSON")
 
     p_index = sub.add_parser("index", help="索引总览（默认增量扫描后汇报）")
-    p_index.add_argument("--check", action="store_true",
-                         help="只读校验，不重建索引")
+    p_index.add_argument("--check", action="store_true", help="只读校验，不重建索引")
     p_index.add_argument("--json", action="store_true", help="输出 JSON")
 
     p_skill = sub.add_parser("skill", help="技能治理子命令")
@@ -183,12 +199,15 @@ def cmd_route(root: Path, args) -> int:
         try:
             facts = json.loads(args.facts)
         except ValueError as exc:
-            raise store.CmError(store.EXIT_USAGE, "准入事实不是合法 JSON：{}".format(exc))
+            raise store.CmError(store.EXIT_USAGE, "准入事实不是合法 JSON：{}".format(exc)) from exc
     content = " ".join(args.content)
     conn = store.connect(root)
     try:
         result = router.route(
-            root, config, conn, content,
+            root,
+            config,
+            conn,
+            content,
             apply_requested=args.apply,
             confirm=args.confirm,
             facts=facts,
@@ -203,8 +222,7 @@ def cmd_pack(root: Path, args) -> int:
     config = store.load_config(root)
     conn = store.connect(root)
     try:
-        result = pack_engine.pack(root, config, conn, " ".join(args.query),
-                                  budget=args.budget)
+        result = pack_engine.pack(root, config, conn, " ".join(args.query), budget=args.budget)
     finally:
         conn.close()
     print(report.to_json(result) if args.json else report.format_pack(result))
@@ -216,7 +234,9 @@ def cmd_triage(root: Path, args) -> int:
     conn = store.connect(root)
     try:
         result = triage_engine.triage(
-            root, config, conn,
+            root,
+            config,
+            conn,
             expire_sessions=args.expire_sessions,
             drop_pending=args.drop_pending,
         )
@@ -230,8 +250,7 @@ def cmd_mark_done(root: Path, args) -> int:
     config = store.load_config(root)
     conn = store.connect(root)
     try:
-        result = router.mark_done(root, config, conn, " ".join(args.content),
-                                  source=args.source)
+        result = router.mark_done(root, config, conn, " ".join(args.content), source=args.source)
     finally:
         conn.close()
     print(report.to_json(result) if args.json else report.format_mark_done(result))

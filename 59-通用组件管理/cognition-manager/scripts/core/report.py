@@ -98,16 +98,18 @@ def doctor(root, config: dict, conn) -> dict:
             conflicts.append({"kind": "duplicate_name", "skill": name, "paths": sorted(paths)})
     for index, left in enumerate(skills):
         left_triggers = set(_json_load(left["triggers_json"], []))
-        for right in skills[index + 1:]:
+        for right in skills[index + 1 :]:
             if left["sha256"] and left["sha256"] == right["sha256"]:
                 continue
             overlap = left_triggers & set(_json_load(right["triggers_json"], []))
             if overlap:
-                conflicts.append({
-                    "kind": "trigger_overlap",
-                    "skills": sorted([left["name"], right["name"]]),
-                    "triggers": sorted(overlap),
-                })
+                conflicts.append(
+                    {
+                        "kind": "trigger_overlap",
+                        "skills": sorted([left["name"], right["name"]]),
+                        "triggers": sorted(overlap),
+                    }
+                )
 
     # 5. 会话待分拣：超过 TTL 50% 仍未分拣
     ttl_seconds = float(config.get("session_ttl_days") or 7) * 86400
@@ -169,35 +171,63 @@ def doctor(root, config: dict, conn) -> dict:
 def recommendations(metrics: dict, details: dict) -> list:
     items = []
     if metrics.get("anchor_out_of_range"):
-        items.append("修正行号引用：{} 处文档引用的行号超出目标文件行数，执行 cm map 查看明细".format(
-            metrics["anchor_out_of_range"]))
+        items.append(
+            "修正行号引用：{} 处文档引用的行号超出目标文件行数，执行 cm map 查看明细".format(
+                metrics["anchor_out_of_range"]
+            )
+        )
     if metrics.get("code_without_doc"):
-        items.append("补文档：{} 个核心模块源码未被任何文档引用，执行 cm map --gaps 查看".format(
-            metrics["code_without_doc"]))
+        items.append(
+            "补文档：{} 个核心模块源码未被任何文档引用，执行 cm map --gaps 查看".format(
+                metrics["code_without_doc"]
+            )
+        )
     if metrics.get("doc_drift"):
-        items.append("复审漂移：{} 处被引用文件已晚于文档更新 3 天以上，确认接口是否变化".format(
-            metrics["doc_drift"]))
+        items.append(
+            "复审漂移：{} 处被引用文件已晚于文档更新 3 天以上，确认接口是否变化".format(
+                metrics["doc_drift"]
+            )
+        )
     if metrics["broken_links"]:
         sample = details["broken_links"][0] if details["broken_links"] else {}
-        sample_text = "（例如 {} → {}）".format(sample.get("src", "?"), sample.get("dst", "?")) \
-            if sample else ""
-        items.append("先修断链：{} 条引用指向不存在的文件{}，优先处理入口索引类文档".format(
-            metrics["broken_links"], sample_text))
+        sample_text = (
+            "（例如 {} → {}）".format(sample.get("src", "?"), sample.get("dst", "?"))
+            if sample
+            else ""
+        )
+        items.append(
+            "先修断链：{} 条引用指向不存在的文件{}，优先处理入口索引类文档".format(
+                metrics["broken_links"], sample_text
+            )
+        )
     if metrics["index_drift"]:
-        items.append("修复索引漂移：{} 个文件哈希或存在性不一致，执行 cm scan --full 重建".format(
-            metrics["index_drift"]))
+        items.append(
+            "修复索引漂移：{} 个文件哈希或存在性不一致，执行 cm scan --full 重建".format(
+                metrics["index_drift"]
+            )
+        )
     if metrics["orphan_files"]:
-        items.append("登记孤儿文件：{} 个文件未被索引，执行 cm scan 纳入管理".format(
-            metrics["orphan_files"]))
+        items.append(
+            "登记孤儿文件：{} 个文件未被索引，执行 cm scan 纳入管理".format(metrics["orphan_files"])
+        )
     if metrics["skill_conflicts"]:
-        items.append("收敛技能冲突：{} 处（重名 / 缺版本 / 触发词重叠），合并或补充版本号".format(
-            metrics["skill_conflicts"]))
+        items.append(
+            "收敛技能冲突：{} 处（重名 / 缺版本 / 触发词重叠），合并或补充版本号".format(
+                metrics["skill_conflicts"]
+            )
+        )
     if metrics["stale_sessions"]:
-        items.append("清理会话：{} 条超过 TTL 一半仍未分拣，执行 cm triage（M2）".format(
-            metrics["stale_sessions"]))
+        items.append(
+            "清理会话：{} 条超过 TTL 一半仍未分拣，执行 cm triage（M2）".format(
+                metrics["stale_sessions"]
+            )
+        )
     if metrics["pending_backlog"]:
-        items.append("处理待定：{} 条待复核（最老 {} 小时），执行 cm triage（M2）".format(
-            metrics["pending_backlog"], metrics["oldest_pending_hours"]))
+        items.append(
+            "处理待定：{} 条待复核（最老 {} 小时），执行 cm triage（M2）".format(
+                metrics["pending_backlog"], metrics["oldest_pending_hours"]
+            )
+        )
     if not items:
         items.append("工作区健康：九类指标均为 0，建议每周运行一次 cm doctor")
     return items[:3]
@@ -210,7 +240,8 @@ def format_init(result: dict) -> str:
         "模式：{}".format(result["mode"]),
         "状态目录：{}".format(result["cm_dir"]),
         "数据表：schema v{}，FTS5 {}".format(
-            result["schema_version"], "可用" if result["fts"] else "不可用（已降级）"),
+            result["schema_version"], "可用" if result["fts"] else "不可用（已降级）"
+        ),
     ]
     return "\n".join(lines)
 
@@ -230,8 +261,12 @@ def format_doctor(result: dict) -> str:
         (LABELS["index_drift"], metrics["index_drift"]),
         (LABELS["skill_conflicts"], metrics["skill_conflicts"]),
         (LABELS["stale_sessions"], metrics["stale_sessions"]),
-        (LABELS["pending_backlog"], "{}（最老 {} 小时）".format(
-            metrics["pending_backlog"], metrics["oldest_pending_hours"])),
+        (
+            LABELS["pending_backlog"],
+            "{}（最老 {} 小时）".format(
+                metrics["pending_backlog"], metrics["oldest_pending_hours"]
+            ),
+        ),
         (LABELS["anchor_out_of_range"], metrics.get("anchor_out_of_range", 0)),
         (LABELS["code_without_doc"], metrics.get("code_without_doc", 0)),
         (LABELS["doc_drift"], metrics.get("doc_drift", 0)),
@@ -260,46 +295,75 @@ def format_route(result: dict) -> str:
         "写入模式：{}".format(result.get("apply_mode", "plan")),
         "",
         "主载体：{}    置信度：{:.2f}".format(
-            result.get("primary", "-"), float(result.get("confidence", 0))),
+            result.get("primary", "-"), float(result.get("confidence", 0))
+        ),
         "分量：evidence={} consistency={} history={} conflict={}".format(
-            parts.get("evidence"), parts.get("consistency"),
-            parts.get("history"), parts.get("conflict")),
+            parts.get("evidence"),
+            parts.get("consistency"),
+            parts.get("history"),
+            parts.get("conflict"),
+        ),
     ]
     attachments = result.get("attachments") or []
     if attachments:
         lines.append("从属引用：")
         for item in attachments:
-            lines.append("  - {} ← {}（{}，物化 {}）".format(
-                item["target"]["path"], item["edge"], item["route"],
-                item.get("materialize", "none")))
+            lines.append(
+                "  - {} ← {}（{}，物化 {}）".format(
+                    item["target"]["path"],
+                    item["edge"],
+                    item["route"],
+                    item.get("materialize", "none"),
+                )
+            )
     else:
         lines.append("从属引用：无")
     if result.get("alternatives"):
-        lines.append("未决候选：{}".format(
-            "、".join("{} {:.2f}".format(item["route"], item["confidence"])
-                      for item in result["alternatives"])))
+        lines.append(
+            "未决候选：{}".format(
+                "、".join(
+                    "{} {:.2f}".format(item["route"], item["confidence"])
+                    for item in result["alternatives"]
+                )
+            )
+        )
     admission_result = result.get("admission") or {}
     if admission_result.get("applicable"):
         checks = admission_result.get("checks", {})
-        lines.append("准入：{}（{}）".format(
-            admission_result.get("decision"),
-            " / ".join("{}={}".format(key, checks[key].get("result"))
-                       for key in ("A1", "A2", "A3", "A4") if key in checks)))
-    lines.extend([
-        "下一步：{}".format(result.get("next_action")),
-        "目标：{}".format((result.get("target") or {}).get("path") or "（无文件）"),
-    ])
+        lines.append(
+            "准入：{}（{}）".format(
+                admission_result.get("decision"),
+                " / ".join(
+                    "{}={}".format(key, checks[key].get("result"))
+                    for key in ("A1", "A2", "A3", "A4")
+                    if key in checks
+                ),
+            )
+        )
+    lines.extend(
+        [
+            "下一步：{}".format(result.get("next_action")),
+            "目标：{}".format((result.get("target") or {}).get("path") or "（无文件）"),
+        ]
+    )
     patch = result.get("patch")
     if patch:
-        lines.append("Patch：{}（{}，{}）".format(
-            patch.get("summary"), len(patch.get("files", [])),
-            "已落盘" if result.get("apply_mode") == "apply" else "未落盘"))
+        lines.append(
+            "Patch：{}（{}，{}）".format(
+                patch.get("summary"),
+                len(patch.get("files", [])),
+                "已落盘" if result.get("apply_mode") == "apply" else "未落盘",
+            )
+        )
         for item in patch.get("files", []):
             lines.append("  {} {}".format(item["op"], item["path"]))
     apply_result = result.get("apply")
     if apply_result:
-        lines.append("写入结果：{}".format(
-            "已应用" if apply_result.get("applied") else apply_result.get("reason", "跳过")))
+        lines.append(
+            "写入结果：{}".format(
+                "已应用" if apply_result.get("applied") else apply_result.get("reason", "跳过")
+            )
+        )
     lines.append("原因：")
     for reason in result.get("reasons", []):
         lines.append("  - {}".format(reason))
@@ -308,7 +372,8 @@ def format_route(result: dict) -> str:
 
 def format_mark_done(result: dict) -> str:
     return "已登记执行：指纹 {}（近 90 天 {} 次，source={}）".format(
-        result.get("signature"), result.get("executions_90d"), result.get("source"))
+        result.get("signature"), result.get("executions_90d"), result.get("source")
+    )
 
 
 def format_rollback(result: dict) -> str:
@@ -319,8 +384,9 @@ def format_rollback(result: dict) -> str:
         return "\n".join(lines)
     lines = ["回滚完成：{}".format(result.get("run_id"))]
     for item in result.get("restored", []):
-        action = {"removed": "已删除", "restored": "已还原"}.get(item.get("action"),
-                                                                 item.get("action"))
+        action = {"removed": "已删除", "restored": "已还原"}.get(
+            item.get("action"), item.get("action")
+        )
         lines.append("  - {} {}".format(action, item.get("path")))
     return "\n".join(lines)
 
@@ -330,8 +396,15 @@ def format_config(config: dict, updated: list) -> str:
         lines = ["已更新：{}".format(", ".join(updated)), ""]
     else:
         lines = ["当前配置：", ""]
-    keys = ("mode", "apply", "high_threshold", "low_threshold", "session_ttl_days",
-            "materialize", "max_attachments")
+    keys = (
+        "mode",
+        "apply",
+        "high_threshold",
+        "low_threshold",
+        "session_ttl_days",
+        "materialize",
+        "max_attachments",
+    )
     for key in keys:
         if key in config:
             lines.append("{}: {}".format(key, config[key]))
@@ -343,13 +416,20 @@ def format_pack(result: dict) -> str:
         "认知管家 · 上下文打包（只读）",
         "查询：{}".format(result.get("query", "-")),
         "预算：{}    估算：{} tokens    命中：{} 条".format(
-            result.get("budget"), result.get("estimated_tokens"), result.get("item_count")),
+            result.get("budget"), result.get("estimated_tokens"), result.get("item_count")
+        ),
         "",
     ]
     for index, item in enumerate(result.get("items", []), 1):
-        lines.append("{}. {}  [{}，{} tokens，score {}]".format(
-            index, item["path"], item.get("kind", "-"),
-            item.get("estimated_tokens", 0), item.get("score", 0)))
+        lines.append(
+            "{}. {}  [{}，{} tokens，score {}]".format(
+                index,
+                item["path"],
+                item.get("kind", "-"),
+                item.get("estimated_tokens", 0),
+                item.get("score", 0),
+            )
+        )
         lines.append("   {}".format(item.get("reason", "")))
     if not result.get("items"):
         lines.append("（无命中）")
@@ -364,17 +444,29 @@ def format_triage(result: dict) -> str:
     lines = [
         "认知管家 · 分拣{}".format("（演练）" if result.get("dry_run") else ""),
         "过期会话：{} 条（本次回收 {} 条）".format(
-            sessions.get("expired", 0), sessions.get("marked_expired", 0)),
+            sessions.get("expired", 0), sessions.get("marked_expired", 0)
+        ),
     ]
     for item in sessions.get("items", []):
-        lines.append("  - #{} {}（创建 {}）".format(
-            item["id"], item.get("content_ref", "-"), item.get("created_at", "-")))
-    lines.append("待定项：{} 条（丢弃 {} / 复核 {}）".format(
-        pending.get("open", 0), pending.get("dropped", 0), pending.get("incremented", 0)))
+        lines.append(
+            "  - #{} {}（创建 {}）".format(
+                item["id"], item.get("content_ref", "-"), item.get("created_at", "-")
+            )
+        )
+    lines.append(
+        "待定项：{} 条（丢弃 {} / 复核 {}）".format(
+            pending.get("open", 0), pending.get("dropped", 0), pending.get("incremented", 0)
+        )
+    )
     for item in pending.get("items", []):
-        lines.append("  - #{} {} 复核 {} 次（{} 小时）".format(
-            item["id"], item.get("payload_ref", "-"),
-            item.get("review_count", 0), item.get("age_hours", 0)))
+        lines.append(
+            "  - #{} {} 复核 {} 次（{} 小时）".format(
+                item["id"],
+                item.get("payload_ref", "-"),
+                item.get("review_count", 0),
+                item.get("age_hours", 0),
+            )
+        )
     for note in result.get("notes", []):
         lines.append("提示：{}".format(note))
     return "\n".join(lines)
@@ -419,7 +511,8 @@ def format_skill_lint(result: dict) -> str:
         "认知管家 · 技能检查",
         "工作区：{}".format(result["workspace"]),
         "技能数：{}    问题：{}（错误 {} / 警告 {}）".format(
-            summary["skills"], summary["total"], summary["error"], summary["warning"]),
+            summary["skills"], summary["total"], summary["error"], summary["warning"]
+        ),
     ]
     issues = result.get("issues") or []
     if not issues:
@@ -427,8 +520,9 @@ def format_skill_lint(result: dict) -> str:
         return "\n".join(lines)
     lines.append("")
     for position, item in enumerate(issues, 1):
-        lines.append("{}. [{}] {}：{}".format(
-            position, item["severity"], item["kind"], item["detail"]))
+        lines.append(
+            "{}. [{}] {}：{}".format(position, item["severity"], item["kind"], item["detail"])
+        )
     return "\n".join(lines)
 
 
@@ -441,10 +535,7 @@ def _table(rows) -> str:
 
 
 def _display_width(text) -> int:
-    return sum(
-        2 if unicodedata.east_asian_width(char) in ("W", "F") else 1
-        for char in str(text)
-    )
+    return sum(2 if unicodedata.east_asian_width(char) in ("W", "F") else 1 for char in str(text))
 
 
 def to_json(payload) -> str:

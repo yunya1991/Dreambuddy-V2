@@ -144,9 +144,7 @@ def evaluate(root, primary: str, facts: dict = None) -> dict:
     pending = any(check.get("pending") for check in checks.values())
     blocked = any(check.get("blocked") for check in checks.values())
     reason_items = [
-        "{} {}".format(key, check["reason"])
-        for key, check in checks.items()
-        if check.get("reason")
+        "{} {}".format(key, check["reason"]) for key, check in checks.items() if check.get("reason")
     ]
 
     decision = "reject" if blocked else ("pending" if pending else "accept")
