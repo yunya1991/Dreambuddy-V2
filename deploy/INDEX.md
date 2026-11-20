@@ -1,11 +1,12 @@
 # 🤖 部署配置 (deploy/)
 > **用途**: 系统部署配置，含 Hermes skills/cron/memories、运维脚本、systemd 服务
-> **最后更新**: 2026-10-11
+> **最后更新**: 2026-11-20
 
 ## 目录结构
 
 | 目录/文件 | 用途 |
 |:---|:---|
+| [CLOUD-OPS.md](./CLOUD-OPS.md) | **云端运维手册（SSoT）**：43.160.201.117 连接事实、`dreambuddy-frontend@3001/@3002` 双实例拓扑、部署/重启/验证/排障 |
 | `hermes/skills/` | 预部署技能集（14 个 trading SKILL） |
 | `hermes/cron/jobs.json` | 预部署 cron 配置 |
 | `hermes/memories/` | 预部署记忆（USER.md、MEMORY.md） |
