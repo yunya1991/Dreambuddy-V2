@@ -3,7 +3,7 @@ name: skillhub-publisher
 description: "SkillHub（skillhub.cn）发布交互：先判定免费 Skill 还是 SkillPay 付费 Skill；检查账号/实名/商户入驻/API Token；校验 Skill 包；CLI 发布免费 Skill，网页发布 Pay Skill；跟踪审核、付费预检与失败恢复。用于发布/上架/更新 Skill、上架 SkillPay、查审核状态、处理 401/403/409/429 及付费预检失败。"
 slug: dreambuddy-skillhub-publisher
 displayName: SkillHub 发布交互
-version: 1.1.0
+version: 1.1.1
 summary: 面向 Agent 的 SkillHub 发布协议：免费走 CLI，付费走 SkillPay 网页流程；先校验、再发布、结果可复核。
 license: MIT
 allowed-tools: Read, Write, Glob, Grep, Bash
@@ -220,6 +220,18 @@ POST /api/v1/community/skills/precheck-alipay   (multipart: file=SKILL.md)
 5. 提交后以页面「审核中 / 已通过 / 未通过」为证据
 6. 登录墙（手机号 + 短信验证码）交还用户完成
 
+### 5.6 已上架 Pay Skill 发新版本
+
+版本号取自**包内 `SKILL.md` 的 `version`**（网页上改不动，见 skillpay-workflow §8.3 P5）。流程与坑位：
+
+1. 商品管理 → 目标商品「编辑商品信息」→ 删旧 zip → 上传新 zip
+2. **先填「版本修改说明 \*」**（带星号必填，1–200 字）——**空白时点提交不生效且不报错**，包显示已上传但版本不进审核；这是最常见的"更新不了"原因
+3. 上传后商品名会被重置为英文 slug → 改回中文
+4. 取消「报名参加比赛」勾选 → 提交
+5. 提交前自检：说明非空 / 名称为中文 / 比赛未勾选 / 价格与计费模式未变
+
+完整状态语义与 DOM 超时绕过见 `platform/tools-skills/skillpay-workflow/SKILL.md` §8.2–§8.4。
+
 ---
 
 ## 6. 审核与买家验证
@@ -302,6 +314,6 @@ skillhub publish <本目录> --changelog "v1.1.0：补齐 SkillPay 付费发布�
 ```
 
 - slug：`dreambuddy-skillhub-publisher`
-- version：`1.1.0`
+- version：`1.1.1`（新增 §5.6 已上架 Pay Skill 发新版本）
 - license：`MIT`
 - 若 409：改为 `<handle>-skillhub-publisher` 后重发

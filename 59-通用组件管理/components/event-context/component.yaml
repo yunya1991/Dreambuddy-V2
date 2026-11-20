@@ -1,6 +1,6 @@
 name: event-context
 display_name: 事件上下文（官方源·五层装配）
-version: 1.0.0
+version: 1.0.1
 family: event-context
 lifecycle: active
 summary: 从 SEC 与美联储官方公开源拉取公告与声明，装配成事件事实、涉及实体、同类事件次数、来源许可、边界声明五层结构。

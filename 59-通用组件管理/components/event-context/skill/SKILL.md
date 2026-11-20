@@ -2,7 +2,7 @@
 name: event-context
 slug: dreambuddy-event-context
 displayName: 事件上下文（官方源·五层装配）
-version: 1.0.0
+version: 1.0.1
 summary: 从 SEC 与美联储官方公开源拉取公告与声明，装配成事件事实、涉及实体、同类事件次数、来源许可、边界声明五层结构。
 license: MIT
 allowed-tools: Bash, Read
@@ -151,4 +151,5 @@ python3 scripts/handoff.py --subject AAPL --since 30 [--budget 2000] [--json]
 
 | 版本 | 变更 |
 |---|---|
+| 1.0.1 | 内部共享内核重构（endpoint/handoff 与数据服务同源），命令表、字段与输出不变；handoff `target` 改为契约值 `cogsteward.pack@1.0` |
 | 1.0.0 | 首个订阅版本：SEC 披露 / SEC 公告 / 美联储声明三类官方源，五层装配，handoff 可装配指针 |
