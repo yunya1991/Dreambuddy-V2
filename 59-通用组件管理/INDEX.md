@@ -57,7 +57,7 @@
 | 组件 | 目录 | 版本 | 生命周期 | 分发变体 | 入口 |
 |---|---|---|---|---|---|
 | 认知管家 CogSteward `cogsteward` | components/cogsteward/ | v0.7.0 | active | — | 3 个 |
-| 事件上下文（官方源·五层装配） `event-context` | components/event-context/ | v1.0.0 | active | — | 3 个 |
+| 事件上下文（官方源·五层装配） `event-context` | components/event-context/ | v1.0.1 | active | — | 3 个 |
 | 数据服务（宏观·披露·链上·上下文） `market-data` | components/market-data/ | v1.0.2 | active | — | 6 个 |
 | 市场事实日报 `market-facts-daily` | components/market-facts-daily/ | v1.0.3 | active | — | 1 个 |
 <!-- GEN:COMPONENT-REGISTRY:END -->
@@ -73,9 +73,9 @@
 | 认知管家 CogSteward | WorkBuddy Skill（本地安装，`components/cogsteward/skill/`） | v0.7.0 | 🟢 `init/scan/doctor/route/pack/triage/mark-done/rollback/config/index/map/skill lint/selfcheck` 与 `eval_golden`、`release_check` 已实现；九项指标由 `references/metrics-contract.json` 单一源驱动，`python3 -m unittest discover -s tests` 全部通过（2 项跳过）；真实黄金集待人工标注 |
 | 认知管家 Pro `cogsteward-pro` | SkillPay 订阅制商品（¥2.99/月，`components/cogsteward/variants/pro/`） | v1.1.1 | 🟡 契约驱动 + `coverage` 透明；v1 销售中，`P0806000213876724` |
 | 认知管家 Pro 按次版 `cogsteward-pro-pay` | SkillHub Pay Skill（¥0.99/次，`components/cogsteward/variants/pro-pay/`） | v1.1.1 | 🟡 口径对齐免费版 0.7.0（九项 + 契约），评测整改完成待发版 |
-| 市场数据服务 `market-data-hub` | SkillPay 订阅制商品（¥19.9/月，试用 5 次，`components/market-data/skill/`） | v1.0.2 | 🟡 审核中 `P0806000213882316`（旧 P0806000213878528 已归档）；cloud 通道不支持 context；数据源措辞已与台账对齐（默认不接，例外见 DC-1） |
-| 事件上下文服务 `event-context` | SkillPay 订阅制商品（¥19.9/月，试用 5 次，`components/event-context/skill/`） | v1.0.0 | 🟡 审核中 `P0806000213878529` |
-| 市场事实日报 `market-facts-daily` | SkillPay 买断制商品（¥0.99，`components/market-facts-daily/skill/`） | v1.0.3 | 🟡 免责声明已与 DC-1 对齐（仅统计描述、不再分发原始行情）；`--json` 已携带 `data.v1` 外壳；待发版 |
+| 市场数据服务 `market-data-hub` | SkillPay 订阅制商品（¥19.9/月，试用 5 次，`components/market-data/skill/`） | v1.0.2 | 🟢 销售中 v1；**v2（包 1.0.2）审核中**；cloud 通道不支持 context；数据源措辞已与台账对齐（默认不接，例外见 DC-1） |
+| 事件上下文服务 `event-context` | SkillPay 订阅制商品（¥19.9/月，试用 5 次，`components/event-context/skill/`） | v1.0.1 | 🟢 销售中 v1；**v2（包 1.0.1）审核中** |
+| 市场事实日报 `market-facts-daily` | SkillPay 买断制商品（¥0.99，`components/market-facts-daily/skill/`） | v1.0.3 | 🟢 销售中 v3；**v4（包 1.0.3）审核中**；免责声明已与 DC-1 对齐，`--json` 携带 `data.v1` 外壳 |
 | 数据服务专业版 `market-data-pro` | SkillHub Pay Skill（¥2.99/次，`components/market-data/variants/pro/`） | v1.0.3 | 🟢 已发布（评测 4.4）；1.0.3 评测整改完成待发版 |
 | 事件上下文专业版 `event-context-pro` | SkillHub Pay Skill（¥2.99/次，`components/event-context/variants/pro/`） | v1.0.1 | 🟢 已发布（评测 4.5）；1.0.1 评测整改完成待发版 |
 
