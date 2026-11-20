@@ -1,0 +1,19 @@
+# CogSteward 技能包清单
+name: cognition-manager
+version: 0.7.0
+entry: scripts/cm_cli.py
+runtime: python3
+dependencies: []            # 零第三方依赖，仅标准库
+modes:
+  - dev
+  - office
+permissions:
+  filesystem:
+    read: workspace
+    write: [".cm/"]            # 默认只写状态目录
+    write_apply: workspace     # cm config apply=on 且单次 --apply 时才写工作区文件（先快照）
+  network: none
+  subprocess: none
+platform:
+  distribution: local-install   # 云端执行形态不可用
+  dirs: [SKILL.md, references, scripts, templates]

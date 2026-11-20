@@ -1,0 +1,26 @@
+[Unit]
+Description=SkillHub Audit API (Alipay AI pay-per-use, HTTP 402)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=skillhub
+Group=skillhub
+WorkingDirectory=/opt/skillhub-audit/app
+EnvironmentFile=/etc/skillhub-audit/audit.env
+ExecStart=/usr/bin/node /opt/skillhub-audit/app/src/server.js
+Restart=always
+RestartSec=3
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/skillhub-audit
+LimitNOFILE=4096
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

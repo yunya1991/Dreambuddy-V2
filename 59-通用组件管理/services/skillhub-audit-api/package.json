@@ -1,0 +1,19 @@
+{
+  "name": "skillhub-audit-api",
+  "version": "1.2.0",
+  "private": true,
+  "description": "SkillHub Skill 上架体检 API（支付宝 AI 按量付费 402 协议）",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "alipay-sdk": "^4.13.0",
+    "better-sqlite3": "^11.5.0",
+    "express": "^4.21.0"
+  }
+}

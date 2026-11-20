@@ -1,0 +1,14 @@
+# Office 版：资料目录 / 个人知识工作者
+# 办公场景多归属仅约 20%，使用简化模型：主载体 + 一句话备注
+mode: office
+label: Office
+high_threshold: 0.80
+low_threshold: 0.55
+session_ttl_days: 14
+materialize: none
+max_attachments: 0
+weight_evidence: 0.35
+weight_consistency: 0.30
+weight_history: 0.20
+weight_conflict: 0.15
+vocabulary: [资料, 套路, 要点, 本次]

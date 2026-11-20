@@ -1,0 +1,13 @@
+# Dev 版：代码仓库 / 技术团队
+mode: dev
+label: Dev
+high_threshold: 0.80
+low_threshold: 0.50
+session_ttl_days: 7
+materialize: stub
+max_attachments: 3
+weight_evidence: 0.35
+weight_consistency: 0.30
+weight_history: 0.20
+weight_conflict: 0.15
+vocabulary: [文档, 技能, 记忆, 会话]

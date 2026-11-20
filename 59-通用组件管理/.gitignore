@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# 组件运行时状态（认知管家工作区索引）
+.cm/
+
+# 构建产物
+dist/
+
+# Node
+node_modules/
+
+# 密钥与本地配置（保留模板）
+.env
+!.env.example
+
+# macOS
+.DS_Store

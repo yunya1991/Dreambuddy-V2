@@ -1,0 +1,160 @@
+{
+  "schema_version": "1.0",
+  "name": "cogsteward-metrics",
+  "updated": "2026-11-20",
+  "problem_metrics": [
+    "broken_links",
+    "orphan_files",
+    "index_drift",
+    "skill_conflicts",
+    "stale_sessions",
+    "pending_backlog",
+    "anchor_out_of_range",
+    "code_without_doc",
+    "doc_drift"
+  ],
+  "metrics": [
+    {
+      "key": "broken_links",
+      "label": "断链",
+      "definition": "索引中的本地引用指向不存在的文件；同一（文档, 目标）只计 1 次",
+      "warn_at": 1,
+      "high_at": 5,
+      "weight": 30,
+      "action": "cm index --check 定位失效链接，逐个修复或移入归档目录"
+    },
+    {
+      "key": "orphan_files",
+      "label": "孤儿文件",
+      "definition": "磁盘存在但未被 docs / skills 索引登记的文件；执行 cm scan 后归零",
+      "warn_at": 5,
+      "high_at": 20,
+      "weight": 20,
+      "action": "cm scan 重新登记未入索引文件；长期无引用的移出工作区"
+    },
+    {
+      "key": "index_drift",
+      "label": "索引漂移",
+      "definition": "已登记文件哈希不一致、文件缺失或不可读的条数",
+      "warn_at": 3,
+      "high_at": 10,
+      "weight": 20,
+      "action": "cm index 全量重建，核对磁盘与索引差异"
+    },
+    {
+      "key": "skill_conflicts",
+      "label": "技能冲突",
+      "definition": "重名分组数 + 缺 version 技能数 + triggers 有交集的技能对数；status=orphan 不计",
+      "warn_at": 1,
+      "high_at": 3,
+      "weight": 20,
+      "action": "cm skill lint 定位重名/重复触发词，合并或改 slug"
+    },
+    {
+      "key": "stale_sessions",
+      "label": "过期会话",
+      "definition": "创建后超过会话 TTL 一半仍未分拣的会话数（Dev 3.5 天 / Office 7 天）",
+      "warn_at": 5,
+      "high_at": 20,
+      "weight": 5,
+      "action": "cm triage --expire-sessions 归档过期会话"
+    },
+    {
+      "key": "pending_backlog",
+      "label": "待定积压",
+      "definition": "state='open' 的待定项数量",
+      "warn_at": 10,
+      "high_at": 50,
+      "weight": 5,
+      "action": "cm triage 先演练，确认后 --drop-pending 清理积压"
+    },
+    {
+      "key": "anchor_out_of_range",
+      "label": "行号越界",
+      "definition": "文档 #L起-L止 越界条数（起<1 / 止<起 / 止>文件行数）；目标文件缺失归断链",
+      "warn_at": 1,
+      "high_at": 5,
+      "weight": 10,
+      "action": "cm map --gaps 定位越界行号，修正为实际行数内的引用"
+    },
+    {
+      "key": "code_without_doc",
+      "label": "无文档代码",
+      "definition": "含 INDEX.md 或 SKILL.md 的目录中，未被任何已索引文档引用的源码文件数",
+      "warn_at": 1,
+      "high_at": 5,
+      "weight": 10,
+      "action": "cm map --gaps 列出无文档源码，在所属模块 INDEX.md 中补充说明与链接"
+    },
+    {
+      "key": "doc_drift",
+      "label": "文档漂移",
+      "definition": "被引用文件 mtime 比引用文档晚 ≥3 天的条数；CHANGELOG / INDEX / ENGINEERING_INDEX 作为来源不计",
+      "warn_at": 3,
+      "high_at": 10,
+      "weight": 10,
+      "action": "cm map --gaps 查看晚于文档更新的文件，确认接口变化后同步文档"
+    }
+  ],
+  "ratios": [
+    {
+      "id": "broken_link_rate",
+      "label": "断链占比",
+      "metric": "broken_links",
+      "denominator": "documents",
+      "warn_at": 1,
+      "high_at": 5,
+      "weight": 10,
+      "informational": false,
+      "action": "cm index --check 逐条修复断链"
+    },
+    {
+      "id": "orphan_rate",
+      "label": "孤儿文件占比",
+      "metric": "orphan_files",
+      "denominator": "documents",
+      "warn_at": 5,
+      "high_at": 15,
+      "weight": 10,
+      "informational": false,
+      "action": "cm scan 后处理无引用文件"
+    },
+    {
+      "id": "conflict_rate",
+      "label": "技能冲突占比",
+      "metric": "skill_conflicts",
+      "denominator": "skills",
+      "warn_at": 3,
+      "high_at": 10,
+      "weight": 10,
+      "informational": false,
+      "action": "cm skill lint 合并重名技能"
+    },
+    {
+      "id": "anchor_error_rate",
+      "label": "行号越界占比",
+      "metric": "anchor_out_of_range",
+      "denominator": "documents",
+      "warn_at": 1,
+      "high_at": 3,
+      "weight": 0,
+      "informational": false,
+      "action": "cm map --gaps 修正越界行号引用"
+    },
+    {
+      "id": "stale_session_rate",
+      "label": "过期会话占比",
+      "metric": "stale_sessions",
+      "denominator": "sessions",
+      "warn_at": 10,
+      "high_at": 30,
+      "weight": 0,
+      "informational": true,
+      "action": "cm triage --expire-sessions 归档"
+    }
+  ],
+  "health": {
+    "ok_max_problems": 0,
+    "attention_max_problems": 2
+  }
+}
