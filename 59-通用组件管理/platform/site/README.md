@@ -70,7 +70,7 @@ python3 -m http.server 8099
 # 试用页需要 /api/trial，本地无后端时提交会提示请求失败，属预期
 ```
 
-## 研究博客（blog/）
+## 研究博客（blog/，署名：二十三画生）
 
 - 文章源：`blog/posts/*.md`，front matter 必填 `title / date / summary`，可选 `tags`（逗号分隔）
 - 产物：`blog/index.html`、`blog/<slug>.html`、`blog/feed.xml`（RSS 2.0）

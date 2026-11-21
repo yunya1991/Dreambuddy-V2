@@ -873,9 +873,9 @@ def build_feed(posts: list) -> str:
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<rss version="2.0">\n'
         "  <channel>\n"
-        "    <title>59 研究博客</title>\n"
+        "    <title>二十三画生 · 研究博客</title>\n"
         f"    <link>{SITE_ORIGIN}/blog/index.html</link>\n"
-        "    <description>关于交易系统、数据质量与可分发能力组件的工程研究笔记。</description>\n"
+        "    <description>二十三画生的研究博客：关于交易系统、数据质量与可分发能力组件的工程研究笔记。</description>\n"
         "    <language>zh-CN</language>\n" + "\n".join(items) + "\n  </channel>\n</rss>\n"
     )
 

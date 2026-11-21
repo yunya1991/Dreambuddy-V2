@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
-    <title>59 研究博客</title>
+    <title>二十三画生 · 研究博客</title>
     <link>https://49.233.123.96/blog/index.html</link>
-    <description>关于交易系统、数据质量与可分发能力组件的工程研究笔记。</description>
+    <description>二十三画生的研究博客：关于交易系统、数据质量与可分发能力组件的工程研究笔记。</description>
     <language>zh-CN</language>
     <item>
       <title>每个数字都要能回溯：我们的数据可信度五道检查</title>
