@@ -328,6 +328,79 @@ code.inline { background: #f1f5f9; padding: 2px 6px; border-radius: 5px; font-si
   .trial-side { order: 2; }
 }
 
+/* ==================== 研究博客 ==================== */
+.post-list { display: grid; gap: 14px; }
+.post-item {
+  display: block; background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow);
+  color: inherit; transition: 0.18s;
+}
+.post-item:hover { text-decoration: none; border-color: #bfdbfe; transform: translateY(-1px); }
+.post-item h3 { margin: 0 0 6px; font-size: 18px; color: var(--ink); }
+.post-item p { margin: 0; color: var(--muted); font-size: 14px; }
+.post-meta { color: var(--muted); font-size: 13px; }
+.post-item .post-meta { margin-top: 10px; font-size: 12px; }
+.post-tags { margin-left: 8px; }
+.post-tags .tag, .post-meta .tag { margin: 0 4px 0 0; }
+
+/* 系列文章：首页分组卡与文章页导航 */
+.series-block {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 18px 22px; box-shadow: var(--shadow);
+}
+.series-head { margin-bottom: 10px; }
+.series-head h3 { margin: 0 0 4px; font-size: 18px; color: var(--ink); }
+.series-meta { margin: 0; color: var(--muted); font-size: 12px; }
+.series-parts { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.series-part {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 7px 10px; border-radius: 10px; color: inherit;
+}
+.series-part:hover { background: #f1f5f9; text-decoration: none; }
+.series-part .part-no { color: var(--accent); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.series-part .part-title { flex: 1; font-size: 15px; }
+.series-part .part-date { color: var(--muted); font-size: 12px; }
+.series-box {
+  margin: 14px 0 22px; padding: 12px 16px;
+  background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; font-size: 14px;
+}
+.series-box .series-label { margin: 0; color: #1e40af; }
+.series-box .series-jump { margin-top: 6px; font-size: 13px; }
+
+.post h1 { font-size: 32px; line-height: 1.3; margin: 6px 0 10px; letter-spacing: -0.3px; }
+.post-cta {
+  margin-top: 36px; padding: 20px 22px; background: #eff6ff;
+  border: 1px solid #bfdbfe; border-radius: var(--radius);
+}
+.post-cta h3 { margin: 0 0 6px; }
+.post-cta p { margin: 0; color: #1e40af; font-size: 14px; }
+
+.prose { font-size: 15.5px; }
+.prose h2 { font-size: 23px; margin: 34px 0 10px; }
+.prose h3 { font-size: 19px; margin: 26px 0 8px; }
+.prose h4 { font-size: 16px; margin: 20px 0 6px; }
+.prose p { margin: 12px 0; }
+.prose ul, .prose ol { margin: 12px 0; padding-left: 24px; }
+.prose li { margin: 5px 0; }
+.prose pre {
+  background: #0b1220; color: #e2e8f0; padding: 14px 16px; border-radius: 10px;
+  overflow: auto; font-size: 13px; line-height: 1.55;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.prose code {
+  background: #f1f5f9; padding: 2px 6px; border-radius: 5px; font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.prose pre code { background: transparent; padding: 0; color: inherit; font-size: 13px; }
+.prose blockquote {
+  margin: 16px 0; padding: 10px 16px; border-left: 3px solid var(--accent);
+  background: #f8fafc; color: var(--muted);
+}
+.prose blockquote p { margin: 0; }
+.prose table { margin: 16px 0; }
+.prose img { max-width: 100%; border-radius: 10px; }
+.prose hr { border: 0; border-top: 1px solid var(--line); margin: 26px 0; }
+
 /* 商品详情页：三问选择器与变体卡高亮（无 JS 时全部静态可见） */
 .opt {
   display: inline-flex; align-items: center; gap: 8px;

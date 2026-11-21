@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "command": "report",
+  "generated_at": "2026-11-20T12:00:00+08:00",
+  "tasks": [
+    {"id": "t1", "adapter": "railway", "status": "hit", "window_start": null, "window_end": null, "submit_enabled": 0}
+  ],
+  "hits": [
+    {
+      "task_id": "t1",
+      "fingerprint": "fp-abc",
+      "at": 1700000000000,
+      "result": "hit",
+      "target": {"target_id": "G1", "session": "2026-12-01", "price_tier": "二等座"},
+      "max_price": 600
+    }
+  ],
+  "events": [],
+  "limits": "fixture",
+  "watch": {
+    "tasks": [
+      {"id": "t1", "adapter": "railway", "target_id": "G1", "session": "2026-12-01", "price_tier": "二等座", "max_price": 600}
+    ]
+  }
+}

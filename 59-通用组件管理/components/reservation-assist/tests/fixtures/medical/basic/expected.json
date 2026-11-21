@@ -1,0 +1,5 @@
+{
+  "hits": [
+    {"target_id": "张医生", "session": "内科 上午", "price_tier": "内科", "price": 50, "remaining": 3}
+  ]
+}

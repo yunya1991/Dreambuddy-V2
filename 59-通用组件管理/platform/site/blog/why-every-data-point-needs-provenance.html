@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<!-- AUTO-GENERATED from templates/post.html — 禁止手改；改模板后跑 build_site.py --write -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>每个数字都要能回溯：我们的数据可信度五道检查 · 59 研究博客</title>
+<meta name="description" content="10 年期美债 5.07% 这类结论，如果没有数据日期、方法 ID、样本量和缺失标注，就等于没有。我们把它固化成五道检查，缺一项就不许对外输出。">
+<link rel="alternate" type="application/rss+xml" title="59 研究博客 RSS" href="feed.xml">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../index.html">
+      <img src="../assets/logo.jpg" alt="logo">
+      <span>59 通用组件管理</span>
+    </a>
+    <nav class="nav-links">
+      <a href="../index.html">产品介绍</a>
+      <a href="../trial.html">免费体检</a>
+      <a href="../guide.html">使用说明</a>
+      <a href="index.html" class="active">研究博客</a>
+    </nav>
+  </div>
+</header>
+
+<main class="section">
+  <div class="wrap">
+    <article class="post">
+      <p class="hint"><a href="index.html">← 返回研究博客</a></p>
+      <h1>每个数字都要能回溯：我们的数据可信度五道检查</h1>
+      <p class="post-meta">2026-11-21 · <span class="tag">数据质量</span> <span class="tag">研究工程</span> <span class="tag">可复现</span></p>
+
+      <div class="prose">
+<h2>一个数字什么时候算&quot;可信&quot;</h2>
+<p>研究里最常见的争论不是结论对错，而是&quot;你这个数从哪来的&quot;。</p>
+<p>如果一份输出只给了 <code>5.07</code>，它至少缺了五件事：<strong>哪一天的数据、用哪个方法算的、样本量多少、缺失了什么、数据源是否允许这样使用</strong>。缺任何一项，这个数字都无法被复核，也无法被引用。</p>
+<p>我们把数据链路拆成五道检查，每一道都对应输出里的一个字段。这套检查现在跑在所有对外数据组件上。</p>
+<h2>检查一：数据日期，不是生成时间</h2>
+<p>最容易混淆的两个时间戳是&quot;脚本运行时间&quot;和&quot;数据日期&quot;。前者只能说明你什么时候跑过，后者才决定结论是否过期。</p>
+<p>我们的输出同时给出 <code>generated_at</code>（生成时间）与 <code>data_date</code>（数据日期）。对宏观序列，<code>data_date</code> 是该序列最后一个有效观测；对行情，它是最后一根日线。</p>
+<p>一个真实教训：某次取 SEC 财务字段，概念名用了旧的 <code>Revenues</code>，多数公司 2019 年后不再申报，取回来的是多年前的数据。字段能取到、结构也合法，但结论已经失去意义。<strong>能取到不等于新鲜</strong>，所以数据日期必须显式输出，陈旧数据在输出里注明。</p>
+<h2>检查二：方法 ID，让口径可以对齐</h2>
+<p>同一个&quot;20 日涨跌幅&quot;，至少有三种算法：收盘价对比、复权价对比、对数收益累加。不做标注，跨报告比较就是灾难。</p>
+<p>我们的每个统计量都挂方法 ID，输出末尾统一列出：</p>
+<pre><code>方法ID：M11 区间变动 / M12 序列分位 / M13 年化波动 / M14 最大回撤</code></pre>
+<p>这样一来，&quot;分位数 60%&quot; 不再是模糊描述，而是可以逐条复算的口径。方法 ID 同时是测试锚点：改算法必须改 ID，否则校验不通过。</p>
+<h2>检查三：样本量，与缺失标注</h2>
+<p>统计量本身不带样本量，是一个隐藏的陷阱：<code>n=20</code> 的分位数和 <code>n=250</code> 的分位数，可信度完全不同。</p>
+<p>我们的规则是<strong>统计量与样本量成对输出</strong>：</p>
+<table>
+<thead><tr>
+<th>字段</th>
+<th>示例</th>
+<th>含义</th>
+</tr></thead>
+<tbody>
+<tr><td>pctile</td><td>0.60</td><td>当前值在窗口内的分位</td></tr>
+<tr><td>pctile_n</td><td>60</td><td>实际参与计算的样本数</td></tr>
+<tr><td>observations</td><td>16205</td><td>该序列的历史总观测数</td></tr>
+<tr><td>missing</td><td>无</td><td>未取到的标的与原因码</td></tr>
+</tbody>
+</table>
+<p>缺失绝不静默。取数失败时输出 <code>missing: [&quot;sz000001(E_NET)&quot;]</code>，而不是悄悄少一行。<strong>&quot;少了一行&quot;比&quot;报错&quot;更危险</strong>，因为读者会默认结果完整。</p>
+<h2>检查四：数据源许可，先于技术接入</h2>
+<p>技术上能抓，不等于允许商用再分发。这条线如果模糊，整个产品的合规基础都会动摇。</p>
+<p>我们维护一份数据源授权台账，只有登记过的源才允许接入。默认不接的包括：禁止商用再分发的行情源、需要信息经营许可的交易所行情、以及未核实条款的统计数据。</p>
+<p>低成本公开接口也一样要写清许可与限制，例如公开日线数据会明确标注&quot;仅限本服务内部使用&quot;。许可不是法务的附录，它是输出契约的一部分。</p>
+<h2>检查五：双通道与熔断，失败要可解释</h2>
+<p>数据服务有两种部署形态：本地直连数据源，或经云端网关统一取数。我们让同一个组件支持三种通道：</p>
+<ul>
+<li><code>auto</code>：云端优先，失败自动回退本地</li>
+<li><code>cloud</code>：只走网关</li>
+<li><code>local</code>：只本地直连</li>
+</ul>
+<p>工程上有两个细节值得抄：</p>
+<ol>
+<li><strong>连接超时与读取超时分开计时</strong>。TLS 握手抖动不该被误判成&quot;数据源不可用&quot;，否则会触发不必要的回退。</li>
+<li><strong>同进程连续失败即熔断</strong>。网关连续失败两次后，本次调用不再尝试云端，避免每个数据集都等一遍超时。</li>
+</ol>
+<p>失败时必须给出原因（如 <code>no_token / E_NET / E_TLS</code>），而不是笼统的&quot;获取失败&quot;。可解释的失败，才能被运维定位，也才能被读者判断结论是否可信。</p>
+<h2>五道检查的落地方式</h2>
+<p>我们没有靠&quot;评审时记得检查&quot;，而是把它写进输出契约和闸门：</p>
+<ul>
+<li>统计量必须成对输出样本量，缺失必须有原因码</li>
+<li>方法 ID 变化必须伴随算法版本变化</li>
+<li>数据源未登记在台账中，构建期直接失败</li>
+<li>通道回退必须有显式字段（<code>data_route</code>）记录实际走了哪条路</li>
+</ul>
+<p>对使用者来说，最终看到的是一份可复核的输出：</p>
+<pre><code class="lang-json">{
+  &quot;generated_at&quot;: &quot;2026-11-21T04:35:12&quot;,
+  &quot;data_date&quot;: &quot;2026-11-18&quot;,
+  &quot;data_route&quot;: &quot;cloud&quot;,
+  &quot;rows&quot;: [{ &quot;series&quot;: &quot;DGS10&quot;, &quot;latest&quot;: 5.07, &quot;pctile&quot;: 0.6, &quot;pctile_n&quot;: 60 }],
+  &quot;missing&quot;: [],
+  &quot;method_ids&quot;: [&quot;M11&quot;, &quot;M12&quot;, &quot;M13&quot;, &quot;M14&quot;]
+}</code></pre>
+<h2>小结</h2>
+<p>数据可信不是一个形容词，而是一组必须存在的字段：<strong>日期、方法、样本量、缺失、许可</strong>。</p>
+<p>当这五项成为输出的硬性结构，研究结论才具备两个能力：别人能复算，自己敢引用。这也是我们把数据链路做成组件而不是脚本的原因——脚本可以随意省略字段，组件不行。</p>
+      </div>
+      <div class="post-cta">
+        <h3>把你的 Skill 也体检一遍</h3>
+        <p>免费体检会检查结构、版本、示例可执行性与敏感信息泄露，给出总分与逐项修复建议。</p>
+        <p style="margin-top:12px"><a class="btn btn-primary" href="../trial.html">开始免费体检</a></p>
+      </div>
+    </article>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>59 通用组件管理 · 组件登记 / 版本 / 分发 / 边界治理</span>
+    <span><a href="index.html">研究博客</a> · <a href="https://skillhub.cn/dashboard" target="_blank" rel="noopener">SkillHub 控制台</a> · <a href="../privacy.html">隐私说明</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

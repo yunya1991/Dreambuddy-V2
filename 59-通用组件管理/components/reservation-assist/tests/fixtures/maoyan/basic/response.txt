@@ -1,0 +1,8 @@
+{
+  "serverTime": 1764561600000,
+  "shows": [
+    {"show_id": "M1", "session": "2026-12-20 19:30", "tier": "普通区", "price": 280, "left": 4, "link": "https://example.invalid/maoyan/m1"},
+    {"show_id": "M1", "session": "2026-12-20 19:30", "tier": "贵宾区", "price": 480, "left": 2, "link": "https://example.invalid/maoyan/m1-vip"},
+    {"show_id": "M2", "session": "2026-12-21 19:30", "tier": "普通区", "price": 180, "left": 0, "link": "https://example.invalid/maoyan/m2"}
+  ]
+}

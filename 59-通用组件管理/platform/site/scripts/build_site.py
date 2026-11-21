@@ -2,9 +2,12 @@
 """59 站点构建器：模板渲染产物 + 商品详情页 + 组件登记清单
 
 源 / 产物分离（SPEC §5.3）：
-  templates/{index,trial,guide,product}.html  唯一可手改的页面源
+  templates/{index,trial,guide,product,blog,post}.html  唯一可手改的页面源
   index.html / trial.html / guide.html        产物，头部带 AUTO-GENERATED 注释
   p/<family>.html                             商品详情页产物
+  blog/posts/*.md（front matter + Markdown）   研究博客文章源
+        可选 series / series_title / series_order 组成系列文章
+  blog/index.html / blog/<slug>.html / blog/feed.xml   博客产物
   catalog.yaml                                展示文案与入口链接（禁止 version/price）
   products/*.yaml + components/*/component.yaml
         → data/public.json（公开）与 data/registry.json（后台，受保护）
@@ -23,6 +26,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import os
 import re
 import sys
 from datetime import datetime, timezone
@@ -41,6 +45,30 @@ CATALOG_PATH = SITE_DIR / "catalog.yaml"
 
 PAGES = ("index", "trial", "guide")
 PRODUCT_TEMPLATE = "product"
+BLOG_TEMPLATE = "blog"
+POST_TEMPLATE = "post"
+BLOG_SRC_DIR = SITE_DIR / "blog" / "posts"
+BLOG_OUT_DIR = SITE_DIR / "blog"
+BLOG_LIST_BEGIN, BLOG_LIST_END = "<!-- GEN:BLOG-LIST:BEGIN -->", "<!-- GEN:BLOG-LIST:END -->"
+POST_COUNT_TOKEN = "{{POST_COUNT}}"
+SITE_ORIGIN = os.environ.get("SITE_ORIGIN", "https://49.233.123.96").rstrip("/")
+SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+MONTHS = (
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+)
 GENERATED_MARK = "AUTO-GENERATED"
 RULE_COUNT_TOKEN = "{{PUBLIC_RULE_COUNT}}"
 RULE_TABLE_BEGIN, RULE_TABLE_END = "<!-- GEN:RULES:BEGIN -->", "<!-- GEN:RULES:END -->"
@@ -443,6 +471,415 @@ def build_public(catalog: dict, products: dict, components: list, rules: dict) -
     }
 
 
+# ── 研究博客（Markdown 源 → 静态页 + RSS）─────────────────────────────────
+
+
+def _inline_md(text: str) -> str:
+    """行内语法：代码、加粗、斜体、链接。先转义再做安全替换。"""
+    out = html.escape(text)
+    out = re.sub(r"`([^`]+)`", r"<code>\1</code>", out)
+    out = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", out)
+    out = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", r"<em>\1</em>", out)
+    out = re.sub(
+        r"\[([^\]]+)\]\(([^)\s]+)\)",
+        r'<a href="\2">\1</a>',
+        out,
+    )
+    return out
+
+
+def _table_html(rows: list) -> str:
+    cells = [[cell.strip() for cell in row.strip().strip("|").split("|")] for row in rows]
+    if len(cells) >= 2 and all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells[1]):
+        head, body = cells[0], cells[2:]
+    else:
+        head, body = cells[0], cells[1:]
+    lines = ["<table>", "<thead><tr>"]
+    lines += [f"<th>{_inline_md(cell)}</th>" for cell in head]
+    lines.append("</tr></thead>")
+    if body:
+        lines.append("<tbody>")
+        for row in body:
+            lines.append("<tr>" + "".join(f"<td>{_inline_md(cell)}</td>" for cell in row) + "</tr>")
+        lines.append("</tbody>")
+    lines.append("</table>")
+    return "\n".join(lines)
+
+
+def markdown_to_html(text: str) -> str:
+    """本仓库文章用到的 Markdown 子集：标题/段落/列表/引用/表格/围栏代码/分隔线。"""
+    lines = text.splitlines()
+    out: list = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+        if not stripped:
+            i += 1
+            continue
+
+        if stripped.startswith("```"):
+            lang = html.escape(stripped[3:].strip())
+            i += 1
+            buf = []
+            while i < len(lines) and not lines[i].strip().startswith("```"):
+                buf.append(lines[i])
+                i += 1
+            i += 1
+            cls = f' class="lang-{lang}"' if lang else ""
+            out.append(f"<pre><code{cls}>{html.escape(chr(10).join(buf))}</code></pre>")
+            continue
+
+        heading = re.match(r"^(#{1,4})\s+(.*)$", stripped)
+        if heading:
+            level = min(len(heading.group(1)) + 1, 5)  # 文章标题由模板给出，# 从 h2 起
+            out.append(f"<h{level}>{_inline_md(heading.group(2))}</h{level}>")
+            i += 1
+            continue
+
+        if stripped in ("---", "***", "___"):
+            out.append("<hr>")
+            i += 1
+            continue
+
+        if stripped.startswith(">"):
+            buf = []
+            while i < len(lines) and lines[i].strip().startswith(">"):
+                buf.append(lines[i].strip()[1:].strip())
+                i += 1
+            out.append("<blockquote><p>" + _inline_md(" ".join(buf)) + "</p></blockquote>")
+            continue
+
+        if re.match(r"^[-*+]\s+", stripped):
+            items = []
+            while i < len(lines):
+                item = re.match(r"^\s*[-*+]\s+(.*)$", lines[i])
+                if not item:
+                    break
+                items.append(_inline_md(item.group(1).strip()))
+                i += 1
+            out.append("<ul>\n" + "\n".join(f"<li>{x}</li>" for x in items) + "\n</ul>")
+            continue
+
+        if re.match(r"^\d+\.\s+", stripped):
+            items = []
+            while i < len(lines):
+                item = re.match(r"^\s*\d+\.\s+(.*)$", lines[i])
+                if not item:
+                    break
+                items.append(_inline_md(item.group(1).strip()))
+                i += 1
+            out.append("<ol>\n" + "\n".join(f"<li>{x}</li>" for x in items) + "\n</ol>")
+            continue
+
+        if stripped.startswith("|"):
+            rows = []
+            while i < len(lines) and lines[i].strip().startswith("|"):
+                rows.append(lines[i])
+                i += 1
+            out.append(_table_html(rows))
+            continue
+
+        buf = [stripped]
+        i += 1
+        while i < len(lines):
+            nxt = lines[i].strip()
+            if (
+                not nxt
+                or nxt.startswith(("#", "```", ">", "|"))
+                or re.match(r"^[-*+]\s+", nxt)
+                or re.match(r"^\d+\.\s+", nxt)
+                or nxt in ("---", "***", "___")
+            ):
+                break
+            buf.append(nxt)
+            i += 1
+        out.append("<p>" + _inline_md(" ".join(buf)) + "</p>")
+
+    return "\n".join(out)
+
+
+def split_front_matter(text: str, name: str) -> tuple:
+    if not text.startswith("---\n"):
+        raise SiteError(f"{name} 缺少以 --- 开头的 front matter")
+    end = text.find("\n---\n", 4)
+    if end < 0:
+        raise SiteError(f"{name} 缺少 front matter 结束行 ---")
+    meta = parse_yaml(text[4:end])
+    if not isinstance(meta, dict):
+        raise SiteError(f"{name} 的 front matter 必须是键值对")
+    return meta, text[end + 5 :]
+
+
+def load_posts() -> list:
+    if not BLOG_SRC_DIR.exists():
+        raise SiteError(f"缺少博客源目录 {BLOG_SRC_DIR}")
+    posts = []
+    for path in sorted(BLOG_SRC_DIR.glob("*.md")):
+        slug = path.stem
+        if not SLUG_RE.match(slug):
+            raise SiteError(f"blog/posts/{path.name} 文件名必须是小写 slug（a-z0-9-）")
+        meta, body = split_front_matter(path.read_text(encoding="utf-8"), path.name)
+        for key in ("title", "date", "summary"):
+            if not meta.get(key):
+                raise SiteError(f"blog/posts/{path.name} 缺少 front matter 字段 {key}")
+        date = str(meta["date"])
+        if not DATE_RE.match(date):
+            raise SiteError(f"blog/posts/{path.name} 的 date 必须是 YYYY-MM-DD")
+        try:
+            datetime.strptime(date, "%Y-%m-%d")
+        except ValueError as exc:
+            raise SiteError(f"blog/posts/{path.name} 的 date 非法: {exc}") from None
+        tags = meta.get("tags") or []
+        if isinstance(tags, str):
+            tags = [item.strip() for item in tags.split(",") if item.strip()]
+        if not isinstance(tags, list):
+            raise SiteError(f"blog/posts/{path.name} 的 tags 必须是列表或逗号分隔字符串")
+        series = _post_series_meta(path.name, meta)
+        posts.append(
+            {
+                "slug": slug,
+                "title": str(meta["title"]),
+                "date": date,
+                "summary": str(meta["summary"]),
+                "tags": [str(item) for item in tags],
+                "series": series,
+                "body": markdown_to_html(body),
+            }
+        )
+    if not posts:
+        raise SiteError("blog/posts/ 下没有文章")
+    posts.sort(key=lambda item: (item["date"], item["slug"]), reverse=True)
+    _attach_series(posts)
+    return posts
+
+
+def _post_series_meta(name: str, meta: dict) -> dict | None:
+    series_id = meta.get("series")
+    if series_id is None:
+        if meta.get("series_title") is not None or meta.get("series_order") is not None:
+            raise SiteError(f"blog/posts/{name} 填了 series_title/series_order，但缺少 series")
+        return None
+    series_id = str(series_id).strip()
+    if not SLUG_RE.match(series_id):
+        raise SiteError(f"blog/posts/{name} 的 series 必须是系列 slug（a-z0-9-）")
+    title = str(meta.get("series_title") or "").strip()
+    if not title:
+        raise SiteError(f"blog/posts/{name} 有 series 时必须填 series_title")
+    raw_order = meta.get("series_order")
+    if isinstance(raw_order, bool) or not isinstance(raw_order, int):
+        raise SiteError(f"blog/posts/{name} 的 series_order 必须是整数")
+    if raw_order < 1:
+        raise SiteError(f"blog/posts/{name} 的 series_order 必须 ≥ 1")
+    return {"id": series_id, "title": title, "order": raw_order}
+
+
+def _attach_series(posts: list) -> None:
+    groups: dict = {}
+    for post in posts:
+        if post["series"]:
+            groups.setdefault(post["series"]["id"], []).append(post)
+    for series_id, members in groups.items():
+        titles = {member["series"]["title"] for member in members}
+        if len(titles) > 1:
+            raise SiteError(
+                f"系列 {series_id} 的 series_title 不一致：{' / '.join(sorted(titles))}"
+            )
+        orders = [member["series"]["order"] for member in members]
+        dupes = sorted({order for order in orders if orders.count(order) > 1})
+        if dupes:
+            raise SiteError(f"系列 {series_id} 的 series_order 重复：{dupes}")
+        members.sort(key=lambda member: member["series"]["order"])
+        for index, member in enumerate(members):
+            member["series"]["total"] = len(members)
+            prev = members[index - 1] if index > 0 else None
+            nxt = members[index + 1] if index + 1 < len(members) else None
+            member["series"]["prev"] = (
+                {"slug": prev["slug"], "title": prev["title"]} if prev else None
+            )
+            member["series"]["next"] = {"slug": nxt["slug"], "title": nxt["title"]} if nxt else None
+
+
+def _post_item(post: dict) -> str:
+    tags = "".join(f'<span class="tag">{html.escape(tag)}</span>' for tag in post["tags"])
+    return (
+        '        <a class="post-item" href="{}.html">\n'
+        "          <h3>{}</h3>\n"
+        "          <p>{}</p>\n"
+        '          <p class="post-meta">{}<span class="post-tags">{}</span></p>\n'
+        "        </a>".format(
+            html.escape(post["slug"]),
+            html.escape(post["title"]),
+            html.escape(post["summary"]),
+            post["date"],
+            tags,
+        )
+    )
+
+
+def _series_block(entry: dict) -> str:
+    parts = "\n".join(
+        '            <li><a class="series-part" href="{}.html">'
+        '<span class="part-no">第 {} 篇</span>'
+        '<span class="part-title">{}</span>'
+        '<span class="part-date">{}</span></a></li>'.format(
+            html.escape(post["slug"]),
+            post["series"]["order"],
+            html.escape(post["title"]),
+            post["date"],
+        )
+        for post in entry["posts"]
+    )
+    return (
+        '        <section class="series-block" id="series-{}">\n'
+        '          <div class="series-head">\n'
+        "            <h3>系列 · {}</h3>\n"
+        '            <p class="series-meta">共 {} 篇 · 最近更新 {}</p>\n'
+        "          </div>\n"
+        '          <ol class="series-parts">\n{}\n          </ol>\n'
+        "        </section>".format(
+            html.escape(entry["id"]),
+            html.escape(entry["title"]),
+            len(entry["posts"]),
+            entry["date"],
+            parts,
+        )
+    )
+
+
+def _blog_entries(posts: list) -> list:
+    entries = []
+    series: dict = {}
+    for post in posts:
+        if post["series"]:
+            series.setdefault(post["series"]["id"], {"meta": post["series"], "posts": []})
+            series[post["series"]["id"]]["posts"].append(post)
+        else:
+            entries.append({"date": post["date"], "key": post["slug"], "posts": [post]})
+    for series_id, group in series.items():
+        members = sorted(group["posts"], key=lambda post: post["series"]["order"])
+        entries.append(
+            {
+                "date": max(post["date"] for post in members),
+                "key": series_id,
+                "id": series_id,
+                "title": group["meta"]["title"],
+                "posts": members,
+            }
+        )
+    entries.sort(key=lambda entry: (entry["date"], entry["key"]), reverse=True)
+    return entries
+
+
+def _blog_items(posts: list) -> str:
+    items = []
+    for entry in _blog_entries(posts):
+        if entry["posts"][0]["series"]:
+            items.append(_series_block(entry))
+        else:
+            items.append(_post_item(entry["posts"][0]))
+    return "\n".join(items)
+
+
+def _post_tags(tags: list) -> str:
+    if not tags:
+        return ""
+    return " · " + " ".join(f'<span class="tag">{html.escape(tag)}</span>' for tag in tags)
+
+
+def _post_series(post: dict) -> str:
+    meta = post.get("series")
+    if not meta:
+        return ""
+    links = [f'<a href="index.html#series-{html.escape(meta["id"])}">系列目录</a>']
+    if meta.get("prev"):
+        links.append(
+            '<a href="{}.html">← 上一篇：{}</a>'.format(
+                html.escape(meta["prev"]["slug"]), html.escape(meta["prev"]["title"])
+            )
+        )
+    if meta.get("next"):
+        links.append(
+            '<a href="{}.html">下一篇：{} →</a>'.format(
+                html.escape(meta["next"]["slug"]), html.escape(meta["next"]["title"])
+            )
+        )
+    return (
+        '      <div class="series-box">\n'
+        '        <p class="series-label">系列 · <strong>{}</strong> · 第 {} / {} 篇</p>\n'
+        '        <nav class="series-jump">{}</nav>\n'
+        "      </div>".format(
+            html.escape(meta["title"]),
+            meta["order"],
+            meta["total"],
+            " · ".join(links),
+        )
+    )
+
+
+def render_blog(posts: list) -> str:
+    template = (TEMPLATES_DIR / f"{BLOG_TEMPLATE}.html").read_text(encoding="utf-8")
+    first, sep, rest = template.partition("\n")
+    if not sep or first.strip().lower() != "<!doctype html>":
+        raise SiteError("templates/blog.html 首行必须是 <!DOCTYPE html>")
+    body = _replace_block(rest, BLOG_LIST_BEGIN, BLOG_LIST_END, _blog_items(posts))
+    body = body.replace(POST_COUNT_TOKEN, str(len(posts)))
+    rendered = f"{first}\n{_header(BLOG_TEMPLATE)}\n{body}"
+    if "{{" in rendered:
+        raise SiteError("blog/index.html 仍有未替换的占位符")
+    return rendered
+
+
+def render_post(post: dict) -> str:
+    template = (TEMPLATES_DIR / f"{POST_TEMPLATE}.html").read_text(encoding="utf-8")
+    first, sep, rest = template.partition("\n")
+    if not sep or first.strip().lower() != "<!doctype html>":
+        raise SiteError("templates/post.html 首行必须是 <!DOCTYPE html>")
+    body = (
+        rest.replace("{{TITLE}}", html.escape(post["title"]))
+        .replace("{{SUMMARY}}", html.escape(post["summary"]))
+        .replace("{{DATE}}", post["date"])
+        .replace("{{TAGS}}", _post_tags(post["tags"]))
+        .replace("{{SERIES}}", _post_series(post))
+        .replace("{{BODY}}", post["body"])
+    )
+    rendered = f"{first}\n{_header(POST_TEMPLATE)}\n{body}"
+    if "{{" in rendered:
+        raise SiteError(f"blog/{post['slug']}.html 仍有未替换的占位符")
+    return rendered
+
+
+def _rfc822(date: str) -> str:
+    value = datetime.strptime(date, "%Y-%m-%d")
+    return "{}, {:02d} {} {} 00:00:00 +0800".format(
+        WEEKDAYS[value.weekday()], value.day, MONTHS[value.month - 1], value.year
+    )
+
+
+def build_feed(posts: list) -> str:
+    items = []
+    for post in posts:
+        link = f"{SITE_ORIGIN}/blog/{post['slug']}.html"
+        items.append(
+            "    <item>\n"
+            f"      <title>{html.escape(post['title'])}</title>\n"
+            f"      <link>{html.escape(link)}</link>\n"
+            f'      <guid isPermaLink="true">{html.escape(link)}</guid>\n'
+            f"      <pubDate>{_rfc822(post['date'])}</pubDate>\n"
+            f"      <description>{html.escape(post['summary'])}</description>\n"
+            "    </item>"
+        )
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<rss version="2.0">\n'
+        "  <channel>\n"
+        "    <title>59 研究博客</title>\n"
+        f"    <link>{SITE_ORIGIN}/blog/index.html</link>\n"
+        "    <description>关于交易系统、数据质量与可分发能力组件的工程研究笔记。</description>\n"
+        "    <language>zh-CN</language>\n" + "\n".join(items) + "\n  </channel>\n</rss>\n"
+    )
+
+
 # ── 页面渲染 ──────────────────────────────────────────────────────────────
 
 
@@ -650,10 +1087,17 @@ def render_all() -> dict:
         family = item["family"]
         details[family] = render_product(family, catalog[family], item)
 
+    posts = load_posts()
+
     return {
         "rules": rules,
         "pages": pages,
         "details": details,
+        "blog": {
+            "index": render_blog(posts),
+            "feed": build_feed(posts),
+            "posts": {post["slug"]: render_post(post) for post in posts},
+        },
         "public": public,
         "registry": build_registry(components),
     }
@@ -679,6 +1123,13 @@ def write() -> int:
     for family, content in bundle["details"].items():
         (PRODUCT_OUT_DIR / f"{family}.html").write_text(content, encoding="utf-8")
 
+    blog = bundle["blog"]
+    BLOG_OUT_DIR.mkdir(parents=True, exist_ok=True)
+    (BLOG_OUT_DIR / "index.html").write_text(blog["index"], encoding="utf-8")
+    (BLOG_OUT_DIR / "feed.xml").write_text(blog["feed"], encoding="utf-8")
+    for slug, content in blog["posts"].items():
+        (BLOG_OUT_DIR / f"{slug}.html").write_text(content, encoding="utf-8")
+
     PUBLIC_JSON_PATH.parent.mkdir(parents=True, exist_ok=True)
     PUBLIC_JSON_PATH.write_text(
         json.dumps(bundle["public"], ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
@@ -687,7 +1138,8 @@ def write() -> int:
         json.dumps(bundle["registry"], ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     print(
-        f"已渲染 {len(bundle['pages'])} 页 + {len(bundle['details'])} 个商品页，"
+        f"已渲染 {len(bundle['pages'])} 页 + {len(bundle['details'])} 个商品页"
+        f" + 博客 {len(bundle['blog']['posts'])} 篇（含 index 与 feed.xml），"
         f"并写入 data/public.json（{len(bundle['public']['components'])} 个组件）"
         f"与 data/registry.json（{len(bundle['registry']['components'])} 个组件）"
     )
@@ -730,6 +1182,20 @@ def check() -> int:
             if path.name not in expected_files:
                 errors.append(f"{path} 不属于任何商品族（陈旧产物），请删除或补 catalog")
 
+    blog = bundle["blog"]
+    _check_text(BLOG_OUT_DIR / "index.html", blog["index"], errors)
+    feed_path = BLOG_OUT_DIR / "feed.xml"
+    if not feed_path.exists():
+        errors.append("缺少产物 blog/feed.xml，请执行 --write")
+    elif feed_path.read_text(encoding="utf-8") != blog["feed"]:
+        errors.append("blog/feed.xml 与文章源不一致，请执行 --write")
+    for slug, expected in blog["posts"].items():
+        _check_text(BLOG_OUT_DIR / f"{slug}.html", expected, errors)
+    if BLOG_OUT_DIR.exists():
+        for path in sorted(BLOG_OUT_DIR.glob("*.html")):
+            if path.name != "index.html" and path.stem not in blog["posts"]:
+                errors.append(f"{path} 不属于任何文章（陈旧产物），请删除或补 blog/posts")
+
     if PUBLIC_JSON_PATH.exists():
         current = json.loads(PUBLIC_JSON_PATH.read_text(encoding="utf-8"))
         if _strip_volatile(current) != _strip_volatile(bundle["public"]):
@@ -751,7 +1217,7 @@ def check() -> int:
 
     print(
         f"[check] 通过（{len(bundle['pages'])} 页产物 + {len(bundle['details'])} 个商品页"
-        f" + public.json/registry.json 均与源一致）"
+        f" + 博客 {len(bundle['blog']['posts'])} 篇 + public.json/registry.json 均与源一致）"
     )
     return 0
 

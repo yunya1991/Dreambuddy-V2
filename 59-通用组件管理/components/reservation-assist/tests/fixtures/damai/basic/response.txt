@@ -1,0 +1,8 @@
+{
+  "serverTime": 1764561600000,
+  "sessions": [
+    {"session_id": "S1", "name": "2026-12-05 19:30", "tier": "看台", "price": 480, "remaining": 2, "url": "https://example.invalid/show/s1"},
+    {"session_id": "S2", "name": "2026-12-06 19:30", "tier": "看台", "price": 380, "remaining": 6, "url": "https://example.invalid/show/s2"},
+    {"session_id": "S1", "name": "2026-12-05 19:30", "tier": "内场", "price": 1280, "remaining": 5, "url": "https://example.invalid/show/s1-vip"}
+  ]
+}

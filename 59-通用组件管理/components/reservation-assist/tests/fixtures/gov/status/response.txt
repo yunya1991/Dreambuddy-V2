@@ -1,0 +1,9 @@
+{
+  "status": 1,
+  "msg": "",
+  "data": {
+    "time": "09:00-17:30",
+    "timelist": {"opened": "09:00", "stoped": "16:30", "exited": "——", "closed": "17:30"},
+    "info": [{"text": "周一例行闭馆，国家法定节假日除外", "color": "000000"}]
+  }
+}

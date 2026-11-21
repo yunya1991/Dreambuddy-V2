@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>59 研究博客</title>
+    <link>https://49.233.123.96/blog/index.html</link>
+    <description>关于交易系统、数据质量与可分发能力组件的工程研究笔记。</description>
+    <language>zh-CN</language>
+    <item>
+      <title>每个数字都要能回溯：我们的数据可信度五道检查</title>
+      <link>https://49.233.123.96/blog/why-every-data-point-needs-provenance.html</link>
+      <guid isPermaLink="true">https://49.233.123.96/blog/why-every-data-point-needs-provenance.html</guid>
+      <pubDate>Sat, 21 Nov 2026 00:00:00 +0800</pubDate>
+      <description>10 年期美债 5.07% 这类结论，如果没有数据日期、方法 ID、样本量和缺失标注，就等于没有。我们把它固化成五道检查，缺一项就不许对外输出。</description>
+    </item>
+    <item>
+      <title>把可复用能力做成组件：我们踩过的四个坑与四道门禁</title>
+      <link>https://49.233.123.96/blog/turn-capabilities-into-components.html</link>
+      <guid isPermaLink="true">https://49.233.123.96/blog/turn-capabilities-into-components.html</guid>
+      <pubDate>Fri, 20 Nov 2026 00:00:00 +0800</pubDate>
+      <description>同一段扫描登记、上下文装配、行情取数，在三个业务模块里各写一遍，最后谁都不敢改。我们把它们抽成组件后，用四道门禁守住边界。</description>
+    </item>
+  </channel>
+</rss>

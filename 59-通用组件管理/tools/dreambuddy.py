@@ -6,9 +6,21 @@
   dreambuddy chat                       同上，会话式自然语言编排
   dreambuddy ls [--json]                列出组件、入口与动作
   dreambuddy help <组件>                 查看某组件入口与动作
-  dreambuddy run <组件> <动作|入口> [args...] [--allow-write]
+  dreambuddy run <组件> <动作|入口> [args...] [--allow-write] [--endpoint auto|cloud|local]
                                         以子进程调用组件脚本（默认拒绝 write 动作）
+  dreambuddy 59 <组件> <动作> [args...]  同 run（59 域显式写法）
+  dreambuddy data <组件> <动作> [args...] 同 run（数据/组件域别名）
+  dreambuddy mobile <子命令> [args...]   手机AGENT 业务域（内部 CLI：mra.py）
+  dreambuddy domains                    列出已接通的能力域
   dreambuddy doctor [--full]            跑治理闸门（kernel/边界/索引/规则）
+
+域间调用：统一入口只做子进程编排，两个方向都通过本 CLI 互相调用，不互相 import。
+被调子进程会拿到 DREAMBUDDY_CLI（本入口绝对路径）与 DREAMBUDDY_DOMAIN，可反向回查。
+
+云端通道：对声明了 endpoint 参数的动作，`--endpoint cloud` 走 partner 网关
+（默认 https://www.neodrm.com/api/partner/v1，可用 MDH_ENDPOINT 覆盖）。
+令牌从环境 PARTNER_TOKEN / PARTNER_TOKEN_FILE 读取，或写在
+~/.local/share/dreambuddy/partner.env；环境变量 DREAMBUDDY_ENDPOINT 可设默认通道。
 
 设计原则：只做子进程编排，不 import 组件内部代码，保持组件相互独立（G1–G7 不受影响）。
 """
@@ -33,6 +45,76 @@ except ImportError:  # pragma: no cover
 
 ROOT = Path(__file__).resolve().parent.parent
 COMPONENTS = ROOT / "components"
+CLI_PATH = Path(__file__).resolve()
+
+ENDPOINT_CHOICES = ("auto", "cloud", "local")
+ENDPOINT_ENV = "DREAMBUDDY_ENDPOINT"
+PARTNER_ENV = Path(os.path.expanduser("~/.local/share/dreambuddy/partner.env"))
+PARTNER_KEYS = ("PARTNER_TOKEN", "PARTNER_TOKEN_FILE", "MDH_ENDPOINT")
+DEFAULT_PARTNER_BASE = "https://www.neodrm.com/api/partner/v1"
+
+
+def load_partner_env() -> None:
+    """把云端网关配置并入进程环境；已存在的环境变量优先。"""
+    if not PARTNER_ENV.exists():
+        return
+    for line in PARTNER_ENV.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, val = line.split("=", 1)
+        key = key.strip()
+        if key in PARTNER_KEYS:
+            os.environ.setdefault(key, val.strip().strip("\"'"))
+
+
+def cloud_status() -> str:
+    base = os.environ.get("MDH_ENDPOINT") or DEFAULT_PARTNER_BASE
+    has_token = bool(
+        (os.environ.get("PARTNER_TOKEN") or "").strip()
+        or (os.environ.get("PARTNER_TOKEN_FILE") or "").strip()
+    )
+    return "{} · 令牌{}".format(base, "已配置" if has_token else "未配置（{}）".format(PARTNER_ENV))
+
+
+def default_endpoint() -> str:
+    value = (os.environ.get(ENDPOINT_ENV) or "").strip().lower()
+    return value if value in ENDPOINT_CHOICES else ""
+
+
+def take_endpoint(argv: list[str]) -> tuple[list[str], str]:
+    """从参数里摘出 --endpoint，返回 (剩余参数, 取值)；未显式给出时取环境默认。"""
+    rest: list[str] = []
+    value = default_endpoint()
+    i = 0
+    while i < len(argv):
+        item = argv[i]
+        if item == "--endpoint":
+            if i + 1 >= len(argv):
+                raise SystemExit("E_INPUT：--endpoint 需要 auto / cloud / local 之一")
+            value = argv[i + 1].strip().lower()
+            i += 2
+            continue
+        if item.startswith("--endpoint="):
+            value = item.split("=", 1)[1].strip().lower()
+            i += 1
+            continue
+        rest.append(item)
+        i += 1
+    if value and value not in ENDPOINT_CHOICES:
+        raise SystemExit("E_INPUT：--endpoint 取值 auto / cloud / local")
+    return rest, value
+
+
+def apply_endpoint(endpoint: str, params: list[str], argv: list[str]) -> list[str]:
+    """把通道参数转发给声明了 endpoint 的动作；未声明的动作不允许指定 cloud。"""
+    if not endpoint:
+        return argv
+    if "endpoint" in params:
+        return argv + ["--endpoint", endpoint]
+    if endpoint == "cloud":
+        raise SystemExit("E_UNSUPPORTED：该动作暂无云端通道，可改用 --endpoint local")
+    return argv
 
 
 def load_components() -> list[dict]:
@@ -55,19 +137,21 @@ def script_path(comp: dict, rel: str) -> Path:
     return comp["_dir"] / (comp.get("skill_dir") or "skill") / rel
 
 
-def resolve_target(comp: dict, target: str) -> tuple[Path, list[str], str, str]:
-    """返回 (脚本路径, 前置参数, 安全级, 说明)。"""
+def resolve_target(comp: dict, target: str) -> tuple[Path, list[str], str, str, list[str]]:
+    """返回 (脚本路径, 前置参数, 安全级, 说明, 参数名列表)。"""
     for action in comp.get("actions") or []:
         if action.get("name") == target:
+            params = [p.get("name", "") for p in action.get("params") or []]
             return (
                 script_path(comp, action["script"]),
                 list(action.get("args") or []),
                 action.get("safety", "read"),
                 action.get("description", ""),
+                params,
             )
     for rel in comp.get("entrypoints") or []:
         if target in (rel, Path(rel).name, Path(rel).stem):
-            return script_path(comp, rel), [], "read", "入口脚本"
+            return script_path(comp, rel), [], "read", "入口脚本", []
     choices = [a.get("name") for a in comp.get("actions") or []] + [
         Path(r).stem for r in comp.get("entrypoints") or []
     ]
@@ -120,30 +204,145 @@ def cmd_help(args) -> int:
     if acts:
         print("\n动作：")
         for a in acts:
+            cloud = " 云端" if "endpoint" in [p.get("name") for p in a.get("params") or []] else ""
             print(
-                "  - {:16} [{}] {}  ({})".format(
+                "  - {:16} [{}]{} {}  ({})".format(
                     a.get("name"),
                     a.get("safety", "read"),
+                    cloud,
                     a.get("description", ""),
                     " ".join(a.get("args") or []) or "—",
                 )
             )
-    print("\n用法: dreambuddy run {} <动作|入口> [参数...]".format(comp.get("name")))
+    print(
+        "\n用法: dreambuddy run {} <动作|入口> [参数...] [--endpoint auto|cloud|local]".format(
+            comp.get("name")
+        )
+    )
+    print("云端: {}".format(cloud_status()))
     return 0
 
 
 def cmd_run(args) -> int:
     comp = find_component(args.component)
-    script, pre, safety, desc = resolve_target(comp, args.target)
+    script, pre, safety, desc, params = resolve_target(comp, args.target)
+    rest, endpoint = take_endpoint(list(args.rest))
+    # argparse.REMAINDER 会把尾随的 --allow-write 吞进来，这里还原成开关
+    allow_write = args.allow_write or "--allow-write" in rest
+    rest = [item for item in rest if item != "--allow-write"]
     if not script.exists():
         raise SystemExit("E_SCRIPT：脚本不存在 {}".format(script))
-    if safety == "write" and not args.allow_write:
+    if safety == "write" and not allow_write:
         print("E_GUARD：动作 {} 标记为 write，需加 --allow-write 才能执行".format(args.target))
         return 3
-    cmd = [sys.executable, str(script)] + pre + list(args.rest)
+    cmd = apply_endpoint(endpoint, params, [sys.executable, str(script)] + pre + rest)
     print("[dreambuddy] {} → {}".format(comp.get("name"), " ".join(cmd)), file=sys.stderr)
-    proc = subprocess.run(cmd, cwd=str(comp["_dir"]))
+    proc = subprocess.run(cmd, cwd=str(comp["_dir"]), env=domain_env("59"))
     return proc.returncode
+
+
+# ---------------------------------------------------------------- 手机AGENT 业务域
+
+MOBILE_COMPONENT = "mobile-reservation-assist"
+RESERVATION_COMPONENT = "reservation-assist"
+MOBILE_WRITE = {"dispatch", "ingest", "pause", "resume"}
+MOBILE_LONG = {"gateway", "chat"}
+MOBILE_COMMANDS = (
+    ("doctor", "read", "环境自检"),
+    ("jobs", "read", "预约作业清单（--state 过滤）"),
+    ("report", "read", "reservation.v1 报告"),
+    ("patrol", "read", "巡检诊断（--auto-fix 为写）"),
+    ("ask", "read", "自然语言→白名单计划（--execute 为写）"),
+    ("token", "read", "查看/生成网关 Token"),
+    ("ingest", "write", "归一上游命中并入队"),
+    ("dispatch", "write", "自然语言下发预约作业（--dry-run 只解析）"),
+    ("pause", "write", "暂停派发"),
+    ("resume", "write", "恢复派发"),
+    ("gateway", "long", "启动本地 HTTP 网关（前台常驻）"),
+    ("chat", "long", "会话模式（前台交互）"),
+)
+
+
+def domain_env(domain: str) -> dict:
+    """子进程环境：透传 CLI 路径，供另一域反向调用统一入口。"""
+    env = dict(os.environ)
+    env["DREAMBUDDY_CLI"] = str(CLI_PATH)
+    env["DREAMBUDDY_DOMAIN"] = domain
+    return env
+
+
+def mobile_script() -> Path:
+    return script_path(find_component(MOBILE_COMPONENT), "scripts/mra.py")
+
+
+def mobile_safety(sub: str, rest: list) -> str:
+    if sub in MOBILE_WRITE:
+        return "write"
+    if sub == "ask" and "--execute" in rest:
+        return "write"
+    if sub == "patrol" and "--auto-fix" in rest:
+        return "write"
+    if sub in MOBILE_LONG:
+        return "long"
+    return "read"
+
+
+def build_mobile_argv(sub: str, rest: list) -> list[str]:
+    """组装 mra.py 调用；ingest 未给 --ra-cli 时自动接上 59 域 reservation-assist。"""
+    argv = [sys.executable, str(mobile_script()), sub] + list(rest)
+    if sub == "ingest" and "--ra-cli" not in rest:
+        ra = script_path(find_component(RESERVATION_COMPONENT), "scripts/ra.py")
+        if ra.exists():
+            argv += ["--ra-cli", str(ra)]
+    return argv
+
+
+def print_mobile_help() -> None:
+    print("手机AGENT 业务域（内部 CLI：{}）".format(mobile_script().name))
+    print("用法: dreambuddy mobile <子命令> [参数...] [--allow-write]")
+    for name, safety, desc in MOBILE_COMMANDS:
+        print("  - {:10} [{}] {}".format(name, safety, desc))
+    print("\n跨域：手机AGENT 子进程可用 $DREAMBUDDY_CLI 回查 59 域，例如")
+    print("      $DREAMBUDDY_CLI data market-data quotes --symbols sh600519")
+
+
+def cmd_mobile(args) -> int:
+    rest = list(args.rest)
+    allow_write = args.allow_write or "--allow-write" in rest
+    rest = [item for item in rest if item != "--allow-write"]
+    if not rest or rest[0] in ("help", "-h", "--help", "ls"):
+        print_mobile_help()
+        return 0
+    sub, sub_rest = rest[0], rest[1:]
+    safety = mobile_safety(sub, sub_rest)
+    if safety == "write" and not allow_write:
+        print("E_GUARD：mobile {} 是写动作，需加 --allow-write 才能执行".format(sub))
+        return 3
+    script = mobile_script()
+    if not script.exists():
+        raise SystemExit("E_SCRIPT：手机AGENT CLI 不存在 {}".format(script))
+    argv = build_mobile_argv(sub, sub_rest)
+    print("[dreambuddy] mobile → {}".format(" ".join(argv)), file=sys.stderr)
+    proc = subprocess.run(
+        argv,
+        cwd=str(find_component(MOBILE_COMPONENT)["_dir"]),
+        env=domain_env("mobile"),
+    )
+    return proc.returncode
+
+
+def cmd_domains(args) -> int:
+    comps = load_components()
+    print("已接通能力域（统一入口：{}）".format(CLI_PATH.name))
+    print("\n● 59 域   dreambuddy 59|data|run <组件> <动作> [--endpoint auto|cloud|local]")
+    for comp in comps:
+        acts = [a.get("name", "?") for a in comp.get("actions") or []]
+        print("  - {:28} {}".format(comp.get("name"), ", ".join(acts) or "（无动作）"))
+    print("\n● 手机AGENT 域   dreambuddy mobile <子命令> [--allow-write]")
+    for name, safety, desc in MOBILE_COMMANDS:
+        print("  - {:10} [{}] {}".format(name, safety, desc))
+    print("\n域间调用：子进程通过 $DREAMBUDDY_CLI 回查统一入口，不互相 import。")
+    return 0
 
 
 def cmd_doctor(args) -> int:
@@ -171,6 +370,7 @@ def cmd_doctor(args) -> int:
             for line in tail:
                 print("      " + line)
     print("\n结果：{}".format("全部通过" if failed == 0 else "{} 项失败".format(failed)))
+    print("云端通道：{}".format(cloud_status()))
     return 0 if failed == 0 else 1
 
 
@@ -415,7 +615,10 @@ def capabilities_text() -> str:
             continue
         names = ", ".join(a.get("name", "?") for a in acts)
         lines.append("  · {}（{}）".format(comp.get("name"), names))
-    lines.append("直接说人话即可，例如：查询贵州茅台股价 / 看比特币链上指标 / 预约助手体检")
+    lines.append(
+        "直接说人话即可，例如：查询贵州茅台股价 / 看比特币链上指标 / 预约助手体检\n"
+        "命令域：dreambuddy 59|data <组件> <动作>  ·  dreambuddy mobile <子命令>  ·  dreambuddy domains"
+    )
     return "\n".join(lines)
 
 
@@ -453,7 +656,7 @@ def validate_plan(plan: dict) -> str | None:
     return None
 
 
-def execute_plan(plan: dict, allow_write: bool = False) -> int:
+def execute_plan(plan: dict, allow_write: bool = False, endpoint: str = "") -> int:
     kind = plan.get("kind")
     if kind == "answer":
         print(plan.get("text", ""))
@@ -474,38 +677,46 @@ def execute_plan(plan: dict, allow_write: bool = False) -> int:
     action = plan.get("action", "")
     try:
         comp = find_component(comp_name)
-        script, pre, safety, desc = resolve_target(comp, action)
+        script, pre, safety, desc, params = resolve_target(comp, action)
     except SystemExit as exc:
         print(str(exc))
         return 1
     if safety == "write" and not allow_write:
         print("E_GUARD：{} 是写动作，需 --allow-write（本轮只读编排不执行）".format(action))
         return 3
-    argv = (
-        [sys.executable, str(script)]
-        + pre
-        + normalize_args(comp_name, action, plan.get("args") or [])
-    )
+    rest, arg_endpoint = take_endpoint(normalize_args(comp_name, action, plan.get("args") or []))
+    endpoint = endpoint or arg_endpoint
+    try:
+        argv = apply_endpoint(
+            endpoint,
+            params,
+            [sys.executable, str(script)] + pre + rest,
+        )
+    except SystemExit as exc:
+        print(str(exc))
+        return 1
     print("→ {} {}  [{}]  {}".format(comp_name, action, safety, plan.get("reason", "")), flush=True)
     print("  {}".format(" ".join(argv)), file=sys.stderr)
-    return subprocess.run(argv, cwd=str(comp["_dir"])).returncode
+    return subprocess.run(argv, cwd=str(comp["_dir"]), env=domain_env("59")).returncode
 
 
-def handle_nl(text: str, allow_write: bool = False) -> int:
+def handle_nl(text: str, allow_write: bool = False, endpoint: str = "") -> int:
     plan, source = nl_plan(text)
     if source == "rule" and plan.get("kind") == "run":
         # 关键词兜底命中也标明，方便排查大模型是否生效
         pass
-    return execute_plan(plan, allow_write=allow_write)
+    return execute_plan(plan, allow_write=allow_write, endpoint=endpoint)
 
 
 def cmd_chat(args) -> int:
     print(
-        "dreambuddy 59 域会话  ·  大模型 {}".format(
-            "已接入（Qwen）" if qwen_ready() else "未配置，走关键词路由"
+        "dreambuddy 59 域会话  ·  大模型 {}  ·  云端 {}".format(
+            "已接入（Qwen）" if qwen_ready() else "未配置，走关键词路由",
+            cloud_status(),
         )
     )
-    print("直接说需求，例如「查询贵州茅台股价」；输入 ls / help <组件> / doctor / quit")
+    print("直接说需求，例如「查询贵州茅台股价」；输入 domains 看已接通的能力域")
+    print("命令：ls / help <组件> / run / 59 / data / mobile / doctor / quit")
     while True:
         try:
             line = input("\ndreambuddy> ").strip()
@@ -517,12 +728,25 @@ def cmd_chat(args) -> int:
         if line in ("quit", "exit", "q", "退出"):
             return 0
         head = line.split()[0]
-        if head in ("ls", "list", "doctor", "help", "run"):
+        if head in (
+            "ls",
+            "list",
+            "doctor",
+            "help",
+            "run",
+            "domains",
+            "mobile",
+            "phone",
+            "手机",
+            "data",
+            "59",
+        ):
             if head in ("list",):
                 line = "ls"
             main(shlex.split(line))
             continue
-        handle_nl(line)
+        tokens, endpoint = take_endpoint(line.split())
+        handle_nl(" ".join(tokens), endpoint=endpoint)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -537,12 +761,26 @@ def build_parser() -> argparse.ArgumentParser:
     p_help.add_argument("component")
     p_help.set_defaults(func=cmd_help)
 
-    p_run = sub.add_parser("run", help="调用组件的动作或入口")
-    p_run.add_argument("component")
-    p_run.add_argument("target")
-    p_run.add_argument("rest", nargs=argparse.REMAINDER)
-    p_run.add_argument("--allow-write", action="store_true", help="允许执行 write 动作")
-    p_run.set_defaults(func=cmd_run)
+    for name, alias_help in (
+        ("run", "调用组件的动作或入口"),
+        ("59", "59 域（同 run）"),
+        ("data", "59 域数据/组件（同 run）"),
+    ):
+        p = sub.add_parser(name, help=alias_help)
+        p.add_argument("component")
+        p.add_argument("target")
+        p.add_argument("rest", nargs=argparse.REMAINDER)
+        p.add_argument("--allow-write", action="store_true", help="允许执行 write 动作")
+        p.set_defaults(func=cmd_run)
+
+    for name in ("mobile", "phone", "手机"):
+        p = sub.add_parser(name, help="手机AGENT 业务域（内部 mra.py）")
+        p.add_argument("rest", nargs=argparse.REMAINDER)
+        p.add_argument("--allow-write", action="store_true", help="允许执行写动作")
+        p.set_defaults(func=cmd_mobile)
+
+    p_domains = sub.add_parser("domains", help="列出已接通的能力域")
+    p_domains.set_defaults(func=cmd_domains)
 
     p_doc = sub.add_parser("doctor", help="治理闸门体检")
     p_doc.add_argument("--full", action="store_true", help="额外跑 make check（较重）")
@@ -553,11 +791,24 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-SUBCOMMANDS = ("ls", "help", "run", "doctor", "chat")
+SUBCOMMANDS = (
+    "ls",
+    "help",
+    "run",
+    "doctor",
+    "chat",
+    "59",
+    "data",
+    "mobile",
+    "phone",
+    "手机",
+    "domains",
+)
 
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
+    load_partner_env()
     parser = build_parser()
     if not argv:
         # 终端里裸命令 → 会话；管道/非交互 → 打印总览
@@ -566,7 +817,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_ls(parser.parse_args(["ls"]))
     if argv[0] not in SUBCOMMANDS and not argv[0].startswith("-"):
         # 直接把整句人话当需求，例如：dreambuddy 查询贵州茅台股价
-        return handle_nl(" ".join(argv))
+        tokens, endpoint = take_endpoint(argv)
+        return handle_nl(" ".join(tokens), endpoint=endpoint)
     args = parser.parse_args(argv)
     return args.func(args)
 

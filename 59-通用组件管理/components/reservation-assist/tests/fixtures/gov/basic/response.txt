@@ -1,0 +1,8 @@
+{
+  "serverTime": 1764561600000,
+  "slots": [
+    {"site": "市民中心", "date": "2026-12-02", "period": "上午", "fee": 0, "left": 5, "link": "https://example.invalid/gov/civic"},
+    {"site": "出入境大厅", "date": "2026-12-02", "period": "下午", "fee": 0, "left": 2, "link": "https://example.invalid/gov/visa"},
+    {"site": "车管所", "date": "2026-12-02", "period": "上午", "fee": 0, "left": 0, "link": "https://example.invalid/gov/vehicle"}
+  ]
+}

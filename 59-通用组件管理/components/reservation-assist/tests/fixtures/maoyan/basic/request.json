@@ -1,0 +1,6 @@
+{
+  "url": "https://example.invalid/maoyan/shows",
+  "status": 200,
+  "target": {"target_id": "M1", "session": "2026-12-20", "price_tier": "普通区"},
+  "rule": {"max_price": 300}
+}

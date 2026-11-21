@@ -1,0 +1,11 @@
+{
+  "code": 0,
+  "serverTime": 1764561600000,
+  "data": {
+    "tickets": [
+      {"id": "T1", "session": "2026-12-12 14:00", "sku_name": "普通票", "price": 580, "stock": 2, "link": "https://example.invalid/mall/t1"},
+      {"id": "T2", "session": "2026-12-12 14:00", "sku_name": "VIP票", "price": 980, "stock": 5, "link": "https://example.invalid/mall/t2"},
+      {"id": "T3", "session": "2026-12-13 14:00", "sku_name": "普通票", "price": 380, "stock": 0, "link": "https://example.invalid/mall/t3"}
+    ]
+  }
+}

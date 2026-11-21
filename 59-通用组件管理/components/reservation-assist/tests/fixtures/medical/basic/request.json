@@ -1,0 +1,6 @@
+{
+  "url": "https://example.invalid/hospital/slots",
+  "status": 200,
+  "target": {"target_id": "D1", "session": "2026-12-02", "price_tier": "内科"},
+  "rule": {"max_price": 100}
+}

@@ -1,0 +1,9 @@
+{
+  "serverTime": 1764561600000,
+  "trains": [
+    {"train_no": "G1", "date": "2026-12-01", "seat": "二等座", "price": 553, "remaining": 3, "url": "https://example.invalid/railway/g1"},
+    {"train_no": "D31", "date": "2026-12-01", "seat": "二等座", "price": 553, "remaining": 2, "url": "https://example.invalid/railway/d31"},
+    {"train_no": "G3", "date": "2026-12-01", "seat": "商务座", "price": 1748, "remaining": 1, "url": "https://example.invalid/railway/g3"},
+    {"train_no": "G5", "date": "2026-12-01", "seat": "二等座", "price": 553, "remaining": 0, "url": "https://example.invalid/railway/g5"}
+  ]
+}

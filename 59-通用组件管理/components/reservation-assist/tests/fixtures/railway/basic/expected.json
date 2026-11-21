@@ -1,0 +1,6 @@
+{
+  "hits": [
+    {"target_id": "G1", "session": "2026-12-01", "price_tier": "二等座", "price": 553, "remaining": 3},
+    {"target_id": "D31", "session": "2026-12-01", "price_tier": "二等座", "price": 553, "remaining": 2}
+  ]
+}

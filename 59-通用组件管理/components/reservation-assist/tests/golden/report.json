@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "command": "report",
+  "generated_at": "2026-11-20T20:00:00+08:00",
+  "tasks": [
+    {
+      "id": "t1",
+      "adapter": "railway",
+      "status": "notified",
+      "window_start": 1764547200000,
+      "window_end": 1764547800000,
+      "submit_enabled": 0
+    }
+  ],
+  "hits": [
+    {
+      "task_id": "t1",
+      "fingerprint": "8f14e45fceea167a5a36dedd4bea2543c1d8d8faf0a3f4af2f4c0b9e2f7e6d11",
+      "at": 1764547300000,
+      "result": "notified",
+      "notified_at": 1764547301000,
+      "submit_state": null
+    }
+  ],
+  "events": [
+    {
+      "at": 1764547300000,
+      "level": "info",
+      "code": "hit",
+      "task_id": "t1",
+      "payload": {}
+    }
+  ],
+  "missing": [],
+  "limits": "本工具仅做余票/号源监控与官方页面跳转，不代抢、不转售、不支付，也不承诺成功率；观测结果以平台官方页面为准。"
+}

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<!-- AUTO-GENERATED from templates/post.html — 禁止手改；改模板后跑 build_site.py --write -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>把可复用能力做成组件：我们踩过的四个坑与四道门禁 · 59 研究博客</title>
+<meta name="description" content="同一段扫描登记、上下文装配、行情取数，在三个业务模块里各写一遍，最后谁都不敢改。我们把它们抽成组件后，用四道门禁守住边界。">
+<link rel="alternate" type="application/rss+xml" title="59 研究博客 RSS" href="feed.xml">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../index.html">
+      <img src="../assets/logo.jpg" alt="logo">
+      <span>59 通用组件管理</span>
+    </a>
+    <nav class="nav-links">
+      <a href="../index.html">产品介绍</a>
+      <a href="../trial.html">免费体检</a>
+      <a href="../guide.html">使用说明</a>
+      <a href="index.html" class="active">研究博客</a>
+    </nav>
+  </div>
+</header>
+
+<main class="section">
+  <div class="wrap">
+    <article class="post">
+      <p class="hint"><a href="index.html">← 返回研究博客</a></p>
+      <h1>把可复用能力做成组件：我们踩过的四个坑与四道门禁</h1>
+      <p class="post-meta">2026-11-20 · <span class="tag">系统架构</span> <span class="tag">组件化</span> <span class="tag">工程治理</span></p>
+
+      <div class="prose">
+<h2>问题不是&quot;代码重复&quot;，是&quot;没人敢改&quot;</h2>
+<p>在一个持续演进的交易系统里，最先失控的往往不是策略，而是那些看起来最不起眼的基础能力：扫描目录、登记上下文、取行情、抓宏观数据。它们被复制进第二个模块时还算合理，到第三个模块时就开始分叉——同一个字段有三种叫法，同一份配置有三个默认值。</p>
+<p>真正的痛点是：<strong>没人知道改动会影响谁</strong>。于是所有模块都倾向于再复制一份，而不是改公共那份。</p>
+<p>我们把这类能力从业务模块里抽了出来，做成可登记、可版本化、可分发的组件。过程中踩过四个坑，最后收敛成四道门禁。</p>
+<h2>坑一：清单只在人脑里</h2>
+<p>第一版组件散落在各模块目录，靠口头约定维护。结果是构建脚本找不到入口、文档链接指向不存在的文件、版本号三处不一致。</p>
+<p><strong>门禁一：统一清单，且由脚本生成。</strong></p>
+<p>每个组件必须有一份 <code>component.yaml</code> 声明名称、版本、生命周期、入口、依赖与产出契约。模块索引表由脚本从这些文件生成，发版前跑校验，禁止手改生成块。</p>
+<pre><code class="lang-bash">python3 tools/gen_index.py --check   # 生成块与 component.yaml 不一致就失败</code></pre>
+<p>清单不是文档，是构建输入。</p>
+<h2>坑二：版本靠&quot;感觉&quot;</h2>
+<p>组件被三个业务模块引用后，升级变成赌博：改一个默认参数，某个模块的产出口径就变了，但没人能说清是哪个版本引入的。</p>
+<p><strong>门禁二：版本语义 + 生命周期状态。</strong></p>
+<p>组件状态只有 <code>active / draft / deprecated</code> 三种，对外目录只允许出现 <code>active</code>。版本号在 <code>component.yaml</code> 与 <code>SKILL.md</code> 中必须一致，发版前校验；历史版本文档整体归档，主索引只指向当前版。</p>
+<p>这条规则的价值不在&quot;规范&quot;，而在于它让&quot;这个组件现在能不能用&quot;变成一个可查询的事实，而不是一场讨论。</p>
+<h2>坑三：一份实现，四个分发形态</h2>
+<p>我们同时需要 CLI（本地运维调试）、Skill 包（对外分发）、MCP 工具（IDE 内调用）和在线形态（云端 Agent 调用）。第一反应是各写一套，很快出现四份版本、四种错误码。</p>
+<p><strong>门禁三：一份源码，构建期生成多形态。</strong></p>
+<p>同一份 <code>component.yaml</code> 驱动四种产物，不允许各自定义版本。组件的共享逻辑放进内核目录，构建时注入到各组件，源码树不直接引用。</p>
+<p>一个副作用是：<strong>契约比传输更重要</strong>。我们最初的动作声明只有 <code>name / script / safety</code>，没有入参 schema，导致 MCP 工具无法生成稳定的参数表单，调用方只能&quot;猜命令行&quot;。补上参数声明后，同一份定义才能同时喂给 CLI、Skill 和 MCP。</p>
+<h2>坑四：边界是口头的</h2>
+<p>组件被抽出后，很快有人开始 import 交易域的私有 schema、引用本机绝对路径、读取内部数据文件。表面上组件化完成了，实际上只是把耦合换了个位置。</p>
+<p><strong>门禁四：独立性闸门进构建流程。</strong></p>
+<p>用脚本做机械检查：组件不得反向依赖交易域私有 schema、绝对路径与内部数据；越界即构建失败。</p>
+<pre><code class="lang-bash">python3 tools/check_boundaries.py    # G1–G7 独立性检查</code></pre>
+<p>人工评审会漏，脚本不会。边界检查必须和编译一样，成为&quot;改完就要跑&quot;的动作。</p>
+<h2>可以直接抄走的检查清单</h2>
+<ul>
+<li>每个可复用能力都有唯一清单文件，索引由生成器产出</li>
+<li>生命周期只有三种状态，对外只暴露 <code>active</code></li>
+<li>版本号单点声明，文档与清单不一致即失败</li>
+<li>动作声明包含参数类型、必填与枚举，而不是只写脚本路径</li>
+<li>独立性检查进 CI，越界即阻断</li>
+<li>发版前一条命令跑完全部门禁</li>
+</ul>
+<pre><code class="lang-bash">make check   # kernel 一致 + 独立性 + 索引 + 规则/站点一致</code></pre>
+<h2>小结</h2>
+<p>组件化不是&quot;把代码搬到另一个目录&quot;，而是把<strong>所有权、版本、边界</strong>变成可执行的门禁。四道门禁里，没有一道是&quot;写得更优雅&quot;，全部是&quot;让错误无法悄悄发生&quot;。</p>
+<p>下一篇我们会聊另一半问题：组件可以复用之后，<strong>它给出的数据凭什么可信</strong>——方法 ID、样本量、缺失标注与数据源许可，这些才是研究结论能不能被引用的前提。</p>
+      </div>
+      <div class="post-cta">
+        <h3>把你的 Skill 也体检一遍</h3>
+        <p>免费体检会检查结构、版本、示例可执行性与敏感信息泄露，给出总分与逐项修复建议。</p>
+        <p style="margin-top:12px"><a class="btn btn-primary" href="../trial.html">开始免费体检</a></p>
+      </div>
+    </article>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>59 通用组件管理 · 组件登记 / 版本 / 分发 / 边界治理</span>
+    <span><a href="index.html">研究博客</a> · <a href="https://skillhub.cn/dashboard" target="_blank" rel="noopener">SkillHub 控制台</a> · <a href="../privacy.html">隐私说明</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -70,6 +70,17 @@ python3 -m http.server 8099
 # 试用页需要 /api/trial，本地无后端时提交会提示请求失败，属预期
 ```
 
+## 研究博客（blog/）
+
+- 文章源：`blog/posts/*.md`，front matter 必填 `title / date / summary`，可选 `tags`（逗号分隔）
+- 产物：`blog/index.html`、`blog/<slug>.html`、`blog/feed.xml`（RSS 2.0）
+- 新增文章：放 `<slug>.md`（slug 只允许小写 `a-z0-9-`），再跑 `python3 scripts/build_site.py --write`
+- 系列文章：front matter 额外加 `series`（系列 slug）、`series_title`（展示名）、`series_order`（≥1，同系列内唯一）。
+  首页会把同系列文章折叠成一张卡片（按系列内序号排列），文章页展示「第 N/M 篇」与上/下一篇导航；
+  三个字段必须同时出现，缺一或 `series_title`/`series_order` 系列内冲突都会让 `--check` 失败
+- RSS 里的绝对链接默认 `https://49.233.123.96`，可用环境变量 `SITE_ORIGIN` 覆盖（备案域名通过后改这里）
+- `build_site.py --check` 会校验文章产物一致性与陈旧页面，纳入 `make check`
+
 ## 部署状态（49.233.123.96）
 
 > 2026-11-20 完成 S0–S2 上线并通过外网验收；2026-11-21 增加公网 HTTPS（IP 证书）。

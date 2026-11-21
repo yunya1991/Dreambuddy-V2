@@ -1,0 +1,6 @@
+{
+  "url": "https://example.invalid/show/sessions",
+  "status": 200,
+  "target": {"target_id": "SHOW1", "session": "2026-12-05", "price_tier": "看台"},
+  "rule": {"max_price": 800}
+}

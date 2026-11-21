@@ -1,0 +1,8 @@
+{
+  "serverTime": 1764561600000,
+  "slots": [
+    {"dept": "内科", "doctor": "张医生", "period": "上午", "fee": 50, "left": 3, "link": "https://example.invalid/hospital/zhang"},
+    {"dept": "外科", "doctor": "李医生", "period": "上午", "fee": 120, "left": 2, "link": "https://example.invalid/hospital/li"},
+    {"dept": "儿科", "doctor": "王医生", "period": "下午", "fee": 20, "left": 0, "link": "https://example.invalid/hospital/wang"}
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "hits": [
+    {"target_id": "S1", "session": "2026-12-05 19:30", "price_tier": "看台", "price": 480, "remaining": 2},
+    {"target_id": "S2", "session": "2026-12-06 19:30", "price_tier": "看台", "price": 380, "remaining": 6}
+  ]
+}
