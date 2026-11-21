@@ -3,7 +3,7 @@ name: event-context
 slug: dreambuddy-event-context
 displayName: 事件上下文（SEC公告·美联储声明·五层装配）
 description: "把一条官方事件展开成可复核的五层上下文：事件事实、涉及实体、同类历史次数、来源许可与边界声明。覆盖特斯拉/苹果等公司 SEC 公告与美联储声明，适合事件驱动研究与公告复盘；不做宏观序列或文件清单。"
-tags: [官方事件, sec公告, 美联储, 事件研究, event-context]
+tags: [监管文件, 时间线, 来源可追溯, 历史次数, eventresearch, filing-reader]
 version: 1.0.2
 summary: 查特斯拉/苹果 SEC 公告与美联储声明，装配事件事实、实体、同类次数、来源许可与边界五层；不含宏观序列或文件清单。
 license: MIT

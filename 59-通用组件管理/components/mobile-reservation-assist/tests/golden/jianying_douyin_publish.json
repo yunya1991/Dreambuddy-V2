@@ -1,0 +1,27 @@
+{
+  "schema": "publish.replay.v1",
+  "flow": "jianying_to_douyin",
+  "recorded_at": "2026-11-21T20:48:11+08:00",
+  "source": "真机 ddad4c46 全链路成功轨迹（用户确认已发布）",
+  "note_input": {
+    "title": "海外科技与加密资产回调，避险情绪升温",
+    "body": "最近海外风险资产出现显著回调，科技股与加密货币同步承压，市场避险情绪明显升温。",
+    "topics": ["海外宏观", "大类资产", "科技股回调", "市场波动率", "资产配置"]
+  },
+  "video": "/sdcard/DCIM/Camera/lv_0_20261121204720.mp4",
+  "expected_state": "done",
+  "steps": [
+    {"action": "jy_open", "ok": true, "note": "com.lemon.lv"},
+    {"action": "jy_entry", "ok": true, "note": "图文成片"},
+    {"action": "jy_input", "ok": true, "note": "528 字"},
+    {"action": "jy_apply", "ok": true, "note": ""},
+    {"action": "jy_ratio", "ok": true, "note": "9:16"},
+    {"action": "jy_generate", "ok": true, "note": "已提交生成"},
+    {"action": "jy_wait_edit", "ok": true, "note": "已进入编辑页"},
+    {"action": "jy_export", "ok": true, "note": "已提交导出 1080P"},
+    {"action": "jy_wait_saved", "ok": true, "note": "/sdcard/DCIM/Camera/lv_0_20261121204720.mp4"},
+    {"action": "jy_share", "ok": true, "note": "已跳到抖音发布页"},
+    {"action": "douyin_compose", "ok": true, "note": "标题/描述已填"},
+    {"action": "douyin_publish", "ok": true, "note": "发布成功"}
+  ]
+}

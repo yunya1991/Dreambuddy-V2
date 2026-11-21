@@ -1,0 +1,379 @@
+# SkillHub 产品优化评分卡（单一源）
+#
+# 分工（与 contracts/skill-quality-rules.yaml 不重叠）：
+#   合规链 skill-quality-rules.yaml 回答「能不能上架」：frontmatter / 402 / 密钥 / 体积
+#   优化链 本文件                 回答「agent 会不会选你」：召回 / 区分 / 信任 / 转化 / 可用
+# 修改后必须 bump version 并在 changelog 追加一条；`cli.py card --check` 会校验。
+#
+# check.type 仅支持 8 种（全部纯文本/正则，离线确定性）：
+#   entity_hit / intent_term / bilingual / boundary_declared /
+#   cross_field_dup / length_range / field_present / evidence_present / family_distinct
+# applies_to 取值：skill_md / mcp_tool / product_page / packaging
+
+version: 3
+updated_at: "2026-11-21"
+changelog:
+  - version: 1
+    summary: "初版：5 维 20 规则，覆盖 SKILL.md / MCP 工具 / 商品页 / 定价包装"
+  - version: 2
+    summary: "按真实 MCP 面与存量商品校准：实体门槛降到 1 并新增 3 实体告警；边界降为 warn；新增空描述 blocker；定价仅对收费渠道必填"
+  - version: 3
+    summary: "四商品校准：补 A股/美股/港股/行情/宏观/指标类实体；CON002 改为按词表整词比对（消除「据服/件上」等滑窗碎片误报）；RET002 只约束 SKILL.md 并补 适合/面向/覆盖 等触发词（商品页不再因缺「当用户」被误判 D 级）"
+
+profiles:
+  # 新增商品：blocker 硬阻断，总分低于阈值告警
+  new:
+    enforce: [blocker]
+    total_warn: 75
+  # 存量商品：只挡 blocker，避免历史商品一夜卡死
+  legacy:
+    enforce: [blocker]
+    total_warn: 60
+
+thresholds:
+  grade_a: 90
+  grade_b: 75
+  grade_c: 60
+
+dimensions:
+  retrievability:
+    label: 可召回
+    weight: 30
+  distinctiveness:
+    label: 可区分
+    weight: 25
+  trust:
+    label: 可信任
+    weight: 20
+  conversion:
+    label: 转化
+    weight: 15
+  operability:
+    label: 可用
+    weight: 10
+
+# 用户会直接说出的实体词表（来自 intents.yaml 与真实商品页）
+entity_lexicon:
+  company:
+    - 贵州茅台
+    - 茅台
+    - 宁德时代
+    - 宁德
+    - 比亚迪
+    - 招商银行
+    - 平安
+    - 苹果
+    - 特斯拉
+    - 英伟达
+    - 腾讯
+    - 阿里
+  ticker:
+    - AAPL
+    - TSLA
+    - NVDA
+    - MSFT
+    - GOOGL
+    - AMD
+  form:
+    - 8-K
+    - 10-K
+    - 10-Q
+    - S-1
+    - 13F
+  index:
+    - 上证
+    - 深证
+    - 创业板
+    - 沪深300
+    - 标普
+    - 纳斯达克
+    - 道琼斯
+  macro:
+    - CPI
+    - 失业率
+    - 国债收益率
+    - 非农
+    - FOMC
+    - 美联储
+    - GDP
+    - PMI
+  onchain:
+    - 以太坊
+    - 比特币
+    - 区块
+    - 活跃地址
+    - 链上
+  market:
+    - A股
+    - 美股
+    - 港股
+    - 财报
+    - 行情
+    - 宏观
+  metric:
+    - 涨跌幅
+    - 分位
+    - 波动率
+    - 最大回撤
+    - 均线
+    - 成交额
+  venue:
+    - 国博
+    - 演唱会
+    - 故宫
+    - 展览
+  event:
+    - 公告
+    - 披露
+    - 声明
+    - 事件
+    - SEC
+    - 上下文
+  workplace:
+    - 工作区
+    - 体检
+    - 断链
+    - 孤儿文件
+    - 技能重名
+    - 行号越界
+    - 文档漂移
+
+# 跨字段重复词的白名单：这些词在标题与副标题同时出现是正常的
+dup_whitelist: [a股, 指数, 数据, 服务, 市场, 事实, 上下文, 事件, 专业版, 助手]
+
+rules:
+  # ---------- 可召回 ----------
+  - id: RET001
+    title: 描述含用户原话实体
+    dimension: retrievability
+    severity: blocker
+    applies_to: [skill_md, mcp_tool]
+    weight: 12
+    check: {type: entity_hit, field: description, min: 1}
+    messages:
+      fail: 描述里没有任何用户会直接说出的实体（公司名、代码、表单类型、指数名）
+      advice: 按「能力 + 用户原话实体 + 边界」重写，至少补 1 个实体
+
+  - id: RET005
+    title: 实体覆盖足够（≥3）
+    dimension: retrievability
+    severity: warn
+    applies_to: [skill_md, mcp_tool]
+    weight: 6
+    check: {type: entity_hit, field: description, min: 3}
+    messages:
+      fail: 描述里的实体少于 3 个，短问句容易召回不到
+      advice: 再补 1–2 个用户常说的实体（如具体表单、指数、场馆）
+
+  - id: RET002
+    title: 描述含意图触发短语
+    dimension: retrievability
+    severity: warn
+    applies_to: [skill_md]
+    weight: 6
+    check:
+      type: intent_term
+      field: description
+      terms: [当用户, 用于, 适用于, 适合, 面向, 覆盖, 帮你, 使用, 查, 统计, 查询]
+    messages:
+      fail: 描述缺少「当用户……时使用」类触发短语
+      advice: 在描述中补一句用户会怎么说（引用原话即可）
+
+  - id: RET003
+    title: tags 中英双语
+    dimension: retrievability
+    severity: warn
+    applies_to: [skill_md]
+    weight: 5
+    check: {type: bilingual, field: tags, min_ascii: 1, min_cjk: 2}
+    messages:
+      fail: tags 缺少英文或中文词，跨语言检索会漏召回
+      advice: tags 补 1 个英文词与 2 个中文实体词
+
+  - id: RET004
+    title: 示例覆盖真实说法
+    dimension: retrievability
+    severity: warn
+    applies_to: [skill_md]
+    weight: 4
+    check: {type: evidence_present, field: examples, min: 2}
+    messages:
+      fail: 示例少于 2 条，agent 缺少可复制触发样本
+      advice: 补 3 条用户会直接复制的中文示例
+
+  # ---------- 可区分 ----------
+  - id: DIS001
+    title: 声明不适用范围
+    dimension: distinctiveness
+    severity: warn
+    applies_to: [mcp_tool]
+    weight: 10
+    check:
+      type: boundary_declared
+      fields: [not_for, description]
+      markers: [不, 禁, 不含, 不用于, 不查, 不做, 不给, 不预测]
+    messages:
+      fail: 未声明边界，容易被越界误选
+      advice: 补一句「不用于……」，让 agent 明确排除场景
+
+  - id: DIS004
+    title: MCP 工具描述非空且可读
+    dimension: distinctiveness
+    severity: blocker
+    applies_to: [mcp_tool]
+    weight: 8
+    check: {type: length_range, field: description, min: 10}
+    messages:
+      fail: MCP 工具描述为空或过短，agent 无法判断用途
+      advice: 在 component.yaml 的 action 上补一句能力描述
+
+  - id: DIS002
+    title: when_to_use 与 not_for 成组
+    dimension: distinctiveness
+    severity: warn
+    applies_to: [mcp_tool]
+    weight: 8
+    check: {type: field_present, fields: [when_to_use, not_for]}
+    messages:
+      fail: MCP 工具缺少 when_to_use 或 not_for
+      advice: 在 component.yaml 的 action 上成组补齐 when_to_use 与 not_for
+
+  - id: DIS003
+    title: 同族工具名有区分
+    dimension: distinctiveness
+    severity: warn
+    applies_to: [mcp_tool]
+    weight: 7
+    check: {type: family_distinct}
+    messages:
+      fail: 同族工具名无独有词，语义重叠
+      advice: 至少保留一个只属于本工具的意图词（如 quote / filing / facts）
+
+  # ---------- 可信任 ----------
+  - id: TRU001
+    title: 有可复制示例
+    dimension: trust
+    severity: warn
+    applies_to: [skill_md]
+    weight: 7
+    check: {type: evidence_present, field: examples, min: 1}
+    messages:
+      fail: 没有可复制示例
+      advice: 补一段「装好后直接说」的示例
+
+  - id: TRU002
+    title: 有输出样例
+    dimension: trust
+    severity: info
+    applies_to: [skill_md]
+    weight: 4
+    check: {type: field_present, fields: [output_sample]}
+    messages:
+      fail: 未展示输出样例
+      advice: 补 5–10 行真实输出，买家能判断是否可用
+
+  - id: TRU003
+    title: 许可证已声明
+    dimension: trust
+    severity: warn
+    applies_to: [skill_md, product_page]
+    weight: 4
+    check: {type: field_present, fields: [license]}
+    messages:
+      fail: 未声明 license
+      advice: "frontmatter 补 license：MIT（或商业授权）"
+
+  - id: TRU004
+    title: 版本号语义化
+    dimension: trust
+    severity: warn
+    applies_to: [skill_md]
+    weight: 5
+    check: {type: length_range, field: version, pattern: "^\\d+\\.\\d+\\.\\d+$"}
+    messages:
+      fail: version 不是 x.y.z 语义化版本
+      advice: 改成 1.0.4 这类三段式版本
+
+  # ---------- 转化 ----------
+  - id: CON001
+    title: 标题长度适合列表展示
+    dimension: conversion
+    severity: warn
+    applies_to: [product_page]
+    weight: 5
+    check: {type: length_range, field: title, min: 4, max: 30}
+    messages:
+      fail: 标题过长或过短，列表页会被截断
+      advice: 标题控制在 30 字内，先写能力词
+
+  - id: CON002
+    title: 标题/副标题/keywords 不重复词
+    dimension: conversion
+    severity: warn
+    applies_to: [product_page]
+    weight: 8
+    check: {type: cross_field_dup, fields: [title, subtitle, keywords]}
+    messages:
+      fail: 标题、副标题与关键词重复用词，浪费检索位
+      advice: 按 ASO 规则：同一词只出现一次，副标题补场景，关键词补长尾
+
+  - id: CON003
+    title: 描述前段讲清解决什么问题
+    dimension: conversion
+    severity: warn
+    applies_to: [skill_md, product_page]
+    weight: 7
+    check: {type: length_range, field: description, min: 40}
+    messages:
+      fail: 描述过短，讲不清解决的问题
+      advice: 前 80 字写「用户什么场景 + 得到什么」，不写内部术语
+
+  - id: CON004
+    title: 定价与售卖模式明确
+    dimension: conversion
+    severity: blocker
+    applies_to: [packaging]
+    weight: 10
+    check:
+      type: field_present
+      fields: [price, mode]
+      when:
+        field: channel
+        in: [skillpay-subscription, skillpay-once, skillhub-pay]
+    messages:
+      fail: 缺少价格或售卖模式
+      advice: 在 products/*.yaml 明确 price 与 channel（买断/订阅/按次）
+
+  # ---------- 可用 ----------
+  - id: OPE001
+    title: 提供首跑命令
+    dimension: operability
+    severity: warn
+    applies_to: [skill_md]
+    weight: 6
+    check: {type: evidence_present, field: first_run_cmd}
+    messages:
+      fail: 没有可直接运行的命令
+      advice: 补一条 python3 scripts/xxx.py 的最小命令
+
+  - id: OPE002
+    title: 说明错误码与降级
+    dimension: operability
+    severity: info
+    applies_to: [skill_md]
+    weight: 4
+    check: {type: field_present, fields: [error_codes]}
+    messages:
+      fail: 未说明出错时的表现
+      advice: 补「数据不可用 / E_ENV」等错误语义
+
+  - id: OPE003
+    title: MCP 工具声明输出契约
+    dimension: operability
+    severity: info
+    applies_to: [mcp_tool]
+    weight: 3
+    check: {type: field_present, fields: [output]}
+    messages:
+      fail: action 未声明 output 契约
+      advice: "在 component.yaml 的 action 上补 output：json"

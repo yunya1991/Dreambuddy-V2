@@ -232,8 +232,8 @@ def cmd_run(args) -> int:
     rest = [item for item in rest if item != "--allow-write"]
     if not script.exists():
         raise SystemExit("E_SCRIPT：脚本不存在 {}".format(script))
-    if safety == "write" and not allow_write:
-        print("E_GUARD：动作 {} 标记为 write，需加 --allow-write 才能执行".format(args.target))
+    if safety in {"write", "ui"} and not allow_write:
+        print("E_GUARD：动作 {} 标记为 {}，需加 --allow-write 才能执行".format(args.target, safety))
         return 3
     cmd = apply_endpoint(endpoint, params, [sys.executable, str(script)] + pre + rest)
     print("[dreambuddy] {} → {}".format(comp.get("name"), " ".join(cmd)), file=sys.stderr)
@@ -247,13 +247,23 @@ MOBILE_COMPONENT = "mobile-reservation-assist"
 RESERVATION_COMPONENT = "reservation-assist"
 MOBILE_WRITE = {"dispatch", "ingest", "pause", "resume"}
 MOBILE_LONG = {"gateway", "chat"}
+# 内容流水线：compose/trends/collect/data 不碰手机 UI；其余（scout/post/cover/memo/chain）有 UI 副作用
+MOBILE_CONTENT = {"xhs", "douyin"}
+MOBILE_CONTENT_READ = {"compose", "trends", "collect", "data"}
 MOBILE_COMMANDS = (
     ("doctor", "read", "环境自检"),
     ("jobs", "read", "预约作业清单（--state 过滤）"),
     ("report", "read", "reservation.v1 报告"),
+    ("reconcile", "read", "订单对账（order_unknown）"),
+    ("knowledge", "read", "平台规则知识问答（引用+置信度）"),
+    ("explore", "read", "探索录制 / 适配器草案 / 回放门禁"),
+    ("devices", "read", "设备心跳与在线状态"),
+    ("regression", "read", "适配器批量回归"),
     ("patrol", "read", "巡检诊断（--auto-fix 为写）"),
     ("ask", "read", "自然语言→白名单计划（--execute 为写）"),
     ("token", "read", "查看/生成网关 Token"),
+    ("xhs", "ui", "小红书流水线：scout/trends/collect/data/compose/cover/post/chain"),
+    ("douyin", "ui", "抖音流水线：scout/trends/collect/data/compose/cover/post/chain"),
     ("ingest", "write", "归一上游命中并入队"),
     ("dispatch", "write", "自然语言下发预约作业（--dry-run 只解析）"),
     ("pause", "write", "暂停派发"),
@@ -278,6 +288,9 @@ def mobile_script() -> Path:
 def mobile_safety(sub: str, rest: list) -> str:
     if sub in MOBILE_WRITE:
         return "write"
+    if sub in MOBILE_CONTENT:
+        second = rest[0] if rest and not rest[0].startswith("-") else ""
+        return "read" if second in MOBILE_CONTENT_READ else "ui"
     if sub == "ask" and "--execute" in rest:
         return "write"
     if sub == "patrol" and "--auto-fix" in rest:
@@ -315,8 +328,8 @@ def cmd_mobile(args) -> int:
         return 0
     sub, sub_rest = rest[0], rest[1:]
     safety = mobile_safety(sub, sub_rest)
-    if safety == "write" and not allow_write:
-        print("E_GUARD：mobile {} 是写动作，需加 --allow-write 才能执行".format(sub))
+    if safety in {"write", "ui"} and not allow_write:
+        print("E_GUARD：mobile {} 是 {} 动作，需加 --allow-write 才能执行".format(sub, safety))
         return 3
     script = mobile_script()
     if not script.exists():
@@ -681,8 +694,8 @@ def execute_plan(plan: dict, allow_write: bool = False, endpoint: str = "") -> i
     except SystemExit as exc:
         print(str(exc))
         return 1
-    if safety == "write" and not allow_write:
-        print("E_GUARD：{} 是写动作，需 --allow-write（本轮只读编排不执行）".format(action))
+    if safety in {"write", "ui"} and not allow_write:
+        print("E_GUARD：{} 是 {} 动作，需 --allow-write（本轮只读编排不执行）".format(action, safety))
         return 3
     rest, arg_endpoint = take_endpoint(normalize_args(comp_name, action, plan.get("args") or []))
     endpoint = endpoint or arg_endpoint

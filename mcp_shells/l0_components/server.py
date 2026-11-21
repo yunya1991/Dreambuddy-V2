@@ -120,7 +120,9 @@ def build_tools(profile: str = "hot", allow_write: bool = False) -> List[Dict[st
             mcp = action.get("mcp") or {}
             if not mcp.get("expose"):
                 continue
-            is_write = action.get("safety", "read") == "write"
+            is_write = action.get("safety", "read") in {"write", "ui"}
+            if action.get("safety") == "irreversible":
+                continue
             if is_write and not allow_write:
                 continue
             if action.get("output") != "json":

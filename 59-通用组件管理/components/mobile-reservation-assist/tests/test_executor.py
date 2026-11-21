@@ -32,13 +32,9 @@ class ExecutorTest(unittest.TestCase):
 
     def test_ensure_executable_gates(self) -> None:
         with self.assertRaises(executor.GateDenied):
-            executor.ensure_executable(
-                self.job, self.db, env={"MRA_ALLOW_EXECUTE": "1"}, paused=True
-            )
+            executor.ensure_executable(self.job, self.db, env={"MRA_ALLOW_EXECUTE": "1"}, paused=True)
         with self.assertRaises(executor.GateDenied):
-            executor.ensure_executable(
-                self.job, self.db, env={"MRA_ALLOW_EXECUTE": "0"}, paused=False
-            )
+            executor.ensure_executable(self.job, self.db, env={"MRA_ALLOW_EXECUTE": "0"}, paused=False)
         # 正常放行
         executor.ensure_executable(self.job, self.db, env={"MRA_ALLOW_EXECUTE": "1"}, paused=False)
 

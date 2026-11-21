@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-11-21T05:48:05Z",
+  "generated_at": "2026-11-21T12:34:22Z",
   "source": "59-通用组件管理/components/*/component.yaml",
   "components": [
     {
@@ -73,7 +73,7 @@
     {
       "name": "mobile-reservation-assist",
       "display_name": "手机预约助手 Mobile Reservation Assist",
-      "version": "0.2.0",
+      "version": "0.14.0",
       "family": "reservation-assist",
       "lifecycle": "draft",
       "summary": "消费预约助手命中，经本地 HTTP 网关把预约动作下发到手机端 Agent（Auto.js）执行，停在官方下单页、不代付不锁座。",

@@ -1,6 +1,6 @@
 name: mobile-reservation-assist
 display_name: 手机预约助手 Mobile Reservation Assist
-version: 0.2.0
+version: 0.14.0
 family: reservation-assist
 lifecycle: draft
 summary: 消费预约助手命中，经本地 HTTP 网关把预约动作下发到手机端 Agent（Auto.js）执行，停在官方下单页、不代付不锁座。
@@ -29,9 +29,46 @@ actions:
     output: json
     mcp: {expose: true, tier: hot, name: reservation_job_list}
     params:
-      - {name: state, flag: "--state", type: string, enum: [pending, dispatched, done, failed, unknown, cooldown], description: 按状态过滤}
+      - {name: state, flag: "--state", type: string, enum: [pending, dispatched, done, failed, unknown, cooldown, pending_human, takeover, order_unknown], description: 按状态过滤}
   - {name: report, script: scripts/mra.py, args: [report], safety: read, description: 生成报告}
+  - {name: reconcile, script: scripts/mra.py, args: [reconcile], safety: read, description: 订单对账：列出/收敛 order_unknown 作业}
+  - name: knowledge
+    description: "只读知识问答：平台规则/实名/退改/放号（引用 + 置信度）"
+    when_to_use: "回答平台规则类问题，结果带引用与置信度，可缓存复用"
+    not_for: "不用于执行预约或下单动作"
+    script: scripts/mra.py
+    args: [knowledge, ask]
+    safety: read
+    output: json
+    params:
+      - {name: question, type: string, required: true, description: 问题}
+      - {name: app, flag: "--app", type: string, description: 关联平台（缓存隔离）}
+  - name: explore
+    description: "探索录制：人工演示一遍，采集页面快照并生成适配器草案"
+    when_to_use: "接入新平台/新流程前，用手机端录制生成 L3 工具序列草案"
+    not_for: "不执行任何预约或支付动作；草案需人工复核后启用"
+    script: scripts/mra.py
+    args: [explore, draft]
+    safety: read
+    output: json
+    params:
+      - {name: id, flag: "--id", type: integer, required: true, description: 录制会话 ID}
+      - {name: out, flag: "--out", type: string, description: 源码草案输出路径（可空）}
+  - name: explore-gate
+    description: "回放兼容门禁：基线断言 vs 新录制，判断适配器是否失效"
+    when_to_use: "平台改版后、上线前校验旧适配器是否仍可用"
+    not_for: "不执行预约动作，仅做只读比对"
+    script: scripts/mra.py
+    args: [explore, check]
+    safety: read
+    output: json
+    params:
+      - {name: name, flag: "--name", type: string, required: true, description: 基线名}
+      - {name: id, flag: "--id", type: integer, required: true, description: 新录制会话 ID}
+      - {name: threshold, flag: "--threshold", type: number, description: 断言命中率阈值}
   - {name: patrol, script: scripts/mra.py, args: [patrol], safety: read, description: 巡检诊断}
+  - {name: devices, script: scripts/mra.py, args: [devices], safety: read, description: 设备心跳与在线状态}
+  - {name: regression, script: scripts/mra.py, args: [regression, run], safety: read, description: 批量执行兼容性回归（失败退出码 3）}
   - name: ask
     description: "演出/博物馆门票预约计划：把“国博 12 月 25 日还能约吗”解析为白名单计划（只解析不执行）"
     when_to_use: "判断国博/演出等门票能否预约，生成预约计划"
@@ -43,3 +80,136 @@ actions:
     mcp: {expose: true, tier: hot, name: ticket_reservation}
     params:
       - {name: text, type: string, required: true, description: 自然语言预约指令（只出白名单计划，不执行）}
+
+  # ── 内容运营（小红书 / 抖音）：默认停在发布前，publish_note 永不暴露 ──
+  - name: xhs-scout
+    description: "小红书爆款侦察：按赛道浏览信息流，读前 N 篇，可点赞/收藏"
+    when_to_use: "需要小红书选题与爆款风格参考时"
+    not_for: "不发笔记、不评论、不刷量"
+    script: scripts/mra.py
+    args: [xhs, scout]
+    safety: ui
+    output: json
+    params:
+      - {name: track, flag: "--track", type: string, description: 赛道关键词，逗号分隔}
+      - {name: limit, flag: "--limit", type: integer, description: 读取篇数（1-8）}
+      - {name: timeout, flag: "--timeout", type: integer, description: 等待手机回执秒数}
+  - name: xhs-trends
+    description: "小红书爆款分析：主题/形式/可扩展方向/风格提示"
+    when_to_use: "把 scout 样本丢给千问做选题与风格分析"
+    not_for: "不执行任何手机 UI 动作"
+    script: scripts/mra.py
+    args: [xhs, trends]
+    safety: read
+    output: json
+    params:
+      - {name: scout, flag: "--scout", type: string, required: true, description: scout 产出的 JSON 路径}
+      - {name: extra, flag: "--extra", type: string, description: 额外分析要求}
+  - name: xhs-compose
+    description: "小红书写稿：文章+云端数据+爆款风格 → 千问生成笔记"
+    when_to_use: "已有研究/文章素材，需要生成小红书笔记文案"
+    not_for: "不采集、不发布；只产出 note JSON"
+    script: scripts/mra.py
+    args: [xhs, compose]
+    safety: read
+    output: json
+    params:
+      - {name: article, flag: "--article", type: string, required: true, description: collect 产出的文章 JSON（可重复）}
+      - {name: data, flag: "--data", type: string, description: 云端数据摘要 JSON}
+      - {name: trend, flag: "--trend", type: string, description: 爆款风格参考 JSON}
+      - {name: style, flag: "--style", type: string, description: 封面风格提示}
+  - name: xhs-cover
+    description: "小红书封面：千问生图并保存到相册"
+    when_to_use: "笔记文案已定，需要生成封面图"
+    not_for: "不发布笔记"
+    script: scripts/mra.py
+    args: [xhs, cover]
+    safety: ui
+    output: json
+    params:
+      - {name: note, flag: "--note", type: string, description: 笔记 JSON 路径}
+      - {name: title, flag: "--title", type: string, description: 无笔记文件时用标题生成}
+      - {name: style, flag: "--style", type: string, description: 封面风格}
+      - {name: image, flag: "--image", type: string, description: 直接指定现成图片}
+  - name: xhs-post
+    description: "小红书填稿：填标题正文与配图，默认停在发布前"
+    when_to_use: "物料已审，需要把草稿填进小红书发布页供人工确认"
+    not_for: "默认不点发布；发布是人工终态"
+    script: scripts/mra.py
+    args: [xhs, post]
+    safety: ui
+    output: json
+    params:
+      - {name: note, flag: "--note", type: string, required: true, description: 笔记 JSON 路径}
+      - {name: image, flag: "--image", type: string, description: 指定素材路径}
+      - {name: publish, flag: "--publish", type: boolean, description: 人工显式授权后才点发布}
+  - name: xhs-chain
+    description: "小红书完整链路：侦察→采集→写稿→生图→填到发布前"
+    when_to_use: "一键跑内容闭环，最后一律停在发布前"
+    not_for: "不自动点发布"
+    script: scripts/mra.py
+    args: [xhs, chain]
+    safety: ui
+    output: json
+    params:
+      - {name: track, flag: "--track", type: string, description: 赛道关键词}
+      - {name: count, flag: "--count", type: integer, description: 采集篇数}
+      - {name: style, flag: "--style", type: string, description: 封面风格}
+  - name: douyin-scout
+    description: "抖音爆款侦察：按赛道搜索并读前 N 条视频卡片"
+    when_to_use: "需要抖音选题与爆款形式参考时"
+    not_for: "不发布、不评论、不刷量"
+    script: scripts/mra.py
+    args: [douyin, scout]
+    safety: ui
+    output: json
+    params:
+      - {name: track, flag: "--track", type: string, description: 赛道关键词}
+      - {name: limit, flag: "--limit", type: integer, description: 读取条数（1-8）}
+      - {name: timeout, flag: "--timeout", type: integer, description: 等待手机回执秒数}
+  - name: douyin-trends
+    description: "抖音爆款分析：主题/形式/风格提示"
+    when_to_use: "把 scout 样本做选题与形式分析"
+    not_for: "不执行手机 UI 动作"
+    script: scripts/mra.py
+    args: [douyin, trends]
+    safety: read
+    output: json
+    params:
+      - {name: scout, flag: "--scout", type: string, required: true, description: scout 产出的 JSON 路径}
+      - {name: extra, flag: "--extra", type: string, description: 额外分析要求}
+  - name: douyin-compose
+    description: "抖音写稿：文章+云端数据+爆款风格 → 千问生成图文文案"
+    when_to_use: "已有素材，需要生成抖音图文文案"
+    not_for: "不采集、不发布"
+    script: scripts/mra.py
+    args: [douyin, compose]
+    safety: read
+    output: json
+    params:
+      - {name: article, flag: "--article", type: string, required: true, description: collect 产出的文章 JSON}
+      - {name: data, flag: "--data", type: string, description: 云端数据摘要 JSON}
+      - {name: trend, flag: "--trend", type: string, description: 爆款风格参考 JSON}
+  - name: douyin-cover
+    description: "抖音封面：千问生图并保存到相册"
+    when_to_use: "文案已定，需要生成封面图"
+    not_for: "不发布"
+    script: scripts/mra.py
+    args: [douyin, cover]
+    safety: ui
+    output: json
+    params:
+      - {name: note, flag: "--note", type: string, description: 笔记 JSON 路径}
+      - {name: title, flag: "--title", type: string, description: 无笔记文件时用标题生成}
+  - name: douyin-post
+    description: "抖音填稿：填图文内容，默认停在发布前"
+    when_to_use: "物料已审，需要把草稿填进抖音发布页供人工确认"
+    not_for: "默认不点发布；发布是人工终态"
+    script: scripts/mra.py
+    args: [douyin, post]
+    safety: ui
+    output: json
+    params:
+      - {name: note, flag: "--note", type: string, required: true, description: 笔记 JSON 路径}
+      - {name: image, flag: "--image", type: string, description: 指定素材路径}
+      - {name: publish, flag: "--publish", type: boolean, description: 人工显式授权后才点发布}

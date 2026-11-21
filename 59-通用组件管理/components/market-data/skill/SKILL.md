@@ -3,9 +3,9 @@ name: market-data-hub
 slug: dreambuddy-market-data-hub
 displayName: 数据服务（A股行情·宏观·披露·链上）
 description: "面向 Agent 的开放金融数据服务：A 股个股行情快照（贵州茅台/宁德时代等）、FRED 宏观序列、SEC 8-K/10-K/10-Q 披露与 us-gaap 字段、公有链链上指标，并附数据上下文与交叉统计。只提供许可明确可商用的数据与确定性计算，不做预测、评级或目标价。"
-tags: [a股行情, 美股披露, 宏观数据, 链上数据, 金融数据, a-share-quotes, sec-filings]
+tags: [a股行情, 8-K文件, us-gaap, 活跃地址, 金融数据, a-share-quotes]
 version: 1.0.3
-summary: 查贵州茅台/宁德时代等 A 股现价、美国宏观序列、美股 SEC 披露与链上指标，每个数字附方法ID、样本量与数据时间。
+summary: 查贵州茅台/宁德时代等个股现价、美国利率与通胀序列、美股公告文件与公有链指标，每个数字附方法ID、样本量与数据时间。
 license: MIT
 allowed-tools: Bash, Read
 ---

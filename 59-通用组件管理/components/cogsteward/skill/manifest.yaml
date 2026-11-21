@@ -1,6 +1,6 @@
 # CogSteward 技能包清单
 name: cognition-manager
-version: 0.7.0
+version: 0.7.1
 entry: scripts/cm_cli.py
 runtime: python3
 dependencies: []            # 零第三方依赖，仅标准库

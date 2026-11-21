@@ -95,7 +95,8 @@
             }
           },
           "safety": {
-            "enum": ["read", "write"]
+            "enum": ["read", "write", "ui", "irreversible"],
+            "description": "read=只读；write=本地/外部写入；ui=手机 UI 副作用（等同写入，需授权）；irreversible=支付/提交/发布（禁止暴露 MCP）"
           },
           "output": {
             "enum": ["json", "text"],

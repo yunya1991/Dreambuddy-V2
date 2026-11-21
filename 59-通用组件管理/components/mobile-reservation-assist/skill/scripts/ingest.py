@@ -100,7 +100,9 @@ def hits_from_list(items: list[dict]) -> list[dict]:
 
 
 def _run_ra_json(ra_cli: str, *args: str) -> dict:
-    proc = subprocess.run([str(ra_cli), *args], capture_output=True, text=True, timeout=60)
+    proc = subprocess.run(
+        [str(ra_cli), *args], capture_output=True, text=True, timeout=60
+    )
     if proc.returncode != 0:
         raise RuntimeError(
             "上游 CLI 失败（exit {}）：{}".format(proc.returncode, proc.stderr.strip()[:200])
@@ -113,7 +115,7 @@ def load_hits(ra_cli: str | None = None, source: str | None = None) -> list[dict
     if source:
         if not source.startswith("file:"):
             raise ValueError("--source 仅支持 file:<path>")
-        data = json.loads(Path(source[len("file:") :]).read_text(encoding="utf-8"))
+        data = json.loads(Path(source[len("file:"):]).read_text(encoding="utf-8"))
         if isinstance(data, list):
             return hits_from_list(data)
         meta = task_meta_from_watch(data.get("watch") or {})
@@ -132,9 +134,7 @@ def ingest_into(store, hits: list[dict]) -> dict:
     for hit in hits:
         if store.enqueue_job(hit):
             added += 1
-            store.add_event(
-                "info", "job_enqueued", hit["task_id"], {"fingerprint": hit["fingerprint"][:12]}
-            )
+            store.add_event("info", "job_enqueued", hit["task_id"], {"fingerprint": hit["fingerprint"][:12]})
         else:
             skipped += 1
     return {"added": added, "skipped": skipped, "total": len(hits)}

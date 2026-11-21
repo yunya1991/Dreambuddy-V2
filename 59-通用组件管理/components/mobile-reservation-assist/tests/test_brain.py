@@ -7,6 +7,7 @@ import tempfile
 import unittest
 
 import _support  # noqa: F401 - 注入 skill/scripts 到 sys.path
+
 import brain
 import mra
 
@@ -49,9 +50,7 @@ class PlanTest(unittest.TestCase):
         return original
 
     def test_plan_whitelist(self):
-        original = self._patch(
-            '{"intent":"查看","steps":[{"action":"jobs","params":{}}],"note":""}'
-        )
+        original = self._patch('{"intent":"查看","steps":[{"action":"jobs","params":{}}],"note":""}')
         try:
             result = brain.plan("看看作业")
         finally:
@@ -70,6 +69,40 @@ class PlanTest(unittest.TestCase):
         self.assertEqual(data["adapter"], "bilibili")
         self.assertEqual(data["target_id"], "周杰伦")
         self.assertEqual(data["max_price"], 1280)
+
+
+class NoteTest(unittest.TestCase):
+    def test_normalize_note_clamps_and_cleans(self):
+        note = brain.normalize_note(
+            {"title": "  一个很长很长很长很长很长很长的标题  ", "body": "正文", "topics": ["#宏观", "宏观", " 数据 "]}
+        )
+        self.assertEqual(note["title"], "一个很长很长很长很长很长很长的标题")
+        self.assertLessEqual(len(note["title"]), 20)
+        self.assertEqual(note["topics"], ["宏观", "数据"])
+
+    def test_compose_note_includes_market_data(self):
+        captured = {}
+
+        def fake_chat(messages, **kwargs):
+            captured["payload"] = messages[-1]["content"]
+            return '{"title":"标题","body":"正文","topics":["宏观"]}'
+
+        original = brain.chat
+        brain.chat = fake_chat
+        try:
+            note = brain.compose_note(
+                {"title": "文章", "body": "内容"}, data={"market": {"价格": 1}}
+            )
+        finally:
+            brain.chat = original
+        self.assertEqual(note["title"], "标题")
+        self.assertIn("market_data", captured["payload"])
+        self.assertIn("价格", captured["payload"])
+
+    def test_image_prompt_is_deterministic(self):
+        prompt = brain.image_prompt({"title": "测试主题"})
+        self.assertIn("测试主题", prompt)
+        self.assertIn("3:4", prompt)
 
 
 class ExecuteTest(unittest.TestCase):

@@ -6,6 +6,7 @@ import json
 import unittest
 
 import yaml
+
 from _support import COMPONENT
 
 REQUIRED_GOLDEN = [
@@ -51,9 +52,7 @@ class ContractTest(unittest.TestCase):
             self.assertTrue((COMPONENT / "skill" / entry).is_file(), entry)
 
     def test_golden_valid(self) -> None:
-        golden = json.loads(
-            (COMPONENT / "tests" / "golden" / "report.json").read_text(encoding="utf-8")
-        )
+        golden = json.loads((COMPONENT / "tests" / "golden" / "report.json").read_text(encoding="utf-8"))
         for key in REQUIRED_GOLDEN:
             self.assertIn(key, golden)
         self.assertGreaterEqual(len(golden["limits"]), 1)
