@@ -470,9 +470,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         if args.cmd == "write":
             import plan as plan_mod
 
-            principal = args.principal or os.environ.get(
-                "DREAMBUDDY_PRINCIPAL", os.environ.get("USER", "local-user")
-            )
+            principal = args.principal or os.environ.get("DREAMBUDDY_PRINCIPAL", "local-user")
             created = plan_mod.create(
                 "cloud",
                 args.tool,
