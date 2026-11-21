@@ -40,6 +40,7 @@ verify: check
 	  python3 -m unittest discover -s "$$d" -p "test_*.py" || exit 1; \
 	done
 	python3 -m unittest discover -s platform/optimizer/tests
+	python3 -m unittest discover -s platform/bench/routing -p "test_*.py"
 	python3 -m unittest discover -s ../mcp_shells/l0_components -p "test_*.py"
 	python3 platform/sandbox/run_cases.py
 
@@ -47,4 +48,6 @@ bench-dry:
 	python3 platform/bench/routing/run_bench.py --dry-run
 
 bench:
-	python3 platform/bench/routing/run_bench.py --router qwen
+	python3 platform/bench/routing/run_bench.py --router qwen \
+		--compare platform/ops/bench_history.jsonl \
+		--archive platform/ops/bench_history.jsonl --trend

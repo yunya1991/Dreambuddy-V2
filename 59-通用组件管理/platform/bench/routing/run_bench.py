@@ -8,6 +8,8 @@
     python3 platform/bench/routing/run_bench.py --router qwen
     python3 platform/bench/routing/run_bench.py --router qwen --json /tmp/bench.json
     python3 platform/bench/routing/run_bench.py --router qwen --compare /tmp/baseline.json
+    python3 platform/bench/routing/run_bench.py --router qwen --archive platform/ops/bench_history.jsonl --trend
+    python3 platform/bench/routing/run_bench.py --router qwen --compare platform/ops/bench_history.jsonl
 
 指标:
     coverage_hit_rate    期望命中率（覆盖意图里选对我们的比例）
@@ -39,6 +41,11 @@ MODULE_ROOT = BENCH_DIR.parents[2]  # 59-通用组件管理/
 REPO_ROOT = MODULE_ROOT.parent  # dreambuddy-v2/
 INTENTS_DEFAULT = BENCH_DIR / "intents.yaml"
 COMPETITORS_DEFAULT = BENCH_DIR / "competitors.yaml"
+HISTORY_DEFAULT = Path(
+    os.environ.get(
+        "DREAMBUDDY_BENCH_HISTORY", str(MODULE_ROOT / "platform" / "ops" / "bench_history.jsonl")
+    )
+)
 
 # 历史命名快照：仅用于 name-only A/B 对照
 NAME_ALIASES = {
@@ -334,6 +341,72 @@ def compare(metrics: Dict[str, Any], previous: Dict[str, Any]) -> None:
             print("  {:16} {:.0f} → {:.0f}  ({:+.0f})".format(label, old, new, new - old))
 
 
+def history_record(report: Dict[str, Any]) -> Dict[str, Any]:
+    """把完整报告压成一行留档：只保留可比指标和实验条件。"""
+    metrics = report.get("metrics") or {}
+    return {
+        "generated_at": report.get("generated_at"),
+        "router": report.get("router"),
+        "model": report.get("model"),
+        "catalog_fields": report.get("catalog_fields"),
+        "name_style": report.get("name_style"),
+        "total": metrics.get("total", 0),
+        "coverage_hit_rate": metrics.get("coverage_hit_rate", 0.0),
+        "ours_selection_rate": metrics.get("ours_selection_rate", 0.0),
+        "wrong_our_tool": metrics.get("wrong_our_tool", 0),
+        "false_positive_rate": metrics.get("false_positive_rate", 0.0),
+        "avg_latency_ms": metrics.get("avg_latency_ms", 0.0),
+    }
+
+
+def archive(path: Path, report: Dict[str, Any]) -> Dict[str, Any]:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    record = history_record(report)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+    return record
+
+
+def load_history(path: Path) -> List[Dict[str, Any]]:
+    if not path.is_file():
+        return []
+    records: List[Dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            records.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return records
+
+
+def print_trend(records: List[Dict[str, Any]], limit: int = 10) -> None:
+    if not records:
+        print("\n趋势：暂无历史归档（用 --archive <path> 写入）")
+        return
+    shown = records[-limit:]
+    print("\n趋势（最近 {} 条）：".format(len(shown)))
+    print(
+        "  {:<19} {:<12} {:<14} {:>8} {:>8} {:>10} {:>6}".format(
+            "时间", "模型", "catalog", "覆盖", "选中", "越界误选", "错选"
+        )
+    )
+    for record in shown:
+        print(
+            "  {:<19} {:<12} {:<14} {:>7.1%} {:>8.1%} {:>10.1%} {:>6}".format(
+                str(record.get("generated_at", ""))[:19],
+                str(record.get("model", ""))[:12],
+                str(record.get("catalog_fields", ""))[:14],
+                record.get("coverage_hit_rate", 0.0),
+                record.get("ours_selection_rate", 0.0),
+                record.get("false_positive_rate", 0.0),
+                record.get("wrong_our_tool", 0),
+            )
+        )
+
+
 def _ensure_ssl_cert() -> None:
     """部分环境缺少系统根证书；未显式配置时用 certifi，避免整轮误判为 error。"""
     if os.environ.get("SSL_CERT_FILE"):
@@ -372,7 +445,23 @@ def main(argv: Optional[List[str]] = None) -> int:
         "--retries", type=int, default=1, help="单条调用失败重试次数，避免网络抖动被算成路由退化"
     )
     parser.add_argument("--json", type=Path, default=None, help="写入完整报告 JSON")
-    parser.add_argument("--compare", type=Path, default=None, help="与历史报告对比")
+    parser.add_argument(
+        "--archive",
+        type=Path,
+        default=None,
+        help="把本次指标追加到 JSONL 归档（默认 {}）".format(HISTORY_DEFAULT),
+    )
+    parser.add_argument(
+        "--compare",
+        type=Path,
+        default=None,
+        help="与历史报告对比（.json 或 .jsonl 末条）",
+    )
+    parser.add_argument(
+        "--trend",
+        action="store_true",
+        help="打印历史归档的趋势表（读 --archive 路径，默认 {}）".format(HISTORY_DEFAULT),
+    )
     args = parser.parse_args(argv)
     _ensure_ssl_cert()
     if args.model:
@@ -467,30 +556,38 @@ def main(argv: Optional[List[str]] = None) -> int:
     metrics = score(results, our_names)
     print_report(metrics, results, our_names, model_name)
 
+    report = {
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "router": args.router,
+        "model": model_name,
+        "catalog_fields": args.catalog_fields,
+        "name_style": args.name_style,
+        "metrics": metrics,
+        "results": results,
+    }
+
     if args.compare and args.compare.is_file():
-        previous = json.loads(args.compare.read_text(encoding="utf-8"))
-        compare(metrics, previous.get("metrics") or {})
+        if args.compare.suffix == ".jsonl":
+            history = load_history(args.compare)
+            previous = history[-1] if history else {}
+        else:
+            previous = json.loads(args.compare.read_text(encoding="utf-8")).get("metrics") or {}
+        if previous:
+            compare(metrics, previous)
 
     if args.json:
         args.json.parent.mkdir(parents=True, exist_ok=True)
         args.json.write_text(
-            json.dumps(
-                {
-                    "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
-                    "router": args.router,
-                    "model": model_name,
-                    "catalog_fields": args.catalog_fields,
-                    "name_style": args.name_style,
-                    "metrics": metrics,
-                    "results": results,
-                },
-                ensure_ascii=False,
-                indent=2,
-            )
-            + "\n",
-            encoding="utf-8",
+            json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
         print("\n报告已写入：{}".format(args.json))
+
+    if args.archive:
+        archive(args.archive, report)
+        print("\n归档已追加：{}".format(args.archive))
+
+    if args.trend:
+        print_trend(load_history(args.archive or HISTORY_DEFAULT))
 
     return 0
 
