@@ -336,3 +336,22 @@ scheduler_data/
 
 # 23 自进化运行期大样本（生成物，不入库）
 23-四层闭环自进化交易架构/dreambuddy_evolution/gene_data/.shadow_rl_samples.jsonl.*
+
+# 40 周期神经网络运行期生成物（2026-11-22 收口：由日更流水线生成，不入库，避免部署 stash 覆盖最新产物）
+40-周期神经网络系统/asset_rotation.json
+40-周期神经网络系统/cross_asset_matrix.json
+40-周期神经网络系统/cycle_state.json
+40-周期神经网络系统/execution_state.json
+40-周期神经网络系统/factor_contradiction_priors.json
+40-周期神经网络系统/fund_flow.json
+40-周期神经网络系统/meme_platform.json
+40-周期神经网络系统/nn_feedback_consumption.json
+40-周期神经网络系统/resonance_matrix.json
+40-周期神经网络系统/sector_transmission.json
+40-周期神经网络系统/stagflation_correction_table.json
+40-周期神经网络系统/stovall_breadth.json
+40-周期神经网络系统/strategy_mapping.json
+40-周期神经网络系统/washout_verdicts.json
+40-周期神经网络系统/x1_metrics_status.json
+# 部署健康状态（运行期写盘）
+/.deploy/health-state
