@@ -102,20 +102,61 @@ def _planned_command(step: Dict[str, Any]) -> str:
     return " ".join(argv)
 
 
-def _run_step(step: Dict[str, Any], dry_run: bool) -> Dict[str, Any]:
+def _resolve_params(params: Dict[str, Any], context: Dict[str, str]) -> Dict[str, Any]:
+    resolved: Dict[str, Any] = {}
+    for key, value in (params or {}).items():
+        if isinstance(value, str):
+            for name, path in context.items():
+                value = value.replace("{{{}}}".format(name), path)
+        resolved[key] = value
+    return resolved
+
+
+def _out_path(step: Dict[str, Any], run_id: str) -> str:
+    out = str(step.get("out") or "")
+    if not out:
+        return ""
+    if os.path.isabs(out):
+        return out
+    return str(runs_dir() / run_id / "artifacts" / out)
+
+
+def _run_step(
+    step: Dict[str, Any],
+    dry_run: bool,
+    run_id: str,
+    context: Dict[str, str],
+) -> Dict[str, Any]:
+    import content
     import dreambuddy
 
     component, action = _split_use(str(step.get("use") or ""))
+    params = _resolve_params(step.get("params") or {}, context)
+    out = _out_path(step, run_id)
     record: Dict[str, Any] = {
         "use": step.get("use"),
         "status": "pending",
         "started_at": _now(),
     }
     if not component:
-        record.update(status="pending_builtin", detail="P1 内置步骤未实现")
+        if dry_run:
+            record.update(status="planned", command="builtin:{}".format(action))
+            return record
+        try:
+            built = content.run_builtin(action, params, out)
+        except content.ContentError as exc:
+            record.update(status="failed", detail=str(exc), finished_at=_now())
+            return record
+        if "pending_builtin" in built or "pending" in built:
+            record.update(status="pending_builtin", detail=built)
+        else:
+            record.update(status="done", detail=built)
+        if out:
+            record["out"] = out
+        record["finished_at"] = _now()
         return record
     args: List[str] = []
-    for name, value in (step.get("params") or {}).items():
+    for name, value in params.items():
         flag = "--" + str(name).replace("_", "-")
         if isinstance(value, bool):
             if value:
@@ -123,11 +164,8 @@ def _run_step(step: Dict[str, Any], dry_run: bool) -> Dict[str, Any]:
         else:
             args.extend([flag, str(value)])
     if dry_run:
-        record.update(status="planned", command=_planned_command(step))
+        record.update(status="planned", command=_planned_command({**step, "params": params}))
         return record
-    out = str(step.get("out") or "")
-    if out and not os.path.isabs(out):
-        out = str(runs_dir() / "artifacts" / out)
     code = dreambuddy.run_action(
         component,
         action,
@@ -191,6 +229,9 @@ def run(
         }
 
     steps: List[Dict[str, Any]] = list(workflow.get("steps") or [])
+    context: Dict[str, str] = {
+        key: str(value.get("out")) for key, value in state["steps"].items() if value.get("out")
+    }
     blocked = False
     progress = True
     while progress:
@@ -215,7 +256,11 @@ def run(
                         progress = True
                     blocked = True
                     continue
-            state["steps"][step_id] = _run_step(step, dry_run=dry_run)
+            state["steps"][step_id] = _run_step(
+                step, dry_run=dry_run, run_id=run_id, context=context
+            )
+            if state["steps"][step_id].get("out"):
+                context[step_id] = str(state["steps"][step_id]["out"])
             progress = True
 
     pending = [

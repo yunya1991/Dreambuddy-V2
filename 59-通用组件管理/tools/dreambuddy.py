@@ -826,6 +826,7 @@ def cmd_chat(args) -> int:
             "workflow",
             "schedule",
             "release",
+            "content",
         ):
             if head in ("list",):
                 line = "ls"
@@ -905,6 +906,12 @@ def cmd_release(args) -> int:
     return release_ledger.main(list(args.rest))
 
 
+def cmd_content(args) -> int:
+    import content
+
+    return content.main(list(args.rest))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="dreambuddy", description="59 域统一只读编排 CLI")
     sub = parser.add_subparsers(dest="cmd")
@@ -962,6 +969,7 @@ def build_parser() -> argparse.ArgumentParser:
         ("workflow", cmd_workflow, "工作流：list/show/run/approve"),
         ("schedule", cmd_schedule, "定时任务：add/list/pause/resume/rm/run-now/run-due"),
         ("release", cmd_release, "发布台账：status/record/rollback"),
+        ("content", cmd_content, "内容闭环：render/blog/social/metrics"),
     ):
         p = sub.add_parser(name, help=help_text)
         p.add_argument("rest", nargs=argparse.REMAINDER)
@@ -986,6 +994,7 @@ SUBCOMMANDS = (
     "workflow",
     "schedule",
     "release",
+    "content",
 )
 
 

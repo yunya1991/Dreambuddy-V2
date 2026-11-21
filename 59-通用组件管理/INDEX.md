@@ -31,7 +31,7 @@
 | [docs/SPEC-20261121-SkillHub产品优化引擎-v0.1.md](./docs/SPEC-20261121-SkillHub产品优化引擎-v0.1.md) | v0.1 | **产品优化引擎**：5 维 20 规则评分卡、四类评分对象、`score/advise/ab/gate/report` CLI 契约、legacy/new 门禁策略 | ✅ P0–P2 已落地（v0.1.0） |
 | [docs/RESEARCH-20261121-产品优化引擎三路调研-v0.1.md](./docs/RESEARCH-20261121-产品优化引擎三路调研-v0.1.md) | v0.1 | **三路调研**：已有实现盘点、RAG-MCP/MCP-Zero/SCOUT/Semantic Tool Discovery 与 semantic-router 对比、ASO/JTBD/落地页转化可迁移实践 | ✅ 结论已落 SPEC |
 | [docs/SPEC-20261121-59域全生命周期-现状与缺口-v0.1.md](./docs/SPEC-20261121-59域全生命周期-现状与缺口-v0.1.md) | v0.2 | **全生命周期盘点（SPEC-A）**：七段完备度、17 项缺口（P0×8/P1×5/P2×4）、业务闭环现状；已对齐手机 AGENT 主仓 v0.14.0/schema 7，指出 59 mobile 副本为旧桩 | 🚧 P0 已全部落地 |
-| [docs/SPEC-20261121-59域全生命周期-框架与操作流程-v0.1.md](./docs/SPEC-20261121-59域全生命周期-框架与操作流程-v0.1.md) | v0.2 | **目标框架与操作流程（SPEC-B）**：七平面架构（含 L3.5 手机执行面）、契约扩展、CLI/工作流/调度/三态审批、数据→研究→博文→手机填稿→人工发布→回流、六组件测试矩阵与 P0–P2 路线图 | 🚧 P0 已全部落地，进入 P1 |
+| [docs/SPEC-20261121-59域全生命周期-框架与操作流程-v0.1.md](./docs/SPEC-20261121-59域全生命周期-框架与操作流程-v0.1.md) | v0.2 | **目标框架与操作流程（SPEC-B）**：七平面架构（含 L3.5 手机执行面）、契约扩展、CLI/工作流/调度/三态审批、数据→研究→博文→手机填稿→人工发布→回流、六组件测试矩阵与 P0–P2 路线图 | ✅ P0/P1 已落地（P1-5 待做） |
 | [docs/SPEC-20261120-59站点与体检产品化改造-v0.3.md](./docs/SPEC-20261120-59站点与体检产品化改造-v0.3.md) | v0.3 | **站点与体检产品化改造（当前版）**：必填项禁灰度、文案生成清单、`patches[]` 付费交付、全局额度单事务、基线门禁、S0a/S0b 拆步、规则结构校验、范围冻结到 S2 | ✅ S0a–S2 已完成并部署 49.233.123.96（外网验收通过）；HTTPS 用 Let's Encrypt IP 证书（6 天自动续期）；域名待 ICP 备案 |
 | [docs/SPEC-20261120-59站点与体检产品化改造-v0.2.md](./docs/SPEC-20261120-59站点与体检产品化改造-v0.2.md) | v0.2 | 已被 v0.3 取代（保留审计痕迹） | 🗄 归档 |
 | [docs/SPEC-20261120-59站点与体检产品化改造-v0.1.md](./docs/SPEC-20261120-59站点与体检产品化改造-v0.1.md) | v0.1 | 初稿（已被 v0.2 取代，保留审计痕迹） | 🗄 归档 |
@@ -74,7 +74,7 @@
 | 事件上下文（官方源·五层装配） `event-context` | components/event-context/ | v1.0.2 | active | — | 3 个 |
 | 数据服务（宏观·披露·链上·上下文） `market-data` | components/market-data/ | v1.0.3 | active | — | 6 个 |
 | 市场事实日报 `market-facts-daily` | components/market-facts-daily/ | v1.0.4 | active | — | 1 个 |
-| 手机预约助手 Mobile Reservation Assist `mobile-reservation-assist` | components/mobile-reservation-assist/ | v0.14.0 | draft | — | 1 个 |
+| 手机预约助手 Mobile Reservation Assist `mobile-reservation-assist` | components/mobile-reservation-assist/ | v0.16.0 | draft | — | 1 个 |
 | 预约助手 Reservation Assist `reservation-assist` | components/reservation-assist/ | v0.11.2 | draft | — | 1 个 |
 <!-- GEN:COMPONENT-REGISTRY:END -->
 

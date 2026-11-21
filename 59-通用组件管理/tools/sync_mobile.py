@@ -15,6 +15,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import sys
 from datetime import datetime, timezone
@@ -123,6 +124,14 @@ def check(local_only: bool = False) -> int:
         print("FAIL：副本缺少 {} 个文件：{}".format(len(missing), ", ".join(sorted(missing)[:5])))
         return 1
     if local_only:
+        stamped = source_version(DEST)
+        if stamped != manifest.get("canonical_version"):
+            print(
+                "FAIL：component.yaml 版本 {} 与 manifest {} 不一致".format(
+                    stamped, manifest.get("canonical_version")
+                )
+            )
+            return 1
         print("OK：副本与 manifest 一致（{} 个文件，未比对主仓实时状态）".format(len(recorded)))
         return 0
 
@@ -157,6 +166,19 @@ def display_path(path: Path) -> str:
         return path.as_posix()
 
 
+def stamp_version(version: str) -> None:
+    """把主仓版本号同步到 59 自维护的 component.yaml / SKILL.md（仅元数据行）。"""
+    for path in (DEST / "component.yaml", DEST / "skill" / "SKILL.md"):
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        stamped = re.sub(
+            r"^version:\s*.*$", "version: {}".format(version), text, count=1, flags=re.M
+        )
+        if stamped != text:
+            path.write_text(stamped, encoding="utf-8")
+
+
 def write() -> int:
     source = source_root() / "mobile-reservation-assist"
     if not source.exists():
@@ -167,19 +189,27 @@ def write() -> int:
         dst = DEST / rel
         if not src.exists():
             continue
+        # 先复制到 staging，成功后再替换，避免外部盘超时把副本清空
+        staging = dst.with_name(dst.name + ".syncing")
+        if staging.exists():
+            shutil.rmtree(staging)
         if src.is_dir():
-            if dst.exists():
-                shutil.rmtree(dst)
             shutil.copytree(
                 src,
-                dst,
+                staging,
                 ignore=shutil.ignore_patterns(
                     "__pycache__", ".pytest_cache", "*.pyc", "*.pyo", *sorted(SKIP_FILES)
                 ),
             )
+            if dst.exists():
+                shutil.rmtree(dst)
+            staging.rename(dst)
         else:
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src, dst)
+            staging.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, staging)
+            staging.replace(dst)
+    version = source_version(source)
+    stamp_version(version)
     hashes = collect_hashes(source)
     payload = {
         "canonical_repo": display_path(source_root()),

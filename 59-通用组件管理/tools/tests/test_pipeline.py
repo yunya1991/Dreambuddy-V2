@@ -92,8 +92,53 @@ class WorkflowTest(PipelineTestBase):
         state = json.loads(runs[0].read_text(encoding="utf-8"))
         self.assertEqual(state["status"], "done")
         self.assertEqual(state["steps"]["facts"]["status"], "planned")
-        self.assertEqual(state["steps"]["report"]["status"], "pending_builtin")
+        self.assertEqual(state["steps"]["report"]["status"], "planned")
+        self.assertEqual(state["steps"]["report"]["command"], "builtin:research.render")
         self.assertFalse((self.root / "state" / "workflows" / "artifacts").exists())
+
+    def test_builtin_research_step_executes(self) -> None:
+        wf_dir = self._workflow_dir()
+        facts_path = self.root / "facts.json"
+        facts_path.write_text(
+            json.dumps(
+                {
+                    "data_date": "2026-11-20",
+                    "window": 30,
+                    "generated_at": "2026-11-20T19:13:15",
+                    "rows": [
+                        {
+                            "symbol": "sh000001",
+                            "name": "上证综指",
+                            "n": 320,
+                            "close": 3533.79,
+                            "d1": -0.0122,
+                            "d5": -0.0276,
+                            "d20": -0.0424,
+                            "pctile": 0.0333,
+                            "vol": 0.1452,
+                            "mdd": -0.0702,
+                            "ma60": -0.0669,
+                        }
+                    ],
+                    "missing": [],
+                    "sources": [{"name": "fixture"}],
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        (wf_dir / "builtin-content.yaml").write_text(
+            "id: builtin-content\nversion: 1\nsteps:\n"
+            "  - id: report\n    use: research.render\n"
+            "    params: {facts: '%s'}\n    out: report.md\n" % facts_path,
+            encoding="utf-8",
+        )
+        self.assertEqual(workflow.run("builtin-content"), 0)
+        runs = sorted((self.root / "state" / "workflows").glob("*/run.json"))
+        state = json.loads(runs[-1].read_text(encoding="utf-8"))
+        self.assertEqual(state["status"], "done")
+        self.assertEqual(state["steps"]["report"]["status"], "done")
+        self.assertTrue(Path(state["steps"]["report"]["out"]).exists())
 
     def test_human_gate_blocks_until_approved(self) -> None:
         wf_dir = self._workflow_dir()
@@ -115,7 +160,7 @@ class JobsTest(PipelineTestBase):
         wf_dir = self.root / "workflows"
         wf_dir.mkdir()
         (wf_dir / "builtin.yaml").write_text(
-            "id: builtin\nversion: 1\nsteps:\n  - id: only\n    use: research.render\n",
+            "id: builtin\nversion: 1\nsteps:\n  - id: only\n    use: ops.metrics_record\n",
             encoding="utf-8",
         )
         self._old_wf = workflow.WORKFLOWS_DIR

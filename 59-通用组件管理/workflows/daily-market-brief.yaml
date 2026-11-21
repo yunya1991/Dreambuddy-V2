@@ -1,5 +1,5 @@
 id: daily-market-brief
-version: 1
+version: 2
 owner: 59-domain
 schedule: "30 8 * * 1-5"
 limits: {timeout_sec: 900, retries: 1}
@@ -11,22 +11,25 @@ steps:
   - id: report
     use: research.render
     needs: [facts]
+    params: {facts: "{facts}"}
     out: report.md
     human_gate: A
   - id: blog
     use: site.blog_draft
     needs: [report]
+    params: {report: "{report}", publish: true}
     out: blog-draft.md
     human_gate: B
   - id: social
     use: content.social_pack
     needs: [report]
+    params: {report: "{report}", facts: "{facts}"}
     out: social-pack.json
     human_gate: C
   - id: phone_fill
     use: mobile-reservation-assist.xhs-post
     needs: [social]
-    params: {note: "social-pack.json"}
+    params: {note: "{social}"}
     allow_write: true
     human_gate: D
   - id: metrics
