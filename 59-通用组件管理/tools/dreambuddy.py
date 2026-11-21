@@ -111,7 +111,7 @@ def apply_endpoint(endpoint: str, params: list[str], argv: list[str]) -> list[st
     """把通道参数转发给声明了 endpoint 的动作；未声明的动作不允许指定 cloud。"""
     if not endpoint:
         return argv
-    if "endpoint" in params:
+    if "endpoint" in params or "--endpoint" in params:
         return argv + ["--endpoint", endpoint]
     if endpoint == "cloud":
         raise SystemExit("E_UNSUPPORTED：该动作暂无云端通道，可改用 --endpoint local")
@@ -823,7 +823,7 @@ def capabilities_text() -> str:
     lines.append(
         "直接说人话即可，例如：查询贵州茅台股价 / 看比特币链上指标 / 预约助手体检 / 跑一下市场日报工作流\n"
         "命令域：dreambuddy 59|data <组件> <动作>  ·  dreambuddy dal <只读数据>  ·  dreambuddy trading <只读状态>  ·  dreambuddy mobile <子命令>\n"
-        "        dreambuddy workflow run <id> --dry-run  ·  dreambuddy schedule list  ·  dreambuddy domains"
+        "        dreambuddy workflow run <id> --dry-run  ·  dreambuddy schedule list  ·  dreambuddy cloud status|tools|call  ·  dreambuddy domains"
     )
     return "\n".join(lines)
 
@@ -959,6 +959,16 @@ def execute_plan(plan: dict, allow_write: bool = False, endpoint: str = "") -> i
         except ValueError as exc:
             print(str(exc))
             return 1
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0 if payload.get("ok", True) else 1
+    if kind == "cloud":
+        import cloud_client
+
+        try:
+            payload = cloud_client.call(str(plan.get("tool") or ""), plan.get("args") or {})
+        except cloud_client.CloudError as exc:
+            print(str(exc))
+            return {"E_CLOUD_AUTH": 2, "E_CLOUD_DENIED": 3}.get(exc.code, 1)
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 0 if payload.get("ok", True) else 1
     if kind == "trading":
@@ -1144,6 +1154,7 @@ def cmd_chat(args) -> int:
             "dal",
             "trading",
             "交易",
+            "cloud",
             "caps",
             "registry",
         ):
@@ -1212,15 +1223,29 @@ def cmd_apply(args) -> int:
         print(str(exc))
         return 3
     try:
-        code = run_action(
-            str(approved["component"]),
-            str(approved["action"]),
-            list(approved.get("args") or []),
-            allow_write=True,
-            endpoint=str(approved.get("endpoint") or ""),
-            reason="apply {}".format(args.plan_id),
-        )
+        if str(approved.get("component")) == "cloud":
+            import cloud_client
+
+            payload_args = json.loads((approved.get("args") or ["{}"])[0])
+            payload = cloud_client.call_write(str(approved["action"]), payload_args, args.plan_id)
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+            code = 0 if payload.get("ok", True) else 1
+        else:
+            code = run_action(
+                str(approved["component"]),
+                str(approved["action"]),
+                list(approved.get("args") or []),
+                allow_write=True,
+                endpoint=str(approved.get("endpoint") or ""),
+                reason="apply {}".format(args.plan_id),
+            )
     except SystemExit as exc:
+        print(str(exc))
+        return 1
+    except json.JSONDecodeError:
+        print("E_INPUT：写计划参数不是合法 JSON")
+        return 3
+    except Exception as exc:  # cloud_client.CloudError 及子进程错误
         print(str(exc))
         return 1
     plan_mod.audit(
@@ -1285,6 +1310,17 @@ def cmd_trading(args) -> int:
     import trading_bridge
 
     return trading_bridge.main(list(args.rest))
+
+
+def cmd_cloud(args) -> int:
+    rest = list(args.rest)
+    if rest and rest[0] in {"tools", "call", "write", "audit"}:
+        import cloud_client
+
+        return cloud_client.main(rest)
+    import cloud_channel
+
+    return cloud_channel.main(rest)
 
 
 def cmd_caps(args) -> int:
@@ -1358,6 +1394,7 @@ def build_parser() -> argparse.ArgumentParser:
         ("supply", cmd_supply, "供应链：check/verify --online"),
         ("dal", cmd_dal, "19-DAL 只读数据桥：tools/scopes/read/fetch"),
         ("trading", cmd_trading, "6-TRADING 只读状态：signal/bus/positions/balance/..."),
+        ("cloud", cmd_cloud, "云端通道：status/probe/token status|set"),
         ("caps", cmd_caps, "能力注册表：list/show/check/prompt/export"),
         ("registry", cmd_caps, "能力注册表（同 caps）"),
     ):
@@ -1390,6 +1427,7 @@ SUBCOMMANDS = (
     "supply",
     "dal",
     "trading",
+    "cloud",
     "caps",
     "registry",
 )

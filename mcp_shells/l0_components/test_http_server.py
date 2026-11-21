@@ -44,6 +44,60 @@ class AuthTest(unittest.TestCase):
         self.assertTrue(http_server.write_allowed(tool, "ops", {"ops"}))
 
 
+class PlanSignatureTest(unittest.TestCase):
+    KEY = "signing-key-0123456789"  # secret-scan: allow
+
+    def test_args_hash_is_canonical(self):
+        left = http_server.canonical_args_hash({"b": 2, "a": 1})
+        right = http_server.canonical_args_hash({"a": 1, "b": 2})
+        self.assertEqual(left, right)
+        self.assertNotEqual(left, http_server.canonical_args_hash({"a": 1}))
+
+    def test_verify_plan_accepts_matching_signature(self):
+        digest = http_server.canonical_args_hash({"series": "DGS10"})
+        signature = cloud_signature(self.KEY, "plan_abc", "market_data_handoff", digest)
+        self.assertTrue(
+            http_server.verify_plan(self.KEY, "plan_abc", "market_data_handoff", digest, signature)
+        )
+
+    def test_verify_plan_rejects_tampering(self):
+        digest = http_server.canonical_args_hash({"series": "DGS10"})
+        signature = cloud_signature(self.KEY, "plan_abc", "market_data_handoff", digest)
+        self.assertFalse(
+            http_server.verify_plan(
+                self.KEY, "plan_abc", "market_data_handoff", digest + "0", signature
+            )
+        )
+        self.assertFalse(
+            http_server.verify_plan(
+                self.KEY, "plan_abc", "event_context_handoff", digest, signature
+            )
+        )
+        self.assertFalse(
+            http_server.verify_plan("", "plan_abc", "market_data_handoff", digest, signature)
+        )
+
+    def test_write_tools_not_in_allowlist_are_not_projected(self):
+        tools = [
+            {"name": "read_tool", "_write": False},
+            {"name": "market_data_handoff", "_write": True},
+            {"name": "event_context_handoff", "_write": True},
+        ]
+        projected = http_server.project_tools(tools, True, {"market_data_handoff"})
+        self.assertEqual([item["name"] for item in projected], ["read_tool", "market_data_handoff"])
+        self.assertEqual(
+            [item["name"] for item in http_server.project_tools(tools, False, set())], ["read_tool"]
+        )
+
+
+def cloud_signature(key: str, plan_id: str, tool: str, digest: str) -> str:
+    import hashlib
+    import hmac
+
+    message = "{}\n{}\n{}".format(plan_id, tool, digest).encode("utf-8")
+    return hmac.new(key.encode("utf-8"), message, hashlib.sha256).hexdigest()
+
+
 class HttpTransportTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -146,7 +200,14 @@ class HttpTransportTest(unittest.TestCase):
 
     def test_write_without_whitelist_is_403(self):
         write_server = http_server.build_server(
-            "127.0.0.1", 0, TOKEN, {"ops"}, profile="all", allow_write=True
+            "127.0.0.1",
+            0,
+            TOKEN,
+            {"ops"},
+            profile="all",
+            allow_write=True,
+            write_tools={"event_context_handoff", "market_data_handoff"},
+            signing_key=PlanSignatureTest.KEY,
         )
         port = write_server.server_address[1]
         thread = threading.Thread(target=write_server.serve_forever, daemon=True)

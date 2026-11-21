@@ -20,6 +20,7 @@ stdio 版本见同目录 server.py；本文件只补 HTTP 传输与鉴权，工�
 from __future__ import annotations
 
 import argparse
+import hashlib
 import hmac
 import importlib.util
 import json
@@ -55,6 +56,24 @@ def parse_principals(raw: str) -> set[str]:
     return {item.strip() for item in (raw or "").split(",") if item.strip()}
 
 
+def parse_tools(raw: str) -> set[str]:
+    return {item.strip() for item in (raw or "").split(",") if item.strip()}
+
+
+def canonical_args_hash(arguments: Any) -> str:
+    payload = json.dumps(arguments or {}, ensure_ascii=False, sort_keys=True)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def verify_plan(signing_key: str, plan_id: str, tool: str, args_hash: str, signature: str) -> bool:
+    """云端二次校验：HMAC(plan_id \\n tool \\n args_hash) 必须与本地审批后签发一致。"""
+    if not (signing_key and plan_id and signature):
+        return False
+    message = "{}\n{}\n{}".format(plan_id, tool, args_hash).encode("utf-8")
+    expected = hmac.new(signing_key.encode("utf-8"), message, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+
+
 def check_auth(headers: Any, token: str, require_principal: bool = True) -> Tuple[str, int, str]:
     """返回 (principal, status, error)。status=200 表示通过。"""
     authorization = str(headers.get("Authorization") or "")
@@ -78,6 +97,7 @@ def make_handler(
     token: str,
     principals: set[str],
     timeout: int,
+    signing_key: str = "",
 ) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
         server_version = "DreamBuddyMCP/1.0"
@@ -114,6 +134,7 @@ def make_handler(
                     "server": core.SERVER_NAME,
                     "version": core.SERVER_VERSION,
                     "tools": len(tools),
+                    "write_tools": sum(1 for tool in tools if tool.get("_write")),
                 },
             )
 
@@ -161,6 +182,29 @@ def make_handler(
                         },
                     )
                     return
+                if tool.get("_write"):
+                    params = request.get("params") or {}
+                    plan_id = str(self.headers.get("X-Plan-Id") or "")
+                    args_header = str(self.headers.get("X-Args-Sha256") or "")
+                    signature = str(self.headers.get("X-Plan-Signature") or "")
+                    actual = canonical_args_hash(params.get("arguments") or {})
+                    if not (
+                        args_header
+                        and actual == args_header
+                        and verify_plan(signing_key, plan_id, tool["name"], actual, signature)
+                    ):
+                        self._send(
+                            403,
+                            {
+                                "error": "E_PLAN：写动作必须携带已审批计划签名（plan_id/args/signature）"
+                            },
+                        )
+                        return
+                    sys.stderr.write(
+                        "[mcp-http] WRITE principal={} plan={} tool={} args={}\n".format(
+                            principal, plan_id, tool["name"], actual[:16]
+                        )
+                    )
 
             started = time.time()
             response = core.handle(request, tools, timeout, principal=principal)
@@ -177,6 +221,16 @@ def make_handler(
     return Handler
 
 
+def project_tools(
+    tools: List[Dict[str, Any]], allow_write: bool, write_tools: Optional[set[str]]
+) -> List[Dict[str, Any]]:
+    """写工具必须同时出现在白名单里才投影；未登记的一律不暴露。"""
+    if not allow_write:
+        return [tool for tool in tools if not tool.get("_write")]
+    allowed = write_tools or set()
+    return [tool for tool in tools if not tool.get("_write") or tool["name"] in allowed]
+
+
 def build_server(
     host: str,
     port: int,
@@ -185,11 +239,15 @@ def build_server(
     profile: str = "hot",
     allow_write: bool = False,
     timeout: int = 120,
+    write_tools: Optional[set[str]] = None,
+    signing_key: str = "",
 ) -> ThreadingHTTPServer:
     if len(token) < MIN_TOKEN_LEN:
         raise ValueError("E_AUTH：token 至少 {} 字符，拒绝裸奔".format(MIN_TOKEN_LEN))
-    tools = core.build_tools(profile, allow_write=allow_write)
-    handler = make_handler(tools, token, principals, timeout)
+    tools = project_tools(
+        core.build_tools(profile, allow_write=allow_write), allow_write, write_tools
+    )
+    handler = make_handler(tools, token, principals, timeout, signing_key=signing_key)
     return ThreadingHTTPServer((host, port), handler)
 
 
@@ -206,6 +264,16 @@ def main(argv: Optional[List[str]] = None) -> int:
         default=os.environ.get("DREAMBUDDY_MCP_PRINCIPALS", ""),
         help="允许写动作的 principal，逗号分隔",
     )
+    parser.add_argument(
+        "--write-tools",
+        default=os.environ.get("DREAMBUDDY_MCP_WRITE_TOOLS", ""),
+        help="允许写动作的工具名白名单，逗号分隔（未登记的不投影）",
+    )
+    parser.add_argument(
+        "--signing-key",
+        default=os.environ.get("DREAMBUDDY_MCP_SIGNING_KEY", ""),
+        help="写计划 HMAC 签名密钥（与本地 apply 共享）",
+    )
     args = parser.parse_args(argv)
 
     token = str(args.token or "")
@@ -218,13 +286,30 @@ def main(argv: Optional[List[str]] = None) -> int:
         )
         return 2
     principals = parse_principals(args.principals)
+    write_tools = parse_tools(args.write_tools)
     if args.allow_write and not principals:
         print("E_AUTH：--allow-write 必须同时给出 --principals 白名单", file=sys.stderr)
+        return 2
+    if args.allow_write and (not write_tools or len(args.signing_key) < MIN_TOKEN_LEN):
+        print(
+            "E_AUTH：--allow-write 需要 DREAMBUDDY_MCP_WRITE_TOOLS 与 ≥{} 字符签名密钥".format(
+                MIN_TOKEN_LEN
+            ),
+            file=sys.stderr,
+        )
         return 2
 
     try:
         server = build_server(
-            args.host, args.port, token, principals, args.profile, args.allow_write, args.timeout
+            args.host,
+            args.port,
+            token,
+            principals,
+            args.profile,
+            args.allow_write,
+            args.timeout,
+            write_tools=write_tools,
+            signing_key=str(args.signing_key or ""),
         )
     except ValueError as exc:
         print(str(exc), file=sys.stderr)

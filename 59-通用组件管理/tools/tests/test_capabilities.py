@@ -122,6 +122,7 @@ class LegacyCatalogTest(unittest.TestCase):
                 "component_actions",
                 "data_read",
                 "trading_read",
+                "cloud_read",
                 "mobile_read",
                 "workflows",
                 "schedule_read",

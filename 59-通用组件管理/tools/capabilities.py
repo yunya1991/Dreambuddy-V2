@@ -6,8 +6,9 @@
      其中 aliases 展开为跨域短别名            → mobile.<command>       kind=mobile
   2. 19-DAL 只读数据桥                          → data.<tool>            kind=data
   3. 6-TRADING 只读状态桥（l1_trading MCP）      → trading.<tool>         kind=trading
-  4. workflows/*.yaml                           → workflow.<name>        kind=workflow
-  5. 定时任务只读                               → schedule.list          kind=schedule
+  4. 云端只读控制面（HTTP MCP 缓存）             → cloud.<tool>           kind=cloud
+  5. workflows/*.yaml                           → workflow.<name>        kind=workflow
+  6. 定时任务只读                               → schedule.list          kind=schedule
 
 用法:
     python3 tools/capabilities.py list [--json] [--kind run] [--safety write]
@@ -39,7 +40,7 @@ COMPONENTS = ROOT / "components"
 WORKFLOWS = ROOT / "workflows"
 MOBILE_COMPONENT = "mobile-reservation-assist"
 
-KINDS = ("run", "mobile", "data", "trading", "workflow", "schedule")
+KINDS = ("run", "mobile", "data", "trading", "cloud", "workflow", "schedule")
 SAFETIES = ("read", "write", "ui")
 SAFETY_ORDER = {"read": 0, "write": 1, "ui": 2, "irreversible": 3}
 
@@ -56,6 +57,7 @@ def _signature() -> tuple:
     for extra in (
         TOOLS_DIR / "data_bridge.py",
         TOOLS_DIR / "trading_bridge.py",
+        TOOLS_DIR / "cloud_client.py",
         REPO_ROOT / "mcp_shells" / "l0_data" / "server.py",
         REPO_ROOT / "mcp_shells" / "l1_trading" / "server.py",
         COMPONENTS / MOBILE_COMPONENT / "skill" / "scripts" / "mra.py",
@@ -177,6 +179,43 @@ def _trading_caps(issues: List[Dict[str, str]]) -> List[Dict[str, Any]]:
     return caps
 
 
+def _cloud_caps(issues: List[Dict[str, str]]) -> List[Dict[str, Any]]:
+    """P5-2 云端只读控制面：只读缓存投影，构建期不联网。"""
+    try:
+        import cloud_client
+    except Exception as exc:
+        issues.append({"id": "cloud.*", "problem": "cloud_client 不可用：{}".format(exc)})
+        return []
+    conf = cloud_client.config()
+    cached = cloud_client.tools(cache_only=True)
+    if not cached and conf["complete"]:
+        issues.append(
+            {"id": "cloud.*", "problem": "已配置但无工具缓存（先 cloud tools --refresh）"}
+        )
+    caps = []
+    for tool in cached:
+        if tool.get("write"):
+            continue
+        caps.append(
+            {
+                "id": "cloud.{}".format(tool["name"]),
+                "kind": "cloud",
+                "domain": "cloud",
+                "tool": tool["name"],
+                "description": tool.get("description", ""),
+                "when_to_use": "需要云端运行时事实（交易状态 / 云侧组件结果）且本地无等价能力",
+                "not_for": "禁止经云端执行写动作；写仍走本地 plan/approve",
+                "safety": "read",
+                "schema": tool.get("inputSchema") or {},
+                "params": [],
+                "script": "tools/cloud_client.py",
+                "source": conf["base"],
+                "status": "ready",
+            }
+        )
+    return caps
+
+
 def _mobile_caps(run_caps: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """跨域短别名（mobile.<command>）：由 component.yaml 的 aliases 展开，不再维护第二份清单。"""
     caps: List[Dict[str, Any]] = []
@@ -260,6 +299,7 @@ def build(refresh: bool = False) -> List[Dict[str, Any]]:
         run_caps
         + _data_caps(issues)
         + _trading_caps(issues)
+        + _cloud_caps(issues)
         + _mobile_caps(run_caps)
         + _workflow_caps()
         + _schedule_caps()
@@ -306,6 +346,14 @@ def plan_for(capability_id: str, args: Any = None) -> Dict[str, Any]:
     if cap["kind"] == "data":
         return {
             "kind": "data",
+            "tool": cap["tool"],
+            "args": args if isinstance(args, dict) else {},
+            "capability": cap["id"],
+            "reason": reason,
+        }
+    if cap["kind"] == "cloud":
+        return {
+            "kind": "cloud",
             "tool": cap["tool"],
             "args": args if isinstance(args, dict) else {},
             "capability": cap["id"],
@@ -366,6 +414,11 @@ def legacy_catalog() -> Dict[str, Any]:
             {"name": cap["tool"], "schema": cap.get("schema") or {}, "safety": "read"}
             for cap in caps
             if cap["kind"] == "trading"
+        ],
+        "cloud_read": [
+            {"name": cap["tool"], "schema": cap.get("schema") or {}, "safety": "read"}
+            for cap in caps
+            if cap["kind"] == "cloud"
         ],
         "mobile_read": [cap["command"] for cap in caps if cap["kind"] == "mobile"],
         "workflows": [cap["workflow"] for cap in caps if cap["kind"] == "workflow"],
@@ -479,7 +532,7 @@ def sources() -> List[Dict[str, str]]:
                 "sha256": _sha256(path),
             }
         )
-    for bridge in ("data_bridge.py", "trading_bridge.py"):
+    for bridge in ("data_bridge.py", "trading_bridge.py", "cloud_client.py"):
         path = TOOLS_DIR / bridge
         if path.exists():
             items.append(
