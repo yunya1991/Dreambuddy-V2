@@ -3,7 +3,7 @@ name: skillhub-publisher
 description: "SkillHub（skillhub.cn）发布交互：先判定免费 Skill 还是 SkillPay 付费 Skill；检查账号/实名/商户入驻/API Token；校验 Skill 包；CLI 发布免费 Skill，网页发布 Pay Skill；跟踪审核、付费预检与失败恢复。用于发布/上架/更新 Skill、上架 SkillPay、查审核状态、处理 401/403/409/429 及付费预检失败。"
 slug: dreambuddy-skillhub-publisher
 displayName: SkillHub 发布交互
-version: 1.1.1
+version: 1.2.0
 summary: 面向 Agent 的 SkillHub 发布协议：免费走 CLI，付费走 SkillPay 网页流程；先校验、再发布、结果可复核。
 license: MIT
 allowed-tools: Read, Write, Glob, Grep, Bash
@@ -205,6 +205,7 @@ POST /api/v1/community/skills/precheck-alipay   (multipart: file=SKILL.md)
 1. 登录 SkillHub →「发布 Skill」→ 选择「发布付费 Skill」
 2. 「Pay Skill 改造」：确认支付接入方式、支付确认链路、支付触发标识
 3. 「上传基本信息」：上传含 `SKILL.md` 的文件夹或 ZIP；填 Slug、显示名称、版本、描述、分类、图标
+   - **版本修改说明（必填）**：带星号，1–200 字，位于「版本变更申请」标题下（页面顶部区域）。整页很长，滚到底部操作价格时已不在视野内、截图也只覆盖一屏，**必须进页面第一件事就填**
 4. 「完善计费」：选择按次计费，填单次价格；保持三处价格一致
 5. 「验证 & 案例」：完成线上验证，补使用效果案例（可选）
 6. 提交 → 内容审核 + 安全扫描 + 付费预检 → 审核通过后上架
@@ -213,24 +214,34 @@ POST /api/v1/community/skills/precheck-alipay   (multipart: file=SKILL.md)
 
 ### 5.5 网页操作纪律
 
-1. 每步先 `browser_snapshot` 读取表单，不要硬编码 ref / CSS 选择器
-2. 上传后核对文件名、文件数与 `SKILL.md` 根层位置
-3. 提交前汇总「slug / 名称 / 版本 / 分类 / 免费或付费 / 价格 / 支付渠道」给用户确认
-4. 价格、付费模式、公开发布必须用户明确同意
-5. 提交后以页面「审核中 / 已通过 / 未通过」为证据
-6. 登录墙（手机号 + 短信验证码）交还用户完成
+1. **打开更新页后第一件事**：填「版本修改说明 *」为 `vX.Y.Z：变更摘要`，填完回读一次确认非空；该字段必填且整页很长、截图截不全，遗漏会导致提交不生效且**无任何报错**
+2. 每步先 `browser_snapshot` 读取表单，不要硬编码 ref / CSS 选择器
+3. 上传后核对文件名、文件数与 `SKILL.md` 根层位置
+4. 提交前汇总「slug / 名称 / 版本 / 分类 / 免费或付费 / 价格 / 支付渠道 / 版本修改说明」给用户确认
+5. 价格、付费模式、公开发布必须用户明确同意
+6. 提交后以页面「审核中 / 已通过 / 未通过」为证据
+7. 登录墙（手机号 + 短信验证码）交还用户完成，不要用自动化绕过
+8. 更新页 URL 去掉 `upload=success` 可避免页面就绪超时；页面卡死时关闭标签页重开
+9. 上传 zip 后商品名称会被自动改为 SKILL 名（如 `market-data-hub`），且解析完成前显示「解析中...」；等解析结束再改回中文展示名
+10. 浏览器子代理在 `product-new` 页面易卡死：改用 `TRAE-browseruse`（Exec 内调 `browser_*`），并在单个商品走完「填写→上传→核对→提交→验证卡片」后再开下一个
 
-### 5.6 已上架 Pay Skill 发新版本
+### 5.6 已上架 Pay Skill 发新版本（存量在售商品）
 
-版本号取自**包内 `SKILL.md` 的 `version`**（网页上改不动，见 skillpay-workflow §8.3 P5）。流程与坑位：
+版本号取自**包内 `SKILL.md` 的 `version`**（网页上改不动，见 skillpay-workflow §8.3 P5）。标准七步：
 
-1. 商品管理 → 目标商品「编辑商品信息」→ 删旧 zip → 上传新 zip
-2. **先填「版本修改说明 \*」**（带星号必填，1–200 字）——**空白时点提交不生效且不报错**，包显示已上传但版本不进审核；这是最常见的"更新不了"原因
-3. 上传后商品名会被重置为英文 slug → 改回中文
-4. 取消「报名参加比赛」勾选 → 提交
-5. 提交前自检：说明非空 / 名称为中文 / 比赛未勾选 / 价格与计费模式未变
+1. 打开 `…/creator/product-new?state=version&product=<商品ID>&source=stored&copyType=LIVE`（**不带 `upload=success`**）
+2. **先填「版本修改说明 \*」**（必填 1–200 字）——空白时点提交**不生效且不报错**，包显示已上传但版本不进审核；这是最常见的"更新不了"原因
+3. 「Skill 文件」区点「移除已上传文件」，等按钮消失后再上传新 zip
+4. 等商品名输入框的「解析中...」消失 → 商品名已被重置成英文 slug → 改回中文展示名
+5. 滚到底部核对：计费模式（买断/订阅**选定不可改**）、价格、试用次数、黑客松未勾选、「提交审核」按钮可用
+6. 提交 → 跳回商品列表（先显示「正在加载商品...」）
+7. 等卡片出现 `新版本审核中...不影响当前销售商品` 即成功；卡片上的 `vN` 是**在售**版本，不是新提交版本
 
-完整状态语义与 DOM 超时绕过见 `platform/tools-skills/skillpay-workflow/SKILL.md` §8.2–§8.4。
+**买断制商品发新版只影响新买家**：页面明示「历史买家继续使用购买时交付的版本，不会收到更新或自动升级」。需要老用户拿到新版，只能走订阅制或另行通知，别把"已更新"当成老用户已受益。
+
+**已收费能力禁止免费上架**：SkillHub 免费包里若写了"未配置令牌即本地直连、功能不受影响"，等同于把 SkillPay 的付费能力白送；上架前先查产品清单与计费模式。
+
+完整状态语义、八个必查坑见 `platform/tools-skills/skillpay-workflow/SKILL.md` §8.2–§8.4。
 
 ---
 
@@ -314,6 +325,6 @@ skillhub publish <本目录> --changelog "v1.1.0：补齐 SkillPay 付费发布�
 ```
 
 - slug：`dreambuddy-skillhub-publisher`
-- version：`1.1.1`（新增 §5.6 已上架 Pay Skill 发新版本）
+- version：`1.2.0`（§5.4/§5.5 补版本说明必填与三个页面坑；§5.6 收敛为存量商品发版七步 + 买断制语义）
 - license：`MIT`
 - 若 409：改为 `<handle>-skillhub-publisher` 后重发
