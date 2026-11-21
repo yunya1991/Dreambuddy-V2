@@ -1,0 +1,9 @@
+[Unit]
+Description=DreamBuddy cloud backup retention (prune stale backups)
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/luke/dreambuddy/deploy/ops/cleanup-cloud-backups.sh
+Nice=10
+IOSchedulingClass=idle
