@@ -34,6 +34,7 @@ import re
 import shlex
 import subprocess
 import sys
+import time
 import urllib.request
 from pathlib import Path
 
@@ -450,17 +451,14 @@ def qwen_ready() -> bool:
     return bool(env.get("QWEN_BASE_URL") and env.get("QWEN_API_KEY"))
 
 
-def qwen_call(system: str, user: str, timeout: int = 45) -> str:
+def qwen_chat(messages: list[dict], timeout: int = 45) -> str:
     env = load_qwen_env()
     if not (env.get("QWEN_BASE_URL") and env.get("QWEN_API_KEY")):
         raise RuntimeError("QWEN 未配置")
     url = env["QWEN_BASE_URL"].rstrip("/") + "/chat/completions"
     payload = {
         "model": env.get("QWEN_DEFAULT_MODEL", "qwen3.7-plus"),
-        "messages": [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
+        "messages": messages,
         "temperature": 0.2,
     }
     req = urllib.request.Request(
@@ -480,6 +478,13 @@ def qwen_call(system: str, user: str, timeout: int = 45) -> str:
         raise RuntimeError("QWEN 返回格式异常") from exc
 
 
+def qwen_call(system: str, user: str, timeout: int = 45) -> str:
+    return qwen_chat(
+        [{"role": "system", "content": system}, {"role": "user", "content": user}],
+        timeout=timeout,
+    )
+
+
 def action_catalog() -> list[dict]:
     """把所有组件的 actions 摊平成路由候选。"""
     items: list[dict] = []
@@ -496,24 +501,56 @@ def action_catalog() -> list[dict]:
     return items
 
 
-ROUTER_SYSTEM = """你是 59 域组件编排路由器。只输出 JSON，不要解释。
-可选动作清单（component/action/description/safety）：
+MOBILE_READ_COMMANDS = ("doctor", "jobs", "report", "patrol", "ask", "token")
+
+
+def route_catalog() -> dict:
+    """统一路由器候选：59 动作 + 19-DAL 只读工具 + 手机只读子命令 + 工作流 + 调度只读。"""
+    data_tools: list[dict] = []
+    try:
+        import data_bridge
+
+        data_tools = [
+            {"name": item["name"], "schema": item["inputSchema"], "safety": "read"}
+            for item in data_bridge.tools()
+        ]
+    except Exception:  # 数据桥不可用时仍可路由其它域
+        data_tools = [{"name": "data_store_read", "safety": "read"}]
+    return {
+        "component_actions": action_catalog(),
+        "data_read": data_tools,
+        "mobile_read": list(MOBILE_READ_COMMANDS),
+        "workflows": [path.stem for path in sorted((ROOT / "workflows").glob("*.yaml"))],
+        "schedule_read": ["list"],
+    }
+
+
+ROUTER_SYSTEM = """你是 dreambuddy 统一操作台路由器。只输出 JSON，不要解释。
+能力目录：
 {catalog}
 
 输出之一：
-{{"kind":"run","component":"<组件>","action":"<动作>","args":["<附加参数>"],"reason":"<一句话>"}}
-{{"kind":"answer","text":"<直接回答，说明 59 域当前没有对应能力时也要如实说>"}}
+{{"kind":"run","component":"<组件>","action":"<动作>","args":["..."],"reason":"<一句话>"}}
+{{"kind":"data","tool":"data_store_read|data_fetch|data_collect_once","args":{{...}},"reason":"<一句话>"}}
+{{"kind":"mobile","command":"<只读子命令>","args":["..."],"reason":"<一句话>"}}
+{{"kind":"workflow","workflow":"<工作流 id>","reason":"<一句话>"}}
+{{"kind":"schedule","command":"list","reason":"<一句话>"}}
+{{"kind":"answer","text":"<直接回答，做不到也要如实说>"}}
 {{"kind":"unknown","text":"<说明为什么无法路由>"}}
 
 规则：
-1) 只能选清单里的 component+action，不得编造。
-2) args 是传给组件脚本的附加命令行参数，必须带前缀，例如 quotes 用 ["--symbols","sh600519"]，
-   onchain 用 ["--chain","eth"]；A 股代码用 sh/sz 前缀。
-3) quotes 只支持 A 股：代码必须是 sh/sz + 6 位数字（如 sh600519）。
-   加密货币（BTC/ETH）价格、美股价格不在本域能力内，必须用 answer 如实说明；
+1) 只能使用目录里出现的 component+action、data_read 工具、mobile_read 子命令、workflows id。
+2) data 只读：data_store_read 必须 table=mm_metrics，且 filters 同时含 sub_category 与 metric_name；
+   data_collect_once 无参；data_fetch 需要 scope。不要编造不存在的指标名，不确定时用 answer 说明。
+3) mobile 只路由只读子命令；dispatch/ingest/pause/resume/xhs/douyin post 等写动作不在本路由，
+   用 answer 提示用户显式执行 `dreambuddy mobile <子命令> --allow-write`。
+4) workflow 只做 dry-run 预演；schedule 只允许 list。
+5) 写动作（safety=write）可以选 run，但系统会拦并生成待批准计划，不要假装已执行。
+6) args 是传给组件脚本的命令行参数，必须带前缀：
+   quotes 用 ["--symbols","sh600519"]，onchain 用 ["--chain","eth"]，macro/filings 可空。
+7) quotes 只支持 A 股：sh/sz + 6 位数字；加密货币/美股价格不在本域能力内，用 answer 说明；
    链上指标（不含价格）才用 onchain。
-4) safety=write 的动作也可以选，但需用户授权，系统会拦。
-5) 说「预约助手/放票/抢票/手机端/会员购/演出门票」时，优先 mobile-reservation-assist；
+8) 说「预约助手/放票/抢票/手机端/会员购/演出门票」优先 mobile-reservation-assist；
    reservation-assist 只负责余票/号源监控与通知，不要混用。"""
 
 # 组件脚本的参数前缀：模型若只给裸值，这里补上 flag
@@ -560,6 +597,27 @@ def rule_plan(text: str) -> dict:
 
     if has("体检", "治理", "闸门", "doctor"):
         return {"kind": "answer", "text": "运行治理闸门请用：dreambuddy doctor"}
+
+    if has("工作流", "日报", "简报", "研究文档", "daily-market-brief"):
+        return {
+            "kind": "workflow",
+            "workflow": "daily-market-brief",
+            "reason": "按日报工作流 dry-run 预演",
+        }
+
+    if has("定时任务", "定时", "schedule", "cron"):
+        return {
+            "kind": "answer",
+            "text": "设置定时任务：dreambuddy schedule add <job_id> --cron \"0 8 * * *\" --workflow daily-market-brief\n"
+            "查看：dreambuddy schedule list  ·  立即触发：dreambuddy schedule run-now <job_id>",
+        }
+
+    if has("本地库", "历史指标", "指标历史", "dal", "数据库查询"):
+        return {
+            "kind": "answer",
+            "text": "19-DAL 只读查询：dreambuddy dal scopes 看可用数据域；\n"
+            "按指标查：dreambuddy dal read --table mm_metrics --sub-category <域> --metric-name <指标> --limit 10",
+        }
 
     if has("比特币", "btc", "以太坊", "eth", "链上", "区块"):
         return {
@@ -651,24 +709,43 @@ def capabilities_text() -> str:
         names = ", ".join(a.get("name", "?") for a in acts)
         lines.append("  · {}（{}）".format(comp.get("name"), names))
     lines.append(
-        "直接说人话即可，例如：查询贵州茅台股价 / 看比特币链上指标 / 预约助手体检\n"
-        "命令域：dreambuddy 59|data <组件> <动作>  ·  dreambuddy mobile <子命令>  ·  dreambuddy domains"
+        "直接说人话即可，例如：查询贵州茅台股价 / 看比特币链上指标 / 预约助手体检 / 跑一下市场日报工作流\n"
+        "命令域：dreambuddy 59|data <组件> <动作>  ·  dreambuddy dal <只读数据>  ·  dreambuddy mobile <子命令>\n"
+        "        dreambuddy workflow run <id> --dry-run  ·  dreambuddy schedule list  ·  dreambuddy domains"
     )
     return "\n".join(lines)
 
 
-def nl_plan(text: str) -> tuple[dict, str]:
-    """返回 (计划, 路由来源)。"""
+ROUTER_KINDS = {"run", "data", "mobile", "workflow", "schedule", "answer", "unknown"}
+HISTORY_LIMIT = 8
+
+
+def trim_history(history: list[dict], limit: int = HISTORY_LIMIT) -> list[dict]:
+    turns = [
+        {"role": turn["role"], "content": str(turn.get("content") or "")}
+        for turn in history or []
+        if turn.get("role") in {"user", "assistant"} and str(turn.get("content") or "").strip()
+    ]
+    return turns[-limit:]
+
+
+def nl_plan(text: str, history: list[dict] | None = None) -> tuple[dict, str]:
+    """返回 (计划, 路由来源)。history 只用于多轮消解（如“那宁德时代呢”）。"""
     if qwen_ready():
         try:
-            raw = qwen_call(
-                ROUTER_SYSTEM.format(
-                    catalog=json.dumps(action_catalog(), ensure_ascii=False, indent=2)
-                ),
-                text,
-            )
+            messages = [
+                {
+                    "role": "system",
+                    "content": ROUTER_SYSTEM.format(
+                        catalog=json.dumps(route_catalog(), ensure_ascii=False, indent=2)
+                    ),
+                }
+            ]
+            messages.extend(trim_history(history or []))
+            messages.append({"role": "user", "content": text})
+            raw = qwen_chat(messages)
             obj = _extract_json(raw)
-            if obj and obj.get("kind") in ("run", "answer", "unknown"):
+            if obj and obj.get("kind") in ROUTER_KINDS:
                 return obj, "qwen"
         except Exception as exc:  # 网络/额度异常时退回关键词
             print("[dreambuddy] 大模型不可用（{}），改用关键词路由".format(exc), file=sys.stderr)
@@ -729,6 +806,38 @@ def execute_plan(plan: dict, allow_write: bool = False, endpoint: str = "") -> i
     if kind == "unknown":
         print(plan.get("text", "无法路由"))
         return 1
+    if kind == "data":
+        import data_bridge
+
+        try:
+            payload = data_bridge.call(str(plan.get("tool") or ""), plan.get("args") or {})
+        except ValueError as exc:
+            print(str(exc))
+            return 1
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0 if payload.get("ok", True) else 1
+    if kind == "mobile":
+        command = str(plan.get("command") or "")
+        if command not in MOBILE_READ_COMMANDS:
+            print(
+                "E_GUARD：会话只路由手机只读子命令（{}）。写动作请显式执行："
+                "dreambuddy mobile {} --allow-write".format("/".join(MOBILE_READ_COMMANDS), command)
+            )
+            return 3
+        return cmd_mobile(
+            argparse.Namespace(
+                rest=[command] + [str(item) for item in plan.get("args") or []],
+                allow_write=False,
+            )
+        )
+    if kind == "workflow":
+        import workflow
+
+        return workflow.main(["run", str(plan.get("workflow") or ""), "--dry-run"])
+    if kind == "schedule":
+        import jobs
+
+        return jobs.main(["list"])
     if kind != "run":
         print("E_PLAN：未知计划 {}".format(plan))
         return 1
@@ -781,23 +890,63 @@ def execute_plan(plan: dict, allow_write: bool = False, endpoint: str = "") -> i
         return 1
 
 
-def handle_nl(text: str, allow_write: bool = False, endpoint: str = "") -> int:
-    plan, source = nl_plan(text)
-    if source == "rule" and plan.get("kind") == "run":
-        # 关键词兜底命中也标明，方便排查大模型是否生效
-        pass
+def handle_nl(
+    text: str,
+    allow_write: bool = False,
+    endpoint: str = "",
+    history: list[dict] | None = None,
+) -> int:
+    plan, _source = nl_plan(text, history=history)
     return execute_plan(plan, allow_write=allow_write, endpoint=endpoint)
 
 
+SESSION_DIR = Path(os.path.expanduser("~/.local/share/dreambuddy/sessions"))
+
+
+def resolve_session(value: str) -> Path | None:
+    if not value:
+        return None
+    candidate = Path(os.path.expanduser(value))
+    if candidate.suffix or "/" in value:
+        return candidate
+    return SESSION_DIR / "{}.jsonl".format(value)
+
+
+def load_session(path: Path | None) -> list[dict]:
+    if path is None or not path.is_file():
+        return []
+    turns: list[dict] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            turn = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if turn.get("role") in {"user", "assistant"} and str(turn.get("content") or "").strip():
+            turns.append({"role": turn["role"], "content": str(turn["content"])})
+    return turns
+
+
+def append_session(path: Path | None, turn: dict) -> None:
+    if path is None:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(turn, ensure_ascii=False) + "\n")
+
+
 def cmd_chat(args) -> int:
+    session_path = resolve_session(getattr(args, "session", "") or "")
+    history = trim_history(load_session(session_path))
     print(
         "dreambuddy 59 域会话  ·  大模型 {}  ·  云端 {}".format(
             "已接入（Qwen）" if qwen_ready() else "未配置，走关键词路由",
             cloud_status(),
         )
     )
+    if session_path:
+        print("会话记录：{}（已载入 {} 轮上下文）".format(session_path, len(history) // 2))
     print("直接说需求，例如「查询贵州茅台股价」；输入 domains 看已接通的能力域")
-    print("命令：ls / help <组件> / run / 59 / data / mobile / doctor / quit")
+    print("命令：ls / help <组件> / run / 59 / data / dal / mobile / workflow / schedule / doctor / quit")
     while True:
         try:
             line = input("\ndreambuddy> ").strip()
@@ -820,6 +969,7 @@ def cmd_chat(args) -> int:
             "phone",
             "手机",
             "data",
+            "dal",
             "59",
             "plan",
             "apply",
@@ -827,13 +977,42 @@ def cmd_chat(args) -> int:
             "schedule",
             "release",
             "content",
+            "lifecycle",
+            "pack",
+            "supply",
         ):
             if head in ("list",):
                 line = "ls"
             main(shlex.split(line))
             continue
         tokens, endpoint = take_endpoint(line.split())
-        handle_nl(" ".join(tokens), endpoint=endpoint)
+        text = " ".join(tokens)
+        plan, _source = nl_plan(text, history=history)
+        code = execute_plan(
+            plan, allow_write=getattr(args, "allow_write", False), endpoint=endpoint
+        )
+        summary = "[{}] {} 退出码 {}".format(
+            plan.get("kind", "?"),
+            plan.get("reason") or str(plan.get("text") or "")[:80],
+            code,
+        )
+        history = trim_history(
+            history
+            + [{"role": "user", "content": text}, {"role": "assistant", "content": summary}]
+        )
+        if session_path:
+            stamp = time.strftime("%Y-%m-%dT%H:%M:%S")
+            append_session(session_path, {"role": "user", "content": text, "at": stamp})
+            append_session(
+                session_path,
+                {
+                    "role": "assistant",
+                    "content": summary,
+                    "kind": plan.get("kind", ""),
+                    "exit": code,
+                    "at": stamp,
+                },
+            )
 
 
 def cmd_plan(args) -> int:
@@ -930,6 +1109,12 @@ def cmd_supply(args) -> int:
     return supply_chain.main(list(args.rest))
 
 
+def cmd_dal(args) -> int:
+    import data_bridge
+
+    return data_bridge.main(list(args.rest))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="dreambuddy", description="59 域统一只读编排 CLI")
     sub = parser.add_subparsers(dest="cmd")
@@ -968,6 +1153,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_doc.set_defaults(func=cmd_doctor)
 
     p_chat = sub.add_parser("chat", help="会话式自然语言编排")
+    p_chat.add_argument("--session", default="", help="会话名或 JSONL 路径，用于多轮上下文持久化")
+    p_chat.add_argument("--allow-write", action="store_true", help="会话内允许直接执行写动作")
     p_chat.set_defaults(func=cmd_chat)
 
     p_plan = sub.add_parser("plan", help="为写动作生成待批准计划")
@@ -991,6 +1178,7 @@ def build_parser() -> argparse.ArgumentParser:
         ("lifecycle", cmd_lifecycle, "生命周期：check/plan"),
         ("pack", cmd_pack, "技能集：list/show/check/build"),
         ("supply", cmd_supply, "供应链：check/verify --online"),
+        ("dal", cmd_dal, "19-DAL 只读数据桥：tools/scopes/read/fetch"),
     ):
         p = sub.add_parser(name, help=help_text)
         p.add_argument("rest", nargs=argparse.REMAINDER)
@@ -1019,6 +1207,7 @@ SUBCOMMANDS = (
     "lifecycle",
     "pack",
     "supply",
+    "dal",
 )
 
 
