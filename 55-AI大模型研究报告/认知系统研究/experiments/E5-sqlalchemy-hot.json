@@ -1,0 +1,2187 @@
+{
+ "repo": "/tmp/e5src/sa",
+ "head": "6f924b05d72c",
+ "head_date": "2026-11-16",
+ "windows": [
+  30,
+  90,
+  150
+ ],
+ "n_per": 80,
+ "seed": 20261118,
+ "classes": {
+  "F1": {
+   "n": 240,
+   "events": 0,
+   "exposure": 22080,
+   "lambda": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "half_life_days": null
+  }
+ },
+ "records": [
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "startswith_op",
+   "file": "lib/sqlalchemy/sql/operators.py",
+   "line": 2383,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "RoleImpl",
+   "file": "lib/sqlalchemy/sql/coercions.py",
+   "line": 476,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "view_reflection",
+   "file": "lib/sqlalchemy/testing/requirements.py",
+   "line": 772,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_polymorphic_properties",
+   "file": "lib/sqlalchemy/orm/mapper.py",
+   "line": 2928,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_CreatesToken",
+   "file": "lib/sqlalchemy/orm/path_registry.py",
+   "line": 427,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "AbstractTextClause",
+   "file": "lib/sqlalchemy/sql/elements.py",
+   "line": 2328,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "Config",
+   "file": "lib/sqlalchemy/testing/config.py",
+   "line": 330,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "truncate_and_render_constraint_name",
+   "file": "lib/sqlalchemy/sql/compiler.py",
+   "line": 8367,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_InsertTestBase",
+   "file": "test/sql/test_insert.py",
+   "line": 47,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "Credit",
+   "file": "test/orm/test_subquery_relations.py",
+   "line": 3058,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "load_scalar_from_subq",
+   "file": "lib/sqlalchemy/orm/strategies.py",
+   "line": 2131,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "recover_twophase",
+   "file": "lib/sqlalchemy/engine/base.py",
+   "line": 1042,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_join_fixture_m2o_selfref",
+   "file": "test/orm/test_rel_fn.py",
+   "line": 293,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "AbstractConcreteAbstraction",
+   "file": "test/ext/declarative/test_inheritance.py",
+   "line": 833,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "OracleExecutionContext",
+   "file": "lib/sqlalchemy/dialects/oracle/base.py",
+   "line": 2069,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "InstanceLogger",
+   "file": "lib/sqlalchemy/log.py",
+   "line": 99,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_many_to_many_fixture",
+   "file": "test/orm/test_cascade.py",
+   "line": 1197,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "not_match_op",
+   "file": "lib/sqlalchemy/sql/operators.py",
+   "line": 2540,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_sa_decl_prepare_nocascade",
+   "file": "lib/sqlalchemy/ext/declarative/extensions.py",
+   "line": 270,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "InspectionAttr",
+   "file": "lib/sqlalchemy/orm/base.py",
+   "line": 587,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_counter",
+   "file": "test/orm/test_cycles.py",
+   "line": 1602,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "SelectStatementGrouping",
+   "file": "lib/sqlalchemy/sql/selectable.py",
+   "line": 3991,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "safe_construct",
+   "file": "lib/sqlalchemy/sql/elements.py",
+   "line": 6044,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_loop_test",
+   "file": "test/sql/test_operators.py",
+   "line": 192,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "StaleDataError",
+   "file": "lib/sqlalchemy/orm/exc.py",
+   "line": 36,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "connect_two",
+   "file": "test/engine/test_pool.py",
+   "line": 629,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "AltNameThing",
+   "file": "test/orm/test_unitofworkv2.py",
+   "line": 3659,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_ComparatorFactory",
+   "file": "lib/sqlalchemy/sql/type_api.py",
+   "line": 110,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "BitString",
+   "file": "lib/sqlalchemy/dialects/postgresql/bitstring.py",
+   "line": 16,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "LoaderCriteriaOption",
+   "file": "lib/sqlalchemy/orm/util.py",
+   "line": 1424,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "release_savepoint",
+   "file": "lib/sqlalchemy/engine/events.py",
+   "line": 570,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_dispatch_for_vendor",
+   "file": "lib/sqlalchemy/dialects/mysql/base.py",
+   "line": 3151,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "x_alone",
+   "file": "test/orm/test_utils.py",
+   "line": 391,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_for_class",
+   "file": "lib/sqlalchemy/event/base.py",
+   "line": 181,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "find_left_clause_that_matches_given",
+   "file": "lib/sqlalchemy/sql/util.py",
+   "line": 159,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "mssqlpython_dialect",
+   "file": "test/dialect/mssql/test_engine.py",
+   "line": 537,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "assert_warns_message",
+   "file": "lib/sqlalchemy/testing/assertions.py",
+   "line": 420,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "SchemaItem",
+   "file": "lib/sqlalchemy/sql/schema.py",
+   "line": 229,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_get_crud_params",
+   "file": "lib/sqlalchemy/sql/crud.py",
+   "line": 117,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_column_descriptions",
+   "file": "lib/sqlalchemy/orm/context.py",
+   "line": 2638,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "our_connect",
+   "file": "test/engine/test_execute.py",
+   "line": 1938,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_is_declarative_props",
+   "file": "lib/sqlalchemy/orm/decl_base.py",
+   "line": 234,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "FunctionElement",
+   "file": "lib/sqlalchemy/sql/functions.py",
+   "line": 119,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "DeclarativeBaseNoMeta",
+   "file": "lib/sqlalchemy/orm/decl_api.py",
+   "line": 1014,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "PluginLoader",
+   "file": "lib/sqlalchemy/util/langhelpers.py",
+   "line": 475,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "FixtureFunctions",
+   "file": "lib/sqlalchemy/testing/plugin/plugin_base.py",
+   "line": 794,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "warns_if",
+   "file": "lib/sqlalchemy/testing/exclusions.py",
+   "line": 34,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "MyTest2",
+   "file": "test/orm/test_attributes.py",
+   "line": 228,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "match_op",
+   "file": "lib/sqlalchemy/sql/operators.py",
+   "line": 2515,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "eq_compile_type",
+   "file": "lib/sqlalchemy/testing/schema.py",
+   "line": 126,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "MutableComposite",
+   "file": "lib/sqlalchemy/ext/mutable.py",
+   "line": 742,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "special_types_table",
+   "file": "test/dialect/postgresql/test_types.py",
+   "line": 4057,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "connection_callable",
+   "file": "lib/sqlalchemy/ext/horizontal_shard.py",
+   "line": 324,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "delete_using",
+   "file": "test/requirements.py",
+   "line": 614,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "Otherwise",
+   "file": "test/orm/test_rel_fn.py",
+   "line": 63,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_format_sequence_string_literal",
+   "file": "lib/sqlalchemy/dialects/postgresql/base.py",
+   "line": 3330,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "inet_str",
+   "file": "test/dialect/postgresql/test_types.py",
+   "line": 3144,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "ObjectScope",
+   "file": "lib/sqlalchemy/engine/reflection.py",
+   "line": 169,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "test_range_custom_object_hook",
+   "file": "test/dialect/postgresql/test_compiler.py",
+   "line": 3411,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "object_state",
+   "file": "lib/sqlalchemy/orm/base.py",
+   "line": 422,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_get_id",
+   "file": "lib/sqlalchemy/util/_collections_cy.py",
+   "line": 264,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_limit_offset_value",
+   "file": "lib/sqlalchemy/sql/selectable.py",
+   "line": 215,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "propagate_cases",
+   "file": "test/orm/test_core_compilation.py",
+   "line": 420,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_assert_ddl",
+   "file": "test/sql/test_ddlemit.py",
+   "line": 667,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "queue_pool",
+   "file": "lib/sqlalchemy/testing/requirements.py",
+   "line": 167,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "IdentityOptions",
+   "file": "lib/sqlalchemy/sql/schema.py",
+   "line": 4313,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_MemoizedSelectEntities",
+   "file": "lib/sqlalchemy/sql/selectable.py",
+   "line": 5401,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "python_profiling_backend",
+   "file": "test/requirements.py",
+   "line": 2169,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "enum_table",
+   "file": "test/dialect/postgresql/test_reflection.py",
+   "line": 642,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_test_set_dataclasses",
+   "file": "test/orm/test_collection.py",
+   "line": 1082,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "CustomType",
+   "file": "test/dialect/postgresql/test_reflection.py",
+   "line": 3431,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_CompoundListener",
+   "file": "lib/sqlalchemy/event/attr.py",
+   "line": 414,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "PGUuid",
+   "file": "lib/sqlalchemy/dialects/postgresql/types.py",
+   "line": 37,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_ColumnMetrics",
+   "file": "lib/sqlalchemy/sql/base.py",
+   "line": 1887,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "adhoc_async_engine",
+   "file": "test/ext/asyncio/test_engine.py",
+   "line": 190,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_commit_someattr",
+   "file": "test/orm/test_attributes.py",
+   "line": 1785,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "Section",
+   "file": "test/orm/test_lazy_relations.py",
+   "line": 1281,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_verify_canload",
+   "file": "lib/sqlalchemy/orm/dependency.py",
+   "line": 268,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "_with_schema_translate",
+   "file": "lib/sqlalchemy/sql/compiler.py",
+   "line": 8097,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 30,
+   "key": "render_postcompile_fixture",
+   "file": "test/sql/test_compiler.py",
+   "line": 5922,
+   "dur": 31,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "update_query_dict",
+   "file": "lib/sqlalchemy/engine/url.py",
+   "line": 484,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_company_with_emps_machines_fixture",
+   "file": "test/orm/inheritance/_poly_fixtures.py",
+   "line": 232,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "receives_bool_col_expr",
+   "file": "test/typing/plain_files/sql/common_sql_element.py",
+   "line": 77,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "concat_op",
+   "file": "lib/sqlalchemy/sql/operators.py",
+   "line": 2565,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "notendswith_op",
+   "file": "lib/sqlalchemy/sql/operators.py",
+   "line": 2445,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "runit_persist",
+   "file": "test/perf/orm2010.py",
+   "line": 64,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "Discriminator",
+   "file": "test/orm/inheritance/test_assorted_poly.py",
+   "line": 2780,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "run_thick_mode",
+   "file": "test/dialect/oracle/_oracledb_mode.py",
+   "line": 25,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_compare_edges",
+   "file": "lib/sqlalchemy/dialects/postgresql/ranges.py",
+   "line": 179,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_close_special",
+   "file": "lib/sqlalchemy/pool/base.py",
+   "line": 1519,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "run_thin_mode",
+   "file": "test/dialect/oracle/_oracledb_mode.py",
+   "line": 17,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_test_db_opt",
+   "file": "test/dialect/oracle/test_dialect.py",
+   "line": 1050,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_state_constructor",
+   "file": "lib/sqlalchemy/orm/instrumentation.py",
+   "line": 339,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_ConnectionRecord",
+   "file": "lib/sqlalchemy/pool/base.py",
+   "line": 630,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "not_startswith_op",
+   "file": "lib/sqlalchemy/sql/operators.py",
+   "line": 2391,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "type_coerce",
+   "file": "lib/sqlalchemy/sql/_elements_constructors.py",
+   "line": 2011,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "NodeRel",
+   "file": "test/orm/test_mapper.py",
+   "line": 1780,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_AssociationDict",
+   "file": "lib/sqlalchemy/ext/associationproxy.py",
+   "line": 1695,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_operator_fn",
+   "file": "lib/sqlalchemy/sql/operators.py",
+   "line": 2135,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "view_reflection",
+   "file": "lib/sqlalchemy/testing/requirements.py",
+   "line": 739,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "Annotated",
+   "file": "lib/sqlalchemy/sql/annotation.py",
+   "line": 250,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "format_argspec_init",
+   "file": "lib/sqlalchemy/util/langhelpers.py",
+   "line": 680,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "after_update",
+   "file": "lib/sqlalchemy/orm/events.py",
+   "line": 1345,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_we_dont_return_rows",
+   "file": "lib/sqlalchemy/engine/cursor.py",
+   "line": 1563,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "get_referent",
+   "file": "lib/sqlalchemy/sql/schema.py",
+   "line": 3363,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "ColumnProperty",
+   "file": "lib/sqlalchemy/orm/properties.py",
+   "line": 102,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "Linting",
+   "file": "lib/sqlalchemy/sql/compiler.py",
+   "line": 715,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_code_str",
+   "file": "lib/sqlalchemy/exc.py",
+   "line": 57,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_one_to_many_fixture",
+   "file": "test/orm/test_cascade.py",
+   "line": 1143,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_generate_table_select",
+   "file": "lib/sqlalchemy/sql/compiler.py",
+   "line": 7136,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "TString",
+   "file": "lib/sqlalchemy/sql/elements.py",
+   "line": 2739,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "format_sequence",
+   "file": "lib/sqlalchemy/sql/compiler.py",
+   "line": 8160,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_checkin_event_fixture",
+   "file": "test/engine/test_pool.py",
+   "line": 472,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "stringify_dialect",
+   "file": "lib/sqlalchemy/sql/ddl.py",
+   "line": 458,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_generate_columns_plus_names",
+   "file": "lib/sqlalchemy/sql/selectable.py",
+   "line": 2418,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "data_table",
+   "file": "test/dialect/postgresql/test_types.py",
+   "line": 6591,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_enum_query",
+   "file": "lib/sqlalchemy/dialects/postgresql/base.py",
+   "line": 5669,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_connect_event_fixture",
+   "file": "test/engine/test_pool.py",
+   "line": 450,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "ts_headline",
+   "file": "lib/sqlalchemy/dialects/postgresql/ext.py",
+   "line": 480,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "lower_neighbors",
+   "file": "examples/graphs/directed_graph.py",
+   "line": 22,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "teardown_events",
+   "file": "lib/sqlalchemy/testing/util.py",
+   "line": 492,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "get_isolation_levels",
+   "file": "lib/sqlalchemy/testing/requirements.py",
+   "line": 1099,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_TableViaSelect",
+   "file": "lib/sqlalchemy/sql/ddl.py",
+   "line": 578,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "NoDBAPILoaded",
+   "file": "lib/sqlalchemy/exc.py",
+   "line": 350,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_pool_fixture",
+   "file": "test/engine/test_reconnect.py",
+   "line": 173,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "GlyphCoordinate",
+   "file": "examples/space_invaders/space_invaders.py",
+   "line": 116,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_fn_fixture",
+   "file": "test/orm/test_query.py",
+   "line": 7313,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_label_select_column",
+   "file": "lib/sqlalchemy/sql/compiler.py",
+   "line": 4707,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "DropSequence",
+   "file": "lib/sqlalchemy/sql/ddl.py",
+   "line": 1083,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "AnalyzedFunction",
+   "file": "lib/sqlalchemy/sql/lambdas.py",
+   "line": 1098,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_column_descriptions",
+   "file": "lib/sqlalchemy/orm/context.py",
+   "line": 2638,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "run_as_contextmanager",
+   "file": "lib/sqlalchemy/testing/util.py",
+   "line": 197,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_to_tuple_instance",
+   "file": "lib/sqlalchemy/engine/_row_cy.py",
+   "line": 165,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_orm_adapt_element",
+   "file": "lib/sqlalchemy/orm/util.py",
+   "line": 1237,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "mysql_mariadb_reserved_words",
+   "file": "test/dialect/mysql/test_compiler.py",
+   "line": 87,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "aggregate_orderby_inline",
+   "file": "lib/sqlalchemy/sql/compiler.py",
+   "line": 1052,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_table_oids_query",
+   "file": "lib/sqlalchemy/dialects/postgresql/base.py",
+   "line": 4749,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "FetchedValue",
+   "file": "lib/sqlalchemy/sql/schema.py",
+   "line": 4358,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "eval_name_only",
+   "file": "lib/sqlalchemy/util/typing.py",
+   "line": 276,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "user_id",
+   "file": "test/orm/declarative/test_basic.py",
+   "line": 1929,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_allrows",
+   "file": "lib/sqlalchemy/engine/_result_cy.py",
+   "line": 358,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "AsBoolean",
+   "file": "lib/sqlalchemy/sql/elements.py",
+   "line": 4142,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "column_property",
+   "file": "lib/sqlalchemy/orm/_orm_constructors.py",
+   "line": 461,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_CreateBase",
+   "file": "lib/sqlalchemy/sql/ddl.py",
+   "line": 473,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "Synonym",
+   "file": "lib/sqlalchemy/orm/descriptor_props.py",
+   "line": 1168,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "MySortableEnum",
+   "file": "test/orm/test_unitofwork.py",
+   "line": 3595,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "DMLLimitClause",
+   "file": "lib/sqlalchemy/dialects/mysql/dml.py",
+   "line": 62,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "nulls_first_op",
+   "file": "lib/sqlalchemy/sql/operators.py",
+   "line": 2585,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_schema_item_copy",
+   "file": "lib/sqlalchemy/sql/schema.py",
+   "line": 262,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_omit_standard_example",
+   "file": "lib/sqlalchemy/event/legacy.py",
+   "line": 64,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_construct_composite",
+   "file": "lib/sqlalchemy/orm/descriptor_props.py",
+   "line": 263,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "is_relationship_load",
+   "file": "lib/sqlalchemy/orm/session.py",
+   "line": 731,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_allow_label_resolve",
+   "file": "lib/sqlalchemy/sql/elements.py",
+   "line": 5233,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "insert_returning",
+   "file": "lib/sqlalchemy/testing/requirements.py",
+   "line": 449,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_test_before_parent_attach",
+   "file": "test/sql/test_metadata.py",
+   "line": 2754,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_unique_strategy",
+   "file": "lib/sqlalchemy/engine/_result_cy.py",
+   "line": 630,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "rstrip",
+   "file": "lib/sqlalchemy/dialects/postgresql/bitstring.py",
+   "line": 143,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_declarative_constructor",
+   "file": "lib/sqlalchemy/orm/decl_base.py",
+   "line": 2294,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_assert_dict",
+   "file": "test/orm/declarative/test_tm_future_annotations.py",
+   "line": 514,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 90,
+   "key": "_fk_match",
+   "file": "test/dialect/postgresql/test_reflection.py",
+   "line": 936,
+   "dur": 94,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "BufferedRowCursorFetchStrategy",
+   "file": "lib/sqlalchemy/engine/cursor.py",
+   "line": 1325,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "returning_column_descriptions",
+   "file": "lib/sqlalchemy/sql/dml.py",
+   "line": 946,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "restore_annotations",
+   "file": "lib/sqlalchemy/util/langhelpers.py",
+   "line": 62,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_row_getter",
+   "file": "lib/sqlalchemy/engine/_result_cy.py",
+   "line": 133,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "sqlite_no_cache_dialect",
+   "file": "test/engine/test_execute.py",
+   "line": 4314,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_TraverseTransformCallableType",
+   "file": "lib/sqlalchemy/sql/visitors.py",
+   "line": 629,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "coerce_generator_arg",
+   "file": "lib/sqlalchemy/util/_collections.py",
+   "line": 382,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_cloned_intersection",
+   "file": "lib/sqlalchemy/sql/base.py",
+   "line": 358,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "init_state_collection",
+   "file": "lib/sqlalchemy/orm/attributes.py",
+   "line": 2720,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "ConnectionEvents",
+   "file": "lib/sqlalchemy/engine/events.py",
+   "line": 46,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "AsyncAdapt_asyncpg_connection",
+   "file": "lib/sqlalchemy/dialects/postgresql/asyncpg.py",
+   "line": 745,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "LastSeen",
+   "file": "test/orm/inheritance/test_relationship.py",
+   "line": 2922,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "warns_if",
+   "file": "lib/sqlalchemy/testing/exclusions.py",
+   "line": 34,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "get_final_froms",
+   "file": "lib/sqlalchemy/sql/selectable.py",
+   "line": 6010,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_norm_reflected_table",
+   "file": "test/dialect/mysql/test_reflection.py",
+   "line": 399,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "test_range_custom_object_hook",
+   "file": "test/dialect/postgresql/test_compiler.py",
+   "line": 3236,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "combinations_list",
+   "file": "lib/sqlalchemy/testing/config.py",
+   "line": 165,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "IKAssociation",
+   "file": "test/orm/test_unitofwork.py",
+   "line": 2743,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "DuplicateColumnError",
+   "file": "lib/sqlalchemy/exc.py",
+   "line": 165,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "StrCompileDialect",
+   "file": "lib/sqlalchemy/engine/default.py",
+   "line": 1313,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "after_drop",
+   "file": "lib/sqlalchemy/sql/events.py",
+   "line": 277,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_column_descriptions",
+   "file": "lib/sqlalchemy/orm/context.py",
+   "line": 2638,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_detect_casing",
+   "file": "lib/sqlalchemy/dialects/mysql/base.py",
+   "line": 3661,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_create_singleton",
+   "file": "lib/sqlalchemy/sql/base.py",
+   "line": 237,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "related_metadata",
+   "file": "test/orm/inheritance/test_concrete.py",
+   "line": 1503,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_test_outer_join_fixture",
+   "file": "test/dialect/oracle/test_compiler.py",
+   "line": 1011,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "StructuralRole",
+   "file": "lib/sqlalchemy/sql/roles.py",
+   "line": 158,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_BindNameForColProtocol",
+   "file": "lib/sqlalchemy/sql/compiler.py",
+   "line": 7842,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "remote",
+   "file": "lib/sqlalchemy/orm/relationships.py",
+   "line": 219,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_removed_from_collection",
+   "file": "lib/sqlalchemy/event/registry.py",
+   "line": 142,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "setup_asyncpg_jsonb_codec",
+   "file": "lib/sqlalchemy/dialects/postgresql/asyncpg.py",
+   "line": 1247,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "inserted",
+   "file": "lib/sqlalchemy/dialects/mysql/dml.py",
+   "line": 119,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_check_reflection",
+   "file": "test/dialect/oracle/test_reflection.py",
+   "line": 1631,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_assert_loader_strategy_exception",
+   "file": "test/orm/test_options.py",
+   "line": 1106,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "on_duplicate_key_update",
+   "file": "lib/sqlalchemy/dialects/mysql/dml.py",
+   "line": 163,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "async_scoped_session",
+   "file": "lib/sqlalchemy/ext/asyncio/scoping.py",
+   "line": 122,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_textual_label_reference",
+   "file": "lib/sqlalchemy/sql/elements.py",
+   "line": 3873,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "OperatorType",
+   "file": "lib/sqlalchemy/sql/operators.py",
+   "line": 123,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_as_declarative",
+   "file": "lib/sqlalchemy/orm/decl_base.py",
+   "line": 272,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "AbstractFoo",
+   "file": "test/ext/test_mutable.py",
+   "line": 1250,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_has_aliased_polymorphic_fromclause",
+   "file": "lib/sqlalchemy/orm/mapper.py",
+   "line": 2613,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "bakery",
+   "file": "lib/sqlalchemy/ext/baked.py",
+   "line": 66,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "make_type",
+   "file": "test/dialect/postgresql/test_types.py",
+   "line": 595,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_execute_context",
+   "file": "lib/sqlalchemy/engine/base.py",
+   "line": 1767,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "bitwise_or_op",
+   "file": "lib/sqlalchemy/sql/operators.py",
+   "line": 2618,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_compile_state",
+   "file": "lib/sqlalchemy/orm/query.py",
+   "line": 3386,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "PathTest",
+   "file": "test/orm/test_options.py",
+   "line": 83,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "Session",
+   "file": "lib/sqlalchemy/orm/session.py",
+   "line": 1471,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "DeleteDMLState",
+   "file": "lib/sqlalchemy/sql/dml.py",
+   "line": 381,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "string_or_unprintable",
+   "file": "lib/sqlalchemy/util/langhelpers.py",
+   "line": 184,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "replace_selectable",
+   "file": "lib/sqlalchemy/sql/selectable.py",
+   "line": 345,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_declarative_constructor",
+   "file": "lib/sqlalchemy/orm/decl_base.py",
+   "line": 2280,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "IterString",
+   "file": "test/base/test_utils.py",
+   "line": 1601,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "AnsiFunction",
+   "file": "lib/sqlalchemy/sql/functions.py",
+   "line": 1705,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_inspect_mapped_class",
+   "file": "lib/sqlalchemy/orm/base.py",
+   "line": 520,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "UTypeThree",
+   "file": "test/sql/test_types.py",
+   "line": 1845,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_CachingEntityRegistry",
+   "file": "lib/sqlalchemy/orm/path_registry.py",
+   "line": 788,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "Definition",
+   "file": "test/perf/compiled_extensions/result.py",
+   "line": 398,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "is_quoted_name",
+   "file": "lib/sqlalchemy/sql/_typing.py",
+   "line": 394,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_populate",
+   "file": "lib/sqlalchemy/orm/sync.py",
+   "line": 22,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "run_reap_dbs",
+   "file": "lib/sqlalchemy/testing/provision.py",
+   "line": 434,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "ReturningUpdate",
+   "file": "lib/sqlalchemy/sql/dml.py",
+   "line": 1816,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "polymorphic_union",
+   "file": "lib/sqlalchemy/orm/util.py",
+   "line": 330,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "safe_reraise",
+   "file": "lib/sqlalchemy/util/langhelpers.py",
+   "line": 111,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "state_attribute_str",
+   "file": "lib/sqlalchemy/orm/base.py",
+   "line": 384,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_source_modified",
+   "file": "lib/sqlalchemy/orm/sync.py",
+   "line": 126,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "enabled_for_config",
+   "file": "lib/sqlalchemy/testing/exclusions.py",
+   "line": 84,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "WriteOnlyCollection",
+   "file": "lib/sqlalchemy/orm/writeonly.py",
+   "line": 571,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_orm_compile_options",
+   "file": "lib/sqlalchemy/orm/session.py",
+   "line": 652,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_test_role_neg_comparisons",
+   "file": "test/sql/test_roles.py",
+   "line": 73,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "clear_mappers",
+   "file": "lib/sqlalchemy/orm/_orm_constructors.py",
+   "line": 2336,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "NoForeignKeysError",
+   "file": "lib/sqlalchemy/exc.py",
+   "line": 193,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "attribute_instrument",
+   "file": "lib/sqlalchemy/orm/events.py",
+   "line": 186,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "nullsfirst_op",
+   "file": "lib/sqlalchemy/sql/operators.py",
+   "line": 2581,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "ab_fixture",
+   "file": "test/ext/asyncio/test_session.py",
+   "line": 1250,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "UnboundExecutionError",
+   "file": "lib/sqlalchemy/exc.py",
+   "line": 467,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_truncated_identifier",
+   "file": "lib/sqlalchemy/sql/compiler.py",
+   "line": 4135,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "_mapped_collection_cls",
+   "file": "lib/sqlalchemy/orm/mapped_collection.py",
+   "line": 513,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "dictlike_iteritems",
+   "file": "lib/sqlalchemy/util/langhelpers.py",
+   "line": 1559,
+   "dur": 151,
+   "event": false
+  },
+  {
+   "cls": "F1",
+   "window": 150,
+   "key": "deprecated_cls",
+   "file": "lib/sqlalchemy/util/deprecations.py",
+   "line": 81,
+   "dur": 151,
+   "event": false
+  }
+ ]
+}

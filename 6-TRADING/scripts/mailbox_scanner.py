@@ -20,11 +20,8 @@
 
 import argparse
 import json
-import os
 import re
 import sys
-import urllib.error
-import urllib.request
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -48,10 +45,6 @@ SUBDIRS = {
 
 # 上次扫描状态文件
 STATE_FILE = MAILBOX_DIR / ".scanner_state.json"
-
-# Artifact Hub 连通配置
-HUB_URL = os.getenv("DREAM_HUB_URL", "http://127.0.0.1:3456")
-HUB_TRADING_ENDPOINT = f"{HUB_URL}/api/trading/mailbox-scan"
 
 # ==================== YAML Frontmatter 解析 ====================
 
@@ -369,62 +362,6 @@ def deliver_to_artifact_hub(summary: Dict[str, Any], verbose: bool = False) -> b
         return False
 
 
-# ==================== 推送到 Artifact Hub ====================
-
-
-def push_to_hub(summary: Dict[str, Any], verbose: bool = False) -> bool:
-    """
-    将交易指令摘要通过 HTTP POST 推送到 Artifact Hub
-
-    这是 mailbox_scanner → Hub 的实时 API 通道，
-    替代纯文件投递的单向管道模式。
-
-    返回: 推送是否成功
-    """
-    try:
-        payload = json.dumps(
-            {
-                "source": "mailbox_scanner",
-                "scanned_at": summary.get("scanned_at"),
-                "screen1": summary.get("screen1"),
-                "screen2": summary.get("screen2"),
-                "signals": summary.get("signals", []),
-                "execution_log": summary.get("execution_log", []),
-            },
-            ensure_ascii=False,
-        ).encode("utf-8")
-
-        req = urllib.request.Request(
-            HUB_TRADING_ENDPOINT,
-            data=payload,
-            headers={"Content-Type": "application/json; charset=utf-8"},
-            method="POST",
-        )
-
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            status = resp.status
-            body = resp.read().decode("utf-8")
-
-        if status in (200, 201):
-            if verbose:
-                print(f"  Hub 推送成功: {HUB_TRADING_ENDPOINT} (HTTP {status})")
-            return True
-        else:
-            if verbose:
-                print(f"  Hub 推送异常: HTTP {status} — {body[:200]}")
-            return False
-
-    except urllib.error.URLError as e:
-        reason = str(e.reason)
-        if verbose:
-            print(f"  Hub 推送失败: {HUB_TRADING_ENDPOINT} — {reason}")
-        return False
-    except Exception as e:
-        if verbose:
-            print(f"  Hub 推送异常: {e}")
-        return False
-
-
 # ==================== 报告生成 ====================
 
 
@@ -432,7 +369,6 @@ def generate_scan_report(
     scan_results: Dict[str, List[Dict]],
     summary: Dict[str, Any],
     deliver_ok: bool,
-    hub_ok: bool = False,
     verbose: bool = False,
 ) -> str:
     """生成扫描报告"""
@@ -481,8 +417,6 @@ def generate_scan_report(
     # 投递状态
     deliver_status = "成功" if deliver_ok else "失败"
     lines.append(f"  产物中台投递: {deliver_status}")
-    hub_status = "成功" if hub_ok else "未推送/失败"
-    lines.append(f"  Hub 实时推送:  {hub_status}")
 
     lines.append("")
     lines.append("=" * 50)
@@ -557,13 +491,8 @@ def main():
     if not args.dry_run:
         deliver_ok = deliver_to_artifact_hub(summary, verbose=args.verbose)
 
-    # 实时推送到 Artifact Hub (Hub → Trading 双向连通)
-    hub_ok = False
-    if not args.dry_run:
-        hub_ok = push_to_hub(summary, verbose=args.verbose)
-
     # 生成报告
-    report = generate_scan_report(scan_results, summary, deliver_ok, hub_ok, verbose=args.verbose)
+    report = generate_scan_report(scan_results, summary, deliver_ok, verbose=args.verbose)
 
     # 保存报告到 execution_log
     report_file = (
@@ -574,7 +503,6 @@ def main():
         "summary": summary,
         "scan_results_count": {k: len(v) for k, v in scan_results.items()},
         "deliver_success": deliver_ok,
-        "hub_push_success": hub_ok,
     }
     report_file.parent.mkdir(parents=True, exist_ok=True)
     report_file.write_text(json.dumps(report_data, indent=2, ensure_ascii=False), encoding="utf-8")

@@ -1,0 +1,91 @@
+# C-Drive 工程开发域节点族（SPEC §4.1）—— 只做映射，不改 C-Drive 代码
+# 复用：node_id 用 DEV-*，signals 换成开发信号；五动作与 effort_level 原样复用
+version: v1
+cdrive:
+  impl: 1-ARCHITECTURE/dream-harness-bridge/packages/python-server/c_drive_agent.py
+  actions: [continue, redo, jump, supplement, debate]
+  effort_levels: [light, standard, deep]
+  fail_open_action: continue
+  debate_policy: 仅用于 D2 计划分歧的候选生成，裁决交 G2 或人工（SPEC §10 R10）
+
+# 开发信号：node_id 不变，signals 由交易语义（LONG/SHORT/EMA）换成本组
+signals:
+  out_of_scope_files:
+    label: 越界文件数
+    unit: count
+    hard_max: 0
+    action: jump          # 立即停，回 D2
+    status: calibrated
+  test_failure_rate:
+    label: 测试失败率
+    unit: ratio
+    threshold: 0.0
+    action: redo
+    status: uncalibrated  # 阈值待真实 run 标定（SPEC §4.3 工作中再补）
+  impact_deviation:
+    label: 影响面偏差
+    unit: ratio
+    threshold: 0.15
+    action: supplement
+    status: uncalibrated
+  spec_drift:
+    label: spec 漂移
+    unit: ratio
+    threshold: 0.15      # 对齐 SPEC §9 M7
+    action: redo
+    status: uncalibrated
+
+nodes:
+  - id: DEV-intake
+    sacg: S
+    phase: D0-intake
+    gate: G0
+    owner_skill: dreamos-dev
+    input: 用户请求
+    output: task 清单（intent / owner_skill / scope）
+    judge: G0 绑定检查
+
+  - id: DEV-context
+    sacg: S
+    phase: D1-context
+    gate: G1
+    owner_skill: dream-rea-architecture-query
+    input: task
+    output: context pack（recall_ids / snapshot_id / 影响面）
+    judge: G1
+
+  - id: DEV-plan
+    sacg: S
+    phase: D2-plan
+    gate: G2
+    owner_skill: dream-arch-research-orchestrator
+    input: context pack
+    output: 计划（验收标准 / falsifier / 回滚 / 复用盘点）
+    judge: G2 人工批准
+
+  - id: DEV-exec
+    sacg: C
+    phase: E1-execute
+    gate: G3
+    owner_skill: dream-tdd-dev-workflow
+    input: 计划
+    output: 变更集（changes.json）
+    judge: G3 越界即停
+
+  - id: DEV-verify
+    sacg: A
+    phase: A1-verify
+    gate: G4
+    owner_skill: dream-acceptance-verify
+    input: 变更集
+    output: 验收包（五维证据 + command + exit_code）
+    judge: G4（异角色，禁写代码者自评）
+
+  - id: DEV-settle
+    sacg: G
+    phase: M1-settle
+    gate: G5
+    owner_skill: dream-completion-evolution-workflow
+    input: 验收包
+    output: 记忆 / 文档 / ADR
+    judge: G5

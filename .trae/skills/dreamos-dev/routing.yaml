@@ -1,0 +1,49 @@
+# 任务类型 → owner SKILL（唯一事实源）
+# 元 SKILL 只路由，不内联实现；缺项在此补，不扩 SKILL.md 正文（SPEC §5.2）
+version: v1
+default: dream-arch-research-orchestrator
+routes:
+  - task: 架构摸底 / 影响面
+    keywords: [架构, 影响面, 依赖, 入口, 摸底, 调用链]
+    owner_skill: dream-rea-architecture-query
+
+  - task: 调研 / SPEC 形成
+    keywords: [调研, 研究, SPEC, 方案, 设计, 规划]
+    owner_skill: dream-arch-research-orchestrator
+
+  - task: 方案分歧候选（只生成候选，不做裁决）
+    keywords: [分歧, 争议, 对比方案, 评审]
+    owner_skill: dream-science-peer-review
+    note: 脑暴双路径（52/orchestrator）默认关闭；裁决交 G2 或人工
+
+  - task: TDD 实现
+    keywords: [实现, 开发, TDD, 修复, 重构, 功能]
+    owner_skill: dream-tdd-dev-workflow
+
+  - task: 前端落地
+    keywords: [前端, 页面, 组件, 交互, UI]
+    owner_skill: dream-feature-landing-workflow
+
+  - task: 验收
+    keywords: [验收, 验证, 证据, 完成确认]
+    owner_skill: dream-acceptance-verify
+
+  - task: 提交 / 同步
+    keywords: [提交, commit, 推送, 同步]
+    owner_skill: dream-code-commit-sync-workflow
+
+  - task: 文档同步
+    keywords: [文档, 索引, 链接, 登记]
+    owner_skill: dream-doc-sync-workflow
+
+  - task: 收尾 / 沉淀
+    keywords: [收尾, 沉淀, 归档, 复盘, record]
+    owner_skill: dream-completion-evolution-workflow
+
+  - task: 自迭代
+    keywords: [自迭代, L4, 进化, 蒸馏]
+    owner_skill: dream-self-iteration-workflow
+
+  - task: SKILL 治理
+    keywords: [SKILL, 注册表, 冲突, 生命周期]
+    owner_skill: dream-skill-index-governance

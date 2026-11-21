@@ -1,0 +1,110 @@
+[
+  {
+    "snippet_tokens": 15,
+    "reads": 1,
+    "content": 46.0,
+    "pointer": 31.8,
+    "rmd": 32.0,
+    "rmd_llm": 254.4,
+    "best": "pointer"
+  },
+  {
+    "snippet_tokens": 15,
+    "reads": 5,
+    "content": 138.0,
+    "pointer": 140.9,
+    "rmd": 109.5,
+    "rmd_llm": 1211.2,
+    "best": "rmd"
+  },
+  {
+    "snippet_tokens": 15,
+    "reads": 20,
+    "content": 483.0,
+    "pointer": 550.0,
+    "rmd": 399.8,
+    "rmd_llm": 4799.2,
+    "best": "rmd"
+  },
+  {
+    "snippet_tokens": 15,
+    "reads": 100,
+    "content": 2323.0,
+    "pointer": 2731.8,
+    "rmd": 1948.2,
+    "rmd_llm": 23935.2,
+    "best": "rmd"
+  },
+  {
+    "snippet_tokens": 25,
+    "reads": 1,
+    "content": 46.0,
+    "pointer": 47.0,
+    "rmd": 42.8,
+    "rmd_llm": 264.4,
+    "best": "rmd"
+  },
+  {
+    "snippet_tokens": 25,
+    "reads": 5,
+    "content": 138.0,
+    "pointer": 216.7,
+    "rmd": 163.2,
+    "rmd_llm": 1261.2,
+    "best": "content"
+  },
+  {
+    "snippet_tokens": 25,
+    "reads": 20,
+    "content": 483.0,
+    "pointer": 853.0,
+    "rmd": 614.8,
+    "rmd_llm": 4999.2,
+    "best": "content"
+  },
+  {
+    "snippet_tokens": 25,
+    "reads": 100,
+    "content": 2323.0,
+    "pointer": 4247.0,
+    "rmd": 3023.4,
+    "rmd_llm": 24935.2,
+    "best": "content"
+  },
+  {
+    "snippet_tokens": 40,
+    "reads": 1,
+    "content": 46.0,
+    "pointer": 69.7,
+    "rmd": 58.9,
+    "rmd_llm": 279.4,
+    "best": "content"
+  },
+  {
+    "snippet_tokens": 40,
+    "reads": 5,
+    "content": 138.0,
+    "pointer": 330.3,
+    "rmd": 243.9,
+    "rmd_llm": 1336.2,
+    "best": "content"
+  },
+  {
+    "snippet_tokens": 40,
+    "reads": 20,
+    "content": 483.0,
+    "pointer": 1307.6,
+    "rmd": 937.4,
+    "rmd_llm": 5299.2,
+    "best": "content"
+  },
+  {
+    "snippet_tokens": 40,
+    "reads": 100,
+    "content": 2323.0,
+    "pointer": 6519.7,
+    "rmd": 4636.3,
+    "rmd_llm": 26435.2,
+    "best": "content"
+  }
+]

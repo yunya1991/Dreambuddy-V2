@@ -1,0 +1,14 @@
+id: tee-red-green-progress
+locations:
+  - path: .trae/skills/tee-red-green-progress
+    role: trae-entry
+  - path: 1-ARCHITECTURE/skills/tee-red-green-progress
+    role: project-index
+lifecycle:
+  status: active
+  proposed_at: "2026-09-21"
+  activated_at: "2026-09-21"
+conflicts_with: []
+replaces: []
+replaced_by: null
+integrity_hash: null

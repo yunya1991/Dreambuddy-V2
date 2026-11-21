@@ -1,0 +1,64 @@
+# 六阶段状态机（SPEC §7）—— 唯一状态枚举来源
+# 消费方：run.schema.json（phase 枚举）、gates.yaml（gate_in）、scripts/g0_check.py
+version: v1
+states:
+  - id: D0-intake
+    label: 意图归类 + 任务切分
+    dev_node: DEV-intake
+    sacg: S
+    gate_in: [G0]
+    artifacts: [run.json]
+    next: [D1-context]
+    on_fail: D0-intake
+
+  - id: D1-context
+    label: recall + REA 快照 + 影响面
+    dev_node: DEV-context
+    sacg: S
+    gate_in: [G1]
+    artifacts: [context.json]
+    next: [D2-plan]
+    on_fail: D1-context
+
+  - id: D2-plan
+    label: Spec/Plan + 验收标准 + 回滚
+    dev_node: DEV-plan
+    sacg: S
+    gate_in: [G2]
+    artifacts: [plan.md]
+    next: [E1-execute]
+    on_fail: D2-plan
+
+  - id: E1-execute
+    label: 分派 owner SKILL，单线程写
+    dev_node: DEV-exec
+    sacg: C
+    gate_in: [G3]
+    artifacts: [changes.json]
+    next: [A1-verify]
+    on_fail: D2-plan        # 越界即停，重规划后再过 G1/G2
+
+  - id: A1-verify
+    label: 五维验收（异角色）
+    dev_node: DEV-verify
+    sacg: A
+    gate_in: [G4]
+    artifacts: [acceptance.md]
+    next: [M1-settle]
+    on_fail: E1-execute     # 验收不过回执行，不得宣称完成
+
+  - id: M1-settle
+    label: 四分流沉淀 + ADR + 架构问题回写
+    dev_node: DEV-settle
+    sacg: G
+    gate_in: [G5]
+    artifacts: [settle.json]
+    next: [CLOSED]
+    on_fail: M1-settle      # G5 未过不得关闭 run
+
+  - id: CLOSED
+    label: 已关闭
+    terminal: true
+    gate_in: []
+    artifacts: []
+    next: []

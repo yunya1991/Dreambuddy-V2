@@ -328,3 +328,11 @@ scheduler_data/
 !59-通用组件管理/platform/site/data/
 !59-通用组件管理/platform/site/data/**
 !59-通用组件管理/platform/site/assets/logo.jpg
+
+# 工具/前端运行期产物（2026-11-21 收口：不入库）
+/.cm/
+/.data/
+/3.1-FRONTEND/.data/
+
+# 23 自进化运行期大样本（生成物，不入库）
+23-四层闭环自进化交易架构/dreambuddy_evolution/gene_data/.shadow_rl_samples.jsonl.*

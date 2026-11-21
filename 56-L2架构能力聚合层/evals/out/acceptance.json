@@ -1,0 +1,111 @@
+{
+  "generated_at": "2026-11-18T01:10:42+0800",
+  "gates": {
+    "AC1": {
+      "status": "pass",
+      "detail": {
+        "pass": true,
+        "shells_all_present": true,
+        "active_each_has_scenario": true
+      }
+    },
+    "AC1b": {
+      "status": "pass",
+      "detail": {
+        "status": "pass",
+        "pass": true,
+        "each_active_shell_has_tool": true,
+        "tool_coverage_ratio_ok": true
+      },
+      "tool_coverage_ratio": 0.864
+    },
+    "AC2": {
+      "status": "pass",
+      "detail": {
+        "sampled": 8,
+        "trace_id_all": true,
+        "expected_hit_rate_ok": true,
+        "business_tool_all": true
+      }
+    },
+    "AC3": {
+      "status": "partial",
+      "detail": {
+        "p2_available_shells": 16,
+        "p1_answered": 7,
+        "p1_shell_touch": "unverified: 产品链工具调用在 Node/DSH 进程内，Python 探针不可见（D-1/D-6）"
+      }
+    },
+    "AC4": {
+      "status": "pass",
+      "detail": {
+        "sediment_types": [
+          "case",
+          "doc",
+          "skill"
+        ]
+      }
+    },
+    "AC5": {
+      "status": "pass",
+      "detail": {
+        "mandate_deny": true,
+        "degraded_no_fabrication": true,
+        "c_layer_redo": true
+      }
+    },
+    "AC5b": {
+      "status": "pass",
+      "detail": {
+        "write_landed": true
+      }
+    },
+    "AC6": {
+      "status": "pass",
+      "detail": {
+        "rows": 8,
+        "calls": 8
+      }
+    },
+    "AC7": {
+      "status": "pass",
+      "detail": {
+        "static_under_60s": true
+      }
+    }
+  },
+  "failed": [],
+  "partial": [
+    "AC3"
+  ],
+  "steps": {
+    "static": {
+      "cmd": "/opt/anaconda3/bin/python3 /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/56-L2架构能力聚合层/evals/run_static_audit.py",
+      "code": 0,
+      "elapsed_s": 0.74,
+      "stdout_tail": "mode\n  - l0.trade-exec.mcp:reconcile\n  - l0.trade-exec.mcp:read_signals\n  - l0.trade-exec.mcp:ingest_signal\n  - l2.debate.mcp:get_debate_result\n  - l2.debate.mcp:debate_health\n  - l1.trading.mcp:get_bus_state\n  - l1.trading.mcp:get_cycle_state\n  - l1.trading.mcp:get_strategic_extension\n  - l1.trading.mcp:get_decision_diagnostics\n  - l1.trading.mcp:get_training_status\n  - l1.trading.mcp:get_positions\n  - l1.trading.mcp:get_balance\n  - l1.trading.mcp:forward_signal\n  - l1.intent.mcp:list_intents\n  - l1.intent.mcp:execute_intent\n  - l1.strategy.mcp:get_approval_state\n  - l1.strategy.mcp:list_signal_triggers\n  - l2.dreamos.mcp:submit_run\n  - l2.dreamos.mcp:get_result\n  - l2.dreamos.mcp:get_intent\n  - l2.dreamos.mcp:get_budget\n  - l1.ops.mcp:get_bus_state\n  - l2.train.mcp:trigger_training\n  - l2.emergence.mcp:get_emergence_metrics\n  - l2.emergence.mcp:get_experiment_report\n  - l2.dsh.mcp:get_worker_roster\n------------------------------------------------------------------------------\n期望但未注册：\n  - S15 → l1.stats.mcp:stats_validate\n------------------------------------------------------------------------------\nAC1: PASS  {'pass': True, 'shells_all_present': True, 'active_each_has_scenario': True}\nAC1b: PENDING  {'status': 'pending', 'pass': False, 'each_active_shell_has_tool': True, 'tool_coverage_ratio_ok': False}\n==============================================================================\n\n写入: /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/56-L2架构能力聚合层/evals/out/coverage_matrix.json\n",
+      "stderr_tail": ""
+    },
+    "smoke": {
+      "cmd": "/opt/anaconda3/bin/python3 /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/56-L2架构能力聚合层/evals/run_smoke.py",
+      "code": 0,
+      "elapsed_s": 109.04,
+      "stdout_tail": "\"phase\": \"p1\", \"answered\": 7, \"attempted\": 7, \"rows\": [{\"scenario_id\": \"S1\", \"ok\": true, \"latency_ms\": 4449.345, \"answer_len\": 227}, {\"scenario_id\": \"S2\", \"ok\": true, \"latency_ms\": 6653.427, \"answer_len\": 414}, {\"scenario_id\": \"S3\", \"ok\": true, \"latency_ms\": 5360.828, \"answer_len\": 414}, {\"scenario_id\": \"S4\", \"ok\": true, \"latency_ms\": 7775.696, \"answer_len\": 703}, {\"scenario_id\": \"S5\", \"ok\": true\n[p1b] {\"phase\": \"p1b\", \"scenarios\": 8, \"rows\": [{\"scenario_id\": \"S1\", \"hit_rate\": 1.0, \"tools\": 2, \"pass\": true}, {\"scenario_id\": \"S2\", \"hit_rate\": 1.0, \"tools\": 2, \"pass\": true}, {\"scenario_id\": \"S3\", \"hit_rate\": 1.0, \"tools\": 2, \"pass\": true}, {\"scenario_id\": \"S4\", \"hit_rate\": 1.0, \"tools\": 2, \"pass\": true}, {\"scenario_id\": \"S5\", \"hit_rate\": 1.0, \"tools\": 3, \"pass\": true}, {\"scenario_id\": \"S7\", \"hit_r\n[p3] {\"phase\": \"p3\", \"rows\": [{\"scenario_id\": \"S4\", \"stages\": [\"S\", \"A\", \"C\", \"G\"], \"nodes\": 3, \"sediments\": 1}, {\"scenario_id\": \"S15\", \"sediments\": [\"case\", \"doc\", \"skill\"]}, {\"scenario_id\": \"S11\", \"action\": \"NEED_CLARIFY\"}, {\"scenario_id\": \"S12\", \"action\": \"EARLY_TERMINATE\"}], \"elapsed_s\": 0.78}\n[faults] {\"phase\": \"faults\", \"timeout\": true, \"auth_degrade\": true, \"concurrency\": {\"submitted\": 5, \"completed\": 5}, \"mandate\": {\"deny_code\": \"forbidden\", \"allow_ok\": true, \"write_landed\": true}, \"elapsed_s\": 3.02}\n\n证据: /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/56-L2架构能力聚合层/evals/out/evidence.jsonl\n摘要: /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/56-L2架构能力聚合层/evals/out/smoke_summary.json\n",
+      "stderr_tail": ""
+    },
+    "static_with_evidence": {
+      "cmd": "/opt/anaconda3/bin/python3 /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/56-L2架构能力聚合层/evals/run_static_audit.py --evidence /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/56-L2架构能力聚合层/evals/out/evidence.jsonl",
+      "code": 0,
+      "elapsed_s": 0.74,
+      "stdout_tail": "     1    S1,S11,S12                \nl1.strategy.mcp           L1    4      2    S17,S18,S5,S6             \nl2.dreamos.mcp            L2    5      1    S15                       \nl1.ops.mcp                L1    3      2    S13,S14                   \nl2.train.mcp              L2    3      2    S10,S9                    \nl2.emergence.mcp          L2    3      1    S10                       \nl2.dsh.mcp                L2    3      2    S14,S15                   \n------------------------------------------------------------------------------\n未覆盖工具 11 个：\n  - l0.cognition.mcp:record\n  - l0.cognition.mcp:verify\n  - l0.semantic-39.mcp:distill_aliases\n  - l0.semantic-39.mcp:training_feed\n  - l0.data.mcp:data_store_write\n  - l0.trade-exec.mcp:place_order\n  - l0.trade-exec.mcp:cancel_order\n  - l0.trade-exec.mcp:ingest_signal\n  - l1.trading.mcp:forward_signal\n  - l2.dreamos.mcp:submit_run\n  - l2.train.mcp:trigger_training\n------------------------------------------------------------------------------\n期望但未注册：\n  - S15 → l1.stats.mcp:stats_validate\n------------------------------------------------------------------------------\nAC1: PASS  {'pass': True, 'shells_all_present': True, 'active_each_has_scenario': True}\nAC1b: PASS  {'status': 'pass', 'pass': True, 'each_active_shell_has_tool': True, 'tool_coverage_ratio_ok': True}\n==============================================================================\n\n写入: /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/56-L2架构能力聚合层/evals/out/coverage_matrix.json\n",
+      "stderr_tail": ""
+    },
+    "baseline": {
+      "cmd": "/opt/anaconda3/bin/python3 /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/56-L2架构能力聚合层/evals/run_baseline.py --max-calls 40",
+      "code": 0,
+      "elapsed_s": 18.16,
+      "stdout_tail": "完成 8 题，DeepSeek 调用 8 次\n写入: /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/56-L2架构能力聚合层/evals/out/baseline_comparison.json / .md\n",
+      "stderr_tail": ""
+    }
+  }
+}

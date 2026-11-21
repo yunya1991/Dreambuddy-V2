@@ -1,0 +1,2459 @@
+{
+ "instrument": {
+  "repo": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2",
+  "head": "ae08e3dc3a37",
+  "head_date": "2026-11-18",
+  "windows": [
+   0,
+   30,
+   90,
+   150
+  ],
+  "n_per_window": 60,
+  "seed": 20261118
+ },
+ "n": 240,
+ "events": 4,
+ "censored": 236,
+ "exposure_days": 15961,
+ "lambda_per_day": 0.000251,
+ "lambda_ci95": [
+  5.9e-05,
+  0.000551
+ ],
+ "half_life_days": 2765.8,
+ "by_window": {
+  "0": {
+   "n": 60,
+   "events": 0,
+   "lambda": NaN
+  },
+  "30": {
+   "n": 60,
+   "events": 0,
+   "lambda": 0.0
+  },
+  "90": {
+   "n": 60,
+   "events": 0,
+   "lambda": 0.0
+  },
+  "150": {
+   "n": 60,
+   "events": 4,
+   "lambda": 0.000463
+  }
+ },
+ "km": [
+  [
+   32,
+   0.9833
+  ],
+  [
+   145,
+   0.9661
+  ]
+ ],
+ "records": [
+  {
+   "window": 0,
+   "sym": "scan_count",
+   "file": "41-文件索引系统/core/scanner.py",
+   "line": 179,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "ShellHandleManager",
+   "file": "34-前端应用训练系统/core/shell_handles.py",
+   "line": 62,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "ModelTuner",
+   "file": "12-三屏趋势系统/ml/tuner.py",
+   "line": 17,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "TestNeuralSDETrainer",
+   "file": "23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_neural_sde_model.py",
+   "line": 179,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "compute_hurst_features",
+   "file": "11-易经推理系统/scripts/memory_l4/bcrm2/classic_experience_features.py",
+   "line": 727,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "summary_rate",
+   "file": "1-ARCHITECTURE/dream-harness-bridge/packages/python-server/heartbeat_monitor.py",
+   "line": 88,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_g1_zero_write_fail_passes",
+   "file": "19-数据访问层/tests/implementations/sqlite_unified/test_audit_summary.py",
+   "line": 86,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "llm_distill_aliases",
+   "file": "39-金融语义蒸馏系统/scripts/distill_aliases.py",
+   "line": 63,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_probe_connects_collected",
+   "file": "44-三端协作架构系统/shared/tests/test_c5_probe_store_port.py",
+   "line": 75,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "TestCapitalControlComponent",
+   "file": "16-调控系统/tests/capital_control/test_integration.py",
+   "line": 114,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "_build_macro_snapshot",
+   "file": "16-调控系统/core/a1_research_adapter.py",
+   "line": 464,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "ModelPrediction",
+   "file": "13-通用风控模块/core/ml_model.py",
+   "line": 20,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "TestLogging",
+   "file": "18-数据获取中心/tests/crawler/test_scrapling_engine.py",
+   "line": 186,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_signal_has_current_phase_field_default_p2",
+   "file": "11-易经推理系统/scripts/memory_l4/tests/test_coin_fundamental_ranker.py",
+   "line": 91,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "_has_trade_target",
+   "file": "52-lobehub协议集成/orchestrator/router.py",
+   "line": 126,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "_handle_data_store_write",
+   "file": "mcp_shells/l0_data/server.py",
+   "line": 246,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_a_chain_nodes_have_retry_policy",
+   "file": "experiments/ab-trading/test_module_interfaces.py",
+   "line": 248,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_parse_day_variants",
+   "file": "54-L1架构能力聚合层/tests/test_price_echo.py",
+   "line": 92,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_bayesian_confidence_fallback_on_exception",
+   "file": "11-易经推理系统/scripts/memory_l4/tests/test_force_vector_adapters.py",
+   "line": 92,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_TR_DI_08_injected_pipeline_used_in_record_real_pnl",
+   "file": "23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_di_pipeline.py",
+   "line": 118,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_write_snapshot_dry_run_summary_has_waterlines",
+   "file": "11-易经推理系统/scripts/memory_l4/tests/test_bdsm_snapshot_sector_valuation.py",
+   "line": 317,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_exception_returns_unknown",
+   "file": "11-易经推理系统/scripts/memory_l4/tests/test_w5_washout_backtest.py",
+   "line": 445,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "dedupe_pool",
+   "file": "52-lobehub协议集成/orchestrator/brainstorm_orchestrator.py",
+   "line": 212,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "IntentGoldenCollectorTest",
+   "file": "34-前端应用训练系统/tests/test_l1_intent_golden_collector.py",
+   "line": 37,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_no_prices_still_aligns_but_returns_nan",
+   "file": "48-涌现架构/tests/test_financial_env_align.py",
+   "line": 122,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_apply_and_verify",
+   "file": "45-评测系统/tests/unit/test_migration.py",
+   "line": 187,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "check_timeout",
+   "file": "4-MEMORY/9-工具与接口/cognitive_session.py",
+   "line": 558,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_nan_data",
+   "file": "11-易经推理系统/multi_scenario_validation.py",
+   "line": 1336,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "_normalize_price_data",
+   "file": "9-基本面分析/ops/nanoclaw/core_task1/flow/scripts/flow_backtester.py",
+   "line": 210,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "DimensionForce",
+   "file": "50-NN主矛盾评估器/core/dimension_forces.py",
+   "line": 16,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "_to_chroma_meta",
+   "file": "2-KNOWLEDGE/9-RAG-INFRA/vector_store/build_index.py",
+   "line": 52,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "_parse_decision",
+   "file": "experiments/ab-trading/core/c_execution_layer/dynamic_decision_maker.py",
+   "line": 198,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_normalization",
+   "file": "23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_sentiment_bridge.py",
+   "line": 70,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "TestTR125AllCloseFlowDispatch",
+   "file": "22-执行引擎中心/tests/test_task12_v15_production_replacement.py",
+   "line": 257,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "walk_forward_blocks",
+   "file": "48-涌现架构/reflection/nested_walk_forward.py",
+   "line": 68,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "_call_check_has_new",
+   "file": "18-数据获取中心/data_center/collectors/news/odaily_newsflash.py",
+   "line": 673,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "SqlitePositionRepository",
+   "file": "19-数据访问层/dreambuddy_dal/implementations/sqlite_unified/position_impl.py",
+   "line": 88,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_max_positions",
+   "file": "11-易经推理系统/multi_scenario_validation.py",
+   "line": 1032,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_s20_rolling_mean_leading_none",
+   "file": "54-L1架构能力聚合层/tests/test_methods_research.py",
+   "line": 216,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_determinism_regression_paths",
+   "file": "54-L1架构能力聚合层/tests/test_methods_correlation_extra.py",
+   "line": 288,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_new_context_without_browser",
+   "file": "30-真实环境交互系统/tests/test_browser_connector.py",
+   "line": 93,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "Session",
+   "file": "23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_interfaces.py",
+   "line": 71,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_get_elo",
+   "file": "4-MEMORY/9-工具与接口/test_debate_memory_ext.py",
+   "line": 133,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_sync_position_outside_observe_period_not_skipped",
+   "file": "11-易经推理系统/tests/test_loss_prevention_fixes.py",
+   "line": 61,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "negotiate_protocol_version",
+   "file": "mcp_shells/_shared/shell_runtime.py",
+   "line": 63,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_C1_half_entry_writes_valid_v03_schema_line",
+   "file": "11-易经推理系统/scripts/memory_l4/tests/test_cbr_jsonl_append.py",
+   "line": 57,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "_broken_build",
+   "file": "21-特征工程中心/tests/integration/test_t30_triple_screen_graduation.py",
+   "line": 215,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_fail_open_single_factor",
+   "file": "23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_cross_attention.py",
+   "line": 108,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "TemporalSignatureExtractor",
+   "file": "mcp_shells/_shared/temporal_signature_extractor.py",
+   "line": 144,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "_recall_similar_cases",
+   "file": "1-ARCHITECTURE/dream-harness-bridge/packages/python-server/algorithm_server.py",
+   "line": 188,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_get_module_detail",
+   "file": "experiments/ab-trading/test_bridge_server.py",
+   "line": 133,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "ModuleSwitches",
+   "file": "4-MEMORY/9-工具与接口/module_switches.py",
+   "line": 22,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "_calc_btc_alt_divergence",
+   "file": "12-三屏趋势系统/ml/philosophy_feature_engineer.py",
+   "line": 1522,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "_get_lock",
+   "file": "32-对抗性辩论Bot/core/orchestrator.py",
+   "line": 173,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "_make_trade_rec",
+   "file": "23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_trade_settlement_bridge.py",
+   "line": 60,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "_binance_daily",
+   "file": "18-数据获取中心/data_center/market/price_source.py",
+   "line": 142,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "remaining_total",
+   "file": "1-ARCHITECTURE/dreamos/budget/global_budget.py",
+   "line": 303,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "build_celery_app",
+   "file": "45-评测系统/core/celery_queue.py",
+   "line": 162,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_file_exists_true",
+   "file": "30-真实环境交互系统/tests/test_computer_use_runner.py",
+   "line": 326,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 0,
+   "sym": "test_hook_called_with_uri_and_report",
+   "file": "45-评测系统/tests/unit/test_index_publisher.py",
+   "line": 92,
+   "born": "2026-11-17",
+   "event": false,
+   "dur_days": 0,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "_crossover_combinations",
+   "file": "23-四层闭环自进化交易架构/dreambuddy_evolution/core/strategy_synthesizer.py",
+   "line": 429,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "TestSCSHarpe",
+   "file": "11-易经推理系统/scripts/memory_l4/tests/test_coin_fundamental_perf.py",
+   "line": 146,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "MultiStrategySignal",
+   "file": "12-三屏趋势系统/signals.py",
+   "line": 36,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "usage_ratio",
+   "file": "1-ARCHITECTURE/dreamos/core/sense/token_budget.py",
+   "line": 102,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "get_module",
+   "file": "experiments/ab-trading/bridge_server.py",
+   "line": 286,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_fail_open_no_metric",
+   "file": "18-数据获取中心/tests/macro/test_semiconductor_cycle_collector.py",
+   "line": 93,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_score_feedback",
+   "file": "6-TRADING/scripts/master_strategy_retriever.py",
+   "line": 814,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "_tamper_for_test",
+   "file": "4-MEMORY/9-工具与接口/evidence_ledger.py",
+   "line": 679,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_zscore_increasing_data_positive_direction",
+   "file": "11-易经推理系统/scripts/memory_l4/tests/test_force_vector_calculator.py",
+   "line": 20,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_4_10_recognizes_camp_structure",
+   "file": "34-前端应用训练系统/tests/test_master_seminar_collector.py",
+   "line": 243,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "_calculate_risk_pct",
+   "file": "1-ARCHITECTURE/dreamos/capabilities/trading/exit_strategy/stop_take_profit.py",
+   "line": 414,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "generate_from_intent",
+   "file": "25-用户策略生成系统/strategy_gen/intent.py",
+   "line": 22,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "_launch_playwright_chromium",
+   "file": "30-真实环境交互系统/core/browser_connector.py",
+   "line": 154,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_init_json_output_default_true",
+   "file": "30-真实环境交互系统/tests/test_bsk_runner.py",
+   "line": 88,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "TestPopulationManagement",
+   "file": "23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_evolution_engine.py",
+   "line": 32,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "_index_append",
+   "file": "9-基本面分析/ops/nanoclaw/core_task1/scripts/artifact_lifecycle.py",
+   "line": 76,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_get_advice_cold_start_coin",
+   "file": "16-调控系统/tests/capital_allocator/test_integration.py",
+   "line": 128,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_knn_search",
+   "file": "11-易经推理系统/scripts/memory_l4/tests/test_pump_dump_reversal_case_library.py",
+   "line": 51,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "_regime_to_direction",
+   "file": "12-三屏趋势系统/data/fundamental_data.py",
+   "line": 47,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "fetch_weekly_klines",
+   "file": "14-V15经典马丁策略/lib/strategy_params.py",
+   "line": 702,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_walk_forward_validate_shadow_param",
+   "file": "11-易经推理系统/scripts/memory_l4/tests/test_evolution_upgrade.py",
+   "line": 62,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "universe_screen_corr",
+   "file": "28-策略信号触发模块/app.py",
+   "line": 187,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "_infer_can_short",
+   "file": "10-经典指标系统/tools/tv_strategy_pipeline.py",
+   "line": 89,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_trade_intent_requires_escalation_high_conf",
+   "file": "1-ARCHITECTURE/dreamos/core/sense/evaluators/test_evaluator_escalation.py",
+   "line": 32,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "_quick_poll_fill",
+   "file": "22-执行引擎中心/tee_core/algorithms/smart_twap.py",
+   "line": 263,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "_generate_json",
+   "file": "30-真实环境交互系统/core/report_generator.py",
+   "line": 116,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "StopLossStrategy",
+   "file": "1-ARCHITECTURE/dreamos/capabilities/trading/exit_strategy/stop_take_profit.py",
+   "line": 29,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "_sync_ai_directive_to_classic",
+   "file": "experiments/ab-trading/mode_manager.py",
+   "line": 474,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_no_signal_returns_original",
+   "file": "34-前端应用训练系统/tests/test_jev_gate.py",
+   "line": 274,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_no_intent_confidence",
+   "file": "1-ARCHITECTURE/dreamos/capabilities/trading/nodes/tests/test_a4_gate.py",
+   "line": 222,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_trend_regime_valid_short_allowed",
+   "file": "11-易经推理系统/scripts/memory_l4/tests/test_5ma_short_filter.py",
+   "line": 738,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "_patched_create_default_context",
+   "file": "deploy/hermes/sitecustomize.py",
+   "line": 20,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "_format_brief_v1",
+   "file": "9-基本面分析/ops/nanoclaw/core_task1/scripts/news_digest_v2.py",
+   "line": 2072,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "C1TechScanNode",
+   "file": "1-ARCHITECTURE/dreamos/capabilities/trading/nodes/c1_tech_scan.py",
+   "line": 23,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_scale_triggered_when_amplitude_exceeds_cap",
+   "file": "11-易经推理系统/scripts/memory_l4/tests/test_cycle_bounds_fft_scale.py",
+   "line": 35,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "TestComputeTechnicalAssessment",
+   "file": "11-易经推理系统/tests/test_bdsm_value_scaling.py",
+   "line": 76,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "_lot_and_ct",
+   "file": "14-V15经典马丁策略/lib/v15_paper_client.py",
+   "line": 176,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_not_in_fomc_but_nfp_event_type_activates_strategy",
+   "file": "29-事件驱动策略系统/tests/test_event_driven_strategy.py",
+   "line": 65,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_detect_architecture_patterns_layered_detected",
+   "file": "33-REA逆向解析工程/tests/test_architecture_pattern_detector.py",
+   "line": 85,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "MLModel",
+   "file": "12-三屏趋势系统/ml/models.py",
+   "line": 19,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "_wrapped_import",
+   "file": "11-易经推理系统/tests/test_p1_finbert_sentiment.py",
+   "line": 207,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_no_top_level_heavy_import_in_source",
+   "file": "1-ARCHITECTURE/dream-harness-bridge/tests/integration/test_f06_native_lib_isolation.py",
+   "line": 121,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_c4_unavailable_degrades_to_pure_c3",
+   "file": "34-前端应用训练系统/tests/test_route_confidence.py",
+   "line": 185,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_ensure_trace_event_sets_book_id_from_ab_owner",
+   "file": "10-经典指标系统/test_signals_dedup.py",
+   "line": 453,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "MAInfo",
+   "file": "11-易经推理系统/scripts/memory_l4/ranging_market_enhancer.py",
+   "line": 88,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "CBRCse",
+   "file": "1-ARCHITECTURE/dream-harness-bridge/packages/python-server/debate_trainer.py",
+   "line": 198,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "_distill_strategy_lessons",
+   "file": "1-ARCHITECTURE/dreamos/evolution/lesson_distiller.py",
+   "line": 81,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_soft_vote_force_close_outcome_label",
+   "file": "23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_evolution_exit_engine_soft_vote.py",
+   "line": 669,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_silver_layer_dedup_unique_constraint",
+   "file": "18-数据获取中心/tests/processing/test_medallion.py",
+   "line": 39,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_adx_trending_market",
+   "file": "11-易经推理系统/tests/test_morphology_features.py",
+   "line": 58,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "list_sites",
+   "file": "18-数据获取中心/data_center/crawler/runner.py",
+   "line": 93,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "is_trend_gua",
+   "file": "11-易经推理系统/scripts/memory_l4/bcrm/_constants.py",
+   "line": 113,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "TestCBRCaseStorage",
+   "file": "4-MEMORY/9-工具与接口/test_debate_memory_ext.py",
+   "line": 28,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "bot_start",
+   "file": "10-经典指标系统/user_data/strategies/Strategy005.py",
+   "line": 95,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "pos_repo",
+   "file": "19-数据访问层/tests/implementations/sqlite_unified/test_position_risk_repo.py",
+   "line": 46,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_unknown_evidence_returns_early_terminate",
+   "file": "34-前端应用训练系统/tests/test_rea_cdrive_adapter.py",
+   "line": 211,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "test_risk_to_sl_modulation_one",
+   "file": "11-易经推理系统/tests/test_sl_tp_modulation.py",
+   "line": 94,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "TestApplyCapitalControl",
+   "file": "11-易经推理系统/scripts/memory_l4/tests/test_capital_control_integration.py",
+   "line": 154,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "DebateOrchestrator",
+   "file": "32-对抗性辩论Bot/core/orchestrator.py",
+   "line": 54,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 30,
+   "sym": "blackout_period_check",
+   "file": "13-通用风控模块/rules/gate_rules.py",
+   "line": 189,
+   "born": "2026-10-16",
+   "event": false,
+   "dur_days": 32,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "_stamp",
+   "file": "9-基本面分析/tavily_fundamental_generator.py",
+   "line": 51,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "_match_crisis",
+   "file": "11-易经推理系统/skills/3-SUPPORT/boss-secretary/risk_emergency_system.py",
+   "line": 1137,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "BreakoutStrategy",
+   "file": "10-经典指标系统/user_data/strategies/breakoutStrategy.py",
+   "line": 110,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "test_group_g",
+   "file": "11-易经推理系统/tests/stress_test_yijing_exit.py",
+   "line": 768,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "TestArenaFeatureJaccard",
+   "file": "10-经典指标系统/test_arena_feature_diversity.py",
+   "line": 241,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "load_all_backtest_results",
+   "file": "9-基本面分析/ops/nanoclaw/core_task1/scripts/generate_optimization_report.py",
+   "line": 15,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "test_sma_calculation",
+   "file": "14-V15经典马丁策略/tests/test_v15_system.py",
+   "line": 123,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "SignalRouterNode",
+   "file": "1-ARCHITECTURE/dreamos/capabilities/trading/signal_router.py",
+   "line": 240,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "record_heartbeat",
+   "file": "11-易经推理系统/scripts/memory_l4/process_guardian.py",
+   "line": 105,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "ExecutionFeedbackCollector",
+   "file": "1-ARCHITECTURE/dreamos/core/memory/execution_feedback.py",
+   "line": 39,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "load_models",
+   "file": "11-易经推理系统/scripts/memory_l4/bcrm2/anomaly_detector.py",
+   "line": 526,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "collect_miner_economics",
+   "file": "12-三屏趋势系统/data/tavily_data.py",
+   "line": 203,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "compute_endpoint_stats",
+   "file": "7-产物中台/系统研究索引体系/scripts/product-hub-stress-test.py",
+   "line": 330,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "test_boundary",
+   "file": "16-调控系统/tests/capital_control/test_unit.py",
+   "line": 157,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "get_annotation_field",
+   "file": "6-TRADING/scripts/annotation_freshness_gate.py",
+   "line": 350,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "test_build_envelope_contains_required_header_fields",
+   "file": "11-易经推理系统/tests/test_trading_protocol_p0.py",
+   "line": 17,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "analyze_features",
+   "file": "12-三屏趋势系统/ml/feature_analysis.py",
+   "line": 63,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "TestPhaseEGatewayDisabled",
+   "file": "14-V15经典马丁策略/tests/test_phase_e_gateway.py",
+   "line": 73,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "help_text",
+   "file": "1-ARCHITECTURE/dreamos/cli/base.py",
+   "line": 84,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "_group_internal",
+   "file": "11-易经推理系统/scripts/memory_l4/polling_trader.py",
+   "line": 3459,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "_get_risk_level",
+   "file": "11-易经推理系统/skills/3-SUPPORT/boss-secretary/secretary_core.py",
+   "line": 441,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "test_m2_full_pipeline",
+   "file": "11-易经推理系统/tests/e2e_l4_test.py",
+   "line": 371,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "simulate_strategy",
+   "file": "11-易经推理系统/p0_backtest_verify.py",
+   "line": 356,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "require_live_gate",
+   "file": "6-TRADING/scripts/a5_guards.py",
+   "line": 16,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "fake_collect",
+   "file": "9-基本面分析/tests/test_narrative_okx_market_intel_auto_collect.py",
+   "line": 12,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "_generate_mock_sentiment_metrics",
+   "file": "9-基本面分析/data_collector.py",
+   "line": 522,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "_get_feedback_file",
+   "file": "16-调控系统/core/feedback_and_permission.py",
+   "line": 238,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "test_weight_change_affects_score",
+   "file": "11-易经推理系统/tests/test_pentagon_v4_risk_control.py",
+   "line": 608,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "consolidate_tier0",
+   "file": "4-MEMORY/9-工具与接口/consolidation_engine.py",
+   "line": 557,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "add_history",
+   "file": "experiments/ab-trading/core/g_graph_storage/history.py",
+   "line": 162,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "build_memory_graph",
+   "file": "11-易经推理系统/scripts/memory_l4/memory_graph.py",
+   "line": 27,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "analyze_a2",
+   "file": "6-TRADING/scripts/deepseek_analyst.py",
+   "line": 115,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "_train_and_get_importance",
+   "file": "11-易经推理系统/scripts/memory_l4/bcrm2/feature_selector.py",
+   "line": 112,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "_okx_generated_at",
+   "file": "9-基本面分析/ops/nanoclaw/core_task1/flow/scripts/sync_web3_skill_snapshot.py",
+   "line": 346,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "node_ids",
+   "file": "1-ARCHITECTURE/dreamos/core/arrange/types.py",
+   "line": 322,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "verify_prior_suggestions",
+   "file": "experiments/ab-trading/core/trading_memory.py",
+   "line": 718,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "fetch_daily_klines",
+   "file": "14-V15经典马丁策略/lib/strategy_params.py",
+   "line": 651,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "analyze_per_symbol",
+   "file": "11-易经推理系统/scripts/memory_l4/analyze_confidence_sizing.py",
+   "line": 185,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "check_file_boundaries",
+   "file": "6-TRADING/skills/dual-agent-conflict-gate/conflict_gate.py",
+   "line": 132,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "fail_once",
+   "file": "11-易经推理系统/tests/test_a0_a9_stress_scenarios.py",
+   "line": 777,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "step_investigation",
+   "file": "11-易经推理系统/scripts/memory_l4/distill_engine.py",
+   "line": 217,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "get_config_info",
+   "file": "16-调控系统/core/qwen_client.py",
+   "line": 322,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "_decide_mode_coins",
+   "file": "11-易经推理系统/scripts/memory_l4/polling_trader.py",
+   "line": 1863,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "compress_to_architecture",
+   "file": "experiments/ab-trading/core/g_graph_storage/compressor.py",
+   "line": 220,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "TestV15ExecutorAdapter",
+   "file": "1-ARCHITECTURE/dreamos/tests/test_v15_executor.py",
+   "line": 8,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "_update_l4_outcome",
+   "file": "1-ARCHITECTURE/dreamos/capabilities/trading/execution/auto_trader.py",
+   "line": 316,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "_take_snapshot",
+   "file": "4-MEMORY/9-工具与接口/cognitive_daemon.py",
+   "line": 216,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "load_snapshot",
+   "file": "9-基本面分析/ml_trade_service_v2.py",
+   "line": 66,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "_step5_spiral_position",
+   "file": "11-易经推理系统/scripts/memory_l4/bcrm/engine.py",
+   "line": 691,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "_clear_exit_confirm",
+   "file": "11-易经推理系统/scripts/memory_l4/polling_trader.py",
+   "line": 1727,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "evolve_baseline",
+   "file": "16-调控系统/core/llm_baseline_evolution.py",
+   "line": 664,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "write_artifacts",
+   "file": "11-易经推理系统/scripts/ci/branch_lifecycle_bot.py",
+   "line": 166,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "compute_trend_velocity",
+   "file": "11-易经推理系统/scripts/memory_l4/qmm/trend_velocity.py",
+   "line": 9,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "CapabilityRegistry",
+   "file": "1-ARCHITECTURE/dreamos/core/capability/registry.py",
+   "line": 55,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "test_path_advantage_in_range",
+   "file": "4-MEMORY/9-工具与接口/test_cognitive_backtest_unified.py",
+   "line": 129,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "leading_number",
+   "file": "0-系统文档管理/4-工具与自动化/doc_coverage.py",
+   "line": 83,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "build_report",
+   "file": "6-TRADING/sessions/20260527-BTC-STRESS-TEST/review/test_scenario_runner.py",
+   "line": 556,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "_arena_find_model_key_for_feature_set",
+   "file": "10-经典指标系统/ml_trade_service.py",
+   "line": 102255,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "_poles_to_outer_gua",
+   "file": "11-易经推理系统/scripts/memory_l4/bcrm/yijing_engine.py",
+   "line": 390,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 90,
+   "sym": "test_p1_exec_gate_blocks_on_high_fail_rate_window",
+   "file": "10-经典指标系统/test_agent_doc_constraints.py",
+   "line": 307,
+   "born": "2026-08-19",
+   "event": false,
+   "dur_days": 90,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_get_baseline_metrics",
+   "file": "7-产物中台/系统研究索引体系/scripts/recommendation-engine/engine.py",
+   "line": 405,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_reg_with_strong",
+   "file": "6-TRADING/scripts/test_model_dispatcher.py",
+   "line": 102,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "tavily_search",
+   "file": "6-TRADING/scripts/screen2_runner.py",
+   "line": 50,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_update_all_index",
+   "file": "6-TRADING/scripts/master_strategy_retriever.py",
+   "line": 313,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "stop_okx_ws",
+   "file": "6-TRADING/bridge/api/realtime_api.py",
+   "line": 214,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_check_data_health",
+   "file": "6-TRADING/skills/dream-pretrade-gatekeeper/scripts/pretrade_gatekeeper.py",
+   "line": 151,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "format_screen1_a_summary",
+   "file": "6-TRADING/scripts/cross_asset_allocator.py",
+   "line": 355,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_collect_evidence_refs",
+   "file": "6-TRADING/skills/dream-data-analysis/analyzer.py",
+   "line": 852,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "calc_fibonacci",
+   "file": "6-TRADING/scripts/v15_signal.py",
+   "line": 146,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "match_strategy_for_scenario",
+   "file": "6-TRADING/scripts/a4_validation_executor.py",
+   "line": 129,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "opponent",
+   "file": "6-TRADING/skills/dual-agent-conflict-gate/conflict_gate.py",
+   "line": 98,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "update_weight",
+   "file": "6-TRADING/skills/master-seminar/modules/M2_master_selector.py",
+   "line": 257,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "CampAllocation",
+   "file": "6-TRADING/skills/master-seminar/modules/M3_camp_generator.py",
+   "line": 21,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "poll_and_execute",
+   "file": "3-FRONTEND/dream-universal-gateway/scripts/task_poller.py",
+   "line": 390,
+   "born": "2026-06-20",
+   "event": true,
+   "dur_days": 145,
+   "break_commit": "ef237384"
+  },
+  {
+   "window": 150,
+   "sym": "_add_to_all_index",
+   "file": "6-TRADING/skills/dream-knowledge/indexer/knowledge_indexer.py",
+   "line": 103,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_generate_mock_research",
+   "file": "6-TRADING/scripts/dream_strategy_pipeline.py",
+   "line": 791,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_generate_attack_question",
+   "file": "6-TRADING/skills/master-seminar/modules/M4_debate_engine.py",
+   "line": 314,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_calculate_tier",
+   "file": "6-TRADING/skills/dream-knowledge/evaluator/scoring_engine.py",
+   "line": 159,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "register_error_handlers",
+   "file": "6-TRADING/bridge/api/monitoring.py",
+   "line": 305,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_load_master_stats",
+   "file": "6-TRADING/skills/master-seminar/modules/M6_master_evolution.py",
+   "line": 70,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "is_port_open",
+   "file": "7-产物中台/progress_auto_update.py",
+   "line": 783,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_objective",
+   "file": "6-TRADING/scripts/bayesian_opt_engine.py",
+   "line": 329,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_check_verification_design",
+   "file": "6-TRADING/skills/A7-practice-theory/gates/a7_practice_gate.py",
+   "line": 129,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "TriggerType",
+   "file": "7-产物中台/系统研究索引体系/scripts/recommendation-engine/engine.py",
+   "line": 65,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_analyze_lambda_risk",
+   "file": "6-TRADING/skills/dream-data-analysis/analyzer.py",
+   "line": 656,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "BailianClient",
+   "file": "6-TRADING/skills/dream-bailian-integration/src/bailian_client.py",
+   "line": 16,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_check_validation",
+   "file": "6-TRADING/skills/dream-pretrade-gatekeeper/scripts/pretrade_gatekeeper.py",
+   "line": 396,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "generate_summary_json",
+   "file": "6-TRADING/skills/master-seminar/modules/M7_report_writer.py",
+   "line": 307,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "analyze_a2",
+   "file": "6-TRADING/scripts/deepseek_analyst.py",
+   "line": 115,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "calculate_updated_assessment",
+   "file": "6-TRADING/skills/dream-intelligence-monitor/scripts/level15_a2_incremental_updater.py",
+   "line": 118,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_score_logic",
+   "file": "6-TRADING/skills/dream-knowledge/evaluator/scoring_engine.py",
+   "line": 231,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "generate_plans",
+   "file": "6-TRADING/skills/dream-strategy-designer/scripts/war_game_simulator.py",
+   "line": 248,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "render_all_charts",
+   "file": "6-TRADING/skills/dream-data-analysis/renderer.py",
+   "line": 1095,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "SeminarContext",
+   "file": "6-TRADING/skills/master-seminar/modules/M1_orchestrator.py",
+   "line": 23,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "save_index",
+   "file": "scripts/sync_artifact.py",
+   "line": 330,
+   "born": "2026-06-20",
+   "event": true,
+   "dur_days": 32,
+   "break_commit": "d07d1849"
+  },
+  {
+   "window": 150,
+   "sym": "ensure_http_server",
+   "file": "7-产物中台/progress_auto_update.py",
+   "line": 792,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_extract_warnings",
+   "file": "6-TRADING/scripts/dream_strategy_pipeline.py",
+   "line": 637,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_extract_signals",
+   "file": "6-TRADING/skills/master-seminar/modules/M5_conclusion_extractor.py",
+   "line": 195,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "check_improvement_suggestions",
+   "file": "6-TRADING/skills/A8-theory-practice-verification/gates/a8_self_criticism_gate.py",
+   "line": 193,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_check_dream_mode",
+   "file": "6-TRADING/skills/dream-pretrade-gatekeeper/scripts/pretrade_gatekeeper.py",
+   "line": 383,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_calculate_adoption",
+   "file": "6-TRADING/skills/master-seminar/modules/M6_master_evolution.py",
+   "line": 168,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "DebateEngine",
+   "file": "6-TRADING/skills/master-seminar/modules/M4_debate_engine.py",
+   "line": 32,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_archive_report",
+   "file": "6-TRADING/skills/master-seminar/modules/M1_orchestrator.py",
+   "line": 204,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "test_trading_workflow",
+   "file": "6-TRADING/skills/dream-bailian-integration/scripts/test_workflow.py",
+   "line": 16,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "payload_flag",
+   "file": "AGENT协作工具/github-actions/check_agent_lifecycle.py",
+   "line": 40,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "test_all_index_rebuild",
+   "file": "6-TRADING/scripts/master_strategy_retriever.py",
+   "line": 873,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_extract_key_disputes",
+   "file": "6-TRADING/skills/master-seminar/modules/M4_debate_engine.py",
+   "line": 334,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "sort_key",
+   "file": "scripts/sync_artifact.py",
+   "line": 511,
+   "born": "2026-06-20",
+   "event": true,
+   "dur_days": 32,
+   "break_commit": "d07d1849"
+  },
+  {
+   "window": 150,
+   "sym": "_make_layers",
+   "file": "6-TRADING/scripts/v15_signal.py",
+   "line": 162,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "add_tag",
+   "file": "6-TRADING/skills/master-seminar/modules/M2_master_selector.py",
+   "line": 262,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_generate_scenarios",
+   "file": "6-TRADING/scripts/dream_strategy_pipeline.py",
+   "line": 1557,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "save_dashboard",
+   "file": "scripts/write_health_status.py",
+   "line": 56,
+   "born": "2026-06-20",
+   "event": true,
+   "dur_days": 32,
+   "break_commit": "d07d1849"
+  },
+  {
+   "window": 150,
+   "sym": "test_vendored_drift_guard_action_is_removed",
+   "file": "tests/test_drift_guard_reuse_workflow.py",
+   "line": 25,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "test_a5_gate_complete",
+   "file": "6-TRADING/skills/A7-practice-theory/gates/test_a7_gate.py",
+   "line": 61,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_calc_library_score",
+   "file": "7-产物中台/系统研究索引体系/scripts/recommendation-engine/engine.py",
+   "line": 869,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "test_config_allows_agent_collaboration_tools_as_ci_scope",
+   "file": "tests/test_drift_guard_reuse_workflow.py",
+   "line": 33,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "simulate_price_series",
+   "file": "6-TRADING/bridge/api/strategy_backtest_api.py",
+   "line": 82,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "OKXCLI",
+   "file": "6-TRADING/scripts/okx_cli.py",
+   "line": 14,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "_add_to_tier_index",
+   "file": "6-TRADING/skills/dream-knowledge/indexer/knowledge_indexer.py",
+   "line": 85,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  },
+  {
+   "window": 150,
+   "sym": "phase8_advisor_review",
+   "file": "6-TRADING/scripts/a2_first_principles_v2.6_auto.py",
+   "line": 858,
+   "born": "2026-06-20",
+   "event": false,
+   "dur_days": 150,
+   "break_commit": null
+  }
+ ]
+}

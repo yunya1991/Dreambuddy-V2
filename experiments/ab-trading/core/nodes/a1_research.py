@@ -1,9 +1,8 @@
 """
 A1 深度调研节点（v2.1 — 对接 A系列研报本地目录）
 调用优先级：
-  1. 本地 A系列研报目录（最新文件）← 新增
-  2. A1 Feed API（http://49.233.123.96:3456/feed）
-  3. 内置 fallback 规则
+  1. 本地 A系列研报目录（最新文件）
+  2. 内置 fallback 规则（原 A1 Feed API 已随产物中台下线移除）
 
 同时读取 A6 情报报告，融入决策输入。
 
@@ -18,8 +17,6 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
-import requests
 
 # ── A系列研报目录（绝对路径）──────────────────────────────────────────────
 _A1_REPORT_DIR = Path(__file__).resolve().parent.parent.parent / "A系列研报" / "A1研报"
@@ -174,31 +171,14 @@ def _load_latest_a1_report(coin: str, reasoning: List[str]) -> Dict:
     """
     读取 A系列研报/A1研报/ 中最新的报告文件。
     支持 JSON 格式（a1_regime_YYYYMMDD.json）。
-    如果本地文件过期或不存在，降级到 Feed API。
+    如果本地文件过期或不存在，直接降级到内置规则。
     """
     # 1) 尝试读取本地最新 JSON 报告
     local_report = _read_latest_json_report(_A1_REPORT_DIR, coin, reasoning)
     if local_report:
         return local_report
 
-    # 2) 降级：调用 Feed API
-    reasoning.append("[A1研报] 本地研报目录无有效文件，调用 Feed API")
-    try:
-        resp = requests.get(
-            "http://49.233.123.96:3456/feed", params={"coin": coin, "limit": 3}, timeout=5
-        )
-        if resp.status_code == 200:
-            feed = resp.json()
-            result = feed if isinstance(feed, dict) else {"summary": str(feed)[:200]}
-            result["_source"] = "feed_api"
-            reasoning.append(f"[A1 Feed] API 获取到 {len(result)} 条数据")
-            return result
-        else:
-            reasoning.append(f"[A1 Feed] API 返回 {resp.status_code}，使用备用逻辑")
-    except Exception as e:
-        reasoning.append(f"[A1 Feed] 请求失败: {str(e)[:50]}，使用备用逻辑")
-
-    # 3) 最终降级：内置规则
+    # 2) 降级：内置规则（原 Feed API 已随产物中台下线移除）
     reasoning.append("[A1研报] 使用内置 fallback 逻辑")
     return {**_fallback_research_simple(coin), "_source": "fallback"}
 

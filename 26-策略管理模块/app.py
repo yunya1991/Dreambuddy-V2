@@ -187,20 +187,6 @@ def lib_upsert_strategy():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-@app.route("/api/v1/lib/sync/product-hub", methods=["POST"])
-def lib_sync_product_hub():
-    """将 M26 registry 策略同步到 7-产物中台（需 admin token）。"""
-    if not _require_admin():
-        return jsonify({"ok": False, "error": "forbidden"}), 403
-    try:
-        from strategy_lib.services import product_hub_sync
-
-        result = product_hub_sync.sync_strategies_to_product_hub()
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-
 @app.route("/api/v1/lib/sync/object-store", methods=["POST"])
 def lib_sync_object_store():
     """将 registry 元数据 + bundles 同步到对象存储（S3 或本地，需 admin token）。"""

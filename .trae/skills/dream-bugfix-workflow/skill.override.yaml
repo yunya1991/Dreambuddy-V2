@@ -1,0 +1,14 @@
+id: dream-bugfix-workflow
+locations:
+  - path: .trae/skills/dream-bugfix-workflow
+    role: trae-entry
+  - path: 1-ARCHITECTURE/skills/dream-bugfix-workflow
+    role: project-index
+lifecycle:
+  status: active
+  proposed_at: "2026-09-21"
+  activated_at: "2026-09-21"
+conflicts_with: []
+replaces: []
+replaced_by: null
+integrity_hash: null

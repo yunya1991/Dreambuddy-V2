@@ -1,0 +1,861 @@
+{
+  "phases": {
+    "sweep": {
+      "phase": "sweep",
+      "shells": 16,
+      "available": 16,
+      "list_mismatch": [],
+      "missing_impl": [],
+      "details": [
+        {
+          "shell_id": "l0.cognition.mcp",
+          "shell_path": "4-MEMORY/9-工具与接口/cognitive_mcp_server.py",
+          "available": true,
+          "tools_listed": 7,
+          "tools_registered": 7,
+          "tools_list_matches": true,
+          "tools": [
+            {
+              "tool": "recall",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 5795.098
+            },
+            {
+              "tool": "unified_search",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 2003.332
+            },
+            {
+              "tool": "record",
+              "skipped": "write"
+            },
+            {
+              "tool": "verify",
+              "skipped": "write"
+            },
+            {
+              "tool": "stats",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 6375.526
+            },
+            {
+              "tool": "health",
+              "ok": false,
+              "degraded": true,
+              "error_code": "TimeoutError",
+              "latency_ms": 14899.952
+            },
+            {
+              "tool": "l4_status",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 3435.772
+            }
+          ]
+        },
+        {
+          "shell_id": "l0.data.mcp",
+          "shell_path": "mcp_shells/l0_data/server.py",
+          "available": true,
+          "tools_listed": 4,
+          "tools_registered": 4,
+          "tools_list_matches": true,
+          "tools": [
+            {
+              "tool": "data_fetch",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1831.336
+            },
+            {
+              "tool": "data_collect_once",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1687.892
+            },
+            {
+              "tool": "data_store_read",
+              "ok": true,
+              "degraded": true,
+              "error_code": "invalid",
+              "latency_ms": 1541.582
+            },
+            {
+              "tool": "data_store_write",
+              "skipped": "write"
+            }
+          ]
+        },
+        {
+          "shell_id": "l0.eval.mcp",
+          "shell_path": "mcp_shells/l0_eval/server.py",
+          "available": true,
+          "tools_listed": 2,
+          "tools_registered": 2,
+          "tools_list_matches": true,
+          "tools": [
+            {
+              "tool": "eval_analyze",
+              "ok": true,
+              "degraded": true,
+              "error_code": "invalid",
+              "latency_ms": 1842.64
+            },
+            {
+              "tool": "eval_report",
+              "ok": true,
+              "degraded": true,
+              "error_code": "unavailable",
+              "latency_ms": 1841.132
+            }
+          ]
+        },
+        {
+          "shell_id": "l0.rea.mcp",
+          "shell_path": "mcp_shells/l0_rea/server.py",
+          "available": true,
+          "tools_listed": 15,
+          "tools_registered": 15,
+          "tools_list_matches": true,
+          "tools": [
+            {
+              "tool": "submit_rea_analyze",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 2039.654
+            },
+            {
+              "tool": "poll_rea_analyze",
+              "ok": true,
+              "degraded": true,
+              "error_code": "invalid",
+              "latency_ms": 1699.659
+            },
+            {
+              "tool": "submit_rea_trace",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1737.647
+            },
+            {
+              "tool": "poll_rea_trace",
+              "ok": true,
+              "degraded": true,
+              "error_code": "invalid",
+              "latency_ms": 1898.797
+            },
+            {
+              "tool": "submit_rea_compare",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1946.681
+            },
+            {
+              "tool": "poll_rea_compare",
+              "ok": true,
+              "degraded": true,
+              "error_code": "invalid",
+              "latency_ms": 2254.059
+            },
+            {
+              "tool": "get_rea_snapshot",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1992.773
+            },
+            {
+              "tool": "rea_audit",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 2334.362
+            },
+            {
+              "tool": "get_rea_methodology",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 2041.485
+            },
+            {
+              "tool": "cancel_rea_analyze",
+              "ok": true,
+              "degraded": true,
+              "error_code": "invalid",
+              "latency_ms": 2065.779
+            },
+            {
+              "tool": "cancel_rea_trace",
+              "ok": true,
+              "degraded": true,
+              "error_code": "invalid",
+              "latency_ms": 1950.529
+            },
+            {
+              "tool": "cancel_rea_compare",
+              "ok": true,
+              "degraded": true,
+              "error_code": "invalid",
+              "latency_ms": 1914.335
+            },
+            {
+              "tool": "submit_rea_adapt_plan",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 2618.452
+            },
+            {
+              "tool": "poll_rea_adapt_plan",
+              "ok": true,
+              "degraded": true,
+              "error_code": "invalid",
+              "latency_ms": 1999.671
+            },
+            {
+              "tool": "cancel_rea_adapt_plan",
+              "ok": true,
+              "degraded": true,
+              "error_code": "invalid",
+              "latency_ms": 1560.266
+            }
+          ]
+        },
+        {
+          "shell_id": "l0.semantic-39.mcp",
+          "shell_path": "39-金融语义蒸馏系统/scripts/mcp_server.py",
+          "available": true,
+          "tools_listed": 4,
+          "tools_registered": 4,
+          "tools_list_matches": true,
+          "tools": [
+            {
+              "tool": "query_entity",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1882.82
+            },
+            {
+              "tool": "semantic_lookup",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1791.071
+            },
+            {
+              "tool": "distill_aliases",
+              "skipped": "write"
+            },
+            {
+              "tool": "training_feed",
+              "skipped": "write"
+            }
+          ]
+        },
+        {
+          "shell_id": "l0.store-admin.mcp",
+          "shell_path": "mcp_shells/l0_store_admin/server.py",
+          "available": true,
+          "tools_listed": 2,
+          "tools_registered": 2,
+          "tools_list_matches": true,
+          "tools": [
+            {
+              "tool": "store_admin_status",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1909.404
+            },
+            {
+              "tool": "store_admin_query",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1811.706
+            }
+          ]
+        },
+        {
+          "shell_id": "l0.trade-exec.mcp",
+          "shell_path": "mcp_shells/l0_trade_exec/server.py",
+          "available": true,
+          "tools_listed": 10,
+          "tools_registered": 10,
+          "tools_list_matches": true,
+          "tools": [
+            {
+              "tool": "place_order",
+              "skipped": "write"
+            },
+            {
+              "tool": "cancel_order",
+              "skipped": "write"
+            },
+            {
+              "tool": "get_positions",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1993.131
+            },
+            {
+              "tool": "get_balance",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1891.78
+            },
+            {
+              "tool": "pre_trade_check",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 2315.035
+            },
+            {
+              "tool": "check_exit",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1991.078
+            },
+            {
+              "tool": "get_account_mode",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 2212.499
+            },
+            {
+              "tool": "reconcile",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1908.12
+            },
+            {
+              "tool": "read_signals",
+              "ok": true,
+              "degraded": true,
+              "error_code": "signal_source_partial",
+              "latency_ms": 2232.352
+            },
+            {
+              "tool": "ingest_signal",
+              "skipped": "write"
+            }
+          ]
+        },
+        {
+          "shell_id": "l1.intent.mcp",
+          "shell_path": "mcp_shells/l1_intent/server.py",
+          "available": true,
+          "tools_listed": 3,
+          "tools_registered": 3,
+          "tools_list_matches": true,
+          "tools": [
+            {
+              "tool": "list_intents",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 2146.446
+            },
+            {
+              "tool": "classify_intent",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1923.955
+            },
+            {
+              "tool": "execute_intent",
+              "ok": true,
+              "degraded": false,
+              "error_code": "invalid",
+              "latency_ms": 1940.691
+            }
+          ]
+        },
+        {
+          "shell_id": "l1.ops.mcp",
+          "shell_path": "mcp_shells/l1_ops/server.py",
+          "available": true,
+          "tools_listed": 3,
+          "tools_registered": 3,
+          "tools_list_matches": true,
+          "tools": [
+            {
+              "tool": "list_alerts",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1975.689
+            },
+            {
+              "tool": "get_health",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 2102.553
+            },
+            {
+              "tool": "get_bus_state",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 2067.42
+            }
+          ]
+        },
+        {
+          "shell_id": "l1.strategy.mcp",
+          "shell_path": "mcp_shells/l1_strategy/server.py",
+          "available": true,
+          "tools_listed": 4,
+          "tools_registered": 4,
+          "tools_list_matches": true,
+          "tools": [
+            {
+              "tool": "list_strategies",
+              "ok": true,
+              "degraded": false,
+              "error_code": "unavailable",
+              "latency_ms": 2126.796
+            },
+            {
+              "tool": "get_strategy_version",
+              "ok": true,
+              "degraded": false,
+              "error_code": "invalid",
+              "latency_ms": 1860.604
+            },
+            {
+              "tool": "get_approval_state",
+              "ok": true,
+              "degraded": false,
+              "error_code": "invalid",
+              "latency_ms": 1953.106
+            },
+            {
+              "tool": "list_signal_triggers",
+              "ok": true,
+              "degraded": false,
+              "error_code": "unavailable",
+              "latency_ms": 2119.204
+            }
+          ]
+        },
+        {
+          "shell_id": "l1.trading.mcp",
+          "shell_path": "mcp_shells/l1_trading/server.py",
+          "available": true,
+          "tools_listed": 10,
+          "tools_registered": 10,
+          "tools_list_matches": true,
+          "tools": [
+            {
+              "tool": "get_signal_state",
+              "ok": true,
+              "degraded": true,
+              "error_code": "degraded",
+              "latency_ms": 1542.342
+            },
+            {
+              "tool": "get_bus_state",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1979.966
+            },
+            {
+              "tool": "get_constraint_state",
+              "ok": true,
+              "degraded": true,
+              "error_code": "not_found",
+              "latency_ms": 1913.432
+            },
+            {
+              "tool": "get_cycle_state",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1901.681
+            },
+            {
+              "tool": "get_strategic_extension",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1754.243
+            },
+            {
+              "tool": "get_decision_diagnostics",
+              "ok": true,
+              "degraded": true,
+              "error_code": "degraded",
+              "latency_ms": 2008.666
+            },
+            {
+              "tool": "get_training_status",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1779.655
+            },
+            {
+              "tool": "get_positions",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 2170.888
+            },
+            {
+              "tool": "get_balance",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1993.232
+            },
+            {
+              "tool": "forward_signal",
+              "skipped": "write"
+            }
+          ]
+        },
+        {
+          "shell_id": "l2.debate.mcp",
+          "shell_path": "mcp_shells/debate_adversarial/server.py",
+          "available": true,
+          "tools_listed": 3,
+          "tools_registered": 3,
+          "tools_list_matches": true,
+          "tools": [
+            {
+              "tool": "start_debate",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1945.369
+            },
+            {
+              "tool": "get_debate_result",
+              "ok": true,
+              "degraded": true,
+              "error_code": "invalid",
+              "latency_ms": 1794.692
+            },
+            {
+              "tool": "debate_health",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 2143.527
+            }
+          ]
+        },
+        {
+          "shell_id": "l2.dreamos.mcp",
+          "shell_path": "mcp_shells/l2_dreamos/server.py",
+          "available": true,
+          "tools_listed": 5,
+          "tools_registered": 5,
+          "tools_list_matches": true,
+          "tools": [
+            {
+              "tool": "submit_run",
+              "skipped": "write"
+            },
+            {
+              "tool": "poll_run",
+              "ok": true,
+              "degraded": false,
+              "error_code": "not_found",
+              "latency_ms": 2103.331
+            },
+            {
+              "tool": "get_result",
+              "ok": true,
+              "degraded": false,
+              "error_code": "invalid",
+              "latency_ms": 1810.261
+            },
+            {
+              "tool": "get_intent",
+              "ok": true,
+              "degraded": false,
+              "error_code": "invalid",
+              "latency_ms": 1895.447
+            },
+            {
+              "tool": "get_budget",
+              "ok": true,
+              "degraded": false,
+              "error_code": "invalid",
+              "latency_ms": 1905.732
+            }
+          ]
+        },
+        {
+          "shell_id": "l2.dsh.mcp",
+          "shell_path": "mcp_shells/l2_dsh/server.py",
+          "available": true,
+          "tools_listed": 3,
+          "tools_registered": 3,
+          "tools_list_matches": true,
+          "tools": [
+            {
+              "tool": "get_router_summary",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 2426.799
+            },
+            {
+              "tool": "get_ticket_status",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 2006.918
+            },
+            {
+              "tool": "get_worker_roster",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 1540.656
+            }
+          ]
+        },
+        {
+          "shell_id": "l2.emergence.mcp",
+          "shell_path": "mcp_shells/l2_emergence/server.py",
+          "available": true,
+          "tools_listed": 3,
+          "tools_registered": 3,
+          "tools_list_matches": true,
+          "tools": [
+            {
+              "tool": "get_emergence_metrics",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 2118.961
+            },
+            {
+              "tool": "list_experiments",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 2260.886
+            },
+            {
+              "tool": "get_experiment_report",
+              "ok": true,
+              "degraded": false,
+              "error_code": "invalid",
+              "latency_ms": 1517.361
+            }
+          ]
+        },
+        {
+          "shell_id": "l2.train.mcp",
+          "shell_path": "mcp_shells/l2_train/server.py",
+          "available": true,
+          "tools_listed": 3,
+          "tools_registered": 3,
+          "tools_list_matches": true,
+          "tools": [
+            {
+              "tool": "trigger_training",
+              "skipped": "write"
+            },
+            {
+              "tool": "get_training_status",
+              "ok": true,
+              "degraded": false,
+              "error_code": "invalid",
+              "latency_ms": 2148.536
+            },
+            {
+              "tool": "list_runs",
+              "ok": true,
+              "degraded": false,
+              "error_code": "",
+              "latency_ms": 2196.452
+            }
+          ]
+        }
+      ],
+      "elapsed_s": 34.45
+    },
+    "p1": {
+      "phase": "p1",
+      "answered": 7,
+      "attempted": 7,
+      "rows": [
+        {
+          "scenario_id": "S1",
+          "ok": true,
+          "latency_ms": 4449.345,
+          "answer_len": 227
+        },
+        {
+          "scenario_id": "S2",
+          "ok": true,
+          "latency_ms": 6653.427,
+          "answer_len": 414
+        },
+        {
+          "scenario_id": "S3",
+          "ok": true,
+          "latency_ms": 5360.828,
+          "answer_len": 414
+        },
+        {
+          "scenario_id": "S4",
+          "ok": true,
+          "latency_ms": 7775.696,
+          "answer_len": 703
+        },
+        {
+          "scenario_id": "S5",
+          "ok": true,
+          "latency_ms": 23293.889,
+          "answer_len": 1082
+        },
+        {
+          "scenario_id": "S7",
+          "ok": true,
+          "latency_ms": 6141.061,
+          "answer_len": 414
+        },
+        {
+          "scenario_id": "S13",
+          "ok": true,
+          "latency_ms": 1416.174,
+          "answer_len": 735
+        }
+      ],
+      "elapsed_s": 55.1
+    },
+    "p1b": {
+      "phase": "p1b",
+      "scenarios": 8,
+      "rows": [
+        {
+          "scenario_id": "S1",
+          "hit_rate": 1.0,
+          "tools": 2,
+          "pass": true
+        },
+        {
+          "scenario_id": "S2",
+          "hit_rate": 1.0,
+          "tools": 2,
+          "pass": true
+        },
+        {
+          "scenario_id": "S3",
+          "hit_rate": 1.0,
+          "tools": 2,
+          "pass": true
+        },
+        {
+          "scenario_id": "S4",
+          "hit_rate": 1.0,
+          "tools": 2,
+          "pass": true
+        },
+        {
+          "scenario_id": "S5",
+          "hit_rate": 1.0,
+          "tools": 3,
+          "pass": true
+        },
+        {
+          "scenario_id": "S7",
+          "hit_rate": 1.0,
+          "tools": 2,
+          "pass": true
+        },
+        {
+          "scenario_id": "S10",
+          "hit_rate": 1.0,
+          "tools": 2,
+          "pass": true
+        },
+        {
+          "scenario_id": "S13",
+          "hit_rate": 1.0,
+          "tools": 3,
+          "pass": true
+        }
+      ],
+      "elapsed_s": 14.91
+    },
+    "p3": {
+      "phase": "p3",
+      "rows": [
+        {
+          "scenario_id": "S4",
+          "stages": [
+            "S",
+            "A",
+            "C",
+            "G"
+          ],
+          "nodes": 3,
+          "sediments": 1
+        },
+        {
+          "scenario_id": "S15",
+          "sediments": [
+            "case",
+            "doc",
+            "skill"
+          ]
+        },
+        {
+          "scenario_id": "S11",
+          "action": "NEED_CLARIFY"
+        },
+        {
+          "scenario_id": "S12",
+          "action": "EARLY_TERMINATE"
+        }
+      ],
+      "elapsed_s": 0.78
+    },
+    "faults": {
+      "phase": "faults",
+      "timeout": true,
+      "auth_degrade": true,
+      "concurrency": {
+        "submitted": 5,
+        "completed": 5
+      },
+      "mandate": {
+        "deny_code": "forbidden",
+        "allow_ok": true,
+        "write_landed": true
+      },
+      "elapsed_s": 3.02
+    }
+  }
+}

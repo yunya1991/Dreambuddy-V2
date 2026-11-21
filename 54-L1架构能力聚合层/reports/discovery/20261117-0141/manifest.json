@@ -1,0 +1,92 @@
+{
+  "report": "20261117-0141",
+  "created_at": "2026-11-17T01:41:13",
+  "space_version": 1,
+  "space_hash": "a6b3ae48cc25cf0727d2c53a4434f20ef8f7dbc7ae8aa78b2eebb59fe2ee95e7",
+  "seed": 42,
+  "data_version": "db@20261117",
+  "series": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "NASDAQCOM",
+    "SP500",
+    "XAU",
+    "DCOILWTICO",
+    "DGS10",
+    "VIXCLS",
+    "T10Y2Y",
+    "DTWEXBGS",
+    "crypto_fear_greed",
+    "btc_funding_rate",
+    "btc_open_interest",
+    "stablecoin_supply_usd",
+    "etf_net_flow_usd"
+  ],
+  "transforms": [
+    "raw",
+    "diff",
+    "pct",
+    "zscore60",
+    "ts_rank60",
+    "quintile5"
+  ],
+  "methods": [
+    "B14"
+  ],
+  "evaluated_methods": [
+    "B14"
+  ],
+  "truncated": {
+    "methods": [
+      "M01",
+      "M02",
+      "M11",
+      "M12",
+      "B01",
+      "B02",
+      "B03",
+      "B04",
+      "B05",
+      "B11",
+      "B12",
+      "B13",
+      "B15",
+      "R01",
+      "R02",
+      "R03",
+      "R04",
+      "SC52",
+      "SC62"
+    ]
+  },
+  "horizons": [
+    1,
+    5,
+    20
+  ],
+  "units": {
+    "units": 4608,
+    "evaluated": 4050,
+    "truncated": true,
+    "skipped": {
+      "short": 558,
+      "no_ic": 0
+    },
+    "series_loaded": 16,
+    "passed_fdr": 832
+  },
+  "n_units": 4050,
+  "fdr": {
+    "enabled": true,
+    "alpha": 0.05
+  },
+  "split": {
+    "screen_ratio": 0.7,
+    "holdout_ratio": 0.3,
+    "min_holdout_agreement": 0.6
+  },
+  "dedupe": {
+    "corr_threshold": 0.95
+  }
+}

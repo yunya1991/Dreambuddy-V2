@@ -1,0 +1,445 @@
+# 架构总装与调度能力评测 — 场景集 v0.1
+# 依据: SPEC-56-架构总装与调度能力评测-v0.1.md §4
+# 约定:
+#   expected_tools 格式 "<shell_id>:<tool>"（静态覆盖判定用，不代表真实命中）
+#   sampled=true 的场景进入抽样实跑（≥8 条）
+#   baseline=true 的场景进入 DeepSeek 单模型对比（8 题）
+#   signed_off=false 的 must_have_facts 由独立评审者抽查签核（SPEC §9 自证偏误控制）
+version: "0.1"
+spec: "../SPEC-56-架构总装与调度能力评测-v0.1.md"
+registry: "../../47-MCP管理系统/registry/mcp_capabilities.yaml"
+
+scenarios:
+  - id: S1
+    category: simple_direct
+    title: 简单直答（行情）
+    input: "BTC 现价多少"
+    expected_route: L1_DIRECT
+    expected_tools:
+      - "l1.intent.mcp:classify_intent"
+      - "l0.data.mcp:data_fetch"
+    must_have_facts:
+      - text: "给出 BTC 最新成交价（数值）"
+        source: "34-前端应用训练系统/core/l0_foundation.py#market.ticker"
+        signed_off: true
+        match: ["BTC", "USDT", "$", "美元"]
+      - text: "给出数据源与时间戳"
+        source: "34-前端应用训练系统/core/l0_foundation.py#_envelope(source,timestamp)"
+        signed_off: true
+        match: ["UTC", "2026", "时间", "来源", "数据源"]
+    assertions:
+      - "route.decision == L1_DIRECT"
+      - "stages 为空（不进入 L2 编排）"
+      - "tool_calls 含 l0.data.mcp:data_fetch 且 ok=true"
+    entry: [P1, P1b]
+    sampled: true
+    baseline: true
+
+  - id: S2
+    category: data_evidence
+    title: 数据取证（财务四期）
+    input: "茅台近 4 季营收与毛利率"
+    expected_route: L2_HANDOFF
+    expected_tools:
+      - "l0.data.mcp:data_store_read"
+      - "l0.store-admin.mcp:store_admin_status"
+    must_have_facts:
+      - text: "返回 4 个季度的营收数值（非 0.000）"
+        source: "待独立评审签核：19-数据访问层 财务表契约"
+        signed_off: false
+        match: ["Q1", "Q2", "Q3", "Q4", "季度", "营收"]
+      - text: "返回 4 个季度的毛利率（百分比口径一致）"
+        source: "待独立评审签核：19-数据访问层 财务表契约"
+        signed_off: false
+        match: ["毛利率", "%", "percent", "毛利"]
+      - text: "标注每期数据的时间标签"
+        source: "scenario_fixed_input"
+        signed_off: false
+        match: ["2025", "2026", "年", "报告期"]
+    assertions:
+      - "tool_calls 含 l0.data.mcp:data_store_read"
+      - "must_have_facts 命中率 >= 2/3"
+      - "无 0.000 占位数值"
+    entry: [P1, P1b]
+    sampled: true
+    baseline: true
+
+  - id: S3
+    category: semantic_parse
+    title: 语义解析（实体别名）
+    # 口径修正：SPEC 示例「宁王/茅台/大饼」不在 3.1-FRONTEND/scripts/entity_aliases.json
+    # （该表仅覆盖 20 个加密/美股标的），无法据既有契约判定对错。改用表内实体。
+    input: "比特币、以太坊、狗狗币分别指谁"
+    note: "A 股别名（宁王/茅台）不在别名表 —— 见报告死角 D-9"
+    expected_route: L1_DIRECT
+    expected_tools:
+      - "l0.semantic-39.mcp:semantic_lookup"
+      - "l0.semantic-39.mcp:query_entity"
+    must_have_facts:
+      - text: "比特币 → BTC"
+        source: "3.1-FRONTEND/scripts/entity_aliases.json[BTC]"
+        signed_off: true
+        match: ["BTC"]
+      - text: "以太坊 → ETH"
+        source: "3.1-FRONTEND/scripts/entity_aliases.json[ETH]"
+        signed_off: true
+        match: ["ETH"]
+      - text: "狗狗币 → DOGE"
+        source: "3.1-FRONTEND/scripts/entity_aliases.json[DOGE]"
+        signed_off: true
+        match: ["DOGE"]
+    assertions:
+      - "三实体全部命中"
+      - "tool_calls 含 l0.semantic-39.mcp:semantic_lookup"
+    entry: [P1, P1b]
+    sampled: true
+    baseline: true
+
+  - id: S4
+    category: contradiction
+    title: 矛盾识别
+    input: "同一标的宏观与资金面是否矛盾"
+    expected_route: L2_HANDOFF
+    expected_tools:
+      - "l0.rea.mcp:submit_rea_analyze"
+      - "l0.cognition.mcp:recall"
+    must_have_facts:
+      - text: "列出至少两个维度（宏观 / 资金面）各自的证据"
+        source: "34-前端应用训练系统/core/sacg_orchestrator.py#S_LAYER_INTENT_PROFILES.contradiction_insight"
+        signed_off: true
+        match: ["宏观", "资金"]
+      - text: "给出主要矛盾判定"
+        source: "同上"
+        signed_off: true
+        match: ["主矛盾", "主要矛盾", "矛盾"]
+    assertions:
+      - "route.decision == L2_HANDOFF"
+      - "stages 含 S 与 C"
+      - "tool_calls 含 l0.rea.mcp:submit_rea_analyze 或 l0.cognition.mcp:recall"
+    entry: [P1, P1b, P3]
+    sampled: true
+    baseline: true
+
+  - id: S5
+    category: technical_review
+    title: 技术复盘
+    input: "BTC 本周结构是否转弱"
+    expected_route: L2_HANDOFF
+    expected_tools:
+      - "l1.strategy.mcp:list_strategies"
+      - "l0.rea.mcp:submit_rea_trace"
+      - "l2.debate.mcp:start_debate"
+    must_have_facts:
+      - text: "给出趋势/动量/波动至少三项结构判断"
+        source: "30-真实环境交互系统 技术指标契约"
+        signed_off: false
+        match: ["趋势", "动量", "波动"]
+      - text: "结论附带失效条件"
+        source: "scenario_fixed_input"
+        signed_off: false
+        match: ["失效", "止损", "跌破", "转弱"]
+    assertions:
+      - "tool_calls 含 l1.strategy.mcp 与 l0.rea.mcp 工具"
+      - "REA trace 四项状态齐全（submit/poll/result/status）"
+    entry: [P1, P1b, P3]
+    sampled: true
+    baseline: true
+
+  - id: S6
+    category: valuation
+    title: 估值分位
+    input: "当前估值分位是否极端"
+    expected_route: L2_HANDOFF
+    expected_tools:
+      - "l1.strategy.mcp:get_strategy_version"
+      - "l0.data.mcp:data_fetch"
+    must_have_facts:
+      - text: "给出分位数值"
+        source: "30-真实环境交互系统 估值契约"
+        signed_off: false
+      - text: "给出样本区间（起止时间与样本量）"
+        source: "30-真实环境交互系统 估值契约"
+        signed_off: false
+    assertions:
+      - "tool_calls 含 l1.strategy.mcp 工具"
+    entry: [P1, P1b]
+    sampled: false
+    baseline: false
+
+  - id: S7
+    category: trade_plan
+    title: 交易计划
+    input: "给我 BTC 交易计划与仓位"
+    expected_route: L2_HANDOFF
+    expected_tools:
+      - "l1.trading.mcp:get_signal_state"
+      - "l0.trade-exec.mcp:pre_trade_check"
+    must_have_facts:
+      - text: "给出入场条件"
+        source: "54-L1架构能力聚合层 交易计划契约"
+        signed_off: false
+        match: ["入场", "买入", "建仓"]
+      - text: "给出止损位与仓位比例"
+        source: "54-L1架构能力聚合层 交易计划契约"
+        signed_off: false
+        match: ["止损", "仓位", "%"]
+      - text: "给出失效条件"
+        source: "scenario_fixed_input"
+        signed_off: false
+        match: ["失效", "止损", "跌破"]
+    assertions:
+      - "tool_calls 含 l1.trading.mcp 只读工具"
+      - "不含任何写交易指令（place_order 未被执行）"
+    entry: [P1, P1b]
+    sampled: true
+    baseline: true
+
+  - id: S8
+    category: risk_control
+    title: 风控处置
+    input: "持仓回撤 12%，怎么处置"
+    expected_route: L2_HANDOFF
+    expected_tools:
+      - "l1.trading.mcp:get_constraint_state"
+      - "l0.cognition.mcp:recall"
+    must_have_facts:
+      - text: "给出分级处置动作（观察/减仓/清仓）"
+        source: "30-真实环境交互系统 风控契约"
+        signed_off: false
+      - text: "给出触发阈值"
+        source: "30-真实环境交互系统 风控契约"
+        signed_off: false
+    assertions:
+      - "tool_calls 含 l1.trading.mcp:get_constraint_state"
+    entry: [P1, P1b]
+    sampled: false
+    baseline: false
+
+  - id: S9
+    category: backtest_verify
+    title: 回测验证
+    input: "验证最近 20 笔信号质量"
+    expected_route: L2_HANDOFF
+    expected_tools:
+      - "l0.eval.mcp:eval_analyze"
+      - "l2.train.mcp:list_runs"
+    must_have_facts:
+      - text: "给出样本数"
+        source: "45-评测系统 口径"
+        signed_off: false
+      - text: "给出胜率口径（含未平仓处理）"
+        source: "45-评测系统 口径"
+        signed_off: false
+    assertions:
+      - "tool_calls 含 l0.eval.mcp:eval_analyze"
+    entry: [P1, P1b]
+    sampled: false
+    baseline: false
+
+  - id: S10
+    category: evolution_write
+    title: 进化沉淀（写链路）
+    input: "把这次失败案例入库"
+    expected_route: L2_HANDOFF
+    write: true
+    expected_tools:
+      - "l2.emergence.mcp:list_experiments"
+      - "l2.train.mcp:get_training_status"
+    expected_write_tools:
+      - "l0.semantic-39.mcp:training_feed"   # 静态覆盖；运行时需 Mandate，见 S16
+    must_have_facts:
+      - text: "无 Mandate 时明确拒绝（mandate_required）"
+        source: "34-前端应用训练系统/core/mandate_gate.py"
+        signed_off: true
+        match: ["Mandate", "mandate", "授权", "拒绝"]
+      - text: "有 Mandate 时入队并返回可查询句柄"
+        source: "34-前端应用训练系统/core/mandate_gate.py"
+        signed_off: true
+        match: ["入队", "queued", "句柄", "案例"]
+    assertions:
+      - "无 Mandate：拒绝且无落盘"
+      - "有 Mandate：DREAMBUDDY_L0_ROOT=<tmp> 下文件数增加"
+    entry: [P1b, P3]
+    sampled: true
+    baseline: true
+
+  - id: S11
+    category: clarify
+    title: 澄清
+    input: "帮我看看这个"
+    expected_route: NEED_CLARIFY
+    expected_tools:
+      - "l1.intent.mcp:classify_intent"
+    must_have_facts:
+      - text: "返回结构化澄清选项（非猜测性回答）"
+        source: "34-前端应用训练系统/core/sufficiency.py#NEED_CLARIFY"
+        signed_off: true
+    assertions:
+      - "route.decision == NEED_CLARIFY"
+      - "无下游 L2 工具调用"
+    entry: [P1, P1b, P3]
+    sampled: false
+    baseline: false
+
+  - id: S12
+    category: early_terminate
+    title: 早停
+    input: "今天天气如何"
+    expected_route: EARLY_TERMINATE
+    expected_tools:
+      - "l1.intent.mcp:classify_intent"
+    must_have_facts:
+      - text: "明确告知能力边界并终止，不触发下游 LLM"
+        source: "34-前端应用训练系统/core/sufficiency.py#EARLY_TERMINATE"
+        signed_off: true
+    assertions:
+      - "route.decision == EARLY_TERMINATE"
+      - "无 L2 工具调用"
+    entry: [P1, P1b, P3]
+    sampled: false
+    baseline: false
+
+  - id: S13
+    category: degrade
+    title: 故障降级
+    input: "查询 BTC 行情并给出风险提示"
+    expected_route: L2_HANDOFF
+    fault_injection: timeout_or_401
+    expected_tools:
+      - "l0.data.mcp:data_fetch"
+      - "l1.ops.mcp:get_health"
+      - "l0.store-admin.mcp:store_admin_status"
+    must_have_facts:
+      - text: "返回 degraded 标记与降级原因"
+        source: "mcp_shells/_shared/envelope_wrap.py#wrap"
+        signed_off: true
+        match: ["degraded", "降级", "不可用"]
+      - text: "不编造未获取到的数值"
+        source: "SPEC §5.4"
+        signed_off: true
+        match: ["无法获取", "未知", "暂缺", "数据不可用", "未能获取"]
+    assertions:
+      - "degraded=true 且 error_code 非空"
+      - "答案中不含伪造价格"
+    entry: [P1b, P3]
+    sampled: true
+    baseline: true
+
+  - id: S14
+    category: concurrency
+    title: 并发调度
+    input: "同一标的 5 并发请求"
+    expected_route: L2_HANDOFF
+    fault_injection: concurrency_5_cap_2
+    expected_tools:
+      - "l2.dsh.mcp:get_ticket_status"
+      - "l1.ops.mcp:list_alerts"
+      - "l0.store-admin.mcp:store_admin_status"
+    must_have_facts:
+      - text: "提交数 = 完成数 + 明确失败数（无丢单）"
+        source: "34-前端应用训练系统/core/ticket_store.py"
+        signed_off: true
+      - text: "每个请求可查 trace_id / ticket"
+        source: "34-前端应用训练系统/core/ticket_store.py"
+        signed_off: true
+    assertions:
+      - "并发不超过配置上限"
+      - "tickets 数量 == 提交数"
+    entry: [P1b, P3]
+    sampled: true
+    baseline: false
+
+  - id: S15
+    category: audit_replay
+    title: 审计回放
+    input: "回放 S4 的调度过程"
+    expected_route: L2_HANDOFF
+    expected_tools:
+      - "l2.dsh.mcp:get_router_summary"
+      - "l2.dreamos.mcp:poll_run"
+    expected_unregistered:
+      - "l1.stats.mcp:stats_validate"   # 已实现未注册（D-4 注册缺口），P2 直测
+    must_have_facts:
+      - text: "trace_id 贯穿 S/A/C/G 四阶段"
+        source: "34-前端应用训练系统/core/sacg_orchestrator.py#_gen_trace_id"
+        signed_off: true
+      - text: "G 四类沉淀（case/cognition/process/doc）可查"
+        source: "34-前端应用训练系统/core/sacg_orchestrator.py#G_OUTCOME_MAP"
+        signed_off: true
+    assertions:
+      - "evidence 中 trace_id 一致"
+      - "sediments 覆盖 4 类"
+    entry: [P1b, P3]
+    sampled: false
+    baseline: false
+
+  - id: S16
+    category: approval_gate
+    title: 审批门
+    input: "写入一条认知记录"
+    expected_route: L2_HANDOFF
+    write: true
+    expected_tools:
+      - "l0.cognition.mcp:record"
+      - "l0.trade-exec.mcp:place_order"
+    must_have_facts:
+      - text: "无 Mandate → 拒绝码 mandate_required"
+        source: "34-前端应用训练系统/core/mandate_gate.py"
+        signed_off: true
+      - text: "有 Mandate → 执行并落盘"
+        source: "34-前端应用训练系统/core/mandate_gate.py"
+        signed_off: true
+    assertions:
+      - "无 Mandate 分支 ok=false 且 error_code=mandate_required/forbidden"
+      - "有 Mandate 分支落盘成功"
+    entry: [P1b, P3]
+    sampled: true
+    baseline: false
+
+  - id: S17
+    category: event_driven
+    title: 事件驱动传导
+    input: "非农超预期，对风险资产如何传导"
+    expected_route: L2_HANDOFF
+    expected_tools:
+      - "l0.data.mcp:data_fetch"
+      - "l0.cognition.mcp:recall"
+      - "l1.strategy.mcp:list_strategies"
+    must_have_facts:
+      - text: "事件 → 资产 → 时滞 三段齐全"
+        source: "34-前端应用训练系统/core/sacg_orchestrator.py#event_analysis"
+        signed_off: true
+    assertions:
+      - "tool_calls 含 l0.data.mcp 与 l0.cognition.mcp"
+    entry: [P1, P1b]
+    sampled: false
+    baseline: false
+
+  - id: S18
+    category: cross_asset
+    title: 跨资产轮动
+    input: "股债商汇现在该往哪边偏"
+    expected_route: L2_HANDOFF
+    expected_tools:
+      - "l1.strategy.mcp:list_strategies"
+      - "l0.data.mcp:data_fetch"
+      - "l0.rea.mcp:submit_rea_compare"
+    must_have_facts:
+      - text: "给出轮动方向（至少 4 类资产排序）"
+        source: "34-前端应用训练系统/core/sacg_orchestrator.py#asset_class_trend"
+        signed_off: true
+      - text: "给出排序依据"
+        source: "scenario_fixed_input"
+        signed_off: false
+    assertions:
+      - "tool_calls 含 l0.rea.mcp:submit_rea_compare"
+    entry: [P1, P1b]
+    sampled: false
+    baseline: false
+
+# ── 壳级豁免（不参与覆盖判定）────────────────────────────────
+exemptions:
+  - shell_id: l0.rea-client.mcp
+    reason: "registry 标 deprecated 且 shell_path 为空，无实现文件（D-4）"
+  - shell_id: agent.debate.mcp
+    reason: "registry 标 deprecated，与 l2.debate.mcp 共用同一 server"

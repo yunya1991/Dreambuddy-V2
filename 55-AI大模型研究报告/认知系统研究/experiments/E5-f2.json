@@ -1,0 +1,2545 @@
+{
+ "head": "7a85b5ebb696",
+ "head_date": "2026-11-18",
+ "note": "只存值哈希，原始值不入盘",
+ "records": [
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "DEEPSEEK_MODEL_V4",
+   "v_hash": "b45bfc6e",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "TRAINING_FRONTEND_URL",
+   "v_hash": "28e9af66",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "TACTICAL_MICRO_BUDGET_USDT",
+   "v_hash": "39fa9ec1",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "DREAMOS_SYMBOLS",
+   "v_hash": "3d2d6352",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "AGENT_CHAT_DRIVER_EXEC",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "GITHUB_ACTOR",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "ML_TRADE_SERVICE_URL",
+   "v_hash": "28e78b1c",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "FT_ENABLE_OSC_ENTRIES",
+   "v_hash": "6b86b273",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "USE_REALTIME",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "USE_FINBERT",
+   "v_hash": "6b86b273",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "FEISHU_HTTP_BACKOFF",
+   "v_hash": "9f29a130",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "AGENT_OPENAI_COMPAT_JSON_MODE",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "ML_EXPORT_SIZE",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "BAYESIAN_OPT_WEEKLY",
+   "v_hash": "fcbcf165",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "GOVERNANCE_BASE",
+   "v_hash": "2276523f",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "POLL_INTERVAL",
+   "v_hash": "4a44dc15",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "PHASE_C_ROLLOUT_STATE",
+   "v_hash": "d6c7392a",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "TACTICAL_STOP_LOSS_PCT",
+   "v_hash": "7932a07a",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "FEISHU_APP_ID",
+   "v_hash": "7b3b63d3",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "STRATEGY_UPDATE_MIN",
+   "v_hash": "5feceb66",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "HOME",
+   "v_hash": "cd5848f1",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "AGENT_OPENAI_BASE_URL",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "TWITTER_LLM_MODEL",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "DEFAULT_POSITION_PCT",
+   "v_hash": "0e1a3f94",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "FORCE_VECTOR_SHADOW",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "ENABLE_BDSM_INDEPENDENT_OPEN",
+   "v_hash": "6b86b273",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "ML_EXPORT_URL",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "AGENT_DASHSCOPE_JSON_MODE",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "TWITTER_LLM_PROVIDER",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "STRATEGY_UPDATE_HOUR",
+   "v_hash": "d4735e3a",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "TRADING_HTTP_BASE_URL",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "SIGNAL_BUS_BASE",
+   "v_hash": "03986737",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "FUNDAMENTAL_GRAY_V1",
+   "v_hash": "6b86b273",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "TWITTER_LLM_COMPOSE_TIMEOUT_SEC",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "AGENT_A_QWEN_DAILY_LIMIT",
+   "v_hash": "39fa9ec1",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "RECOMMENDATION_ENGINE_API_URL",
+   "v_hash": "de5f077c",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "ML_EXPORT_MIN_INTERVAL_SEC",
+   "v_hash": "5feceb66",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "DREAMBUDDY_DATA",
+   "v_hash": "cdb4ee2a",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "ENABLE_FOLLOW_UP_CATALYST",
+   "v_hash": "6b86b273",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "STRATEGY_INDEPENDENT_COINS",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "ENABLE_BUFFETT_DISCOUNT",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "AUTO_TRADE_ACCOUNT_SCOPE",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "SCHEDULER_TZ_OFFSET",
+   "v_hash": "2c624232",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "ML_GROUP_ID",
+   "v_hash": "9bfe3954",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "OKX_PROFILE",
+   "v_hash": "247610f4",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "BAYESIAN_OPT_MONTHLY",
+   "v_hash": "b5bea41b",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "CDRIVE_V3_GRAY_PERCENT",
+   "v_hash": "5feceb66",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "AGENT_OPENAI_COMPAT_MODEL",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "RUN_SLOW_TESTS",
+   "v_hash": "5feceb66",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "STRATEGY_LIB_PORT",
+   "v_hash": "6c1ec2ad",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "QWEN_MODEL",
+   "v_hash": "bc33b81a",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "AGENT_DASHSCOPE_MODEL",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "GOVERNANCE_OUTBOX_DIR",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "BACKTEST",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "LLM_DAILY_TRAE_LIMIT",
+   "v_hash": "c2356069",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "POLLING_COINS",
+   "v_hash": "d46c3841",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "DREAMOS_CONFIDENCE_THRESHOLD",
+   "v_hash": "f3e360d8",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "FUND_7ENGINES_BOOST",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "BINANCE_WEB3_BASE_URL",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2a",
+   "key": "PORT",
+   "v_hash": "bc7fe627",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "REPORT_PUSH_STATE_FILE",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "HL_POLL_INTERVAL_SEC",
+   "v_hash": "ef2d127d",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "BASE_POSITION_PCT",
+   "v_hash": "0602d7c8",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "AGENT_A_OKX_PASSPHRASE",
+   "v_hash": "e1518a19",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "REDIS_HOST",
+   "v_hash": "49960de5",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "REDIS_PORT",
+   "v_hash": "48f599a9",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "AGENT_OPENAI_COMPAT_BASE_URL",
+   "v_hash": "d30a576c",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "GATE_SKILLS_BASE_URL",
+   "v_hash": "abbd10d6",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "MINIO_ENDPOINT",
+   "v_hash": "67354a43",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "SCREEN_MAX_VOL_MULT",
+   "v_hash": "fbd04e1a",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "AGENT_LLM_ROUTER_RULES_JSON",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "LEVERAGE",
+   "v_hash": "4a44dc15",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "AGENT_LLM_ROUTER_ENABLED",
+   "v_hash": "6b86b273",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "SCREEN_POLL_INTERVAL",
+   "v_hash": "8b34042b",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "SCREEN_LOG_LEVEL",
+   "v_hash": "cda14d0b",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "MAX_ADDONS_PER_POSITION",
+   "v_hash": "4e074085",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "OKX_DRY_RUN",
+   "v_hash": "fcbcf165",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "SERVER_2_IP",
+   "v_hash": "fd39c95b",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "REPORT_API_BASE_TEST",
+   "v_hash": "23c2d82a",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "ALIYUN_ACCESS_KEY_ID",
+   "v_hash": "da2e0034",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "SERVER_1_IP",
+   "v_hash": "404f767c",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "ALIYUN_REGION",
+   "v_hash": "ddce303c",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "NEWS_AI_PATH_ENABLED",
+   "v_hash": "5feceb66",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "ACTIVE_SYSTEM",
+   "v_hash": "e0d2747b",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "SCREEN_VOL_MULT",
+   "v_hash": "d0ff5974",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "NEWS_MOCK_FALLBACK_ENABLED",
+   "v_hash": "5feceb66",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "TIMESCALE_DSN",
+   "v_hash": "64534e5c",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "SCREEN_SKIP_THRESHOLD",
+   "v_hash": "ef2d127d",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "HYPERLIQUID_INFO_URL",
+   "v_hash": "6dac7cbb",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "VITE_SUPABASE_URL",
+   "v_hash": "1b12e9f6",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "PER_TRADE_PCT",
+   "v_hash": "0602d7c8",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "AGENT_LLM_EXPLORE_MODEL",
+   "v_hash": "7596ab66",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "SCREEN_COINS",
+   "v_hash": "1be3af0e",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "STRATEGY_ID",
+   "v_hash": "670020ff",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "ADDON_PCT",
+   "v_hash": "36819111",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "AGENT_OPENAI_COMPAT_MODEL",
+   "v_hash": "4f0d9b02",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "HL_STALE_THRESHOLD_SEC",
+   "v_hash": "4a44dc15",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "AGENT_LLM_CODE_MODEL",
+   "v_hash": "5d07fabb",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "AGENT_LLM_SMALL_PROVIDER",
+   "v_hash": "9ae4dd44",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "BINANCE_STREAMS",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "SCREEN_STRATEGY_MODE",
+   "v_hash": "929260ad",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "BINANCE_SYMBOL",
+   "v_hash": "19aa16ae",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "V3_WEB_UI_PORT",
+   "v_hash": "419487a6",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "FEATURE_WINDOWS",
+   "v_hash": "4a44dc15",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "VITE_APP_VERSION",
+   "v_hash": "92521fc3",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "MAX_CONCURRENT_POSITIONS",
+   "v_hash": "4b227777",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "MAX_POSITION_PCT",
+   "v_hash": "a30a0433",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "OKX_SIMULATED",
+   "v_hash": "fcbcf165",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "TIMESCALE_FALLBACK_PORTS",
+   "v_hash": "a73f5163",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "SCREEN_LLM_DAILY_LIMIT",
+   "v_hash": "6b51d431",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "INITIAL_CAPITAL",
+   "v_hash": "ad573668",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "SCREEN_MIN_VOL_MULT",
+   "v_hash": "22176497",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "AGENT_LLM_SMALL_MODEL",
+   "v_hash": "4f0d9b02",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "SCREEN_AUTO_EXECUTE",
+   "v_hash": "b5bea41b",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "AGENT_LLM_EXPLORE_PROVIDER",
+   "v_hash": "dc4cb570",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "AGENT_LLM_CODE_PROVIDER",
+   "v_hash": "76e3c7bf",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "NEWS_AI_PATH_TIMEOUT_SEC",
+   "v_hash": "6b51d431",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "SCREEN_LOSS_THRESHOLD",
+   "v_hash": "4e074085",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "MONITOR_SYMBOLS",
+   "v_hash": "a2ac4f63",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "REPORT_API_BASE_PROD",
+   "v_hash": "23c2d82a",
+   "event": false,
+   "dur_days": 32,
+   "why": "仍成立"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "AGENT_DREAM_OS_HYPERLIQUID_USER",
+   "v_hash": "2fc84a04",
+   "event": true,
+   "dur_days": 32,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "QWEN_MODEL",
+   "v_hash": "bc33b81a",
+   "event": true,
+   "dur_days": 32,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "DATABASE_URL",
+   "v_hash": "ea987bfc",
+   "event": true,
+   "dur_days": 32,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "HUB_BASE_URL",
+   "v_hash": "b1a61bf2",
+   "event": true,
+   "dur_days": 32,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "WORKBUDDY_API_URL",
+   "v_hash": "a76d8c3e",
+   "event": true,
+   "dur_days": 32,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "WORKBUDDY_WS_URL",
+   "v_hash": "542e59a8",
+   "event": true,
+   "dur_days": 32,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "QWEN_BASE_URL",
+   "v_hash": "989d3503",
+   "event": true,
+   "dur_days": 32,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "ENABLE_DYNAMIC_CHAIN",
+   "v_hash": "b5bea41b",
+   "event": true,
+   "dur_days": 32,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "NEXT_PUBLIC_BRIDGE_URL",
+   "v_hash": "2aadc135",
+   "event": true,
+   "dur_days": 32,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "USE_SCHEDULER",
+   "v_hash": "b5bea41b",
+   "event": true,
+   "dur_days": 32,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 30,
+   "cls": "F2b",
+   "key": "NEXTAUTH_URL",
+   "v_hash": "8daca32f",
+   "event": true,
+   "dur_days": 32,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "DREAMOS_FUNDAMENTAL_INJECTION",
+   "v_hash": "6b86b273",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "TWITTER_OUTBOX_WORKER_ENABLED",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "GITHUB_RUN_ID",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "FT_OSC_BLOCK_EXIT_SIGNAL",
+   "v_hash": "6b86b273",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "TELEGRAM_CHAT_ID",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "FT_DAILY_TIMING_EMA_SLOW",
+   "v_hash": "1a656259",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "TELEGRAM_ENABLED",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "FT_DAILY_TREND_FOLLOW",
+   "v_hash": "6b86b273",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "DREAMOS_FUNDAMENTAL_INJECT_MOCK",
+   "v_hash": "5feceb66",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "ASTER_BASE_URL",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "TWITTER_LLM_COMPOSE_TIMEOUT_SEC",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "AGENT_LLM_ROUTER_ENABLED",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "TRAE_BASE_URL",
+   "v_hash": "d29dccd8",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "FT_DISABLE_DAILY_FILTER_GROUPS",
+   "v_hash": "6b86b273",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "TELEGRAM_OUTBOX_WORKER_ENABLED",
+   "v_hash": "6b86b273",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "ASTER_USER",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "FT_DAILY_TIMING_PULLBACK_MIN_VOTES",
+   "v_hash": "d4735e3a",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "DREAMOS_CONFIDENCE_THRESHOLD",
+   "v_hash": "f3e360d8",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "EXIT_MODE",
+   "v_hash": "08d41f02",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "CARRY_WORKER_ENABLED",
+   "v_hash": "6b86b273",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "ML_EXPORT_URL",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "DREAMOS_SYMBOLS",
+   "v_hash": "3d2d6352",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "TWITTER_MIRROR_TO_TELEGRAM_ENABLED",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "AGENT_OPENAI_COMPAT_MODEL",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "TREND_SYMBOLS",
+   "v_hash": "07449a27",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "DREAMOS_FREE_FUNDAMENTAL",
+   "v_hash": "6b86b273",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "FEISHU_APP_ID",
+   "v_hash": "7b3b63d3",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "LISTEN_HOST",
+   "v_hash": "12ca17b4",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "AUTH_ADMIN_USER",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "BINANCE_SPOT_TESTNET",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "TWITTER_OUTBOX_WORKER_TAIL_BYTES",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "FEISHU_HTTP_BACKOFF",
+   "v_hash": "9f29a130",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "FT_DAILY_TF_REQUIRE_MACD_HIST_UP",
+   "v_hash": "5feceb66",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "AGENT_DASHSCOPE_BASE_URL",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "DEEPSEEK_MODEL_V4",
+   "v_hash": "b45bfc6e",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "FT_SHORT_STRICT_LEVEL",
+   "v_hash": "6b86b273",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "FORCE_CLASSIC_DRIVER",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "AGENT_A_DEEPSEEK_DAILY_LIMIT",
+   "v_hash": "c2356069",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "POLL_INTERVAL",
+   "v_hash": "4a44dc15",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "V15_BT_LONG_ONLY",
+   "v_hash": "5feceb66",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "AGENT_OPENAI_COMPAT_JSON_MODE",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "V15_AI_PHASE_D_PATCHTST_MODEL_PATH",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "TWITTER_RISK_BUDGET_PCT",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "NEWS_AI_PATH_ENABLED",
+   "v_hash": "5feceb66",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "PYTEST_CURRENT_TEST",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "ENABLE_ADMIN_UI",
+   "v_hash": "fcbcf165",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "V15_BT_USE_TIMING_GATE",
+   "v_hash": "5feceb66",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "N_TRIALS",
+   "v_hash": "d59eced1",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "UNITTEST",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "AGENT_OLLAMA_MODEL",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "TWITTER_ENABLED",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "MIN_POSITION_USDT",
+   "v_hash": "d0ff5974",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "FUNDAMENTAL_NEWS_BRIEF_CACHE_TTL_MS",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "BRIDGE_DEBUG",
+   "v_hash": "fcbcf165",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "GITHUB_REF",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "FEISHU_HTTP_RETRY",
+   "v_hash": "4e074085",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "FEISHU_HTTP_TIMEOUT",
+   "v_hash": "f5ca38f7",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "GITHUB_REPOSITORY",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "ASTER_SPOT_BASE_URL",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2a",
+   "key": "LLM_DAILY_QWEN_LIMIT",
+   "v_hash": "39fa9ec1",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "SCREEN_POLL_INTERVAL",
+   "v_hash": "8b34042b",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "BINANCE_STREAMS",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "LISTEN_HOST",
+   "v_hash": "12ca17b4",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "VITE_APP_VERSION",
+   "v_hash": "92521fc3",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "AGENT_B_OKX_PASSPHRASE",
+   "v_hash": "0fed1138",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "SCREEN_LOSS_THRESHOLD",
+   "v_hash": "4e074085",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "VITE_SUPABASE_URL",
+   "v_hash": "1b12e9f6",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "AGENT_LLM_CODE_MODEL",
+   "v_hash": "5d07fabb",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "TIMESCALE_DSN",
+   "v_hash": "64534e5c",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "REDIS_HOST",
+   "v_hash": "49960de5",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "HYPERLIQUID_USER_ADDRESS",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "NEWS_AI_PATH_ENABLED",
+   "v_hash": "5feceb66",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "NEWS_AI_PATH_URL",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "AGENT_LLM_ROUTER_RULES_JSON",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "REPORT_API_BASE_PROD",
+   "v_hash": "23c2d82a",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "REPORT_PUSH_STATE_FILE",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "REPORT_PUSH_RECEIPT_FILE",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "AGENT_LLM_SMALL_MODEL",
+   "v_hash": "4f0d9b02",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "SERVER_2_IP",
+   "v_hash": "fd39c95b",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "INITIAL_CAPITAL",
+   "v_hash": "ad573668",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "SCREEN_STRATEGY_MODE",
+   "v_hash": "929260ad",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "PORT",
+   "v_hash": "bc7fe627",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "REPORT_PUSH_MODE",
+   "v_hash": "6754af96",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "SCREEN_LLM_DAILY_LIMIT",
+   "v_hash": "6b51d431",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "REDIS_PORT",
+   "v_hash": "48f599a9",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "VITE_API_URL",
+   "v_hash": "28e9af66",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "HL_POLL_INTERVAL_SEC",
+   "v_hash": "ef2d127d",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "AGENT_A_OKX_PASSPHRASE",
+   "v_hash": "e1518a19",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "HYPERLIQUID_INFO_URL",
+   "v_hash": "6dac7cbb",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "NEWS_AI_PATH_MODEL",
+   "v_hash": "8a434280",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "ALIYUN_REGION",
+   "v_hash": "ddce303c",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "AGENT_LLM_ROUTER_ENABLED",
+   "v_hash": "6b86b273",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "SCREEN_COINS",
+   "v_hash": "1be3af0e",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "OKX_BASE_URL",
+   "v_hash": "ed77b75d",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "SCREEN_SKIP_THRESHOLD",
+   "v_hash": "ef2d127d",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "PER_TRADE_PCT",
+   "v_hash": "0602d7c8",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "VITE_APP_NAME",
+   "v_hash": "a7ea628d",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "AGENT_LLM_SMALL_PROVIDER",
+   "v_hash": "9ae4dd44",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "STRATEGY_ID",
+   "v_hash": "670020ff",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "AGENT_OPENAI_COMPAT_BASE_URL",
+   "v_hash": "d30a576c",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "SCREEN_MAX_VOL_MULT",
+   "v_hash": "fbd04e1a",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "SCREEN_MIN_VOL_MULT",
+   "v_hash": "22176497",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "BASE_TP_PCT",
+   "v_hash": "a888fe9e",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "ALIYUN_ACCESS_KEY_ID",
+   "v_hash": "da2e0034",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "MONITOR_SYMBOLS",
+   "v_hash": "a2ac4f63",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "NEWS_AI_PATH_TIMEOUT_SEC",
+   "v_hash": "6b51d431",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "AGENT_OPENAI_COMPAT_JSON_MODE",
+   "v_hash": "6b86b273",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "NEWS_MOCK_FALLBACK_ENABLED",
+   "v_hash": "5feceb66",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "TIMESCALE_FALLBACK_PORTS",
+   "v_hash": "a73f5163",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "AGENT_OPENAI_COMPAT_MODEL",
+   "v_hash": "4f0d9b02",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "SCREEN_AUTO_EXECUTE",
+   "v_hash": "b5bea41b",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "SERVER_1_IP",
+   "v_hash": "404f767c",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "FEATURE_WINDOWS",
+   "v_hash": "4a44dc15",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "SCREEN_LOG_LEVEL",
+   "v_hash": "cda14d0b",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "GATE_SKILLS_BASE_URL",
+   "v_hash": "abbd10d6",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "AGENT_LLM_EXPLORE_PROVIDER",
+   "v_hash": "dc4cb570",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "ADDON_PCT",
+   "v_hash": "36819111",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "AGENT_LLM_EXPLORE_MODEL",
+   "v_hash": "7596ab66",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "REPORT_API_BASE_TEST",
+   "v_hash": "23c2d82a",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "ACTIVE_SYSTEM",
+   "v_hash": "e0d2747b",
+   "event": false,
+   "dur_days": 90,
+   "why": "仍成立"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "DEFAULT_MARGIN_USDT",
+   "v_hash": "ad573668",
+   "event": true,
+   "dur_days": 90,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "ADDON3_PCT",
+   "v_hash": "0e1a3f94",
+   "event": true,
+   "dur_days": 90,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "V15_DATA_SOURCE",
+   "v_hash": "27c3158e",
+   "event": true,
+   "dur_days": 90,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "V15_AI_PHASE_E_MODEL_PATH",
+   "v_hash": "06653e13",
+   "event": true,
+   "dur_days": 90,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "OKX_DEFAULT_INST_ID",
+   "v_hash": "b3981d94",
+   "event": true,
+   "dur_days": 90,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "AGENT_DREAM_OS_HYPERLIQUID_USER",
+   "v_hash": "2fc84a04",
+   "event": true,
+   "dur_days": 90,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "V15_MAX_POST_ADDON_HOURS",
+   "v_hash": "a750e567",
+   "event": true,
+   "dur_days": 90,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "ADDON2_PCT",
+   "v_hash": "b4af9cbc",
+   "event": true,
+   "dur_days": 90,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "V15_TIME_EXIT_MAX_EXTENSION_HOURS",
+   "v_hash": "c2356069",
+   "event": true,
+   "dur_days": 90,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "EXCHANGE",
+   "v_hash": "27c3158e",
+   "event": true,
+   "dur_days": 90,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "ENABLE_DYNAMIC_CHAIN",
+   "v_hash": "b5bea41b",
+   "event": true,
+   "dur_days": 90,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "V15_COOLDOWN_HOURS",
+   "v_hash": "98010bd9",
+   "event": true,
+   "dur_days": 90,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "NEXTAUTH_URL",
+   "v_hash": "8daca32f",
+   "event": true,
+   "dur_days": 90,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "WORKBUDDY_WS_URL",
+   "v_hash": "542e59a8",
+   "event": true,
+   "dur_days": 90,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 90,
+   "cls": "F2b",
+   "key": "V15_AI_SHADOW",
+   "v_hash": "fcbcf165",
+   "event": true,
+   "dur_days": 90,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 150,
+   "cls": "F2a",
+   "key": "WORKSPACE",
+   "v_hash": "a4ee4448",
+   "event": false,
+   "dur_days": 150,
+   "why": "仍成立"
+  },
+  {
+   "window": 150,
+   "cls": "F2a",
+   "key": "OKX_PASSPHRASE",
+   "v_hash": "e3b0c442",
+   "event": false,
+   "dur_days": 150,
+   "why": "仍成立"
+  },
+  {
+   "window": 150,
+   "cls": "F2a",
+   "key": "BRIDGE_DEBUG",
+   "v_hash": "fcbcf165",
+   "event": false,
+   "dur_days": 150,
+   "why": "仍成立"
+  },
+  {
+   "window": 150,
+   "cls": "F2a",
+   "key": "RECOMMENDATION_ENGINE_API_URL",
+   "v_hash": "de5f077c",
+   "event": false,
+   "dur_days": 150,
+   "why": "仍成立"
+  },
+  {
+   "window": 150,
+   "cls": "F2a",
+   "key": "POLL_INTERVAL",
+   "v_hash": "4a44dc15",
+   "event": false,
+   "dur_days": 150,
+   "why": "仍成立"
+  },
+  {
+   "window": 150,
+   "cls": "F2a",
+   "key": "BRIDGE_HOST",
+   "v_hash": "12ca17b4",
+   "event": false,
+   "dur_days": 150,
+   "why": "仍成立"
+  },
+  {
+   "window": 150,
+   "cls": "F2a",
+   "key": "OKX_PROFILE",
+   "v_hash": "247610f4",
+   "event": false,
+   "dur_days": 150,
+   "why": "仍成立"
+  },
+  {
+   "window": 150,
+   "cls": "F2a",
+   "key": "GH_REPO",
+   "v_hash": "e219c190",
+   "event": false,
+   "dur_days": 150,
+   "why": "仍成立"
+  },
+  {
+   "window": 150,
+   "cls": "F2a",
+   "key": "DREAM_HUB_URL",
+   "v_hash": "58f52450",
+   "event": false,
+   "dur_days": 150,
+   "why": "仍成立"
+  },
+  {
+   "window": 150,
+   "cls": "F2a",
+   "key": "BRIDGE_PORT",
+   "v_hash": "f23784f1",
+   "event": true,
+   "dur_days": 150,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 150,
+   "cls": "F2b",
+   "key": "NEXT_PUBLIC_BRIDGE_URL",
+   "v_hash": "2aadc135",
+   "event": true,
+   "dur_days": 150,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 150,
+   "cls": "F2b",
+   "key": "NEXTAUTH_URL",
+   "v_hash": "8daca32f",
+   "event": true,
+   "dur_days": 150,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 150,
+   "cls": "F2b",
+   "key": "WORKBUDDY_WS_URL",
+   "v_hash": "542e59a8",
+   "event": true,
+   "dur_days": 150,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 150,
+   "cls": "F2b",
+   "key": "HUB_BASE_URL",
+   "v_hash": "b1a61bf2",
+   "event": true,
+   "dur_days": 150,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 150,
+   "cls": "F2b",
+   "key": "WORKBUDDY_API_URL",
+   "v_hash": "a76d8c3e",
+   "event": true,
+   "dur_days": 150,
+   "why": "键消失(上界)"
+  },
+  {
+   "window": 150,
+   "cls": "F2b",
+   "key": "DATABASE_URL",
+   "v_hash": "ea987bfc",
+   "event": true,
+   "dur_days": 150,
+   "why": "键消失(上界)"
+  }
+ ]
+}

@@ -1,0 +1,459 @@
+{
+  "generated_from": {
+    "registry": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/47-MCP管理系统/registry/mcp_capabilities.yaml",
+    "scenarios": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/56-L2架构能力聚合层/evals/scenarios.yaml",
+    "evidence": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/56-L2架构能力聚合层/evals/out/evidence.jsonl"
+  },
+  "summary": {
+    "shells_total": 18,
+    "shells_active": 16,
+    "shells_deprecated": 2,
+    "shells_exempt": 2,
+    "tools_active": 81,
+    "tools_hit": 70,
+    "tool_coverage_ratio": 0.864,
+    "tool_coverage_target": 0.7,
+    "evidence_based": true,
+    "scenarios_total": 18,
+    "scenarios_sampled": 10,
+    "scenarios_baseline": 8
+  },
+  "shells": [
+    {
+      "shell_id": "l0.cognition.mcp",
+      "layer": "L0",
+      "status": "available",
+      "transport": "ssh-stdio",
+      "tools_total": 7,
+      "tools_expected": [
+        "recall",
+        "record"
+      ],
+      "tools_expected_count": 2,
+      "tool_coverage": 0.286,
+      "scenarios": [
+        "S16",
+        "S17",
+        "S4",
+        "S8"
+      ],
+      "exempt": false,
+      "exempt_reason": "",
+      "shell_path": "4-MEMORY/9-工具与接口/cognitive_mcp_server.py",
+      "shell_impl_exists": true
+    },
+    {
+      "shell_id": "l0.semantic-39.mcp",
+      "layer": "L0",
+      "status": "available",
+      "transport": "stdio",
+      "tools_total": 4,
+      "tools_expected": [
+        "query_entity",
+        "semantic_lookup",
+        "training_feed"
+      ],
+      "tools_expected_count": 3,
+      "tool_coverage": 0.75,
+      "scenarios": [
+        "S10",
+        "S3"
+      ],
+      "exempt": false,
+      "exempt_reason": "",
+      "shell_path": "39-金融语义蒸馏系统/scripts/mcp_server.py",
+      "shell_impl_exists": true
+    },
+    {
+      "shell_id": "l0.rea.mcp",
+      "layer": "L0",
+      "status": "available",
+      "transport": "stdio",
+      "tools_total": 15,
+      "tools_expected": [
+        "submit_rea_analyze",
+        "submit_rea_compare",
+        "submit_rea_trace"
+      ],
+      "tools_expected_count": 3,
+      "tool_coverage": 0.2,
+      "scenarios": [
+        "S18",
+        "S4",
+        "S5"
+      ],
+      "exempt": false,
+      "exempt_reason": "",
+      "shell_path": "mcp_shells/l0_rea/server.py",
+      "shell_impl_exists": true
+    },
+    {
+      "shell_id": "l0.rea-client.mcp",
+      "layer": "L0",
+      "status": "deprecated",
+      "transport": "http",
+      "tools_total": 3,
+      "tools_expected": [],
+      "tools_expected_count": 0,
+      "tool_coverage": 0.0,
+      "scenarios": [],
+      "exempt": true,
+      "exempt_reason": "registry 标 deprecated 且 shell_path 为空，无实现文件（D-4）",
+      "shell_path": "",
+      "shell_impl_exists": false
+    },
+    {
+      "shell_id": "l0.data.mcp",
+      "layer": "L0",
+      "status": "available",
+      "transport": "stdio",
+      "tools_total": 4,
+      "tools_expected": [
+        "data_fetch",
+        "data_store_read"
+      ],
+      "tools_expected_count": 2,
+      "tool_coverage": 0.5,
+      "scenarios": [
+        "S1",
+        "S13",
+        "S17",
+        "S18",
+        "S2",
+        "S6"
+      ],
+      "exempt": false,
+      "exempt_reason": "",
+      "shell_path": "mcp_shells/l0_data/server.py",
+      "shell_impl_exists": true
+    },
+    {
+      "shell_id": "l0.eval.mcp",
+      "layer": "L0",
+      "status": "available",
+      "transport": "stdio",
+      "tools_total": 2,
+      "tools_expected": [
+        "eval_analyze"
+      ],
+      "tools_expected_count": 1,
+      "tool_coverage": 0.5,
+      "scenarios": [
+        "S9"
+      ],
+      "exempt": false,
+      "exempt_reason": "",
+      "shell_path": "mcp_shells/l0_eval/server.py",
+      "shell_impl_exists": true
+    },
+    {
+      "shell_id": "l0.store-admin.mcp",
+      "layer": "L0",
+      "status": "available",
+      "transport": "stdio",
+      "tools_total": 2,
+      "tools_expected": [
+        "store_admin_status"
+      ],
+      "tools_expected_count": 1,
+      "tool_coverage": 0.5,
+      "scenarios": [
+        "S13",
+        "S14",
+        "S2"
+      ],
+      "exempt": false,
+      "exempt_reason": "",
+      "shell_path": "mcp_shells/l0_store_admin/server.py",
+      "shell_impl_exists": true
+    },
+    {
+      "shell_id": "l0.trade-exec.mcp",
+      "layer": "L0",
+      "status": "available",
+      "transport": "stdio",
+      "tools_total": 10,
+      "tools_expected": [
+        "place_order",
+        "pre_trade_check"
+      ],
+      "tools_expected_count": 2,
+      "tool_coverage": 0.2,
+      "scenarios": [
+        "S16",
+        "S7"
+      ],
+      "exempt": false,
+      "exempt_reason": "",
+      "shell_path": "mcp_shells/l0_trade_exec/server.py",
+      "shell_impl_exists": true
+    },
+    {
+      "shell_id": "agent.debate.mcp",
+      "layer": "L2",
+      "status": "deprecated",
+      "transport": "stdio",
+      "tools_total": 3,
+      "tools_expected": [],
+      "tools_expected_count": 0,
+      "tool_coverage": 0.0,
+      "scenarios": [],
+      "exempt": true,
+      "exempt_reason": "registry 标 deprecated，与 l2.debate.mcp 共用同一 server",
+      "shell_path": "mcp_shells/debate_adversarial/server.py",
+      "shell_impl_exists": true
+    },
+    {
+      "shell_id": "l2.debate.mcp",
+      "layer": "L2",
+      "status": "available",
+      "transport": "stdio",
+      "tools_total": 3,
+      "tools_expected": [
+        "start_debate"
+      ],
+      "tools_expected_count": 1,
+      "tool_coverage": 0.333,
+      "scenarios": [
+        "S5"
+      ],
+      "exempt": false,
+      "exempt_reason": "",
+      "shell_path": "mcp_shells/debate_adversarial/server.py",
+      "shell_impl_exists": true
+    },
+    {
+      "shell_id": "l1.trading.mcp",
+      "layer": "L1",
+      "status": "available",
+      "transport": "stdio",
+      "tools_total": 10,
+      "tools_expected": [
+        "get_constraint_state",
+        "get_signal_state"
+      ],
+      "tools_expected_count": 2,
+      "tool_coverage": 0.2,
+      "scenarios": [
+        "S7",
+        "S8"
+      ],
+      "exempt": false,
+      "exempt_reason": "",
+      "shell_path": "mcp_shells/l1_trading/server.py",
+      "shell_impl_exists": true
+    },
+    {
+      "shell_id": "l1.intent.mcp",
+      "layer": "L1",
+      "status": "available",
+      "transport": "stdio",
+      "tools_total": 3,
+      "tools_expected": [
+        "classify_intent"
+      ],
+      "tools_expected_count": 1,
+      "tool_coverage": 0.333,
+      "scenarios": [
+        "S1",
+        "S11",
+        "S12"
+      ],
+      "exempt": false,
+      "exempt_reason": "",
+      "shell_path": "mcp_shells/l1_intent/server.py",
+      "shell_impl_exists": true
+    },
+    {
+      "shell_id": "l1.strategy.mcp",
+      "layer": "L1",
+      "status": "available",
+      "transport": "stdio",
+      "tools_total": 4,
+      "tools_expected": [
+        "get_strategy_version",
+        "list_strategies"
+      ],
+      "tools_expected_count": 2,
+      "tool_coverage": 0.5,
+      "scenarios": [
+        "S17",
+        "S18",
+        "S5",
+        "S6"
+      ],
+      "exempt": false,
+      "exempt_reason": "",
+      "shell_path": "mcp_shells/l1_strategy/server.py",
+      "shell_impl_exists": true
+    },
+    {
+      "shell_id": "l2.dreamos.mcp",
+      "layer": "L2",
+      "status": "available",
+      "transport": "stdio",
+      "tools_total": 5,
+      "tools_expected": [
+        "poll_run"
+      ],
+      "tools_expected_count": 1,
+      "tool_coverage": 0.2,
+      "scenarios": [
+        "S15"
+      ],
+      "exempt": false,
+      "exempt_reason": "",
+      "shell_path": "mcp_shells/l2_dreamos/server.py",
+      "shell_impl_exists": true
+    },
+    {
+      "shell_id": "l1.ops.mcp",
+      "layer": "L1",
+      "status": "available",
+      "transport": "stdio",
+      "tools_total": 3,
+      "tools_expected": [
+        "get_health",
+        "list_alerts"
+      ],
+      "tools_expected_count": 2,
+      "tool_coverage": 0.667,
+      "scenarios": [
+        "S13",
+        "S14"
+      ],
+      "exempt": false,
+      "exempt_reason": "",
+      "shell_path": "mcp_shells/l1_ops/server.py",
+      "shell_impl_exists": true
+    },
+    {
+      "shell_id": "l2.train.mcp",
+      "layer": "L2",
+      "status": "available",
+      "transport": "stdio",
+      "tools_total": 3,
+      "tools_expected": [
+        "get_training_status",
+        "list_runs"
+      ],
+      "tools_expected_count": 2,
+      "tool_coverage": 0.667,
+      "scenarios": [
+        "S10",
+        "S9"
+      ],
+      "exempt": false,
+      "exempt_reason": "",
+      "shell_path": "mcp_shells/l2_train/server.py",
+      "shell_impl_exists": true
+    },
+    {
+      "shell_id": "l2.emergence.mcp",
+      "layer": "L2",
+      "status": "available",
+      "transport": "stdio",
+      "tools_total": 3,
+      "tools_expected": [
+        "list_experiments"
+      ],
+      "tools_expected_count": 1,
+      "tool_coverage": 0.333,
+      "scenarios": [
+        "S10"
+      ],
+      "exempt": false,
+      "exempt_reason": "",
+      "shell_path": "mcp_shells/l2_emergence/server.py",
+      "shell_impl_exists": true
+    },
+    {
+      "shell_id": "l2.dsh.mcp",
+      "layer": "L2",
+      "status": "available",
+      "transport": "stdio",
+      "tools_total": 3,
+      "tools_expected": [
+        "get_router_summary",
+        "get_ticket_status"
+      ],
+      "tools_expected_count": 2,
+      "tool_coverage": 0.667,
+      "scenarios": [
+        "S14",
+        "S15"
+      ],
+      "exempt": false,
+      "exempt_reason": "",
+      "shell_path": "mcp_shells/l2_dsh/server.py",
+      "shell_impl_exists": true
+    }
+  ],
+  "uncovered_tools": [
+    {
+      "shell_id": "l0.cognition.mcp",
+      "tool": "record"
+    },
+    {
+      "shell_id": "l0.cognition.mcp",
+      "tool": "verify"
+    },
+    {
+      "shell_id": "l0.semantic-39.mcp",
+      "tool": "distill_aliases"
+    },
+    {
+      "shell_id": "l0.semantic-39.mcp",
+      "tool": "training_feed"
+    },
+    {
+      "shell_id": "l0.data.mcp",
+      "tool": "data_store_write"
+    },
+    {
+      "shell_id": "l0.trade-exec.mcp",
+      "tool": "place_order"
+    },
+    {
+      "shell_id": "l0.trade-exec.mcp",
+      "tool": "cancel_order"
+    },
+    {
+      "shell_id": "l0.trade-exec.mcp",
+      "tool": "ingest_signal"
+    },
+    {
+      "shell_id": "l1.trading.mcp",
+      "tool": "forward_signal"
+    },
+    {
+      "shell_id": "l2.dreamos.mcp",
+      "tool": "submit_run"
+    },
+    {
+      "shell_id": "l2.train.mcp",
+      "tool": "trigger_training"
+    }
+  ],
+  "unregistered_expected": [
+    {
+      "scenario_id": "S15",
+      "pair": "l1.stats.mcp:stats_validate",
+      "reason": "已实现未注册（P2 直测）"
+    }
+  ],
+  "missing_impl": [],
+  "gates": {
+    "AC1": {
+      "pass": true,
+      "shells_all_present": true,
+      "active_each_has_scenario": true
+    },
+    "AC1b": {
+      "status": "pass",
+      "pass": true,
+      "each_active_shell_has_tool": true,
+      "tool_coverage_ratio_ok": true
+    }
+  }
+}

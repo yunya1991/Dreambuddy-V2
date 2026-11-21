@@ -754,49 +754,29 @@ def _handle_technical_indicators(params: dict[str, Any]) -> dict[str, Any]:
 
 
 def _handle_fundamental_analysis(params: dict[str, Any]) -> dict[str, Any]:
-    """基本面 API 接入 (Phase 1)
+    """基本面 API 接入（上游已下线）
 
-    调用 http://49.233.123.96:3456 获取基本面分析数据。
-    FAIL-OPEN: 不可达时返回中性默认值 + 6 层堆栈日志。
+    原上游 http://49.233.123.96:3456（产物中台）已下线，不再发起网络请求，
+    直接返回中性默认值，保持 FAIL-OPEN 语义。
 
     参数:
         symbol: 交易对（如 "BTC"）
-        endpoint: 可选，指定具体端点（默认 /fundamental/overview）
+        endpoint: 保留入参以兼容旧调用（不再使用）
 
-    返回: 基本面分析结果 dict
+    返回: 基本面分析结果 dict（status=degraded）
     """
-    import urllib.request
-
     symbol = params.get("symbol", "BTC")
     endpoint = params.get("endpoint", "/fundamental/overview")
-    base_url = "http://49.233.123.96:3456"
 
-    try:
-        url = f"{base_url}{endpoint}"
-        req = urllib.request.Request(url, method="GET")
-        req.add_header("Accept", "application/json")
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            return {
-                "node_id": "fundamental_analysis",
-                "symbol": symbol,
-                "endpoint": endpoint,
-                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                "data": data,
-                "status": "ok",
-            }
-    except Exception as e:
-        stack = traceback.format_exc()
-        _send_stderr("WARN", f"基本面API(3456)不可达: {e}\n{stack}")
-        return {
-            "node_id": "fundamental_analysis",
-            "symbol": symbol,
-            "endpoint": endpoint,
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "status": "degraded",
-            "neutral_default": {"signal": "neutral", "confidence": 0.0},
-            "error": f"{type(e).__name__}: {e}",
-        }
+    return {
+        "node_id": "fundamental_analysis",
+        "symbol": symbol,
+        "endpoint": endpoint,
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "status": "degraded",
+        "neutral_default": {"signal": "neutral", "confidence": 0.0},
+        "error": "upstream_retired: 产物中台(49.233.123.96:3456) 已下线",
+    }
 
 
 # G 层 session log consumer 投影文件路径

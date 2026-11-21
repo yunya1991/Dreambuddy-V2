@@ -1,0 +1,16 @@
+id: dreambuddy-os
+locations:
+  - path: .trae/skills/dreambuddy-os
+    role: trae-entry
+  - path: 1-ARCHITECTURE/skills/dreambuddy-os
+    role: project-index
+lifecycle:
+  status: deprecated
+  proposed_at: "2026-09-21"
+  activated_at: "2026-06-27"
+  deprecated_at: "2026-11-12"
+  deprecation_reason: DREAM 架构落地统一入口收敛到 dreamos-dev（薄提示 + contracts/ + scripts/ 机器门禁），dreambuddy-os 不再作为开工入口
+conflicts_with: []
+replaces: []
+replaced_by: dreamos-dev
+integrity_hash: null

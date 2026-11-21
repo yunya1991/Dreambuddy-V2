@@ -1,0 +1,13 @@
+{
+  "params": {
+    "alpha": 0.05,
+    "min_agree": 0.8,
+    "min_members": 10,
+    "primary_only": true
+  },
+  "pattern_count": 0,
+  "patterns": [],
+  "schema_version": "1.0",
+  "skipped": 50,
+  "unmapped": []
+}

@@ -1,0 +1,14 @@
+id: dream-research-workflow
+locations:
+  - path: .trae/skills/dream-research-workflow
+    role: trae-entry
+  - path: 1-ARCHITECTURE/skills/dream-research-workflow
+    role: project-index
+lifecycle:
+  status: active
+  proposed_at: "2026-09-21"
+  activated_at: "2026-09-21"
+conflicts_with: []
+replaces: []
+replaced_by: null
+integrity_hash: null

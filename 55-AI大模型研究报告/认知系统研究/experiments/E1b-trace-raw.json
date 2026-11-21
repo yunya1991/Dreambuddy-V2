@@ -1,0 +1,539 @@
+[
+ {
+  "id": "A1",
+  "category": "调用链",
+  "ok": true,
+  "filtered": true,
+  "seeds": [
+   "core.compute.graph_executor.GraphExecutor.execute",
+   "core.compute.graph_executor.GraphExecutor.__init__"
+  ],
+  "seed_count": 2,
+  "subgraph_nodes": 6,
+  "edge_count": 4,
+  "payload_bytes": 1400,
+  "latency_ms": 1656.4,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内"
+  ],
+  "expected_paths": [
+   "apps/trading_agent/agent.py"
+  ],
+  "truth": "TradingAgent.__init__ 中 self.graph_executor = GraphExecutor(registry=self.registry)",
+  "truth_evidence": [
+   "apps/trading_agent/agent.py:95"
+  ]
+ },
+ {
+  "id": "A2",
+  "category": "调用链",
+  "ok": true,
+  "filtered": true,
+  "seeds": [
+   "core.compute.graph_executor.GraphExecutor.execute",
+   "core.compute.graph_executor.GraphExecutor.__init__",
+   "core.compute.node_runner._target",
+   "core.compute.node_runner.NodeRunner.run"
+  ],
+  "seed_count": 4,
+  "subgraph_nodes": 12,
+  "edge_count": 8,
+  "payload_bytes": 2419,
+  "latency_ms": 1566.5,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内"
+  ],
+  "expected_paths": [
+   "core/compute/graph_executor.py"
+  ],
+  "truth": "GraphExecutor.__init__ 中 self._runner = NodeRunner(max_retries=..., timeout_ms=...)",
+  "truth_evidence": [
+   "core/compute/graph_executor.py:104"
+  ]
+ },
+ {
+  "id": "A3",
+  "category": "调用链",
+  "ok": true,
+  "filtered": true,
+  "seeds": [
+   "shared.state.new_state",
+   "shared.state.State.update"
+  ],
+  "seed_count": 2,
+  "subgraph_nodes": 2,
+  "edge_count": 0,
+  "payload_bytes": 278,
+  "latency_ms": 1572.3,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内"
+  ],
+  "expected_paths": [
+   "core/compute/aggregator.py"
+  ],
+  "truth": "Aggregator.update_state() 写入 state.final_action 与 state.final_confidence",
+  "truth_evidence": [
+   "core/compute/aggregator.py:187",
+   "core/compute/aggregator.py:189"
+  ]
+ },
+ {
+  "id": "A4",
+  "category": "调用链",
+  "ok": true,
+  "filtered": true,
+  "seeds": [
+   "core.capability.registry.CapabilityRegistry.attach_node_registry"
+  ],
+  "seed_count": 1,
+  "subgraph_nodes": 1,
+  "edge_count": 0,
+  "payload_bytes": 304,
+  "latency_ms": 1567.3,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内"
+  ],
+  "expected_paths": [
+   "apps/trading_agent/agent.py"
+  ],
+  "truth": "TradingAgent.__init__ 中 self.capability_registry.attach_node_registry(self.registry)",
+  "truth_evidence": [
+   "apps/trading_agent/agent.py:77"
+  ]
+ },
+ {
+  "id": "B1",
+  "category": "字段来源",
+  "ok": true,
+  "filtered": true,
+  "seeds": [
+   "shared.state.new_state",
+   "shared.state.State.update",
+   "tests.test_coin_selector.test_fuse_results",
+   "core.sense.intent_engine.IntentEngine._fuse_results"
+  ],
+  "seed_count": 4,
+  "subgraph_nodes": 8,
+  "edge_count": 5,
+  "payload_bytes": 1558,
+  "latency_ms": 1563.7,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内"
+  ],
+  "expected_paths": [
+   "shared/state.py"
+  ],
+  "truth": "State.update() 中 self.results[node_id] = result",
+  "truth_evidence": [
+   "shared/state.py:165",
+   "shared/state.py:167"
+  ]
+ },
+ {
+  "id": "B2",
+  "category": "字段来源",
+  "ok": true,
+  "filtered": false,
+  "seeds": [],
+  "seed_count": 0,
+  "subgraph_nodes": 400,
+  "edge_count": 0,
+  "payload_bytes": 28041,
+  "latency_ms": 1564.7,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内",
+   "feature 未匹配到任何函数，返回全量调用图"
+  ],
+  "expected_paths": [
+   "core/compute/aggregator.py"
+  ],
+  "truth": "Aggregator.aggregate 中按成功节点置信度加权平均；HOLD 时再乘 0.6",
+  "truth_evidence": [
+   "core/compute/aggregator.py:128",
+   "core/compute/aggregator.py:133"
+  ]
+ },
+ {
+  "id": "B3",
+  "category": "字段来源",
+  "ok": true,
+  "filtered": true,
+  "seeds": [
+   "shared.state.new_state",
+   "shared.state.State.update",
+   "apps.api_server.recognize_intent",
+   "core.sense.types.IntentInput.to_dict"
+  ],
+  "seed_count": 4,
+  "subgraph_nodes": 4,
+  "edge_count": 0,
+  "payload_bytes": 430,
+  "latency_ms": 1564.2,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内"
+  ],
+  "expected_paths": [
+   "apps/trading_agent/agent.py",
+   "capabilities/trading/nodes/a5_execution.py"
+  ],
+  "truth": "TradingAgent 两处（intent 识别后、A5 回写）+ a5_execution.py 一处",
+  "truth_evidence": [
+   "apps/trading_agent/agent.py:419",
+   "apps/trading_agent/agent.py:873",
+   "capabilities/trading/nodes/a5_execution.py:344"
+  ]
+ },
+ {
+  "id": "B4",
+  "category": "字段来源",
+  "ok": true,
+  "filtered": true,
+  "seeds": [
+   "tests.test_a1_graph_executor_stop_reason._executor",
+   "tests.test_a1_graph_executor_stop_reason._FakeNode.execute"
+  ],
+  "seed_count": 2,
+  "subgraph_nodes": 10,
+  "edge_count": 16,
+  "payload_bytes": 4024,
+  "latency_ms": 1570.3,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内"
+  ],
+  "expected_paths": [
+   "core/compute/graph_executor.py"
+  ],
+  "truth": "全部在 graph_executor.py：187/207/293/303/313/352/420/427/477",
+  "truth_evidence": [
+   "core/compute/graph_executor.py:187",
+   "core/compute/graph_executor.py:207",
+   "core/compute/graph_executor.py:293",
+   "core/compute/graph_executor.py:303",
+   "core/compute/graph_executor.py:313",
+   "core/compute/graph_executor.py:352",
+   "core/compute/graph_executor.py:420",
+   "core/compute/graph_executor.py:427",
+   "core/compute/graph_executor.py:477"
+  ]
+ },
+ {
+  "id": "C1",
+  "category": "配置生效点",
+  "ok": true,
+  "filtered": false,
+  "seeds": [],
+  "seed_count": 0,
+  "subgraph_nodes": 400,
+  "edge_count": 0,
+  "payload_bytes": 28041,
+  "latency_ms": 1573.8,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内",
+   "feature 未匹配到任何函数，返回全量调用图"
+  ],
+  "expected_paths": [
+   "cli/auto_trader.py",
+   "capabilities/trading/execution/auto_trader.py",
+   "capabilities/trading/nodes/a5_execution.py",
+   "capabilities/trading/nodes/a3_strategy.py"
+  ],
+  "truth": "4 个模块级常量：cli/auto_trader.py、capabilities/trading/execution/auto_trader.py、nodes/a5_execution.py、nodes/a3_strategy.py，默认值均为 0.4",
+  "truth_evidence": [
+   "cli/auto_trader.py:37",
+   "capabilities/trading/execution/auto_trader.py:37",
+   "capabilities/trading/nodes/a5_execution.py:19",
+   "capabilities/trading/nodes/a3_strategy.py:15"
+  ]
+ },
+ {
+  "id": "C2",
+  "category": "配置生效点",
+  "ok": true,
+  "filtered": false,
+  "seeds": [],
+  "seed_count": 0,
+  "subgraph_nodes": 400,
+  "edge_count": 0,
+  "payload_bytes": 28041,
+  "latency_ms": 1567.5,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内",
+   "feature 未匹配到任何函数，返回全量调用图"
+  ],
+  "expected_paths": [
+   "core/arrange/graph_planner.py"
+  ],
+  "truth": "GraphPlanner._infer_chain 读取；值为 true（不区分大小写）时直接返回默认 A 链，跳过 INTENT_CHAIN_MAP",
+  "truth_evidence": [
+   "core/arrange/graph_planner.py:290",
+   "core/arrange/graph_planner.py:293"
+  ]
+ },
+ {
+  "id": "C3",
+  "category": "配置生效点",
+  "ok": true,
+  "filtered": false,
+  "seeds": [],
+  "seed_count": 0,
+  "subgraph_nodes": 400,
+  "edge_count": 0,
+  "payload_bytes": 28041,
+  "latency_ms": 1566.7,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内",
+   "feature 未匹配到任何函数，返回全量调用图"
+  ],
+  "expected_paths": [
+   "evolution/exploration_policy.py",
+   "evolution/washout_bayesian_updater.py"
+  ],
+  "truth": "exploration_policy.py: 构造时 self._enabled = (值=='1')；washout_bayesian_updater.py: 值 != '1' 时退化为原始 update（字节等价）",
+  "truth_evidence": [
+   "evolution/exploration_policy.py:40",
+   "evolution/washout_bayesian_updater.py:119"
+  ]
+ },
+ {
+  "id": "C4",
+  "category": "配置生效点",
+  "ok": true,
+  "filtered": false,
+  "seeds": [],
+  "seed_count": 0,
+  "subgraph_nodes": 400,
+  "edge_count": 0,
+  "payload_bytes": 28041,
+  "latency_ms": 1565.9,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内",
+   "feature 未匹配到任何函数，返回全量调用图"
+  ],
+  "expected_paths": [
+   "shared/event_writer.py",
+   "core/compute/hermes_reflector.py"
+  ],
+  "truth": "两处：shared/event_writer.py（事件根目录）与 core/compute/hermes_reflector.py（反思溯源）",
+  "truth_evidence": [
+   "shared/event_writer.py:44",
+   "core/compute/hermes_reflector.py:166"
+  ]
+ },
+ {
+  "id": "D1",
+  "category": "模块入口",
+  "ok": true,
+  "filtered": true,
+  "seeds": [
+   "apps.api_server.chat",
+   "apps.api_server.main",
+   "apps.api_server.create_app"
+  ],
+  "seed_count": 3,
+  "subgraph_nodes": 10,
+  "edge_count": 14,
+  "payload_bytes": 1950,
+  "latency_ms": 1568.8,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内"
+  ],
+  "expected_paths": [
+   "apps/api_server.py"
+  ],
+  "truth": "apps/api_server.py:75 定义 create_app(agent=None, budget_mode='standard')；模块 docstring 声明 python -m dreamos.apps.api_server",
+  "truth_evidence": [
+   "apps/api_server.py:21",
+   "apps/api_server.py:75"
+  ]
+ },
+ {
+  "id": "D2",
+  "category": "模块入口",
+  "ok": true,
+  "filtered": true,
+  "seeds": [
+   "cli.app.get_default_app"
+  ],
+  "seed_count": 1,
+  "subgraph_nodes": 1,
+  "edge_count": 0,
+  "payload_bytes": 222,
+  "latency_ms": 1568.0,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内"
+  ],
+  "expected_paths": [
+   "cli/app.py"
+  ],
+  "truth": "cli/app.py:126 def get_default_app() -> CLIApp",
+  "truth_evidence": [
+   "cli/app.py:126"
+  ]
+ },
+ {
+  "id": "D3",
+  "category": "模块入口",
+  "ok": true,
+  "filtered": true,
+  "seeds": [
+   "registry.node_registry.get_default_registry"
+  ],
+  "seed_count": 1,
+  "subgraph_nodes": 1,
+  "edge_count": 0,
+  "payload_bytes": 262,
+  "latency_ms": 1608.3,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内"
+  ],
+  "expected_paths": [
+   "registry/node_registry.py"
+  ],
+  "truth": "registry/node_registry.py:266 def get_default_registry() -> NodeRegistry",
+  "truth_evidence": [
+   "registry/node_registry.py:266"
+  ]
+ },
+ {
+  "id": "D4",
+  "category": "模块入口",
+  "ok": true,
+  "filtered": true,
+  "seeds": [
+   "core.capability.registry.get_default_capability_registry"
+  ],
+  "seed_count": 1,
+  "subgraph_nodes": 1,
+  "edge_count": 0,
+  "payload_bytes": 288,
+  "latency_ms": 1623.6,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内"
+  ],
+  "expected_paths": [
+   "core/capability/registry.py"
+  ],
+  "truth": "core/capability/registry.py:272 def get_default_capability_registry() -> CapabilityRegistry",
+  "truth_evidence": [
+   "core/capability/registry.py:272"
+  ]
+ },
+ {
+  "id": "E1",
+  "category": "依赖关系",
+  "ok": true,
+  "filtered": true,
+  "seeds": [
+   "core.capability.tool_set._slug",
+   "core.artifact.store._match_text",
+   "core.compute.node_runner._target",
+   "cli.ranking_insight.compute_insight",
+   "core.graph_store.compressor._scan"
+  ],
+  "seed_count": 5,
+  "subgraph_nodes": 34,
+  "edge_count": 39,
+  "payload_bytes": 7267,
+  "latency_ms": 1802.3,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内"
+  ],
+  "expected_paths": [
+   "core/compute/graph_executor.py"
+  ],
+  "truth": "无静态 import；仅通过 Optional[Any] 参数注入 graph_store，并在 execute 中取 store = graph_store or self._graph_store",
+  "truth_evidence": [
+   "core/compute/graph_executor.py:97",
+   "core/compute/graph_executor.py:167"
+  ]
+ },
+ {
+  "id": "E2",
+  "category": "依赖关系",
+  "ok": true,
+  "filtered": true,
+  "seeds": [
+   "core.capability.tool_set._slug",
+   "core.artifact.store._match_text",
+   "core.sense.types.IntentInput.to_dict",
+   "core.sense.types.IntentResult.to_dict"
+  ],
+  "seed_count": 4,
+  "subgraph_nodes": 15,
+  "edge_count": 20,
+  "payload_bytes": 3622,
+  "latency_ms": 1585.6,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内"
+  ],
+  "expected_paths": [
+   "core/sense/intent_engine.py"
+  ],
+  "truth": "不依赖 capabilities；项目内只依赖 dreamos.shared（llm_client、utils）",
+  "truth_evidence": [
+   "core/sense/intent_engine.py:32",
+   "core/sense/intent_engine.py:33",
+   "core/sense/recognizers/llm_based.py:18"
+  ]
+ },
+ {
+  "id": "E3",
+  "category": "依赖关系",
+  "ok": true,
+  "filtered": true,
+  "seeds": [
+   "cli.evolution_test.main",
+   "evolution.types.Lesson.to_dict",
+   "core.capability.tool_set._slug",
+   "core.artifact.store._match_text"
+  ],
+  "seed_count": 4,
+  "subgraph_nodes": 23,
+  "edge_count": 28,
+  "payload_bytes": 5563,
+  "latency_ms": 1590.0,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内"
+  ],
+  "expected_paths": [
+   "evolution/engine.py",
+   "evolution/lesson_distiller.py"
+  ],
+  "truth": "是，依赖 core.graph_store.types.HistoryEntry（engine/lesson_distiller/gap_analyzer/node_optimizer 共 4+ 文件），另依赖 shared.state / shared.utils",
+  "truth_evidence": [
+   "evolution/engine.py:47",
+   "evolution/engine.py:50",
+   "evolution/lesson_distiller.py:23",
+   "evolution/gap_analyzer.py:19",
+   "evolution/node_optimizer.py:22"
+  ]
+ },
+ {
+  "id": "E4",
+  "category": "依赖关系",
+  "ok": true,
+  "filtered": true,
+  "seeds": [
+   "apps.cli.main",
+   "apps.api_server.chat",
+   "cli.app.CLIApp.run"
+  ],
+  "seed_count": 3,
+  "subgraph_nodes": 14,
+  "edge_count": 17,
+  "payload_bytes": 2327,
+  "latency_ms": 1596.6,
+  "known_gaps": [
+   "未指定入口或入口函数不在分析范围内"
+  ],
+  "expected_paths": [
+   "apps/cli.py"
+  ],
+  "truth": "存在；apps/cli.py 的 main() 内延迟 import dreamos.cli.get_default_app 及命令模块（向后兼容入口）",
+  "truth_evidence": [
+   "apps/cli.py:15",
+   "apps/cli.py:16",
+   "apps/cli.py:19"
+  ]
+ }
+]

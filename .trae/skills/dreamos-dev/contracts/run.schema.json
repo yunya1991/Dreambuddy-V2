@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dreambuddy.local/skills/dreamos-dev/contracts/run.schema.json",
+  "title": "DreamRun/v1",
+  "description": "DREAM 架构落地的 run 绑定契约（G0 判定依据）。run_id 直接复用 trace_id（monitor-bus 全链路追踪 ID），不新造 ID 体系；model_id=human 表示纯人工改动也须挂 run（SPEC §13 O-D1）。字段只增不删。",
+  "type": "object",
+  "required": ["run_id", "model_id", "phase", "created_at"],
+  "additionalProperties": true,
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "minLength": 6,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "运行标识，取值等于 trace_id，禁止另造 ID 体系"
+    },
+    "model_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$",
+      "description": "执行模型标识；human 表示人工改动"
+    },
+    "phase": {
+      "type": "string",
+      "enum": ["D0-intake", "D1-context", "D2-plan", "E1-execute", "A1-verify", "M1-settle", "CLOSED"],
+      "description": "当前阶段，枚举与 contracts/phases.yaml 的 states[].id 严格一致"
+    },
+    "task": {
+      "type": "object",
+      "required": ["intent", "owner_skill"],
+      "additionalProperties": true,
+      "properties": {
+        "intent": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "owner_skill": {
+          "type": "string",
+          "minLength": 1,
+          "description": "取自 routing.yaml 的 owner SKILL 名"
+        },
+        "scope": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "影响面（文件/目录白名单），G3 越界判定依据"
+        }
+      }
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "effort_level": {
+      "type": "string",
+      "enum": ["light", "standard", "deep"],
+      "default": "standard",
+      "description": "复用 C-Drive effort_level；小任务走 light（SPEC §10 R9）"
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "产物文件名，相对 .runs/<run_id>/（SPEC §7）",
+      "properties": {
+        "context": { "type": "string" },
+        "plan": { "type": "string" },
+        "changes": { "type": "string" },
+        "evidence": { "type": "string" },
+        "acceptance": { "type": "string" },
+        "settle": { "type": "string" }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "description": "机器可判定证据：每条须带 command + exit_code",
+      "items": { "$ref": "#/$defs/evidence" }
+    }
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "required": ["gate", "command", "exit_code"],
+      "additionalProperties": true,
+      "properties": {
+        "gate": { "type": "string", "pattern": "^G[0-5]$" },
+        "command": { "type": "string", "minLength": 1 },
+        "exit_code": { "type": "integer" },
+        "output_excerpt": { "type": "string" },
+        "at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

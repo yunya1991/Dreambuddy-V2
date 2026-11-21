@@ -1,0 +1,116 @@
+# G0-G5 门禁（SPEC §6）—— 规则即数据，判定在脚本/命令，不在提示词
+# status: enabled = 当前可机器判定；pending:SPEC-A/C = 依赖 SPEC A/C 未落地，FAIL-OPEN（只记录不阻断）
+# 2026-11-12 更新：G0/G1/G2/G3/G4/G5 全部脚本化（scripts/g?_check.py）；G4 可用命令为 tsc/build/lint/test/contracts/boundary
+#   check:contracts / check:boundary 已于 2026-11-12 实装并通过，从 pending + FAIL-OPEN 校准为 enabled
+#   G4 同日脚本化为 g4_check.py（evidence.json 五维判定），fail_open 由 true 校准为 false
+version: v1
+principle: 每条证据必须是 command + exit_code + 关键输出片段；人工结论不可单独作为证据
+gates:
+  - id: G0
+    name: 绑定
+    sacg: C
+    rule: run_id / model_id / phase 非空且合法（run_id = trace_id，phase 取自 phases.yaml）
+    blocking: true
+    fail_open: false
+    status: enabled
+    checker:
+      type: script
+      path: scripts/g0_check.py
+      cmd: python3 .trae/skills/dreamos-dev/scripts/g0_check.py --run .runs/<run_id>/run.json
+    on_fail: 硬拒开工（0 例外）
+
+  - id: G1
+    name: 上下文
+    sacg: S
+    rule: recall 记录 + REA snapshot_id（或显式声明跳过理由）
+    blocking: true
+    fail_open: false
+    status: enabled
+    note: 数据来源暂由本地 context.json 承载（recall_ids / snapshot_id / skips / impact）；SPEC-A 落地后仅替换来源，不改判定
+    checker:
+      type: script
+      path: scripts/g1_check.py
+      cmd: python3 .trae/skills/dreamos-dev/scripts/g1_check.py --run .runs/<run_id>/context.json
+    on_fail: 退回 D1
+
+  - id: G2
+    name: 计划
+    sacg: S
+    rule: 计划必须包含下列全部章节，缺一即退回重规划
+    required_sections: [验收标准, falsifier, 回滚, 影响面, 复用盘点]
+    reuse_inventory: 必填——逐级核对 SPEC A/C 条款 → 现有 SKILL → L0 壳，并写明「为何不能复用」
+    blocking: true
+    fail_open: false
+    status: enabled
+    note: required_sections 从本文件读取，plan.md 缺章节或缺复用盘点即退回
+    checker:
+      type: script
+      path: scripts/g2_check.py
+      cmd: python3 .trae/skills/dreamos-dev/scripts/g2_check.py --plan .runs/<run_id>/plan.md
+    on_fail: 退回 D2
+
+  - id: G3
+    name: 执行越界
+    sacg: C
+    rule: 实际改动 ⊆ run.task.scope（影响面）；越界立即停
+    blocking: true
+    fail_open: false
+    status: enabled
+    checker:
+      type: script
+      path: scripts/g3_check.py
+      cmd: python3 .trae/skills/dreamos-dev/scripts/g3_check.py --run .runs/<run_id>/run.json --changes .runs/<run_id>/changes.json
+    on_fail: 立即停 → 重过 G1/G2
+
+  - id: G4
+    name: 验收
+    sacg: A
+    rule: 五维证据齐全，每条附 command + exit_code + 关键输出；不适用须声明 skip_reason，已执行证据 exit_code 必须为 0
+    dimensions: [症状复测, 日志证据, 回归, 影响面, 边界]
+    blocking: true
+    fail_open: false
+    status: enabled
+    note: 2026-11-12 脚本化（scripts/g4_check.py）；证据载体为 .runs/<run_id>/evidence.json，维度清单读本文件
+    checker:
+      type: script
+      path: scripts/g4_check.py
+      cmd: python3 .trae/skills/dreamos-dev/scripts/g4_check.py --run .runs/<run_id>/run.json
+    on_fail: 不得宣称完成
+    evidence_commands:
+      - id: tsc
+        cmd: cd 3.1-FRONTEND && npx tsc --noEmit
+        status: enabled
+      - id: build
+        cmd: cd 3.1-FRONTEND && npm run build
+        status: enabled
+      - id: test
+        cmd: cd 3.1-FRONTEND && npm run test
+        status: enabled
+      - id: lint
+        cmd: cd 3.1-FRONTEND && npm run lint
+        status: enabled
+        known_issue: 仓库缺 ESLint9 flat config，lint 为预存失败（非本轮引入），记录 exit_code 不作阻断
+      - id: contracts
+        cmd: cd 3.1-FRONTEND && npm run check:contracts
+        status: enabled
+        fail_open: false
+        note: 2026-11-12 实装为 jest 套件（src/lib/contracts），4 例通过
+      - id: boundary
+        cmd: cd 3.1-FRONTEND && npm run check:boundary
+        status: enabled
+        fail_open: false
+        note: 2026-11-12 实装，基线 fs=41 / child_process=31，超基线即失败
+
+  - id: G5
+    name: 沉淀
+    sacg: G
+    rule: record/verify + 文档索引更新 + 架构问题回写
+    blocking: true
+    fail_open: false
+    status: enabled
+    note: 数据来源暂由本地 settle.json 承载（record_ids / verified / doc_changes / arch_issues）
+    checker:
+      type: script
+      path: scripts/g5_check.py
+      cmd: python3 .trae/skills/dreamos-dev/scripts/g5_check.py --run .runs/<run_id>/settle.json
+    on_fail: 不得关闭 run

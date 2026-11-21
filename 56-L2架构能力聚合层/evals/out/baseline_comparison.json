@@ -1,0 +1,368 @@
+{
+  "ok": true,
+  "generated_at": "2026-11-18T01:10:42+0800",
+  "deepseek_calls": 8,
+  "call_budget": 40,
+  "questions": 8,
+  "latency_note": "系统侧时延为 P1 单次实测（n=1），非推断统计；DeepSeek 侧同为 n=1",
+  "d2_method": "关键词命中率（must_have_facts[].match）× 5，非 LLM 评审",
+  "d6_note": "系统侧 token 用量未在产品链 SSE 中暴露，记 null",
+  "rows": [
+    {
+      "scenario_id": "S1",
+      "question": "BTC 现价多少",
+      "system": {
+        "answer": "📊 **BTC (BTC-USDT-SWAP) 实时行情**\n\n> 由 Dream Gateway 中台即时生成 | 链路: market_query\n\n**当前状态**\n- 当前价格: **$63,897.7** 🔴-1.39% (24h)\n- 24h开盘: $64,796.1\n- 24h最高: $65,511.6\n- 24h最低: $63,300\n- 资金费率: 0.0006% (偏多)\n- 更新时间: 2026/11/18 01:09:09\n\n",
+        "answer_available": true,
+        "tools_hit": [
+          "l0.data.mcp:data_fetch",
+          "l1.intent.mcp:classify_intent"
+        ],
+        "expected_tools": [
+          "l1.intent.mcp:classify_intent",
+          "l0.data.mcp:data_fetch"
+        ],
+        "latency_ms": 4449.345,
+        "d1_capability_coverage": 2.0,
+        "d2_correctness": 5.0,
+        "d3_scheduling": 3.0,
+        "d4_evidence": 5.0,
+        "d5_latency": 5.0,
+        "d6_token_cost": null
+      },
+      "baseline": {
+        "answer": "我无法获取实时数据，因此不能给出 BTC 的当前价格。建议查看主流交易所或行情网站（如 Coinbase、Binance、CoinMarketCap）获取实时报价。",
+        "answer_available": true,
+        "usage": {
+          "prompt_tokens": 56,
+          "completion_tokens": 38,
+          "total_tokens": 94,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "prompt_cache_hit_tokens": 0,
+          "prompt_cache_miss_tokens": 56
+        },
+        "latency_ms": 892.233,
+        "d1_capability_coverage": 0.0,
+        "d2_correctness": 2.5,
+        "d3_scheduling": 0.0,
+        "d4_evidence": 0.0,
+        "d5_latency": 5.0,
+        "d6_token_cost": 5.0
+      }
+    },
+    {
+      "scenario_id": "S2",
+      "question": "茅台近 4 季营收与毛利率",
+      "system": {
+        "answer": "### S2_ANALYSIS\n\n🧠 **S2 分析**\n\n> 多维度分析与评估中...\n\n**自省 Gate 结果：** 置信度=0.62，风险=0.49。 问题识别：分析中缺少明确市场判断；分析内容过短，缺乏深度分析。 修正建议：补充明确趋势判断（看涨/看跌/区间）；增加更多数据支撑。\n\n---\n\n### S5_EXECUTE\n\n⚡ **S5 执行**\n\n> 执行计划跟踪，等待交易信号确认\n\n**自省 Gate 结果：** 置信度=0.95，风险=0.25。\n\n---\n\n**S 系列质量总结**：整体置信度 0.78 / 最高风险 0.49\n执行步骤：2（实际产出 2 个，跳过 0 个）\n品质评级：good\n  - 共有 2 处问题被识别\n\n**Graph 结构分析**：完成度 40%，\n  高价值节点 2 个，可压缩节点 0 个，\n\n  └ 分析链: partial (conf=0.78, risk=0.49)",
+        "answer_available": true,
+        "tools_hit": [
+          "l0.data.mcp:data_store_read",
+          "l0.store-admin.mcp:store_admin_status"
+        ],
+        "expected_tools": [
+          "l0.data.mcp:data_store_read",
+          "l0.store-admin.mcp:store_admin_status"
+        ],
+        "latency_ms": 6653.427,
+        "d1_capability_coverage": 2.0,
+        "d2_correctness": 1.67,
+        "d3_scheduling": 3.0,
+        "d4_evidence": 5.0,
+        "d5_latency": 4.0,
+        "d6_token_cost": null
+      },
+      "baseline": {
+        "answer": "我无法提供贵州茅台近4个季度的具体营收与毛利率数值。原因如下：\n\n- 我的知识存在截止时间，无法确知“最近4个季度”对应哪些报告期；\n- 即便在知识范围内，精确到单季的营收和毛利率数据我也无法可靠复现，编造具体数值会误导判断。\n\n**建议获取途径：**\n1. 贵州茅台（600519）定期报告：季度报告、半年报、年报中的“主要财务数据”部分；\n2. 上交所官网或巨潮资讯网的公告原文；\n3. 主流财经数据平台（如东方财富、同花顺）的财务数据页。\n\n如需，我可以说明茅台财报中营收与毛利率的**口径差异**（如营业总收入 vs 营业收入、毛利率计算方式），帮助你自行核对数据。",
+        "answer_available": true,
+        "usage": {
+          "prompt_tokens": 60,
+          "completion_tokens": 171,
+          "total_tokens": 231,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "prompt_cache_hit_tokens": 0,
+          "prompt_cache_miss_tokens": 60
+        },
+        "latency_ms": 1938.669,
+        "d1_capability_coverage": 0.0,
+        "d2_correctness": 5.0,
+        "d3_scheduling": 0.0,
+        "d4_evidence": 0.0,
+        "d5_latency": 5.0,
+        "d6_token_cost": 5.0
+      }
+    },
+    {
+      "scenario_id": "S3",
+      "question": "比特币、以太坊、狗狗币分别指谁",
+      "system": {
+        "answer": "### S2_ANALYSIS\n\n🧠 **S2 分析**\n\n> 多维度分析与评估中...\n\n**自省 Gate 结果：** 置信度=0.62，风险=0.49。 问题识别：分析中缺少明确市场判断；分析内容过短，缺乏深度分析。 修正建议：补充明确趋势判断（看涨/看跌/区间）；增加更多数据支撑。\n\n---\n\n### S5_EXECUTE\n\n⚡ **S5 执行**\n\n> 执行计划跟踪，等待交易信号确认\n\n**自省 Gate 结果：** 置信度=0.95，风险=0.25。\n\n---\n\n**S 系列质量总结**：整体置信度 0.78 / 最高风险 0.49\n执行步骤：2（实际产出 2 个，跳过 0 个）\n品质评级：good\n  - 共有 2 处问题被识别\n\n**Graph 结构分析**：完成度 40%，\n  高价值节点 2 个，可压缩节点 0 个，\n\n  └ 分析链: partial (conf=0.78, risk=0.49)",
+        "answer_available": true,
+        "tools_hit": [
+          "l0.semantic-39.mcp:query_entity",
+          "l0.semantic-39.mcp:semantic_lookup"
+        ],
+        "expected_tools": [
+          "l0.semantic-39.mcp:semantic_lookup",
+          "l0.semantic-39.mcp:query_entity"
+        ],
+        "latency_ms": 5360.828,
+        "d1_capability_coverage": 2.0,
+        "d2_correctness": 0.0,
+        "d3_scheduling": 3.0,
+        "d4_evidence": 5.0,
+        "d5_latency": 4.0,
+        "d6_token_cost": null
+      },
+      "baseline": {
+        "answer": "比特币、以太坊、狗狗币都是加密货币（数字货币），不是指某个人。简要说明：\n\n- **比特币（Bitcoin，BTC）**：2008年由化名“中本聪”（Satoshi Nakamoto）提出，2009年上线，是首个去中心化加密货币。中本聪真实身份至今未知。\n- **以太坊（Ethereum，ETH）**：2013—2014年由**维塔利克·布特林（Vitalik Buterin，人称“V神”）**等人提出并开发，2015年上线，主打智能合约与去中心化应用平台。\n- **狗狗币（Dogecoin，DOGE）**：2013年由**比利·马库斯（Billy Markus）**和**杰克逊·帕尔默（Jackson Palmer）**创建，最初是受柴犬表情包（Doge）启发的玩笑币，后因社区和名人效应走红。\n\n如果你问的是“分别指谁”，通常只有以太坊和狗狗币有明确创始人；比特币创始人仅为化名，身份不明。",
+        "answer_available": true,
+        "usage": {
+          "prompt_tokens": 61,
+          "completion_tokens": 229,
+          "total_tokens": 290,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "prompt_cache_hit_tokens": 0,
+          "prompt_cache_miss_tokens": 61
+        },
+        "latency_ms": 1994.896,
+        "d1_capability_coverage": 0.0,
+        "d2_correctness": 5.0,
+        "d3_scheduling": 0.0,
+        "d4_evidence": 0.0,
+        "d5_latency": 5.0,
+        "d6_token_cost": 5.0
+      }
+    },
+    {
+      "scenario_id": "S4",
+      "question": "同一标的宏观与资金面是否矛盾",
+      "system": {
+        "answer": "### S2_ANALYSIS\n\n🔬 **BTC 深度分析报告**\n\n> 由 Dream Gateway 中台即时生成 | 链路: S2_ANALYSIS\n\n---\n\n## 第一性原理分析\n\n**核心矛盾**: 宏观偏鹰 vs 技术面超卖反弹需求\n**主要矛盾方面**: 宏观压力 (Fed降息预期归零)\n**次要矛盾方面**: 技术面支撑 (关键支撑位有效)\n\n### 当前市场数据（实时）\n| 指标 | 数值 |\n|------|------|\n| 当前价格 | N/A |\n| 24h涨跌 | N/A |\n| 24h最高 | N/A |\n| 24h最低 | N/A |\n| 市场Regime | 区间震荡 |\n| 数据来源 | Unknown |\n\n### 建议\n**观望为主，等待突破**\n\n⚡ 思考模式: quick | 链路: S2_ANALYSIS\n\n**自省 Gate 结果：** 置信度=0.85，风险=0.25。\n\n  - 工具 analysis 输出第 1 次验证通过\n\n---\n\n### S5_EXECUTE\n\n⚡ **S5 执行**\n\n> 执行计划跟踪，等待交易信号确认\n\n**自省 Gate 结果：** 置信度=0.95，风险=0.25。\n\n---\n\n**S 系列质量总结**：整体置信度 0.90 / 最高风险 0.25\n执行步骤：2（实际产出 2 个，跳过 0 个）\n品质评级：excellent\n\n**Graph 结构分析**：完成度 40%，\n  高价值节点 2 个，可压缩节点 0 个，\n\n  └ 分析链: partial (conf=0.90, risk=0.25)",
+        "answer_available": true,
+        "tools_hit": [
+          "l0.cognition.mcp:recall",
+          "l0.rea.mcp:submit_rea_analyze"
+        ],
+        "expected_tools": [
+          "l0.rea.mcp:submit_rea_analyze",
+          "l0.cognition.mcp:recall"
+        ],
+        "latency_ms": 7775.696,
+        "d1_capability_coverage": 2.0,
+        "d2_correctness": 5.0,
+        "d3_scheduling": 5.0,
+        "d4_evidence": 5.0,
+        "d5_latency": 4.0,
+        "d6_token_cost": null
+      },
+      "baseline": {
+        "answer": "“同一标的宏观与资金面是否矛盾”需先明确判断标准，否则无法给出确定结论。以下为结构化分析框架：\n\n**1. 概念区分**\n- **宏观面**：经济增长、通胀、利率、政策取向、信用周期等，决定标的的中长期盈利与估值中枢。\n- **资金面**：成交量、换手率、融资余额、北向/主力资金流向、流动性松紧等，反映短期供需与情绪。\n\n**2. 是否矛盾的判断**\n- 二者**不必然矛盾**，因为时间维度不同：宏观偏中长期，资金面偏短期。\n- 常见“看似矛盾”情形：\n  - 宏观走弱但资金面活跃 → 多为流动性宽松或主题炒作驱动的短期行情，可持续性存疑。\n  - 宏观向好但资金面流出 → 可能是预期已提前兑现、估值偏高或阶段性调仓。\n- 真正矛盾需满足：**同一时间窗口内**，宏观信号与资金流向方向持续背离，且无法用流动性、政策预期差、估值位置解释。\n\n**3. 结论**\n无法脱离具体标的、时间区间和数据给出“是/否”判断。若需结论，应提供：标的名称、观察区间、所用宏观指标与资金指标。就方法论而言，宏观与资金面更多是**不同周期维度的互补**，而非天然对立；短期背离常见，持续背离才构成需要警惕的信号。\n\n（注：本回答不涉及任何实时数据，具体数值无法获取。）",
+        "answer_available": true,
+        "usage": {
+          "prompt_tokens": 59,
+          "completion_tokens": 315,
+          "total_tokens": 374,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "prompt_cache_hit_tokens": 0,
+          "prompt_cache_miss_tokens": 59
+        },
+        "latency_ms": 2854.175,
+        "d1_capability_coverage": 0.0,
+        "d2_correctness": 5.0,
+        "d3_scheduling": 0.0,
+        "d4_evidence": 0.0,
+        "d5_latency": 5.0,
+        "d6_token_cost": 5.0
+      }
+    },
+    {
+      "scenario_id": "S5",
+      "question": "BTC 本周结构是否转弱",
+      "system": {
+        "answer": "**💡 核心观点**\n\nBTC 当前价格 $63,852，24小时跌了 1.46%，短期确实有点转弱的迹象，但还谈不上趋势破位。更像是涨多了之后在喘气整理，市场从单边上涨切换到了来回震荡的模式。核心矛盾很明确：多空双方正在激烈掰手腕，谁也没占明显上风。\n\n---\n**📊 详细分析**\n\n**技术面**：价格在 $63,300 到 $65,511 之间晃悠，现在是贴着区间的下半部分，说明上方抛压确实存在，短期买盘有点扛不住。从系统判断来看，市场状态一半时间在说\"趋势行情\"，一半时间在说\"高波动行情\"，这种信号打架本身就说明价格趋势不再干净利落，正是结构转弱初期的典型表现。第一性原理的判断说阻力只是中等，趋势还在延续，所以目前更像是\"减速\"而不是\"掉头\"。\n\n**资金面**：这个维度有亮点也有隐患。好的方面是，有大额 BTC 从交易所被提走（通常意味着大户在买入并提到自己钱包，不想卖），同时链上活跃地址数24小时涨了5%，说明参与的人在变多。但隐患在于，永续合约的资金费率为正——简单说就是做多的人太多，大家都在加杠杆赌涨，这往往会让市场变得脆弱，稍微一跌就容易引发连环踩踏。\n\n**市场状态**：系统里有好几种声音。回测结果很有意思，趋势跟踪类的测试有两个没通过，最大回撤分别到了 23.2% 和 17.4%，说明在最近这段行情里，傻乎乎地追涨会非常难受。而通过的那个测试，最大回撤只有 11.9%，用的是更灵活的波动率策略。翻译过来就是：现在的行情不适合死多头也不适合死空头，适合灵活应对。\n\n**风险提示**：最大的矛盾在于——情报面偏多，但价格在跌；状态信号一会儿说趋势在延续，一会儿说波动加大。这种多空信号交织的情况，往往意味着接下来会有一次比较剧烈的方向选择。资金费率为正这个信号尤其要小心，如果价格继续磨下去，高杠杆的多头可能扛不住，导致一波快速下杀。另外基本面新闻这块数据获取有限，参考价值不高。\n\n## 操作建议\n\n现在追多不合适，追空也没到那个份上。如果手里有现货，可以先拿着但心里要有准备：$63,300 这个位置如果放量跌破，短期可能会加速滑一段。如果空仓想进，可以等两个信号：要么放量重新站回 $65,000 以上，那说明上方抛压被消化完了；要么跌到 $63,300 附近出现明显的抗跌迹象（比如跌不动了、成交缩量），再轻仓试多。止损就设在 $63,300 下方 1-2% 的位置，别硬扛。整体仓位别太重，等方向明确了再说。\n\n---\n\n\n🔗 [查看完整报告](/reports/task_20261117170936_ys0b)",
+        "answer_available": true,
+        "tools_hit": [
+          "l0.rea.mcp:submit_rea_trace",
+          "l1.strategy.mcp:list_strategies",
+          "l2.debate.mcp:start_debate"
+        ],
+        "expected_tools": [
+          "l1.strategy.mcp:list_strategies",
+          "l0.rea.mcp:submit_rea_trace",
+          "l2.debate.mcp:start_debate"
+        ],
+        "latency_ms": 23293.889,
+        "d1_capability_coverage": 3.0,
+        "d2_correctness": 5.0,
+        "d3_scheduling": 3.0,
+        "d4_evidence": 5.0,
+        "d5_latency": 3.0,
+        "d6_token_cost": null
+      },
+      "baseline": {
+        "answer": "我无法获取实时行情数据，无法对\"本周\"BTC 的具体价格结构做出判断。以下仅提供分析框架，供你自行对照行情验证：\n\n**判断\"结构转弱\"的常用观察点**\n\n1. **高低点序列**：是否出现更低的高点（LH）+ 更低的低点（LL）。若本周高点未破前高、且跌破前一周低点，结构转弱信号较强。\n2. **关键均线**：价格是否失守 20 日/50 日均线并转为压制；均线是否走平或下弯。\n3. **区间边界**：是否有效跌破近期震荡区间下沿（收盘确认，而非插针）。\n4. **量能配合**：下跌是否放量、反弹是否缩量。\n5. **衍生品指标**：资金费率是否转负、未平仓合约变化、多空比。\n6. **宏观联动**：美元指数、美股风险偏好、ETF 资金流向。\n\n**结论**：需以上述维度对照实际周线/日线数据才能定性。若你提供本周开高低收及前几周关键位，我可以帮你做结构化推演。",
+        "answer_available": true,
+        "usage": {
+          "prompt_tokens": 58,
+          "completion_tokens": 248,
+          "total_tokens": 306,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "prompt_cache_hit_tokens": 0,
+          "prompt_cache_miss_tokens": 58
+        },
+        "latency_ms": 2420.664,
+        "d1_capability_coverage": 0.0,
+        "d2_correctness": 2.5,
+        "d3_scheduling": 0.0,
+        "d4_evidence": 0.0,
+        "d5_latency": 5.0,
+        "d6_token_cost": 5.0
+      }
+    },
+    {
+      "scenario_id": "S7",
+      "question": "给我 BTC 交易计划与仓位",
+      "system": {
+        "answer": "### S2_ANALYSIS\n\n🧠 **S2 分析**\n\n> 多维度分析与评估中...\n\n**自省 Gate 结果：** 置信度=0.62，风险=0.49。 问题识别：分析中缺少明确市场判断；分析内容过短，缺乏深度分析。 修正建议：补充明确趋势判断（看涨/看跌/区间）；增加更多数据支撑。\n\n---\n\n### S5_EXECUTE\n\n⚡ **S5 执行**\n\n> 执行计划跟踪，等待交易信号确认\n\n**自省 Gate 结果：** 置信度=0.95，风险=0.25。\n\n---\n\n**S 系列质量总结**：整体置信度 0.78 / 最高风险 0.49\n执行步骤：2（实际产出 2 个，跳过 0 个）\n品质评级：good\n  - 共有 2 处问题被识别\n\n**Graph 结构分析**：完成度 40%，\n  高价值节点 2 个，可压缩节点 0 个，\n\n  └ 分析链: partial (conf=0.78, risk=0.49)",
+        "answer_available": true,
+        "tools_hit": [
+          "l0.trade-exec.mcp:pre_trade_check",
+          "l1.trading.mcp:get_signal_state"
+        ],
+        "expected_tools": [
+          "l1.trading.mcp:get_signal_state",
+          "l0.trade-exec.mcp:pre_trade_check"
+        ],
+        "latency_ms": 6141.061,
+        "d1_capability_coverage": 2.0,
+        "d2_correctness": 1.67,
+        "d3_scheduling": 3.0,
+        "d4_evidence": 5.0,
+        "d5_latency": 4.0,
+        "d6_token_cost": null
+      },
+      "baseline": {
+        "answer": "# BTC 交易计划与仓位框架\n\n**重要前提**：我无法获取实时价格、链上数据或市场情绪指标，以下为**通用框架**，具体数值需你根据当前行情自行填入。\n\n## 一、交易前必填项（需你自行获取）\n- 当前价格、近期高低点、关键支撑/阻力位\n- 你的账户总资金、单笔可承受亏损比例（建议 ≤2%）\n- 交易周期（日内/波段/中长线）\n\n## 二、仓位计算（核心公式）\n```\n单笔风险金额 = 总资金 × 风险比例（建议1%~2%）\n仓位数量 = 单笔风险金额 ÷ (入场价 - 止损价)\n```\n\n**示例**（假设数据，仅演示算法）：\n- 总资金 100,000，风险 1% = 1,000\n- 入场 60,000，止损 57,000（价差 3,000）\n- 仓位 = 1,000 ÷ 3,000 ≈ 0.33 BTC（名义约 20,000，即 20% 仓位）\n\n## 三、计划结构模板\n| 项目 | 内容 |\n|------|------|\n| 方向 | 多/空（依趋势判断） |\n| 入场 | 分批：首仓 50%，回踩确认加 50% |\n| 止损 | 放在关键结构位外，**必须预设** |\n| 止盈 | 分批：T1 减 1/3（1R），T2 减 1/3（2R），剩余移动止损 |\n| 盈亏比 | 目标 ≥ 1:2 |\n| 最大仓位 | 单币种不超过总资金 30%~50%（视风险偏好） |\n\n## 四、风控铁律\n1. 单笔亏损 ≤ 总资金 2%\n2. 同时持仓总风险 ≤ 6%\n3. 止损不移动扩大，只向盈利方向移动\n4. 连续亏损 3 笔后暂停复盘\n5. 杠杆仅用于放大资金效率，不放大风险敞口\n\n## 五、我无法提供的\n- 实时价格、具体支撑阻力位、入场/止损的精确数值\n- 当前趋势方向判断（需结合实时K线与成交量）\n\n**建议**：先确定你的风险比例与交易周期，把当前价格和关键位填入模板，我可帮你校验仓位计算逻辑是否合理。",
+        "answer_available": true,
+        "usage": {
+          "prompt_tokens": 58,
+          "completion_tokens": 528,
+          "total_tokens": 586,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "prompt_cache_hit_tokens": 0,
+          "prompt_cache_miss_tokens": 58
+        },
+        "latency_ms": 3849.312,
+        "d1_capability_coverage": 0.0,
+        "d2_correctness": 5.0,
+        "d3_scheduling": 0.0,
+        "d4_evidence": 0.0,
+        "d5_latency": 5.0,
+        "d6_token_cost": 5.0
+      }
+    },
+    {
+      "scenario_id": "S10",
+      "question": "把这次失败案例入库",
+      "system": {
+        "answer": "",
+        "answer_available": false,
+        "tools_hit": [
+          "l2.emergence.mcp:list_experiments",
+          "l2.train.mcp:get_training_status"
+        ],
+        "expected_tools": [
+          "l2.emergence.mcp:list_experiments",
+          "l2.train.mcp:get_training_status"
+        ],
+        "latency_ms": null,
+        "d1_capability_coverage": 2.0,
+        "d2_correctness": 0.0,
+        "d3_scheduling": 3.0,
+        "d4_evidence": 0.0,
+        "d5_latency": null,
+        "d6_token_cost": null
+      },
+      "baseline": {
+        "answer": "我无法执行“入库”操作——我没有记忆、数据库或跨会话存储能力，也无法访问任何案例库系统。本次对话结束后，内容不会被保留。\n\n如果你需要归档，建议自行记录，可参考以下结构化模板：\n\n**失败案例记录模板**\n- 案例名称：\n- 时间/场景：\n- 目标：\n- 实际结果：\n- 失败原因（直接原因 / 根本原因）：\n- 影响与损失：\n- 改进措施：\n- 责任人 / 复盘日期：\n\n如需，我可以帮你把这次案例的内容整理成上述格式的文本，供你复制到自己的知识库。",
+        "answer_available": true,
+        "usage": {
+          "prompt_tokens": 56,
+          "completion_tokens": 128,
+          "total_tokens": 184,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "prompt_cache_hit_tokens": 0,
+          "prompt_cache_miss_tokens": 56
+        },
+        "latency_ms": 1595.693,
+        "d1_capability_coverage": 0.0,
+        "d2_correctness": 2.5,
+        "d3_scheduling": 0.0,
+        "d4_evidence": 0.0,
+        "d5_latency": 5.0,
+        "d6_token_cost": 5.0
+      }
+    },
+    {
+      "scenario_id": "S13",
+      "question": "查询 BTC 行情并给出风险提示",
+      "system": {
+        "answer": "综合置信度: 61%\n\n市场状态识别器: neutral (置信度 82%)\nA0-矛盾论分析OS: neutral (置信度 80%)\n基本面-新闻聚合: neutral (置信度 55%)\n情报监控: long (置信度 65%)\n市场状态识别器: long (置信度 75%)\nA0-矛盾论分析OS: neutral (置信度 72%)\n基本面-新闻聚合: neutral (置信度 55%)\n情报监控: long (置信度 78%)\n回测引擎: long (置信度 89%)\n贝叶斯优化器: long (置信度 78%)\n\n综合置信度: 70%\n\n市场状态识别器: neutral (置信度 86%)\nA0-矛盾论分析OS: neutral (置信度 76%)\n基本面-新闻聚合: neutral (置信度 55%)\n情报监控: long (置信度 69%)\n市场状态识别器: neutral (置信度 79%)\nA0-矛盾论分析OS: neutral (置信度 79%)\n基本面-新闻聚合: neutral (置信度 55%)\n情报监控: long (置信度 77%)\n回测引擎: neutral (置信度 76%)\n贝叶斯优化器: long (置信度 85%)\n市场状态识别器: neutral (置信度 81%)\nA0-矛盾论分析OS: neutral (置信度 77%)\n基本面-新闻聚合: neutral (置信度 55%)\n情报监控: long (置信度 78%)\n回测引擎: long (置信度 76%)\n贝叶斯优化器: long (置信度 85%)\n策略研究: neutral (置信度 79%)\nA2-第一性原理: long (置信度 76%)",
+        "answer_available": true,
+        "tools_hit": [
+          "l0.data.mcp:data_fetch",
+          "l0.store-admin.mcp:store_admin_status",
+          "l1.ops.mcp:get_health"
+        ],
+        "expected_tools": [
+          "l0.data.mcp:data_fetch",
+          "l1.ops.mcp:get_health",
+          "l0.store-admin.mcp:store_admin_status"
+        ],
+        "latency_ms": 1416.174,
+        "d1_capability_coverage": 3.0,
+        "d2_correctness": 0.0,
+        "d3_scheduling": 3.0,
+        "d4_evidence": 5.0,
+        "d5_latency": 5.0,
+        "d6_token_cost": null
+      },
+      "baseline": {
+        "answer": "我无法获取实时行情数据，以下为基于既有知识的说明：\n\n**行情数据**\n- 无法提供 BTC 当前价格、涨跌幅、成交量等实时数值（无实时数据接入）。\n- 建议通过交易所或行情网站（如 CoinGecko、CoinMarketCap）自行查询。\n\n**风险提示（通用）**\n1. **高波动性**：BTC 单日大幅涨跌常见，杠杆交易可能快速爆仓。\n2. **政策与监管风险**：各国监管态度差异大，政策变动可能显著影响价格与流动性。\n3. **流动性风险**：极端行情下买卖价差扩大，大额交易滑点明显。\n4. **安全风险**：交易所被盗、私钥丢失、钓鱼诈骗等。\n5. **市场操纵与信息风险**：小市值时段易受操纵，社交媒体消息真伪难辨。\n6. **合规与税务**：部分地区对加密资产交易有申报与纳税要求。\n\n**建议**：控制仓位、避免高杠杆、使用可信平台并做好资产自托管安全；以上不构成投资建议。",
+        "answer_available": true,
+        "usage": {
+          "prompt_tokens": 59,
+          "completion_tokens": 226,
+          "total_tokens": 285,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "prompt_cache_hit_tokens": 0,
+          "prompt_cache_miss_tokens": 59
+        },
+        "latency_ms": 1935.701,
+        "d1_capability_coverage": 0.0,
+        "d2_correctness": 2.5,
+        "d3_scheduling": 0.0,
+        "d4_evidence": 0.0,
+        "d5_latency": 5.0,
+        "d6_token_cost": 5.0
+      }
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "updated_at": "2026-11-18T14:35:07.626634",
+  "symbol": "BTC",
+  "mode": "shadow",
+  "signal": {
+    "signal": "neutral",
+    "strength": 0.0,
+    "elasticity": 0.0,
+    "event_type": "none",
+    "event_phase": "neutral",
+    "window_start": null,
+    "window_end": null,
+    "confidence": 0.0,
+    "scores": {},
+    "reason": "不在 FOMC 周期且无宏观事件触发",
+    "forward_guidance": "",
+    "mode": "none"
+  },
+  "event_dominance": {
+    "filter_level": "none",
+    "macro_direction": "neutral",
+    "modifier": 0.0,
+    "override_subsystems": false,
+    "active": false,
+    "reason": "不在 FOMC 周期或方向中性"
+  },
+  "main_chain": {
+    "d_star": "WAIT",
+    "action": "WAIT",
+    "ri": 0.5,
+    "regime": ""
+  },
+  "kline": {
+    "close": 139.0,
+    "timestamp": null
+  }
+}

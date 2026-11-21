@@ -1,0 +1,191 @@
+{
+ "n": 23,
+ "suspect": 0,
+ "note": "suspect_reversed 仅为疑似标记；真值须人工盲评",
+ "records": [
+  {
+   "src": "commit",
+   "t": "2026-07-13",
+   "ref": "b7b890e6",
+   "text": "feat: 回退到基线配置 - 禁用Meta-Labeling和美林时钟",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "commit",
+   "t": "2026-10-04",
+   "ref": "df2b8b93",
+   "text": "feat(frontend): 修复 three-screens 回退 + 接入 api/mapper/charts",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "commit",
+   "t": "2026-10-06",
+   "ref": "a1021adc",
+   "text": "chore: 提交之前会话的未提交改动以避免回退",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "commit",
+   "t": "2026-10-30",
+   "ref": "43a3f38d",
+   "text": "fix(collab): dr-drill 云端按属主自动提权 + 日志写入回退 sudo tee",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "commit",
+   "t": "2026-10-31",
+   "ref": "0b1e73c0",
+   "text": "C5 前置：DualWrite 三项加固——① _compare_results 字段级递归比对（list 逐元素/dict 逐键/dataclass 递归，废弃原 list 只比 len() 的假 MATCH）；② per-repo 读开关（READ_SOURCE_{REPO} 优先于全局 READ_SOURCE，支持按 repo 灰度切读）；③ shadow diff 率门槛（SHADOW_D",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "commit",
+   "t": "2026-11-03",
+   "ref": "042933de",
+   "text": "fix(Phase-C): coupling target 正确 drift level 映射 + Head forward 默认禁用 band mask",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "commit",
+   "t": "2026-11-14",
+   "ref": "fc8ec439",
+   "text": "fix(13-22): 门禁工厂落地，22 Gateway 不再使用空规则表",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "commit",
+   "t": "2026-11-14",
+   "ref": "88af0ec2",
+   "text": "fix(50): 龙头共振在数据降级时跳过——禁止用恒等 corr0=1.0 放大置信度",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "commit",
+   "t": "2026-11-14",
+   "ref": "6014ee8c",
+   "text": "fix(P3): 修正 exit_runner 客户端类名与网关接线，dry-run 禁止真实撤单",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "commit",
+   "t": "2026-11-16",
+   "ref": "1efc1492",
+   "text": "fix(ranking): venue bridge 返回空 K 线时继续回退 REST",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "doc",
+   "t": "2026-11-16",
+   "ref": "55-AI大模型研究报告/认知系统研究/04-从记忆失败到能力获取-开题报告.md:29",
+   "text": "信息不足**：缺少用户偏好、外部状态、历史否决等无法现场推导的信息；",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "doc",
+   "t": "2026-11-16",
+   "ref": "55-AI大模型研究报告/认知系统研究/04-从记忆失败到能力获取-开题报告.md:93",
+   "text": "信息缺失 | 用户偏好、外部状态或历史否决不可获得 | 保存或更新残差记忆 |",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "doc",
+   "t": "2026-11-16",
+   "ref": "55-AI大模型研究报告/认知系统研究/03-长期智能体记忆系统任务成本联合基准-开题报告.md:129",
+   "text": "负向决策 | 避免重复推荐已否决方案 | 否决原因和适用边界 |",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "doc",
+   "t": "2026-11-16",
+   "ref": "55-AI大模型研究报告/认知系统研究/02-使用驱动的记忆巩固与分级遗忘-开题报告.md:15",
+   "text": "长期运行智能体需要持续更新记忆，但永久保留会造成过期信息残留、检索干扰和维护成本增长，单纯按时间删除又可能误删低频但高价值的用户否决、事故教训和负向决策。本研究拟提出使用驱动的记忆巩固与分级遗忘框架，将“被检索”“被实际采用”“被任务结果验证”区分为不同强度的反馈信号，驱动记忆质量、保留期限和检索可见性的联合变化；同时将遗忘拆分为退出检索索引、宽限观察、树梢痕迹保留和主记录删除，以兼顾遗忘效率、误",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "doc",
+   "t": "2026-11-16",
+   "ref": "55-AI大模型研究报告/认知系统研究/02-使用驱动的记忆巩固与分级遗忘-开题报告.md:167",
+   "text": "负向决策 | 曾否决方案被再次建议 | 是否保留适用条件和否决原因 |",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "doc",
+   "t": "2026-11-16",
+   "ref": "55-AI大模型研究报告/认知系统研究/01-主论文-残差记忆与按需重建-开题报告.md:61",
+   "text": "提高用户偏好、历史否决和有代价教训等关键经验的可持续复用能力。",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "doc",
+   "t": "2026-11-16",
+   "ref": "55-AI大模型研究报告/认知系统研究/01-主论文-残差记忆与按需重建-开题报告.md:85",
+   "text": "横向研究不采用功能数量评分，而采用统一机制矩阵：",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "doc",
+   "t": "2026-11-16",
+   "ref": "55-AI大模型研究报告/认知系统研究/01-主论文-残差记忆与按需重建-开题报告.md:133",
+   "text": "1. 用户偏好与用户否决；",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "doc",
+   "t": "2026-11-16",
+   "ref": "55-AI大模型研究报告/认知系统研究/01-主论文-残差记忆与按需重建-开题报告.md:155",
+   "text": "长期内容记忆 | 高置信、不可再推导的残差 | 保存用户否决、代价教训和外部状态 |",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "doc",
+   "t": "2026-11-16",
+   "ref": "55-AI大模型研究报告/认知系统研究/01-主论文-残差记忆与按需重建-开题报告.md:201",
+   "text": "研究内容记忆向指针、联想关系或零记忆转换的条件，以及指针失效、代码变化和文档迁移后的更新方法。对必须原样保存的用户偏好、否决和高代价教训，保留来源与适用条件。",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "doc",
+   "t": "2026-11-16",
+   "ref": "55-AI大模型研究报告/认知系统研究/01-主论文-残差记忆与按需重建-开题报告.md:237",
+   "text": "历史负向决策遵守 | 已否决方案的检索与适用边界 |",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "doc",
+   "t": "2026-11-16",
+   "ref": "55-AI大模型研究报告/认知系统研究/01-主论文-残差记忆与按需重建-开题报告.md:325",
+   "text": "2. **记忆形态创新**：将内容、指针、联想与零记忆纳入统一选择框架，长期记忆不再等同于长期保存全文。",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  },
+  {
+   "src": "doc",
+   "t": "2026-11-16",
+   "ref": "55-AI大模型研究报告/认知系统研究/01-主论文-残差记忆与按需重建-开题报告.md:411",
+   "text": "误遗忘关键经验 | 用户否决和负向决策被错误删除 | 高价值残差保护、宽限期、删除测试与可审计机制 |",
+   "suspect_reversed": false,
+   "suspect_evidence": ""
+  }
+ ]
+}
