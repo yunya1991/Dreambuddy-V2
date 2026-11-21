@@ -329,7 +329,29 @@ def cmd_mobile(args) -> int:
     sub, sub_rest = rest[0], rest[1:]
     safety = mobile_safety(sub, sub_rest)
     if safety in {"write", "ui"} and not allow_write:
-        print("E_GUARD：mobile {} 是 {} 动作，需加 --allow-write 才能执行".format(sub, safety))
+        import plan as plan_mod
+
+        action = sub
+        apply_args = list(sub_rest)
+        if sub in MOBILE_CONTENT and sub_rest:
+            action = "{}-{}".format(sub, sub_rest[0])
+            apply_args = list(sub_rest[1:])
+        try:
+            created = plan_mod.create(
+                "mobile-reservation-assist",
+                action,
+                apply_args,
+                principal=os.environ.get("DREAMBUDDY_PRINCIPAL", "local-user"),
+                risk=safety,
+            )
+            print(
+                "E_GUARD：mobile {} 是 {} 动作。已生成计划 {}，确认后执行："
+                "dreambuddy apply {} --allow-write".format(
+                    sub, safety, created["plan_id"], created["plan_id"]
+                )
+            )
+        except ValueError as exc:
+            print(str(exc))
         return 3
     script = mobile_script()
     if not script.exists():
@@ -669,6 +691,36 @@ def validate_plan(plan: dict) -> str | None:
     return None
 
 
+def run_action(
+    comp_name: str,
+    action: str,
+    args: list,
+    allow_write: bool = False,
+    endpoint: str = "",
+    reason: str = "",
+    stdout_path: str = "",
+) -> int:
+    """按 component.yaml 解析并执行一个动作（workflow / apply 的公共执行核）。"""
+    comp = find_component(comp_name)
+    script, pre, safety, _desc, params = resolve_target(comp, action)
+    if safety in {"write", "ui"} and not allow_write:
+        print("E_GUARD：{} {} 是 {} 动作，需 --allow-write".format(comp_name, action, safety))
+        return 3
+    rest, arg_endpoint = take_endpoint(normalize_args(comp_name, action, args))
+    endpoint = endpoint or arg_endpoint
+    argv = apply_endpoint(endpoint, params, [sys.executable, str(script)] + pre + rest)
+    print("→ {} {}  [{}]  {}".format(comp_name, action, safety, reason), flush=True)
+    print("  {}".format(" ".join(argv)), file=sys.stderr)
+    if stdout_path:
+        target = Path(stdout_path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("w", encoding="utf-8") as handle:
+            return subprocess.run(
+                argv, cwd=str(comp["_dir"]), env=domain_env("59"), stdout=handle
+            ).returncode
+    return subprocess.run(argv, cwd=str(comp["_dir"]), env=domain_env("59")).returncode
+
+
 def execute_plan(plan: dict, allow_write: bool = False, endpoint: str = "") -> int:
     kind = plan.get("kind")
     if kind == "answer":
@@ -688,29 +740,45 @@ def execute_plan(plan: dict, allow_write: bool = False, endpoint: str = "") -> i
 
     comp_name = plan.get("component", "")
     action = plan.get("action", "")
+    args = [str(item) for item in plan.get("args") or []]
     try:
         comp = find_component(comp_name)
-        script, pre, safety, desc, params = resolve_target(comp, action)
+        _script, _pre, safety, _desc, _params = resolve_target(comp, action)
     except SystemExit as exc:
         print(str(exc))
         return 1
     if safety in {"write", "ui"} and not allow_write:
-        print("E_GUARD：{} 是 {} 动作，需 --allow-write（本轮只读编排不执行）".format(action, safety))
+        try:
+            from plan import create as create_plan
+
+            created = create_plan(
+                comp_name,
+                action,
+                args,
+                principal=os.environ.get("DREAMBUDDY_PRINCIPAL", "local-user"),
+                risk=safety,
+            )
+            print(
+                "E_GUARD：{} {} 是 {} 动作。已生成计划 {}，确认后执行："
+                "dreambuddy apply {} --allow-write".format(
+                    comp_name, action, safety, created["plan_id"], created["plan_id"]
+                )
+            )
+        except ValueError as exc:
+            print(str(exc))
         return 3
-    rest, arg_endpoint = take_endpoint(normalize_args(comp_name, action, plan.get("args") or []))
-    endpoint = endpoint or arg_endpoint
     try:
-        argv = apply_endpoint(
-            endpoint,
-            params,
-            [sys.executable, str(script)] + pre + rest,
+        return run_action(
+            comp_name,
+            action,
+            args,
+            allow_write=allow_write,
+            endpoint=endpoint,
+            reason=plan.get("reason", ""),
         )
     except SystemExit as exc:
         print(str(exc))
         return 1
-    print("→ {} {}  [{}]  {}".format(comp_name, action, safety, plan.get("reason", "")), flush=True)
-    print("  {}".format(" ".join(argv)), file=sys.stderr)
-    return subprocess.run(argv, cwd=str(comp["_dir"]), env=domain_env("59")).returncode
 
 
 def handle_nl(text: str, allow_write: bool = False, endpoint: str = "") -> int:
@@ -753,6 +821,11 @@ def cmd_chat(args) -> int:
             "手机",
             "data",
             "59",
+            "plan",
+            "apply",
+            "workflow",
+            "schedule",
+            "release",
         ):
             if head in ("list",):
                 line = "ls"
@@ -760,6 +833,76 @@ def cmd_chat(args) -> int:
             continue
         tokens, endpoint = take_endpoint(line.split())
         handle_nl(" ".join(tokens), endpoint=endpoint)
+
+
+def cmd_plan(args) -> int:
+    import plan as plan_mod
+
+    try:
+        created = plan_mod.create(
+            args.component,
+            args.action,
+            list(args.rest),
+            principal=args.principal or os.environ.get("DREAMBUDDY_PRINCIPAL", "local-user"),
+            risk="write",
+        )
+    except ValueError as exc:
+        print(str(exc))
+        return 3
+    print(created["plan_id"])
+    return 0
+
+
+def cmd_apply(args) -> int:
+    if not args.allow_write:
+        print("E_GUARD：apply 会执行写动作，需显式 --allow-write")
+        return 3
+    import plan as plan_mod
+
+    principal = args.principal or os.environ.get("DREAMBUDDY_PRINCIPAL", "local-user")
+    try:
+        approved = plan_mod.approve(args.plan_id, principal=principal)
+    except ValueError as exc:
+        print(str(exc))
+        return 3
+    try:
+        code = run_action(
+            str(approved["component"]),
+            str(approved["action"]),
+            list(approved.get("args") or []),
+            allow_write=True,
+            endpoint=str(approved.get("endpoint") or ""),
+            reason="apply {}".format(args.plan_id),
+        )
+    except SystemExit as exc:
+        print(str(exc))
+        return 1
+    plan_mod.audit(
+        "plan.execute",
+        plan_id=args.plan_id,
+        principal=principal,
+        exit_code=code,
+        action=approved.get("action"),
+    )
+    return code
+
+
+def cmd_workflow(args) -> int:
+    import workflow
+
+    return workflow.main(list(args.rest))
+
+
+def cmd_schedule(args) -> int:
+    import jobs
+
+    return jobs.main(list(args.rest))
+
+
+def cmd_release(args) -> int:
+    import release_ledger
+
+    return release_ledger.main(list(args.rest))
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -801,6 +944,28 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_chat = sub.add_parser("chat", help="会话式自然语言编排")
     p_chat.set_defaults(func=cmd_chat)
+
+    p_plan = sub.add_parser("plan", help="为写动作生成待批准计划")
+    p_plan.add_argument("--principal", default="")
+    p_plan.add_argument("component")
+    p_plan.add_argument("action")
+    p_plan.add_argument("rest", nargs=argparse.REMAINDER)
+    p_plan.set_defaults(func=cmd_plan)
+
+    p_apply = sub.add_parser("apply", help="批准并执行计划")
+    p_apply.add_argument("plan_id")
+    p_apply.add_argument("--allow-write", action="store_true")
+    p_apply.add_argument("--principal", default="")
+    p_apply.set_defaults(func=cmd_apply)
+
+    for name, func, help_text in (
+        ("workflow", cmd_workflow, "工作流：list/show/run/approve"),
+        ("schedule", cmd_schedule, "定时任务：add/list/pause/resume/rm/run-now/run-due"),
+        ("release", cmd_release, "发布台账：status/record/rollback"),
+    ):
+        p = sub.add_parser(name, help=help_text)
+        p.add_argument("rest", nargs=argparse.REMAINDER)
+        p.set_defaults(func=func)
     return parser
 
 
@@ -816,6 +981,11 @@ SUBCOMMANDS = (
     "phone",
     "手机",
     "domains",
+    "plan",
+    "apply",
+    "workflow",
+    "schedule",
+    "release",
 )
 
 

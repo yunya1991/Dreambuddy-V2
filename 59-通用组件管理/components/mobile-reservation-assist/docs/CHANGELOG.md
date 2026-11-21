@@ -1,5 +1,17 @@
 # CHANGELOG — mobile-reservation-assist
 
+## v0.16.0 (2026-11-21)
+
+设备端补真机接单，并加独立开关（默认关闭，关闭时由用户自主接单）。
+
+- 新增 `autojs/modules/accept_helper.js`：按 `route_start/route_end/price` 定位订单卡片，只点该卡片内的接单按钮；点击后读页面提取订单号。
+- 三平台 `didi/dida/hello` 的 `acceptOrder(orderId, target, options)` 改为调用 helper，接单前自动回到订单大厅。
+- `autojs/main.js`：`case "accept"` 接入 `handleAcceptCommand`；新增 `config.accept.enabled` 开关、`max_per_day` 上限、工作时段与价格下限校验；`status` 返回开关与当日接单数。
+- `config` 指令新增 `accept_enabled` / `max_accept` 热更新，落盘 `config.json`。
+- `config.json` 新增 `accept` 段（`enabled=false`、`max_per_day=1`、`confirm_texts`）。
+- 桥接 target 补充 `route_start/route_end`，便于设备端按路线兜底定位订单。
+- 测试：新增 `tests/test_device_accept.py`（4 例）；全量 280 项通过。
+
 ## v0.15.0 (2026-11-21)
 
 顺风车抢单接入新架构（服务端桥接，不改手机端 JS）。

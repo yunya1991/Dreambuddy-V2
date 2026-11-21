@@ -1,9 +1,9 @@
 {
   "canonical_repo": "~/Documents/顺风车业务",
-  "canonical_version": "0.15.0",
+  "canonical_version": "0.16.0",
   "files": {
-    "docs/API_SPEC.md": "4207faad2fbad799aa353aef2bef1c096ff1bdd8e40e4cbe56cd4092ca6dd676",
-    "docs/CHANGELOG.md": "ebff06ab9457739a4f0d2dbda8fe643b832716707bbc10300851d752cba7a7c7",
+    "docs/API_SPEC.md": "1211c3c695bddc39604de70f3efe9d0d2569ee104a06a158de3b63eaad326504",
+    "docs/CHANGELOG.md": "a1c077576d82281a98be8187a5e0ed09eba84fb9cca4276e091116d8a80f8d26",
     "docs/ENGINEERING_INDEX.md": "a5b487b5fbf08a777645cd833c1ce4ac042a4992f6dab2cc39f75edf72f8f449",
     "docs/TECHNICAL_DESIGN.md": "05ae6db789f8d79f2c31329b65844d53d3351a8f2900c16989d9bdc91a372809",
     "skill/references/adapters.md": "09f7fab67039b1a1ef5e2509f80f25e34897d9bb3da8ea4524cc59ea97b8a946",
@@ -84,6 +84,6 @@
     "tests/test_vision.py": "9dead0490282818cf640abd764ea12972bbcd488db9acb49b1ee7d90b61ee0f8",
     "tests/test_xhs_chain.py": "df06ced9fcea81906b948b3786df60ad16f36ad902c6b91ba89ad0820e94e2d8"
   },
-  "source_hash": "47fec878426e6ff71d9b1093feca586cab36a31fba7275bddb9d7d4049449364",
-  "synced_at": "2026-11-21T12:55:57.144548+00:00"
+  "source_hash": "f0d708b2269c1996d70b101c1c79529890ef2c2beca43faf10afec2256eae891",
+  "synced_at": "2026-11-21T13:06:54.206013+00:00"
 }

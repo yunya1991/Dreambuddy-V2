@@ -35,8 +35,8 @@ SYNC_PATHS = (
 )
 IGNORE_NAMES = {"__pycache__", ".pytest_cache"}
 IGNORE_SUFFIXES = {".pyc", ".pyo"}
-# 主仓里与 Web 桥接强耦合、不属于组件边界的测试（import src.services）
-SKIP_FILES = {"test_phone_bridge.py"}
+# 主仓里与 Web 桥接 / 安卓 AutoJS 源码强耦合、不属于组件边界的测试
+SKIP_FILES = {"test_phone_bridge.py", "test_device_accept.py"}
 
 
 def source_root() -> Path:

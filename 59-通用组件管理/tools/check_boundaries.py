@@ -370,6 +370,10 @@ def check_golden(components: list[Component]) -> RuleResult:
             except json.JSONDecodeError as exc:
                 result.fail(sample, "JSON 解析失败：{}".format(exc.msg))
                 continue
+            # 回放/命令轨迹样本自带其它 schema（如 publish.replay.v1），不属于本组件输出契约
+            declared = payload.get("schema")
+            if isinstance(declared, str) and declared and declared != profile:
+                continue
             if jsonschema_validate is None:
                 missing = [k for k in schema.get("required") or [] if k not in payload]
                 if missing:

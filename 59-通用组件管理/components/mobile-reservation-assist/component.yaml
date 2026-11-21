@@ -81,6 +81,40 @@ actions:
     params:
       - {name: text, type: string, required: true, description: 自然语言预约指令（只出白名单计划，不执行）}
 
+  # ── 写动作（需 --allow-write / plan 审批）──
+  - name: dispatch
+    description: "把自然语言预约指令解析为作业并入队（--dry-run 只解析）"
+    when_to_use: "需要手机端执行预约任务时"
+    not_for: "不代付、不锁座、不提交订单"
+    script: scripts/mra.py
+    args: [dispatch]
+    safety: write
+    output: json
+  - name: ingest
+    description: "归一上游余票命中并入队"
+    when_to_use: "预约助手产生新命中，需要同步到手机队列"
+    not_for: "不直接执行预约"
+    script: scripts/mra.py
+    args: [ingest]
+    safety: write
+    output: json
+  - name: pause
+    description: "暂停手机端派发"
+    when_to_use: "需要临时停止所有派发时"
+    not_for: "不删除队列"
+    script: scripts/mra.py
+    args: [pause]
+    safety: write
+    output: json
+  - name: resume
+    description: "恢复手机端派发"
+    when_to_use: "暂停后恢复派发"
+    not_for: "不补发暂停期间错过的任务"
+    script: scripts/mra.py
+    args: [resume]
+    safety: write
+    output: json
+
   # ── 内容运营（小红书 / 抖音）：默认停在发布前，publish_note 永不暴露 ──
   - name: xhs-scout
     description: "小红书爆款侦察：按赛道浏览信息流，读前 N 篇，可点赞/收藏"

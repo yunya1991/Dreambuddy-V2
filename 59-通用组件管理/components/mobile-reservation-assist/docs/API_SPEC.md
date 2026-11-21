@@ -253,7 +253,7 @@ mra knowledge ask "<问题>" [--app X] [--max-age 秒] [--no-cache] [--timeout 1
 
 动词映射：`start→scan_session`、`refresh→scan_once`、`accept→accept_order`、`stop→stop_scan`；`config/status` 不建 job。
 开关：`MRA_PHONE_BRIDGE`（默认开）、`MRA_ACCEPT_ENABLE`（默认关）。接单还需 `params.accept_authorized=true`、当日 `max_accept` 未用尽、价格不低于下限。
-已知限制：设备端 `autojs/main.js` 的 `accept` 仍为空实现，自动接单只能到 `pending_human`，需后续补真机点击。
+设备端二次开关：`config.json` 的 `accept.enabled`（默认关闭）。关闭时 accept 回「自动接单未开启，请人工接单」→ `pending_human`；开启后按订单定位卡片点击接单，成功回传订单号。`accept.max_per_day` 为设备侧单日上限；`config` 指令可热更新 `accept_enabled` / `max_accept`。
 
 ```
 mra carpool start --platform didi [--min-price 30] [--max-accept 1]
