@@ -138,6 +138,82 @@ def script_path(comp: dict, rel: str) -> Path:
     return comp["_dir"] / (comp.get("skill_dir") or "skill") / rel
 
 
+def find_action(comp: dict, target: str) -> dict:
+    """取动作原始声明（拿 cwd / 参数 flag 等 manifest 字段）。"""
+    for action in comp.get("actions") or []:
+        if action.get("name") == target:
+            return action
+    return {}
+
+
+def action_cwd(comp: dict, action: dict) -> Path:
+    """动作可声明 cwd: workspace，表示在仓库根（而非组件目录）执行。"""
+    if action.get("cwd") == "workspace":
+        return ROOT.parent
+    return comp["_dir"]
+
+
+def split_globals(action: dict, rest: list[str]) -> tuple[list[str], list[str]]:
+    """把 global: true 的参数（如 --root）提到子命令之前。
+
+    认知管家这类脚本的 --root 是顶层参数，必须排在 scan/doctor 前面，
+    否则 argparse 会当成子命令的未知参数。
+    """
+    flags = {
+        p["flag"]
+        for p in action.get("params") or []
+        if p.get("global") and p.get("flag")
+    }
+    if not flags:
+        return [], rest
+    head: list[str] = []
+    tail: list[str] = []
+    i = 0
+    while i < len(rest):
+        item = rest[i]
+        flag, sep, val = item.partition("=")
+        if flag not in flags:
+            tail.append(item)
+            i += 1
+            continue
+        if sep:
+            head.extend([flag, val])
+            i += 1
+            continue
+        if i + 1 >= len(rest) or str(rest[i + 1]).startswith("-"):
+            # 模型有时只给 flag 不给值（如 --root --json），按缺失处理，落回默认值
+            i += 1
+            continue
+        head.extend([flag, rest[i + 1]])
+        i += 2
+    return head, tail
+
+
+def drop_stray_args(action: dict, args: list[str]) -> list[str]:
+    """动作只接受带 flag 的参数时，丢掉模型塞进来的游离关键词。
+
+    例如 index 没有位置参数，模型却给了 ["手机助手"]；若不过滤，
+    argparse 会直接报 unrecognized arguments。
+    """
+    params = action.get("params") or []
+    if not params or any(not p.get("flag") for p in params):
+        return args
+    out: list[str] = []
+    i = 0
+    while i < len(args):
+        item = str(args[i])
+        if not item.startswith("-"):
+            i += 1
+            continue
+        out.append(item)
+        if "=" not in item and i + 1 < len(args) and not str(args[i + 1]).startswith("-"):
+            out.append(str(args[i + 1]))
+            i += 2
+            continue
+        i += 1
+    return out
+
+
 def resolve_target(comp: dict, target: str) -> tuple[Path, list[str], str, str, list[str]]:
     """返回 (脚本路径, 前置参数, 安全级, 说明, 参数名列表)。"""
     for action in comp.get("actions") or []:
@@ -227,18 +303,24 @@ def cmd_help(args) -> int:
 def cmd_run(args) -> int:
     comp = find_component(args.component)
     script, pre, safety, desc, params = resolve_target(comp, args.target)
+    action = find_action(comp, args.target)
     rest, endpoint = take_endpoint(list(args.rest))
     # argparse.REMAINDER 会把尾随的 --allow-write 吞进来，这里还原成开关
     allow_write = args.allow_write or "--allow-write" in rest
     rest = [item for item in rest if item != "--allow-write"]
+    if action:
+        import capabilities
+
+        safety = capabilities.effective_safety(action, rest)
     if not script.exists():
         raise SystemExit("E_SCRIPT：脚本不存在 {}".format(script))
     if safety in {"write", "ui"} and not allow_write:
         print("E_GUARD：动作 {} 标记为 {}，需加 --allow-write 才能执行".format(args.target, safety))
         return 3
-    cmd = apply_endpoint(endpoint, params, [sys.executable, str(script)] + pre + rest)
+    head, rest = split_globals(action, rest)
+    cmd = apply_endpoint(endpoint, params, [sys.executable, str(script)] + head + pre + rest)
     print("[dreambuddy] {} → {}".format(comp.get("name"), " ".join(cmd)), file=sys.stderr)
-    proc = subprocess.run(cmd, cwd=str(comp["_dir"]), env=domain_env("59"))
+    proc = subprocess.run(cmd, cwd=str(action_cwd(comp, action)), env=domain_env("59"))
     return proc.returncode
 
 
@@ -246,32 +328,6 @@ def cmd_run(args) -> int:
 
 MOBILE_COMPONENT = "mobile-reservation-assist"
 RESERVATION_COMPONENT = "reservation-assist"
-MOBILE_WRITE = {"dispatch", "ingest", "pause", "resume"}
-MOBILE_LONG = {"gateway", "chat"}
-# 内容流水线：compose/trends/collect/data 不碰手机 UI；其余（scout/post/cover/memo/chain）有 UI 副作用
-MOBILE_CONTENT = {"xhs", "douyin"}
-MOBILE_CONTENT_READ = {"compose", "trends", "collect", "data"}
-MOBILE_COMMANDS = (
-    ("doctor", "read", "环境自检"),
-    ("jobs", "read", "预约作业清单（--state 过滤）"),
-    ("report", "read", "reservation.v1 报告"),
-    ("reconcile", "read", "订单对账（order_unknown）"),
-    ("knowledge", "read", "平台规则知识问答（引用+置信度）"),
-    ("explore", "read", "探索录制 / 适配器草案 / 回放门禁"),
-    ("devices", "read", "设备心跳与在线状态"),
-    ("regression", "read", "适配器批量回归"),
-    ("patrol", "read", "巡检诊断（--auto-fix 为写）"),
-    ("ask", "read", "自然语言→白名单计划（--execute 为写）"),
-    ("token", "read", "查看/生成网关 Token"),
-    ("xhs", "ui", "小红书流水线：scout/trends/collect/data/compose/cover/post/chain"),
-    ("douyin", "ui", "抖音流水线：scout/trends/collect/data/compose/cover/post/chain"),
-    ("ingest", "write", "归一上游命中并入队"),
-    ("dispatch", "write", "自然语言下发预约作业（--dry-run 只解析）"),
-    ("pause", "write", "暂停派发"),
-    ("resume", "write", "恢复派发"),
-    ("gateway", "long", "启动本地 HTTP 网关（前台常驻）"),
-    ("chat", "long", "会话模式（前台交互）"),
-)
 
 
 def domain_env(domain: str) -> dict:
@@ -286,21 +342,6 @@ def mobile_script() -> Path:
     return script_path(find_component(MOBILE_COMPONENT), "scripts/mra.py")
 
 
-def mobile_safety(sub: str, rest: list) -> str:
-    if sub in MOBILE_WRITE:
-        return "write"
-    if sub in MOBILE_CONTENT:
-        second = rest[0] if rest and not rest[0].startswith("-") else ""
-        return "read" if second in MOBILE_CONTENT_READ else "ui"
-    if sub == "ask" and "--execute" in rest:
-        return "write"
-    if sub == "patrol" and "--auto-fix" in rest:
-        return "write"
-    if sub in MOBILE_LONG:
-        return "long"
-    return "read"
-
-
 def build_mobile_argv(sub: str, rest: list) -> list[str]:
     """组装 mra.py 调用；ingest 未给 --ra-cli 时自动接上 59 域 reservation-assist。"""
     argv = [sys.executable, str(mobile_script()), sub] + list(rest)
@@ -311,13 +352,50 @@ def build_mobile_argv(sub: str, rest: list) -> list[str]:
     return argv
 
 
+def mobile_action_caps() -> list[dict]:
+    """手机动作清单：唯一源是 component.yaml（经能力注册表），不维护第二份命令表。"""
+    import capabilities
+
+    return [
+        cap
+        for cap in capabilities.build()
+        if cap.get("component") == MOBILE_COMPONENT and cap.get("kind") == "run"
+    ]
+
+
+def match_mobile_action(tokens: list) -> tuple[dict | None, int]:
+    """按 args 最长前缀匹配动作，返回 (能力, 已匹配长度)。"""
+    best: dict | None = None
+    size = 0
+    for cap in mobile_action_caps():
+        args = [str(item) for item in cap.get("args") or []]
+        if not args or len(args) > len(tokens):
+            continue
+        if [str(item) for item in tokens[: len(args)]] == args and len(args) > size:
+            best, size = cap, len(args)
+    return best, size
+
+
+def mobile_safety(sub: str, rest: list) -> tuple[str, dict | None]:
+    """按注册表判定安全级；未登记的候选按 write 兜底（fail-closed）。"""
+    import capabilities
+
+    tokens = [sub] + [str(item) for item in rest]
+    if any(item in ("-h", "--help") for item in tokens):
+        return "read", None
+    cap, _size = match_mobile_action(tokens)
+    if cap is None:
+        return "write", None
+    return capabilities.effective_safety(cap, tokens), cap
+
+
 def print_mobile_help() -> None:
-    print("手机AGENT 业务域（内部 CLI：{}）".format(mobile_script().name))
+    print("手机AGENT 业务域（内部 CLI：{}；动作清单来自 component.yaml）".format(mobile_script().name))
     print("用法: dreambuddy mobile <子命令> [参数...] [--allow-write]")
-    for name, safety, desc in MOBILE_COMMANDS:
-        print("  - {:10} [{}] {}".format(name, safety, desc))
-    print("\n跨域：手机AGENT 子进程可用 $DREAMBUDDY_CLI 回查 59 域，例如")
-    print("      $DREAMBUDDY_CLI data market-data quotes --symbols sh600519")
+    for cap in mobile_action_caps():
+        args = " ".join(str(item) for item in cap.get("args") or [cap.get("action", "")])
+        print("  - {:26} [{}] {}".format(args, cap.get("safety", "read"), cap.get("description", "")))
+    print("\n未登记子命令按 write 兜底，需 --allow-write；跨域可回查 $DREAMBUDDY_CLI")
 
 
 def cmd_mobile(args) -> int:
@@ -328,15 +406,16 @@ def cmd_mobile(args) -> int:
         print_mobile_help()
         return 0
     sub, sub_rest = rest[0], rest[1:]
-    safety = mobile_safety(sub, sub_rest)
+    if sub == "twitter" and not sub_rest:
+        sub_rest = ["--help"]
+    safety, matched = mobile_safety(sub, sub_rest)
     if safety in {"write", "ui"} and not allow_write:
         import plan as plan_mod
 
-        action = sub
+        action = str(matched.get("action")) if matched else sub
         apply_args = list(sub_rest)
-        if sub in MOBILE_CONTENT and sub_rest:
-            action = "{}-{}".format(sub, sub_rest[0])
-            apply_args = list(sub_rest[1:])
+        if matched:
+            apply_args = apply_args[len(matched.get("args") or []) :]
         try:
             created = plan_mod.create(
                 "mobile-reservation-assist",
@@ -374,9 +453,22 @@ def cmd_domains(args) -> int:
     for comp in comps:
         acts = [a.get("name", "?") for a in comp.get("actions") or []]
         print("  - {:28} {}".format(comp.get("name"), ", ".join(acts) or "（无动作）"))
+    print("\n● 6-TRADING 域   dreambuddy trading <signal|bus|constraint|cycle|strategic|diagnostics|training|positions|balance>")
+    try:
+        import trading_bridge
+
+        for item in trading_bridge.tools():
+            print("  - {:26} {}".format(item["name"], item.get("description", "")))
+    except Exception as exc:  # 交易域不可用时如实提示
+        print("  - （不可用：{}）".format(exc))
     print("\n● 手机AGENT 域   dreambuddy mobile <子命令> [--allow-write]")
-    for name, safety, desc in MOBILE_COMMANDS:
-        print("  - {:10} [{}] {}".format(name, safety, desc))
+    for cap in mobile_action_caps():
+        args_text = " ".join(str(item) for item in cap.get("args") or [cap.get("action", "")])
+        print(
+            "  - {:26} [{}] {}".format(
+                args_text, cap.get("safety", "read"), cap.get("description", "")
+            )
+        )
     print("\n域间调用：子进程通过 $DREAMBUDDY_CLI 回查统一入口，不互相 import。")
     return 0
 
@@ -390,6 +482,7 @@ def cmd_doctor(args) -> int:
     gates = [
         ("kernel 注入一致性", ["tools/sync_kernel.py", "--check"]),
         ("独立性闸门 G1–G7", ["tools/check_boundaries.py"]),
+        ("能力索引同步", ["tools/capabilities.py", "verify"]),
         ("INDEX 同步", ["tools/gen_index.py", "--check"]),
         ("规则/站点一致", ["tools/sync_rules.py", "--check"]),
     ]
@@ -486,72 +579,56 @@ def qwen_call(system: str, user: str, timeout: int = 45) -> str:
 
 
 def action_catalog() -> list[dict]:
-    """把所有组件的 actions 摊平成路由候选。"""
-    items: list[dict] = []
-    for comp in load_components():
-        for act in comp.get("actions") or []:
-            items.append(
-                {
-                    "component": comp.get("name"),
-                    "action": act.get("name"),
-                    "description": act.get("description", ""),
-                    "safety": act.get("safety", "read"),
-                }
-            )
-    return items
+    """组件动作候选（来自能力注册表，保持单一来源）。"""
+    import capabilities
+
+    return [
+        {
+            "component": cap["component"],
+            "action": cap["action"],
+            "description": cap.get("description", ""),
+            "safety": cap.get("safety", "read"),
+        }
+        for cap in capabilities.build()
+        if cap["kind"] == "run"
+    ]
 
 
-MOBILE_READ_COMMANDS = ("doctor", "jobs", "report", "patrol", "ask", "token")
+def mobile_read_commands() -> tuple:
+    import capabilities
+
+    return capabilities.mobile_read_commands()
 
 
 def route_catalog() -> dict:
-    """统一路由器候选：59 动作 + 19-DAL 只读工具 + 手机只读子命令 + 工作流 + 调度只读。"""
-    data_tools: list[dict] = []
-    try:
-        import data_bridge
+    """统一路由器候选：由能力注册表派生（59 动作 + 数据桥 + 手机 + 工作流 + 调度）。"""
+    import capabilities
 
-        data_tools = [
-            {"name": item["name"], "schema": item["inputSchema"], "safety": "read"}
-            for item in data_bridge.tools()
-        ]
-    except Exception:  # 数据桥不可用时仍可路由其它域
-        data_tools = [{"name": "data_store_read", "safety": "read"}]
-    return {
-        "component_actions": action_catalog(),
-        "data_read": data_tools,
-        "mobile_read": list(MOBILE_READ_COMMANDS),
-        "workflows": [path.stem for path in sorted((ROOT / "workflows").glob("*.yaml"))],
-        "schedule_read": ["list"],
-    }
+    return capabilities.legacy_catalog()
 
 
-ROUTER_SYSTEM = """你是 dreambuddy 统一操作台路由器。只输出 JSON，不要解释。
-能力目录：
+ROUTER_SYSTEM = """你是 dreambuddy 统一操作台路由器。只能从能力注册表里选，只输出 JSON，不要解释。
+能力注册表：
 {catalog}
 
 输出之一：
-{{"kind":"run","component":"<组件>","action":"<动作>","args":["..."],"reason":"<一句话>"}}
-{{"kind":"data","tool":"data_store_read|data_fetch|data_collect_once","args":{{...}},"reason":"<一句话>"}}
-{{"kind":"mobile","command":"<只读子命令>","args":["..."],"reason":"<一句话>"}}
-{{"kind":"workflow","workflow":"<工作流 id>","reason":"<一句话>"}}
-{{"kind":"schedule","command":"list","reason":"<一句话>"}}
+{{"kind":"call","capability":"<注册表里的 id>","args":[...或{{...}}],"reason":"<一句话>"}}
 {{"kind":"answer","text":"<直接回答，做不到也要如实说>"}}
 {{"kind":"unknown","text":"<说明为什么无法路由>"}}
 
 规则：
-1) 只能使用目录里出现的 component+action、data_read 工具、mobile_read 子命令、workflows id。
-2) data 只读：data_store_read 必须 table=mm_metrics，且 filters 同时含 sub_category 与 metric_name；
-   data_collect_once 无参；data_fetch 需要 scope。不要编造不存在的指标名，不确定时用 answer 说明。
-3) mobile 只路由只读子命令；dispatch/ingest/pause/resume/xhs/douyin post 等写动作不在本路由，
-   用 answer 提示用户显式执行 `dreambuddy mobile <子命令> --allow-write`。
-4) workflow 只做 dry-run 预演；schedule 只允许 list。
-5) 写动作（safety=write）可以选 run，但系统会拦并生成待批准计划，不要假装已执行。
-6) args 是传给组件脚本的命令行参数，必须带前缀：
-   quotes 用 ["--symbols","sh600519"]，onchain 用 ["--chain","eth"]，macro/filings 可空。
-7) quotes 只支持 A 股：sh/sz + 6 位数字；加密货币/美股价格不在本域能力内，用 answer 说明；
-   链上指标（不含价格）才用 onchain。
-8) 说「预约助手/放票/抢票/手机端/会员购/演出门票」优先 mobile-reservation-assist；
-   reservation-assist 只负责余票/号源监控与通知，不要混用。"""
+1) capability 必须是注册表里出现的 id，不要自造、不要改写前缀。
+2) data.* 的 args 是对象；workflow.* 只做 dry-run 预演；schedule.list 无参。
+3) write/ui 能力可以选，系统会拦成待批准计划或按任务级 --allow-write 放行，不要假装已执行。
+4) run 类 args 用命令行长参数：quotes 用 ["--symbols","sh600519"]，onchain 用 ["--chain","eth"]，
+   macro/filings 可空；--root 用绝对路径（默认仓库根）。
+5) quotes 只支持 A 股：sh/sz + 6 位数字；加密货币/美股价格不在本域能力内，用 answer 说明；
+   链上指标（不含价格）才用 market-data.onchain。
+6) 说「预约助手/放票/抢票/手机端/会员购/演出门票」优先 mobile-reservation-assist.*；
+   reservation-assist.* 只负责余票/号源监控与通知，不要混用。
+7) 文件/目录治理（扫描登记、索引、代码-文档对应、上下文打包）归 cogsteward.*；
+   cogsteward.index/map/doctor 没有位置参数，按关键词定位文件用 cogsteward.pack。
+8) 不确定或能力不在表内时用 answer/unknown，不要硬编参数。"""
 
 # 组件脚本的参数前缀：模型若只给裸值，这里补上 flag
 ARG_FLAG = {
@@ -618,6 +695,22 @@ def rule_plan(text: str) -> dict:
             "text": "19-DAL 只读查询：dreambuddy dal scopes 看可用数据域；\n"
             "按指标查：dreambuddy dal read --table mm_metrics --sub-category <域> --metric-name <指标> --limit 10",
         }
+
+    if has("持仓", "仓位", "余额", "交易信号", "信号状态", "周期状态", "宏观约束", "交易诊断", "训练状态"):
+        tool = "get_signal_state"
+        if has("持仓", "仓位"):
+            tool = "get_positions"
+        elif has("余额", "资金"):
+            tool = "get_balance"
+        elif has("周期"):
+            tool = "get_cycle_state"
+        elif has("约束", "宏观"):
+            tool = "get_constraint_state"
+        elif has("诊断", "矛盾"):
+            tool = "get_decision_diagnostics"
+        elif has("训练"):
+            tool = "get_training_status"
+        return {"kind": "trading", "tool": tool, "args": {}, "reason": "6-TRADING 只读状态"}
 
     if has("比特币", "btc", "以太坊", "eth", "链上", "区块"):
         return {
@@ -688,13 +781,32 @@ def rule_plan(text: str) -> dict:
             "reason": "余票/号源监控状态",
         }
 
-    if has("上下文", "登记", "索引", "扫描"):
+    if has("打包上下文", "上下文打包", "最小上下文", "上下文包"):
         return {
             "kind": "run",
             "component": "cogsteward",
-            "action": "selfcheck",
+            "action": "pack",
+            "args": [text],
+            "reason": "按任务打包最小上下文指针",
+        }
+
+    if has(
+        "认知管家",
+        "上下文",
+        "扫描",
+        "登记",
+        "索引",
+        "整理",
+        "文件管理",
+        "归档",
+        "代码文档",
+    ):
+        return {
+            "kind": "run",
+            "component": "cogsteward",
+            "action": "index",
             "args": [],
-            "reason": "上下文治理自检",
+            "reason": "认知管家索引/登记概览",
         }
 
     return {"kind": "unknown", "text": "没听懂要调哪个 59 域能力。输入「你能做什么」看能力清单。"}
@@ -710,13 +822,22 @@ def capabilities_text() -> str:
         lines.append("  · {}（{}）".format(comp.get("name"), names))
     lines.append(
         "直接说人话即可，例如：查询贵州茅台股价 / 看比特币链上指标 / 预约助手体检 / 跑一下市场日报工作流\n"
-        "命令域：dreambuddy 59|data <组件> <动作>  ·  dreambuddy dal <只读数据>  ·  dreambuddy mobile <子命令>\n"
+        "命令域：dreambuddy 59|data <组件> <动作>  ·  dreambuddy dal <只读数据>  ·  dreambuddy trading <只读状态>  ·  dreambuddy mobile <子命令>\n"
         "        dreambuddy workflow run <id> --dry-run  ·  dreambuddy schedule list  ·  dreambuddy domains"
     )
     return "\n".join(lines)
 
 
-ROUTER_KINDS = {"run", "data", "mobile", "workflow", "schedule", "answer", "unknown"}
+ROUTER_KINDS = {
+    "call",
+    "run",
+    "data",
+    "mobile",
+    "workflow",
+    "schedule",
+    "answer",
+    "unknown",
+}
 HISTORY_LIMIT = 8
 
 
@@ -733,11 +854,15 @@ def nl_plan(text: str, history: list[dict] | None = None) -> tuple[dict, str]:
     """返回 (计划, 路由来源)。history 只用于多轮消解（如“那宁德时代呢”）。"""
     if qwen_ready():
         try:
+            import capabilities
+
             messages = [
                 {
                     "role": "system",
                     "content": ROUTER_SYSTEM.format(
-                        catalog=json.dumps(route_catalog(), ensure_ascii=False, indent=2)
+                        catalog=json.dumps(
+                            capabilities.prompt_catalog(), ensure_ascii=False, indent=2
+                        )
                     ),
                 }
             ]
@@ -780,22 +905,31 @@ def run_action(
     """按 component.yaml 解析并执行一个动作（workflow / apply 的公共执行核）。"""
     comp = find_component(comp_name)
     script, pre, safety, _desc, params = resolve_target(comp, action)
+    action_def = find_action(comp, action)
+    rest, arg_endpoint = take_endpoint(
+        drop_stray_args(action_def, normalize_args(comp_name, action, args))
+    )
+    if action_def:
+        import capabilities
+
+        safety = capabilities.effective_safety(action_def, rest)
     if safety in {"write", "ui"} and not allow_write:
         print("E_GUARD：{} {} 是 {} 动作，需 --allow-write".format(comp_name, action, safety))
         return 3
-    rest, arg_endpoint = take_endpoint(normalize_args(comp_name, action, args))
+    head, rest = split_globals(action_def, rest)
     endpoint = endpoint or arg_endpoint
-    argv = apply_endpoint(endpoint, params, [sys.executable, str(script)] + pre + rest)
+    argv = apply_endpoint(endpoint, params, [sys.executable, str(script)] + head + pre + rest)
     print("→ {} {}  [{}]  {}".format(comp_name, action, safety, reason), flush=True)
     print("  {}".format(" ".join(argv)), file=sys.stderr)
+    cwd = str(action_cwd(comp, action_def))
     if stdout_path:
         target = Path(stdout_path)
         target.parent.mkdir(parents=True, exist_ok=True)
         with target.open("w", encoding="utf-8") as handle:
             return subprocess.run(
-                argv, cwd=str(comp["_dir"]), env=domain_env("59"), stdout=handle
+                argv, cwd=cwd, env=domain_env("59"), stdout=handle
             ).returncode
-    return subprocess.run(argv, cwd=str(comp["_dir"]), env=domain_env("59")).returncode
+    return subprocess.run(argv, cwd=cwd, env=domain_env("59")).returncode
 
 
 def execute_plan(plan: dict, allow_write: bool = False, endpoint: str = "") -> int:
@@ -806,6 +940,17 @@ def execute_plan(plan: dict, allow_write: bool = False, endpoint: str = "") -> i
     if kind == "unknown":
         print(plan.get("text", "无法路由"))
         return 1
+    if kind == "call":
+        import capabilities
+
+        capability = str(plan.get("capability") or "")
+        try:
+            resolved = capabilities.plan_for(capability, plan.get("args"))
+        except ValueError as exc:
+            print(str(exc))
+            return 1
+        print("[capability] {} · {}".format(capability, resolved.get("reason", "")), file=sys.stderr)
+        return execute_plan(resolved, allow_write=allow_write, endpoint=endpoint)
     if kind == "data":
         import data_bridge
 
@@ -816,12 +961,23 @@ def execute_plan(plan: dict, allow_write: bool = False, endpoint: str = "") -> i
             return 1
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 0 if payload.get("ok", True) else 1
+    if kind == "trading":
+        import trading_bridge
+
+        try:
+            payload = trading_bridge.call(str(plan.get("tool") or ""), plan.get("args") or {})
+        except ValueError as exc:
+            print(str(exc))
+            return 1
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0 if payload.get("ok", True) else 1
     if kind == "mobile":
         command = str(plan.get("command") or "")
-        if command not in MOBILE_READ_COMMANDS:
+        allowed = mobile_read_commands()
+        if command not in allowed:
             print(
                 "E_GUARD：会话只路由手机只读子命令（{}）。写动作请显式执行："
-                "dreambuddy mobile {} --allow-write".format("/".join(MOBILE_READ_COMMANDS), command)
+                "dreambuddy mobile {} --allow-write".format("/".join(allowed), command)
             )
             return 3
         return cmd_mobile(
@@ -856,6 +1012,11 @@ def execute_plan(plan: dict, allow_write: bool = False, endpoint: str = "") -> i
     except SystemExit as exc:
         print(str(exc))
         return 1
+    action_def = find_action(comp, action)
+    if action_def:
+        import capabilities
+
+        safety = capabilities.effective_safety(action_def, args)
     if safety in {"write", "ui"} and not allow_write:
         try:
             from plan import create as create_plan
@@ -980,6 +1141,11 @@ def cmd_chat(args) -> int:
             "lifecycle",
             "pack",
             "supply",
+            "dal",
+            "trading",
+            "交易",
+            "caps",
+            "registry",
         ):
             if head in ("list",):
                 line = "ls"
@@ -1115,6 +1281,18 @@ def cmd_dal(args) -> int:
     return data_bridge.main(list(args.rest))
 
 
+def cmd_trading(args) -> int:
+    import trading_bridge
+
+    return trading_bridge.main(list(args.rest))
+
+
+def cmd_caps(args) -> int:
+    import capabilities
+
+    return capabilities.main(list(args.rest))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="dreambuddy", description="59 域统一只读编排 CLI")
     sub = parser.add_subparsers(dest="cmd")
@@ -1179,6 +1357,9 @@ def build_parser() -> argparse.ArgumentParser:
         ("pack", cmd_pack, "技能集：list/show/check/build"),
         ("supply", cmd_supply, "供应链：check/verify --online"),
         ("dal", cmd_dal, "19-DAL 只读数据桥：tools/scopes/read/fetch"),
+        ("trading", cmd_trading, "6-TRADING 只读状态：signal/bus/positions/balance/..."),
+        ("caps", cmd_caps, "能力注册表：list/show/check/prompt/export"),
+        ("registry", cmd_caps, "能力注册表（同 caps）"),
     ):
         p = sub.add_parser(name, help=help_text)
         p.add_argument("rest", nargs=argparse.REMAINDER)
@@ -1208,6 +1389,9 @@ SUBCOMMANDS = (
     "pack",
     "supply",
     "dal",
+    "trading",
+    "caps",
+    "registry",
 )
 
 

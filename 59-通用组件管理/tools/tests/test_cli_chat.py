@@ -17,6 +17,7 @@ if str(TOOLS_DIR) not in sys.path:
 
 import data_bridge  # noqa: E402
 import dreambuddy  # noqa: E402
+import trading_bridge  # noqa: E402
 
 
 class RouterCatalogTest(unittest.TestCase):
@@ -106,6 +107,50 @@ class SessionTest(unittest.TestCase):
             path = Path(tmp) / "s.jsonl"
             path.write_text('{"role":"user","content":"ok"}\nnot-json\n', encoding="utf-8")
             self.assertEqual(len(dreambuddy.load_session(path)), 1)
+
+
+class TradingBridgeTest(unittest.TestCase):
+    def test_only_read_tools_are_exposed(self):
+        names = {item["name"] for item in trading_bridge.tools()}
+        self.assertEqual(names, set(trading_bridge.READ_TOOLS))
+        self.assertNotIn("forward_signal", names)
+
+    def test_forward_signal_is_rejected(self):
+        with self.assertRaises(ValueError):
+            trading_bridge.call("forward_signal", {"paper_execute": False})
+
+    def test_catalog_registers_trading_ids(self):
+        import capabilities
+
+        caps = capabilities.build(refresh=True)
+        ids = {cap["id"] for cap in caps if cap["kind"] == "trading"}
+        self.assertIn("trading.get_signal_state", ids)
+        self.assertIn("trading.get_positions", ids)
+        legacy = capabilities.legacy_catalog()
+        self.assertTrue(any(item["name"] == "get_balance" for item in legacy["trading_read"]))
+
+    def test_plan_for_trading(self):
+        import capabilities
+
+        plan = capabilities.plan_for("trading.get_cycle_state", {})
+        self.assertEqual(plan["kind"], "trading")
+        self.assertEqual(plan["tool"], "get_cycle_state")
+
+    def test_execute_plan_trading_branch(self):
+        buffer = io.StringIO()
+        with (
+            mock.patch("trading_bridge.call", return_value={"ok": True, "data": {"state": "idle"}}),
+            redirect_stdout(buffer),
+        ):
+            code = dreambuddy.execute_plan(
+                {"kind": "trading", "tool": "get_signal_state", "args": {}}
+            )
+        self.assertEqual(code, 0)
+        self.assertIn('"ok": true', buffer.getvalue())
+
+    def test_rule_plan_routes_trading(self):
+        self.assertEqual(dreambuddy.rule_plan("看一下我的持仓")["tool"], "get_positions")
+        self.assertEqual(dreambuddy.rule_plan("交易信号现在是什么")["tool"], "get_signal_state")
 
 
 class DataBridgeTest(unittest.TestCase):
