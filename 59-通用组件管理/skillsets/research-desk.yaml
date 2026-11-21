@@ -1,0 +1,9 @@
+# 研究台技能集：数据 → 研究文档 → 博文 → 社媒物料
+skillset: research-desk
+display_name: 研究台
+description: 市场数据 + 官方事件 + 每日事实 + 认知沉淀，覆盖 daily-market-brief 工作流所需的全部商品。
+products:
+  - market-data
+  - event-context
+  - market-facts-daily
+  - cogsteward

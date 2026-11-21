@@ -5,14 +5,18 @@
 # make release 先过闸门再构建
 # make test    沙箱 16 场景回归
 # make verify  全量验证：check + 契约漂移 + 主仓同步 + 组件/引擎/MCP/沙箱测试
+# make verify-live 联网校验：SkillHub 平台签名（未登录时 SKIP）
 # make bench   可发现性路由基准（需 Qwen 配置；--dry-run 只校验夹具）
 
-.PHONY: check build release test verify bench bench-dry
+.PHONY: check build release test verify verify-live bench bench-dry
 
 check:
 	python3 tools/sync_kernel.py --check
 	python3 tools/check_boundaries.py
 	python3 tools/check_contracts.py
+	python3 tools/lifecycle.py check
+	python3 tools/skillset.py check
+	python3 tools/supply_chain.py check
 	python3 tools/sync_mobile.py --check-local
 	python3 tools/gen_index.py --check
 	python3 tools/sync_rules.py --check
@@ -43,6 +47,9 @@ verify: check
 	python3 -m unittest discover -s platform/bench/routing -p "test_*.py"
 	python3 -m unittest discover -s ../mcp_shells/l0_components -p "test_*.py"
 	python3 platform/sandbox/run_cases.py
+
+verify-live:
+	python3 tools/supply_chain.py verify --online
 
 bench-dry:
 	python3 platform/bench/routing/run_bench.py --dry-run

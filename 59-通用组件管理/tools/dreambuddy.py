@@ -912,6 +912,24 @@ def cmd_content(args) -> int:
     return content.main(list(args.rest))
 
 
+def cmd_lifecycle(args) -> int:
+    import lifecycle
+
+    return lifecycle.main(list(args.rest))
+
+
+def cmd_pack(args) -> int:
+    import skillset
+
+    return skillset.main(list(args.rest))
+
+
+def cmd_supply(args) -> int:
+    import supply_chain
+
+    return supply_chain.main(list(args.rest))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="dreambuddy", description="59 域统一只读编排 CLI")
     sub = parser.add_subparsers(dest="cmd")
@@ -970,6 +988,9 @@ def build_parser() -> argparse.ArgumentParser:
         ("schedule", cmd_schedule, "定时任务：add/list/pause/resume/rm/run-now/run-due"),
         ("release", cmd_release, "发布台账：status/record/rollback"),
         ("content", cmd_content, "内容闭环：render/blog/social/metrics"),
+        ("lifecycle", cmd_lifecycle, "生命周期：check/plan"),
+        ("pack", cmd_pack, "技能集：list/show/check/build"),
+        ("supply", cmd_supply, "供应链：check/verify --online"),
     ):
         p = sub.add_parser(name, help=help_text)
         p.add_argument("rest", nargs=argparse.REMAINDER)
@@ -995,6 +1016,9 @@ SUBCOMMANDS = (
     "schedule",
     "release",
     "content",
+    "lifecycle",
+    "pack",
+    "supply",
 )
 
 

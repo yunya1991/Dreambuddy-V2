@@ -1,0 +1,49 @@
+name: 59 通用组件验证
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "59-通用组件管理/**"
+      - "mcp_shells/l0_components/**"
+      - ".github/workflows/59-verify.yml"
+  pull_request:
+    paths:
+      - "59-通用组件管理/**"
+      - "mcp_shells/l0_components/**"
+      - ".github/workflows/59-verify.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: 59-verify-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  verify:
+    name: 59 域门禁（check + 离线 verify）
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 59-通用组件管理
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml jsonschema requests certifi black ruff
+
+      - name: make check（契约/生命周期/技能集/供应链/索引/站点/规则）
+        run: make check
+
+      - name: 离线 verify（跳过手机主仓实时比对）
+        env:
+          SHUNFENGCHE_REPO: /nonexistent
+        run: make verify
