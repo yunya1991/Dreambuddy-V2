@@ -448,6 +448,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_write.add_argument("--args", default="{}")
     p_write.add_argument("--ttl", type=int, default=900)
     p_write.add_argument("--principal", default="")
+    p_write.add_argument(
+        "--confirm", action="store_true", help="注入 confirm=true（组件写动作必需）"
+    )
     p_audit = sub.add_parser("audit", help="查看调用审计")
     p_audit.add_argument("--tail", type=int, default=10)
 
@@ -470,11 +473,29 @@ def main(argv: Optional[List[str]] = None) -> int:
         if args.cmd == "write":
             import plan as plan_mod
 
+            try:
+                payload_args = json.loads(args.args)
+            except json.JSONDecodeError:
+                print("E_INPUT：--args 不是合法 JSON", file=sys.stderr)
+                return 2
+            if not isinstance(payload_args, dict):
+                print("E_INPUT：--args 必须是 JSON 对象", file=sys.stderr)
+                return 2
+            if not payload_args.get("confirm"):
+                if args.confirm:
+                    payload_args["confirm"] = True
+                else:
+                    print(
+                        "E_CONFIRM：组件写动作需要 confirm=true；加 --confirm 自动注入",
+                        file=sys.stderr,
+                    )
+                    return 2
+            serialized = json.dumps(payload_args, ensure_ascii=False, sort_keys=True)
             principal = args.principal or os.environ.get("DREAMBUDDY_PRINCIPAL", "local-user")
             created = plan_mod.create(
                 "cloud",
                 args.tool,
-                [args.args],
+                [serialized],
                 principal=principal,
                 endpoint="cloud",
                 ttl=args.ttl,

@@ -823,7 +823,7 @@ def capabilities_text() -> str:
     lines.append(
         "直接说人话即可，例如：查询贵州茅台股价 / 看比特币链上指标 / 预约助手体检 / 跑一下市场日报工作流\n"
         "命令域：dreambuddy 59|data <组件> <动作>  ·  dreambuddy dal <只读数据>  ·  dreambuddy trading <只读状态>  ·  dreambuddy mobile <子命令>\n"
-        "        dreambuddy workflow run <id> --dry-run  ·  dreambuddy schedule list  ·  dreambuddy cloud status|tools|call  ·  dreambuddy domains"
+        "        dreambuddy workflow run <id> --dry-run  ·  dreambuddy schedule list  ·  dreambuddy cloud status|tools|call|write|sync  ·  dreambuddy domains"
     )
     return "\n".join(lines)
 
@@ -1318,6 +1318,10 @@ def cmd_cloud(args) -> int:
         import cloud_client
 
         return cloud_client.main(rest)
+    if rest and rest[0] == "sync":
+        import cloud_sync
+
+        return cloud_sync.main(rest[1:])
     import cloud_channel
 
     return cloud_channel.main(rest)

@@ -233,6 +233,29 @@ class CloudWriteTest(unittest.TestCase):
         )
         self.assertEqual(payload["_meta"]["plan_id"], "plan_abc")
 
+    def test_write_cli_requires_confirm(self):
+        buffer = io.StringIO()
+        with mock.patch("plan.create") as creator, redirect_stderr(buffer):
+            code = cloud_client.main(["write", "demo_write", "--args", "{}"])
+        self.assertEqual(code, 2)
+        self.assertIn("E_CONFIRM", buffer.getvalue())
+        creator.assert_not_called()
+
+    def test_write_cli_confirm_injects_flag(self):
+        captured = {}
+
+        def fake_create(component, action, args, **kwargs):
+            captured.update(component=component, action=action, args=args, kwargs=kwargs)
+            return {"plan_id": "plan_test"}
+
+        with mock.patch("plan.create", side_effect=fake_create), redirect_stdout(io.StringIO()):
+            code = cloud_client.main(
+                ["write", "demo_write", "--args", '{"series": "DGS10"}', "--confirm"]
+            )
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(captured["args"][0])["confirm"], True)
+        self.assertEqual(captured["component"], "cloud")
+
 
 class CloudCapabilityTest(unittest.TestCase):
     def setUp(self):
