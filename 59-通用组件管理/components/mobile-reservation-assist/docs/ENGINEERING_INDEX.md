@@ -19,6 +19,7 @@ mobile-reservation-assist/
 │   │   ├── locator.py         定位兜底：规则排序 + 本地小模型复核
 │   │   ├── vision.py          视觉兜底：OCR 块排序（置信度加权）
 │   │   ├── regression.py      回归任务集：基线 + 录制批量比对
+│   │   ├── twitter.py         X 网页端发布：Playwright 持久化登录 + 定时队列
 │   │   ├── notify.py          通知通道
 │   │   ├── security.py        redact / Token / 容器判定
 │   │   ├── phone_tools/       L3 语义工具层（平台无关，含风险策略）
@@ -27,7 +28,8 @@ mobile-reservation-assist/
 ├── agent/
 │   └── reservation_agent.js   Auto.js 手机端常驻 Agent（复用现有工程）
 └── tests/                     contract/store/ingest/gateway/executor/architecture
-                               + state_machine/receipt/phone_tools/reconcile/knowledge/explore/replay_gate/locator/vision/multidevice/regression + golden/fixtures
+                               + state_machine/receipt/phone_tools/reconcile/knowledge/explore/replay_gate/locator/vision/multidevice/regression/twitter
+                               + golden/fixtures
 ```
 
 ## 关键契约

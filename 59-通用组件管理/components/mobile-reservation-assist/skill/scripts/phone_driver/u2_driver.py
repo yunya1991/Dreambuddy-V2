@@ -7,8 +7,10 @@ MIUI/HyperOS 会反复撤销第三方无障碍（Auto.js），剪映/抖音这�
 
 from __future__ import annotations
 
+import json
 import os
 import re
+import subprocess
 import time
 from pathlib import Path
 
@@ -59,11 +61,79 @@ def _shot_dir() -> Path:
     return path
 
 
+# ── 无线 adb：探测、连接、持久化 ────────────────────────────────────────────
+def _device_file() -> Path:
+    root = Path(os.environ.get("MRA_STATE_DIR") or (Path.home() / ".mobile-reservation-assist"))
+    root.mkdir(parents=True, exist_ok=True)
+    return root / "device.json"
+
+
+def adb(*args, timeout: float = 10.0) -> str:
+    try:
+        done = subprocess.run(["adb", *args], capture_output=True, text=True, timeout=timeout)
+        return (done.stdout or "") + (done.stderr or "")
+    except Exception:
+        return ""
+
+
+def _default_serial() -> str:
+    """多设备时优先 USB 序列号（无线地址含冒号）。"""
+    output = adb("devices")
+    devices = [
+        line.split("\t")[0].strip()
+        for line in output.splitlines()[1:]
+        if "\tdevice" in line
+    ]
+    usb = [item for item in devices if ":" not in item]
+    return (usb or devices or [""])[0]
+
+
+def wifi_ip(serial: str = "") -> str:
+    """从已连接设备读 wlan0 的 IPv4（优先无线网卡，避免取到蜂窝/VPN）。"""
+    target_serial = serial or _default_serial()
+    target = ["-s", target_serial] if target_serial else []
+    output = adb(*target, "shell", "ip route")
+    for line in output.splitlines():
+        if "dev wlan0" in line:
+            match = re.search(r"src (\d+\.\d+\.\d+\.\d+)", line)
+            if match:
+                return match.group(1)
+    match = re.search(r"src (\d+\.\d+\.\d+\.\d+)", output)
+    return match.group(1) if match else ""
+
+
+def adb_tcpip(port: int = 5555) -> str:
+    return adb("tcpip", str(port))
+
+
+def adb_connect(address: str) -> bool:
+    return "connected to" in adb("connect", address)
+
+
+def save_serial(serial: str) -> Path:
+    path = _device_file()
+    path.write_text(json.dumps({"serial": serial}, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
+def load_saved_serial() -> str:
+    try:
+        data = json.loads(_device_file().read_text(encoding="utf-8"))
+        return str(data.get("serial") or "")
+    except (OSError, ValueError):
+        return ""
+
+
 class U2Driver:
     """薄封装：只提供流程需要的动作，保持可替换（测试用 FakeDriver 同接口）。"""
 
     def __init__(self, serial: str = "", poll: float = 0.5, shot_dir: Path | None = None):
-        self.serial = serial or os.environ.get("MRA_DEVICE_SERIAL") or os.environ.get("ANDROID_SERIAL") or ""
+        self.serial = (
+            serial
+            or os.environ.get("MRA_DEVICE_SERIAL")
+            or os.environ.get("ANDROID_SERIAL")
+            or load_saved_serial()
+        )
         self.poll = poll
         self._shot_dir = shot_dir
         self._device = None
@@ -76,6 +146,8 @@ class U2Driver:
         if self._device is None:
             import uiautomator2 as u2
 
+            if self.serial and ":" in self.serial:
+                adb_connect(self.serial)  # 幂等：无线断线后自动重连，无需手工 adb connect
             self._device = u2.connect(self.serial or None)
         return self._device
 
@@ -211,6 +283,16 @@ class U2Driver:
                 continue
         return None
 
+    def dismiss_cross_app_prompt(self) -> bool:
+        """Android 跨应用启动确认（AutoJs6 想要打开 X）：点允许。"""
+        page = self.page_text(600)
+        if "想要打开" not in page and "是否允许" not in page:
+            return False
+        if self.tap_any(("始终允许", "允许"), timeout=3):
+            time.sleep(1.5)
+            return True
+        return False
+
     def _dismiss_ime_picker(self) -> bool:
         """MIUI 在切换 AdbKeyboard 时会弹输入法选择器，挡住页面按钮。"""
         page = self.page_text(600)
@@ -291,6 +373,38 @@ class U2Driver:
             for value in values
         ]
 
+    def type_text(self, text: str, hint: str = "", clear: bool = False) -> bool:
+        """写入当前聚焦输入框（无聚焦时按提示点输入框），整页回读校验。"""
+        if not text:
+            return False
+        self._capture_ime()
+        element = self.tap_input(hint) if hint else None
+        if element is None:
+            try:
+                focused = self.d(focused=True)
+                element = focused if focused.exists else None
+            except Exception:
+                element = None
+        if element is None:
+            element = self.tap_input()
+        if element is None:
+            self.restore_ime()
+            return False
+        try:
+            element.click()
+            time.sleep(0.6)
+            if clear:
+                element.clear_text()
+                time.sleep(0.3)
+            element.set_text(text)
+            time.sleep(1.0)
+        except Exception:
+            self.restore_ime()
+            return False
+        self.restore_ime()
+        head = text.strip().splitlines()[0][:10] if text.strip() else ""
+        return not head or head in self.page_text(6000)
+
     # ── 页面信息 ────────────────────────────────────────────────────────
     def page_text(self, limit: int = 1200) -> str:
         try:
@@ -317,6 +431,14 @@ class U2Driver:
         return str(path)
 
     # ── 系统动作 ────────────────────────────────────────────────────────
+    def swipe_xy(self, x1: int, y1: int, x2: int, y2: int, duration: float = 0.3) -> bool:
+        try:
+            self.d.swipe(int(x1), int(y1), int(x2), int(y2), duration=duration)
+            time.sleep(0.4)
+            return True
+        except Exception:
+            return False
+
     def swipe_up(self, scale: float = 0.72) -> bool:
         width, height = self.window_size()
         try:

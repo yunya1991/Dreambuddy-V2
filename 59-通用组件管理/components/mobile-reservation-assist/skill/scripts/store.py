@@ -13,7 +13,7 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
-SCHEMA_VERSION = "8"
+SCHEMA_VERSION = "9"
 
 DDL = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -120,6 +120,20 @@ CREATE TABLE IF NOT EXISTS phone_job_links (
     device_id TEXT,
     created_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS twitter_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    text TEXT NOT NULL,
+    media_json TEXT,
+    scheduled_at INTEGER NOT NULL,
+    state TEXT NOT NULL DEFAULT 'pending',
+    attempts INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT,
+    tweet_url TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    posted_at INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_twitter_due ON twitter_posts(state, scheduled_at);
 CREATE INDEX IF NOT EXISTS idx_phone_links_job ON phone_job_links(job_id);
 CREATE INDEX IF NOT EXISTS idx_jobs_state ON jobs(state);
 CREATE INDEX IF NOT EXISTS idx_events_at ON events(at);
@@ -933,6 +947,133 @@ class Store:
         report["run_id"] = row["id"]
         report["started_at"] = row["started_at"]
         return report
+
+    # --- 推特定时发布队列 ---------------------------------------------------
+    @staticmethod
+    def _twitter_row(row: sqlite3.Row) -> dict:
+        return {
+            "_id": row["id"],
+            "text": row["text"],
+            "media": json.loads(row["media_json"] or "[]"),
+            "scheduled_at": row["scheduled_at"],
+            "state": row["state"],
+            "attempts": row["attempts"],
+            "last_error": row["last_error"] or "",
+            "tweet_url": row["tweet_url"] or "",
+            "created_at": row["created_at"],
+            "updated_at": row["updated_at"],
+            "posted_at": row["posted_at"],
+        }
+
+    def enqueue_twitter_post(self, text: str, scheduled_at: int, media=None) -> int:
+        """入队一条推文；scheduled_at 为毫秒时间戳。"""
+        body = str(text or "").strip()
+        if not body:
+            raise ValueError("推文内容不能为空")
+        if len(body) > 25000:
+            raise ValueError("推文内容超出 X 长文上限")
+        now = int(time.time() * 1000)
+        with self.tx() as conn:
+            cursor = conn.execute(
+                "INSERT INTO twitter_posts(text, media_json, scheduled_at, state, created_at, updated_at)"
+                " VALUES(?, ?, ?, 'pending', ?, ?)",
+                (body, json.dumps(list(media or []), ensure_ascii=False), int(scheduled_at), now, now),
+            )
+            return int(cursor.lastrowid)
+
+    def list_twitter_posts(self, state: str | None = None, limit: int = 50) -> list[dict]:
+        if state:
+            rows = self._fetchall(
+                "SELECT * FROM twitter_posts WHERE state=? ORDER BY scheduled_at DESC LIMIT ?",
+                (state, int(limit)),
+            )
+        else:
+            rows = self._fetchall(
+                "SELECT * FROM twitter_posts ORDER BY scheduled_at DESC LIMIT ?", (int(limit),)
+            )
+        return [self._twitter_row(row) for row in rows]
+
+    def get_twitter_post(self, post_id: int) -> dict | None:
+        row = self._fetchone("SELECT * FROM twitter_posts WHERE id=?", (int(post_id),))
+        return self._twitter_row(row) if row else None
+
+    def claim_due_twitter_post(self, now: int | None = None) -> dict | None:
+        """原子认领一条到点推文：pending → posting，避免并发重复发布。"""
+        now = int(now or time.time() * 1000)
+        with self.tx() as conn:
+            row = conn.execute(
+                "SELECT id FROM twitter_posts WHERE state='pending' AND scheduled_at<=?"
+                " ORDER BY scheduled_at, id LIMIT 1",
+                (now,),
+            ).fetchone()
+            if not row:
+                return None
+            cursor = conn.execute(
+                "UPDATE twitter_posts SET state='posting', attempts=attempts+1, updated_at=?"
+                " WHERE id=? AND state='pending'",
+                (now, row["id"]),
+            )
+            if cursor.rowcount != 1:
+                return None
+            claimed = conn.execute("SELECT * FROM twitter_posts WHERE id=?", (row["id"],)).fetchone()
+            return self._twitter_row(claimed)
+
+    def finish_twitter_post(
+        self, post_id: int, state: str, error: str = "", tweet_url: str = ""
+    ) -> dict | None:
+        """收敛发布结果：posting → done/failed。"""
+        if state not in ("done", "failed"):
+            raise ValueError("推文终态只能是 done 或 failed")
+        now = int(time.time() * 1000)
+        with self.tx() as conn:
+            cursor = conn.execute(
+                "UPDATE twitter_posts SET state=?, last_error=?, tweet_url=?, updated_at=?,"
+                " posted_at=? WHERE id=? AND state='posting'",
+                (state, error or None, tweet_url or None, now, now if state == "done" else None, int(post_id)),
+            )
+            if cursor.rowcount != 1:
+                return None
+            row = conn.execute("SELECT * FROM twitter_posts WHERE id=?", (int(post_id),)).fetchone()
+            return self._twitter_row(row)
+
+    def cancel_twitter_post(self, post_id: int) -> dict:
+        """取消待发推文；已进入发布中的不允许取消。"""
+        now = int(time.time() * 1000)
+        with self.tx() as conn:
+            row = conn.execute(
+                "SELECT state FROM twitter_posts WHERE id=?", (int(post_id),)
+            ).fetchone()
+            if not row:
+                raise ValueError("推文不存在：{}".format(post_id))
+            if row["state"] == "posting":
+                raise ValueError("推文正在发布中，禁止取消；请先核对是否已发出")
+            if row["state"] != "pending":
+                raise ValueError("仅 pending 状态可取消，当前：{}".format(row["state"]))
+            conn.execute(
+                "UPDATE twitter_posts SET state='cancelled', updated_at=? WHERE id=? AND state='pending'",
+                (now, int(post_id)),
+            )
+            updated = conn.execute("SELECT * FROM twitter_posts WHERE id=?", (int(post_id),)).fetchone()
+            return self._twitter_row(updated)
+
+    def recover_stale_twitter(self, seconds: int = 900, now: int | None = None) -> int:
+        """发布中断恢复：超时仍处于 posting 的标记 failed，交人工核对，禁止自动重发。"""
+        now = int(now or time.time() * 1000)
+        cutoff = now - int(seconds) * 1000
+        with self.tx() as conn:
+            return conn.execute(
+                "UPDATE twitter_posts SET state='failed', updated_at=?,"
+                " last_error='发布中断，结果未知；请人工核对后再决定是否补发'"
+                " WHERE state='posting' AND updated_at<?",
+                (now, cutoff),
+            ).rowcount
+
+    def count_twitter_posts(self, state: str | None = None) -> int:
+        if state:
+            row = self._fetchone("SELECT COUNT(*) AS n FROM twitter_posts WHERE state=?", (state,))
+        else:
+            row = self._fetchone("SELECT COUNT(*) AS n FROM twitter_posts")
+        return int(row["n"]) if row else 0
 
     # --- TTL --------------------------------------------------------------
     def purge(self, now: int | None = None, results_days: int = 30, events_days: int = 90) -> dict:

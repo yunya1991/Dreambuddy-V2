@@ -1,5 +1,9 @@
 # 小红书图文发布参考 — mobile-reservation-assist
 
+> 状态：现行（v1.1，2026-11-21）
+> 范围：小红书内容链路（侦察→采集→写稿→生图→发布）的操作细节与已知坑
+> 关系：架构口径见 `docs/手机AGENT业务架构总览.md`；命令入口见 `skill/SKILL.md` 4.9；本文只补真机操作与排障细节
+
 把「爆款侦察 → 手机笔记本 → 千问分析 → 多篇采集 → 汇总 → 千问出图文 → 发布」做成一条可复跑链路。
 命令入口是 `mra xhs`，全部动作经本地网关下发到手机端 Auto.js Agent 执行。
 
@@ -138,5 +142,38 @@ python3 scripts/mra.py xhs run --source wallstreetcn --count 1
 - 采集去重：跨源按标题前 40 字去重，重复记入 `duplicates`；空态卡片（请刷新/检查网络等）跳过。
 - 搜索失败不阻断：步骤 `news_search=false`，降级读首页，并在 `degraded` 中标注。
 - 笔记本：小米笔记编辑页有两个 EditText，写高度最大的正文框；退回列表未回显时，重开首条回读校验。
+
+## 8. 完整闭环实测补充（2026-11-21 二次）
+
+一次从零到发布的 `xhs chain --publish` 全链路实测，新增以下坑与结论：
+
+1. **先发图文前必须保证相册首项是图片**：剪映导出视频后，相册时间倒序第一项是 `.mp4`，
+   小红书图文会选不到图。处理：把封面图 `cp` 到 `/sdcard/DCIM/Camera/` 并触发
+   `MEDIA_SCANNER_SCAN_FILE`，使其成为相册最新项。
+2. **千问生图会被系统跨应用弹窗挡住**：出现「AutoJs6 想要打开 千问，是否允许？」时，
+   Auto.js 找不到输入框，`cover` 返回 `pending_human`。已在 `mra._generate_cover` 加 u2 兜底：
+   点「允许/始终允许」后**只重试一次**。
+3. **笔记本不是卡死，而是慢**：每个 `memo` 都是一次同步作业回执（默认 120s），链路里 4 次；
+   实测全部 `done`，只是页面停留在小米笔记编辑页较久。排查时先看 `mra jobs` 状态，不要急着重启。
+4. **scout 偶发 pending_human**：本次第一次失败、第二次成功；失败只跳过趋势分析，
+   继续采集→写稿→生图→发布，不阻断发布。
+5. **`xhs chain` 不支持 `--json`**：输出为文本报告，需要 JSON 时用分步命令。
+6. **云端数据 market 可能为 null**：写稿会退化为只用文章素材，仍可发布。
+
+实测成功轨迹（可作为回归参照）：
+
+```
+scout(done) → trend(done) → collect(3 篇 done) → data(done)
+→ compose(done, 标题「黄金理财破净？拆解下跌底层逻辑」, guard 通过)
+→ cover(done, /sdcard/DCIM/QuarkAI/a1d769ae...png)
+→ post(done, 页面出现「发布成功」)
+```
+
+一键入口（与抖音串联）：
+
+```bash
+python3 skill/scripts/mra.py publish --to all --publish   # 小红书链路 → 同一篇笔记做视频发抖音
+python3 skill/scripts/mra.py publish --to xhs --publish   # 只发小红书
+```
 
 免责声明：本链路仅做内容采集、分析、改写与发布编排，不构成投资建议。

@@ -2,7 +2,7 @@
 name: mobile-reservation-assist
 slug: dreambuddy-mobile-reservation-assist
 displayName: 手机预约助手 Mobile Reservation Assist
-version: 0.16.0
+version: 0.20.0
 summary: 消费预约助手命中，经本地 HTTP 网关把预约动作下发到手机端 Agent（Auto.js）执行，停在官方下单页、不代付不锁座。
 license: MIT
 allowed-tools: Bash, Read

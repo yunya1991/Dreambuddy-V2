@@ -76,8 +76,9 @@
 | 事件上下文（官方源·五层装配） `event-context` | components/event-context/ | v1.0.2 | active | — | 3 个 |
 | 数据服务（宏观·披露·链上·上下文） `market-data` | components/market-data/ | v1.0.3 | active | — | 6 个 |
 | 市场事实日报 `market-facts-daily` | components/market-facts-daily/ | v1.0.4 | active | — | 1 个 |
-| 手机预约助手 Mobile Reservation Assist `mobile-reservation-assist` | components/mobile-reservation-assist/ | v0.19.0 | draft | — | 1 个 |
+| 手机预约助手 Mobile Reservation Assist `mobile-reservation-assist` | components/mobile-reservation-assist/ | v0.20.0 | draft | — | 1 个 |
 | 预约助手 Reservation Assist `reservation-assist` | components/reservation-assist/ | v0.11.2 | draft | — | 1 个 |
+| 研究博客发布 `site-blog` | components/site-blog/ | v1.0.0 | draft | — | 1 个 |
 <!-- GEN:COMPONENT-REGISTRY:END -->
 
 ---

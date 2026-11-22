@@ -262,3 +262,23 @@ mra carpool accept --platform didi --order-id D123 --accept
 mra carpool stop --platform didi
 mra carpool status [--json]
 ```
+
+## 推特定时发布（CLI，桌面 Playwright）
+
+| 命令 | 说明 |
+|---|---|
+| `mra twitter login [--manual] [--timeout 300]` | 默认从本机 Chrome 导入 x.com cookie 并验证；`--manual` 打开浏览器人工登录 |
+| `mra twitter status [--offline] [--json]` | 登录状态 + 队列计数 + 最近一条待发 |
+| `mra twitter post --text/--file [--image ...] [--dry-run] [--headed]` | 立即发布；`--dry-run` 只做风控与预览 |
+| `mra twitter schedule --text/--file (--at "YYYY-MM-DD HH:MM"\|--at "HH:MM"\|--in 30m) [--image ...]` | 入队定时发布 |
+| `mra twitter list [--state pending] [--limit 20] [--json]` | 查看队列 |
+| `mra twitter cancel --id <n>` | 取消待发（`posting` 禁止取消） |
+| `mra twitter run-due [--limit 3] [--headed]` | 执行到点推文（launchd 每分钟调用） |
+| `mra twitter install-schedule` / `uninstall-schedule` | 安装/卸载 launchd 定时器 |
+| `mra ask "发一条推文：…"` | 大模型映射为 `twitter_post`；默认只出计划，`--execute` 才发布 |
+| `mra ask "明天9点发一条推文：…"` | 映射为 `twitter_schedule`（`at` 支持 `明天 09:00` / `HH:MM` / `YYYY-MM-DD HH:MM`） |
+| `mra ask "看下推文定时队列" --execute` | 映射为 `twitter_list`（只读） |
+
+队列状态：`pending → posting → done | failed`，`pending → cancelled`。
+`posting` 超 15 分钟由 `recover_stale_twitter` 收敛为 `failed`（结果未知，转人工核对），不自动重发。
+发布前复用 `content_guard`：命中个股代码/买卖指令/收益承诺返回 `E_INPUT`，`--allow-risk` 可放行。

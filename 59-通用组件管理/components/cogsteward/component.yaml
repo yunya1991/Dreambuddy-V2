@@ -21,7 +21,86 @@ docs:
   - docs/CHANGELOG.md
   - docs/CHANGELOG-skill.md
 actions:
-  - {name: doctor, script: scripts/cm_cli.py, args: [doctor], safety: read, description: 认知管家自检}
+  - name: doctor
+    description: "认知管家自检：工作区体检（断链/孤儿/漂移/技能冲突）"
+    when_to_use: "手机助手等目录整理后体检，确认索引与磁盘一致"
+    not_for: "不做文件登记写入"
+    script: scripts/cm_cli.py
+    args: [doctor]
+    safety: read
+    cwd: workspace
+    params:
+      - {name: root, flag: "--root", type: string, global: true, description: 工作区根目录（默认仓库根）}
+      - {name: json, flag: "--json", type: boolean, description: JSON 输出}
   - {name: lint, script: scripts/cm_cli.py, args: [skill, lint], safety: read, output: json, description: 规则与结构检查}
-  - {name: selfcheck, script: scripts/cm_cli.py, args: [selfcheck], safety: read, description: 自检}
-  - {name: index, script: scripts/cm_cli.py, args: [index], safety: read, description: 索引视图}
+  - name: selfcheck
+    description: 安装自检：契约 / 口径 / 版本一致性
+    script: scripts/cm_cli.py
+    args: [selfcheck]
+    safety: read
+    cwd: workspace
+    params:
+      - {name: root, flag: "--root", type: string, global: true, description: 工作区根目录（默认仓库根）}
+      - {name: json, flag: "--json", type: boolean, description: JSON 输出}
+  - name: index
+    description: "索引总览（默认增量扫描后汇报）：看清工作区/手机助手目录被如何登记"
+    when_to_use: "需要概览文件登记与索引状态、确认某目录是否已被收录时"
+    not_for: "需要真正写入登记时用 scan（写动作）"
+    script: scripts/cm_cli.py
+    args: [index]
+    safety: read
+    cwd: workspace
+    params:
+      - {name: root, flag: "--root", type: string, global: true, description: 工作区根目录（默认仓库根）}
+      - {name: check, flag: "--check", type: boolean, description: 只读校验，不重建索引}
+      - {name: json, flag: "--json", type: boolean, description: JSON 输出}
+  - name: scan
+    description: "扫描并登记工作区文件（写 .cm 索引；需 --allow-write）"
+    when_to_use: "手机助手等目录新增/改名文件后，需要把变更登记进认知管家索引"
+    not_for: "只想看概览用 index；不删除磁盘文件"
+    script: scripts/cm_cli.py
+    args: [scan]
+    safety: write
+    cwd: workspace
+    params:
+      - {name: root, flag: "--root", type: string, global: true, description: 工作区根目录（默认仓库根）}
+      - {name: full, flag: "--full", type: boolean, description: 忽略增量缓存，全部重算}
+      - {name: json, flag: "--json", type: boolean, description: JSON 输出}
+  - name: map
+    description: "代码-文档对应检查：行号越界 / 无文档代码 / 漂移"
+    when_to_use: "整理手机助手等模块文档时，找出代码与文档脱节点"
+    not_for: "不做文件登记写入"
+    script: scripts/cm_cli.py
+    args: [map]
+    safety: read
+    cwd: workspace
+    params:
+      - {name: root, flag: "--root", type: string, global: true, description: 工作区根目录（默认仓库根）}
+      - {name: gaps, flag: "--gaps", type: boolean, description: 只输出缺口明细}
+      - {name: json, flag: "--json", type: boolean, description: JSON 输出}
+  - name: pack
+    description: "按 token 预算打包上下文指针（只读），如「手机助手 预约 文件」"
+    when_to_use: "给某个任务凑最小上下文，先定位该读哪些文件"
+    not_for: "不落盘、不改文件"
+    script: scripts/cm_cli.py
+    args: [pack]
+    safety: read
+    cwd: workspace
+    params:
+      - {name: query, type: string, required: true, description: 检索关键词 / 任务描述（可多个）}
+      - {name: root, flag: "--root", type: string, global: true, description: 工作区根目录（默认仓库根）}
+      - {name: budget, flag: "--budget", type: integer, description: token 预算（默认 2000）}
+      - {name: json, flag: "--json", type: boolean, description: JSON 输出}
+  - name: init
+    description: "初始化认知管家工作区（生成 .cm/ 与索引）；可配 --scan 立即登记（写动作）"
+    when_to_use: "要把一个独立目录（如手机助手组件目录）作为单独工作区治理时"
+    not_for: "仓库根已有 .cm，无需重复 init"
+    script: scripts/cm_cli.py
+    args: [init]
+    safety: write
+    cwd: workspace
+    params:
+      - {name: root, flag: "--root", type: string, global: true, description: 工作区根目录（默认仓库根）}
+      - {name: mode, flag: "--mode", type: string, enum: [dev, office], description: 版本模式}
+      - {name: scan, flag: "--scan", type: boolean, description: 初始化后立即扫描}
+      - {name: json, flag: "--json", type: boolean, description: JSON 输出}

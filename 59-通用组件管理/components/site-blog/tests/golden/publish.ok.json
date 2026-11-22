@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "command": "site-blog.publish",
+  "generated_at": "2026-11-22T10:15:00+0800",
+  "status": "done",
+  "slug": "gold-liquidity-2026-11",
+  "url": "http://49.233.123.96:8081/blog/gold-liquidity-2026-11.html",
+  "build_ok": true,
+  "deployed": true,
+  "http_status": 200,
+  "images": ["platform/site/assets/charts/20261122T101500/chart1.png"],
+  "post": "platform/site/blog/posts/gold-liquidity-2026-11.md"
+}

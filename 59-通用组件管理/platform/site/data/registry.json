@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-11-21T13:36:33Z",
+  "generated_at": "2026-11-22T04:12:02Z",
   "source": "59-通用组件管理/components/*/component.yaml",
   "components": [
     {
@@ -71,24 +71,6 @@
       "source": "components/market-facts-daily/component.yaml"
     },
     {
-      "name": "mobile-reservation-assist",
-      "display_name": "手机预约助手 Mobile Reservation Assist",
-      "version": "0.16.0",
-      "family": "reservation-assist",
-      "lifecycle": "draft",
-      "summary": "消费预约助手命中，经本地 HTTP 网关把预约动作下发到手机端 Agent（Auto.js）执行，停在官方下单页、不代付不锁座。",
-      "entrypoints": [
-        "scripts/mra.py"
-      ],
-      "docs": [
-        "docs/ENGINEERING_INDEX.md",
-        "docs/TECHNICAL_DESIGN.md",
-        "docs/API_SPEC.md",
-        "docs/CHANGELOG.md"
-      ],
-      "source": "components/mobile-reservation-assist/component.yaml"
-    },
-    {
       "name": "reservation-assist",
       "display_name": "预约助手 Reservation Assist",
       "version": "0.11.2",
@@ -105,6 +87,37 @@
         "docs/CHANGELOG.md"
       ],
       "source": "components/reservation-assist/component.yaml"
+    },
+    {
+      "name": "site-blog",
+      "display_name": "研究博客发布",
+      "version": "1.0.0",
+      "family": "site-blog",
+      "lifecycle": "draft",
+      "summary": "把带 front matter 的 Markdown 研究稿写入 59 站点，复制图表、构建校验后 rsync 部署并做 HTTP 校验。",
+      "entrypoints": [
+        "scripts/publish.py"
+      ],
+      "docs": [],
+      "source": "components/site-blog/component.yaml"
+    },
+    {
+      "name": "ticket_reservation",
+      "display_name": "手机预约助手 Mobile Reservation Assist",
+      "version": "0.20.0",
+      "family": "reservation-assist",
+      "lifecycle": "draft",
+      "summary": "消费预约助手命中，经本地 HTTP 网关把预约动作下发到手机端 Agent（Auto.js）执行，停在官方下单页、不代付不锁座。注意：本目录 scripts/mra.py 为代理壳，转发到手机AGENT域主仓 mra.py（MOBILE_AGENT_CLI / ~/.config/dreambuddy/mobile_agent.path），实现与状态只有一份。",
+      "entrypoints": [
+        "scripts/mra.py"
+      ],
+      "docs": [
+        "docs/ENGINEERING_INDEX.md",
+        "docs/TECHNICAL_DESIGN.md",
+        "docs/API_SPEC.md",
+        "docs/CHANGELOG.md"
+      ],
+      "source": "components/mobile-reservation-assist/component.yaml"
     }
   ]
 }

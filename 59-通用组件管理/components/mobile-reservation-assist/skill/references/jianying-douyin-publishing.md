@@ -1,5 +1,9 @@
 # 剪映 → 抖音视频发布参考 — mobile-reservation-assist
 
+> 状态：现行（v1.1，2026-11-21）
+> 范围：剪映图文成片、导出、分享到抖音并发布的操作细节与已知坑
+> 关系：架构口径见 `docs/手机AGENT业务架构总览.md`；命令入口见 `skill/SKILL.md` 4.11；本文只补真机动作与排障细节
+
 把「小红书笔记文案 → 剪映 AI 文字成片 → 导出 1080P → 剪映「分享到抖音」→ 填标题描述 → 发布」
 做成一条可复跑、可回放的链路。执行器为 uiautomator2 本地通道（adb，不依赖无障碍）。
 
@@ -58,15 +62,21 @@
 cd mobile-reservation-assist
 export MRA_STATE_DIR=/Users/zhangjiangtao/Documents/顺风车业务/.mra_state
 
-# 只生成视频（导出到相册）
-python3 skill/scripts/mra.py video make --note <note.json> --json
+# 一键双平台：小红书完整链路（侦察→写稿→生图→发布）→ 同一篇笔记做剪映视频并发抖音
+python3 skill/scripts/mra.py publish --to all --publish
 
-# 全链路：生成 → 导出 → 剪映分享 → 填标题描述 → 发布
-python3 skill/scripts/mra.py video make --note <note.json> --publish --json
+# 只发单个平台（默认停在发布前，--publish 才点发布）
+python3 skill/scripts/mra.py publish --to xhs --publish
+python3 skill/scripts/mra.py publish --to douyin --note <note.json> --publish
 
-# 仅发布已有视频（抖音 + → 相册 → 选视频 → 发布）
+# 单独命令
+python3 skill/scripts/mra.py video make --note <note.json> --json          # 只生成视频
+python3 skill/scripts/mra.py video make --note <note.json> --publish --json # 生成并发布
 python3 skill/scripts/mra.py douyin post --note <note.json> --media video --publish --json
 ```
+
+`publish --to all` 的执行顺序：小红书链路（含发布）→ 取该链路产出的笔记 → 剪映生成/导出/分享 → 抖音发布。
+小红书链路即使停在封面（`cover`）失败，只要笔记已产出，仍会继续抖音视频，并在结果里标注小红书失败原因。
 
 驱动开关（默认 `auto`）：
 

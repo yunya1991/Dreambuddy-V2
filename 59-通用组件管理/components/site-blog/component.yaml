@@ -1,0 +1,32 @@
+name: site-blog
+display_name: 研究博客发布
+version: 1.0.0
+family: site-blog
+lifecycle: draft
+summary: 把带 front matter 的 Markdown 研究稿写入 59 站点，复制图表、构建校验后 rsync 部署并做 HTTP 校验。
+entrypoints:
+  - scripts/publish.py
+kernel_deps: []
+output_contract: cogsteward.v1
+products: []
+tests:
+  dir: tests
+  entry: python3 -m unittest discover -s tests -v
+actions:
+  - name: publish
+    description: "发布一篇研究博客：写 md + 拷图 + build + check + rsync + HTTP 200 校验"
+    when_to_use: "OKA 内容 run 产出的 blog.md 需要上线到 59 研究博客时"
+    not_for: "不生成文章、不改图表；不做社媒发布"
+    script: scripts/publish.py
+    args: []
+    safety: write
+    output: json
+    mcp: {expose: false}
+    params:
+      - {name: file, flag: "--file", type: string, description: Markdown 路径}
+      - {name: slug, flag: "--slug", type: string, description: 文章 slug（a-z0-9-）}
+      - {name: run_id, flag: "--run-id", type: string, description: 图片目录使用的 run id}
+      - {name: image, flag: "--image", type: string, description: 配图路径，可重复}
+      - {name: remote_dir, flag: "--remote-dir", type: string, description: 远端部署目录（默认取 DREAMBUDDY_SITE_REMOTE_DIR）}
+      - {name: no_deploy, flag: "--no-deploy", type: boolean, default: false, description: 只构建不部署}
+      - {name: allow_write, flag: "--allow-write", type: boolean, default: false, description: 写入门禁}

@@ -47,6 +47,7 @@ L4 业务编排层  phone_adapters/
 | locator.py | 定位兜底：规则排序 + 本地小模型复核 → `locator.v1`（支付红线） |
 | vision.py | 视觉兜底：OCR 块排序（置信度加权）→ `vision.v1`（支付红线） |
 | regression.py | 回归任务集：基线 + 录制批量比对 → `regression.v1` |
+| twitter.py | X 网页端发布：Playwright 持久化登录 + 定时队列执行（桌面通道） |
 | phone_tools/ | L3 语义工具注册表与风险策略（平台无关） |
 | phone_adapters/ | L4 平台编排（6 个预约平台 + 千问咨询） |
 | security.py | redact、Token（0600 文件）、容器判定、执行开关 |
@@ -87,7 +88,8 @@ knowledge_cache(fingerprint PK, app, question, payload_json, created_at, expires
 explorations(id, app, goal, state, device_id, started_at, stopped_at)
 snapshots(id, exploration_id, seq, at, package, activity, page_text, screenshot, nodes_json, signature)
 adapter_baselines(name PK, app, exploration_id, steps_json, assertions_json, created_at)
-meta(key, value)   # schema_version(=7) / paused
+twitter_posts(id, text, media_json, scheduled_at, state, attempts, last_error, tweet_url, created_at, updated_at, posted_at)
+meta(key, value)   # schema_version(=9) / paused
 ```
 
 老库升级：`_migrate()` 通过 `PRAGMA table_info` 检测后 `ALTER TABLE ADD COLUMN`。

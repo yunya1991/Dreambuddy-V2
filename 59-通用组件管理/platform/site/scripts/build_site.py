@@ -53,6 +53,7 @@ BLOG_LIST_BEGIN, BLOG_LIST_END = "<!-- GEN:BLOG-LIST:BEGIN -->", "<!-- GEN:BLOG-
 POST_COUNT_TOKEN = "{{POST_COUNT}}"
 SITE_ORIGIN = os.environ.get("SITE_ORIGIN", "https://49.233.123.96").rstrip("/")
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+IMAGE_LINE_RE = re.compile(r"^!\[([^\]]*)\]\(([^)\s]+)\)$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 MONTHS = (
@@ -488,6 +489,27 @@ def _inline_md(text: str) -> str:
     return out
 
 
+def _image_html(alt: str, src: str) -> str:
+    """博客配图：只允许 ../assets/ 下的本地文件，防目录穿越；输出 figure/img。"""
+    if src.startswith(("http://", "https://", "data:")):
+        raise SiteError(f"博客图片只允许本地相对路径: {src}")
+    if not src.startswith("../assets/"):
+        raise SiteError(f"博客图片必须位于 ../assets/ 下: {src}")
+    root = SITE_DIR.resolve()
+    target = (BLOG_OUT_DIR / src).resolve()
+    if target != root and root not in target.parents:
+        raise SiteError(f"博客图片路径越界: {src}")
+    if not target.is_file():
+        raise SiteError(f"博客图片不存在: {src}")
+    caption = f"<figcaption>{html.escape(alt)}</figcaption>" if alt else ""
+    return (
+        '<figure class="post-figure">'
+        f'<img src="{html.escape(src)}" alt="{html.escape(alt)}" loading="lazy" '
+        'style="max-width:100%;border-radius:12px">'
+        f"{caption}</figure>"
+    )
+
+
 def _table_html(rows: list) -> str:
     cells = [[cell.strip() for cell in row.strip().strip("|").split("|")] for row in rows]
     if len(cells) >= 2 and all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells[1]):
@@ -539,6 +561,12 @@ def markdown_to_html(text: str) -> str:
 
         if stripped in ("---", "***", "___"):
             out.append("<hr>")
+            i += 1
+            continue
+
+        image = IMAGE_LINE_RE.match(stripped)
+        if image:
+            out.append(_image_html(image.group(1).strip(), image.group(2).strip()))
             i += 1
             continue
 

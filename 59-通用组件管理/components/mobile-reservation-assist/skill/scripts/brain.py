@@ -35,6 +35,21 @@ ALLOWED_ACTIONS = (
     "reconcile",    # 订单对账：列出/收敛 order_unknown（不确定结果只能人工对账）
     "consult",      # 问手机端千问 App（知识百科），用于故障排查
     "knowledge_ask",  # 千问知识工具：只读结构化问答（引用 + 置信度 + TTL 缓存）
+    # 推文发布（桌面 Playwright 通道；发布本身仍需 ask --execute 人工授权）
+    "twitter_post",
+    "twitter_schedule",
+    "twitter_list",
+    "twitter_status",
+    # 手机 UI 原子动作（确定性执行；动作集合需与 phone_console.PHONE_ACTIONS 保持一致）
+    "open_app",
+    "tap",
+    "type",
+    "swipe",
+    "key",
+    "screen",
+    "shot",
+    "wait",
+    "pkg",
 )
 
 # 红线关键词：出现即拒绝该计划步骤
@@ -142,6 +157,19 @@ PLAN_SYSTEM = """你是一个手机预约助手的指令规划器。把用户的
 - reconcile        订单对账：列出待对账作业 ()，或收敛某作业 (job_id, state=done|failed, order_id 可选, note 可选)
 - consult          问手机端千问 App 寻求排障方案 (question)
 - knowledge_ask    千问知识工具（只读）：平台规则/实名/退改/放号咨询 (question, app 可选)
+- twitter_post     立即发一条推文 (text 必填, image 可选 图片路径数组, dry_run 可选=true 只预览)
+- twitter_schedule 定时发推文 (text 必填, at="YYYY-MM-DD HH:MM" 或 "HH:MM" 或 "明天 09:00", 或 in="30m"/"2h"/"1d")
+- twitter_list     查看推文定时队列 (state 可选 pending|posting|done|failed|cancelled, limit 可选)
+- twitter_status   查看推特定时队列概览与登录状态 (offline 可选=true 不启动浏览器)
+- open_app         打开手机应用 (app: xhs/jianying/douyin/qianwen/notes 或包名, restart 可选)
+- tap              按文本点击 (text, timeout 可选)；按坐标用 params 里的 x/y
+- type             写入当前输入框 (text, hint 可选, clear 可选)
+- swipe            滑动 (direction=up|down|left|right, duration 可选)
+- key              系统按键 (key=back|home|recent|enter)
+- screen           读取当前页面文本与包名 (limit 可选)
+- shot             截图 (tag 可选)
+- wait             等待元素出现 (text, timeout 可选)
+- pkg              读取当前前台包名 ()
 
 输出结构：
 {"intent": "一句话意图", "steps": [{"action": "动作名", "params": {...}}], "note": "说明"}
@@ -722,10 +750,26 @@ def precheck(action: str, params: dict) -> dict:
     elif action == "knowledge_ask":
         if not str(params.get("question") or "").strip():
             missing.append("question")
+    elif action == "open_app":
+        if not str(params.get("app") or "").strip():
+            missing.append("app")
+    elif action == "tap":
+        if not str(params.get("text") or "").strip() and None in (params.get("x"), params.get("y")):
+            missing.append("text 或 x/y")
+    elif action in ("type", "wait"):
+        if not str(params.get("text") or "").strip():
+            missing.append("text")
     elif action == "reconcile":
         if params.get("job_id") not in (None, ""):
             if str(params.get("state") or "").strip() not in ("done", "failed"):
                 missing.append("state(done|failed)")
+    elif action in ("twitter_post", "twitter_schedule"):
+        if not str(params.get("text") or "").strip():
+            missing.append("text")
+        if action == "twitter_schedule" and not (
+            str(params.get("at") or "").strip() or str(params.get("in") or "").strip()
+        ):
+            missing.append("at 或 in")
     return {"ok": not missing, "missing": missing}
 
 

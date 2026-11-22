@@ -24,6 +24,7 @@ VERSION_RE = re.compile(r"^\d+\.\d+\.\d+$")
 ADD_PARSER_RE = re.compile(r"add_parser\(\s*[\"']([A-Za-z0-9_-]+)[\"']")
 ALIAS_RE = re.compile(r"aliases\s*=\s*\[([^\]]*)\]")
 ADD_ARG_RE = re.compile(r"add_argument\(\s*[\"'](--[A-Za-z0-9_-]+)[\"']")
+PROXY_MARKER = "59 域代理壳"
 
 
 def capabilities(script: Path) -> Dict[str, Set[str]]:
@@ -62,6 +63,15 @@ def check_component(component_dir: Path) -> List[str]:
     for entry in data.get("entrypoints") or []:
         if not resolve_script(component_dir, str(entry)).exists():
             errors.append("{}: 入口不存在 {}".format(name, entry))
+    proxy_entries = [
+        resolve_script(component_dir, str(entry)) for entry in data.get("entrypoints") or []
+    ]
+    if any(
+        path.is_file() and PROXY_MARKER in path.read_text(encoding="utf-8")
+        for path in proxy_entries
+    ):
+        # 代理壳不含 argparse；真实实现在主仓，契约由 sync_mobile 双向核对
+        return errors
 
     cache: Dict[str, Dict[str, Set[str]]] = {}
     seen: Set[str] = set()

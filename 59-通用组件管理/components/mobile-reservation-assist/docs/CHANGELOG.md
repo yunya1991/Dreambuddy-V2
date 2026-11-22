@@ -1,5 +1,48 @@
 # CHANGELOG — mobile-reservation-assist
 
+## v0.20.0 (2026-11-22)
+
+能力注册补全（P1）：explore / regression / caps 8 个动作入库。
+
+- 只读：`caps show`、`explore list`、`explore show`、`regression list`。
+- 写动作（会创建状态，按 write 登记）：`explore start`、`explore stop`、`explore baseline`、`regression add`。
+- 手机 CLI 叶子命令覆盖率 64/72 → **72/72**；`mra.py` 现有全部叶子命令均有注册动作。
+
+## v0.19.0 (2026-11-22)
+
+能力注册补全（P0）：小红书 / 抖音 / 推特链路 12 个缺失动作入库。
+
+- 小红书：新增 `xhs collect` / `xhs data` / `xhs memo add` / `xhs memo list` / `xhs run` 登记；`collect --memo` 动态升为 ui。
+- 抖音：新增 `douyin chain` / `douyin collect` / `douyin data` / `douyin memo add` / `douyin memo list` 登记；`collect --memo` 动态升为 ui。
+- 推特：新增 `twitter login`（write，凭证只留本机浏览器 profile）/ `twitter run-due`（write，发布到点推文）登记。
+- 登记后手机 CLI 叶子命令覆盖率 52/72 → 64/72；剩余 `explore` / `regression` / `caps show` 8 项留待 P1。
+
+## v0.18.0 (2026-11-22)
+
+跨域能力注册表 P1：发布合并索引 + 双向调度入口。
+
+- 新增 `skill/scripts/registry.py`：只读消费 59 域 `dreambuddy.capabilities.v2` 索引（`DREAMBUDDY_REGISTRY` → `~/.local/share/dreambuddy/registry/capabilities.json`），不 import 59 代码。
+- 新增 CLI `mra caps list|show`：跨域发现能力（按 kind 过滤，输出索引生成时间）。
+- 新增 CLI `mra cross <capability_id> [args...] [--allow-write]`：按索引把能力翻译成 `dreambuddy run/dal/workflow/schedule` 子进程；执行前按索引 `safety + escalate` 复核，write/ui 需显式 `--allow-write`；本域能力直接拒绝。
+- CLI 路径解析：`DREAMBUDDY_CLI` → `~/.config/dreambuddy/dreambuddy.path` → 默认 59 域入口。
+- `component.yaml` 新增 `caps` / `cross` 两个只读动作声明，供 59 域总控台与 MCP 投影识别。
+- `data.*` 跨域：按 schema/路由把 `--json` / `key=value` / 原生 flag 翻译成 `dreambuddy dal read|fetch|scopes`，`filters` 自动扁平化为 `--sub-category` / `--metric-name` / `--start-ts` / `--end-ts`。
+- 依赖：使用前需在 59 域执行 `dreambuddy caps sync` 发布索引；`dreambuddy doctor` 会校验索引是否漂移。
+
+## v0.17.0 (2026-11-21)
+
+新增推特定时发布通道（桌面 Playwright，独立于手机端）。
+
+- 新增 `skill/scripts/twitter.py`：持久化 profile（`<state_dir>/twitter/profile`）+ **本机 Chrome cookie 导入**（Keychain `Chrome Safe Storage` 解密，兼容 v10/v11 与 SHA256(host) 前缀），`login` 默认走 Chrome、`--manual` 兜底；发布用常规 Chrome UA 规避 X 对 HeadlessChrome 的拦截。
+- `schema_version=9`：新增 `twitter_posts` 队列表与 `claim_due_twitter_post / finish_twitter_post / cancel_twitter_post / recover_stale_twitter`；单条原子认领 `pending → posting`，杜绝并发重复发推。
+- 新增 CLI `mra twitter login|status|post|schedule|list|cancel|run-due|install-schedule|uninstall-schedule`。
+- 定时采用本地队列 + launchd 每分钟 tick（`com.mra.twitter-scheduler`），`--at "YYYY-MM-DD HH:MM"` / `--at "HH:MM"` / `--in 30m` 三种写法。
+- 复用 `content_guard` 做发布前金融风控；`posting` 超 15 分钟收敛 `failed` 并提示人工核对，禁止自动重发。
+- 大模型入口：`brain.ALLOWED_ACTIONS` 新增 `twitter_post / twitter_schedule / twitter_list / twitter_status`，`mra ask`/`chat` 可用自然语言发推、定时发推、查队列；`ask` 默认只出计划，`--execute` 才执行（发布为人工授权动作）；`--at` 支持 `明天 09:00` 相对日期写法。
+- 59 域总控台接入：`components/mobile-reservation-assist/skill/scripts/mra.py` 改为代理壳（`MOBILE_AGENT_CLI` → `~/.config/dreambuddy/mobile_agent.path` → 默认主仓），`dreambuddy` 新增 `twitter` 命令与读写分级；两处 CLI 共用同一实现与状态，不再维护副本。实测 `dreambuddy mobile twitter status/list` 通过，写动作默认被门禁拦截并生成计划。
+- 测试：新增 `tests/test_twitter.py`（22 例，队列 / 认领 / 收敛 / 时间解析 / run-due / Chrome cookie 解密 / 计划白名单与预检）；全量 355 项通过。
+- 已知限制：需本机开机且已完成一次 `twitter login`；X 网页结构改版时选择器需同步更新。
+
 ## v0.16.0 (2026-11-21)
 
 设备端补真机接单，并加独立开关（默认关闭，关闭时由用户自主接单）。
