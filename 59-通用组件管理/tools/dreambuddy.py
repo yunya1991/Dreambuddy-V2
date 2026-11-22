@@ -1314,7 +1314,7 @@ def cmd_trading(args) -> int:
 
 def cmd_cloud(args) -> int:
     rest = list(args.rest)
-    if rest and rest[0] in {"tools", "call", "write", "audit"}:
+    if rest and rest[0] in {"tools", "call", "write", "audit", "ca"}:
         import cloud_client
 
         return cloud_client.main(rest)

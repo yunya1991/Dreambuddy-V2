@@ -22,6 +22,7 @@ import hashlib
 import hmac
 import json
 import os
+import socket
 import ssl
 import sys
 import time
@@ -416,6 +417,44 @@ def _decode_result(result: Dict[str, Any]) -> Dict[str, Any]:
     return {"ok": True, "data": payload, "_meta": {"route": "cloud"}}
 
 
+def ca_path() -> Path:
+    configured = os.environ.get("DREAMBUDDY_CLOUD_CA", "").strip()
+    if configured:
+        return Path(os.path.expanduser(configured))
+    return Path.home() / ".local/share/dreambuddy/cloud-ca.pem"
+
+
+def fetch_cert_pem(host: str, port: int = 443) -> str:
+    """抓取服务端证书用于固定 CA；仅用于自建端点轮换后重新钉扎。"""
+    context = ssl._create_unverified_context()
+    with socket.create_connection((host, port), timeout=10) as raw:
+        with context.wrap_socket(raw, server_hostname=host) as tls:
+            return ssl.DER_cert_to_PEM_cert(tls.getpeercert(binary_form=True))
+
+
+def save_ca(pem: str, out: Optional[Path] = None) -> Path:
+    path = out or ca_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(pem, encoding="utf-8")
+    path.chmod(0o600)
+    return path
+
+
+def ca_update(host: str = "", out: Optional[Path] = None) -> Dict[str, Any]:
+    conf = config()
+    target = host or conf["base"].split("://", 1)[-1].split("/", 1)[0].split(":", 1)[0]
+    if not target:
+        raise CloudError("E_CLOUD_AUTH", "无法推断证书主机，请传 --host")
+    pem = fetch_cert_pem(target)
+    path = save_ca(pem, out)
+    return {
+        "ok": True,
+        "host": target,
+        "path": str(path),
+        "sha256": hashlib.sha256(pem.encode("utf-8")).hexdigest()[:16],
+    }
+
+
 def status_report() -> Dict[str, Any]:
     conf = config()
     cached = read_cache()
@@ -453,6 +492,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     p_audit = sub.add_parser("audit", help="查看调用审计")
     p_audit.add_argument("--tail", type=int, default=10)
+    p_ca = sub.add_parser("ca", help="证书固定（自签端点轮换后重新钉扎）")
+    p_ca.add_argument("action", choices=["update"])
+    p_ca.add_argument("--host", default="")
+    p_ca.add_argument("--out", type=Path, default=None)
 
     args = parser.parse_args(argv)
     try:
@@ -511,6 +554,14 @@ def main(argv: Optional[List[str]] = None) -> int:
             payload = call(args.tool, json.loads(args.args))
             print(json.dumps(payload, ensure_ascii=False, indent=2))
             return 0 if payload.get("ok", True) else 1
+        if args.cmd == "ca":
+            report = ca_update(args.host, args.out)
+            print(
+                "已固定 {} 证书 → {}（sha256:{}）".format(
+                    report["host"], report["path"], report["sha256"]
+                )
+            )
+            return 0
         if args.cmd == "audit":
             path = audit_path()
             if not path.is_file():

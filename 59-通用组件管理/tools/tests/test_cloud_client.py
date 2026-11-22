@@ -233,6 +233,22 @@ class CloudWriteTest(unittest.TestCase):
         )
         self.assertEqual(payload["_meta"]["plan_id"], "plan_abc")
 
+    def test_ca_update_pins_cert_with_600(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "ca.pem"
+            with (
+                mock.patch.object(cloud_client, "fetch_cert_pem", return_value="PEM"),
+                mock.patch.dict(
+                    os.environ,
+                    {"DREAMBUDDY_CLOUD_BASE": "https://cloud.example/mcp"},
+                    clear=False,
+                ),
+            ):
+                report = cloud_client.ca_update(out=out)
+            self.assertEqual(report["host"], "cloud.example")
+            self.assertEqual(out.read_text(encoding="utf-8"), "PEM")
+            self.assertEqual(out.stat().st_mode & 0o777, 0o600)
+
     def test_write_cli_requires_confirm(self):
         buffer = io.StringIO()
         with mock.patch("plan.create") as creator, redirect_stderr(buffer):

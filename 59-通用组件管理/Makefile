@@ -35,6 +35,9 @@ release: check build
 test:
 	python3 platform/sandbox/run_cases.py
 
+verify-cloud:
+	python3 tools/verify_live.py
+
 verify: check
 	python3 tools/sync_mobile.py --check
 	python3 -m unittest discover -s tools/tests
