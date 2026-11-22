@@ -49,6 +49,7 @@ def _summary(
     patched: int = 0,
     skipped: int = 0,
     failed: int = 0,
+    deduped: int = 0,
     reason: str = "",
 ) -> None:
     """每轮写一条汇总审计：供监控判断巡检新鲜度，即使无补挂动作也留痕。"""
@@ -59,6 +60,7 @@ def _summary(
             "patched": patched,
             "skipped": skipped,
             "failed": failed,
+            "deduped": deduped,
             "reason": reason,
         },
         Path(audit_path) if audit_path else None,
@@ -94,18 +96,76 @@ def _positions(okx_client: Any) -> list[dict[str, Any]]:
     return out
 
 
-def _has_sltp(okx_client: Any, inst_id: str, pos_side: str) -> tuple[bool, bool]:
+def _algo_snapshot(
+    okx_client: Any, inst_id: str, pos_side: str
+) -> tuple[list[dict[str, Any]], str]:
+    """返回同方向 algo 单与查询错误；查询失败绝不能当作"无挂单"处理。"""
     algo = okx_client.get_algo_orders(inst_id=inst_id)
-    _has_sl = _has_tp = False
+    if not isinstance(algo, dict):
+        return [], "algo_query_invalid"
+    if algo.get("query_ok") is False:
+        return [], "; ".join(algo.get("errors") or []) or "algo_query_failed"
+    out = []
     for o in algo.get("orders") or algo.get("data") or []:
         _side = o.get("pos_side") or o.get("posSide") or ""
         if _side and _side != pos_side:
             continue
-        if float(o.get("sl_trigger_px") or o.get("slTriggerPx") or 0) > 0:
-            _has_sl = True
-        if float(o.get("tp_trigger_px") or o.get("tpTriggerPx") or 0) > 0:
-            _has_tp = True
-    return _has_sl, _has_tp
+        out.append(o)
+    return out, ""
+
+
+def _dedupe_algo_orders(
+    okx_client: Any,
+    inst_id: str,
+    pos_side: str,
+    orders: list[dict[str, Any]],
+    audit_path: Path | None,
+    log_fn: Callable[[str], None],
+) -> tuple[list[dict[str, Any]], int, str]:
+    """同一持仓只保留最新一条 SL/TP 单，撤掉历史重复单。"""
+    live = []
+    for o in orders:
+        has_px = (
+            float(o.get("sl_trigger_px") or o.get("slTriggerPx") or 0) > 0
+            or float(o.get("tp_trigger_px") or o.get("tpTriggerPx") or 0) > 0
+        )
+        state = str(o.get("state") or "live")
+        if has_px and state in ("live", "ordering", "partially_filled"):
+            live.append(o)
+    if len(live) <= 1:
+        return orders, 0, ""
+
+    live.sort(key=lambda o: int(str(o.get("algo_id") or o.get("algoId") or 0)))
+    keep = live[-1]
+    cancelled = 0
+    for o in live[:-1]:
+        aid = o.get("algo_id") or o.get("algoId")
+        try:
+            if not hasattr(okx_client, "cancel_algo_order"):
+                return orders, cancelled, "client_without_cancel_algo_order"
+            r = okx_client.cancel_algo_order(inst_id=inst_id, algo_id=aid)
+            ok = isinstance(r, dict) and bool(r.get("ok"))
+        except Exception as exc:  # noqa: BLE001
+            ok = False
+            r = {"error": str(exc)}
+        _audit(
+            {
+                "kind": "dedupe",
+                "source": SOURCE_TAG,
+                "inst_id": inst_id,
+                "pos_side": pos_side,
+                "kept_algo_id": keep.get("algo_id") or keep.get("algoId"),
+                "cancelled_algo_id": aid,
+                "ok": ok,
+                "result": "ok" if ok else r,
+            },
+            audit_path,
+        )
+        if not ok:
+            return orders, cancelled, f"dedupe_cancel_failed algo={aid}"
+        cancelled += 1
+        log_fn(f"[SLTP-Reconcile] 去重 {inst_id}({pos_side}) 撤销重复单 algo={aid}")
+    return [keep] + [o for o in orders if o not in live], cancelled, ""
 
 
 def reconcile_sltp(
@@ -117,7 +177,7 @@ def reconcile_sltp(
     log_fn: Callable[[str], None] | None = None,
     audit_path: str | Path | None = None,
 ) -> dict[str, int]:
-    """对全部持仓补挂缺失的 SL/TP。返回 {patched, skipped, failed}。"""
+    """对全部持仓补挂缺失的 SL/TP。返回 {patched, skipped, failed, deduped}。"""
     _log = log_fn or (lambda msg: logger.info(msg))
     _t0 = time.time()
     if not (okx_client and hasattr(okx_client, "get_positions")):
@@ -134,7 +194,7 @@ def reconcile_sltp(
         _summary(audit_path, reason="no_positions")
         return {"patched": 0, "skipped": 0, "failed": 0}
 
-    patched = skipped = failed = 0
+    patched = skipped = failed = deduped = 0
     for pos in positions:
         inst_id = pos["inst_id"]
         pos_side = pos["pos_side"]
@@ -143,11 +203,36 @@ def reconcile_sltp(
         upl_pct = pos["upl_ratio"] * 100
 
         try:
-            has_sl, has_tp = _has_sltp(okx_client, inst_id, pos_side)
+            algo_orders, algo_err = _algo_snapshot(okx_client, inst_id, pos_side)
         except Exception as exc:  # noqa: BLE001
             _log(f"[SLTP-Reconcile] {inst_id}({pos_side}) algo查询异常: {exc}")
             failed += 1
             continue
+        if algo_err:
+            # 查询失败不能当作"无 SL/TP"，否则会重复补挂
+            _log(f"[SLTP-Reconcile] {inst_id}({pos_side}) algo查询失败: {algo_err}")
+            failed += 1
+            continue
+
+        algo_orders, n_deduped, dedupe_err = _dedupe_algo_orders(
+            okx_client,
+            inst_id,
+            pos_side,
+            algo_orders,
+            Path(audit_path) if audit_path else None,
+            _log,
+        )
+        deduped += n_deduped
+        if dedupe_err:
+            failed += 1
+            continue
+
+        has_sl = any(
+            float(o.get("sl_trigger_px") or o.get("slTriggerPx") or 0) > 0 for o in algo_orders
+        )
+        has_tp = any(
+            float(o.get("tp_trigger_px") or o.get("tpTriggerPx") or 0) > 0 for o in algo_orders
+        )
         if has_sl and has_tp:
             skipped += 1
             continue
@@ -211,8 +296,8 @@ def reconcile_sltp(
             _log(f"[SLTP-Reconcile] {inst_id}({pos_side}) 异常: {exc}")
 
     _log(
-        f"[SLTP-Reconcile] 补挂={patched} 跳过={skipped} 失败={failed} "
+        f"[SLTP-Reconcile] 补挂={patched} 跳过={skipped} 失败={failed} 去重={deduped} "
         f"耗时={time.time() - _t0:.1f}s"
     )
-    _summary(audit_path, patched=patched, skipped=skipped, failed=failed)
-    return {"patched": patched, "skipped": skipped, "failed": failed}
+    _summary(audit_path, patched=patched, skipped=skipped, failed=failed, deduped=deduped)
+    return {"patched": patched, "skipped": skipped, "failed": failed, "deduped": deduped}

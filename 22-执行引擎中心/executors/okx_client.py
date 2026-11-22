@@ -152,6 +152,17 @@ class _CustomDNSAdapter(requests.adapters.HTTPAdapter):
         self.poolmanager = CustomPoolManager(**kwargs)
 
 
+def _inst_type_of(inst_id: str) -> str:
+    """由 instId 推导 OKX instType（algo 查询接口强烈建议显式传入）。"""
+    s = (inst_id or "").upper()
+    if s.endswith("-SWAP"):
+        return "SWAP"
+    parts = s.split("-")
+    if len(parts) >= 3 and parts[-1].isdigit():
+        return "FUTURES"
+    return "SPOT"
+
+
 class OKXSimulatedClient:
     """OKX 模拟交易客户端"""
 
@@ -991,14 +1002,19 @@ class OKXSimulatedClient:
         # ── P0修复：调整一侧止盈止损时，保留另一侧的价格，避免取消原保护 ──
         existing_sl = 0
         existing_tp = 0
+        existing_orders = []
+        query_error = ""
         try:
             current_orders = self.get_algo_orders(inst_id)
+            if current_orders.get("query_ok") is False:
+                query_error = "; ".join(current_orders.get("errors") or []) or "algo_query_failed"
             if current_orders.get("ok") and current_orders.get("orders"):
                 for order in current_orders["orders"]:
                     # 宽松匹配：pending 接口返回的都是未触发订单，优先匹配同方向
                     pos_match = order.get("pos_side") == pos_side or not order.get("pos_side")
                     state_match = order.get("state") in ("live", "ordering", None, "")
                     if pos_match and state_match:
+                        existing_orders.append(order)
                         if order.get("sl_trigger_px", 0) > 0:
                             existing_sl = order["sl_trigger_px"]
                         if order.get("tp_trigger_px", 0) > 0:
@@ -1024,6 +1040,7 @@ class OKXSimulatedClient:
                     current_orders,
                 )
         except Exception as e:
+            query_error = str(e)
             self._audit_log("algo_preserve_error", {"inst_id": inst_id}, {"error": str(e)})
 
         # 如果只更新一侧，保留另一侧的现有价格
@@ -1032,12 +1049,6 @@ class OKXSimulatedClient:
             stop_loss_px = existing_sl
         if (take_profit_px is None or take_profit_px == 0) and existing_tp > 0:
             take_profit_px = existing_tp
-
-        # 先撤销已有未触发的止盈止损单，避免重复下单
-        try:
-            self.cancel_algo_orders(inst_id)
-        except Exception:
-            pass
 
         # 获取持仓数量
         if sz is None:
@@ -1079,6 +1090,47 @@ class OKXSimulatedClient:
                     sz = _aligned
         except Exception as _e:
             self._audit_log("algo_sz_align_error", {"inst_id": inst_id}, {"error": str(_e)})
+
+        # ── 幂等：同值 SL/TP 已在挂单则直接返回，禁止重复新建 OCO ──
+        # 23-evolution 与补挂巡检会周期性重复下发同一组 SL/TP，过去每次都新建 algo 单，
+        # 造成 OKX 同一持仓出现多份 OCO（MU 6 份 / CRCL 3 份 / LINK 3 份事故）。
+        tol = max(float(tick_sz) * 0.5, 1e-6)
+        if not query_error:
+            for o in existing_orders:
+                o_sl = float(o.get("sl_trigger_px") or 0)
+                o_tp = float(o.get("tp_trigger_px") or 0)
+                o_sz = float(o.get("sz") or 0)
+                sl_ok = (stop_loss_px == 0) or (o_sl > 0 and abs(o_sl - stop_loss_px) <= tol)
+                tp_ok = (take_profit_px == 0) or (o_tp > 0 and abs(o_tp - take_profit_px) <= tol)
+                sz_ok = (o_sz <= 0) or (abs(o_sz - float(sz)) <= 1e-6)
+                if sl_ok and tp_ok and sz_ok:
+                    self._audit_log(
+                        "algo_unchanged",
+                        {
+                            "instId": inst_id,
+                            "posSide": pos_side,
+                            "slTriggerPx": stop_loss_px,
+                            "tpTriggerPx": take_profit_px,
+                            "sz": sz,
+                            "algoId": o.get("algo_id"),
+                        },
+                        {"code": "0", "msg": "unchanged"},
+                    )
+                    return {
+                        "ok": True,
+                        "unchanged": True,
+                        "stop_loss_px": stop_loss_px,
+                        "take_profit_px": take_profit_px,
+                        "sz": sz,
+                        "algo_id": o.get("algo_id"),
+                    }
+
+        # ── 撤单严格校验：查询失败或撤单失败一律中止，禁止盲挂造成重复 ──
+        if query_error:
+            return {"ok": False, "error": f"cancel_before_place_failed: {query_error}"}
+        cancel_res = self.cancel_algo_orders(inst_id)
+        if not (isinstance(cancel_res, dict) and cancel_res.get("ok")):
+            return {"ok": False, "error": f"cancel_before_place_failed: {cancel_res}"}
 
         # OCO 单：止损和止盈必须同时设置，如果只有一个，用 conditional 单
         if stop_loss_px and take_profit_px:
@@ -1377,26 +1429,70 @@ class OKXSimulatedClient:
             return {"ok": False, "error": "missing api credentials"}
 
         algo_ids = []
+        query_errors = []
+        inst_type = _inst_type_of(inst_id)
         for ord_type in ("conditional", "oco"):
             r = self._get(
-                "/api/v5/trade/orders-algo-pending", {"instId": inst_id, "ordType": ord_type}
+                "/api/v5/trade/orders-algo-pending",
+                {"instType": inst_type, "instId": inst_id, "ordType": ord_type},
             )
             if r.get("code") != "0":
+                query_errors.append(f"{ord_type}:{r.get('code')}:{r.get('msg')}")
                 continue
             algo_ids.extend(d["algoId"] for d in r.get("data", []))
 
+        if query_errors:
+            # 查询不完整时不允许继续挂单/撤单，避免"看不到旧单→再挂一份"
+            return {
+                "ok": False,
+                "cancelled": 0,
+                "error": "pending_query_failed: " + "; ".join(query_errors),
+            }
         if not algo_ids:
             return {"ok": True, "cancelled": 0, "msg": "无未触发的 algo orders"}
 
         cancelled = 0
+        failed = []
         for aid in algo_ids:
             body = {"algoId": aid, "instId": inst_id}
             cr = self._post("/api/v5/trade/cancel-algos", [body])
-            if cr.get("code") == "0":
+            items = cr.get("data") or []
+            item_ok = cr.get("code") == "0" and all(str(i.get("sCode", "0")) == "0" for i in items)
+            if item_ok:
                 cancelled += 1
+            else:
+                failed.append(
+                    {"algoId": aid, "code": cr.get("code"), "msg": (cr.get("msg") or "")[:80]}
+                )
             self._audit_log("cancel_algo", body, cr)
 
+        if failed:
+            return {"ok": False, "cancelled": cancelled, "total": len(algo_ids), "failed": failed}
         return {"ok": True, "cancelled": cancelled, "total": len(algo_ids)}
+
+    def cancel_algo_order(self, inst_id: str = None, algo_id: str = None) -> Dict:
+        """撤销单条 algo 单（重复单去重时保留最新一条）。"""
+        inst_id = inst_id or self.cfg["default_inst_id"]
+        if not algo_id:
+            return {"ok": False, "error": "missing algo_id"}
+
+        if self.dry_run:
+            self._dry_run_algo_orders[inst_id] = [
+                o
+                for o in self._dry_run_algo_orders.get(inst_id, [])
+                if str(o.get("algo_id")) != str(algo_id)
+            ]
+            return {"ok": True, "dry_run": True, "algo_id": str(algo_id)}
+
+        if not self._has_credentials():
+            return {"ok": False, "error": "missing api credentials"}
+
+        body = {"algoId": str(algo_id), "instId": inst_id}
+        cr = self._post("/api/v5/trade/cancel-algos", [body])
+        items = cr.get("data") or []
+        ok = cr.get("code") == "0" and all(str(i.get("sCode", "0")) == "0" for i in items)
+        self._audit_log("cancel_algo", body, cr)
+        return {"ok": ok, "algo_id": str(algo_id), "raw": cr}
 
     def get_algo_orders(self, inst_id: str = None) -> Dict:
         """查询未触发的止盈止损单"""
@@ -1405,16 +1501,27 @@ class OKXSimulatedClient:
         # dry_run 模式：从本地内存订单簿读取
         if self.dry_run:
             orders = self._dry_run_algo_orders.get(inst_id, [])
-            return {"ok": True, "orders": list(orders), "count": len(orders), "dry_run": True}
+            return {
+                "ok": True,
+                "orders": list(orders),
+                "count": len(orders),
+                "dry_run": True,
+                "query_ok": True,
+                "errors": [],
+            }
 
         if not self._has_credentials():
             return {"ok": False, "error": "missing api credentials"}
         orders = []
+        query_errors = []
+        inst_type = _inst_type_of(inst_id)
         for ord_type in ("conditional", "oco"):
             r = self._get(
-                "/api/v5/trade/orders-algo-pending", {"instId": inst_id, "ordType": ord_type}
+                "/api/v5/trade/orders-algo-pending",
+                {"instType": inst_type, "instId": inst_id, "ordType": ord_type},
             )
             if r.get("code") != "0":
+                query_errors.append(f"{ord_type}:{r.get('code')}:{r.get('msg')}")
                 continue
             for d in r.get("data", []):
                 orders.append(
@@ -1433,7 +1540,13 @@ class OKXSimulatedClient:
                         "tag": d.get("tag", ""),
                     }
                 )
-        return {"ok": True, "orders": orders, "count": len(orders)}
+        return {
+            "ok": True,
+            "orders": orders,
+            "count": len(orders),
+            "query_ok": not query_errors,
+            "errors": query_errors,
+        }
 
     # OKX algo history 的 state 语义归一：effective=仍挂单，不等于已触达。
     # 11 域的消费方把 effective 误当归一为 triggered，这里显式降为 pending，
