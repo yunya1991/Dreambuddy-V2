@@ -1,0 +1,33 @@
+{
+  "skill": "news-monitor",
+  "version": "0.1.0",
+  "command": "hot",
+  "generated_at": "2026-11-22T08:00:00+00:00",
+  "data_date": "2026-11-22T07:51:14+00:00",
+  "rows": [
+    {
+      "event_id": "bda9f9e514ef2362",
+      "title": "机构：美国10月PCE通胀料升至3.8%，美联储12月加息预期或升温",
+      "topic": "rates_policy",
+      "sentiment": "利好",
+      "sentiment_score": 0.9987,
+      "importance": 88.2,
+      "published_at": "2026-11-22T06:10:59Z",
+      "origin": "odaily_newsflash",
+      "source_url": "https://www.odaily.news/newsflash/537505",
+      "rank": 1
+    }
+  ],
+  "missing": [],
+  "method_ids": ["N01"],
+  "sources": [
+    {
+      "name": "DreamBuddy 云端新闻监控快照",
+      "url": "https://www.neodrm.com/dashboard/news",
+      "license": "内部聚合；原始新闻版权归各来源媒体，不再分发正文"
+    }
+  ],
+  "limits": "云端 24h 热点影响力榜 Top N；仅标题/主题/情绪/影响力/来源链接，非预测、非投资建议。",
+  "data_route": "cloud",
+  "ok": true
+}

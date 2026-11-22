@@ -80,6 +80,27 @@ sources:
       reviewed_at: "2026-11-20"
       review_result: "P6 复核通过：market-data-hub 措辞已改「默认不接，例外见台账」；日报免责声明已与 DC-1 范围对齐（仅统计描述、不再分发原始行情）；无新增用途或换源"
 
+  - id: dream_cloud_news
+    name: DreamBuddy 云端新闻监控快照（www.neodrm.com，聚合公开新闻源）
+    endpoint: "https://www.neodrm.com/api/fundamental/news/snapshot"
+    license: 内部聚合快照（原始新闻版权归各来源媒体）
+    commercial_use: exception
+    status: active
+    used_by: [news-monitor]
+    notes:
+      - "只读快照；原始新闻来源含 odaily / wallstreetcn / cls / jin10 / sina_finance 等，禁止再分发正文"
+      - "对外仅输出标题、主题、情绪、影响力与来源链接；榜单口径近 24h，非投资建议"
+    exception:
+      id: DC-3
+      approved_by: "用户（2026-11-22 对话确认）"
+      approved_at: "2026-11-22"
+      scope: "仅 news-monitor 内部 CLI / 内部 Skill 只读调用新闻监控快照与榜单检索"
+      restrictions:
+        - "不再分发原始新闻正文；只输出标题、主题、情绪、影响力、来源链接"
+        - "不用于新闻聚合再发布、评级或买卖建议"
+        - "扩大用途或对外商品化必须重新登记并经用户确认"
+      review: "每次用途变化复核一次"
+
   - id: gov_stats_cn
     name: 国内政府统计（统计局 / 央行 / 外汇局 / 海关）
     license: 待核实

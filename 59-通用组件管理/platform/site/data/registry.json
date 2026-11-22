@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-11-22T07:47:11Z",
+  "generated_at": "2026-11-22T07:54:46Z",
   "source": "59-通用组件管理/components/*/component.yaml",
   "components": [
     {
@@ -82,6 +82,19 @@
       ],
       "docs": [],
       "source": "components/market-facts-daily/component.yaml"
+    },
+    {
+      "name": "news-monitor",
+      "display_name": "新闻监控（云端）",
+      "version": "0.1.0",
+      "family": "news-monitor",
+      "lifecycle": "beta",
+      "summary": "云端新闻监控通用组件：只读拉取 24h 热点影响力榜、情绪与主题指标、关键词检索，数据直连 www.neodrm.com，不落地原始正文。",
+      "entrypoints": [
+        "scripts/news.py"
+      ],
+      "docs": [],
+      "source": "components/news-monitor/component.yaml"
     },
     {
       "name": "reservation-assist",

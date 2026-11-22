@@ -1,0 +1,64 @@
+name: news-monitor
+display_name: 新闻监控（云端）
+version: 0.1.0
+family: news-monitor
+lifecycle: beta
+summary: 云端新闻监控通用组件：只读拉取 24h 热点影响力榜、情绪与主题指标、关键词检索，数据直连 www.neodrm.com，不落地原始正文。
+skill_dir: skill
+entrypoints:
+  - scripts/news.py
+kernel_deps: []
+output_contract: data.v1
+products: []
+tests:
+  dir: tests
+  entry: python3 -m unittest discover -s tests -v
+actions:
+  - name: hot
+    description: "云端 24h 热点新闻榜 Top N：主题、情绪、影响力、来源链接"
+    when_to_use: "需要当天最值得关注的新闻头条与影响力排序时"
+    not_for: "不抓取全文正文；按关键词找新闻用 search"
+    script: scripts/news.py
+    args: ["hot"]
+    safety: read
+    output: json
+    mcp: {expose: true, tier: hot, name: news_monitor_hot}
+    params:
+      - {name: limit, flag: "--limit", type: integer, default: 10, description: 返回条数（1–50）}
+      - {name: endpoint, flag: "--endpoint", type: string, enum: [auto, cloud, local], default: auto, description: 数据通道}
+  - name: metrics
+    description: "新闻情绪与影响力核心指标 + 主题簇分布"
+    when_to_use: "判断市场情绪冷热、正负面占比与主题集中度时"
+    not_for: "不返回单条新闻（用 hot / search）"
+    script: scripts/news.py
+    args: ["metrics"]
+    safety: read
+    output: json
+    mcp: {expose: true, tier: extended, name: news_monitor_metrics}
+    params:
+      - {name: endpoint, flag: "--endpoint", type: string, enum: [auto, cloud, local], default: auto, description: 数据通道}
+  - name: search
+    description: "按关键词检索云端新闻（24h / 7d / 30d 窗口）"
+    when_to_use: "用户给出标的、主题或事件关键词，需要相关新闻列表时"
+    not_for: "不做全文检索与历史翻页；榜单口径见返回 limits"
+    script: scripts/news.py
+    args: ["search"]
+    safety: read
+    output: json
+    mcp: {expose: true, tier: extended, name: news_monitor_search}
+    params:
+      - {name: keyword, flag: "--keyword", type: string, required: true, description: 关键词，如 BTC / 美联储 / 英伟达}
+      - {name: window, flag: "--window", type: string, enum: [24h, 7d, 30d], default: 7d, description: 检索时间窗}
+      - {name: endpoint, flag: "--endpoint", type: string, enum: [auto, cloud, local], default: auto, description: 数据通道}
+  - name: snapshot
+    description: "云端新闻监控完整快照（指标 + 热点 + 主题簇 + 时序），供排障与下游装配"
+    when_to_use: "需要原始快照字段、复盘数据质量或下游二次加工时"
+    not_for: "日常问答优先用 hot / metrics / search，避免输出过大"
+    script: scripts/news.py
+    args: ["snapshot"]
+    safety: read
+    output: json
+    mcp: {expose: false}
+    params:
+      - {name: days, flag: "--days", type: integer, default: 0, description: 时序窗口天数（0=云端默认 90）}
+      - {name: endpoint, flag: "--endpoint", type: string, enum: [auto, cloud, local], default: auto, description: 数据通道}

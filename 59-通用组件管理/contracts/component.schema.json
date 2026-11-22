@@ -32,7 +32,7 @@
       "description": "SemVer；必须与 skill/SKILL.md frontmatter 一致，否则 G5 失败"
     },
     "family": {
-      "enum": ["cogsteward", "market-data", "event-context", "market-facts", "reservation-assist", "site-blog", "dal-data"],
+      "enum": ["cogsteward", "market-data", "event-context", "market-facts", "reservation-assist", "site-blog", "dal-data", "news-monitor"],
       "description": "商品族，决定构建变体与共用契约 profile"
     },
     "lifecycle": {
