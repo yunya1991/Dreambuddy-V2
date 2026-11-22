@@ -902,16 +902,28 @@ class TradeExecutionGateway:
             if _action == "open":
                 if _qty <= 0:
                     _qty = self._current_position_qty(sig.symbol, _side)
-                ledger.record_open(sig.symbol, _side, _qty, _px, source=sig.source)
+                ledger.record_fill(
+                    inst_id=sig.symbol,
+                    pos_side=_side,
+                    action="open",
+                    qty=_qty,
+                    px=_px,
+                    source=sig.source,
+                    decision_id=str(sig.decision_id or ""),
+                    exchange_fill_id=str((_fill or {}).get("trade_id") or ""),
+                    fee=float((_fill or {}).get("fee") or 0.0),
+                )
             elif _action in ("close", "reduce", "reduce_only"):
-                ledger.apply_partial_close(
-                    sig.symbol,
-                    _side,
-                    _qty,
-                    _px,
+                ledger.record_fill(
+                    inst_id=sig.symbol,
+                    pos_side=_side,
+                    action=_action,
+                    qty=_qty,
+                    px=_px,
                     ratio=1.0 if _action == "close" else None,
                     source=sig.source,
                     decision_id=str(sig.decision_id or ""),
+                    exchange_fill_id=str((_fill or {}).get("trade_id") or ""),
                     fee=float((_fill or {}).get("fee") or 0.0),
                     exit_reason=str(sig.reason or ""),
                 )
@@ -1016,12 +1028,14 @@ class TradeExecutionGateway:
         exit_px: float = 0.0,
         source: str = "23-evolution",
         exit_reason: str = "ghost_exchange_flat",
+        domain: Optional[str] = None,
     ) -> Dict[str, Any]:
         """交易所已无持仓但账本仍开着：按幽灵价全平，避免每轮重复告警。
 
         exit_reason 区分归因：
         - ``exchange_sltp``：取到交易所真实成交价，属 SL/TP 正常回填；
         - ``ghost_exchange_flat``：无成交可回填，需人工核对。
+        仅在 operand 所属域份额内平仓（P1 一标的一域）；旧库无域子账时回退全账平仓。
         """
         ledger = self._get_ledger()
         if ledger is None:
@@ -1029,15 +1043,40 @@ class TradeExecutionGateway:
         row = ledger.get_position(inst_id, pos_side)
         if not row:
             return {"ok": False, "reason": "no_position"}
+        _px = float(exit_px or row.get("avg_entry") or 0)
+        _dom = str(domain or "").strip().lower()
+        if _dom:
+            out = ledger.close_position(
+                _dom,
+                inst_id,
+                pos_side,
+                float(row["qty"]),
+                px=_px,
+                source=source,
+                exit_reason=exit_reason,
+            )
+            if out.get("ok"):
+                return out
         return ledger.apply_partial_close(
             inst_id=inst_id,
             pos_side=pos_side,
             qty=float(row["qty"]),
-            px=float(exit_px or row.get("avg_entry") or 0),
+            px=_px,
             ratio=1.0,
             source=source,
             exit_reason=exit_reason,
         )
+
+    def list_domain_positions(self, domain: str | None = None) -> list[Dict[str, Any]]:
+        """域子账只读视图（供 23/15 读取归属与状态，不直接读 positions 原表）。"""
+        ledger = self._get_ledger()
+        if ledger is None:
+            return []
+        return ledger.list_domain_positions(domain)
+
+    def list_breaks(self, state: str = "OPEN", limit: int = 100) -> list[Dict[str, Any]]:
+        ledger = self._get_ledger()
+        return ledger.list_breaks(state=state, limit=limit) if ledger is not None else []
 
     def reconcile_ledger(self, source: str = "22-reconciled") -> Dict[str, Any]:
         """存量仓一次性对账回填：交易所持仓 → 22 账本（幂等，不覆盖真实流水）。"""

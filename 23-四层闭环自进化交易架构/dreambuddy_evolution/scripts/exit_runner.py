@@ -61,12 +61,18 @@ def tag_matches(source: str, tags: Iterable[str]) -> bool:
 def collect_positions(
     gateway: Any, okx: Any, symbols: List[str], tags: Iterable[str]
 ) -> List[Dict[str, Any]]:
-    """账本归属优先；--symbols 用于补录 P2 之前开的老仓。"""
+    """账本归属优先；--symbols 用于补录 P2 之前开的老仓。
+
+    P1-5：容量/离场口径读 effective 持仓（stale 不进入决策），
+    网关无该 API 时回退 list_positions（兼容测试替身与旧版网关）。
+    """
     _want = {s.strip().upper() for s in symbols if s and s.strip()}
     out: List[Dict[str, Any]] = []
     _seen = set()
 
-    for row in gateway.list_positions() or []:
+    _list_effective = getattr(gateway, "list_effective_positions", None)
+    _rows = _list_effective() if callable(_list_effective) else (gateway.list_positions() or [])
+    for row in _rows or []:
         _inst = str(row.get("inst_id") or "")
         if not _inst:
             continue

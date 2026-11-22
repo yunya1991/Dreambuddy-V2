@@ -431,7 +431,24 @@ def close_position(self, domain: str, inst_id: str, pos_side: str, qty: float,
 > **执行记录（2026-11-23）**：P0-1/P0-2/P0-4/P0-5 已落地；新增测试
 > `tests/test_position_ledger_p0.py` 与 `test_ledger_guards.py::test_prefers_effective_positions_when_available`
 > 全部通过。P0-3 云端只读核对：账本 9 条 open（8×`22-reconciled` + 1×`23-evolution`）与 OKX 9 条
-> 逐 `inst/side/qty` 一致，**无 ghost 行可清理**；“25 条 stale”为历史/监控侧统计，账本层无需删除。P1 未开始。
+> 逐 `inst/side/qty` 一致，**无 ghost 行可清理**；“25 条 stale”为历史/监控侧统计，账本层无需删除。
+>
+> **P1 执行记录（2026-11-23）**：P1-1..P1-7 代码落地，本地测试全绿（新增
+> `tests/test_position_ledger_domain.py`、`tests/test_ledger_janitor.py`；旧
+> `test_position_ledger*.py` 回归通过）。
+> - P1-1/P1-4：`position_ledger._migrate_p1` 增量 DDL + 归属回填（`migrations/001_ledger_domain.py`
+>   入口，`p1-001` 只执行一次）；本地合成库两次迁移 `balances=True`、批次不重复。
+> - P1-2：`record_fill` 单事务写 fills+L1+L2+lots，FIFO 平仓、fee 按量摊销尾差入末批；
+>   `exchange_fill_id` 幂等；`reserve/release/expire` + `recon_breaks` 状态机。
+> - P1-3：`TradeExecutionGateway._record_ledger` 改走 `record_fill`；`close_ghost_position`
+>   支持 `domain` 归属校验。
+> - P1-5：23 `exit_runner.collect_positions` 优先 `list_effective_positions`（stale 不进入离场）。
+> - P1-6：`15-监控告警系统/scripts/ledger_janitor.py`（shadow，`janitor_enforce=off`）+
+>   单实例文件锁 + heartbeat + feed_state=degraded（失败不累加 miss）。
+> - P1-7：`22-执行引擎中心/executors/drop_copy_adapter.py`，按 `exchange_fill_id` 幂等导入
+>   50 审计流水/交易所成交，重放不重复入账。
+> - 待办：云端部署（`git pull` + 重启 22/23 服务）因网络不可达暂缓；`janitor_enforce=on`
+>   与 systemd timer 属 P2-1。
 
 ### P1 归因（五层模型落地）
 

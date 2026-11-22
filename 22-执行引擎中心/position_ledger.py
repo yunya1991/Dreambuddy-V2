@@ -11,17 +11,41 @@
 
 from __future__ import annotations
 
+import json
 import os
 import sqlite3
 import threading
-from datetime import datetime, timezone
+import uuid
+from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _DEFAULT_DB = _REPO_ROOT / "22-执行引擎中心" / "runtime" / "position_ledger.db"
 
 _EPS = 1e-9
+
+# SPEC §2：source → domain 唯一映射（保留原始 source 仅作追溯）
+_DOMAIN_RULES: Tuple[Tuple[Tuple[str, ...], str], ...] = (
+    (("23-evolution", "evolution", "bcrm", "strategy", "event_arbitrage"), "23"),
+    (("11-yijing", "11"), "11"),
+    (("50-nn", "50"), "50"),
+    (("6-trading", "6"), "6"),
+    (("22-reconciled", "22-janitor", "sltp", "22"), "22"),
+)
+
+
+def domain_of(source: Optional[str]) -> str:
+    """按 SPEC §2 把 source 前缀/取值映射到规范域编码；未知归 legacy。"""
+    _src = str(source or "").strip().lower()
+    if not _src:
+        return "legacy"
+    for prefixes, dom in _DOMAIN_RULES:
+        for p in prefixes:
+            if _src == p or _src.startswith(p):
+                return dom
+    return "legacy"
 
 
 def _utc_now() -> str:
@@ -59,6 +83,25 @@ class PositionLedger:
         conn.execute("PRAGMA synchronous=NORMAL")
         conn.execute("PRAGMA busy_timeout=5000")
         return conn
+
+    @contextmanager
+    def _tx(self, immediate: bool = True) -> Iterator[sqlite3.Connection]:
+        """单事务写入口：immediate=True 时先取写锁，保证跨进程“读-判-写”原子。"""
+        with self._lock:
+            conn = self._connect()
+            conn.isolation_level = None
+            try:
+                conn.execute("BEGIN IMMEDIATE" if immediate else "BEGIN")
+                yield conn
+                conn.execute("COMMIT")
+            except Exception:
+                try:
+                    conn.execute("ROLLBACK")
+                except sqlite3.Error:
+                    pass
+                raise
+            finally:
+                conn.close()
 
     def _init_db(self) -> None:
         with self._lock, self._connect() as conn:
@@ -106,6 +149,7 @@ class PositionLedger:
                 );
                 """)
             self._migrate_p0(conn)
+            self._migrate_p1(conn)
 
     # ── 迁移（增量、幂等） ────────────────────────────────────────
     @staticmethod
@@ -174,7 +218,722 @@ class PositionLedger:
                 (_utc_now(),),
             )
 
+    def _migrate_p1(self, conn: sqlite3.Connection) -> None:
+        """P1-1 增量 schema：域子账/批次/预占/工单/注册表 + 历史归属回填（幂等）。"""
+        for _name, _ddl in (
+            ("domain", "domain TEXT NOT NULL DEFAULT ''"),
+            ("alloc_id", "alloc_id TEXT NOT NULL DEFAULT ''"),
+            ("exchange_fill_id", "exchange_fill_id TEXT NOT NULL DEFAULT ''"),
+            ("parent_fill_id", "parent_fill_id INTEGER"),
+        ):
+            self._ensure_column(conn, "fills", _name, _ddl)
+
+        # 兼容更早期的 positions schema（缺 source/时间戳列时回填 SQL 才能执行）
+        for _name, _ddl in (
+            ("source", "source TEXT DEFAULT ''"),
+            ("entry_known", "entry_known INTEGER NOT NULL DEFAULT 1"),
+            ("realized_pnl", "realized_pnl REAL NOT NULL DEFAULT 0"),
+            ("opened_at", "opened_at TEXT"),
+            ("updated_at", "updated_at TEXT"),
+            ("closed_at", "closed_at TEXT"),
+        ):
+            self._ensure_column(conn, "positions", _name, _ddl)
+
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS domain_positions (
+                inst_id       TEXT NOT NULL,
+                pos_side      TEXT NOT NULL,
+                domain        TEXT NOT NULL,
+                qty           REAL NOT NULL DEFAULT 0,
+                avg_entry     REAL NOT NULL DEFAULT 0,
+                realized_pnl  REAL NOT NULL DEFAULT 0,
+                entry_known   INTEGER NOT NULL DEFAULT 1,
+                source_detail TEXT DEFAULT '',
+                opened_at     TEXT,
+                updated_at    TEXT,
+                closed_at     TEXT,
+                status        TEXT NOT NULL DEFAULT 'open'
+                              CHECK (status IN ('open','stale','closed')),
+                PRIMARY KEY (inst_id, pos_side, domain)
+            );
+            CREATE TABLE IF NOT EXISTS position_lots (
+                lot_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                inst_id       TEXT NOT NULL,
+                pos_side      TEXT NOT NULL,
+                domain        TEXT NOT NULL,
+                qty           REAL NOT NULL,
+                remaining_qty REAL NOT NULL,
+                px            REAL NOT NULL,
+                opened_at     TEXT NOT NULL,
+                source_detail TEXT DEFAULT '',
+                decision_id   TEXT DEFAULT '',
+                status        TEXT NOT NULL DEFAULT 'open'
+                              CHECK (status IN ('open','closed'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_lots_open
+                ON position_lots (inst_id, pos_side, domain, status, lot_id);
+            CREATE TABLE IF NOT EXISTS reservations (
+                reservation_id TEXT PRIMARY KEY,
+                domain         TEXT NOT NULL,
+                inst_id        TEXT NOT NULL,
+                pos_side       TEXT NOT NULL,
+                notional       REAL NOT NULL,
+                state          TEXT NOT NULL DEFAULT 'held'
+                               CHECK (state IN ('held','consumed','released','expired')),
+                decision_id    TEXT DEFAULT '',
+                created_at     TEXT NOT NULL,
+                expires_at     TEXT NOT NULL,
+                updated_at     TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_reservations_active
+                ON reservations (domain, inst_id, pos_side, state, expires_at);
+            CREATE TABLE IF NOT EXISTS recon_breaks (
+                break_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+                kind          TEXT NOT NULL
+                              CHECK (kind IN ('missing_in_ledger','orphan_in_ledger','qty_drift',
+                                              'price_drift','stale_position','over_close',
+                                              'duplicate_open')),
+                inst_id       TEXT NOT NULL,
+                pos_side      TEXT NOT NULL,
+                domain        TEXT NOT NULL DEFAULT '',
+                detected_at   TEXT NOT NULL,
+                state         TEXT NOT NULL DEFAULT 'OPEN'
+                              CHECK (state IN ('OPEN','ACK','RESOLVED','WAIVED')),
+                owner_domain  TEXT DEFAULT '',
+                evidence_json TEXT DEFAULT '',
+                sla_due_at    TEXT,
+                resolved_at   TEXT,
+                resolution    TEXT DEFAULT ''
+            );
+            CREATE INDEX IF NOT EXISTS idx_recon_breaks_sla
+                ON recon_breaks (state, sla_due_at);
+            CREATE TABLE IF NOT EXISTS domain_registry (
+                domain        TEXT PRIMARY KEY,
+                enabled       INTEGER NOT NULL DEFAULT 1,
+                owner_contact TEXT DEFAULT '',
+                limits_json   TEXT NOT NULL DEFAULT '{}',
+                created_at    TEXT NOT NULL,
+                updated_at    TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_fills_domain
+                ON fills (domain, inst_id, pos_side, id DESC);
+        """)
+
+        conn.executescript("""
+            INSERT OR IGNORE INTO ledger_settings(key, value) VALUES
+              ('lot_close_policy', 'fifo'),
+              ('janitor_enforce', 'off'),
+              ('reservation_ttl_seconds', '300');
+            INSERT OR IGNORE INTO domain_registry(domain, enabled, limits_json, created_at, updated_at)
+            VALUES
+              ('11', 1, '{"max_positions":6,"max_notional":2000}', datetime('now'), datetime('now')),
+              ('23', 1, '{"subpool_max":5,"probe_max":2,"max_direction_ratio":0.70}',
+               datetime('now'), datetime('now')),
+              ('50', 1, '{"max_positions":12,"position_scope":"registry"}',
+               datetime('now'), datetime('now')),
+              ('6',  1, '{}', datetime('now'), datetime('now')),
+              ('22', 1, '{"role":"janitor"}', datetime('now'), datetime('now')),
+              ('legacy', 0, '{}', datetime('now'), datetime('now'));
+        """)
+
+        if (
+            conn.execute("SELECT 1 FROM schema_migrations WHERE version='p1-001'").fetchone()
+            is None
+        ):
+            conn.executescript("""
+                INSERT INTO domain_positions(
+                    inst_id, pos_side, domain, qty, avg_entry, realized_pnl, entry_known,
+                    source_detail, opened_at, updated_at, closed_at, status)
+                SELECT
+                    p.inst_id, p.pos_side,
+                    CASE
+                      WHEN p.source LIKE '23%' OR p.source IN
+                           ('evolution','bcrm','strategy','event_arbitrage') THEN '23'
+                      WHEN p.source LIKE '11%' THEN '11'
+                      WHEN p.source LIKE '50%' THEN '50'
+                      WHEN p.source LIKE '6%'  THEN '6'
+                      WHEN p.source LIKE '22%' OR p.source LIKE 'sltp%' THEN '22'
+                      ELSE 'legacy'
+                    END,
+                    p.qty, p.avg_entry, 0, p.entry_known,
+                    p.source, p.opened_at, p.updated_at, p.closed_at,
+                    CASE WHEN p.closed_at IS NULL AND p.qty > 1e-9 THEN 'open' ELSE 'closed' END
+                FROM positions p
+                WHERE p.qty > 1e-9 OR p.closed_at IS NOT NULL
+                ON CONFLICT(inst_id, pos_side, domain) DO UPDATE SET
+                    qty = excluded.qty,
+                    avg_entry = excluded.avg_entry,
+                    updated_at = excluded.updated_at,
+                    closed_at = excluded.closed_at,
+                    status = excluded.status;
+
+                INSERT INTO position_lots(inst_id, pos_side, domain, qty, remaining_qty, px,
+                                          opened_at, source_detail, decision_id, status)
+                SELECT d.inst_id, d.pos_side, d.domain, d.qty, d.qty, d.avg_entry,
+                       COALESCE(d.opened_at, datetime('now')), 'migration', '', 'open'
+                FROM domain_positions d
+                WHERE d.status = 'open' AND d.qty > 1e-9
+                  AND NOT EXISTS (
+                      SELECT 1 FROM position_lots l
+                      WHERE l.inst_id = d.inst_id AND l.pos_side = d.pos_side
+                        AND l.domain = d.domain AND l.source_detail = 'migration'
+                  );
+
+                UPDATE positions SET status = 'open', verified_at = COALESCE(verified_at, updated_at)
+                 WHERE qty > 1e-9 AND status = 'open';
+                UPDATE positions SET status = 'closed'
+                 WHERE qty <= 1e-9 AND closed_at IS NOT NULL;
+            """)
+            conn.execute(
+                "INSERT OR REPLACE INTO schema_migrations(version, applied_at)"
+                " VALUES('p1-001', ?)",
+                (_utc_now(),),
+            )
+
+        # 历史 realized_pnl 无法精确拆域（SPEC §4.7 限制）：回填批次统一记 0，不用于结算
+        try:
+            conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_domain_positions_active_domain"
+                " ON domain_positions (inst_id, pos_side)"
+                " WHERE qty > 1e-9 AND status IN ('open','stale')"
+            )
+        except sqlite3.IntegrityError:
+            # 存量数据存在同标的多活跃域时保留旧索引之外的运行能力，交由 break 工单人工收敛
+            pass
+        conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_recon_breaks_active"
+            " ON recon_breaks (kind, inst_id, pos_side, domain)"
+            " WHERE state IN ('OPEN','ACK')"
+        )
+        try:
+            conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_fills_exchange_fill"
+                " ON fills (exchange_fill_id) WHERE exchange_fill_id <> ''"
+            )
+        except sqlite3.IntegrityError:
+            pass
+        conn.execute(
+            "CREATE VIEW IF NOT EXISTS v_domain_positions AS"
+            " SELECT d.*, r.enabled AS domain_enabled, r.limits_json AS limits_json"
+            " FROM domain_positions d"
+            " LEFT JOIN domain_registry r ON r.domain = d.domain"
+            " WHERE d.qty > 1e-9"
+        )
+
     # ── 写 ────────────────────────────────────────────────────────
+    # ── 写：成交落账（P1 单一事件流 + 域子账 + FIFO 批次） ────────────
+    def _fill_domain(
+        self, conn: sqlite3.Connection, inst_id: str, pos_side: str, domain: str
+    ) -> str:
+        """本次成交归属域：显式 domain 优先，其次沿用唯一活跃域，最后 legacy。"""
+        _dom = str(domain or "").strip().lower()
+        if _dom:
+            return _dom
+        row = conn.execute(
+            "SELECT domain FROM domain_positions WHERE inst_id=? AND pos_side=?"
+            " AND qty>? AND status IN ('open','stale') ORDER BY updated_at DESC LIMIT 1",
+            (inst_id, pos_side, _EPS),
+        ).fetchone()
+        return str(row["domain"]) if row is not None else "legacy"
+
+    def _ensure_domain_row(
+        self, conn: sqlite3.Connection, inst_id: str, pos_side: str, domain: str, ts: str
+    ) -> None:
+        conn.execute(
+            "INSERT OR IGNORE INTO domain_positions(inst_id, pos_side, domain, qty, avg_entry,"
+            " realized_pnl, entry_known, source_detail, opened_at, updated_at, closed_at, status)"
+            " VALUES (?,?,?,0,0,0,1,'',?,?,NULL,'open')",
+            (inst_id, pos_side, domain, ts, ts),
+        )
+
+    def _insert_fill_tx(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        ts: str,
+        inst_id: str,
+        pos_side: str,
+        action: str,
+        qty: float,
+        px: float,
+        fee: float,
+        realized_pnl: Optional[float],
+        ratio: Optional[float],
+        source: str,
+        decision_id: str,
+        domain: str,
+        alloc_id: str,
+        exchange_fill_id: str,
+        parent_fill_id: Optional[int],
+    ) -> int:
+        cur = conn.execute(
+            "INSERT INTO fills (ts, inst_id, pos_side, action, qty, px, fee, realized_pnl, ratio,"
+            " source, decision_id, domain, alloc_id, exchange_fill_id, parent_fill_id)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                ts,
+                inst_id,
+                pos_side,
+                action,
+                qty,
+                px,
+                fee,
+                realized_pnl,
+                ratio,
+                source,
+                decision_id,
+                domain,
+                alloc_id,
+                exchange_fill_id,
+                parent_fill_id,
+            ),
+        )
+        return int(cur.lastrowid or 0)
+
+    @staticmethod
+    def _upsert_break_tx(
+        conn: sqlite3.Connection,
+        kind: str,
+        inst_id: str,
+        pos_side: str,
+        domain: str,
+        evidence: Optional[Dict[str, Any]],
+        ts: str,
+        sla_due_at: Optional[str] = None,
+    ) -> int:
+        """同一差异只保留一条活跃工单（唯一索引兜底），返回 break_id。"""
+        try:
+            cur = conn.execute(
+                "INSERT INTO recon_breaks(kind, inst_id, pos_side, domain, detected_at, state,"
+                " evidence_json, sla_due_at) VALUES (?,?,?,?,?,'OPEN',?,?)",
+                (
+                    kind,
+                    inst_id,
+                    pos_side,
+                    domain,
+                    ts,
+                    json.dumps(evidence or {}, ensure_ascii=False),
+                    sla_due_at,
+                ),
+            )
+            return int(cur.lastrowid or 0)
+        except sqlite3.IntegrityError:
+            row = conn.execute(
+                "SELECT break_id FROM recon_breaks WHERE kind=? AND inst_id=? AND pos_side=?"
+                " AND domain=? AND state IN ('OPEN','ACK')",
+                (kind, inst_id, pos_side, domain),
+            ).fetchone()
+            return int(row["break_id"]) if row is not None else 0
+
+    def _consume_lots(
+        self,
+        conn: sqlite3.Connection,
+        inst_id: str,
+        pos_side: str,
+        domain: str,
+        qty: float,
+        px: float,
+        fee: float,
+    ) -> Tuple[float, Optional[float], float]:
+        """FIFO 扣减批次：返回 (实际扣减量, 批次 PnL, 缺口量)。
+
+        fee 按扣减数量比例摊到各批次，尾差计入最后一批（SPEC §5.1）。
+        """
+        _sign = 1.0 if pos_side == "long" else -1.0
+        rows = conn.execute(
+            "SELECT lot_id, remaining_qty, px FROM position_lots"
+            " WHERE inst_id=? AND pos_side=? AND domain=? AND status='open' AND remaining_qty>?"
+            " ORDER BY lot_id ASC",
+            (inst_id, pos_side, domain, _EPS),
+        ).fetchall()
+        if not rows:
+            return 0.0, None, qty
+        plan: List[Tuple[int, float, float, float]] = []
+        left = qty
+        take_total = 0.0
+        for r in rows:
+            if left <= _EPS:
+                break
+            avail = float(r["remaining_qty"])
+            take = min(avail, left)
+            plan.append((int(r["lot_id"]), take, float(r["px"]), avail))
+            take_total += take
+            left -= take
+        _fee = float(fee or 0.0)
+        pnl = 0.0
+        fee_left = _fee
+        for i, (lot_id, take, lot_px, avail) in enumerate(plan):
+            if i == len(plan) - 1:
+                fee_alloc = fee_left
+            else:
+                fee_alloc = _fee * (take / take_total) if take_total > _EPS else 0.0
+                fee_left -= fee_alloc
+            pnl += (px - lot_px) * take * _sign - fee_alloc
+            new_rem = max(0.0, avail - take)
+            conn.execute(
+                "UPDATE position_lots SET remaining_qty=?, status=? WHERE lot_id=?",
+                (new_rem, "closed" if new_rem <= _EPS else "open", lot_id),
+            )
+        return take_total, pnl, max(0.0, qty - take_total)
+
+    def _record_fill_tx(
+        self,
+        conn: sqlite3.Connection,
+        *,
+        inst_id: str,
+        pos_side: str,
+        action: str,
+        qty: float,
+        px: float,
+        fee: float = 0.0,
+        ratio: Optional[float] = None,
+        source: str = "",
+        decision_id: str = "",
+        domain: str = "",
+        exchange_fill_id: str = "",
+        alloc_id: str = "",
+        parent_fill_id: Optional[int] = None,
+        exit_reason: str = "",
+        ts: Optional[str] = None,
+        set_cooldown: bool = True,
+    ) -> Dict[str, Any]:
+        """单事务写 fills + L1 + L2 + lots + cooldown（§3.1 三条铁律）。"""
+        _ts = ts or _utc_now()
+        _inst = str(inst_id or "")
+        _side = str(pos_side or "").lower()
+        _qty = float(qty or 0)
+        _px = float(px or 0)
+        _fee = float(fee or 0.0)
+        _action = str(action or "").lower()
+        _decision_id = str(decision_id or "")
+        _alloc = str(alloc_id or "")
+        _efid = str(exchange_fill_id or "")
+        _sign = 1.0 if _side == "long" else -1.0
+
+        if _action == "open":
+            if _qty <= 0 or _px <= 0:
+                return {"ok": False, "reason": "invalid_qty_or_px"}
+            _dom = str(domain or "").strip().lower() or domain_of(source)
+            active = conn.execute(
+                "SELECT domain FROM domain_positions WHERE inst_id=? AND pos_side=?"
+                " AND qty>? AND status IN ('open','stale')",
+                (_inst, _side, _EPS),
+            ).fetchone()
+            if active is not None and str(active["domain"]) != _dom:
+                # P1 一标的一域：冲突时沿用既有域并落 break，避免 L1/L2 撕开
+                self._upsert_break_tx(
+                    conn,
+                    "duplicate_open",
+                    _inst,
+                    _side,
+                    _dom,
+                    {"active_domain": str(active["domain"]), "source": source},
+                    _ts,
+                )
+                _dom = str(active["domain"])
+
+            row = conn.execute(
+                "SELECT qty, avg_entry, entry_known FROM positions WHERE inst_id=? AND pos_side=?",
+                (_inst, _side),
+            ).fetchone()
+            old_qty = float(row["qty"]) if row else 0.0
+            old_avg = float(row["avg_entry"]) if row else 0.0
+            known = int(row["entry_known"]) if row else 1
+            new_qty = old_qty + _qty
+            new_avg = (old_qty * old_avg + _qty * _px) / new_qty if new_qty > _EPS else _px
+            if row is None:
+                conn.execute(
+                    "INSERT INTO positions (inst_id, pos_side, qty, avg_entry, entry_known,"
+                    " realized_pnl, source, opened_at, updated_at, closed_at)"
+                    " VALUES (?,?,?,?,1,0,?,?,?,NULL)",
+                    (_inst, _side, new_qty, new_avg, source, _ts, _ts),
+                )
+            else:
+                conn.execute(
+                    "UPDATE positions SET qty=?, avg_entry=?, entry_known=?,"
+                    " source=CASE WHEN qty <= 0 THEN ? ELSE source END,"
+                    " updated_at=?, closed_at=NULL WHERE inst_id=? AND pos_side=?",
+                    (new_qty, new_avg, known, source, _ts, _inst, _side),
+                )
+
+            self._ensure_domain_row(conn, _inst, _side, _dom, _ts)
+            drow = conn.execute(
+                "SELECT qty, avg_entry FROM domain_positions"
+                " WHERE inst_id=? AND pos_side=? AND domain=?",
+                (_inst, _side, _dom),
+            ).fetchone()
+            d_qty = float(drow["qty"]) if drow else 0.0
+            d_avg = float(drow["avg_entry"]) if drow else 0.0
+            d_new_qty = d_qty + _qty
+            d_new_avg = (d_qty * d_avg + _qty * _px) / d_new_qty if d_new_qty > _EPS else _px
+            conn.execute(
+                "UPDATE domain_positions SET qty=?, avg_entry=?, entry_known=1,"
+                " source_detail=?, updated_at=?, closed_at=NULL, status='open'"
+                " WHERE inst_id=? AND pos_side=? AND domain=?",
+                (d_new_qty, d_new_avg, source, _ts, _inst, _side, _dom),
+            )
+            conn.execute(
+                "INSERT INTO position_lots(inst_id, pos_side, domain, qty, remaining_qty, px,"
+                " opened_at, source_detail, decision_id, status)"
+                " VALUES (?,?,?,?,?,?,?,?,?,'open')",
+                (_inst, _side, _dom, _qty, _qty, _px, _ts, source, _decision_id),
+            )
+            fill_id = self._insert_fill_tx(
+                conn,
+                ts=_ts,
+                inst_id=_inst,
+                pos_side=_side,
+                action="open",
+                qty=_qty,
+                px=_px,
+                fee=_fee,
+                realized_pnl=None,
+                ratio=None,
+                source=source,
+                decision_id=_decision_id,
+                domain=_dom,
+                alloc_id=_alloc,
+                exchange_fill_id=_efid,
+                parent_fill_id=parent_fill_id,
+            )
+            conn.execute(
+                "UPDATE positions SET seq=? WHERE inst_id=? AND pos_side=?",
+                (fill_id, _inst, _side),
+            )
+            return {
+                "ok": True,
+                "fill_id": fill_id,
+                "domain": _dom,
+                "qty": new_qty,
+                "avg_entry": new_avg,
+            }
+
+        # close / reduce
+        if _qty <= 0:
+            return {"ok": False, "reason": "invalid_qty"}
+        _dom = self._fill_domain(conn, _inst, _side, domain)
+        drow = conn.execute(
+            "SELECT qty, avg_entry, entry_known, realized_pnl FROM domain_positions"
+            " WHERE inst_id=? AND pos_side=? AND domain=?",
+            (_inst, _side, _dom),
+        ).fetchone()
+        d_avail = float(drow["qty"]) if drow else 0.0
+        requested = _qty
+        if drow is not None and _qty > d_avail + _EPS:
+            # §5.1-4：不跨域借仓，按可用量截断并落 over_close 工单
+            self._upsert_break_tx(
+                conn,
+                "over_close",
+                _inst,
+                _side,
+                _dom,
+                {"requested": _qty, "available": d_avail, "source": source},
+                _ts,
+            )
+            _qty = max(0.0, d_avail)
+
+        consumed, lot_pnl, _gap = self._consume_lots(conn, _inst, _side, _dom, _qty, _px, _fee)
+        if drow is not None and consumed + _EPS < _qty:
+            # 批次缺失（历史漂移）：按域均价补齐剩余量，避免漏记盈亏
+            rest = _qty - consumed
+            d_avg = float(drow["avg_entry"])
+            if int(drow["entry_known"]) and d_avg > 0 and _px > 0:
+                lot_pnl = (lot_pnl or 0.0) + (_px - d_avg) * rest * _sign
+
+        row = conn.execute(
+            "SELECT qty, avg_entry, entry_known, realized_pnl FROM positions"
+            " WHERE inst_id=? AND pos_side=?",
+            (_inst, _side),
+        ).fetchone()
+        before = float(row["qty"]) if row else 0.0
+        entry = float(row["avg_entry"]) if row else 0.0
+        known = int(row["entry_known"]) if row else 0
+        realized = float(row["realized_pnl"]) if row else 0.0
+        close_qty = min(_qty, before) if before > _EPS else _qty
+        _ratio = (
+            float(ratio) if ratio is not None else (close_qty / before if before > _EPS else 1.0)
+        )
+        l1_pnl: Optional[float] = None
+        if known and entry > 0 and _px > 0:
+            l1_pnl = (_px - entry) * close_qty * _sign - _fee
+        pnl = lot_pnl if lot_pnl is not None else l1_pnl
+        remaining = max(0.0, before - close_qty)
+        if row is None:
+            conn.execute(
+                "INSERT INTO positions (inst_id, pos_side, qty, avg_entry, entry_known,"
+                " realized_pnl, source, opened_at, updated_at, closed_at)"
+                " VALUES (?,?,0,0,0,0,?,?,?,NULL)",
+                (_inst, _side, source, _ts, _ts),
+            )
+        conn.execute(
+            "UPDATE positions SET qty=?, realized_pnl=?, updated_at=?, closed_at=?"
+            " WHERE inst_id=? AND pos_side=?",
+            (
+                remaining,
+                realized + (pnl or 0.0),
+                _ts,
+                _ts if remaining <= _EPS else None,
+                _inst,
+                _side,
+            ),
+        )
+        if drow is not None:
+            d_new_qty = max(0.0, d_avail - _qty)
+            conn.execute(
+                "UPDATE domain_positions SET qty=?, realized_pnl=?, updated_at=?, closed_at=?,"
+                " status=? WHERE inst_id=? AND pos_side=? AND domain=?",
+                (
+                    d_new_qty,
+                    float(drow["realized_pnl"]) + (pnl or 0.0),
+                    _ts,
+                    _ts if d_new_qty <= _EPS else None,
+                    "closed" if d_new_qty <= _EPS else "open",
+                    _inst,
+                    _side,
+                    _dom,
+                ),
+            )
+        cooldown_set = remaining <= _EPS
+        if cooldown_set and set_cooldown:
+            conn.execute(
+                "INSERT INTO cooldowns (inst_id, pos_side, close_ts, realized_pnl,"
+                " exit_reason, source) VALUES (?,?,?,?,?,?)"
+                " ON CONFLICT(inst_id) DO UPDATE SET pos_side=excluded.pos_side,"
+                " close_ts=excluded.close_ts, realized_pnl=excluded.realized_pnl,"
+                " exit_reason=excluded.exit_reason, source=excluded.source",
+                (_inst, _side, _ts, realized + (pnl or 0.0), exit_reason, source),
+            )
+        fill_id = self._insert_fill_tx(
+            conn,
+            ts=_ts,
+            inst_id=_inst,
+            pos_side=_side,
+            action="close" if _ratio >= 0.999 else "reduce",
+            qty=_qty,
+            px=_px,
+            fee=_fee,
+            realized_pnl=pnl,
+            ratio=_ratio,
+            source=source,
+            decision_id=_decision_id,
+            domain=_dom,
+            alloc_id=_alloc,
+            exchange_fill_id=_efid,
+            parent_fill_id=parent_fill_id,
+        )
+        conn.execute(
+            "UPDATE positions SET seq=? WHERE inst_id=? AND pos_side=?",
+            (fill_id, _inst, _side),
+        )
+        return {
+            "ok": True,
+            "fill_id": fill_id,
+            "domain": _dom,
+            "realized_pnl": pnl,
+            "remaining_qty": remaining,
+            "ratio": _ratio,
+            "cooldown_set": cooldown_set,
+            "executed_qty": _qty,
+            "shortfall": max(0.0, requested - _qty),
+        }
+
+    def record_fill(
+        self,
+        inst_id: str,
+        pos_side: str,
+        action: str,
+        qty: float,
+        px: float,
+        *,
+        domain: str = "",
+        source: str = "",
+        decision_id: str = "",
+        exchange_fill_id: str = "",
+        alloc_id: str = "",
+        parent_fill_id: Optional[int] = None,
+        fee: float = 0.0,
+        ratio: Optional[float] = None,
+        exit_reason: str = "",
+        ts: Optional[str] = None,
+        set_cooldown: bool = True,
+    ) -> Dict[str, Any]:
+        """P1 统一成交入口：同一事务写 fills + L1 + L2 + lots；exchange_fill_id 幂等。"""
+        _efid = str(exchange_fill_id or "")
+        if _efid:
+            with self._lock, self._connect() as conn:
+                dup = conn.execute(
+                    "SELECT id FROM fills WHERE exchange_fill_id=? LIMIT 1", (_efid,)
+                ).fetchone()
+            if dup is not None:
+                return {"ok": True, "duplicate": True, "fill_id": int(dup["id"])}
+        try:
+            with self._tx() as conn:
+                return self._record_fill_tx(
+                    conn,
+                    inst_id=inst_id,
+                    pos_side=pos_side,
+                    action=action,
+                    qty=qty,
+                    px=px,
+                    fee=fee,
+                    ratio=ratio,
+                    source=source,
+                    decision_id=decision_id,
+                    domain=domain,
+                    exchange_fill_id=_efid,
+                    alloc_id=alloc_id,
+                    parent_fill_id=parent_fill_id,
+                    exit_reason=exit_reason,
+                    ts=ts,
+                    set_cooldown=set_cooldown,
+                )
+        except sqlite3.IntegrityError as exc:
+            if _efid and "exchange_fill_id" in str(exc):
+                return {"ok": True, "duplicate": True, "reason": "exchange_fill_id_conflict"}
+            return {"ok": False, "reason": f"integrity_error: {exc}"}
+        except sqlite3.Error as exc:
+            return {"ok": False, "reason": f"db_error: {exc}"}
+
+    def close_position(
+        self,
+        domain: str,
+        inst_id: str,
+        pos_side: str,
+        qty: float,
+        *,
+        px: float = 0.0,
+        source: str = "",
+        decision_id: str = "",
+        fee: float = 0.0,
+        exit_reason: str = "",
+        set_cooldown: bool = True,
+        ts: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """仅允许关闭本域份额（§5.2）；janitor 关闭时传 set_cooldown=False。"""
+        _dom = str(domain or "").strip().lower()
+        with self._lock, self._connect() as conn:
+            row = conn.execute(
+                "SELECT qty FROM domain_positions WHERE inst_id=? AND pos_side=?"
+                " AND domain=? AND qty>?",
+                (inst_id, pos_side, _dom, _EPS),
+            ).fetchone()
+        if row is None:
+            return {"ok": False, "reason": "domain_mismatch", "domain": _dom}
+        return self.record_fill(
+            inst_id,
+            pos_side,
+            "reduce",
+            qty,
+            px,
+            domain=_dom,
+            source=source or f"{_dom}-janitor",
+            decision_id=decision_id,
+            fee=fee,
+            exit_reason=exit_reason,
+            ts=ts,
+            set_cooldown=set_cooldown,
+        )
+
     def record_open(
         self,
         inst_id: str,
@@ -184,41 +943,11 @@ class PositionLedger:
         source: str = "",
         ts: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """开仓/加仓：按数量加权更新均价。"""
-        _qty, _px = float(qty or 0), float(px or 0)
-        if _qty <= 0 or _px <= 0:
-            return {"ok": False, "reason": "invalid_qty_or_px"}
-        _ts = ts or _utc_now()
-        with self._lock, self._connect() as conn:
-            row = conn.execute(
-                "SELECT qty, avg_entry, entry_known FROM positions WHERE inst_id=? AND pos_side=?",
-                (inst_id, pos_side),
-            ).fetchone()
-            _old_qty = float(row["qty"]) if row else 0.0
-            _old_avg = float(row["avg_entry"]) if row else 0.0
-            _known = int(row["entry_known"]) if row else 1
-            _new_qty = _old_qty + _qty
-            _new_avg = (_old_qty * _old_avg + _qty * _px) / _new_qty if _new_qty > 0 else _px
-            if row is None:
-                conn.execute(
-                    "INSERT INTO positions (inst_id, pos_side, qty, avg_entry, entry_known,"
-                    " realized_pnl, source, opened_at, updated_at, closed_at)"
-                    " VALUES (?,?,?,?,1,0,?,?,?,NULL)",
-                    (inst_id, pos_side, _new_qty, _new_avg, source, _ts, _ts),
-                )
-            else:
-                conn.execute(
-                    "UPDATE positions SET qty=?, avg_entry=?, entry_known=?,"
-                    " source=CASE WHEN qty <= 0 THEN ? ELSE source END,"
-                    " updated_at=?, closed_at=NULL WHERE inst_id=? AND pos_side=?",
-                    (_new_qty, _new_avg, _known, source, _ts, inst_id, pos_side),
-                )
-            conn.execute(
-                "INSERT INTO fills (ts, inst_id, pos_side, action, qty, px, fee, realized_pnl,"
-                " ratio, source) VALUES (?,?,?,?,?,?,0,NULL,NULL,?)",
-                (_ts, inst_id, pos_side, "open", _qty, _px, source),
-            )
-        return {"ok": True, "qty": _new_qty, "avg_entry": _new_avg}
+        """开仓/加仓：按数量加权更新均价（兼容旧 API，内部走 record_fill）。"""
+        out = self.record_fill(inst_id, pos_side, "open", qty, px, source=source, ts=ts)
+        if not out.get("ok"):
+            return {"ok": False, "reason": out.get("reason")}
+        return {"ok": True, "qty": out.get("qty"), "avg_entry": out.get("avg_entry")}
 
     def apply_partial_close(
         self,
@@ -233,94 +962,31 @@ class PositionLedger:
         ts: Optional[str] = None,
         exit_reason: str = "",
     ) -> Dict[str, Any]:
-        """部分/全部平仓：扣减数量并累计已实现盈亏。
+        """部分/全部平仓（兼容旧 API）：扣减数量并累计已实现盈亏。
 
         持仓未知（P2 之前开的仓）时 realized_pnl 返回 None，不臆造盈亏。
         """
-        _qty = float(qty or 0)
-        if _qty <= 0:
-            return {"ok": False, "reason": "invalid_qty"}
-        _px = float(px or 0)
-        _ts = ts or _utc_now()
-        with self._lock, self._connect() as conn:
-            row = conn.execute(
-                "SELECT qty, avg_entry, entry_known, realized_pnl FROM positions"
-                " WHERE inst_id=? AND pos_side=?",
-                (inst_id, pos_side),
-            ).fetchone()
-            if row is None:
-                _before, _entry, _known, _realized = 0.0, 0.0, 0, 0.0
-            else:
-                _before = float(row["qty"])
-                _entry = float(row["avg_entry"])
-                _known = int(row["entry_known"])
-                _realized = float(row["realized_pnl"])
-
-            _close_qty = min(_qty, _before) if _before > _EPS else _qty
-            _ratio = (
-                float(ratio)
-                if ratio is not None
-                else (_close_qty / _before if _before > _EPS else 1.0)
-            )
-            _pnl = None
-            if _known and _entry > 0 and _px > 0:
-                _sign = 1.0 if pos_side == "long" else -1.0
-                _pnl = (_px - _entry) * _close_qty * _sign - float(fee or 0.0)
-
-            _remaining = max(0.0, _before - _close_qty)
-            if row is None:
-                conn.execute(
-                    "INSERT INTO positions (inst_id, pos_side, qty, avg_entry, entry_known,"
-                    " realized_pnl, source, opened_at, updated_at, closed_at)"
-                    " VALUES (?,?,0,0,0,0,?,?,?,NULL)",
-                    (inst_id, pos_side, source, _ts, _ts),
-                )
-            conn.execute(
-                "UPDATE positions SET qty=?, realized_pnl=?, updated_at=?, closed_at=?"
-                " WHERE inst_id=? AND pos_side=?",
-                (
-                    _remaining,
-                    _realized + (_pnl or 0.0),
-                    _ts,
-                    _ts if _remaining <= _EPS else None,
-                    inst_id,
-                    pos_side,
-                ),
-            )
-            conn.execute(
-                "INSERT INTO fills (ts, inst_id, pos_side, action, qty, px, fee, realized_pnl,"
-                " ratio, source, decision_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                (
-                    _ts,
-                    inst_id,
-                    pos_side,
-                    "close" if _ratio >= 0.999 else "reduce",
-                    _close_qty,
-                    _px,
-                    float(fee or 0.0),
-                    _pnl,
-                    _ratio,
-                    source,
-                    decision_id,
-                ),
-            )
-            _cooldown_set = _remaining <= _EPS
-            if _cooldown_set:
-                # 全部平仓 → 记录冷却（供开仓侧查询，替代 11 的 last_close_info）
-                conn.execute(
-                    "INSERT INTO cooldowns (inst_id, pos_side, close_ts, realized_pnl,"
-                    " exit_reason, source) VALUES (?,?,?,?,?,?)"
-                    " ON CONFLICT(inst_id) DO UPDATE SET pos_side=excluded.pos_side,"
-                    " close_ts=excluded.close_ts, realized_pnl=excluded.realized_pnl,"
-                    " exit_reason=excluded.exit_reason, source=excluded.source",
-                    (inst_id, pos_side, _ts, _realized + (_pnl or 0.0), exit_reason, source),
-                )
+        out = self.record_fill(
+            inst_id,
+            pos_side,
+            "reduce",
+            qty,
+            px,
+            ratio=ratio,
+            source=source,
+            decision_id=decision_id,
+            fee=fee,
+            exit_reason=exit_reason,
+            ts=ts,
+        )
+        if not out.get("ok"):
+            return {"ok": False, "reason": out.get("reason")}
         return {
             "ok": True,
-            "realized_pnl": _pnl,
-            "remaining_qty": _remaining,
-            "ratio": _ratio,
-            "cooldown_set": _cooldown_set,
+            "realized_pnl": out.get("realized_pnl"),
+            "remaining_qty": out.get("remaining_qty"),
+            "ratio": out.get("ratio"),
+            "cooldown_set": out.get("cooldown_set"),
         }
 
     def reconcile(
@@ -407,6 +1073,9 @@ class PositionLedger:
                         " realized_pnl, ratio, source) VALUES (?,?,?,?,?,?,0,NULL,NULL,?)",
                         (_ts, inst_id, pos_side, "reconcile_update", qty, _new_avg, source),
                     )
+                    self._sync_domain_after_reconcile(
+                        conn, inst_id, pos_side, source, _ts, qty, _new_avg
+                    )
                     updated.append(
                         {
                             "inst_id": inst_id,
@@ -433,6 +1102,7 @@ class PositionLedger:
                     " ratio, source) VALUES (?,?,?,?,?,?,0,NULL,NULL,?)",
                     (_ts, inst_id, pos_side, "reconcile", qty, avg, source),
                 )
+                self._sync_domain_after_reconcile(conn, inst_id, pos_side, source, _ts, qty, avg)
             written.append({"inst_id": inst_id, "pos_side": pos_side, "qty": qty, "avg_entry": avg})
 
         # 交易所已无持仓，但账本仍开着：只关闭本对账源写入的陈旧行
@@ -497,6 +1167,288 @@ class PositionLedger:
             "skipped_detail": skipped,
         }
 
+    def _sync_domain_after_reconcile(
+        self,
+        conn: sqlite3.Connection,
+        inst_id: str,
+        pos_side: str,
+        source: str,
+        ts: str,
+        qty: float,
+        avg: float,
+    ) -> None:
+        """对账校正 L1 后同步 L2，保持 Σdomain_positions.qty == positions.qty。"""
+        active = conn.execute(
+            "SELECT domain FROM domain_positions WHERE inst_id=? AND pos_side=?"
+            " AND qty>? AND status IN ('open','stale')",
+            (inst_id, pos_side, _EPS),
+        ).fetchone()
+        # 归属沿用既有活跃域（一标的一域）；无活跃域时按对账源归 22
+        _dom = str(active["domain"]) if active is not None else domain_of(source)
+        self._ensure_domain_row(conn, inst_id, pos_side, _dom, ts)
+        conn.execute(
+            "UPDATE domain_positions SET qty=?, avg_entry=?, entry_known=?, updated_at=?,"
+            " closed_at=NULL, status='open', source_detail=?"
+            " WHERE inst_id=? AND pos_side=? AND domain=?",
+            (qty, avg, 1 if avg > _EPS else 0, ts, source, inst_id, pos_side, _dom),
+        )
+        # 批次按当前交易所持仓重建为一条对账批，避免长期数量漂移累积
+        conn.execute(
+            "UPDATE position_lots SET remaining_qty=0, status='closed'"
+            " WHERE inst_id=? AND pos_side=? AND domain=? AND status='open'",
+            (inst_id, pos_side, _dom),
+        )
+        if qty > _EPS and avg > _EPS:
+            conn.execute(
+                "INSERT INTO position_lots(inst_id, pos_side, domain, qty, remaining_qty, px,"
+                " opened_at, source_detail, decision_id, status)"
+                " VALUES (?,?,?,?,?,?,?,'reconcile','','open')",
+                (inst_id, pos_side, _dom, qty, qty, avg, ts),
+            )
+
+    # ── P1：域子账 / 批次 / 预占 / 对账工单 ─────────────────────────
+    def list_domain_positions(
+        self, domain: Optional[str] = None, include_closed: bool = False
+    ) -> List[Dict[str, Any]]:
+        sql = "SELECT * FROM domain_positions WHERE 1=1"
+        params: List[Any] = []
+        if not include_closed:
+            sql += " AND qty > ?"
+            params.append(_EPS)
+        if domain:
+            sql += " AND domain = ?"
+            params.append(str(domain))
+        sql += " ORDER BY updated_at DESC"
+        with self._lock, self._connect() as conn:
+            rows = conn.execute(sql, params).fetchall()
+        return [dict(r) for r in rows]
+
+    def list_lots(
+        self,
+        inst_id: Optional[str] = None,
+        pos_side: Optional[str] = None,
+        domain: Optional[str] = None,
+        only_open: bool = True,
+    ) -> List[Dict[str, Any]]:
+        sql = "SELECT * FROM position_lots WHERE 1=1"
+        params: List[Any] = []
+        if inst_id:
+            sql += " AND inst_id = ?"
+            params.append(str(inst_id))
+        if pos_side:
+            sql += " AND pos_side = ?"
+            params.append(str(pos_side))
+        if domain:
+            sql += " AND domain = ?"
+            params.append(str(domain))
+        if only_open:
+            sql += " AND status = 'open'"
+        sql += " ORDER BY lot_id ASC"
+        with self._lock, self._connect() as conn:
+            rows = conn.execute(sql, params).fetchall()
+        return [dict(r) for r in rows]
+
+    def domain_qty_sum(self) -> float:
+        with self._lock, self._connect() as conn:
+            row = conn.execute(
+                "SELECT COALESCE(SUM(qty),0) AS q FROM domain_positions WHERE qty > ?", (_EPS,)
+            ).fetchone()
+        return float(row["q"])
+
+    def position_qty_sum(self) -> float:
+        with self._lock, self._connect() as conn:
+            row = conn.execute(
+                "SELECT COALESCE(SUM(qty),0) AS q FROM positions WHERE qty > ?", (_EPS,)
+            ).fetchone()
+        return float(row["q"])
+
+    def get_setting(self, key: str, default: Optional[str] = None) -> Optional[str]:
+        with self._lock, self._connect() as conn:
+            row = conn.execute("SELECT value FROM ledger_settings WHERE key=?", (key,)).fetchone()
+        return str(row["value"]) if row is not None else default
+
+    def set_setting(self, key: str, value: str) -> None:
+        with self._tx() as conn:
+            conn.execute(
+                "INSERT INTO ledger_settings(key, value) VALUES(?,?)"
+                " ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                (str(key), str(value)),
+            )
+
+    # ── 预占额度（并发防超限） ──────────────────────────────────────
+    def _expire_reservations_tx(self, conn: sqlite3.Connection, now_ts: str) -> int:
+        cur = conn.execute(
+            "UPDATE reservations SET state='expired', updated_at=?"
+            " WHERE state='held' AND expires_at < ?",
+            (now_ts, now_ts),
+        )
+        return int(cur.rowcount or 0)
+
+    def reserve(
+        self,
+        domain: str,
+        inst_id: str,
+        pos_side: str,
+        notional: float,
+        decision_id: str = "",
+        ttl: Optional[float] = None,
+        limit_notional: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """预占额度：与 active reservations 一起计算域限额，超限拒绝（U9 并发安全）。"""
+        _notional = float(notional or 0)
+        if _notional <= 0:
+            return {"ok": False, "reason": "invalid_notional"}
+        _dom = str(domain or "").strip().lower() or "legacy"
+        _ttl = float(ttl if ttl is not None else 300.0)
+        now = datetime.now(timezone.utc)
+        now_ts = now.isoformat().replace("+00:00", "Z")
+        exp_ts = (now + timedelta(seconds=_ttl)).isoformat().replace("+00:00", "Z")
+        rid = f"resv-{uuid.uuid4().hex[:16]}"
+        with self._tx() as conn:
+            self._expire_reservations_tx(conn, now_ts)
+            if limit_notional is not None:
+                held = conn.execute(
+                    "SELECT COALESCE(SUM(notional),0) AS n FROM reservations"
+                    " WHERE domain=? AND state='held'",
+                    (_dom,),
+                ).fetchone()
+                _held = float(held["n"]) if held else 0.0
+                if _held + _notional > float(limit_notional) + _EPS:
+                    return {"ok": False, "reason": "limit_exceeded", "held": _held}
+            conn.execute(
+                "INSERT INTO reservations(reservation_id, domain, inst_id, pos_side, notional,"
+                " state, decision_id, created_at, expires_at, updated_at)"
+                " VALUES (?,?,?,?,?,'held',?,?,?,?)",
+                (
+                    rid,
+                    _dom,
+                    str(inst_id),
+                    str(pos_side),
+                    _notional,
+                    str(decision_id or ""),
+                    now_ts,
+                    exp_ts,
+                    now_ts,
+                ),
+            )
+        return {"ok": True, "reservation_id": rid, "expires_at": exp_ts}
+
+    def release(self, reservation_id: str, state: str = "released") -> Dict[str, Any]:
+        _state = str(state or "released")
+        if _state not in ("consumed", "released", "expired"):
+            _state = "released"
+        with self._tx() as conn:
+            cur = conn.execute(
+                "UPDATE reservations SET state=?, updated_at=? WHERE reservation_id=?"
+                " AND state='held'",
+                (_state, _utc_now(), str(reservation_id)),
+            )
+            return {"ok": bool(cur.rowcount), "state": _state}
+
+    def list_reservations(self, domain: Optional[str] = None, state: str = "held") -> List[Dict]:
+        sql = "SELECT * FROM reservations WHERE state=?"
+        params: List[Any] = [str(state)]
+        if domain:
+            sql += " AND domain=?"
+            params.append(str(domain))
+        sql += " ORDER BY created_at ASC"
+        with self._lock, self._connect() as conn:
+            rows = conn.execute(sql, params).fetchall()
+        return [dict(r) for r in rows]
+
+    def held_notional(self, domain: str) -> float:
+        with self._lock, self._connect() as conn:
+            row = conn.execute(
+                "SELECT COALESCE(SUM(notional),0) AS n FROM reservations"
+                " WHERE domain=? AND state='held'",
+                (str(domain),),
+            ).fetchone()
+        return float(row["n"]) if row else 0.0
+
+    def expire_reservations(self) -> int:
+        with self._tx() as conn:
+            return self._expire_reservations_tx(conn, _utc_now())
+
+    # ── 对账工单状态机 ─────────────────────────────────────────────
+    def upsert_break(
+        self,
+        kind: str,
+        inst_id: str,
+        pos_side: str,
+        domain: str = "",
+        evidence: Optional[Dict[str, Any]] = None,
+        sla_due_at: Optional[str] = None,
+        ts: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        _ts = ts or _utc_now()
+        with self._tx() as conn:
+            bid = self._upsert_break_tx(
+                conn,
+                kind,
+                str(inst_id),
+                str(pos_side),
+                str(domain or ""),
+                evidence,
+                _ts,
+                sla_due_at,
+            )
+        return {"ok": True, "break_id": bid}
+
+    def ack_break(self, break_id: int, owner_domain: str = "") -> Dict[str, Any]:
+        with self._tx() as conn:
+            cur = conn.execute(
+                "UPDATE recon_breaks SET state='ACK', owner_domain=?"
+                " WHERE break_id=? AND state='OPEN'",
+                (str(owner_domain or ""), int(break_id)),
+            )
+        return {"ok": bool(cur.rowcount), "break_id": int(break_id)}
+
+    def resolve_break(
+        self, break_id: int, resolution: str = "", state: str = "RESOLVED"
+    ) -> Dict[str, Any]:
+        _state = str(state or "RESOLVED").upper()
+        if _state not in ("RESOLVED", "WAIVED"):
+            _state = "RESOLVED"
+        _ts = _utc_now()
+        with self._tx() as conn:
+            cur = conn.execute(
+                "UPDATE recon_breaks SET state=?, resolution=?, resolved_at=?"
+                " WHERE break_id=? AND state IN ('OPEN','ACK')",
+                (_state, str(resolution or ""), _ts, int(break_id)),
+            )
+        return {"ok": bool(cur.rowcount), "break_id": int(break_id), "state": _state}
+
+    def list_breaks(
+        self,
+        state: Optional[str] = None,
+        kind: Optional[str] = None,
+        domain: Optional[str] = None,
+        limit: int = 100,
+    ) -> List[Dict[str, Any]]:
+        sql = "SELECT * FROM recon_breaks WHERE 1=1"
+        params: List[Any] = []
+        if state:
+            sql += " AND state=?"
+            params.append(str(state))
+        if kind:
+            sql += " AND kind=?"
+            params.append(str(kind))
+        if domain:
+            sql += " AND domain=?"
+            params.append(str(domain))
+        sql += " ORDER BY break_id DESC LIMIT ?"
+        params.append(max(1, int(limit)))
+        with self._lock, self._connect() as conn:
+            rows = conn.execute(sql, params).fetchall()
+        return [dict(r) for r in rows]
+
+    def count_breaks(self, state: str = "OPEN") -> int:
+        with self._lock, self._connect() as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) AS n FROM recon_breaks WHERE state=?", (str(state),)
+            ).fetchone()
+        return int(row["n"]) if row else 0
+
     # ── 读 ────────────────────────────────────────────────────────
     def get_position(self, inst_id: str, pos_side: str) -> Optional[Dict[str, Any]]:
         with self._lock, self._connect() as conn:
@@ -557,6 +1509,88 @@ class PositionLedger:
                 )
                 _n += int(cur.rowcount)
         return _n
+
+    def note_miss(self, inst_id: str, pos_side: str, ts: Optional[str] = None) -> Dict[str, Any]:
+        """janitor 记一次“交易所缺失”：维护首次缺失时间与 miss_count，不改 status。"""
+        _ts = ts or _utc_now()
+        with self._tx() as conn:
+            row = conn.execute(
+                "SELECT miss_count, stale_since, status FROM positions"
+                " WHERE inst_id=? AND pos_side=? AND qty>?",
+                (inst_id, pos_side, _EPS),
+            ).fetchone()
+            if row is None:
+                return {"ok": False, "reason": "no_position"}
+            _first = row["stale_since"] or _ts
+            _miss = int(row["miss_count"] or 0) + 1
+            conn.execute(
+                "UPDATE positions SET miss_count=?, stale_since=? WHERE inst_id=? AND pos_side=?",
+                (_miss, _first, inst_id, pos_side),
+            )
+            return {
+                "ok": True,
+                "miss_count": _miss,
+                "first_miss_at": _first,
+                "status": str(row["status"] or "open"),
+            }
+
+    def set_status(
+        self,
+        inst_id: str,
+        pos_side: str,
+        status: str,
+        *,
+        ts: Optional[str] = None,
+        domain: Optional[str] = None,
+    ) -> bool:
+        """janitor 状态迁移（open→stale→closed）；同时作用于 L1 与 L2 对应行。"""
+        _status = str(status)
+        if _status not in ("open", "stale", "closed"):
+            return False
+        _ts = ts or _utc_now()
+        with self._tx() as conn:
+            if _status == "stale":
+                cur = conn.execute(
+                    "UPDATE positions SET status='stale', stale_since=COALESCE(stale_since, ?),"
+                    " updated_at=? WHERE inst_id=? AND pos_side=? AND qty>? AND status='open'",
+                    (_ts, _ts, inst_id, pos_side, _EPS),
+                )
+            elif _status == "closed":
+                cur = conn.execute(
+                    "UPDATE positions SET status='closed', updated_at=?, closed_at=?"
+                    " WHERE inst_id=? AND pos_side=? AND status IN ('open','stale')",
+                    (_ts, _ts, inst_id, pos_side),
+                )
+            else:
+                cur = conn.execute(
+                    "UPDATE positions SET status='open', stale_since=NULL, miss_count=0,"
+                    " updated_at=? WHERE inst_id=? AND pos_side=?",
+                    (_ts, inst_id, pos_side),
+                )
+            if domain:
+                conn.execute(
+                    "UPDATE domain_positions SET status=?, updated_at=? WHERE inst_id=?"
+                    " AND pos_side=? AND domain=? AND qty>?",
+                    (_status, _ts, inst_id, pos_side, str(domain), _EPS),
+                )
+            return bool(cur.rowcount)
+
+    def set_feed_state(self, state: str, ts: Optional[str] = None) -> None:
+        _ts = ts or _utc_now()
+        with self._tx() as conn:
+            conn.execute(
+                "INSERT INTO ledger_settings(key, value) VALUES('feed_state', ?)"
+                " ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                (str(state),),
+            )
+            conn.execute(
+                "INSERT INTO ledger_settings(key, value) VALUES('feed_state_updated_at', ?)"
+                " ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                (_ts,),
+            )
+
+    def get_feed_state(self) -> str:
+        return str(self.get_setting("feed_state", "ok") or "ok")
 
     def list_effective_positions(
         self, max_heartbeat_age_seconds: float = 300.0
