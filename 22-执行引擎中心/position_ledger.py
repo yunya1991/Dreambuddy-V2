@@ -1267,6 +1267,32 @@ class PositionLedger:
             row = conn.execute("SELECT value FROM ledger_settings WHERE key=?", (key,)).fetchone()
         return str(row["value"]) if row is not None else default
 
+    def domain_limits(self, domain: str) -> Dict[str, Any]:
+        """读取域限额配置（domain_registry.limits_json）；缺失返回空 dict。"""
+        with self._lock, self._connect() as conn:
+            row = conn.execute(
+                "SELECT limits_json, enabled FROM domain_registry WHERE domain=?",
+                (str(domain),),
+            ).fetchone()
+        if row is None:
+            return {}
+        try:
+            limits = json.loads(row["limits_json"] or "{}")
+        except ValueError:
+            limits = {}
+        limits["_enabled"] = bool(row["enabled"])
+        return limits
+
+    def domain_notional(self, domain: str) -> float:
+        """域内当前持仓名义（qty × avg_entry），用于限额判定。"""
+        with self._lock, self._connect() as conn:
+            row = conn.execute(
+                "SELECT COALESCE(SUM(qty * avg_entry),0) AS n FROM domain_positions"
+                " WHERE domain=? AND qty>?",
+                (str(domain), _EPS),
+            ).fetchone()
+        return abs(float(row["n"])) if row else 0.0
+
     def set_setting(self, key: str, value: str) -> None:
         with self._tx() as conn:
             conn.execute(
@@ -1293,8 +1319,12 @@ class PositionLedger:
         decision_id: str = "",
         ttl: Optional[float] = None,
         limit_notional: Optional[float] = None,
+        include_domain_positions: bool = False,
     ) -> Dict[str, Any]:
-        """预占额度：与 active reservations 一起计算域限额，超限拒绝（U9 并发安全）。"""
+        """预占额度：与 active reservations 一起计算域限额，超限拒绝（U9 并发安全）。
+
+        include_domain_positions=True 时把域内已有持仓名义也计入占用（P2-2 闸门口径）。
+        """
         _notional = float(notional or 0)
         if _notional <= 0:
             return {"ok": False, "reason": "invalid_notional"}
@@ -1307,12 +1337,19 @@ class PositionLedger:
         with self._tx() as conn:
             self._expire_reservations_tx(conn, now_ts)
             if limit_notional is not None:
-                held = conn.execute(
+                held_row = conn.execute(
                     "SELECT COALESCE(SUM(notional),0) AS n FROM reservations"
                     " WHERE domain=? AND state='held'",
                     (_dom,),
                 ).fetchone()
-                _held = float(held["n"]) if held else 0.0
+                _held = float(held_row["n"]) if held_row else 0.0
+                if include_domain_positions:
+                    pos_row = conn.execute(
+                        "SELECT COALESCE(SUM(qty * avg_entry),0) AS n FROM domain_positions"
+                        " WHERE domain=? AND qty>?",
+                        (_dom, _EPS),
+                    ).fetchone()
+                    _held += abs(float(pos_row["n"])) if pos_row else 0.0
                 if _held + _notional > float(limit_notional) + _EPS:
                     return {"ok": False, "reason": "limit_exceeded", "held": _held}
             conn.execute(

@@ -235,10 +235,24 @@ def _load_positions(path: str) -> List[Dict[str, Any]]:
     return list(data or [])
 
 
+def _fetch_okx_positions() -> List[Dict[str, Any]]:
+    """直接经 14/V15 的 OKX 客户端拉全量持仓（生产云端默认路径）。"""
+    lib = REPO_ROOT / "14-V15经典马丁策略" / "lib"
+    if str(lib) not in sys.path:
+        sys.path.insert(0, str(lib))
+    from okx_client import OKXSimulatedClient  # noqa: PLC0415 — 延迟导入避免本地无依赖
+
+    data = OKXSimulatedClient().get_positions() or {}
+    if not data.get("ok", True):
+        raise RuntimeError(str(data.get("error") or "okx_get_positions_failed"))
+    return list(data.get("positions") or [])
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="22 账本 janitor（P1 shadow）")
     parser.add_argument("--once", action="store_true", help="执行一轮后退出")
     parser.add_argument("--positions-json", help="交易所持仓快照 JSON（数组或 {positions:[]}）")
+    parser.add_argument("--okx", action="store_true", help="直接经 OKX 客户端拉取持仓（生产）")
     parser.add_argument("--enforce", choices=["on", "off"], help="覆盖 janitor_enforce 设置")
     parser.add_argument("--db", default=os.getenv("POSITION_LEDGER_PATH"), help="账本 DB 路径")
     parser.add_argument("--log-level", default="INFO")
@@ -256,10 +270,15 @@ def main(argv: Optional[List[str]] = None) -> int:
             logger.error("已有 janitor 实例在运行（文件锁占用），本轮退出")
             return 3
         try:
-            positions = _load_positions(args.positions_json) if args.positions_json else []
-        except (OSError, ValueError) as exc:
-            out = run_fetch_failed(ledger, f"positions_snapshot_invalid: {exc}")
-            logger.error("持仓快照读取失败: %s", exc)
+            if args.okx:
+                positions = _fetch_okx_positions()
+            elif args.positions_json:
+                positions = _load_positions(args.positions_json)
+            else:
+                positions = []
+        except (OSError, ValueError, RuntimeError, ImportError) as exc:
+            out = run_fetch_failed(ledger, f"positions_fetch_failed: {exc}")
+            logger.error("交易所持仓获取失败: %s", exc)
             print(json.dumps(out, ensure_ascii=False))
             return 2
         out = run_once(ledger, positions, enforce=enforce)

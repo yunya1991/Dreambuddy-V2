@@ -449,6 +449,23 @@ def close_position(self, domain: str, inst_id: str, pos_side: str, qty: float,
 >   50 审计流水/交易所成交，重放不重复入账。
 > - 待办：云端部署（`git pull` + 重启 22/23 服务）因网络不可达暂缓；`janitor_enforce=on`
 >   与 systemd timer 属 P2-1。
+>
+> **P2 执行记录（2026-11-23，代码就绪）**：
+> - P2-1：janitor enforce 开关已具备；`deploy/systemd/dreambuddy-ledger-janitor.{service,timer}`
+>   以 `--enforce off`（shadow）上线，灰度确认后改 `--enforce on` 即启用 stale→closed。
+> - P2-2：`PositionLedger.domain_limits/domain_notional` + `reserve(include_domain_positions=True)`
+>   把“域内既有持仓名义 + held 预占”一并计入 `limits_json.max_notional`；gateway 在
+>   margin 前置后、下单前预占，成交消费/失败释放，超限返回 `DOMAIN_LIMIT_EXCEEDED`。
+>   23 仍走 subpool/probe 个数限额，50 走 drop-copy。
+> - P2-3：`executors/drop_copy_adapter.py` 新增 CLI（`--jsonl` / `--okx-inst`），50 审计流水
+>   与交易所成交按 `exchange_fill_id` 幂等并网，进入 L1/L2 与容量口径。
+> - P2-4：`exporter/business_metrics_exporter.py` 新增 `ledger_stale_positions`、
+>   `ledger_breaks_open/overdue`、`ledger_miss_max`、`ledger_reservations_held`、
+>   `ledger_domain_qty_mismatch`、`ledger_janitor_age_seconds`、`ledger_feed_state`。
+> - P2-6：`scripts/ledger_eod_recon.py` 三向控制总数（交易所/L1/L2/lots）+ 活跃工单汇总，
+>   不平即非零退出；`deploy/systemd/dreambuddy-ledger-eod.{service,timer}` 每日 00:10 运行。
+> - 测试：`tests/test_ledger_p2.py`（限额预占/拒单、EOD 平衡与漂移、JSONL 幂等、指标字段）。
+> - 上线前置仍是云端网络恢复；P2 指标告警阈值与 Lark 路由沿用 15 现有 alertmanager 配置。
 
 ### P1 归因（五层模型落地）
 

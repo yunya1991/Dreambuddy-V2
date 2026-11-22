@@ -124,7 +124,8 @@ class DropCopyAdapter:
                     "fee": res.get("fee"),
                     "decision_id": rec.get("decision_id"),
                     "ts": rec.get("ts") if isinstance(rec.get("ts"), str) else None,
-                    "action": rec.get("action"),
+                    # x1_live_fills 是 50 入场执行流水；显式 action 优先，缺省按开仓处理
+                    "action": rec.get("action") or "open",
                 }
             )
         out = self.import_fills(records, domain=domain, source=source)
@@ -160,3 +161,54 @@ class DropCopyAdapter:
                 }
             )
         return self.import_fills(fills, domain=domain, source=source or f"{domain}-dropcopy")
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    """CLI：把 50 审计流水/交易所成交幂等导入 22 账本。
+
+    用法：
+      python -m executors.drop_copy_adapter --jsonl 22-执行引擎中心/audit/x1_live_fills.jsonl
+      python -m executors.drop_copy_adapter --okx-inst BTC-USDT-SWAP --okx-inst ETH-USDT-SWAP
+    """
+    import argparse
+    import json
+    import os
+    import sys
+
+    parser = argparse.ArgumentParser(description="22 账本 drop-copy 导入（P1-7/P2-3）")
+    parser.add_argument("--db", default=os.getenv("POSITION_LEDGER_PATH"))
+    parser.add_argument("--jsonl", action="append", default=[], help="审计流水 JSONL 路径")
+    parser.add_argument("--okx-inst", action="append", default=[], help="从交易所成交导入的标的")
+    parser.add_argument("--domain", default="50")
+    parser.add_argument("--source", default="")
+    args = parser.parse_args(argv)
+
+    here = Path(__file__).resolve().parent.parent
+    if str(here) not in sys.path:
+        sys.path.insert(0, str(here))
+    from position_ledger import PositionLedger  # noqa: PLC0415
+
+    ledger = PositionLedger(args.db)
+    adapter = DropCopyAdapter(ledger)
+    results = []
+    for path in args.jsonl:
+        results.append(adapter.import_jsonl(path, domain=args.domain, source=args.source or ""))
+    if args.okx_inst:
+        lib = here.parent / "14-V15经典马丁策略" / "lib"
+        if str(lib) not in sys.path:
+            sys.path.insert(0, str(lib))
+        from okx_client import OKXSimulatedClient  # noqa: PLC0415
+
+        okx = OKXSimulatedClient()
+        for inst in args.okx_inst:
+            results.append(
+                adapter.import_exchange_fills(
+                    okx, inst, domain=args.domain, source=args.source or ""
+                )
+            )
+    print(json.dumps(results, ensure_ascii=False, default=str))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

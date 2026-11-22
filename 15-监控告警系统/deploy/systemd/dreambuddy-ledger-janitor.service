@@ -1,0 +1,17 @@
+[Unit]
+Description=Dreambuddy ledger janitor (SPEC-LEDGER-DOMAIN-ATTRIBUTION P1-6/P2-1)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=luke
+Group=luke
+WorkingDirectory=/home/luke/dreambuddy/15-监控告警系统
+EnvironmentFile=-/etc/dreambuddy-monitoring/monitoring.env
+Environment=DREAMBUDDY_REPO_ROOT=/home/luke/dreambuddy
+Environment=POSITION_LEDGER_PATH=/home/luke/dreambuddy/22-执行引擎中心/runtime/position_ledger.db
+# P1 shadow：--enforce off 只写工单与 miss 计数，不改 status。
+# P2-1 灰度完成、确认真实持仓缺失判定无误后改为 --enforce on 启用 stale→closed 自动迁移。
+ExecStart=/home/luke/venv-trading/bin/python -B scripts/ledger_janitor.py --once --okx --enforce off
+TimeoutStartSec=180
+Nice=10

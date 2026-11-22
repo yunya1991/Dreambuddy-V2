@@ -1,0 +1,11 @@
+[Unit]
+Description=Run dreambuddy ledger janitor every 5 minutes
+
+[Timer]
+OnCalendar=*:0/5
+Persistent=true
+AccuracySec=30s
+Unit=dreambuddy-ledger-janitor.service
+
+[Install]
+WantedBy=timers.target

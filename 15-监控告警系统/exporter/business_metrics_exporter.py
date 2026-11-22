@@ -310,10 +310,26 @@ class Collector:
                 _metric("ledger_ghost_stale_24h", 0),
                 _metric("ledger_ghost_exchange_flat_24h", 0),
                 _metric("ledger_exchange_sltp_24h", 0),
+                _metric("ledger_stale_positions", 0),
+                _metric("ledger_breaks_open", 0),
+                _metric("ledger_breaks_overdue", 0),
+                _metric("ledger_miss_max", 0),
+                _metric("ledger_reservations_held", 0),
+                _metric("ledger_domain_qty_mismatch", 0),
+                _metric("ledger_janitor_age_seconds", 86400),
+                _metric("ledger_feed_state", 1),
             ]
         try:
             conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=2)
             cur = conn.cursor()
+
+            def _scalar(sql: str, params=()) -> float:
+                try:
+                    row = cur.execute(sql, params).fetchone()
+                    return float(row[0]) if row and row[0] is not None else 0.0
+                except sqlite3.Error:
+                    return 0.0
+
             positions = cur.execute("SELECT COUNT(*) FROM positions WHERE qty > 1e-9").fetchone()[0]
             last = cur.execute("SELECT MAX(ts) FROM fills").fetchone()[0]
             updated = cur.execute(
@@ -331,10 +347,42 @@ class Collector:
             ghost_flat = _ghost_map.get("ghost_exchange_flat", 0)
             exchange_sltp = _ghost_map.get("exchange_sltp", 0)
             ghost = ghost_stale + ghost_flat
+            # P1/P2：域归因与巡检健康（旧库无新表时按 0/正常处理）
+            stale_pos = int(_scalar("SELECT COUNT(*) FROM positions WHERE status='stale'"))
+            breaks_open = int(_scalar("SELECT COUNT(*) FROM recon_breaks WHERE state='OPEN'"))
+            breaks_overdue = int(
+                _scalar(
+                    "SELECT COUNT(*) FROM recon_breaks WHERE state IN ('OPEN','ACK')"
+                    " AND sla_due_at IS NOT NULL AND sla_due_at < ?",
+                    (_iso_utc(_now()),),
+                )
+            )
+            miss_max = int(_scalar("SELECT COALESCE(MAX(miss_count),0) FROM positions"))
+            resv_held = int(_scalar("SELECT COUNT(*) FROM reservations WHERE state='held'"))
+            _pos_sum = _scalar("SELECT COALESCE(SUM(qty),0) FROM positions WHERE qty > 1e-9")
+            _dom_sum = _scalar("SELECT COALESCE(SUM(qty),0) FROM domain_positions WHERE qty > 1e-9")
+            mismatch = 1 if abs(_pos_sum - _dom_sum) > 1e-9 else 0
+            _hb = _scalar("SELECT 1 FROM ledger_heartbeat WHERE id=1")
+            _hb_ts = None
+            if _hb:
+                try:
+                    _hb_ts = cur.execute("SELECT ts FROM ledger_heartbeat WHERE id=1").fetchone()[0]
+                except sqlite3.Error:
+                    _hb_ts = None
+            _feed = "ok"
+            try:
+                _row = cur.execute(
+                    "SELECT value FROM ledger_settings WHERE key='feed_state'"
+                ).fetchone()
+                _feed = str(_row[0]) if _row and _row[0] else "ok"
+            except sqlite3.Error:
+                _feed = "ok"
             conn.close()
         except sqlite3.Error:
             return [_metric("ledger_error", 1)]
         age = max(0.0, _now() - _iso_to_ts(str(last))) if last else 86400.0
+        janitor_age = max(0.0, _now() - _iso_to_ts(str(_hb_ts))) if _hb_ts else 86400.0
+        feed_state = {"ok": 0, "degraded": 1, "stale": 2}.get(_feed, 1)
         return [
             _metric("ledger_positions", positions),
             _metric("ledger_last_write_age_seconds", round(age, 1)),
@@ -343,6 +391,14 @@ class Collector:
             _metric("ledger_ghost_stale_24h", ghost_stale),
             _metric("ledger_ghost_exchange_flat_24h", ghost_flat),
             _metric("ledger_exchange_sltp_24h", exchange_sltp),
+            _metric("ledger_stale_positions", stale_pos),
+            _metric("ledger_breaks_open", breaks_open),
+            _metric("ledger_breaks_overdue", breaks_overdue),
+            _metric("ledger_miss_max", miss_max),
+            _metric("ledger_reservations_held", resv_held),
+            _metric("ledger_domain_qty_mismatch", mismatch),
+            _metric("ledger_janitor_age_seconds", round(janitor_age, 1)),
+            _metric("ledger_feed_state", feed_state),
         ]
 
     def _sltp_metrics(self, ex: dict) -> list[str]:

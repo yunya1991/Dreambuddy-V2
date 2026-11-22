@@ -1177,6 +1177,84 @@ class TradeExecutionGateway:
         except Exception as exc:  # noqa: BLE001
             logger.warning("cancel audit write failed: %s", exc)
 
+    # ── P2-2：域限额预占（并发防超限） ────────────────────────────────
+    _RESERVE_DOMAINS = ("11", "6")
+
+    def _order_notional(self, sig: FinalDecisionSignal, sz: Any, px: Any) -> float:
+        payload = sig.payload if isinstance(sig.payload, dict) else {}
+        notional = float(payload.get("notional_usdt") or 0.0)
+        if notional > 0:
+            return abs(notional)
+        _px = float(px or sig.px or payload.get("price") or 0.0)
+        if _px > 0 and sz is not None:
+            return abs(float(sz)) * _px
+        return 0.0
+
+    def _reserve_domain_quota(
+        self, sig: FinalDecisionSignal, sz: Any, px: Any
+    ) -> tuple[Optional[str], Optional[ExecutionResult]]:
+        """开仓前按 domain_registry 限额预占；超限返回拒单。
+
+        仅对声明了 `max_notional` 且经 gateway 开仓的域生效（11/6）；
+        23 走 subpool/probe 个数限额（LedgerGuards），50 走 drop-copy 并网，均不预占。
+        FAIL-OPEN：账本不可用或配置缺失时不阻断下单。
+        """
+        if str(sig.action or "").lower() in _CLOSE_ACTIONS:
+            return None, None
+        from position_ledger import domain_of  # 局部导入，保持 FAIL-OPEN
+
+        dom = domain_of(sig.source)
+        if dom not in self._RESERVE_DOMAINS:
+            return None, None
+        ledger = self._get_ledger()
+        if ledger is None:
+            return None, None
+        try:
+            limits = ledger.domain_limits(dom) or {}
+            max_notional = float(limits.get("max_notional") or 0.0)
+            if max_notional <= 0:
+                return None, None
+            notional = self._order_notional(sig, sz, px)
+            if notional <= 0:
+                return None, None
+            side = str(sig.pos_side or sig.direction or "").lower()
+            out = ledger.reserve(
+                dom,
+                sig.symbol,
+                side,
+                notional,
+                decision_id=str(sig.decision_id or ""),
+                limit_notional=max_notional,
+                include_domain_positions=True,
+            )
+        except Exception as exc:  # noqa: BLE001 — 预占失败不改变交易语义
+            logger.warning("[Gateway] 域限额预占异常(FAIL-OPEN): %s", exc)
+            return None, None
+        if out.get("ok"):
+            return str(out.get("reservation_id") or ""), None
+        reason = (
+            f"domain_limit_exceeded domain={dom} held={out.get('held')} "
+            f"notional={notional:.2f} max={max_notional:.2f}"
+        )
+        logger.warning("[Gateway] 域限额拒绝: %s", reason)
+        return None, ExecutionResult(
+            passed=False,
+            executed=False,
+            reason=reason,
+            reason_code="DOMAIN_LIMIT_EXCEEDED",
+        )
+
+    def _settle_reservation(self, reservation_id: Optional[str], consumed: bool) -> None:
+        if not reservation_id:
+            return
+        ledger = self._get_ledger()
+        if ledger is None:
+            return
+        try:
+            ledger.release(reservation_id, state="consumed" if consumed else "released")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("[Gateway] 预占释放失败(FAIL-OPEN): %s", exc)
+
     def _submit_impl(self, sig: FinalDecisionSignal) -> ExecutionResult:
         # 只读影子校验：仅跑 13 判定并落审计，绝不执行（23 自进化域专用）
         if self._shadow_only:
@@ -1370,6 +1448,15 @@ class TradeExecutionGateway:
 
         order_result = self._place_order(sig_for_exec, position_modifier=position_modifier)
         executed = self._order_succeeded(order_result)
+        # P2-2 域限额预占：成功才下单，按成交结果消费/释放
+        _resv_id, _resv_deny = self._reserve_domain_quota(sig_for_exec, final_sz, sig_for_exec.px)
+        if _resv_deny is not None:
+            self._audit(sig, _resv_deny)
+            return _resv_deny
+
+        order_result = self._place_order(sig_for_exec, position_modifier=position_modifier)
+        executed = self._order_succeeded(order_result)
+        self._settle_reservation(_resv_id, executed)
 
         # 主单成功后自动补 SL/TP（BCRM 风控原逻辑的 Gateway 等价实现）
         # - take_profit/stop_loss 动作本身就是 SL/TP 类，跳过
