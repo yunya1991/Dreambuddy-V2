@@ -179,6 +179,30 @@ class KnowledgeAskTest(unittest.TestCase):
         self.assertIn("可以改", result["answer"])
 
 
+    def test_consult_waits_on_inflight_job(self) -> None:
+        """作业已入队但手机尚未回执时，继续等同一个 job，不立刻报幂等失败。"""
+        import hashlib
+
+        import mra
+
+        question = "在途问题"
+        fingerprint = hashlib.sha1(question.encode("utf-8")).hexdigest()[:16]
+        with mra.open_store() as db:
+            db.enqueue_job(
+                {
+                    "adapter": "qianwen",
+                    "task_id": "consult:{}".format(fingerprint),
+                    "fingerprint": fingerprint,
+                    "at": 0,
+                    "target": {"target_id": "qianwen"},
+                    "max_price": None,
+                }
+            )
+        result = mra._consult_sync(question, timeout=1)
+        self.assertEqual(result["state"], "timeout")
+        self.assertNotIn("幂等去重", result.get("note", ""))
+
+
 def mra_ask(params: dict) -> dict:
     """延迟导入 mra，避免测试收集阶段影响 sys.path。"""
     import mra

@@ -71,7 +71,7 @@
     "tests/test_gateway.py": "850a4c2af3bd24fb2dd753c1db7c753d1df6e8b0d329afab35d8bfbf07e1da41",
     "tests/test_ingest.py": "9994e626d9f09828b99413066e4d052b6c2a85474de909508a5d66639dc4112d",
     "tests/test_jianying_adapter.py": "710445fb8a586aae6061448ca3669c9256aa7bce10b164dad8112267f787eb43",
-    "tests/test_knowledge.py": "30c884370de6d3fba8e435917d4e2f65771ae6d12fc0a229af41672d4c081df9",
+    "tests/test_knowledge.py": "fdc38ac44c532a63469787e49714e65818da13865dc4b03401be6e889fe14d34",
     "tests/test_locator.py": "a49a38c0f13e9f4a4ff5b73aa7d19a36c762929e5524faf35533ce184508b440",
     "tests/test_multidevice.py": "d582b1233d85dc3b93388b45819bed02c1461260cad7d10c18b12caa098dad67",
     "tests/test_note_pipeline.py": "81e590a3351b7c481423395d98fad9a0531129636f04314541d175b2f0fd02f2",
@@ -93,6 +93,6 @@
     "tests/test_wireless.py": "0774e7ea3612f391649b33e55a32ab8ca53b3a33258ee5976d7b92b435490494",
     "tests/test_xhs_chain.py": "df06ced9fcea81906b948b3786df60ad16f36ad902c6b91ba89ad0820e94e2d8"
   },
-  "source_hash": "7d076ba51ec3b70579c70c38f3ffd3f919c0d9d81b7d11294584e16869bac8da",
-  "synced_at": "2026-11-22T04:02:55.723809+00:00"
+  "source_hash": "54d2bacfa287b3c48c2d6b0a4f386ddd97fdff33bfe79ffe2e39d39646d6173c",
+  "synced_at": "2026-11-22T07:48:39.814961+00:00"
 }

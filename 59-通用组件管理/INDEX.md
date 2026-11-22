@@ -73,6 +73,7 @@
 | 组件 | 目录 | 版本 | 生命周期 | 分发变体 | 入口 |
 |---|---|---|---|---|---|
 | 认知管家 CogSteward `cogsteward` | components/cogsteward/ | v0.7.1 | active | — | 3 个 |
+| 19-DAL 数据访问（内部） `dal-data` | components/dal-data/ | v0.1.0 | active | — | 1 个 |
 | 事件上下文（官方源·五层装配） `event-context` | components/event-context/ | v1.0.2 | active | — | 3 个 |
 | 数据服务（宏观·披露·链上·上下文） `market-data` | components/market-data/ | v1.0.3 | active | — | 6 个 |
 | 市场事实日报 `market-facts-daily` | components/market-facts-daily/ | v1.0.4 | active | — | 1 个 |

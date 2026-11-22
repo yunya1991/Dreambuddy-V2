@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-11-22T04:12:02Z",
+  "generated_at": "2026-11-22T07:47:11Z",
   "source": "59-通用组件管理/components/*/component.yaml",
   "components": [
     {
@@ -23,6 +23,19 @@
         "docs/CHANGELOG-skill.md"
       ],
       "source": "components/cogsteward/component.yaml"
+    },
+    {
+      "name": "dal-data",
+      "display_name": "19-DAL 数据访问（内部）",
+      "version": "0.1.0",
+      "family": "dal-data",
+      "lifecycle": "active",
+      "summary": "19 数据访问层内部组件：本地只读查询（mm_metrics 时序、scope 上下文、能力清单）与云端只读快照同步，不注册任何 DAL 写能力。",
+      "entrypoints": [
+        "scripts/dal.py"
+      ],
+      "docs": [],
+      "source": "components/dal-data/component.yaml"
     },
     {
       "name": "event-context",

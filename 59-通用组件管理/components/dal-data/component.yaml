@@ -1,0 +1,85 @@
+name: dal-data
+display_name: 19-DAL 数据访问（内部）
+version: 0.1.0
+family: dal-data
+lifecycle: active
+summary: 19 数据访问层内部组件：本地只读查询（mm_metrics 时序、scope 上下文、能力清单）与云端只读快照同步，不注册任何 DAL 写能力。
+entrypoints:
+  - scripts/dal.py
+kernel_deps: []
+output_contract: cogsteward.v1
+products: []
+tests:
+  dir: tests
+  entry: python3 -m unittest discover -s tests -v
+actions:
+  - name: tools
+    description: "列出 19-DAL 可用的只读工具与输入 schema"
+    when_to_use: "确认 19-DAL 当前暴露了哪些只读能力"
+    not_for: "不返回具体数据行"
+    script: scripts/dal.py
+    args: ["tools"]
+    safety: read
+    output: json
+    mcp: {expose: false}
+    params: []
+  - name: scopes
+    description: "列出 19-DAL 可用数据 scope（采集域）"
+    when_to_use: "查询某指标前先看有哪些 scope 可取上下文"
+    not_for: "不返回时序数据"
+    script: scripts/dal.py
+    args: ["scopes"]
+    safety: read
+    output: json
+    mcp: {expose: false}
+    params: []
+  - name: read
+    description: "按 mm_metrics 查询指标最新值或时间窗"
+    when_to_use: "按 sub_category + metric_name 取宏观/交易指标时序"
+    not_for: "不按 scope 取聚合上下文（用 fetch）"
+    script: scripts/dal.py
+    args: ["read"]
+    safety: read
+    output: json
+    mcp: {expose: false}
+    params:
+      - {name: table, flag: "--table", type: string, default: mm_metrics, description: 表名}
+      - {name: sub_category, flag: "--sub-category", type: string, required: true, description: 子类，如 macro}
+      - {name: metric_name, flag: "--metric-name", type: string, required: true, description: 指标名，如 DGS10}
+      - {name: start_ts, flag: "--start-ts", type: integer, description: 起始时间戳（秒）}
+      - {name: end_ts, flag: "--end-ts", type: integer, description: 结束时间戳（秒）}
+      - {name: limit, flag: "--limit", type: integer, default: 100, description: 返回条数}
+  - name: fetch
+    description: "按 scope 取数据上下文"
+    when_to_use: "需要某个域（如宏观、持仓）的整体上下文时"
+    not_for: "不按单指标精确取时序（用 read）"
+    script: scripts/dal.py
+    args: ["fetch"]
+    safety: read
+    output: json
+    mcp: {expose: false}
+    params:
+      - {name: scope, flag: "--scope", type: string, required: true, description: 数据 scope}
+      - {name: params, flag: "--params", type: string, default: "{}", description: JSON 参数}
+  - name: status
+    description: "查看本地 DAL 只读镜像的新鲜度与库清单"
+    when_to_use: "判断本地快照是否过期、是否需要同步"
+    not_for: "不执行同步"
+    script: scripts/dal.py
+    args: ["status"]
+    safety: read
+    output: json
+    mcp: {expose: false}
+    params: []
+  - name: sync
+    description: "从云端拉取 19-DAL 只读快照（复用既有 dbsync，幂等）"
+    when_to_use: "本地镜像过期时刷新只读副本"
+    not_for: "不写云端生产库；DAL 写入口唯一在云端"
+    script: scripts/dal.py
+    args: ["sync"]
+    safety: write
+    output: json
+    mcp: {expose: false}
+    params:
+      - {name: timeout, flag: "--timeout", type: integer, default: 600, description: 同步超时秒数}
+      - {name: allow_write, flag: "--allow-write", type: boolean, default: false, description: 写入门禁}

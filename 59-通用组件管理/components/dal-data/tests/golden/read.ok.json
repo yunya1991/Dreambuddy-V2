@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "command": "dal-data.read",
+  "generated_at": "2026-11-22T12:30:00+0800",
+  "ok": true,
+  "data": {
+    "ok": true,
+    "rows": [
+      {
+        "sub_category": "macro",
+        "metric_name": "DGS10",
+        "ts": 1763740800,
+        "value": 4.12
+      }
+    ],
+    "missing": [],
+    "method_ids": ["dal.data_store_read"],
+    "sources": ["19-数据访问层/data/dreambuddy_core.db"],
+    "limits": ["只读镜像", "最多返回 100 条"]
+  }
+}
