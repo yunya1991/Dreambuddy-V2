@@ -14,7 +14,9 @@ Environment=EVOLUTION_LOG_ROTATE=external
 Environment=EXECUTION_RIGHTS_ENFORCE=1
 Environment="EVOLUTION_DSTAR_WAIT_MODE=calibrated"
 Environment="EVOLUTION_DSTAR_WAIT_MARGIN=0.30"
-ExecStart=/home/luke/venv-trading/bin/python -m dreambuddy_evolution.scripts.entry_runner --interval 300 --pool-mode dynamic --scan-top 8
+# 动态币池（--pool-mode dynamic）依赖 scripts/symbol_pool.py，该模块尚未提交，
+# 全量开池前先沿用固定基线；切换前需先提交 symbol_pool 并从 GitHub 部署。
+ExecStart=/home/luke/venv-trading/bin/python -m dreambuddy_evolution.scripts.entry_runner --interval 300 --symbols BTC,ETH,SOL
 Restart=always
 RestartSec=10
 KillSignal=SIGTERM
