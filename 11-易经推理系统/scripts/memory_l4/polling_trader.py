@@ -7333,6 +7333,13 @@ class PollingTrader:
             本次执行的动作摘要列表，用于日志聚合。
         """
         actions: List[Dict[str, Any]] = []
+        # ★ shadow/authority 硬闸门（与 _open_position 对齐）：
+        #   shadow_mode=True 时 11 仅产信号，okx_client 已被 FailClosedOkxClient 包裹，
+        #   任何平/减仓写入都会返回 execution_authority_unavailable；BDSM 子池不在
+        #   execution_authority 白名单时同理。此前缺少守卫，导致每轮巡检都对 UNI/ETH
+        #   反复发起被拒的 CLOSE_ALL，形成"持续平仓"假象并刷屏 WARN。
+        if getattr(self, "shadow_mode", False) or not self._execution_authority_permits("bdsm"):
+            return actions
         try:
             bdsm_coins = getattr(self, "BDSM_COINS", frozenset()) or frozenset()
             if not bdsm_coins:

@@ -793,6 +793,76 @@ class BDSPPhase2CouplingTests(unittest.TestCase):
             "bdsm_exit:CLOSE_ALL(B5_rank_tumbling,exit)",
         )
 
+    def _make_gap3_trader(self):
+        """构造 GAP3 出场巡检最小实例（UNI long + CLOSE_ALL 快照）。"""
+        from unittest.mock import MagicMock, patch
+
+        from scripts.memory_l4.polling_trader import PollingTrader
+
+        with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
+            t = PollingTrader.__new__(PollingTrader)
+        t._log = MagicMock()
+        t.BDSM_COINS = frozenset({"UNI"})
+        t._bdsm_snapshot_cache = {
+            "ts": float("inf"),
+            "snapshot": {
+                "version": "1.0",
+                "coins": {
+                    "UNI": {
+                        "available": True,
+                        "exit_action": "CLOSE_ALL",
+                        "exit_triggers": ["B5_rank_tumbling"],
+                        "direction_constraint": "NEUTRAL",
+                        "cap_multiplier": 1.0,
+                    }
+                },
+            },
+        }
+        t.position_tracker = MagicMock()
+        t.okx_client = MagicMock()
+        t.okx_client.market_close_long = MagicMock(return_value={"ok": True, "dry_run": False})
+        t._handle_close_position = MagicMock()
+        t._get_coin_position_info = MagicMock(
+            return_value={
+                "has_position": True,
+                "inst_id": "UNI-USDT-SWAP",
+                "coin": "UNI",
+                "pos_side": "long",
+                "pos": 10,
+                "avg_px": 10.0,
+                "mark_px": 11.0,
+                "upl": 10.0,
+                "upl_ratio": 0.10,
+                "open_time_sec": 0,
+                "source_tag": "bdsm",
+            }
+        )
+        return t
+
+    def test_gap3_shadow_mode_skips_exit_write(self) -> None:
+        """shadow_mode=True → 不得发起真实平仓（避免每轮被拒的 CLOSE_ALL 刷屏）。"""
+        t = self._make_gap3_trader()
+        t.shadow_mode = True
+
+        actions = t._bdsm_check_exit_actions()
+
+        self.assertEqual(actions, [])
+        t.okx_client.market_close_long.assert_not_called()
+        t._handle_close_position.assert_not_called()
+
+    def test_gap3_execution_authority_denies_bdsm_skips_exit_write(self) -> None:
+        """execution_authority 白名单不含 bdsm → 同样不得发起真实平仓。"""
+        t = self._make_gap3_trader()
+        t.shadow_mode = False
+        t.execution_authority = "evolution_only"
+        t._EXECUTION_AUTHORITY_ALLOWED = {"evolution"}
+
+        actions = t._bdsm_check_exit_actions()
+
+        self.assertEqual(actions, [])
+        t.okx_client.market_close_long.assert_not_called()
+        t._handle_close_position.assert_not_called()
+
     def test_gap3_no_bdsm_coin_or_none_no_action(self) -> None:
         """FAIL-OPEN：非 BDSM 币 / exit=NONE → 不调用 OKX 任何平仓/减仓接口。"""
         from unittest.mock import MagicMock, patch
