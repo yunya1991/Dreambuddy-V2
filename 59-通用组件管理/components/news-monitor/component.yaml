@@ -1,9 +1,9 @@
 name: news-monitor
 display_name: 新闻监控（云端）
-version: 0.1.0
+version: 0.2.0
 family: news-monitor
 lifecycle: beta
-summary: 云端新闻监控通用组件：只读拉取 24h 热点影响力榜、情绪与主题指标、关键词检索，数据直连 www.neodrm.com，不落地原始正文。
+summary: 云端新闻监控通用组件：只读拉取 24h 热点影响力榜、情绪与主题指标、关键词检索与明细分页（本地令牌），数据直连 www.neodrm.com，不落地原始正文。
 skill_dir: skill
 entrypoints:
   - scripts/news.py
@@ -49,6 +49,24 @@ actions:
     params:
       - {name: keyword, flag: "--keyword", type: string, required: true, description: 关键词，如 BTC / 美联储 / 英伟达}
       - {name: window, flag: "--window", type: string, enum: [24h, 7d, 30d], default: 7d, description: 检索时间窗}
+      - {name: endpoint, flag: "--endpoint", type: string, enum: [auto, cloud, local], default: auto, description: 数据通道}
+  - name: list
+    description: "云端新闻明细：分页、主题/情绪/关键词过滤，仅本地令牌可读"
+    when_to_use: "需要超出 Top10/前5条的完整去重新闻列表、分页或按条件过滤时"
+    not_for: "不抓取正文；日常头条用 hot，快速检索用 search"
+    script: scripts/news.py
+    args: ["list"]
+    safety: read
+    output: json
+    mcp: {expose: true, tier: extended, name: news_monitor_list}
+    params:
+      - {name: window, flag: "--window", type: string, enum: [24h, 7d, 30d], default: 24h, description: 时间窗}
+      - {name: limit, flag: "--limit", type: integer, default: 50, description: 单页条数（1–500）}
+      - {name: offset, flag: "--offset", type: integer, default: 0, description: 分页偏移}
+      - {name: topic, flag: "--topic", type: string, description: 主题，逗号分隔}
+      - {name: q, flag: "--q", type: string, description: 标题关键词}
+      - {name: min_importance, flag: "--min-importance", type: number, description: 最低影响力}
+      - {name: sentiment, flag: "--sentiment", type: string, description: 情绪：利好/利空/中性}
       - {name: endpoint, flag: "--endpoint", type: string, enum: [auto, cloud, local], default: auto, description: 数据通道}
   - name: snapshot
     description: "云端新闻监控完整快照（指标 + 热点 + 主题簇 + 时序），供排障与下游装配"

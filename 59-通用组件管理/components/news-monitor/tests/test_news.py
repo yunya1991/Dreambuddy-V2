@@ -78,6 +78,50 @@ SEARCH = {
     },
 }
 
+LIST = {
+    "schema": "news_items/v1",
+    "generated_at": "2026-11-22T08:00:00+00:00",
+    "source": "news_digest",
+    "source_generated_at": "2026-11-22T07:58:00+00:00",
+    "window": "24h",
+    "window_hours": 24,
+    "total": 282,
+    "matched": 2,
+    "offset": 0,
+    "limit": 2,
+    "returned": 2,
+    "has_more": True,
+    "degraded": False,
+    "degraded_reason": "",
+    "stats": {"total": 590},
+    "items": [
+        {
+            "event_id": "e1",
+            "title": "SEC 就加密监管框架征求意见",
+            "topic": "crypto_reg",
+            "event_type": "regulatory",
+            "sentiment": {"label": "利好", "score": 0.7},
+            "importance": 82.1,
+            "published_at": "2026-11-22T06:00:00Z",
+            "origin": "odaily_newsflash",
+            "source_url": "https://example.com/1",
+            "source_count": 2,
+            "dup_count": 3,
+        },
+        {
+            "id": "e2",
+            "title": "交易所公布储备证明",
+            "topic": "crypto_reg",
+            "event_type": "exchange",
+            "sentiment": {"label": "中性", "score": 0.0},
+            "importance": 70.5,
+            "ts": "2026-11-22T05:00:00Z",
+            "origin": "wublock",
+            "source_url": "https://example.com/2",
+        },
+    ],
+}
+
 
 class EnvelopeTest(unittest.TestCase):
     def test_required_fields(self):
@@ -173,6 +217,84 @@ class ActionTest(unittest.TestCase):
         body = json.loads(buffer.getvalue())
         self.assertEqual(body["missing"][0]["code"], "E_NET")
         self.assertTrue(body["missing"][0]["detail"])
+
+
+class ListActionTest(unittest.TestCase):
+    def test_list_requires_local_token(self):
+        buffer = StringIO()
+        with mock.patch.object(news, "_local_token", return_value=""), redirect_stdout(buffer):
+            code = news.main(["list"])
+        self.assertEqual(code, 2)
+        body = json.loads(buffer.getvalue())
+        self.assertFalse(body["ok"])
+        self.assertEqual(body["missing"][0]["code"], "E_INPUT")
+
+    def test_list_calls_local_gateway(self):
+        captured = {}
+
+        def fake_http(
+            method,
+            path,
+            params=None,
+            body=None,
+            timeout=news.TIMEOUT,
+            extra_headers=None,
+        ):
+            captured.update(
+                {
+                    "method": method,
+                    "path": path,
+                    "params": params,
+                    "extra_headers": extra_headers,
+                }
+            )
+            return LIST
+
+        buffer = StringIO()
+        with (
+            mock.patch.object(news, "_local_token", return_value="secret"),
+            mock.patch.object(news, "_http_json", side_effect=fake_http),
+            redirect_stdout(buffer),
+        ):
+            code = news.main(
+                [
+                    "list",
+                    "--window",
+                    "24h",
+                    "--limit",
+                    "2",
+                    "--topic",
+                    "crypto_reg",
+                    "--min-importance",
+                    "60",
+                ]
+            )
+        self.assertEqual(code, 0)
+        self.assertEqual(captured["method"], "GET")
+        self.assertEqual(captured["path"], news.ITEMS_PATH)
+        self.assertEqual(captured["extra_headers"], {news.TOKEN_HEADER: "secret"})
+        self.assertEqual(captured["params"]["topic"], "crypto_reg")
+        self.assertEqual(captured["params"]["min_importance"], 60.0)
+        body = json.loads(buffer.getvalue())
+        self.assertEqual(len(body["rows"]), 2)
+        self.assertEqual(body["rows"][0]["event_id"], "e1")
+        self.assertEqual(body["rows"][1]["event_id"], "e2")
+        self.assertEqual(body["detail"]["matched"], 2)
+        self.assertTrue(body["ok"])
+
+    def test_list_degraded_marks_missing(self):
+        degraded = dict(LIST, degraded=True, degraded_reason="digest missing", items=[])
+        buffer = StringIO()
+        with (
+            mock.patch.object(news, "_local_token", return_value="secret"),
+            mock.patch.object(news, "_http_json", return_value=degraded),
+            redirect_stdout(buffer),
+        ):
+            code = news.main(["list"])
+        self.assertEqual(code, 0)
+        body = json.loads(buffer.getvalue())
+        self.assertFalse(body["ok"])
+        self.assertEqual(body["missing"][0]["code"], "E_EMPTY")
 
 
 if __name__ == "__main__":

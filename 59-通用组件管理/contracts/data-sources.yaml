@@ -90,6 +90,7 @@ sources:
     notes:
       - "只读快照；原始新闻来源含 odaily / wallstreetcn / cls / jin10 / sina_finance 等，禁止再分发正文"
       - "对外仅输出标题、主题、情绪、影响力与来源链接；榜单口径近 24h，非投资建议"
+      - "明细接口 /api/news/items 仅 GET、仅本地令牌可读；未配置 DREAMBUDDY_NEWS_LOCAL_TOKEN 时一律 403"
     exception:
       id: DC-3
       approved_by: "用户（2026-11-22 对话确认）"

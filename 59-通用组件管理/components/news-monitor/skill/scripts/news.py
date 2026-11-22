@@ -21,17 +21,23 @@ import hashlib
 import json
 import os
 import ssl
+import sys
 import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 SKILL = "news-monitor"
 DEFAULT_ENDPOINT = "https://www.neodrm.com"
 SNAPSHOT_PATH = "/api/fundamental/news/snapshot"
 SEARCH_PATH = "/api/data/query"
+ITEMS_PATH = "/api/news/items"
+TOKEN_HEADER = "X-Dreambuddy-Local-Token"
+TOKEN_ENV = "NEWS_LOCAL_TOKEN"
+TOKEN_FILE_ENV = "NEWS_LOCAL_TOKEN_FILE"
+DEFAULT_TOKEN_FILE = os.path.expanduser("~/.local/share/dreambuddy/news.env")
 TIMEOUT = 25
 LIMIT_MAX = 50
 DAYS_MAX = 1825
@@ -43,6 +49,7 @@ LIMITS = {
     "hot": "云端 24h 热点影响力榜 Top N；仅标题/主题/情绪/影响力/来源链接，非预测、非投资建议。",
     "metrics": "云端新闻情绪与主题指标快照；榜单口径为近 24h，无历史纵深。",
     "search": "云端榜单检索，支持 24h/7d/30d 窗口；返回热度榜内条目，不等于全量新闻库全文检索。",
+    "list": "云端去重新闻明细库，最多近 30 天；仅本地令牌可读，只读、不再分发正文。",
     "snapshot": "云端新闻监控完整快照；字段随上游演进，下游应容忍新增字段。",
 }
 
@@ -50,6 +57,7 @@ METHOD_IDS = {
     "hot": ["N01"],
     "metrics": ["N02"],
     "search": ["N03"],
+    "list": ["N05"],
     "snapshot": ["N04"],
 }
 
@@ -79,12 +87,35 @@ def _base() -> str:
     return (os.environ.get("NEWS_ENDPOINT") or DEFAULT_ENDPOINT).rstrip("/")
 
 
+def _local_token() -> str:
+    """只从环境或本机 600 文件读取本地令牌，不随包分发。"""
+    value = (os.environ.get(TOKEN_ENV) or "").strip()
+    if value:
+        return value
+    path = os.path.expanduser(os.environ.get(TOKEN_FILE_ENV) or DEFAULT_TOKEN_FILE)
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            text = handle.read()
+    except OSError:
+        return ""
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, val = line.split("=", 1)
+        if key.strip() in {TOKEN_ENV, "DREAMBUDDY_NEWS_LOCAL_TOKEN", "TOKEN"}:
+            return val.strip().strip("\"'")
+    raw = text.strip()
+    return raw if raw and "\n" not in raw else ""
+
+
 def _http_json(
     method: str,
     path: str,
     params: Optional[Dict[str, Any]] = None,
     body: Optional[Dict[str, Any]] = None,
     timeout: int = TIMEOUT,
+    extra_headers: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     url = _base() + path
     if params:
@@ -96,6 +127,7 @@ def _http_json(
         "Accept": "application/json",
         "User-Agent": "dreambuddy-{}/{}".format(SKILL, VERSION),
     }
+    headers.update(extra_headers or {})
     if body is not None:
         data = json.dumps(body, ensure_ascii=False).encode("utf-8")
         headers["Content-Type"] = "application/json"
@@ -260,6 +292,28 @@ def normalize_search(item: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def normalize_item(item: Dict[str, Any]) -> Dict[str, Any]:
+    """把云端明细条目归一为 data.v1 事件行（必须带 event_id）。"""
+    sentiment = _sentiment(item)
+    title = item.get("title") or item.get("title_short") or ""
+    published = item.get("published_at") or item.get("ts")
+    return {
+        "event_id": item.get("event_id") or item.get("id") or _digest(published, title),
+        "title": title,
+        "topic": item.get("topic"),
+        "event_type": item.get("event_type"),
+        "sentiment": sentiment["label"],
+        "sentiment_score": sentiment["score"],
+        "importance": item.get("importance"),
+        "published_at": published,
+        "origin": item.get("origin"),
+        "source_url": item.get("source_url"),
+        "source_count": item.get("source_count"),
+        "dup_count": item.get("dup_count"),
+        "rank": item.get("rank"),
+    }
+
+
 def build_search_message(keyword: str, window: str) -> str:
     word = WINDOW_WORDS.get(window, "")
     window_part = "最近{}".format(word) if word else "最近"
@@ -342,6 +396,65 @@ def cmd_search(args: argparse.Namespace) -> int:
     )
 
 
+def cmd_list(args: argparse.Namespace) -> int:
+    token = _local_token()
+    if not token:
+        raise NewsError(
+            "E_INPUT",
+            "未配置 NEWS_LOCAL_TOKEN（写入 {} 或设置环境变量）".format(DEFAULT_TOKEN_FILE),
+        )
+    params = {
+        "window": args.window,
+        "limit": args.limit,
+        "offset": args.offset,
+        "topic": args.topic,
+        "q": args.q,
+        "min_importance": args.min_importance,
+        "sentiment": args.sentiment,
+    }
+    payload = _http_json(
+        "GET",
+        ITEMS_PATH,
+        params=params,
+        extra_headers={TOKEN_HEADER: token},
+    )
+    items = payload.get("items") or []
+    rows = [normalize_item(item) for item in items if isinstance(item, dict)]
+    stamps = [row.get("published_at") for row in rows if row.get("published_at")]
+    missing: List[Dict[str, str]] = []
+    if payload.get("degraded"):
+        missing.append(
+            {
+                "key": "list",
+                "code": "E_EMPTY",
+                "detail": str(payload.get("degraded_reason") or "云端明细降级"),
+            }
+        )
+    detail = {
+        "window": payload.get("window") or args.window,
+        "window_hours": payload.get("window_hours"),
+        "source": payload.get("source"),
+        "source_generated_at": payload.get("source_generated_at"),
+        "total": payload.get("total"),
+        "matched": payload.get("matched"),
+        "offset": payload.get("offset", args.offset),
+        "limit": payload.get("limit", args.limit),
+        "returned": payload.get("returned", len(rows)),
+        "has_more": payload.get("has_more"),
+        "stats": payload.get("stats") or {},
+    }
+    return _emit(
+        _envelope(
+            "list",
+            rows,
+            data_date=max(stamps) if stamps else payload.get("generated_at"),
+            missing=missing,
+            detail=detail,
+            ok=not missing,
+        )
+    )
+
+
 def cmd_snapshot(args: argparse.Namespace) -> int:
     days = _clamp(args.days, 0, DAYS_MAX) if args.days else 0
     snapshot = fetch_snapshot(days)
@@ -371,6 +484,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_search.add_argument("--window", choices=["24h", "7d", "30d"], default="7d")
     p_search.add_argument("--endpoint", choices=["auto", "cloud", "local"], default="auto")
 
+    p_list = sub.add_parser("list", help="云端新闻明细（分页/过滤，仅本地令牌）")
+    p_list.add_argument("--window", choices=["24h", "7d", "30d"], default="24h")
+    p_list.add_argument("--limit", type=int, default=50)
+    p_list.add_argument("--offset", type=int, default=0)
+    p_list.add_argument("--topic", default=None)
+    p_list.add_argument("--q", default=None)
+    p_list.add_argument("--min-importance", dest="min_importance", type=float, default=None)
+    p_list.add_argument("--sentiment", default=None)
+    p_list.add_argument("--endpoint", choices=["auto", "cloud", "local"], default="auto")
+
     p_snapshot = sub.add_parser("snapshot", help="云端新闻监控完整快照")
     p_snapshot.add_argument("--days", type=int, default=0)
     p_snapshot.add_argument("--endpoint", choices=["auto", "cloud", "local"], default="auto")
@@ -379,6 +502,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
+    # 统一 CLI 会统一追加 --json；本组件始终输出 JSON，容忍该开关
+    argv = [item for item in (sys.argv[1:] if argv is None else argv) if item != "--json"]
     parser = build_parser()
     args = parser.parse_args(argv)
     if not getattr(args, "cmd", None):
@@ -395,6 +520,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "hot": cmd_hot,
         "metrics": cmd_metrics,
         "search": cmd_search,
+        "list": cmd_list,
         "snapshot": cmd_snapshot,
     }
     try:

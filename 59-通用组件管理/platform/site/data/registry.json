@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "generated_at": "2026-11-22T07:54:46Z",
+  "generated_at": "2026-11-22T08:08:16Z",
   "source": "59-通用组件管理/components/*/component.yaml",
   "components": [
     {
@@ -86,10 +86,10 @@
     {
       "name": "news-monitor",
       "display_name": "新闻监控（云端）",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "family": "news-monitor",
       "lifecycle": "beta",
-      "summary": "云端新闻监控通用组件：只读拉取 24h 热点影响力榜、情绪与主题指标、关键词检索，数据直连 www.neodrm.com，不落地原始正文。",
+      "summary": "云端新闻监控通用组件：只读拉取 24h 热点影响力榜、情绪与主题指标、关键词检索与明细分页（本地令牌），数据直连 www.neodrm.com，不落地原始正文。",
       "entrypoints": [
         "scripts/news.py"
       ],

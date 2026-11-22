@@ -78,7 +78,7 @@
 | 数据服务（宏观·披露·链上·上下文） `market-data` | components/market-data/ | v1.0.3 | active | — | 6 个 |
 | 市场事实日报 `market-facts-daily` | components/market-facts-daily/ | v1.0.4 | active | — | 1 个 |
 | 手机预约助手 Mobile Reservation Assist `mobile-reservation-assist` | components/mobile-reservation-assist/ | v0.20.0 | draft | — | 1 个 |
-| 新闻监控（云端） `news-monitor` | components/news-monitor/ | v0.1.0 | beta | — | 1 个 |
+| 新闻监控（云端） `news-monitor` | components/news-monitor/ | v0.2.0 | beta | — | 1 个 |
 | 预约助手 Reservation Assist `reservation-assist` | components/reservation-assist/ | v0.11.2 | draft | — | 1 个 |
 | 研究博客发布 `site-blog` | components/site-blog/ | v1.0.0 | draft | — | 1 个 |
 <!-- GEN:COMPONENT-REGISTRY:END -->
