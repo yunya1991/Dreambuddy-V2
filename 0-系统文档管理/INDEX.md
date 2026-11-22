@@ -283,7 +283,7 @@
 | 19-数据访问层 | [19-数据访问层/docs/](../19-数据访问层/docs/) | ✅ 8文档(含SCHEMA_DESIGN/CONNECTION_GOVERNANCE) | DAL数据访问层，Silver/Gold层；**As-Of vintage**：`mm_metric_vintages` 追加表（2026-11-15 云端回填 975,548 行，写路径待接） |
 | 20-数据清洗中心 | [20-数据清洗中心/docs/](../20-数据清洗中心/docs/) | ✅ 6文档齐全 | Silver层数据清洗管道 |
 | 21-特征工程中心 | [21-特征工程中心/docs/](../21-特征工程中心/docs/) | ✅ 6文档齐全 | 特征工程与Gold层构建 |
-| 22-执行引擎中心 | [22-执行引擎中心/docs/README.md](../22-执行引擎中心/docs/README.md) | ✅ 5文档齐全 | TEE执行引擎核心 |
+| 22-执行引擎中心 | [22-执行引擎中心/docs/README.md](../22-执行引擎中心/docs/README.md) | ✅ 6文档（含多域账本 SPEC） | TEE执行引擎核心；[多域账本归因 SPEC v0.2](../22-执行引擎中心/docs/SPEC-LEDGER-DOMAIN-ATTRIBUTION.md) 已并入 TECHNICAL_DESIGN §8 |
 | 24-图结构上下文压缩 | [24-图结构上下文压缩/docs/](../24-图结构上下文压缩/docs/) | ✅ 5文档齐全 | TypeScript图结构上下文压缩 |
 | 25-用户策略生成系统 | [25-用户策略生成系统/README.md](../25-用户策略生成系统/README.md) | 🟡 README | 用户策略生成（app.py，端口8095） |
 | 26-策略管理模块 | [26-策略管理模块/README.md](../26-策略管理模块/README.md) | 🟡 README | 策略管理（app.py，端口8093） |

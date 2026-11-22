@@ -343,7 +343,9 @@ def build_runtime(dry_run: bool, symbols: List[str], bar: str = "1H"):
     raw = OKXSimulatedClient(cfg)
     gateway = TradeExecutionGateway(okx_client=raw, shadow_only=bool(dry_run))
     guards = LedgerGuards(gateway)
-    market = DataCenterMarketClient(bar=bar, positions_fn=gateway.list_positions, raw_client=raw)
+    market = DataCenterMarketClient(
+        bar=bar, positions_fn=gateway.list_effective_positions, raw_client=raw
+    )
     adapter = DataPipelineAdapter(
         okx_client=market,
         trader=None,

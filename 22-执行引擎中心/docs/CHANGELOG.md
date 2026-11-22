@@ -1,5 +1,37 @@
 # 执行引擎中心 — 变更记录
 
+## v1.10.1（2026-11-23）— 账本 P0：并发底座 + effective 读口径
+
+### 修改
+- `position_ledger._connect`：开启 `journal_mode=WAL`、`synchronous=NORMAL`、`busy_timeout=5000`。
+- `position_ledger`：增量迁移 P0 schema（`seq/verified_at/stale_since/miss_count/status`）、`ledger_settings`、`ledger_heartbeat`、`v_effective_positions`；历史已平行迁移为 `closed`。
+- 新增 `mark_verified` / `heartbeat` / `heartbeat_age_seconds` / `list_effective_positions`；心跳缺失或过期时回退 raw `positions(qty>0)`。
+- `TradeExecutionGateway`：新增 `list_effective_positions`；`reconcile_ledger` 成功后刷新 verified 与心跳。
+- 23 `LedgerGuards` 优先读 effective 口径；`entry_runner` 市场维度改用 effective 持仓。
+
+### 测试
+- 新增 `tests/test_position_ledger_p0.py`（7 项）；`test_ledger_guards.py` 新增 effective 优先级用例；22/23 相关套件通过。
+
+### 说明
+- P0-3 云端只读核对：账本 9 条 open 与 OKX 9 条逐 `inst/side/qty` 一致，无 ghost 行，未删除任何数据；P1（domain_positions/lots/drop-copy/janitor）未开始。
+
+## v1.10.0（2026-11-23）— 多域账本归因五层模型（设计批准）
+
+### 新增
+- `TECHNICAL_DESIGN.md` §8：五层账本模型（L0 交易所快照 / L1 positions / L2 domain_positions+lots / L3 fills 事件流 / L4 状态与 breaks / L5 只读视图）。
+- `docs/SPEC-LEDGER-DOMAIN-ATTRIBUTION.md` v0.2：完整 DDL、gateway/巡检改造点、P0-P2 任务拆解、测试清单与评审记录。
+
+### 决策
+- 归属以 `domain_positions` 为准，`positions.source` 降级为展示字段。
+- stale 落库：连续缺失 ≥600s 且确认 ≥3 次转 stale，≥3600s 转 closed；查询失败不计 miss；feed 停摆回退 raw 口径。
+- 单一事件流 + 三个受控写入口（gateway / drop-copy / janitor），`exchange_fill_id` 幂等。
+- 50 域走 drop-copy 并网（A−），保留其执行路径；P1 过渡期显式排除在 22 容量口径外。
+- janitor 进程归属 15 中台，账本写 API 复用 22；账务修正不写 cooldown。
+
+### 说明
+- 本次仅设计与文档变更，无运行时代码改动；§7 现有实现继续有效，代码按 P0 → P1 → P2 收敛。
+- 评审发现 10 项（含 3 项 P0）：见 SPEC §12。
+
 ## v1.9.4（2026-11-20）— 移除 MULTI 占位标的
 
 ### 修复

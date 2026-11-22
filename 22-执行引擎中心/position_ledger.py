@@ -28,6 +28,18 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def _parse_ts(value: Any) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
 class PositionLedger:
     """SQLite 持仓账本。线程安全（进程内锁 + 独立连接）。"""
 
@@ -42,6 +54,10 @@ class PositionLedger:
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(str(self.path), timeout=5.0)
         conn.row_factory = sqlite3.Row
+        # P0-1：多进程读写（entry23/exit23/15 巡检）下避免写锁互相饿死
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        conn.execute("PRAGMA busy_timeout=5000")
         return conn
 
     def _init_db(self) -> None:
@@ -84,7 +100,79 @@ class PositionLedger:
                     exit_reason TEXT DEFAULT '',
                     source TEXT DEFAULT ''
                 );
+                CREATE TABLE IF NOT EXISTS schema_migrations (
+                    version TEXT PRIMARY KEY,
+                    applied_at TEXT NOT NULL
+                );
                 """)
+            self._migrate_p0(conn)
+
+    # ── 迁移（增量、幂等） ────────────────────────────────────────
+    @staticmethod
+    def _columns(conn: sqlite3.Connection, table: str) -> set:
+        return {str(r[1]) for r in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+
+    def _ensure_column(self, conn: sqlite3.Connection, table: str, name: str, ddl: str) -> None:
+        if name not in self._columns(conn, table):
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
+
+    def _migrate_p0(self, conn: sqlite3.Connection) -> None:
+        """P0-2 增量 schema：状态字段、心跳与 effective 只读视图（幂等）。"""
+        for _name, _ddl in (
+            ("seq", "seq INTEGER NOT NULL DEFAULT 0"),
+            ("verified_at", "verified_at TEXT"),
+            ("stale_since", "stale_since TEXT"),
+            ("miss_count", "miss_count INTEGER NOT NULL DEFAULT 0"),
+            ("status", "status TEXT NOT NULL DEFAULT 'open'"),
+        ):
+            self._ensure_column(conn, "positions", _name, _ddl)
+
+        conn.executescript("""
+            CREATE INDEX IF NOT EXISTS idx_positions_effective
+                ON positions (status, verified_at);
+            CREATE TABLE IF NOT EXISTS ledger_settings (
+                key   TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS ledger_heartbeat (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                ts TEXT NOT NULL
+            );
+            CREATE VIEW IF NOT EXISTS v_effective_positions AS
+            SELECT p.*
+            FROM positions p
+            JOIN ledger_settings s ON s.key = 'effective_ttl_seconds'
+            WHERE p.qty > 1e-9
+              AND p.status = 'open'
+              AND p.verified_at IS NOT NULL
+              AND (julianday('now') - julianday(p.verified_at)) * 86400.0
+                  <= CAST(s.value AS REAL);
+            """)
+        conn.executescript("""
+            INSERT OR IGNORE INTO ledger_settings(key, value) VALUES
+              ('effective_ttl_seconds', '7200'),
+              ('stale_after_seconds', '600'),
+              ('close_after_seconds', '3600'),
+              ('min_confirmations', '3'),
+              ('feed_guard_action', 'fallback_raw'),
+              ('janitor_heartbeat_seconds', '60');
+            """)
+
+        if (
+            conn.execute("SELECT 1 FROM schema_migrations WHERE version='p0-001'").fetchone()
+            is None
+        ):
+            conn.executescript("""
+                UPDATE positions SET status='closed'
+                 WHERE qty <= 1e-9 AND closed_at IS NOT NULL;
+                UPDATE positions SET verified_at = COALESCE(verified_at, updated_at)
+                 WHERE qty > 1e-9 AND status = 'open' AND verified_at IS NULL;
+                """)
+            conn.execute(
+                "INSERT OR REPLACE INTO schema_migrations(version, applied_at)"
+                " VALUES('p0-001', ?)",
+                (_utc_now(),),
+            )
 
     # ── 写 ────────────────────────────────────────────────────────
     def record_open(
@@ -424,6 +512,66 @@ class PositionLedger:
         with self._lock, self._connect() as conn:
             rows = conn.execute(
                 "SELECT * FROM positions WHERE qty > ? ORDER BY updated_at DESC", (_EPS,)
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    # ── P0-5：对账心跳与有效持仓读口径 ──────────────────────────────
+    def heartbeat(self, ts: Optional[str] = None) -> str:
+        """由对账方每轮成功后写入；心跳异常时闸门回退 raw 口径。"""
+        _ts = ts or _utc_now()
+        with self._lock, self._connect() as conn:
+            conn.execute(
+                "INSERT INTO ledger_heartbeat(id, ts) VALUES(1, ?)"
+                " ON CONFLICT(id) DO UPDATE SET ts=excluded.ts",
+                (_ts,),
+            )
+        return _ts
+
+    def heartbeat_age_seconds(self, now: Optional[datetime] = None) -> Optional[float]:
+        with self._lock, self._connect() as conn:
+            row = conn.execute("SELECT ts FROM ledger_heartbeat WHERE id=1").fetchone()
+        if row is None:
+            return None
+        dt = _parse_ts(row["ts"])
+        if dt is None:
+            return None
+        ref = now or datetime.now(timezone.utc)
+        return max(0.0, (ref - dt).total_seconds())
+
+    def mark_verified(self, positions: List[Dict[str, Any]], ts: Optional[str] = None) -> int:
+        """把交易所已确认的持仓刷新为 verified；stale 行重新出现时恢复 open。"""
+        _ts = ts or _utc_now()
+        _n = 0
+        with self._lock, self._connect() as conn:
+            for pos in positions or []:
+                inst = str(pos.get("inst_id") or "")
+                side = str(pos.get("pos_side") or "").lower()
+                if not inst or side not in ("long", "short"):
+                    continue
+                cur = conn.execute(
+                    "UPDATE positions SET verified_at=?, miss_count=0,"
+                    " status=CASE WHEN status='stale' THEN 'open' ELSE status END,"
+                    " stale_since=CASE WHEN status='stale' THEN NULL ELSE stale_since END"
+                    " WHERE inst_id=? AND pos_side=? AND qty>?",
+                    (_ts, inst, side, _EPS),
+                )
+                _n += int(cur.rowcount)
+        return _n
+
+    def list_effective_positions(
+        self, max_heartbeat_age_seconds: float = 300.0
+    ) -> List[Dict[str, Any]]:
+        """容量/闸门唯一读口径。
+
+        心跳缺失或过期时回退 raw `positions(qty>0)`，避免对账停摆后
+        effective 视图变空而放开限额（SPEC §3.2 feed 陈旧保护）。
+        """
+        _age = self.heartbeat_age_seconds()
+        if _age is None or _age > float(max_heartbeat_age_seconds):
+            return self.list_positions()
+        with self._lock, self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM v_effective_positions ORDER BY updated_at DESC"
             ).fetchall()
         return [dict(r) for r in rows]
 

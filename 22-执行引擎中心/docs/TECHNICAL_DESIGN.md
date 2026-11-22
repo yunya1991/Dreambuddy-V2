@@ -139,7 +139,9 @@ TEE 采用分层架构：
 ## 7. 统一持仓账本与执行兜底（2026-11-18）
 
 23 域独立运行、11 交易循环（`polling_trader`）下线后，22 承接全部「公共执行」能力：
-下单、幂等、落账、SL/TP 补挂、对账与幽灵仓清理。本节是该边界的唯一说明。
+下单、幂等、落账、SL/TP 补挂、对账与幽灵仓清理。本节描述**当前实现**。
+
+> **2026-11-23 起**：多域归因与 stale 状态以 **§8 五层模型**为准；§7 中“`source` 即归属”“reconcile 负责关闭陈旧行”“ghost 清理写冷却”均为过渡实现，将在 P0-P2 中按 §8 收敛。
 
 ### 7.1 PositionLedger（position_ledger.py）
 
@@ -167,7 +169,8 @@ SQLite 单库 `22-执行引擎中心/runtime/position_ledger.db`，可用 `POSIT
 3. **同步均价**：仅本对账源（`22-reconciled`）随交易所 `avg_px` 漂移更新，写
    `fills.action=reconcile_update`；23 自己开的仓保留真实开仓成本。
 4. **关闭陈旧行**：交易所已无持仓、账本仍开 → 仅关闭 `source` 以本对账源开头的行，
-   `exit_reason=ghost_stale`，避免每轮重复报幽灵仓。
+   `exit_reason=ghost_stale`，避免每轮重复报幽灵仓。**§8 目标态**：reconcile 不再决定关闭，
+   23/50 归属行由 janitor 按“时间 + 确认次数”迁移为 stale/closed。
 
 调用方：23 `exit_runner` 每轮（默认 60s）先对账再巡检，因此数量/均价漂移最多滞后一个周期。
 
@@ -203,9 +206,84 @@ breakeven_upl_pct=3.0, log_fn=None, audit_path=None)`：
 |---|---|
 | 契约校验 / 幂等 / 路由 / 风控桥 / 审计 | 22 Gateway |
 | 持仓数量与已实现盈亏真相源、冷却 | 22 PositionLedger |
-| SL/TP 补挂、对账、幽灵仓清零 | 22（`sltp_reconcile` + `reconcile_ledger`/`close_ghost_position`） |
+| 域归属（`domain_positions`/lots）、effective 读口径 | 22 PositionLedger（§8） |
+| 对账状态迁移（stale/closed）、breaks 工单 | 15 janitor（写 22 账本 API；§8） |
+| SL/TP 补挂、对账、幽灵仓清零（过渡实现） | 22（`sltp_reconcile` + `reconcile_ledger`/`close_ghost_position`）；目标态见 §8 |
 | 开仓闸门、定容、平仓决策、sz 解析 | 23 `execution/entry_loop.py`、`execution/exit_loop.py` |
 | 最终风控与成交 | 13 `PreTradeGate` + OKX |
 
 22 不感知策略语义；23 不直接调用交易所下单接口，也不写 11 的路径或数据文件。
+
+---
+
+## 8. 多域账本归因（五层模型，2026-11-23 批准）
+
+> 本节是架构口径；完整 DDL、迁移、任务拆解与测试清单见
+> [SPEC-LEDGER-DOMAIN-ATTRIBUTION.md](./SPEC-LEDGER-DOMAIN-ATTRIBUTION.md) v0.2（§12 评审记录）。
+> 二者冲突时，以本节 + SPEC §10.3 决策为准。
+> **实现状态**：截至 2026-11-23 仅完成设计与文档；代码按 P0 → P1 → P2 推进，未完成前 §7 仍是运行事实。
+
+### 8.1 分层
+
+```
+L5 消费方   开仓闸门(按域限额)   只读巡检/监控   前端/复盘
+              ↑ 只读视图 v_effective_positions / v_domain_positions
+L4 状态与异常  verified_at / miss_count / stale_since / status   recon_breaks
+L3 事件流     fills(append-only, id 即单调 seq, exchange_fill_id 幂等键)
+L2 域子账     domain_positions + position_lots
+L1 账户总账   positions(omnibus)
+L0 交易所快照  OKX positions + 成交（drop copy 等价物）
+```
+
+| 层 | 唯一职责 | 不做什么 |
+|---|---|---|
+| L1 `positions` | 账户总持仓与已实现盈亏 | 不承载域归属细节 |
+| L2 `domain_positions`/`position_lots` | 域份额、批次、域内 FIFO | 不直接对外提供容量口径 |
+| L3 `fills` | 全部成交与状态事件的追加流水 | 不允许就地改历史 |
+| L4 `recon_breaks` | 对账差异工单与状态迁移证据 | 不做交易决策 |
+| L5 视图 | 统一读口径 | 不允许写 |
+
+### 8.2 三条铁律
+
+1. **单一事件流 + 三个受控写入口**：gateway（下单成交）、drop-copy 适配器（他域/交易所侧成交）、janitor（对账状态迁移）。传统金融中 order entry 与 position keeping 分离、在账本层合流，约束点是“账本唯一”，不是“网关唯一”。
+2. **归属用子账**：`domain_positions` 记录域份额，`positions.source` 降级为展示字段；一个 `(inst, pos_side)` 同时只允许一个活跃归属域（P1，库层唯一索引），多域共持留 P2。
+3. **stale 是一等状态**：只由 janitor 依据交易所快照写入；容量闸门只统计 `v_effective_positions`，禁止读侧自行推测。
+
+### 8.3 状态机与阈值
+
+```
+open --(连续缺失≥600s 且确认≥3次)--> stale --(连续缺失≥3600s 或人工确认)--> closed
+open --(成交全平)--> closed
+stale --(交易所重新出现)--> open
+```
+
+- **查询失败 ≠ 缺失**：交易所接口失败只记 `feed_state=degraded`，不累加 `miss_count`。
+- **feed 陈旧保护**：janitor 心跳超过 2 个周期，闸门回退原始 `positions(qty>0)` 口径并告警；禁止使用可能为空的 effective 视图放开限额。
+- **账务修正不触发冷却**：janitor 关闭 stale 行不写 `cooldowns`；只有真实成交平仓才写冷却。
+- 参数存 `ledger_settings`，可按巡检周期调整，不使用固定轮数。
+
+### 8.4 读写口径
+
+| 动作 | 归属 | 约束 |
+|---|---|---|
+| 开/平仓成交落账 | 22 gateway | 单事务写 fills + L1 + L2；`exchange_fill_id` 冲突即幂等跳过 |
+| 他域/交易所侧成交导入 | drop-copy 适配器 | 同一 `exchange_fill_id` 只入账一次；50 域按此并网（决策 A−） |
+| 对账补录/状态迁移 | 15 janitor（API 复用 22） | 仅生产云端单实例；每轮写心跳 |
+| 容量/子池/限额读取 | 各域闸门 | 只读 `v_effective_positions`；feed 异常按 §8.3 回退 |
+| 监控/复盘 | 15 / 3.1 / 19 | 只读视图，不读原始表做容量判定 |
+
+- `reconcile_ledger()` 不再决定关闭；关闭统一由 janitor 按 §8.3 执行并写 breaks 证据。
+- 50 域：保留 `x1_live_executor` + `live_order_bridge` 执行路径，按 drop-copy 导入 22 账本；过渡期显式声明不在 22 容量口径内。
+
+### 8.5 落地与验收
+
+| 阶段 | 目标 | 验收 |
+|---|---|---|
+| P0 | WAL、effective 口径、feed 保护、清理 25 条 ghost、50 口径声明 | 23 子池恢复可开仓；账本合计=交易所持仓 |
+| P1 | DDL/回填、domain_positions/lots、drop-copy、breaks + janitor shadow | L1=ΣL2；每个域可独立算 qty/均价/已实现盈亏 |
+| P2 | janitor enforce、reservations、50 并网、EOD 对账、指标告警 | 断链自动 stale 且不占容量；并发不超限；每日控制总数一致 |
+
+> **P0 进度（2026-11-23）**：WAL + `busy_timeout`、`v_effective_positions` + 心跳回退、LedgerGuards 切读已完成并通过测试；云端核对账本 9 条 = OKX 9 条，无 ghost 行需清理；janitor（P1）尚未执行。
+
+**禁止**：多域共持却不建子账；任一链路代别域平仓；用监控侧计算的 stale 替代账本状态。
 

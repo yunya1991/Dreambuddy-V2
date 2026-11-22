@@ -1,8 +1,9 @@
 # 执行引擎中心 — 工程索引
 
-> **版本**：v1.7 | **更新日期**：2026-11-14
+> **版本**：v1.8 | **更新日期**：2026-11-23
 > **模块定位**：Dreambuddy 交易执行引擎（TEE）— 订单路由、执行算法、滑点估计、熔断与审计
 >
+> **v1.8 变更（多域账本归因五层模型）**：`TECHNICAL_DESIGN.md` 新增 §8，批准 L0 交易所快照 / L1 positions / L2 domain_positions+lots / L3 fills 事件流 / L4 状态与 breaks / L5 只读视图；新增详细设计 [SPEC-LEDGER-DOMAIN-ATTRIBUTION.md](./SPEC-LEDGER-DOMAIN-ATTRIBUTION.md) v0.2。归属以 `domain_positions` 为准（`source` 降级展示）、stale 落库（时间+确认次数）、janitor 归 15 中台、50 域走 drop-copy 并网。**代码按 P0→P2 推进中**，未完成前 §7 仍为运行事实。P0-1/P0-2/P0-4/P0-5 已于 2026-11-23 落地并通过测试；P0-3 云端 25 条 ghost 清理与 P1 尚未执行。
 > **v1.7 变更（Phase 2 执行权落 22）**：新增 `FailClosedOkxClient`（执行权威缺失时写操作全拒）；`DomainTaggedOkxClient` 新增 `gateway` 参数，23 域写操作改经 `TradeExecutionGateway` 执行（保留 13 只读影子审计）；11 `polling_trader` 网关加载失败由 FAIL-OPEN 改为 FAIL-CLOSED；16 `exit_executor` 与 11 `restore_sl_tp` 的写操作接入 22 网关。
 > **v1.5 变更（Plan A 凭据收口）**：OKX 客户端唯一实现迁入 `executors/okx_client.py`（11 侧 `okx_simulated.py` 降为转发 shim）；新增 `executors/credentials.py`（AES-256-GCM 加密凭据库，`runtime/venue`）；`executors/live_order_bridge.py` 承接真实下单出口（原 11 `live_order_bridge.py` 已删除），审计与 kill-switch 落 `22/runtime/`。
 > **v1.4 变更**：`executors/domain_clients.py`（自 11 迁入的 `DomainTaggedOkxClient` / `DomainRoutedOkxClient` 唯一实现）；`trade_execution_gateway.py` 改用 `13-通用风控模块/core/factory.create_gate()` 替代裸 `PreTradeGate()`，13 门禁真正生效（fail-closed + 7 条规则全量加载 + `rules_evaluated` / `rule_name` 审计字段）。
@@ -20,6 +21,7 @@ TEE（Trading Execution Engine）是 Dreambuddy 的交易执行核心，负责�
 │   ├── README.md                # 文档索引
 │   ├── TECHNICAL_DESIGN.md      # 技术设计
 │   ├── API_SPEC.md              # 接口规格
+│   ├── SPEC-LEDGER-DOMAIN-ATTRIBUTION.md  # 多域账本归因 SPEC（§8 依据）
 │   └── CHANGELOG.md             # 变更记录
 ├── tee_core/
 │   ├── core/                    # 核心引擎

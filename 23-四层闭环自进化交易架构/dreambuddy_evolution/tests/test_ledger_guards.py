@@ -60,3 +60,15 @@ def test_missing_gateway_is_fail_open():
     assert g.has_position("ANY") is False
     assert g.cooldown("ANY") == (False, "")
     assert g.subpool() == {"count": 0, "long": 0, "short": 0}
+
+
+def test_prefers_effective_positions_when_available():
+    """P0-2：网关提供 effective 口径时，闸门不得回退 raw 持仓。"""
+
+    class _GwEffective(_Gw):
+        def list_effective_positions(self):
+            return [r for r in self._rows if r["inst_id"] != "AMZN-USDT-SWAP"]
+
+    g = LedgerGuards(_GwEffective(_gw()._rows, {}))
+    assert g.has_position("AMZN-USDT-SWAP") is False
+    assert g.subpool()["count"] == 1

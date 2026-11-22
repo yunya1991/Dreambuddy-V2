@@ -982,6 +982,15 @@ class TradeExecutionGateway:
         ledger = self._get_ledger()
         return ledger.list_positions() if ledger is not None else []
 
+    def list_effective_positions(
+        self, max_heartbeat_age_seconds: float = 300.0
+    ) -> list[Dict[str, Any]]:
+        """容量/闸门唯一读口径；心跳过期时账本内部回退 raw 持仓。"""
+        ledger = self._get_ledger()
+        if ledger is None:
+            return []
+        return ledger.list_effective_positions(max_heartbeat_age_seconds)
+
     def get_cooldown(self, inst_id: str) -> Optional[Dict[str, Any]]:
         """最近一次全平记录（含 close_ts/exit_reason/realized_pnl）。"""
         ledger = self._get_ledger()
@@ -1069,6 +1078,12 @@ class TradeExecutionGateway:
             fill_lookup=self._latest_close_fill,
             ghost_confirm=_ghost_confirm,
         )
+        # P0-5：成功对账即刷新 verified 与心跳，供闸门安全读取 effective 视图
+        try:
+            ledger.mark_verified(items)
+            ledger.heartbeat()
+        except Exception as exc:
+            logger.warning("[Gateway] 账本 verified/heartbeat 写入失败(FAIL-OPEN): %s", exc)
         logger.info(
             "[Gateway] 账本对账回填 source=%s inserted=%s updated=%s closed=%s skipped=%s",
             source,

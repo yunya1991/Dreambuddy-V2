@@ -43,7 +43,10 @@ class LedgerGuards:
         self._cooldown_sec = float(cooldown_sec)
 
     def _all_open_positions(self) -> list[dict[str, Any]]:
-        fn = getattr(self._gateway, "list_positions", None)
+        # P0-2：优先读 effective 口径（stale 不占容量）；旧网关/测试桩回退 list_positions
+        fn = getattr(self._gateway, "list_effective_positions", None)
+        if not callable(fn):
+            fn = getattr(self._gateway, "list_positions", None)
         rows = fn() if callable(fn) else []
         return [r for r in rows or [] if float(r.get("qty") or 0) > 0]
 
