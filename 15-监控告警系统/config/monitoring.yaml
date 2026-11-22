@@ -68,11 +68,18 @@ artifacts:
     timestamp_field: null
     ttl_seconds: 93600
     severity: P2
+  # entry23 活体心跳：entry_runner 每 300s 每币写一次（kline_event_handler → event_receiver）
+  - name: entry23_heartbeat
+    path: 23-四层闭环自进化交易架构/runtime/event_driven_state.json
+    timestamp_field: null
+    ttl_seconds: 900         # 3 轮（900s）无心跳即 P1，替代原先用决策审计判存活
+    severity: P1
+  # 决策审计仅在真实 submit 时追加（WAIT 不写），不能当存活心跳；仅兜底"决策沉默"
   - name: execution_decisions_23
     path: 23-四层闭环自进化交易架构/runtime/execution_decisions.jsonl
     timestamp_field: null
-    ttl_seconds: 1800        # 一期：entry23 每 300s，30min 无写入即 P1
-    severity: P1
+    ttl_seconds: 43200       # 12h：近 24h 实测最长自然间隔 6.6h（FREEZE/无信号期）
+    severity: P2
 
 # 任务调度新鲜度：由 push_job.sh 推送 dreambuddy_job_last_success_timestamp_seconds
 jobs:
