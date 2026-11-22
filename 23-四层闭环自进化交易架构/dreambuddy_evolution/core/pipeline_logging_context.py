@@ -6,6 +6,7 @@ FAIL-OPEN: 日志配置失败不影响主流程。
 """
 
 import logging
+import os
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -19,7 +20,10 @@ class PipelineLoggingContext:
     - 配置 dreambuddy_evolution 包的集中日志（FileHandler + 控制台）
     - 提供 get_logger 便捷方法
 
-    日志文件: dreambuddy_evolution/logs/evolution_pipeline.log（轮转，单文件 10MB，保留 5 份）
+    日志文件: dreambuddy_evolution/logs/evolution_pipeline.log
+    - 默认进程内轮转（10MB × 5 份）；
+    - EVOLUTION_LOG_ROTATE=external 时改为 FileHandler，由 logrotate copytruncate 统一轮转
+      （多进程共享同一日志文件时，避免各自 RotatingFileHandler 竞争导致小文件频繁轮转/丢行）。
     """
 
     def __init__(self, log_dir: Path | None = None):
@@ -33,12 +37,19 @@ class PipelineLoggingContext:
         try:
             self._log_dir.mkdir(parents=True, exist_ok=True)
             log_file = self._log_dir / "evolution_pipeline.log"
+            _external = str(os.getenv("EVOLUTION_LOG_ROTATE", "")).strip().lower() == "external"
 
             pkg_logger = logging.getLogger("dreambuddy_evolution")
-            if not any(isinstance(h, RotatingFileHandler) for h in pkg_logger.handlers):
-                fh = RotatingFileHandler(
-                    str(log_file), maxBytes=10 * 1024 * 1024, backupCount=5, encoding="utf-8"
-                )
+            if not any(
+                isinstance(h, (RotatingFileHandler, logging.FileHandler))
+                for h in pkg_logger.handlers
+            ):
+                if _external:
+                    fh: logging.Handler = logging.FileHandler(str(log_file), encoding="utf-8")
+                else:
+                    fh = RotatingFileHandler(
+                        str(log_file), maxBytes=10 * 1024 * 1024, backupCount=5, encoding="utf-8"
+                    )
                 fh.setLevel(logging.INFO)
                 fh.setFormatter(
                     logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")

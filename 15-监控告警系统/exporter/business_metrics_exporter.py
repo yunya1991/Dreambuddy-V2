@@ -297,7 +297,26 @@ class Collector:
         ]
         out.extend(self._ledger_metrics(ex))
         out.extend(self._sltp_metrics(ex))
+        out.extend(self._cycle_metrics())
         return out
+
+    def _cycle_metrics(self) -> list[str]:
+        """40→23 周期上下文新鲜度（P2-5 trace 配套监控）。"""
+        base = self.repo / "40-周期神经网络系统"
+
+        def _age(name: str) -> float:
+            try:
+                return max(0.0, _now() - (base / name).stat().st_mtime)
+            except OSError:
+                return 86400.0
+
+        cs_age = _age("cycle_state.json")
+        sm_age = _age("strategy_mapping.json")
+        return [
+            _metric("cycle_state_age_seconds", round(cs_age, 1)),
+            _metric("strategy_mapping_age_seconds", round(sm_age, 1)),
+            _metric("cycle_context_available", 0 if cs_age > 72 * 3600 else 1),
+        ]
 
     def _ledger_metrics(self, ex: dict) -> list[str]:
         db = self.repo / str(ex.get("ledger_db", "22-执行引擎中心/runtime/position_ledger.db"))

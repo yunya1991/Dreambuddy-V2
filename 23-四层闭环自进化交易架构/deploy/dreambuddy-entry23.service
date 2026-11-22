@@ -10,7 +10,11 @@ WorkingDirectory=/home/luke/dreambuddy/23-四层闭环自进化交易架构
 Environment="HOME=/home/luke"
 Environment=PYTHONUNBUFFERED=1
 Environment=EVOLUTION_ENTRY23_ENABLED=on
-ExecStart=/home/luke/venv-trading/bin/python -m dreambuddy_evolution.scripts.entry_runner --interval 300 --symbols BTC,ETH,SOL
+Environment=EVOLUTION_LOG_ROTATE=external
+Environment=EXECUTION_RIGHTS_ENFORCE=1
+Environment="EVOLUTION_DSTAR_WAIT_MODE=calibrated"
+Environment="EVOLUTION_DSTAR_WAIT_MARGIN=0.30"
+ExecStart=/home/luke/venv-trading/bin/python -m dreambuddy_evolution.scripts.entry_runner --interval 300 --pool-mode dynamic --scan-top 8
 Restart=always
 RestartSec=10
 KillSignal=SIGTERM

@@ -1,0 +1,13 @@
+# 23 自进化流水线日志统一轮转（spec: EVOLUTION_LOG_ROTATE=external）
+# 多进程（entry23/exit23/daily）共享同一文件，用 copytruncate 避免各自 RotatingFileHandler 竞争。
+/home/luke/dreambuddy/23-四层闭环自进化交易架构/dreambuddy_evolution/logs/*.log {
+    daily
+    rotate 14
+    compress
+    missingok
+    notifempty
+    copytruncate
+    su luke luke
+    compresscmd /usr/bin/zstd
+    compressext .zst
+}

@@ -418,7 +418,17 @@ class DataPipelineAdapter:
         try:
             from dreambuddy_evolution.adapters.macro_constraint_adapter import load_macro_constraint
 
-            kline_data["macro_constraint"] = load_macro_constraint()
+            _mc = load_macro_constraint()
+            kline_data["macro_constraint"] = _mc
+            # 40→23 周期上下文 trace：证明 23 每轮确实消费了 40 产出（缺失/过期同样留痕）
+            logger.info(
+                "[CycleContext] available=%s stale=%s age_h=%s state=%s transmission=%s",
+                _mc.get("available"),
+                _mc.get("stale"),
+                _mc.get("age_hours"),
+                _mc.get("real_cycle_state"),
+                _mc.get("transmission_state"),
+            )
         except Exception as e:
             logger.warning("[FO] macro_constraint injection crash: %s", e)
             kline_data["macro_constraint"] = {"available": False}

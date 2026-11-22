@@ -9,6 +9,7 @@ User=luke
 WorkingDirectory=/home/luke/dreambuddy/23-四层闭环自进化交易架构
 Environment="HOME=/home/luke"
 Environment=PYTHONUNBUFFERED=1
+Environment=EVOLUTION_LOG_ROTATE=external
 ExecStart=/home/luke/venv-trading/bin/python -m dreambuddy_evolution.scripts.exit_runner --interval 60
 Restart=always
 RestartSec=10

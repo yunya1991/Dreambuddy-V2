@@ -35,3 +35,48 @@ def test_pipeline_logging_context_get_logger_signature():
     ctx = PipelineLoggingContext()
     assert hasattr(ctx, "get_logger")
     assert callable(ctx.get_logger)
+
+
+def _reset_pkg_handlers():
+    import logging
+
+    for h in list(logging.getLogger("dreambuddy_evolution").handlers):
+        logging.getLogger("dreambuddy_evolution").removeHandler(h)
+        try:
+            h.close()
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def test_external_rotate_uses_plain_file_handler(tmp_path, monkeypatch):
+    """EVOLUTION_LOG_ROTATE=external → 交给 logrotate，进程内不再 RotatingFileHandler。"""
+    import logging
+    from logging.handlers import RotatingFileHandler
+
+    from dreambuddy_evolution.core.pipeline_logging_context import PipelineLoggingContext
+
+    monkeypatch.setenv("EVOLUTION_LOG_ROTATE", "external")
+    _reset_pkg_handlers()
+    try:
+        PipelineLoggingContext(log_dir=tmp_path).configure()
+        handlers = logging.getLogger("dreambuddy_evolution").handlers
+        assert handlers and not any(isinstance(h, RotatingFileHandler) for h in handlers)
+    finally:
+        _reset_pkg_handlers()
+
+
+def test_default_rotate_uses_rotating_handler(tmp_path, monkeypatch):
+    """未设置外部轮转时保持进程内 10MB 轮转。"""
+    import logging
+    from logging.handlers import RotatingFileHandler
+
+    from dreambuddy_evolution.core.pipeline_logging_context import PipelineLoggingContext
+
+    monkeypatch.delenv("EVOLUTION_LOG_ROTATE", raising=False)
+    _reset_pkg_handlers()
+    try:
+        PipelineLoggingContext(log_dir=tmp_path).configure()
+        handlers = logging.getLogger("dreambuddy_evolution").handlers
+        assert any(isinstance(h, RotatingFileHandler) for h in handlers)
+    finally:
+        _reset_pkg_handlers()

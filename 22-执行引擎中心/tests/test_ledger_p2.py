@@ -175,3 +175,23 @@ def test_p2_metrics_include_risk_fields(tmp_path):
     assert "ledger_breaks_open 1" in text
     assert "ledger_domain_qty_mismatch 0" in text
     assert "ledger_feed_state 0" in text
+
+
+def test_p2_cycle_context_metrics(tmp_path):
+    """40→23 周期上下文新鲜度指标：可用性与两个产物的 age。"""
+    pytest.importorskip("yaml")
+    import business_metrics_exporter as bme
+
+    repo = tmp_path / "repo"
+    d40 = repo / "40-周期神经网络系统"
+    d40.mkdir(parents=True)
+    (d40 / "cycle_state.json").write_text("{}", encoding="utf-8")
+    (d40 / "strategy_mapping.json").write_text("{}", encoding="utf-8")
+
+    collector = object.__new__(bme.Collector)
+    collector.repo = repo
+    text = "\n".join(collector._cycle_metrics())
+
+    assert "cycle_context_available 1" in text
+    assert "cycle_state_age_seconds" in text
+    assert "strategy_mapping_age_seconds" in text
