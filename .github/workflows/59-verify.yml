@@ -28,6 +28,12 @@ jobs:
     defaults:
       run:
         working-directory: 59-通用组件管理
+    env:
+      # 注：secrets 不能直接在 if 中引用，先落到 env 再用 env 判断
+      DREAMBUDDY_CLOUD_BASE: ${{ secrets.DREAMBUDDY_CLOUD_BASE }}
+      DREAMBUDDY_CLOUD_TOKEN: ${{ secrets.DREAMBUDDY_CLOUD_TOKEN }}
+      DREAMBUDDY_CLOUD_PRINCIPAL: ${{ secrets.DREAMBUDDY_CLOUD_PRINCIPAL }}
+      DREAMBUDDY_CLOUD_CA_PEM: ${{ secrets.DREAMBUDDY_CLOUD_CA_PEM }}
     steps:
       - uses: actions/checkout@v4
 
@@ -49,13 +55,8 @@ jobs:
         run: make verify
 
       - name: 云端只读冒烟（有密钥才执行）
-        if: ${{ secrets.DREAMBUDDY_CLOUD_BASE != '' }}
+        if: ${{ env.DREAMBUDDY_CLOUD_BASE != '' }}
         working-directory: .
-        env:
-          DREAMBUDDY_CLOUD_BASE: ${{ secrets.DREAMBUDDY_CLOUD_BASE }}
-          DREAMBUDDY_CLOUD_TOKEN: ${{ secrets.DREAMBUDDY_CLOUD_TOKEN }}
-          DREAMBUDDY_CLOUD_PRINCIPAL: ${{ secrets.DREAMBUDDY_CLOUD_PRINCIPAL }}
-          DREAMBUDDY_CLOUD_CA_PEM: ${{ secrets.DREAMBUDDY_CLOUD_CA_PEM }}
         run: |
           if [ -n "$DREAMBUDDY_CLOUD_CA_PEM" ]; then
             printf '%s\n' "$DREAMBUDDY_CLOUD_CA_PEM" > cloud-ca.pem
