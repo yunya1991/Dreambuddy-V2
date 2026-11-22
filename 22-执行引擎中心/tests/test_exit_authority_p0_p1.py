@@ -64,6 +64,35 @@ def test_fail_closed_rejects_cancel_algo_orders():
     assert raw.cancels == []
 
 
+def test_fail_closed_blocks_all_writes_and_passes_reads():
+    """11 信号层硬约束：shadow_mode 下所有写操作拒绝，读操作仍透传。"""
+
+    class _Raw:
+        def __init__(self):
+            self.write_calls = []
+
+        def place_stop_loss_take_profit(self, **kwargs):
+            self.write_calls.append(("sltp", kwargs))
+            return {"ok": True}
+
+        def set_leverage(self, **kwargs):
+            self.write_calls.append(("lever", kwargs))
+            return {"ok": True}
+
+        def get_positions(self, inst_id=None):
+            return {"ok": True, "positions": []}
+
+    raw = _Raw()
+    client = FailClosedOkxClient(raw)
+
+    assert (
+        client.place_stop_loss_take_profit(inst_id="ETH-USDT-SWAP", stop_loss_px=1)["ok"] is False
+    )
+    assert client.set_leverage(inst_id="ETH-USDT-SWAP", lever=5)["ok"] is False
+    assert raw.write_calls == [], "信号层不得触达交易所写接口"
+    assert client.get_positions() == {"ok": True, "positions": []}
+
+
 def test_shadow_gateway_cancel_never_touches_exchange(tmp_path):
     """23 域 dry-run（shadow_only）不得真的撤掉交易所保护单。"""
     raw = _FakeRaw()

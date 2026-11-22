@@ -387,6 +387,9 @@ class FailClosedOkxClient:
         # 撤掉 SL 等于降低保护，执行权威不可用时必须拒绝
         return self._reject()
 
+    def set_leverage(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+        return self._reject()
+
     def __getattr__(self, name: str) -> Any:
         return getattr(object.__getattribute__(self, "_raw"), name)
 

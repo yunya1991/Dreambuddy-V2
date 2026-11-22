@@ -676,6 +676,12 @@ class _RejectAllOkxClient:
     def reduce_position(self, *a, **kw):
         return self._reject()
 
+    def cancel_algo_orders(self, *a, **kw):
+        return self._reject()
+
+    def set_leverage(self, *a, **kw):
+        return self._reject()
+
     def __getattr__(self, name):
         return getattr(object.__getattribute__(self, "_raw"), name)
 
@@ -1062,6 +1068,18 @@ class PollingTrader:
 
         # 11 与 23 已解耦：23 开仓/离场由 dreambuddy-entry23 / exit23 独立驱动，
         # 11 不再持有 23 域下单通道，okx_client 统一为自身的 RiskGated 客户端。
+
+        # ★ 信号层硬约束（2026-11-22 用户确认）：shadow_mode=True 时 11 只产信号。
+        #   开/平/减仓虽已在 _open_position 拦截，但持仓同步修复、SL/TP 补挂巡检
+        #   等路径会直写交易所（造成 tag=yijingsltp 重复 OCO）。此处统一在客户端
+        #   层加写屏障：所有写操作拒绝，读操作透传，从根上保证 11 不落任何订单。
+        if self.shadow_mode:
+            _signal_rejector = _FailClosedOkxClient or _RejectAllOkxClient
+            self.okx_client = _signal_rejector(self.okx_client)
+            self._log(
+                "[SIGNAL-ONLY] shadow_mode 启用：11 仅产信号，下单/撤单/止盈止损写入全部拒绝",
+                "INFO",
+            )
 
         # ── TEE 执行引擎影子模式开关（2026-09-06 全系统统一开启）─────────
         # T12: 11 执行逻辑剥离到 22（tee_core）。默认 enable_tee=True + shadow_mode=True：
@@ -10443,6 +10461,10 @@ class PollingTrader:
         - 补挂前检查是否已有 OCO 单，避免重复挂
         - 只设止损或止盈其中一个也允许（OKX 支持 sl-only 或 tp-only）
         """
+        # ★ 信号层硬约束：shadow_mode 下 11 不写交易所，SL/TP 补挂统一由
+        #   22 sltp_reconcile（exit23 每轮调用）负责，此处直接跳过避免无效写。
+        if getattr(self, "shadow_mode", False):
+            return
         if not (self.okx_client and hasattr(self.okx_client, "get_positions")):
             return
         _t0 = __import__("time").time()
