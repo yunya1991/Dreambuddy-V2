@@ -335,6 +335,14 @@ shells:
     annotations:
       readOnlyHint: true
       destructiveHint: false
+  - name: data_tables
+    port: store
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
   - name: data_store_write
     port: store
     domain: data

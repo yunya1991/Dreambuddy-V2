@@ -26,7 +26,7 @@ from typing import Any, Dict, List, Optional
 MODULE_ROOT = Path(__file__).resolve().parent.parent
 REPO_ROOT = MODULE_ROOT.parent
 SERVER_PATH = REPO_ROOT / "mcp_shells" / "l0_data" / "server.py"
-READ_TOOLS = ("data_fetch", "data_collect_once", "data_store_read")
+READ_TOOLS = ("data_fetch", "data_collect_once", "data_store_read", "data_tables")
 
 
 def load_core():
@@ -71,6 +71,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     sub.add_parser("tools", help="列出只读工具")
     sub.add_parser("scopes", help="列出可用数据 scope")
+    sub.add_parser("tables", help="列出可读表与必填过滤参数")
 
     p_read = sub.add_parser("read", help="按 mm_metrics 查询（最新值或时间窗）")
     p_read.add_argument("--table", default="mm_metrics")
@@ -90,6 +91,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 0
     if args.cmd == "scopes":
         payload = call("data_collect_once", {})
+    elif args.cmd == "tables":
+        payload = call("data_tables", {})
     elif args.cmd == "read":
         filters: Dict[str, Any] = {
             "sub_category": args.sub_category,

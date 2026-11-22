@@ -33,6 +33,16 @@ actions:
     output: json
     mcp: {expose: false}
     params: []
+  - name: tables
+    description: "列出可读数据表与必填过滤参数（DAL 表白名单）"
+    when_to_use: "确认某张表能否读、必须带哪些过滤参数"
+    not_for: "不返回数据行"
+    script: scripts/dal.py
+    args: ["tables"]
+    safety: read
+    output: json
+    mcp: {expose: false}
+    params: []
   - name: read
     description: "按 mm_metrics 查询指标最新值或时间窗"
     when_to_use: "按 sub_category + metric_name 取宏观/交易指标时序"
@@ -62,24 +72,12 @@ actions:
       - {name: scope, flag: "--scope", type: string, required: true, description: 数据 scope}
       - {name: params, flag: "--params", type: string, default: "{}", description: JSON 参数}
   - name: status
-    description: "查看本地 DAL 只读镜像的新鲜度与库清单"
-    when_to_use: "判断本地快照是否过期、是否需要同步"
-    not_for: "不执行同步"
+    description: "查看本地 DAL 只读镜像的新鲜度、表数与关键表完整性"
+    when_to_use: "判断本地快照是否可用、是否缺表"
+    not_for: "不触发同步、不联网"
     script: scripts/dal.py
     args: ["status"]
     safety: read
     output: json
     mcp: {expose: false}
     params: []
-  - name: sync
-    description: "从云端拉取 19-DAL 只读快照（复用既有 dbsync，幂等）"
-    when_to_use: "本地镜像过期时刷新只读副本"
-    not_for: "不写云端生产库；DAL 写入口唯一在云端"
-    script: scripts/dal.py
-    args: ["sync"]
-    safety: write
-    output: json
-    mcp: {expose: false}
-    params:
-      - {name: timeout, flag: "--timeout", type: integer, default: 600, description: 同步超时秒数}
-      - {name: allow_write, flag: "--allow-write", type: boolean, default: false, description: 写入门禁}

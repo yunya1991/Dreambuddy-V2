@@ -68,13 +68,19 @@ def _tools_list() -> list:
 
 
 def test_tools_list_matches_registry():
-    """工具面与注册表（mcp_capabilities.yaml l0.data.mcp）一致：4 工具 + annotations。"""
+    """工具面与注册表（mcp_capabilities.yaml l0.data.mcp）一致：5 工具 + annotations。"""
     tools = _tools_list()
     names = [t["name"] for t in tools]
-    assert names == ["data_fetch", "data_collect_once", "data_store_read", "data_store_write"]
+    assert names == [
+        "data_fetch",
+        "data_collect_once",
+        "data_store_read",
+        "data_tables",
+        "data_store_write",
+    ]
     by_name = {t["name"]: t for t in tools}
     # 只读工具 annotations
-    for n in ("data_fetch", "data_collect_once", "data_store_read"):
+    for n in ("data_fetch", "data_collect_once", "data_store_read", "data_tables"):
         assert by_name[n]["annotations"]["readOnlyHint"] is True
         assert by_name[n]["annotations"]["destructiveHint"] is False
     # 写工具 annotations
@@ -107,11 +113,38 @@ def test_data_store_read_requires_table():
 
 
 def test_data_store_read_unsupported_table():
-    """表白名单：非 mm_metrics 的表明确 invalid（禁任意表查询）。"""
+    """表白名单：未登记的表（如 tr_trades，P2-2 才接入）明确 invalid（禁任意表查询）。"""
     env = _call_tool("data_store_read", {"table": "tr_trades"})
     assert env["ok"] is False
     assert env["error_code"] == "invalid"
     assert "whitelist" in json.dumps(env)
+
+
+def test_data_tables_lists_macro_whitelist():
+    """data_tables 返回宏观域可读表与必填过滤参数。"""
+    env = _call_tool("data_tables", {})
+    assert env["ok"] is True
+    tables = {item["table"]: item for item in env["data"]["tables"]}
+    assert "mm_metrics" in tables
+    assert "mm_funding_rate" in tables
+    assert "filters.symbol" in tables["mm_funding_rate"]["requires"]
+    assert "filters.start_ts" in tables["mm_fear_greed"]["requires"]
+
+
+def test_data_store_read_macro_requires_window():
+    """宏观其余表：缺时间窗/缺 symbol 一律 invalid（防全表扫描）。"""
+    no_window = _call_tool("data_store_read", {"table": "mm_fear_greed", "limit": 5})
+    assert no_window["ok"] is False and no_window["error_code"] == "invalid"
+    no_symbol = _call_tool(
+        "data_store_read",
+        {
+            "table": "mm_funding_rate",
+            "filters": {"start_ts": 1, "end_ts": 2},
+            "limit": 5,
+        },
+    )
+    assert no_symbol["ok"] is False and no_symbol["error_code"] == "invalid"
+    assert "symbol" in json.dumps(no_symbol)
 
 
 def test_data_store_read_requires_metric_filters():

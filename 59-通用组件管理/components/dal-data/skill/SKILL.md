@@ -20,10 +20,12 @@ allowed-tools: Read, Bash
 |---|---|---|
 | `tools` | read | 列出 19-DAL 只读工具与输入 schema |
 | `scopes` | read | 列出可用数据 scope |
+| `tables` | read | 可读表与必填过滤参数（表白名单） |
 | `read` | read | 按 `sub_category` + `metric_name` 查 `mm_metrics` |
 | `fetch` | read | 按 scope 取数据上下文 |
-| `status` | read | 本地只读镜像新鲜度与库清单 |
-| `sync` | write | 从云端拉取只读快照（需 `--allow-write`） |
+| `status` | read | 本地只读镜像新鲜度、表数与关键表完整性 |
+
+**本组件只读且仅本地**：不联网、不触发同步、不写任何数据。
 
 ## 用法
 
@@ -32,7 +34,6 @@ python3 skill/scripts/dal.py read \
   --sub-category macro --metric-name DGS10 --limit 10
 python3 skill/scripts/dal.py fetch --scope market --params '{"symbol":"BTC"}'
 python3 skill/scripts/dal.py status
-python3 skill/scripts/dal.py sync --allow-write --timeout 600
 ```
 
 或经统一 CLI：
@@ -47,6 +48,7 @@ dreambuddy run dal-data read --sub-category macro --metric-name DGS10
 
 ## 边界（硬约束）
 
-- 云端 19 DAL 无对外 HTTP 接口，对接方式为**只读快照**（`cloud sync` 复用既有 dbsync，幂等）；
+- **只读且仅本地**：只读本地镜像库与本地工具，不联网、不触发同步、不写数据；
 - 不注册 `data_store_write`：DAL 写入口唯一在云端，写入须 `sudo -u luke`；
-- 组件 `internal: true`，所有动作 `mcp.expose: false`，不对外发布。
+- 云端镜像刷新属运维侧动作（`08-local-mirror.sh`），不由本组件触发；
+- 组件 `internal: true`（products 为空）、所有动作 `mcp.expose: false`，不对外发布。

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sqlite3
 import subprocess
 import sys
 import time
@@ -23,8 +24,18 @@ from typing import Any, Dict, Optional
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "31-分布式计算部署/phase7/08-local-mirror.sh"
 DAL_DIR = ROOT / "19-数据访问层/data"
+CORE_DB = DAL_DIR / "dreambuddy_core.db"
 COG_DB = ROOT / "4-MEMORY/data/cognitive_memory.db"
 STALE_SECONDS = 1800
+CORE_MIN_TABLES = 29
+REQUIRED_TABLES = (
+    "cv_config_versions",
+    "tr_trades",
+    "po_positions",
+    "rs_state",
+    "mm_metrics",
+    "kg_triples",
+)
 
 
 def _file_info(path: Path) -> Dict[str, Any]:
@@ -40,15 +51,56 @@ def _file_info(path: Path) -> Dict[str, Any]:
     }
 
 
+def core_db_info() -> Dict[str, Any]:
+    """核心库完整性：表数 ≥ 基线且关键表齐全（防止掩盖残缺镜像）。"""
+    if not CORE_DB.is_file():
+        return {
+            "exists": False,
+            "tables": 0,
+            "min_tables": CORE_MIN_TABLES,
+            "missing": list(REQUIRED_TABLES),
+            "tables_ok": False,
+        }
+    try:
+        conn = sqlite3.connect("file:{}?mode=ro".format(CORE_DB), uri=True)
+        try:
+            names = {
+                row[0] for row in conn.execute("select name from sqlite_master where type='table'")
+            }
+        finally:
+            conn.close()
+    except sqlite3.Error as exc:
+        return {
+            "exists": True,
+            "tables": 0,
+            "min_tables": CORE_MIN_TABLES,
+            "missing": list(REQUIRED_TABLES),
+            "tables_ok": False,
+            "error": str(exc),
+        }
+    missing = [name for name in REQUIRED_TABLES if name not in names]
+    return {
+        "exists": True,
+        "tables": len(names),
+        "min_tables": CORE_MIN_TABLES,
+        "missing": missing,
+        "tables_ok": len(names) >= CORE_MIN_TABLES and not missing,
+    }
+
+
 def manifest() -> Dict[str, Any]:
     dbs = sorted(DAL_DIR.glob("*.db")) if DAL_DIR.is_dir() else []
     targets = [_file_info(path) for path in dbs] + [_file_info(COG_DB)]
     ages = [item["age_seconds"] for item in targets if item.get("exists")]
+    core = core_db_info()
+    fresh = bool(ages) and max(ages) <= STALE_SECONDS
     return {
         "script": str(SCRIPT),
         "script_exists": SCRIPT.is_file(),
         "targets": targets,
-        "fresh": bool(ages) and max(ages) <= STALE_SECONDS,
+        "core_db": core,
+        "fresh": fresh,
+        "ok": fresh and core["tables_ok"],
         "stale_seconds": STALE_SECONDS,
     }
 
@@ -83,7 +135,7 @@ def main(argv: Optional[list] = None) -> int:
 
     if args.check:
         report = manifest()
-        code = 0 if report["fresh"] else 1
+        code = 0 if report["ok"] else 1
     else:
         try:
             report = run_sync(args.timeout)

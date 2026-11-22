@@ -41,6 +41,49 @@ _DAL_ROOT = _REPO_ROOT / "19-数据访问层"
 
 # data_store_read 表白名单（禁任意表，仅映射 DAL repo 方法）
 _MM_TABLE = "mm_metrics"
+# 宏观域其余表：表名 → 只读方法（均需时间窗；带 symbol 的表额外要求 symbol）
+_MM_TABLE_SPECS = {
+    "mm_fear_greed": {"method": "query_fear_greed_by_time", "symbol": False},
+    "mm_funding_rate": {"method": "query_funding_by_time", "symbol": True},
+    "mm_open_interest": {"method": "query_open_interest_by_time", "symbol": True},
+    "mm_liquidation": {"method": "query_liquidation_by_time", "symbol": True},
+    "mm_long_short_ratio": {"method": "query_long_short_ratio_by_time", "symbol": True},
+    "mm_taker_volume": {"method": "query_taker_volume_by_time", "symbol": True},
+}
+
+
+def table_catalog() -> list:
+    """可读表清单（供 data_tables / dal-data tables 展示）。"""
+    items = [
+        {
+            "table": _MM_TABLE,
+            "domain": "macro",
+            "requires": ["filters.sub_category", "filters.metric_name"],
+            "optional": ["filters.start_ts", "filters.end_ts", "limit"],
+        }
+    ]
+    for name, spec in _MM_TABLE_SPECS.items():
+        requires = ["filters.start_ts", "filters.end_ts"]
+        if spec["symbol"]:
+            requires.insert(0, "filters.symbol")
+        items.append(
+            {"table": name, "domain": "macro", "requires": requires, "optional": ["limit"]}
+        )
+    return items
+
+
+def _json_value(value):
+    """把 DAL 行里的 Decimal / datetime 转成 JSON 友好值。"""
+    if hasattr(value, "timestamp"):
+        try:
+            return int(value.timestamp())
+        except Exception:  # pragma: no cover
+            return str(value)
+    if isinstance(value, (bytes, memoryview)):
+        return None
+    if isinstance(value, (int, float, str, type(None))):
+        return value
+    return str(value)
 
 
 def _get_market_macro_repo():
@@ -178,16 +221,22 @@ def _handle_data_store_read(args: Dict[str, Any]) -> str:
             ensure_ascii=False,
         )
     if table != _MM_TABLE:
-        return json.dumps(
-            wrap(
-                None,
-                SHELL_SOURCE,
-                degraded=True,
-                error_code="invalid",
-                meta={"reason": f"unsupported table: {table!r} (whitelist: {_MM_TABLE})"},
-            ),
-            ensure_ascii=False,
-        )
+        spec = _MM_TABLE_SPECS.get(table)
+        if spec is None:
+            return json.dumps(
+                wrap(
+                    None,
+                    SHELL_SOURCE,
+                    degraded=True,
+                    error_code="invalid",
+                    meta={
+                        "reason": f"unsupported table: {table!r}",
+                        "whitelist": [_MM_TABLE] + sorted(_MM_TABLE_SPECS),
+                    },
+                ),
+                ensure_ascii=False,
+            )
+        return _read_macro_table(table, spec, args)
     filters = args.get("filters") if isinstance(args.get("filters"), dict) else {}
     sub_category = str(filters.get("sub_category") or "").strip()
     metric_name = str(filters.get("metric_name") or "").strip()
@@ -268,6 +317,76 @@ def _handle_data_store_read(args: Dict[str, Any]) -> str:
             ),
             ensure_ascii=False,
         )
+
+
+def _read_macro_table(table: str, spec: Dict[str, Any], args: Dict[str, Any]) -> str:
+    """宏观域其余表的只读查询：必须带时间窗，带 symbol 的表必须给 symbol。"""
+    filters = args.get("filters") if isinstance(args.get("filters"), dict) else {}
+    start_ts = filters.get("start_ts")
+    end_ts = filters.get("end_ts")
+    if start_ts is None or end_ts is None:
+        return json.dumps(
+            wrap(
+                None,
+                SHELL_SOURCE,
+                degraded=True,
+                error_code="invalid",
+                meta={"reason": f"{table} requires filters.start_ts and filters.end_ts"},
+            ),
+            ensure_ascii=False,
+        )
+    symbol = str(filters.get("symbol") or "").strip()
+    if spec["symbol"] and not symbol:
+        return json.dumps(
+            wrap(
+                None,
+                SHELL_SOURCE,
+                degraded=True,
+                error_code="invalid",
+                meta={"reason": f"{table} requires filters.symbol"},
+            ),
+            ensure_ascii=False,
+        )
+    limit = min(int(args.get("limit", 100)), 100)
+    repo = _get_market_macro_repo()
+    if repo is None:
+        return json.dumps(
+            wrap(
+                None,
+                SHELL_SOURCE,
+                degraded=True,
+                error_code="unavailable",
+                meta={"reason": "dal market_macro repo unavailable"},
+            ),
+            ensure_ascii=False,
+        )
+    try:
+        from datetime import datetime, timezone
+
+        s_dt = datetime.fromtimestamp(int(start_ts), tz=timezone.utc)
+        e_dt = datetime.fromtimestamp(int(end_ts), tz=timezone.utc)
+        method = getattr(repo, spec["method"])
+        res = method(symbol, s_dt, e_dt) if spec["symbol"] else method(s_dt, e_dt)
+        rows = []
+        for row in list(res or [])[:limit]:
+            values = list(row) if isinstance(row, (tuple, list)) else [row]
+            rows.append({"values": [_json_value(v) for v in values]})
+        return json.dumps(
+            wrap({"rows": rows, "table": table, "symbol": symbol or None}, SHELL_SOURCE),
+            ensure_ascii=False,
+        )
+    except Exception as e:
+        return json.dumps(
+            wrap(
+                None, SHELL_SOURCE, degraded=True, error_code="unavailable", meta={"reason": str(e)}
+            ),
+            ensure_ascii=False,
+        )
+
+
+def _handle_data_tables(args: Dict[str, Any]) -> str:
+    """列出可读表与必填过滤参数（read-only）。"""
+    return json.dumps(wrap({"tables": table_catalog()}, SHELL_SOURCE), ensure_ascii=False)
 
 
 def _handle_data_store_write(args: Dict[str, Any]) -> str:
@@ -369,6 +488,10 @@ TOOL_DEFS = {
             "required": ["table"],
         },
     },
+    "data_tables": {
+        "description": "List readable DAL tables and required filters (read-only)",
+        "inputSchema": {"type": "object", "properties": {}},
+    },
     "data_store_write": {
         "description": "Store write (BANNED by default, requires Mandate)",
         "inputSchema": {
@@ -387,6 +510,7 @@ TOOL_HANDLERS = {
     "data_fetch": _handle_data_fetch,
     "data_collect_once": _handle_data_collect_once,
     "data_store_read": _handle_data_store_read,
+    "data_tables": _handle_data_tables,
     "data_store_write": _handle_data_store_write,
 }
 

@@ -54,13 +54,6 @@ class EmitTest(unittest.TestCase):
 
 
 class GateTest(unittest.TestCase):
-    def test_sync_requires_allow_write(self):
-        buffer = StringIO()
-        with redirect_stdout(buffer):
-            code = dal.main(["sync"])
-        self.assertEqual(code, 2)
-        self.assertIn("E_GATE", json.loads(buffer.getvalue())["data"])
-
     def test_fetch_rejects_bad_json(self):
         buffer = StringIO()
         with redirect_stdout(buffer):
@@ -113,6 +106,20 @@ class PassthroughTest(unittest.TestCase):
             ],
         )
 
+    def test_tables_uses_bridge(self):
+        captured = {}
+
+        def fake_run(script, argv, timeout=600):
+            captured["script"] = script
+            captured["argv"] = argv
+            return _proc('{"tables": [{"table": "mm_metrics"}]}')
+
+        with mock.patch.object(dal, "_run", side_effect=fake_run), redirect_stdout(StringIO()):
+            code = dal.main(["tables"])
+        self.assertEqual(code, 0)
+        self.assertEqual(captured["script"], dal.DATA_BRIDGE)
+        self.assertEqual(captured["argv"], ["tables"])
+
     def test_status_uses_cloud_sync(self):
         captured = {}
 
@@ -127,19 +134,17 @@ class PassthroughTest(unittest.TestCase):
         self.assertEqual(captured["script"], dal.CLOUD_SYNC)
         self.assertEqual(captured["argv"], ["--check", "--json"])
 
-    def test_sync_passes_timeout(self):
-        captured = {}
-
+    def test_status_reports_stale_as_success(self):
         def fake_run(script, argv, timeout=600):
-            captured["argv"] = argv
-            captured["timeout"] = timeout
-            return _proc("{}")
+            return _proc('{"fresh": false, "stale_seconds": 1800}', returncode=1)
 
-        with mock.patch.object(dal, "_run", side_effect=fake_run), redirect_stdout(StringIO()):
-            code = dal.main(["sync", "--allow-write", "--timeout", "30"])
+        buffer = StringIO()
+        with mock.patch.object(dal, "_run", side_effect=fake_run), redirect_stdout(buffer):
+            code = dal.main(["status"])
         self.assertEqual(code, 0)
-        self.assertEqual(captured["argv"], ["--json", "--timeout", "30"])
-        self.assertEqual(captured["timeout"], 90)
+        body = json.loads(buffer.getvalue())
+        self.assertTrue(body["ok"])
+        self.assertFalse(body["data"]["fresh"])
 
 
 if __name__ == "__main__":

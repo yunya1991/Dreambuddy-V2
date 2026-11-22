@@ -96,12 +96,46 @@ else
     echo "[$(ts)] skip cognitive merge (snapshot pull failed)" >> "${LOG}"
 fi
 
-# ── 4) 核心库：远端快照 → 本地只读镜像 ──
-rsync -az "${RPATH}" --no-perms --no-owner --no-group -e "${RSH}" \
-    "${SSH_ALIAS}:${SNAP_REMOTE}/dreambuddy_core.db" \
-    "${LOCAL_DAL}/dreambuddy_core.db" >> "${LOG}" 2>&1
-RC=$?; [ "${RC}" -ne 0 ] && FAILED=1
-echo "[$(ts)] dreambuddy_core.db mirror rc=${RC}" >> "${LOG}"
+# ── 4) 核心库：远端快照 → 本地只读镜像（就绪检查 + 临时落盘 + 校验 + 原子替换）──
+#   快照 .tmp 存在说明云端 snapshot_dbs.sh 正在生成/校验，此时拉取会得到残缺文件。
+#   因此：先查就绪 → rsync 到 .incoming → 校验表数/关键表 → 通过才覆盖。
+CORE_INCOMING="${LOCAL_DAL}/dreambuddy_core.db.incoming"
+CORE_MIN_TABLES="${CORE_MIN_TABLES:-29}"
+REQUIRED_TABLES="cv_config_versions tr_trades po_positions rs_state mm_metrics kg_triples"
+
+verify_core_db() {
+    local db="$1" tables t present
+    command -v sqlite3 >/dev/null 2>&1 || return 0
+    tables="$(sqlite3 "file:${db}?mode=ro" "select count(*) from sqlite_master where type='table';" 2>/dev/null)"
+    [ -n "${tables}" ] && [ "${tables}" -ge "${CORE_MIN_TABLES}" ] || return 1
+    for t in ${REQUIRED_TABLES}; do
+        present="$(sqlite3 "file:${db}?mode=ro" "select count(*) from sqlite_master where type='table' and name='${t}';" 2>/dev/null)"
+        [ "${present}" = "1" ] || return 1
+    done
+    return 0
+}
+
+if ${RSH} "${SSH_ALIAS}" "test -e '${SNAP_REMOTE}/dreambuddy_core.db.tmp'" >/dev/null 2>&1; then
+    echo "[$(ts)] skip core mirror: snapshot busy (.tmp exists)，保留旧镜像" >> "${LOG}"
+    FAILED=1
+else
+    rm -f "${CORE_INCOMING}"
+    rsync -az "${RPATH}" --no-perms --no-owner --no-group -e "${RSH}" \
+        "${SSH_ALIAS}:${SNAP_REMOTE}/dreambuddy_core.db" "${CORE_INCOMING}" >> "${LOG}" 2>&1
+    RC=$?
+    if [ "${RC}" -ne 0 ]; then
+        echo "[$(ts)] dreambuddy_core.db mirror rc=${RC}（保留旧镜像）" >> "${LOG}"
+        rm -f "${CORE_INCOMING}"
+        FAILED=1
+    elif verify_core_db "${CORE_INCOMING}"; then
+        mv -f "${CORE_INCOMING}" "${LOCAL_DAL}/dreambuddy_core.db"
+        echo "[$(ts)] dreambuddy_core.db mirror ok（表数校验通过）" >> "${LOG}"
+    else
+        echo "[$(ts)] dreambuddy_core.db 校验失败（表数/关键表不足），保留旧镜像" >> "${LOG}"
+        rm -f "${CORE_INCOMING}"
+        FAILED=1
+    fi
+fi
 
 # ── 5) gene_data 双向 merge（不含 --delete）──
 #   5a. 上行：本地新增 → 远端
