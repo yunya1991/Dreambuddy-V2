@@ -191,6 +191,55 @@ def test_reconcile_backfills_missing_positions_idempotently(tmp_path):
     assert len(audits) == 1
 
 
+def test_reconcile_reopen_after_close_resets_status(tmp_path):
+    """交易所重新出现持仓（qty 0→17）必须把 closed 拉回 open（BNB 17 张复现）。"""
+    led = _ledger(tmp_path)
+    led.reconcile([{"inst_id": "BNB-USDT-SWAP", "pos_side": "short", "qty": 9, "avg_entry": 548.0}])
+    led.apply_partial_close("BNB-USDT-SWAP", "short", 9, 548.42)
+    # 复现生产坏行：qty 已归零且被标记 closed，随后交易所重新出现 17 张
+    with led._connect() as conn:
+        conn.execute(
+            "UPDATE positions SET status='closed' WHERE inst_id=? AND pos_side=?",
+            ("BNB-USDT-SWAP", "short"),
+        )
+
+    def _row():
+        with led._connect() as conn:
+            return conn.execute(
+                "SELECT qty, status, miss_count, stale_since FROM positions"
+                " WHERE inst_id=? AND pos_side=?",
+                ("BNB-USDT-SWAP", "short"),
+            ).fetchone()
+
+    assert _row()["status"] == "closed"
+
+    led.reconcile(
+        [{"inst_id": "BNB-USDT-SWAP", "pos_side": "short", "qty": 17, "avg_entry": 557.28}]
+    )
+    row = _row()
+    assert row["qty"] == 17.0
+    assert row["status"] == "open"
+    assert row["miss_count"] == 0
+    assert row["stale_since"] in (None, "")
+    assert any(
+        r["inst_id"] == "BNB-USDT-SWAP"
+        for r in led.list_effective_positions(max_heartbeat_age_seconds=10**6)
+    )
+
+
+def test_reconcile_resets_closed_status_when_qty_unchanged(tmp_path):
+    """qty 未变但 status=closed 的坏行，对账也必须纠正为 open。"""
+    led = _ledger(tmp_path)
+    led.reconcile([{"inst_id": "XAU-USDT-SWAP", "pos_side": "short", "qty": 28, "avg_entry": 3570}])
+    with led._connect() as conn:
+        conn.execute(
+            "UPDATE positions SET status='closed' WHERE inst_id=? AND pos_side=?",
+            ("XAU-USDT-SWAP", "short"),
+        )
+    led.reconcile([{"inst_id": "XAU-USDT-SWAP", "pos_side": "short", "qty": 28, "avg_entry": 3570}])
+    assert led.get_position("XAU-USDT-SWAP", "short")["status"] == "open"
+
+
 def test_gateway_reconcile_ledger_reads_exchange_positions(tmp_path, monkeypatch):
     monkeypatch.setenv("POSITION_LEDGER_PATH", str(tmp_path / "gw_ledger.db"))
     gw = TradeExecutionGateway(

@@ -1023,7 +1023,7 @@ class PositionLedger:
             _active.add((inst_id, pos_side))
             with self._lock, self._connect() as conn:
                 row = conn.execute(
-                    "SELECT qty, avg_entry, entry_known, source FROM positions"
+                    "SELECT qty, avg_entry, entry_known, source, status FROM positions"
                     " WHERE inst_id=? AND pos_side=?",
                     (inst_id, pos_side),
                 ).fetchone()
@@ -1046,7 +1046,11 @@ class PositionLedger:
                     )
                     _old_avg = float(row["avg_entry"] or 0)
                     _avg_drift = _is_reconciled and avg > _EPS and abs(_old_avg - avg) > _EPS
-                    if abs(_old_qty - qty) <= _EPS and not _avg_drift:
+                    if (
+                        abs(_old_qty - qty) <= _EPS
+                        and not _avg_drift
+                        and str(row["status"] or "open") == "open"
+                    ):
                         skipped.append(f"{inst_id}:{pos_side}")
                         continue
                     if not _is_managed:
@@ -1058,7 +1062,8 @@ class PositionLedger:
                         _new_avg = avg
                     conn.execute(
                         "UPDATE positions SET qty=?, avg_entry=?, entry_known=?, updated_at=?,"
-                        " closed_at=NULL WHERE inst_id=? AND pos_side=?",
+                        " closed_at=NULL, status='open', stale_since=NULL, miss_count=0"
+                        " WHERE inst_id=? AND pos_side=?",
                         (
                             qty,
                             _new_avg,
@@ -1094,7 +1099,13 @@ class PositionLedger:
                     " source=CASE WHEN positions.source != ''"
                     " AND positions.source NOT LIKE '22-reconciled%'"
                     " THEN positions.source ELSE excluded.source END,"
-                    " updated_at=excluded.updated_at, closed_at=NULL",
+                    " updated_at=excluded.updated_at, closed_at=NULL,"
+                    # 交易所重新出现持仓：必须把 closed/stale 拉回 open，否则 effective
+                    # 视图会漏计（2026-11-23 BNB 17 张 status=closed 但 qty>0）
+                    " status=CASE WHEN excluded.qty > 1e-9 THEN 'open' ELSE positions.status END,"
+                    " stale_since=CASE WHEN excluded.qty > 1e-9 THEN NULL"
+                    " ELSE positions.stale_since END,"
+                    " miss_count=CASE WHEN excluded.qty > 1e-9 THEN 0 ELSE positions.miss_count END",
                     (inst_id, pos_side, qty, avg, 1 if avg > 0 else 0, source, _ts, _ts),
                 )
                 conn.execute(
