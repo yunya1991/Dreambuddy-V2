@@ -1,0 +1,11 @@
+[Unit]
+Description=Run dreambuddy ledger attribution report daily at 00:20 Asia/Shanghai
+
+[Timer]
+OnCalendar=*-*-* 00:20:00 Asia/Shanghai
+Persistent=true
+AccuracySec=1min
+Unit=dreambuddy-ledger-attribution.service
+
+[Install]
+WantedBy=timers.target

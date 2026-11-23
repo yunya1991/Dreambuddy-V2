@@ -1,0 +1,15 @@
+[Unit]
+Description=Dreambuddy ledger attribution daily report (22/23/50 domain labels)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=luke
+Group=luke
+WorkingDirectory=/home/luke/dreambuddy/15-监控告警系统
+EnvironmentFile=-/etc/dreambuddy-monitoring/monitoring.env
+Environment=DREAMBUDDY_REPO_ROOT=/home/luke/dreambuddy
+Environment=POSITION_LEDGER_PATH=/home/luke/dreambuddy/22-执行引擎中心/runtime/position_ledger.db
+ExecStart=/home/luke/venv-trading/bin/python -B scripts/ledger_attribution_report.py --since-hours 24 --md --json --out-dir /home/luke/dreambuddy/15-监控告警系统/logs/ledger-attribution
+TimeoutStartSec=180
+# 有未打标签持仓/漂移时保留非零退出码，便于 systemd 失败告警；报告落 logs/ledger-attribution/latest.md
