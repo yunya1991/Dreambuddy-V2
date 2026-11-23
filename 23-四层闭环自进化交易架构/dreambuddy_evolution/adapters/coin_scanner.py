@@ -200,9 +200,17 @@ class CoinScanner:
         self._cache: dict[str, Any] | None = None
         self._cache_ts: float = 0.0
 
-    def scan(self, top_n: int = 20, force: bool = False) -> list[dict[str, Any]]:
+    def scan(
+        self,
+        top_n: int = 20,
+        force: bool = False,
+        allow: set[str] | None = None,
+    ) -> list[dict[str, Any]]:
         """
         扫描全市场，返回信号最强的 top_n 个币种。
+
+        allow: 可选的标的白名单（基础符号，如 {"BTC","ETH"}）。给出时只对
+        白名单内标的拉 K 线计算信号，避免全市场逐币请求带来的限频与耗时。
 
         Returns:
             [
@@ -226,6 +234,7 @@ class CoinScanner:
         if not force and self._cache is not None:
             if time.time() - self._cache_ts < self.CACHE_TTL:
                 return self._cache[:top_n]
+        _t0 = time.time()
 
         try:
             # 1. 获取所有 USDT 永续合约 ticker
@@ -248,6 +257,11 @@ class CoinScanner:
             ]
 
             # 3. 计算每币信号
+            if allow is not None:
+                _allow = {str(s).upper() for s in allow}
+                liquid = [
+                    t for t in liquid if t["inst_id"].replace("-USDT-SWAP", "").upper() in _allow
+                ]
             candidates = []
             for t in liquid:
                 inst_id = t["inst_id"]
@@ -306,6 +320,13 @@ class CoinScanner:
 
             self._cache = balanced
             self._cache_ts = time.time()
+            logger.info(
+                "[FO] scan done top_n=%s allow=%s liquid=%s elapsed_ms=%.0f",
+                top_n,
+                len(_allow) if allow is not None else "all",
+                len(liquid),
+                (time.time() - _t0) * 1000,
+            )
             return balanced[:top_n]
 
         except Exception as e:
