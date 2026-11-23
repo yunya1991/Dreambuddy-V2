@@ -1032,8 +1032,8 @@ class TradeExecutionGateway:
                 else ("sell" if _side == "long" else "buy")
             )
             _fill = self._latest_fill(sig.symbol, _side, side=_expect_side)
-            # 成交索引有秒级延迟：平仓/减仓落账前重试，避免 px=0 导致已实现盈亏失真
-            if _fill is None and _action in ("close", "reduce", "reduce_only"):
+            # 成交索引有秒级延迟：开/平/减仓落账前重试，避免 px=0 导致开仓漏账或盈亏失真
+            if _fill is None and _action in ("open", "close", "reduce", "reduce_only"):
                 for _ in range(2):
                     time.sleep(0.4)
                     _fill = self._latest_fill(sig.symbol, _side, side=_expect_side)
@@ -1063,10 +1063,19 @@ class TradeExecutionGateway:
                     _action,
                     sig.decision_id,
                 )
+            if _px <= 0 and _action == "open":
+                # 成交索引 lag + 下单响应无均价时，用最新价兜底，避免开仓整笔漏账
+                _px = self._last_price(sig.symbol)
+                logger.warning(
+                    "[Gateway] %s open 成交价缺失，按最新价兜底 px=%.6f decision_id=%s",
+                    sig.symbol,
+                    _px,
+                    sig.decision_id,
+                )
             if _action == "open":
                 if _qty <= 0:
                     _qty = self._current_position_qty(sig.symbol, _side)
-                ledger.record_fill(
+                _rec = ledger.record_fill(
                     inst_id=sig.symbol,
                     pos_side=_side,
                     action="open",
@@ -1077,6 +1086,13 @@ class TradeExecutionGateway:
                     exchange_fill_id=str((_fill or {}).get("trade_id") or ""),
                     fee=float((_fill or {}).get("fee") or 0.0),
                 )
+                if not (_rec or {}).get("ok"):
+                    logger.warning(
+                        "[Gateway] %s open 落账被拒: %s decision_id=%s",
+                        sig.symbol,
+                        (_rec or {}).get("reason"),
+                        sig.decision_id,
+                    )
             elif _action in ("close", "reduce", "reduce_only"):
                 ledger.record_fill(
                     inst_id=sig.symbol,
@@ -1134,6 +1150,19 @@ class TradeExecutionGateway:
         """Ghost 平仓落账：取该方向最近一笔真实平仓成交（不限时效）。"""
         _expect_side = "sell" if str(pos_side).lower() == "long" else "buy"
         return self._latest_fill(inst_id, pos_side, side=_expect_side, max_age_sec=None)
+
+    def _last_price(self, inst_id: str) -> float:
+        """最新价兜底（成交索引 lag 时用于开仓落账，查询失败返回 0）。"""
+        fn = getattr(self._okx, "get_ticker", None)
+        if not callable(fn):
+            return 0.0
+        try:
+            data = fn(inst_id) or {}
+            if not data.get("ok", True):
+                return 0.0
+            return float(data.get("last") or 0.0)
+        except Exception:  # noqa: BLE001
+            return 0.0
 
     def _current_position_qty(self, inst_id: str, pos_side: str) -> float:
         """开仓数量兜底：直接读交易所持仓（单位与合约 sz 一致）。"""

@@ -45,6 +45,44 @@ def test_domain_mapping():
     assert domain_of("") == "legacy"
 
 
+def test_gateway_open_falls_back_to_ticker_when_fill_missing(tmp_path):
+    """成交索引 lag 且下单响应无均价时，开仓必须按最新价落账（不得整笔漏账）。"""
+
+    class _NoFillsOkx:
+        def get_ticker(self, inst_id):
+            return {"ok": True, "last": 76.5}
+
+        def get_positions(self, inst_id=None):
+            return {"ok": True, "positions": []}
+
+    led = _ledger(tmp_path)
+    gw = TradeExecutionGateway(okx_client=_NoFillsOkx(), ledger=led)
+    sig = FinalDecisionSignal(
+        signal_id="s1",
+        source="23-evolution",
+        symbol=ETH,
+        direction="long",
+        decision_id="d1",
+        action="open",
+        sz=1.3,
+        pos_side="long",
+    )
+    res = ExecutionResult(
+        passed=True,
+        executed=True,
+        reason="PASS",
+        reason_code="PASS",
+        order_result={"ok": True, "ord_id": "1"},
+    )
+
+    gw._record_ledger(sig, res)
+
+    fill = led.recent_fills(1)[0]
+    assert fill["action"] == "open" and fill["domain"] == "23"
+    assert abs(fill["px"] - 76.5) < 1e-9
+    _assert_balanced(led)
+
+
 def test_u1_open_allocates_domain_and_lot(tmp_path):
     led = _ledger(tmp_path)
 
