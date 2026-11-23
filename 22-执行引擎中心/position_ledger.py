@@ -1657,6 +1657,24 @@ class PositionLedger:
             ).fetchall()
         return [dict(r) for r in rows]
 
+    def active_holders(self, inst_id: str) -> List[Dict[str, Any]]:
+        """该标的全部活跃持有明细（域、方向、数量），跨域互斥守卫用。"""
+        with self._lock, self._connect() as conn:
+            rows = conn.execute(
+                "SELECT domain, pos_side, qty FROM domain_positions"
+                " WHERE inst_id=? AND qty > ? AND status IN ('open','stale')"
+                " ORDER BY domain, pos_side",
+                (inst_id, _EPS),
+            ).fetchall()
+        return [
+            {
+                "domain": str(r["domain"] or ""),
+                "pos_side": str(r["pos_side"] or ""),
+                "qty": float(r["qty"]),
+            }
+            for r in rows
+        ]
+
     def active_domain_holders(self, inst_id: str, pos_side: Optional[str] = None) -> List[str]:
         """该标的前持有域（跨域互斥守卫用）：qty>0 且未平仓的 domain 集合。
 

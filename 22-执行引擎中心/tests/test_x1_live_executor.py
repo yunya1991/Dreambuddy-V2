@@ -16,14 +16,14 @@ import x1_live_executor as ex  # noqa: E402
 
 def _live_decision(**overrides):
     base = {
-        "decision_id": "50-nn|BTC-USDT-SWAP|1",
-        "signal_id": "50-nn|BTC-USDT-SWAP|1",
+        "decision_id": "50-nn|AVAX-USDT-SWAP|1",
+        "signal_id": "50-nn|AVAX-USDT-SWAP|1",
         "source": "50-nn",
         "mode": "live",
         "shadow": False,
-        "symbol": "BTC-USDT-SWAP",
+        "symbol": "AVAX-USDT-SWAP",
         "direction": "long",
-        "mandate_id": "mandate-20261113-50-live-btc",
+        "mandate_id": "mandate-20261113-50-live-avax",
         "execution": {"outcome": "live:50-bypass", "allowed": True},
     }
     base.update(overrides)
@@ -122,7 +122,7 @@ def test_position_guard_blocks_existing_symbol(monkeypatch, tmp_path):
         "_bridge_call",
         lambda payload, timeout=90: {
             "ok": True,
-            "positions": [{"inst_id": "BTC-USDT-SWAP", "pos": 1.0}],
+            "positions": [{"inst_id": "AVAX-USDT-SWAP", "pos": 1.0}],
         },
     )
     outbox = tmp_path / "outbox.jsonl"
@@ -187,7 +187,7 @@ def test_cooldown_blocks_reentry_within_8h(monkeypatch, tmp_path):
         ex, "_bridge_call", lambda payload, timeout=90: {"ok": True, "positions": []}
     )
     (tmp_path / "processed.json").write_text(
-        json.dumps({"processed": {}, "last_entry": {"BTC-USDT-SWAP": time.time()}}),
+        json.dumps({"processed": {}, "last_entry": {"AVAX-USDT-SWAP": time.time()}}),
         encoding="utf-8",
     )
     outbox = tmp_path / "outbox.jsonl"
@@ -199,7 +199,7 @@ def test_cooldown_blocks_reentry_within_8h(monkeypatch, tmp_path):
     result = ex.run(outbox, dry_run=False, limit=10)
     assert result["executed"] == 0
     assert result["skipped"] == 1
-    assert result["cooldown_rejected"][0]["symbol"] == "BTC-USDT-SWAP"
+    assert result["cooldown_rejected"][0]["symbol"] == "AVAX-USDT-SWAP"
     assert result["cooldown_rejected"][0]["remaining_sec"] > 8 * 3600 - 60
     assert not (tmp_path / "fills.jsonl").exists()
 
@@ -219,7 +219,7 @@ def test_cooldown_expires_after_8h_and_records_entry(monkeypatch, tmp_path):
         ),
     )
     (tmp_path / "processed.json").write_text(
-        json.dumps({"processed": {}, "last_entry": {"BTC-USDT-SWAP": time.time() - 9 * 3600}}),
+        json.dumps({"processed": {}, "last_entry": {"AVAX-USDT-SWAP": time.time() - 9 * 3600}}),
         encoding="utf-8",
     )
     outbox = tmp_path / "outbox.jsonl"
@@ -229,7 +229,7 @@ def test_cooldown_expires_after_8h_and_records_entry(monkeypatch, tmp_path):
     result = ex.run(outbox, dry_run=False, limit=10)
     assert result["executed"] == 1
     state = json.loads((tmp_path / "processed.json").read_text(encoding="utf-8"))
-    assert state["last_entry"]["BTC-USDT-SWAP"] >= before
+    assert state["last_entry"]["AVAX-USDT-SWAP"] >= before
 
 
 def test_check_uses_class_notional_cap():
@@ -352,3 +352,33 @@ def test_risk_bridge_real_gate_contract():
     if approved["passed"]:
         assert 10.0 <= approved["notional_usdt"] <= 100.0
         assert approved["leverage"] == 3
+
+
+def test_records_50_fill_into_unified_ledger(tmp_path, monkeypatch):
+    """50 成交必须写入 22 账本并打 domain=50 标签（幂等）。"""
+    monkeypatch.setenv("POSITION_LEDGER_PATH", str(tmp_path / "ledger.db"))
+    from position_ledger import PositionLedger
+
+    rec = {
+        "symbol": "AVAX-USDT-SWAP",
+        "direction": "long",
+        "decision_id": "50-nn|AVAX-USDT-SWAP|1",
+        "order_placed": True,
+        "order_id": "oid-50-1",
+        "fill_px": 10.5,
+        "result": {"contracts": 3.0},
+    }
+    ex._record_position_ledger(rec)
+    ex._record_position_ledger(rec)  # 重放不重复入账
+
+    led = PositionLedger()
+    holders = led.active_holders("AVAX-USDT-SWAP")
+    assert holders and holders[0]["domain"] == "50" and holders[0]["qty"] == 3.0
+    assert len(led.recent_fills(10)) == 1
+
+
+def test_record_skips_unfilled_or_dry_run():
+    ex._record_position_ledger({"symbol": "AVAX-USDT-SWAP", "order_placed": False})
+    ex._record_position_ledger(
+        {"symbol": "AVAX-USDT-SWAP", "order_placed": True, "result": {"contracts": 0}}
+    )

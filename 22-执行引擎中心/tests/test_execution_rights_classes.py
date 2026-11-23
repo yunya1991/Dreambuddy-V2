@@ -199,6 +199,36 @@ def test_shared_outlet_real_ledger_domain_ownership(tmp_path, monkeypatch):
     assert gw._shared_outlet_blocked(_sig("BTC-USDT-SWAP")) == ""
 
 
+class _StubHolders(_StubLedger):
+    def __init__(self, holders):
+        super().__init__([])
+        self.holders = holders
+
+    def active_holders(self, inst_id):
+        return list(self.holders)
+
+
+def test_blocks_same_domain_reverse_side(monkeypatch):
+    """同域已持 short，23 再开 long → 禁止逆向开单。"""
+    gw = _gw(_Okx([]), _StubHolders([{"domain": "23", "pos_side": "short", "qty": 1.0}]))
+    monkeypatch.setattr(gw, "_load_execution_rights", _rules)
+    assert "opposite_side" in gw._shared_outlet_blocked(_sig("AVAX-USDT-SWAP"))
+
+
+def test_blocks_other_domain_any_side(monkeypatch):
+    """他域已持（即使反向）→ 拒绝。"""
+    gw = _gw(_Okx([]), _StubHolders([{"domain": "50", "pos_side": "short", "qty": 3.0}]))
+    monkeypatch.setattr(gw, "_load_execution_rights", _rules)
+    deny = gw._shared_outlet_blocked(_sig("AVAX-USDT-SWAP", "23-evolution"))
+    assert "symbol_held_by_other_domain" in deny and "50" in deny
+
+
+def test_allows_same_domain_same_side_add(monkeypatch):
+    gw = _gw(_Okx([]), _StubHolders([{"domain": "23", "pos_side": "long", "qty": 2.0}]))
+    monkeypatch.setattr(gw, "_load_execution_rights", _rules)
+    assert gw._shared_outlet_blocked(_sig("AVAX-USDT-SWAP", "23-evolution")) == ""
+
+
 def test_real_registry_expansion():
     gw = _gw()
     assert gw._execution_rights_denied(_sig("AVAX-USDT-SWAP", "23-evolution")) == ""

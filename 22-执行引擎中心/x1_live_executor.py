@@ -213,6 +213,39 @@ def _position_guard(decision: dict[str, Any]) -> str | None:
     return None
 
 
+def _record_position_ledger(record: dict[str, Any]) -> None:
+    """50 域成交写入 22 统一账本（domain=50），供归因/容量/跨域互斥使用。
+
+    FAIL-OPEN：账本不可用不影响已成交订单；order_id 作 exchange_fill_id 保证幂等。
+    """
+    if not record.get("order_placed"):
+        return
+    res = record.get("result") or {}
+    try:
+        qty = abs(float(res.get("contracts") or 0))
+        px = float(record.get("fill_px") or res.get("reference_px") or 0)
+    except (TypeError, ValueError):
+        return
+    if qty <= 0 or px <= 0:
+        return
+    try:
+        from position_ledger import PositionLedger
+
+        PositionLedger().record_fill(
+            inst_id=str(record.get("symbol") or "").upper(),
+            pos_side=str(record.get("direction") or "").lower(),
+            action="open",
+            qty=qty,
+            px=px,
+            source="50-nn",
+            domain="50",
+            decision_id=str(record.get("decision_id") or ""),
+            exchange_fill_id=str(record.get("order_id") or ""),
+        )
+    except Exception as exc:  # noqa: BLE001 — 落账失败不影响交易
+        print(f"[x1] 22 账本落账失败(FAIL-OPEN): {exc}", file=sys.stderr)
+
+
 def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
     decisions = _read_outbox(outbox)
     state = _load_state()
@@ -335,6 +368,7 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
             "result": outcome,
         }
         _append_ledger(record)
+        _record_position_ledger(record)
         if not dry_run:
             processed[decision_id] = {
                 "status": "executed" if outcome.get("ok") else "failed",

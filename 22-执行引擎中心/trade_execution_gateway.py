@@ -728,13 +728,37 @@ class TradeExecutionGateway:
                 break
 
         ledger = self._get_ledger()
-        if ledger is not None and hasattr(ledger, "active_domain_holders"):
+        _my_side = str(getattr(sig, "pos_side", None) or sig.direction or "").lower()
+        if ledger is not None and hasattr(ledger, "active_holders"):
+            try:
+                _holders = ledger.active_holders(str(sig.symbol)) or []
+            except Exception as exc:  # noqa: BLE001 — 查询失败不阻断
+                logger.warning("[Gateway] 域归属查询失败(FAIL-OPEN): %s", exc)
+                _holders = []
+            _others = sorted({h["domain"] for h in _holders if h.get("domain") != _my_domain})
+            if _others:
+                return (
+                    f"symbol_held_by_other_domain symbol={sig.symbol}"
+                    f" holders={','.join(_others)}"
+                )
+            if _my_side:
+                _opp = sorted(
+                    {
+                        f"{h.get('domain') or '?'}:{h.get('pos_side')}"
+                        for h in _holders
+                        if str(h.get("pos_side") or "").lower() not in ("", _my_side)
+                    }
+                )
+                if _opp:
+                    return f"symbol_opposite_side_held symbol={sig.symbol} held={','.join(_opp)}"
+            if _holders:
+                return ""
+        elif ledger is not None and hasattr(ledger, "active_domain_holders"):
             try:
                 _owners = ledger.active_domain_holders(
                     str(sig.symbol), getattr(sig, "pos_side", None)
                 )
-            except Exception as exc:  # noqa: BLE001 — 查询失败不阻断
-                logger.warning("[Gateway] 域归属查询失败(FAIL-OPEN): %s", exc)
+            except Exception:  # noqa: BLE001
                 _owners = None
             if _owners:
                 _others = sorted({o for o in _owners if o and o != _my_domain})
