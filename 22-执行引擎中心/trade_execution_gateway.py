@@ -745,17 +745,32 @@ class TradeExecutionGateway:
                     )
                 return ""
 
+        # 账本有仓但无域归属（网关外开仓/历史回填）→ 归属不明，保守拒绝叠加
+        if ledger is not None and hasattr(ledger, "list_positions"):
+            try:
+                _raw = {
+                    str(p.get("inst_id")): abs(float(p.get("qty") or 0))
+                    for p in (ledger.list_positions() or [])
+                }
+            except Exception:  # noqa: BLE001
+                _raw = {}
+            if _raw.get(str(sig.symbol), 0.0) > 1e-9:
+                return f"symbol_held_by_unknown_domain symbol={sig.symbol}"
+
         fn = getattr(self._okx, "get_positions", None)
         if not callable(fn):
             return ""
         try:
-            data = fn(sig.symbol) or {}
+            data = fn() or {}
         except Exception as exc:  # noqa: BLE001 — 查询失败不阻断
             logger.warning("[Gateway] 竞争持仓查询失败(FAIL-OPEN): %s", exc)
             return ""
         if not data.get("ok"):
             return ""
         for row in data.get("positions") or []:
+            _inst = str(row.get("inst_id") or row.get("instId") or "")
+            if _inst and _inst != str(sig.symbol):
+                continue
             try:
                 qty = abs(float(row.get("pos") if "pos" in row else row.get("qty") or 0))
             except (TypeError, ValueError):

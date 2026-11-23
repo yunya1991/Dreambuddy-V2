@@ -25,10 +25,13 @@ class _Okx:
         self.positions = positions or []
         self.exc = exc
 
-    def get_positions(self, inst_id):
+    def get_positions(self, inst_id=None):
         if self.exc is not None:
             raise self.exc
-        return {"ok": True, "positions": list(self.positions)}
+        rows = list(self.positions)
+        if inst_id:
+            rows = [r for r in rows if not r.get("inst_id") or r.get("inst_id") == inst_id]
+        return {"ok": True, "positions": rows}
 
 
 def _sig(symbol: str, source: str = "23-evolution", action: str = "open"):
@@ -134,14 +137,31 @@ def test_shared_outlet_fail_open_on_query_error(monkeypatch):
 
 
 class _StubLedger:
-    def __init__(self, owners=None, exc: Exception | None = None):
+    def __init__(self, owners=None, exc: Exception | None = None, raw=None):
         self.owners = owners or []
         self.exc = exc
+        self.raw = raw or []
 
     def active_domain_holders(self, inst_id, pos_side=None):
         if self.exc:
             raise self.exc
         return list(self.owners)
+
+    def list_positions(self):
+        return list(self.raw)
+
+
+def test_shared_outlet_blocks_unknown_domain_ledger_row(monkeypatch):
+    """线上 10:20 事故：CVX 有仓但无域归属（网关外开仓），仍被放行叠加。"""
+    gw = _gw(_Okx([]), _StubLedger([], raw=[{"inst_id": "AVAX-USDT-SWAP", "qty": 99.0}]))
+    monkeypatch.setattr(gw, "_load_execution_rights", _rules)
+    assert "unknown_domain" in gw._shared_outlet_blocked(_sig("AVAX-USDT-SWAP"))
+
+
+def test_shared_outlet_exchange_rows_filtered_by_symbol(monkeypatch):
+    gw = _gw(_Okx([{"inst_id": "ETH-USDT-SWAP", "pos": 5.0}]), _StubLedger([]))
+    monkeypatch.setattr(gw, "_load_execution_rights", _rules)
+    assert gw._shared_outlet_blocked(_sig("AVAX-USDT-SWAP")) == ""
 
 
 def test_shared_outlet_blocks_other_domain_holder(monkeypatch):
