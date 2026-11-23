@@ -108,3 +108,42 @@ def test_load_universe_includes_exclusive_anchors(tmp_path, monkeypatch):
     u = load_universe()
     assert u["BNB"] == "crypto" and u["XAU"] == "metal"
     assert {"BTC", "ETH", "SOL"} <= set(u)
+
+
+def test_load_universe_filters_symbols_without_23_rights(tmp_path, monkeypatch):
+    """19:54 线上事故：CVX 属 50 单出口，进 23 池必被 single_outlet_denied。"""
+    import json
+
+    import dreambuddy_evolution.scripts.symbol_pool as sp
+
+    live = {
+        "symbols": {
+            "BTC": {"inst_id": "BTC-USDT-SWAP", "asset_class": "crypto"},
+            "CVX": {"inst_id": "CVX-USDT-SWAP", "asset_class": "crypto"},
+            "AVAX": {"inst_id": "AVAX-USDT-SWAP", "asset_class": "crypto"},
+        }
+    }
+    rights = {
+        "symbols": {
+            "BTC-USDT-SWAP": {"outcome": "live:23-gateway"},
+            "CVX-USDT-SWAP": {"outcome": "live:50-bypass"},
+            "AVAX-USDT-SWAP": {
+                "outcome": "live:50-bypass",
+                "shared_outcomes": {"23-evolution": "live:23-gateway"},
+            },
+        }
+    }
+    lf = tmp_path / "live_symbols.json"
+    rf = tmp_path / "execution_rights.json"
+    lf.write_text(json.dumps(live), encoding="utf-8")
+    rf.write_text(json.dumps(rights), encoding="utf-8")
+    monkeypatch.setattr(sp, "_LIVE_SYMBOLS_PATH", lf)
+    monkeypatch.setattr(sp, "_RIGHTS_PATH", rf)
+    monkeypatch.setattr(sp, "_UNIVERSE_CACHE", None)
+    monkeypatch.setattr(sp, "_UNIVERSE_MTIME", -1.0)
+    monkeypatch.setattr(sp, "_RIGHTS_CACHE", None)
+    monkeypatch.setattr(sp, "_RIGHTS_MTIME", -1.0)
+
+    u = load_universe()
+    assert "CVX" not in u
+    assert "BTC" in u and "AVAX" in u
