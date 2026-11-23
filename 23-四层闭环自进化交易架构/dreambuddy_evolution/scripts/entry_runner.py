@@ -414,14 +414,17 @@ def build_runtime(dry_run: bool, symbols: List[str], bar: str = "1H"):
 
 
 def _sleep_with_heartbeat(interval: int, heartbeat: int = 300) -> None:
-    """休眠指定秒数，期间每 heartbeat 秒打一条心跳，避免长静默被监控误判为卡死。"""
+    """休眠指定秒数，期间每 heartbeat 秒打一条心跳；按 5s 切片以便及时响应退出。"""
     _remain = max(1, int(interval))
     _hb = max(1, int(heartbeat))
+    _since_beat = 0
     while _remain > 0 and not _STOP:
-        _step = min(_hb, _remain)
+        _step = min(5, _remain)
         time.sleep(_step)
         _remain -= _step
-        if _remain > 0 and not _STOP:
+        _since_beat += _step
+        if _since_beat >= _hb and _remain > 0 and not _STOP:
+            _since_beat = 0
             logger.info("休眠心跳 剩余 %ss（interval=%ss）", _remain, interval)
 
 

@@ -31,6 +31,21 @@ def test_sleep_with_heartbeat_stops_on_signal(monkeypatch, caplog):
     assert not [r for r in caplog.records if "休眠心跳" in r.getMessage()]
 
 
+def test_sleep_with_heartbeat_exits_within_one_slice(monkeypatch):
+    """SIGTERM 后必须 ≤5s 退出，不能卡在 300s 长睡里。"""
+    monkeypatch.setattr(er, "_STOP", False)
+    calls: list[int] = []
+
+    def _sleep(step):
+        calls.append(step)
+        if len(calls) >= 2:
+            monkeypatch.setattr(er, "_STOP", True)
+
+    monkeypatch.setattr(er.time, "sleep", _sleep)
+    er._sleep_with_heartbeat(600, heartbeat=300)
+    assert len(calls) == 2 and all(step <= 5 for step in calls)
+
+
 # ── 18 行情源包装 ─────────────────────────────────────────────────────
 def test_to_ccxt_symbol_accepts_okx_inst():
     assert DataCenterMarketClient.to_ccxt_symbol("BTC-USDT-SWAP") == "BTC/USDT:USDT"
