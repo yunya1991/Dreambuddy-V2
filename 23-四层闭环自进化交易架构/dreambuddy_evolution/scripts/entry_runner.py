@@ -413,6 +413,18 @@ def build_runtime(dry_run: bool, symbols: List[str], bar: str = "1H"):
     return runner, gateway, adapter
 
 
+def _sleep_with_heartbeat(interval: int, heartbeat: int = 300) -> None:
+    """休眠指定秒数，期间每 heartbeat 秒打一条心跳，避免长静默被监控误判为卡死。"""
+    _remain = max(1, int(interval))
+    _hb = max(1, int(heartbeat))
+    while _remain > 0 and not _STOP:
+        _step = min(_hb, _remain)
+        time.sleep(_step)
+        _remain -= _step
+        if _remain > 0 and not _STOP:
+            logger.info("休眠心跳 剩余 %ss（interval=%ss）", _remain, interval)
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="23 独立开仓 runner")
     parser.add_argument(
@@ -474,10 +486,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             logger.exception("巡检异常(FAIL-OPEN): %s", exc)
         if args.once:
             break
-        for _ in range(max(1, args.interval)):
-            if _STOP:
-                break
-            time.sleep(1)
+        _sleep_with_heartbeat(args.interval)
     logger.info("entry runner 退出")
     return 0
 

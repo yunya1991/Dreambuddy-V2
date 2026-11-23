@@ -88,6 +88,16 @@ def test_empty_universe_skips_scan_and_keeps_baseline():
     assert out == list(SNAPSHOT_ANCHORS)
 
 
+def test_dynamic_scan_logs_start_before_scan(caplog):
+    import logging
+
+    scanner = _Scanner(rows=[{"symbol": "BTC-USDT-SWAP"}])
+    p = _provider(scanner)
+    with caplog.at_level(logging.INFO, logger="entry23.pool"):
+        p.get()
+    assert any("开始动态扫描" in r.getMessage() for r in caplog.records)
+
+
 def test_load_universe_includes_exclusive_anchors(tmp_path, monkeypatch):
     import json
 

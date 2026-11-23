@@ -162,6 +162,11 @@ class DynamicSymbolProvider:
             )
             return _picked
         try:
+            logger.info(
+                "[pool] 开始动态扫描 top_n=%s universe=%s（扫描完成前无输出，属正常）",
+                self._scan_top,
+                len(universe),
+            )
             rows = self._scanner.scan(
                 top_n=self._scan_top,
                 force=False,

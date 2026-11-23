@@ -2,11 +2,33 @@
 
 from __future__ import annotations
 
+import logging
+
+from dreambuddy_evolution.scripts import entry_runner as er
 from dreambuddy_evolution.scripts.entry_runner import (
     DataCenterMarketClient,
     EntryRunner,
     _authority,
 )
+
+
+# ── 休眠心跳（防长静默被监控误判） ────────────────────────────────────
+def test_sleep_with_heartbeat_emits_every_300s(monkeypatch, caplog):
+    monkeypatch.setattr(er, "_STOP", False)
+    monkeypatch.setattr(er.time, "sleep", lambda _s: None)
+    with caplog.at_level(logging.INFO, logger="entry23"):
+        er._sleep_with_heartbeat(600, heartbeat=300)
+    beats = [r.getMessage() for r in caplog.records if "休眠心跳" in r.getMessage()]
+    assert len(beats) == 1 and "剩余 300s" in beats[0]
+
+
+def test_sleep_with_heartbeat_stops_on_signal(monkeypatch, caplog):
+    monkeypatch.setattr(er, "_STOP", False)
+    monkeypatch.setattr(er, "_STOP", True)
+    monkeypatch.setattr(er.time, "sleep", lambda _s: None)
+    with caplog.at_level(logging.INFO, logger="entry23"):
+        er._sleep_with_heartbeat(600, heartbeat=300)
+    assert not [r for r in caplog.records if "休眠心跳" in r.getMessage()]
 
 
 # ── 18 行情源包装 ─────────────────────────────────────────────────────
@@ -151,3 +173,61 @@ def test_on_signal_forwards_cached_kline_to_entry_loop():
     assert run["symbol"] == "BTC"
     assert run["kline"]["close"] == [1.0, 2.0]
     assert run["signal"]["decision_id"] == "dec-1"
+
+
+# ── 动态币池 ──────────────────────────────────────────────────────────
+class _Provider:
+    def __init__(self, pool=None, exc: Exception | None = None):
+        self.pool = pool or []
+        self.exc = exc
+        self.last_source = "scan"
+        self.calls = 0
+
+    def get(self):
+        self.calls += 1
+        if self.exc is not None:
+            raise self.exc
+        return list(self.pool)
+
+
+def test_run_once_refreshes_pool_from_provider():
+    adapter = _Adapter()
+    provider = _Provider(["ETH", "AVAX"])
+    runner = EntryRunner(
+        adapter=adapter,
+        handler=_Handler(),
+        loop=_Loop(),
+        symbols=["BTC"],
+        symbol_provider=provider,
+    )
+    report = runner.run_once()
+    assert [c[0] for c in adapter.calls] == ["ETH", "AVAX"]
+    assert report["pool_source"] == "scan"
+
+
+def test_run_once_keeps_previous_pool_on_provider_error():
+    adapter = _Adapter()
+    provider = _Provider(exc=RuntimeError("scan down"))
+    runner = EntryRunner(
+        adapter=adapter,
+        handler=_Handler(),
+        loop=_Loop(),
+        symbols=["BTC"],
+        symbol_provider=provider,
+    )
+    report = runner.run_once()
+    assert [c[0] for c in adapter.calls] == ["BTC"]
+    assert report["pool_source"] == "fixed"
+
+
+def test_run_once_keeps_previous_pool_on_empty_scan():
+    adapter = _Adapter()
+    runner = EntryRunner(
+        adapter=adapter,
+        handler=_Handler(),
+        loop=_Loop(),
+        symbols=["BTC"],
+        symbol_provider=_Provider([]),
+    )
+    runner.run_once()
+    assert [c[0] for c in adapter.calls] == ["BTC"]
