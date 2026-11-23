@@ -191,6 +191,22 @@ def test_reconcile_backfills_missing_positions_idempotently(tmp_path):
     assert len(audits) == 1
 
 
+def test_reconcile_fills_carry_domain(tmp_path):
+    """对账审计行必须带域标签：回填归 22，校正沿用既有活跃域 23。"""
+    led = _ledger(tmp_path)
+    led.reconcile(
+        [{"inst_id": "BTC-USDT-SWAP", "pos_side": "short", "qty": 0.1, "avg_entry": 66804.3}]
+    )
+    led.record_open("ETH-USDT-SWAP", "long", 1.0, 1800.0, source="23-evolution")
+    led.reconcile(
+        [{"inst_id": "ETH-USDT-SWAP", "pos_side": "long", "qty": 2.0, "avg_entry": 1800.0}]
+    )
+
+    rows = {r["inst_id"]: r for r in led.recent_fills(20) if r["action"].startswith("reconcile")}
+    assert rows["BTC-USDT-SWAP"]["domain"] == "22"
+    assert rows["ETH-USDT-SWAP"]["domain"] == "23"
+
+
 def test_reconcile_reopen_after_close_resets_status(tmp_path):
     """交易所重新出现持仓（qty 0→17）必须把 closed 拉回 open（BNB 17 张复现）。"""
     led = _ledger(tmp_path)

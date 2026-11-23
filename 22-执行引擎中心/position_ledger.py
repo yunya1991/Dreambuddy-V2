@@ -1073,13 +1073,14 @@ class PositionLedger:
                             pos_side,
                         ),
                     )
+                    _dom = self._sync_domain_after_reconcile(
+                        conn, inst_id, pos_side, source, _ts, qty, _new_avg
+                    )
                     conn.execute(
                         "INSERT INTO fills (ts, inst_id, pos_side, action, qty, px, fee,"
-                        " realized_pnl, ratio, source) VALUES (?,?,?,?,?,?,0,NULL,NULL,?)",
-                        (_ts, inst_id, pos_side, "reconcile_update", qty, _new_avg, source),
-                    )
-                    self._sync_domain_after_reconcile(
-                        conn, inst_id, pos_side, source, _ts, qty, _new_avg
+                        " realized_pnl, ratio, source, domain)"
+                        " VALUES (?,?,?,?,?,?,0,NULL,NULL,?,?)",
+                        (_ts, inst_id, pos_side, "reconcile_update", qty, _new_avg, source, _dom),
                     )
                     updated.append(
                         {
@@ -1108,12 +1109,14 @@ class PositionLedger:
                     " miss_count=CASE WHEN excluded.qty > 1e-9 THEN 0 ELSE positions.miss_count END",
                     (inst_id, pos_side, qty, avg, 1 if avg > 0 else 0, source, _ts, _ts),
                 )
+                _dom = self._sync_domain_after_reconcile(
+                    conn, inst_id, pos_side, source, _ts, qty, avg
+                )
                 conn.execute(
                     "INSERT INTO fills (ts, inst_id, pos_side, action, qty, px, fee, realized_pnl,"
-                    " ratio, source) VALUES (?,?,?,?,?,?,0,NULL,NULL,?)",
-                    (_ts, inst_id, pos_side, "reconcile", qty, avg, source),
+                    " ratio, source, domain) VALUES (?,?,?,?,?,?,0,NULL,NULL,?,?)",
+                    (_ts, inst_id, pos_side, "reconcile", qty, avg, source, _dom),
                 )
-                self._sync_domain_after_reconcile(conn, inst_id, pos_side, source, _ts, qty, avg)
             written.append({"inst_id": inst_id, "pos_side": pos_side, "qty": qty, "avg_entry": avg})
 
         # 交易所已无持仓，但账本仍开着：只关闭本对账源写入的陈旧行
@@ -1187,8 +1190,8 @@ class PositionLedger:
         ts: str,
         qty: float,
         avg: float,
-    ) -> None:
-        """对账校正 L1 后同步 L2，保持 Σdomain_positions.qty == positions.qty。"""
+    ) -> str:
+        """对账校正 L1 后同步 L2，保持 Σdomain_positions.qty == positions.qty；返回归属域。"""
         active = conn.execute(
             "SELECT domain FROM domain_positions WHERE inst_id=? AND pos_side=?"
             " AND qty>? AND status IN ('open','stale')",
@@ -1216,6 +1219,7 @@ class PositionLedger:
                 " VALUES (?,?,?,?,?,?,?,'reconcile','','open')",
                 (inst_id, pos_side, _dom, qty, qty, avg, ts),
             )
+        return _dom
 
     # ── P1：域子账 / 批次 / 预占 / 对账工单 ─────────────────────────
     def list_domain_positions(
