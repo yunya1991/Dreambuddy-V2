@@ -54,6 +54,11 @@ done
 ## 5. 告警链路
 
 - [ ] `curl -s -XPOST 127.0.0.1:9093/-/reload` 或配置变更后重启 Alertmanager
+- [ ] **reload 返回 500 时先看容器日志**：若报 `open /etc/alertmanager/alertmanager.yml: no such file or directory`，说明部署时目录被整体替换（`git checkout` / `rsync --delete` / 删目录重建），容器挂载仍指向旧 inode。此时 reload 永远失败，必须
+      `cd /home/luke/dreambuddy/15-监控告警系统/deploy && sudo -n docker compose --env-file /etc/dreambuddy-monitoring/monitoring.env -f docker-compose.monitoring.yml up -d --force-recreate alertmanager`
+- [ ] **reload/recreate 后必须校验运行时配置**（不能只看文件内容）：
+      `curl -s 127.0.0.1:9093/api/v2/status | jq -r '.config.original' | grep -E 'channel="meta"|blackhole'`
+      应命中 `channel="meta"` → `blackhole`；没有命中即为旧配置未生效（2026-11-23 Watchdog P3 持续推飞书即此原因）
 - [ ] 告警可达：`curl -s 127.0.0.1:9093/api/v2/alerts | jq length` 正常返回
 - [ ] 旧误报已消解：变更前已 firing 的 TargetDown 在目标转 `up` 后应收到「已恢复」卡片；如仍持续，检查是否存在历史 silence 或 repeat 窗口
 
