@@ -1657,6 +1657,24 @@ class PositionLedger:
             ).fetchall()
         return [dict(r) for r in rows]
 
+    def active_domain_holders(self, inst_id: str, pos_side: Optional[str] = None) -> List[str]:
+        """该标的前持有域（跨域互斥守卫用）：qty>0 且未平仓的 domain 集合。
+
+        P1 不变量为「一标的一域」，23/50 经 shared_outcomes 共享单出口时，
+        由调用方据此拒绝他域已在持的开仓，避免同标的双向恶性竞争。
+        """
+        sql = (
+            "SELECT DISTINCT domain FROM domain_positions"
+            " WHERE inst_id=? AND qty > ? AND status IN ('open','stale')"
+        )
+        params: List[Any] = [inst_id, _EPS]
+        if pos_side:
+            sql += " AND pos_side=?"
+            params.append(pos_side)
+        with self._lock, self._connect() as conn:
+            rows = conn.execute(sql + " ORDER BY domain", params).fetchall()
+        return [str(r[0] or "") for r in rows if r[0]]
+
     def recent_fills(self, limit: int = 50) -> List[Dict[str, Any]]:
         with self._lock, self._connect() as conn:
             rows = conn.execute(

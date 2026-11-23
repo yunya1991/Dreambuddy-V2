@@ -553,6 +553,9 @@ class TradeExecutionGateway:
         self._contract_mode = str(os.getenv("EXECUTION_CONTRACT_MODE", "alert")).lower()
         self._contract_audit = self._audit_path.parent / "contract_violations.jsonl"
         self._contract_schema: dict | None = None
+        # 22/config/live_symbols.json → inst_id -> asset_class（类级授权用，mtime 缓存）
+        self._symbol_class_cache: dict[str, str] | None = None
+        self._symbol_class_mtime: float | None = None
 
     # ── v1.2 契约校验（alert-only，默认不阻断） ──────────────────────
     _CONTRACT_CORE = ("signal_id", "source", "symbol", "direction", "confidence", "expires_at")
@@ -612,10 +615,11 @@ class TradeExecutionGateway:
         if not rules:
             return ""
         symbols = rules.get("symbols") or {}
+        classes = rules.get("classes") or {}
         default_outcome = str((rules.get("defaults") or {}).get("outcome") or "paper")
         entry = symbols.get(str(sig.symbol)) if isinstance(symbols, dict) else None
-        outcome = str((entry or {}).get("outcome") or default_outcome)
         source = str(sig.source or "")
+        outcome = self._resolve_symbol_outcome(sig.symbol, entry, source, classes, default_outcome)
 
         if outcome == "disabled":
             return f"execution_rights_disabled symbol={sig.symbol}"
@@ -637,6 +641,127 @@ class TradeExecutionGateway:
                 if source.startswith("11-")
                 else (f"single_outlet_denied symbol={sig.symbol} outcome={outcome} source={source}")
             )
+        return ""
+
+    def _resolve_symbol_outcome(
+        self,
+        symbol: str,
+        entry: dict | None,
+        source: str,
+        classes: dict,
+        default_outcome: str,
+    ) -> str:
+        """解析顺序：源专属 outcomes > shared_outcomes > 单值 outcome > 类级 > 默认。
+
+        - `outcomes` / `shared_outcomes` 用于多域竞争同一标的（23 与 50）。
+        - 类级授权用于已注册但未在顶层 symbols 单列的标的。
+        - 未知类别仍落 default（默认 paper），不默认放行 live。
+        """
+        if isinstance(entry, dict):
+            for key in ("outcomes", "shared_outcomes"):
+                table = entry.get(key)
+                if isinstance(table, dict) and table.get(source):
+                    return str(table[source])
+            if entry.get("outcome"):
+                return str(entry["outcome"])
+        asset_class = self._asset_class_of(symbol, entry)
+        class_entry = (
+            classes.get(asset_class) if isinstance(classes, dict) and asset_class else None
+        )
+        if isinstance(class_entry, dict) and class_entry.get("outcome"):
+            return str(class_entry["outcome"])
+        return default_outcome
+
+    def _asset_class_of(self, symbol: str, entry: dict | None = None) -> str:
+        """标的资产类别：symbol 条目显式声明 > 22 live_symbols 注册表 > 空。"""
+        if isinstance(entry, dict) and entry.get("asset_class"):
+            return str(entry["asset_class"])
+        mapping = self._load_symbol_classes()
+        return str(mapping.get(str(symbol).upper()) or "")
+
+    def _load_symbol_classes(self) -> dict[str, str]:
+        """读取 22/config/live_symbols.json 的 inst_id -> asset_class（mtime 缓存）。"""
+        path = REPO_ROOT / "22-执行引擎中心" / "config" / "live_symbols.json"
+        try:
+            mtime = path.stat().st_mtime
+        except OSError:
+            return {}
+        if self._symbol_class_cache is not None and self._symbol_class_mtime == mtime:
+            return self._symbol_class_cache
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            symbols = data.get("symbols") if isinstance(data, dict) else {}
+            self._symbol_class_cache = {
+                str(cfg.get("inst_id") or key).upper(): str(cfg.get("asset_class") or "")
+                for key, cfg in (symbols or {}).items()
+                if isinstance(cfg, dict)
+            }
+            self._symbol_class_mtime = mtime
+        except (OSError, ValueError) as exc:
+            logger.warning("[Gateway] live_symbols 加载失败(FAIL-OPEN): %s", exc)
+            self._symbol_class_cache = {}
+        return self._symbol_class_cache
+
+    def _shared_outlet_blocked(self, sig: FinalDecisionSignal) -> str:
+        """竞争标的的跨域互斥守卫（23/50 shared_outcomes）。
+
+        判定顺序：账本域归属（准）> 交易所持仓（兜底）。
+        - 仅拦开仓；平仓/减仓永远放行；
+        - 仅本域在持 → 放行（允许加仓/再进场）；
+        - 他域在持 → 拒绝 SYMBOL_ALREADY_OPEN，避免同标的双向恶性竞争；
+        - 账本无归属但交易所有仓 → 保守拒绝（来源不明者不叠加）；
+        - 账本/交易所查询失败 → FAIL-OPEN。
+        """
+        if str(sig.action or "").lower() != "open":
+            return ""
+        rules = self._load_execution_rights() or {}
+        symbols = rules.get("symbols") or {}
+        entry = symbols.get(str(sig.symbol)) if isinstance(symbols, dict) else None
+        if not isinstance(entry, dict) or not entry.get("shared_outcomes"):
+            return ""
+
+        _src = str(sig.source or "")
+        _my_domain = ""
+        for _prefix, _dom in (("23", "23"), ("50", "50"), ("11", "11"), ("6-", "6")):
+            if _src.startswith(_prefix):
+                _my_domain = _dom
+                break
+
+        ledger = self._get_ledger()
+        if ledger is not None and hasattr(ledger, "active_domain_holders"):
+            try:
+                _owners = ledger.active_domain_holders(
+                    str(sig.symbol), getattr(sig, "pos_side", None)
+                )
+            except Exception as exc:  # noqa: BLE001 — 查询失败不阻断
+                logger.warning("[Gateway] 域归属查询失败(FAIL-OPEN): %s", exc)
+                _owners = None
+            if _owners:
+                _others = sorted({o for o in _owners if o and o != _my_domain})
+                if _others:
+                    return (
+                        f"symbol_held_by_other_domain symbol={sig.symbol}"
+                        f" holders={','.join(_others)}"
+                    )
+                return ""
+
+        fn = getattr(self._okx, "get_positions", None)
+        if not callable(fn):
+            return ""
+        try:
+            data = fn(sig.symbol) or {}
+        except Exception as exc:  # noqa: BLE001 — 查询失败不阻断
+            logger.warning("[Gateway] 竞争持仓查询失败(FAIL-OPEN): %s", exc)
+            return ""
+        if not data.get("ok"):
+            return ""
+        for row in data.get("positions") or []:
+            try:
+                qty = abs(float(row.get("pos") if "pos" in row else row.get("qty") or 0))
+            except (TypeError, ValueError):
+                continue
+            if qty > 0:
+                return f"symbol_already_open symbol={sig.symbol}"
         return ""
 
     def _load_execution_rights(self) -> dict | None:
@@ -1273,6 +1398,19 @@ class TradeExecutionGateway:
             self._audit(sig, result)
             return result
 
+        # 竞争标的跨域单出口：已有持仓则拒绝再次开仓（23/50 shared_outcomes）
+        _shared_deny = self._shared_outlet_blocked(sig)
+        if _shared_deny:
+            result = ExecutionResult(
+                passed=False,
+                executed=False,
+                reason=_shared_deny,
+                reason_code="SYMBOL_ALREADY_OPEN",
+            )
+            logger.warning("[Gateway] 单出口占用拒绝: %s", _shared_deny)
+            self._audit(sig, result)
+            return result
+
         # 内部决策出口（23-evolution / l1-chart）：decision_id 必填 + expires_at 过期即拒
         if sig.source in _PRECHECK_SOURCES:
             _pre = self._precheck_decision(sig)
@@ -1446,8 +1584,6 @@ class TradeExecutionGateway:
             self._audit(sig, _margin_deny)
             return _margin_deny
 
-        order_result = self._place_order(sig_for_exec, position_modifier=position_modifier)
-        executed = self._order_succeeded(order_result)
         # P2-2 域限额预占：成功才下单，按成交结果消费/释放
         _resv_id, _resv_deny = self._reserve_domain_quota(sig_for_exec, final_sz, sig_for_exec.px)
         if _resv_deny is not None:
