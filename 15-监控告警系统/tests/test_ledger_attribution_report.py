@@ -26,9 +26,10 @@ def test_labeled_positions_report_ok(tmp_path):
 
     rep = build_report(led)
     assert rep["ok"] is True and rep["alerts"] == []
-    assert set(rep["domains"]) == {"23", "50"}
+    assert set(rep["domains"]) == {"22", "23", "50"}  # 三个受监控域始终展示
     assert rep["domains"]["23"]["positions"] == 1
-    assert rep["fills_by_domain"] == {"23": 1, "50": 1}
+    assert rep["domains"]["22"]["positions"] == 0
+    assert rep["fills_by_domain"] == {"22": 0, "23": 1, "50": 1}
     assert rep["unlabeled_fills"] == 0
 
 

@@ -108,6 +108,11 @@ def build_report(ledger: PositionLedger, since_hours: float = 24.0) -> Dict[str,
     if unknown_domains:
         alerts.append(f"出现未知域编码：{', '.join(unknown_domains)}")
 
+    # 三个受监控域始终展示（无仓也显式记 0，避免"没出现=漏监控"的歧义）
+    for _d in ("22", "23", "50"):
+        domains.setdefault(_d, {"positions": 0, "qty": 0.0, "notional": 0.0})
+        fill_stats.setdefault(_d, 0)
+
     return {
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "since_hours": float(since_hours),
@@ -137,8 +142,6 @@ def render_markdown(report: Dict[str, Any]) -> str:
     for dom in sorted(report["domains"], key=lambda x: (x != "22", x != "23", x != "50", x)):
         d = report["domains"][dom]
         lines.append(f"| {dom} | {d['positions']} | {d['qty']:.4f} | {d['notional']:.2f} |")
-    if not report["domains"]:
-        lines.append("| - | 0 | 0 | 0 |")
 
     lines += [
         "",
@@ -149,8 +152,6 @@ def render_markdown(report: Dict[str, Any]) -> str:
     ]
     for dom, n in sorted(report["fills_by_domain"].items()):
         lines.append(f"| {dom} | {n} |")
-    if not report["fills_by_domain"]:
-        lines.append("| - | 0 |")
 
     if report["fills_by_source"]:
         lines += [
