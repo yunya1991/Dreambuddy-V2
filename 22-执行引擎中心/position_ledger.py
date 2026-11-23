@@ -267,6 +267,7 @@ class PositionLedger:
                 opened_at     TEXT NOT NULL,
                 source_detail TEXT DEFAULT '',
                 decision_id   TEXT DEFAULT '',
+                tier          TEXT DEFAULT '',
                 status        TEXT NOT NULL DEFAULT 'open'
                               CHECK (status IN ('open','closed'))
             );
@@ -335,6 +336,9 @@ class PositionLedger:
               ('22', 1, '{"role":"janitor"}', datetime('now'), datetime('now')),
               ('legacy', 0, '{}', datetime('now'), datetime('now'));
         """)
+
+        # 批次级分层（probe/standard/trend）：供探索仓配额统计（须在建表之后）
+        self._ensure_column(conn, "position_lots", "tier", "tier TEXT DEFAULT ''")
 
         if (
             conn.execute("SELECT 1 FROM schema_migrations WHERE version='p1-001'").fetchone()
@@ -594,6 +598,7 @@ class PositionLedger:
         alloc_id: str = "",
         parent_fill_id: Optional[int] = None,
         exit_reason: str = "",
+        tier: str = "",
         ts: Optional[str] = None,
         set_cooldown: bool = True,
     ) -> Dict[str, Any]:
@@ -674,9 +679,9 @@ class PositionLedger:
             )
             conn.execute(
                 "INSERT INTO position_lots(inst_id, pos_side, domain, qty, remaining_qty, px,"
-                " opened_at, source_detail, decision_id, status)"
-                " VALUES (?,?,?,?,?,?,?,?,?,'open')",
-                (_inst, _side, _dom, _qty, _qty, _px, _ts, source, _decision_id),
+                " opened_at, source_detail, decision_id, tier, status)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,'open')",
+                (_inst, _side, _dom, _qty, _qty, _px, _ts, source, _decision_id, str(tier or "")),
             )
             fill_id = self._insert_fill_tx(
                 conn,
@@ -854,6 +859,7 @@ class PositionLedger:
         fee: float = 0.0,
         ratio: Optional[float] = None,
         exit_reason: str = "",
+        tier: str = "",
         ts: Optional[str] = None,
         set_cooldown: bool = True,
     ) -> Dict[str, Any]:
@@ -884,6 +890,7 @@ class PositionLedger:
                     alloc_id=alloc_id,
                     parent_fill_id=parent_fill_id,
                     exit_reason=exit_reason,
+                    tier=tier,
                     ts=ts,
                     set_cooldown=set_cooldown,
                 )
@@ -1660,6 +1667,16 @@ class PositionLedger:
                 "SELECT * FROM v_effective_positions ORDER BY updated_at DESC"
             ).fetchall()
         return [dict(r) for r in rows]
+
+    def probe_position_count(self, domain: str = "23") -> int:
+        """统计指定域当前存活 probe 批次覆盖的标的数据（探索仓配额用）。"""
+        with self._lock, self._connect() as conn:
+            row = conn.execute(
+                "SELECT COUNT(DISTINCT inst_id) AS n FROM position_lots"
+                " WHERE domain=? AND status='open' AND remaining_qty > ? AND lower(tier)='probe'",
+                (str(domain), _EPS),
+            ).fetchone()
+        return int(row["n"]) if row else 0
 
     def active_holders(self, inst_id: str) -> List[Dict[str, Any]]:
         """该标的全部活跃持有明细（域、方向、数量），跨域互斥守卫用。"""

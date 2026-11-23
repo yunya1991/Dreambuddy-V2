@@ -178,6 +178,8 @@ class EvolutionEntryLoop:
         self, ctx: dict[str, Any], gate: str, reason: str, level: str = "WARN"
     ) -> dict[str, Any]:
         self._log(f"[P2-S4b] {ctx['symbol']} 开仓拦截 gate={gate} | {reason}", level)
+        # 可观测性：拦截归因固定落 INFO，便于统计"为何无新开仓"
+        self._log(f"[BLOCK] {ctx['symbol']} gate={gate} tier={ctx.get('tier')} | {reason}", "INFO")
         _sig = ctx.get("signal") or {}
         _payload = _sig.get("payload") or {}
         emit_stage(

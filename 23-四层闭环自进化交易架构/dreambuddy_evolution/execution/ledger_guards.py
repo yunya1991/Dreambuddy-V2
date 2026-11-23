@@ -70,8 +70,14 @@ class LedgerGuards:
 
     def subpool(self) -> dict[str, int]:
         rows = self._open_positions()
+        fn = getattr(self._gateway, "probe_position_count", None)
+        try:
+            probe_count = int(fn("23")) if callable(fn) else 0
+        except Exception:  # noqa: BLE001 — 配额统计失败不阻断开仓
+            probe_count = 0
         return {
             "count": len(rows),
             "long": sum(1 for r in rows if str(r.get("pos_side")) == "long"),
             "short": sum(1 for r in rows if str(r.get("pos_side")) == "short"),
+            "probe_count": probe_count,
         }

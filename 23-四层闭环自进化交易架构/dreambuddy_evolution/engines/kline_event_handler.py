@@ -749,6 +749,16 @@ class KlineEventHandler:
 
             if inference_formed and d_star in ("long", "short"):
                 aligned = (d_star == ess_dir) if ess_dir else True
+                if not aligned:
+                    # 可观测性：方向错配是"d* 有方向但不出信号"的主因之一
+                    logger.info(
+                        "[ALIGN] %s d_star=%s ess_dir=%s ri=%.3f tier=%s → WAIT（方向错配）",
+                        symbol,
+                        d_star,
+                        ess_dir or "-",
+                        ri,
+                        tier,
+                    )
                 if aligned:
                     action = d_star
                     if self.mode == "Phase2":

@@ -45,7 +45,22 @@ def test_has_position_blocks_reconciled_source():
 
 
 def test_subpool_counts_ignore_closed_and_foreign():
-    assert LedgerGuards(_gw()).subpool() == {"count": 2, "long": 1, "short": 1}
+    assert LedgerGuards(_gw()).subpool() == {
+        "count": 2,
+        "long": 1,
+        "short": 1,
+        "probe_count": 0,
+    }
+
+
+def test_subpool_exposes_probe_count_from_gateway():
+    """探索仓配额：网关提供 probe_position_count 时透传给开仓闸门。"""
+
+    class _GwProbe(_Gw):
+        def probe_position_count(self, domain="23"):
+            return 2
+
+    assert LedgerGuards(_GwProbe(_gw()._rows, {})).subpool()["probe_count"] == 2
 
 
 def test_cooldown_reads_22_ledger():
@@ -59,7 +74,7 @@ def test_missing_gateway_is_fail_open():
     g = LedgerGuards(None)
     assert g.has_position("ANY") is False
     assert g.cooldown("ANY") == (False, "")
-    assert g.subpool() == {"count": 0, "long": 0, "short": 0}
+    assert g.subpool() == {"count": 0, "long": 0, "short": 0, "probe_count": 0}
 
 
 def test_prefers_effective_positions_when_available():

@@ -1085,6 +1085,7 @@ class TradeExecutionGateway:
                     decision_id=str(sig.decision_id or ""),
                     exchange_fill_id=str((_fill or {}).get("trade_id") or ""),
                     fee=float((_fill or {}).get("fee") or 0.0),
+                    tier=str(sig.payload.get("tier") or ""),
                 )
                 if not (_rec or {}).get("ok"):
                     logger.warning(
@@ -1186,6 +1187,14 @@ class TradeExecutionGateway:
     def list_positions(self) -> list[Dict[str, Any]]:
         ledger = self._get_ledger()
         return ledger.list_positions() if ledger is not None else []
+
+    def probe_position_count(self, domain: str = "23") -> int:
+        """23 探索仓配额：当前存活 probe 批次覆盖的标的数（无账本时返回 0）。"""
+        ledger = self._get_ledger()
+        if ledger is None:
+            return 0
+        fn = getattr(ledger, "probe_position_count", None)
+        return int(fn(domain)) if callable(fn) else 0
 
     def list_effective_positions(
         self, max_heartbeat_age_seconds: float = 300.0

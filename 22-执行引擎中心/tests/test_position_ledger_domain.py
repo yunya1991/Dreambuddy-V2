@@ -80,7 +80,52 @@ def test_gateway_open_falls_back_to_ticker_when_fill_missing(tmp_path):
     fill = led.recent_fills(1)[0]
     assert fill["action"] == "open" and fill["domain"] == "23"
     assert abs(fill["px"] - 76.5) < 1e-9
+    assert led.probe_position_count("23") == 0  # payload 未带 tier
     _assert_balanced(led)
+
+
+def test_gateway_passes_tier_to_probe_counter(tmp_path):
+    """网关落账透传 payload.tier，供 23 探索仓配额统计。"""
+
+    class _NoFillsOkx:
+        def get_ticker(self, inst_id):
+            return {"ok": True, "last": 76.5}
+
+        def get_positions(self, inst_id=None):
+            return {"ok": True, "positions": []}
+
+    led = _ledger(tmp_path)
+    gw = TradeExecutionGateway(okx_client=_NoFillsOkx(), ledger=led)
+    sig = FinalDecisionSignal(
+        signal_id="s2",
+        source="23-evolution",
+        symbol=ETH,
+        direction="long",
+        decision_id="d2",
+        action="open",
+        sz=1.0,
+        pos_side="long",
+        payload={"tier": "probe"},
+    )
+    res = ExecutionResult(
+        passed=True, executed=True, reason="PASS", reason_code="PASS", order_result={"ok": True}
+    )
+
+    gw._record_ledger(sig, res)
+
+    assert gw.probe_position_count("23") == 1
+
+
+def test_probe_position_count_tracks_tier(tmp_path):
+    """探索仓配额：probe 批次按标的计数，平仓后归零。"""
+    led = _ledger(tmp_path)
+    led.record_fill(ETH, "long", "open", 1.0, 1800.0, source="23-evolution", tier="probe")
+    led.record_fill(BTC, "short", "open", 0.1, 60000.0, source="23-evolution", tier="standard")
+
+    assert led.probe_position_count("23") == 1
+
+    led.record_fill(ETH, "long", "close", 1.0, 1850.0, source="23-evolution")
+    assert led.probe_position_count("23") == 0
 
 
 def test_u1_open_allocates_domain_and_lot(tmp_path):
