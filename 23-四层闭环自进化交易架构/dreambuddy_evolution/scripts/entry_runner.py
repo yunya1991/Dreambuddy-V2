@@ -38,12 +38,16 @@ from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline  # noqa: E
 from dreambuddy_evolution.execution.chain_events import emit_stage, new_trace_id  # noqa: E402
 from dreambuddy_evolution.execution.entry_loop import EvolutionEntryLoop  # noqa: E402
 from dreambuddy_evolution.execution.ledger_guards import LedgerGuards  # noqa: E402
+from dreambuddy_evolution.scripts.symbol_pool import (  # noqa: E402
+    SNAPSHOT_ANCHORS,
+    DynamicSymbolProvider,
+)
 
 logger = logging.getLogger("entry23")
 
 DATA_CENTER_DB = _REPO / "18-数据获取中心" / "data_center.db"
 GENE_DATA_ROOT = _HERE / "dreambuddy_evolution" / "gene_data"
-DEFAULT_SYMBOLS = ("BTC", "ETH", "SOL")
+DEFAULT_SYMBOLS = SNAPSHOT_ANCHORS
 DEFAULT_EXEC_TAGS = ("23-evolution", "evolution", "event_arbitrage")
 
 _STOP = False
@@ -195,12 +199,15 @@ class EntryRunner:
         loop: EvolutionEntryLoop,
         symbols: List[str],
         bar: str = "1H",
+        symbol_provider: Any = None,
     ) -> None:
         self._adapter = adapter
         self._handler = handler
         self._loop = loop
         self._symbols = [s.strip().upper() for s in symbols if s and s.strip()]
         self._bar = bar
+        self._symbol_provider = symbol_provider
+        self._pool_source = "fixed"
         self._klines: Dict[str, Dict[str, Any]] = {}
         if getattr(handler, "_build_position_callback", None) is None:
             if hasattr(handler, "set_build_position_callback"):
@@ -244,7 +251,28 @@ class EntryRunner:
         kline_data["symbol"] = coin
         return kline_data
 
+    def _refresh_symbols(self) -> None:
+        """每轮刷新币池；provider 异常/空结果保留上一轮池（FAIL-OPEN）。"""
+        if self._symbol_provider is None:
+            self._pool_source = "fixed"
+            return
+        try:
+            _pool = self._symbol_provider.get() or []
+        except Exception as exc:  # noqa: BLE001 — 刷新失败不影响本轮巡检
+            logger.warning("币池刷新失败(FAIL-OPEN)，沿用上一轮: %s", exc)
+            return
+        if not _pool:
+            logger.warning("币池刷新为空(FAIL-OPEN)，沿用上一轮")
+            return
+        self._symbols = [str(s).upper() for s in _pool if str(s).strip()]
+        self._pool_source = str(getattr(self._symbol_provider, "last_source", "dynamic"))
+
+    def set_symbol_provider(self, provider: Any) -> None:
+        """注入动态币池提供器（main() 在 dynamic 模式下调用）。"""
+        self._symbol_provider = provider
+
     def run_once(self) -> Dict[str, Any]:
+        self._refresh_symbols()
         _opened = _blocked = _waited = _failed = 0
         for _coin in self._symbols:
             try:
@@ -303,6 +331,7 @@ class EntryRunner:
         )
         return {
             "symbols": len(self._symbols),
+            "pool_source": self._pool_source,
             "signal": _opened,
             "wait": _waited,
             "failed": _failed,
@@ -388,16 +417,26 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="23 独立开仓 runner")
     parser.add_argument(
         "--symbols",
-        default=",".join(DEFAULT_SYMBOLS),
-        help="逗号分隔币种（不含 -USDT-SWAP）",
+        default="",
+        help="逗号分隔币种（不含 -USDT-SWAP）；显式指定时自动切换 fixed 模式",
     )
+    parser.add_argument(
+        "--pool-mode",
+        choices=("dynamic", "fixed"),
+        default="dynamic",
+        help="dynamic=CoinScanner 动态扫描；fixed=固定 --symbols/基线池",
+    )
+    parser.add_argument("--scan-top", type=int, default=8, help="动态模式扫描候选数")
+    parser.add_argument("--max-pool", type=int, default=11, help="动态模式池子上限")
     parser.add_argument("--bar", default="1H", help="K 线周期")
     parser.add_argument("--interval", type=int, default=300, help="巡检间隔秒")
     parser.add_argument("--once", action="store_true", help="只跑一轮")
     parser.add_argument("--dry-run", action="store_true", help="影子模式：只产出决策不执行")
     parser.add_argument("--log-level", default="INFO")
     args = parser.parse_args(argv)
-    _symbols = [s.strip().upper() for s in str(args.symbols).split(",") if s.strip()]
+    _explicit = [s.strip().upper() for s in str(args.symbols).split(",") if s.strip()]
+    _symbols = _explicit or list(DEFAULT_SYMBOLS)
+    _pool_mode = "fixed" if _explicit else str(args.pool_mode)
 
     logging.basicConfig(
         level=getattr(logging, str(args.log_level).upper(), logging.INFO),
@@ -411,6 +450,22 @@ def main(argv: Optional[List[str]] = None) -> int:
     except Exception as exc:  # noqa: BLE001
         logger.error("运行时构造失败: %s", exc)
         return 2
+
+    if _pool_mode == "dynamic":
+        runner.set_symbol_provider(
+            DynamicSymbolProvider(
+                _adapter.get_coin_scanner(),
+                scan_top=args.scan_top,
+                max_pool=args.max_pool,
+            )
+        )
+        logger.info(
+            "动态币池已启用 scan_top=%s max_pool=%s",
+            args.scan_top,
+            args.max_pool,
+        )
+    else:
+        logger.info("固定币池模式 symbols=%s", ",".join(_symbols))
 
     while not _STOP:
         try:
