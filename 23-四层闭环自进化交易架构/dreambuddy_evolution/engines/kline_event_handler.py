@@ -347,6 +347,14 @@ class KlineEventHandler:
             # ============ N2 阻力向量 观测 ============
             _rv_flags = r_vector.get("fallback_flags") or {}
             _rv_n_fb = len(_rv_flags) if isinstance(_rv_flags, dict) else 0
+            # 反射性分项诊断（用于定位 R_reflexivity 恒定；FAIL-OPEN 不影响主链路）
+            _refl_detail: dict = {}
+            try:
+                _detail_fn = getattr(self._rv, "last_reflexivity_detail", None)
+                if callable(_detail_fn):
+                    _refl_detail = _detail_fn() or {}
+            except Exception:  # noqa: BLE001
+                _refl_detail = {}
             emit_stage(
                 "N2",
                 "resistance_vector.calculate",
@@ -361,6 +369,11 @@ class KlineEventHandler:
                     "R_reflexivity": r_vector.get("R_reflexivity"),
                     "quality_score": r_vector.get("quality_score"),
                     "fallback_flags": sorted(_rv_flags) if isinstance(_rv_flags, dict) else [],
+                    "r_inputs": {
+                        "news_sentiment_score": kline_data.get("news_sentiment_score"),
+                        "bid_ask_spread_bps": kline_data.get("bid_ask_spread_bps"),
+                        "refl_components": _refl_detail,
+                    },
                 },
             )
 

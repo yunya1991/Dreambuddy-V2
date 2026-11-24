@@ -409,3 +409,32 @@ class TestResistanceVectorPhase1:
         finally:
             if monkeypatched:
                 patcher.stop()
+
+
+def test_reflexivity_detail_exposes_components():
+    """TR-RV-11（可观测）：反射性分项与 4:3:3 权重一致，且不污染 9 字段 Gold Schema。"""
+    from dreambuddy_evolution.core import resistance_vector as resistance_features
+
+    rv = resistance_features.ResistanceVector()
+    out = rv.calculate("BTC-USDT", _make_mock_raw_data("setup01_5050_book"))
+
+    detail = rv.last_reflexivity_detail()
+    for key in (
+        "corr_term",
+        "liq_term",
+        "sent_term",
+        "corr_proxy",
+        "news_sentiment_score",
+        "bid_ask_spread_bps",
+        "R_reflexivity",
+    ):
+        assert key in detail, f"缺少诊断字段 {key}"
+    assert abs(detail["liq_term"] - (1.0 - 2.0 / 50.0)) < 1e-9
+    assert abs(detail["sent_term"] - 0.50) < 1e-9
+    recombined = 0.4 * detail["corr_term"] + 0.3 * detail["liq_term"] + 0.3 * detail["sent_term"]
+    expect = min(recombined, 0.66) if detail["clamped_fo1"] else recombined
+    assert abs(detail["R_reflexivity"] - expect) < 1e-9
+    assert abs(detail["R_reflexivity"] - out["R_reflexivity"]) < 1e-9
+    # 诊断字段不得进入 Gold Schema（additionalProperties=False）
+    assert "refl_components" not in out
+    assert "r_inputs" not in out

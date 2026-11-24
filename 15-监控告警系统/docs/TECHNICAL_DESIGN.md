@@ -1348,6 +1348,7 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 | N2 L1 阻力向量 | `r_vector_quality_score`、`r_vector_degenerate_ratio` | 观察（Grafana） | `stage=N2`；`[PathDiscovery]` 日志 |
 | N3 高阶因子 | `high_order_applied_ratio` | 观察 | `stage=N3` |
 | N4 路径发现 | `paths_discovered`、`paths_valid_ratio`、`dstar_calibrated_enabled`、`dstar_calibrated_wait_1h`、`dstar_calibrated_trade_1h`、`dstar_calibrated_flip_1h` | `ChainBroken`、`DstarCalibratedModeOff`(P2)、`DstarCalibratedAllWait`(P2) | `stage=N4`（`data.d_star_shadow`：`wait_mode` / `d_star_calibrated` / 两套 `costs`） |
+| N2 反射性 | `r_reflexivity`、`r_reflexivity_distinct_24h`、`r_refl_sentiment_score`、`r_refl_spread_bps`、`r_refl_liq_term` | `ReflexivityConstant`(P3) | `stage=N2`（`data.r_inputs`：`news_sentiment_score` / `bid_ask_spread_bps` / `refl_components`） |
 | N5 主矛盾 | `contradiction_present_ratio`、`contradiction_dimension` | `ContradictionMissing`(P1) | `stage=N5`；`[Contradiction]` |
 | N6 交叉验证 | `cv_present_ratio`、`cv_degraded{mode}` | `CrossValidationMissing`(P1)、`CrossValidationDegraded`(P2) | `stage=N6` |
 | N7 统计验证 | `path_validated_ratio`、`path_score_gap` | 观察 | `stage=N7` |
@@ -1392,6 +1393,7 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 | `dstar_calibrated_enabled` | 1=calibrated 口径生效 | `DstarCalibratedModeOff`(P2, 30m) | 查 `systemctl show -p Environment dreambuddy-entry23 \| grep DSTAR`；drop-in 是否被覆盖 |
 | `dstar_wait_mode{mode}` | 当前口径（legacy/calibrated） | — | 与 enabled 交叉确认 |
 | `dstar_calibrated_wait_1h` / `_trade_1h` / `_flip_1h` | 近 1h 校准口径 WAIT/交易/与 legacy 分歧计数 | `DstarCalibratedAllWait`(P2, 6h) | 全 WAIT → 查 N4 `d_star_shadow.costs*` 与 margin；`flip` 持续 100% 说明 legacy 影子已完全失效 |
+| `r_reflexivity` / `_distinct_24h` / `r_refl_sentiment_score` / `r_refl_spread_bps` / `r_refl_liq_term` | 近 24h 反射性 4:3:3 分项与去重值数（=1 表示恒定） | `ReflexivityConstant`(P3, 6h) | 恒定 → 查 N2 `data.r_inputs`：sentiment 是否钉死 1.0、spread 是否缺失（liq_term 恒 0.5）、corr_term 是否 0.5 |
 | `ri_neutral_1h` | ri 恰为 0.5 的 N9 条数 | — | 与 `ess_direction_empty_1h`、`reflection_eligible_1h` 联合判读 |
 | `ess_direction_empty_1h` | ESS 方向为空的 N9 条数 | `EssDirectionEmpty`(P2, 1h) | ESS top 组合是否又变成纯离场组合 |
 | `ripple_vol_threshold{symbol}` | 自适应放量门槛 | `RippleVolThresholdOutOfRange`(P3, 30m) | 越界 → 检查 20 日波动率窗口与 K 线缺失 |

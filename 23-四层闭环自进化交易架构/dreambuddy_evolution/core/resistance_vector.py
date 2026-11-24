@@ -11,6 +11,7 @@ import gc
 import importlib
 import logging
 import math
+import threading
 import time
 import traceback
 from collections import deque
@@ -139,6 +140,8 @@ class ResistanceVector:
             _lark_send_alert = lark_bridge  # type: ignore[assignment]
         self.adapter = adapter  # 真实行情 adapter（MVP 用 mock，生产 OKX）
         self._sent_fo1: Optional[bool] = None
+        # 诊断上下文：线程本地，保持"无状态"并发契约（不参与 9 字段 Gold Schema）
+        self._tl = threading.local()
 
     # --------------------------------------------------------------------------------------- 工具
     @staticmethod
@@ -460,7 +463,34 @@ class ResistanceVector:
         # FO-1 激活 → reflexivity 额外 clamp 上限 0.66（保证 RV-06 断言 ≤0.66）
         if self._sent_fo1:
             R_refl = min(R_refl, 0.66)
+
+        # 诊断上下文（可观测性：N2 r_inputs.refl_components；threading.local 保证并发不串扰）
+        _tl = getattr(self, "_tl", None)
+        if _tl is not None:
+            _tl.refl_detail = {
+                "corr_term": corr_term,
+                "liq_term": liq_term,
+                "sent_term": sent_term,
+                "corr_proxy": corr_proxy,
+                "news_sentiment_score": float(sent_score),
+                "bid_ask_spread_bps": (
+                    None
+                    if not isinstance(spread_bps, (int, float)) or math.isnan(spread_bps)
+                    else float(spread_bps)
+                ),
+                "clamped_fo1": bool(self._sent_fo1),
+                "R_reflexivity": R_refl,
+            }
         return R_refl
+
+    def last_reflexivity_detail(self) -> dict[str, Any]:
+        """返回本线程最近一次反射性计算的入参/分项（诊断用只读副本）。
+
+        不进 9 字段 Gold Schema（additionalProperties=False），仅供 N2 事件与导出器观测。
+        """
+        _tl = getattr(self, "_tl", None)
+        detail = getattr(_tl, "refl_detail", None) if _tl is not None else None
+        return dict(detail) if isinstance(detail, dict) else {}
 
     # ------------------------------------------------------------------------------- Public API
     def calculate(
@@ -477,6 +507,9 @@ class ResistanceVector:
             # =============== 1. 基本输入 FO-1 检查 ===============
             data = raw_data_dict if isinstance(raw_data_dict, dict) else {}
             self._sent_fo1 = _SENTIMENT_FO1_ACTIVE
+            _tl = getattr(self, "_tl", None)
+            if _tl is not None:  # 重置本线程诊断，避免沿用上一事件
+                _tl.refl_detail = {}
 
             # =============== 2. 5 维计算（单个 FO-1 单维降级） ===============
             try:

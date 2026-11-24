@@ -317,6 +317,15 @@ groups:
         annotations:
           summary: "23 校准口径连续 6h 全 WAIT（F4 回归：中性区 margin 或 R 量纲异常）"
 
+      - alert: ReflexivityConstant
+        expr: dreambuddy_r_reflexivity_distinct_24h == 1
+        for: 6h
+        labels:
+          severity: P3
+          channel: alert
+        annotations:
+          summary: "23 R_reflexivity 24h 内恒定，反身性 4:3:3 分项失效（查 N2 r_inputs 的 sentiment_score / bid_ask_spread_bps / corr_term）"
+
       - alert: EssDirectionEmpty
         expr: dreambuddy_ess_direction_empty_1h > 0
         for: 1h

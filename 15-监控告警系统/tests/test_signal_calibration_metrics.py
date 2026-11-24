@@ -89,3 +89,67 @@ def test_signal_calibration_metrics(tmp_path: Path) -> None:
     assert "dreambuddy_reflection_ri_max 0.55" in text
     assert 'dreambuddy_ri_value{symbol="SOL"} 0.62' in text
     assert 'dreambuddy_ripple_vol_threshold{symbol="BTC"} 1.93' in text
+
+
+def test_reflexivity_observability_metrics(tmp_path: Path) -> None:
+    """N2 反射性分项 → r_reflexivity / distinct_24h / sentiment / spread / liq_term 指标。"""
+    runtime = tmp_path / "23-四层闭环自进化交易架构/runtime"
+    runtime.mkdir(parents=True)
+    ts = _now_iso()
+    rows = [
+        {
+            "ts": ts,
+            "stage": "N2",
+            "symbol": "BTC-USDT-SWAP",
+            "data": {
+                "R_reflexivity": 0.65,
+                "r_inputs": {
+                    "news_sentiment_score": 1.0,
+                    "bid_ask_spread_bps": None,
+                    "refl_components": {"corr_term": 0.5, "liq_term": 0.5, "sent_term": 1.0},
+                },
+            },
+        },
+        {
+            "ts": ts,
+            "stage": "N2",
+            "symbol": "BTC-USDT-SWAP",
+            "data": {
+                "R_reflexivity": 0.65,
+                "r_inputs": {
+                    "news_sentiment_score": 1.0,
+                    "bid_ask_spread_bps": None,
+                    "refl_components": {"corr_term": 0.5, "liq_term": 0.5, "sent_term": 1.0},
+                },
+            },
+        },
+        {
+            "ts": ts,
+            "stage": "N2",
+            "symbol": "ETH-USDT-SWAP",
+            "data": {
+                "R_reflexivity": 0.61,
+                "r_inputs": {
+                    "news_sentiment_score": 0.7,
+                    "bid_ask_spread_bps": 3.0,
+                    "refl_components": {"corr_term": 0.5, "liq_term": 0.94, "sent_term": 0.7},
+                },
+            },
+        },
+    ]
+    (runtime / "chain_events-20261125.jsonl").write_text(
+        "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n", encoding="utf-8"
+    )
+
+    collector = Collector(tmp_path, BASE / "config/monitoring.yaml", BASE / "config/domains.yaml")
+    text = "\n".join(collector.signal_calibration_metrics())
+
+    assert 'dreambuddy_r_reflexivity{symbol="BTC"} 0.65' in text
+    # BTC 两条完全同值 → 24h 去重值数 = 1（恒定告警依据）
+    assert 'dreambuddy_r_reflexivity_distinct_24h{symbol="BTC"} 1' in text
+    assert 'dreambuddy_r_reflexivity_distinct_24h{symbol="ETH"} 1' in text
+    assert 'dreambuddy_r_refl_sentiment_score{symbol="BTC"} 1.0' in text
+    assert 'dreambuddy_r_refl_liq_term{symbol="ETH"} 0.94' in text
+    # BTC spread 缺失 → 不导出该 symbol 的 spread 指标
+    assert 'dreambuddy_r_refl_spread_bps{symbol="BTC"}' not in text
+    assert 'dreambuddy_r_refl_spread_bps{symbol="ETH"} 3.0' in text

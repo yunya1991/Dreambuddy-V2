@@ -666,9 +666,10 @@ class Collector:
         """d_star wait 口径 / ri / ESS 方向 / 放量门槛 / reflection 样本 的 1h 健康度。"""
         runtime = self.repo / "23-四层闭环自进化交易架构/runtime"
         cutoff_1h = _now() - 3600
+        cutoff_24h = _now() - 86400
         rows: list[dict] = []
         for path in sorted(runtime.glob("chain_events-*.jsonl"))[-2:]:
-            rows.extend(_tail_jsonl(path, limit=5000))
+            rows.extend(_tail_jsonl(path, limit=8000))
 
         mode = ""
         cal_wait = cal_trade = flip = 0
@@ -676,14 +677,44 @@ class Collector:
         refl_max = 0.0
         latest_ri: dict[str, float] = {}
         latest_thr: dict[str, float] = {}
+        latest_refl: dict[str, float] = {}
+        refl_series: dict[str, set[float]] = {}
+        latest_sent: dict[str, float] = {}
+        latest_spread: dict[str, float] = {}
+        latest_liq: dict[str, float] = {}
 
         for rec in rows:
             ts = _iso_to_ts(str(rec.get("ts") or ""))
-            if not ts or ts < cutoff_1h:
+            if not ts or ts < cutoff_24h:
                 continue
             stage = str(rec.get("stage") or "")
             data = rec.get("data") if isinstance(rec.get("data"), dict) else {}
             sym = str(rec.get("symbol") or "?").split("-")[0] or "?"
+            if stage == "N2":
+                # 反射性可观测：24h 窗口（用于恒定检测）
+                try:
+                    refl = float(data["R_reflexivity"])
+                except (KeyError, TypeError, ValueError):
+                    refl = None
+                if refl is not None:
+                    latest_refl[sym] = refl
+                    refl_series.setdefault(sym, set()).add(round(refl, 6))
+                    r_inputs = data.get("r_inputs")
+                    if isinstance(r_inputs, dict):
+                        comp = r_inputs.get("refl_components")
+                        comp = comp if isinstance(comp, dict) else {}
+                        for key, bucket in (
+                            ("news_sentiment_score", latest_sent),
+                            ("bid_ask_spread_bps", latest_spread),
+                        ):
+                            val = r_inputs.get(key)
+                            if isinstance(val, (int, float)):
+                                bucket[sym] = float(val)
+                        if isinstance(comp.get("liq_term"), (int, float)):
+                            latest_liq[sym] = float(comp["liq_term"])
+                continue
+            if ts < cutoff_1h:
+                continue
             if stage == "N4":
                 shadow = data.get("d_star_shadow")
                 if isinstance(shadow, dict) and shadow:
@@ -727,6 +758,18 @@ class Collector:
             out.append(_metric("ri_value", round(v, 4), symbol=sym))
         for sym, v in sorted(latest_thr.items()):
             out.append(_metric("ripple_vol_threshold", round(v, 4), symbol=sym))
+        # 反射性维度健康度（R_reflexivity 恒定 = 40/30/30 分项失效）
+        for sym, v in sorted(latest_refl.items()):
+            out.append(_metric("r_reflexivity", round(v, 4), symbol=sym))
+            out.append(
+                _metric("r_reflexivity_distinct_24h", len(refl_series.get(sym, ())), symbol=sym)
+            )
+        for sym, v in sorted(latest_sent.items()):
+            out.append(_metric("r_refl_sentiment_score", round(v, 4), symbol=sym))
+        for sym, v in sorted(latest_spread.items()):
+            out.append(_metric("r_refl_spread_bps", round(v, 4), symbol=sym))
+        for sym, v in sorted(latest_liq.items()):
+            out.append(_metric("r_refl_liq_term", round(v, 4), symbol=sym))
         return out
 
     def collect(self) -> str:

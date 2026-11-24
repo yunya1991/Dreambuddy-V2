@@ -976,3 +976,33 @@ class TestContradictionPassthrough:
         assert path_info["primary_contradiction"] is not None
         assert path_info["primary_contradiction"]["direction"] == "long"
         assert path_info["primary_contradiction"]["strength"] == 0.7
+
+
+def test_n2_event_carries_r_inputs(monkeypatch):
+    """N2 事件必须携带 r_inputs（sentiment / spread / 反射性分项）用于定位 R_reflexivity 恒定。"""
+    import dreambuddy_evolution.engines.kline_event_handler as mod
+
+    captured: list[tuple[str, dict]] = []
+    monkeypatch.setattr(mod, "emit_stage", lambda stage, *a, **kw: captured.append((stage, kw)))
+
+    handler = mod.KlineEventHandler(mode="Phase2")
+    handler.on_kline_close(
+        {
+            "symbol": "BTC-USDT-SWAP",
+            "close": [100.0 + i * 0.1 for i in range(20)],
+            "high": [105.0] * 20,
+            "low": [95.0] * 20,
+            "volume": [1000.0] * 20,
+            "bid_ask_spread_bps": 2.0,
+            "news_sentiment_score": 0.7,
+        }
+    )
+
+    n2 = [kw.get("data") or {} for stage, kw in captured if stage == "N2"]
+    assert n2, "N2 事件未发出"
+    r_inputs = n2[0]["r_inputs"]
+    assert r_inputs["news_sentiment_score"] == 0.7
+    assert r_inputs["bid_ask_spread_bps"] == 2.0
+    comp = r_inputs["refl_components"]
+    assert "corr_term" in comp
+    assert abs(comp["liq_term"] - (1.0 - 2.0 / 50.0)) < 1e-9
