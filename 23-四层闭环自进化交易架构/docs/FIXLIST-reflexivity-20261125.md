@@ -58,3 +58,5 @@ liq_term = 0.5（中性），liq 权重 × liq_degraded_scale(0.5) → 0.15
 | 2026-11-25 | R4/R5 | legacy 路径原样保留，`ENABLE_RV_REFLEXIVITY_V2` 默认关；detail 恒输出 `R_reflexivity_v2` 影子；TR-RV-15/17 | `[x]` legacy 仍精确 0.65 |
 | 2026-11-25 | R6/R7 | `weights.py` 新增 `R_REFL_V2`（window/gain/eps/damp/scale）；9 字段 Schema 未被污染；TR-RV-16/18 | `[x]` ruff 全通过 |
 | 2026-11-25 | 回归 | `test_weights.py` + `test_kline_event_handler.py` | `[x]` 57 passed |
+| 2026-11-25 | 提交 | `52b3406c94` 推送 GitHub；云端快进 `52b3406c9`，重启 entry23（01:30:04 CST） | `[x]` 默认 legacy 实测 0.65 / 影子 v2=0.682 |
+| 2026-11-25 | 切换 | 云端 drop-in `/etc/systemd/system/dreambuddy-entry23.service.d/10-refl-v2.conf` 设 `ENABLE_RV_REFLEXIVITY_V2=1`，daemon-reload + 重启（01:36:15 CST） | `[x]` 进程 env 已含该变量 |
