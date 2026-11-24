@@ -582,7 +582,7 @@ samples.csv ──build_model──▶ optimizer_model.json ──load_model─�
 | S2 | 发布 + 回流 | `skill/scripts/published.py` 台账 + `fixed/metrics.json` → `scripts/ingest_own.py` | 发布记录、按标题索引的流量、`samples.csv` 的 `source_type=own` 行 | 不自动发布；回流只写样本，不改发布流程、不自动录流量 |
 | S3 | 每日反思 | `skill/scripts/content_reflect.py`（`reflect_hours=[10]`） | `fixed/reflections/YYYYMMDD.json` | 反思建议只作参考，需过 G3 才可执行 |
 
-**闭环判定**：S0 产物被 S1 读取 → S1 建议影响 S2 发布 → S2 数据进入 S3 反思 → S3/S0 重训回注，四段缺一即为断链。S2 回流入口已落地（§17.8 `ingest_own.py`，台账 + `metrics.json` → `samples.csv`）；剩余缺口是**真实自有样本尚未跑过一次回流**，且 `metrics.json` 需人工录入流量，因此在 own 样本数量与观测窗口达标前，S0 仍只产出 `prior` 权重，S3 的 `confidence` 仍是 LLM 自评。
+**闭环判定**：S0 产物被 S1 读取 → S1 建议影响 S2 发布 → S2 数据进入 S3 反思 → S3/S0 重训回注，四段缺一即为断链。S2 回流入口已落地（§17.8 `ingest_own.py`，台账 + `metrics.json` → `samples.csv`）；剩余缺口是**真实自有样本尚未跑过一次回流**；`metrics.json` 现已可用 `mra fixed scrape` 从手机 UI 自动抓取（真机导航校准中，校准前可人工 `mra fixed metric` 兜底），因此在 own 样本数量与观测窗口达标前，S0 仍只产出 `prior` 权重，S3 的 `confidence` 仍是 LLM 自评。
 
 ### 17.3 门禁降级：从「功能上线门禁」到「权重启用门禁」
 
@@ -693,9 +693,10 @@ cp model/optimizer_model.json $MRA_STATE_DIR/fixed/optimizer_model.json   # 部�
 | `sample_id` | `own-` + `sha256("{platform}|{run_id}|{title}|{published_at}")[:12]`；不写 `run_id`/`profile`（schema `additionalProperties=false`） |
 | 幂等 | 保留全部 `source_type=public` 行；旧 own 行整批删除后按台账重建；同一 `(run_id, platform)` 只取 `ts` 最新一条；先写同目录临时文件再 `os.replace`，重复执行结果不变 |
 | `is_censored` | `ts` 在最近 7 天内 → `true`（观测窗口未成熟），否则 `false`；`ts` 缺失时记 `false` 并写入 `missing_flags` |
+| 数据来源 | `metrics.json` 由 `mra fixed metric`（人工）或 `mra fixed scrape`（自动，顺风车 `metrics_collector.py`）写入；自动模式从手机 UI 创作中心/数据看板抓取，字段对齐本表 |
 | 调用 | `python3 scripts/ingest_own.py [--state-dir <dir>] [--samples samples.csv] [--dry-run]`；输出 `{added, replaced, skipped, samples, own_total, ledger, metrics, dry_run}` |
 
-边界：本脚本只写 `samples.csv`，不改 `analyze_p0b` / `build_model` / `retrain_daily` 的生效逻辑，也不自动发布或自动采流量。
+边界：本脚本只写 `samples.csv`，不改 `analyze_p0b` / `build_model` / `retrain_daily` 的生效逻辑，也不自动发布；自动抓取脚本 `metrics_collector.py` 独立运行，**真机导航校准通过后再挂入每日定时**，校准前仍可人工 `mra fixed metric`。
 
 ---
 
