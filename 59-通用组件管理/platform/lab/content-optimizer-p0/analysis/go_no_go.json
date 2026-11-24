@@ -1,0 +1,488 @@
+{
+  "generated_at": "2026-11-24T22:30:04+08:00",
+  "samples": {
+    "xiaohongshu": 34,
+    "douyin": 103,
+    "total": 137,
+    "raw_total": 175,
+    "dropped_duplicates": 38,
+    "placeholder_titles": 0
+  },
+  "gates": {
+    "G0": {
+      "pass": true,
+      "evidence": {
+        "criterion": "1 周 ≥30 条/平台；适用字段覆盖 小红书≥70% / 抖音≥40%；不改生产代码",
+        "per_platform": {
+          "xiaohongshu": {
+            "n": 34,
+            "min_required": 30,
+            "applicable_coverage": 81.7,
+            "threshold": 70.0,
+            "count_ok": true,
+            "coverage_ok": true
+          },
+          "douyin": {
+            "n": 103,
+            "min_required": 30,
+            "applicable_coverage": 63.4,
+            "threshold": 40.0,
+            "count_ok": true,
+            "coverage_ok": true
+          }
+        },
+        "raw_coverage": {
+          "xiaohongshu": 64.9,
+          "douyin": 50.4
+        },
+        "production_code_untouched": true
+      }
+    },
+    "G1": {
+      "pass": false,
+      "evidence": {
+        "checks": {
+          "public_usable_raw": 175,
+          "public_usable_after_dedup": 137,
+          "public_required": 300,
+          "own_samples": 0,
+          "own_required": 30,
+          "key_fields_missing_max": 0.3673,
+          "key_fields_missing_limit": 0.3,
+          "dropped_duplicate_rows": 38,
+          "dropped_duplicates_by_platform": {
+            "xiaohongshu": 4,
+            "douyin": 34
+          },
+          "original_duplicate_rate": 0.2171,
+          "post_dedup_duplicate_rate": 0.0,
+          "duplicate_limit": 0.05,
+          "note_duplicates": "重复率按去重前口径报告；去重仅解决可修缺陷，不改变 G1 判定",
+          "placeholder_title_rows": {
+            "xiaohongshu": 0,
+            "douyin": 0
+          }
+        },
+        "failed": [
+          "公开可用样本（去重后）137 < 300",
+          "自有样本 0 < 30",
+          "关键字段缺失率最高 36.73% ≥ 30%"
+        ]
+      }
+    },
+    "G2": {
+      "pass": false,
+      "evidence": {
+        "criterion": "≥2 个可控特征 abs(rho)≥0.20；95%CI 不含 0；BH q≤0.10；bootstrap 方向一致率≥70%；OOS 留出集 abs(rho)≥0.20 且同号",
+        "qualified_by_platform": {
+          "xiaohongshu": [],
+          "douyin": []
+        },
+        "qualified_total": 0,
+        "negative_control_flagged": {
+          "xiaohongshu": [],
+          "douyin": []
+        },
+        "negative_control_note": "负对照若显著，需判断是否可由采集结构解释；不计入可控特征计数",
+        "likes_sensitivity_qualified": {
+          "xiaohongshu": [],
+          "douyin": []
+        },
+        "per_feature": [
+          {
+            "platform": "xiaohongshu",
+            "feature": "title_len",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 19,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "xiaohongshu",
+            "feature": "hashtag_count",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 19,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "xiaohongshu",
+            "feature": "body_len",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 18,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "xiaohongshu",
+            "feature": "publish_hour",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 14,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "xiaohongshu",
+            "feature": "rank",
+            "status": "insufficient",
+            "controllable": false,
+            "negative_control": false,
+            "n": 19,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "xiaohongshu",
+            "feature": "pattern_number",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 19,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "xiaohongshu",
+            "feature": "pattern_question",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 19,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "xiaohongshu",
+            "feature": "pattern_contrast",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 19,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "xiaohongshu",
+            "feature": "pattern_benefit",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 19,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "xiaohongshu",
+            "feature": "pattern_emotion",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 19,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "xiaohongshu",
+            "feature": "nc_title_len_parity",
+            "status": "insufficient",
+            "controllable": false,
+            "negative_control": true,
+            "n": 19,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "xiaohongshu",
+            "feature": "nc_rank_parity",
+            "status": "insufficient",
+            "controllable": false,
+            "negative_control": true,
+            "n": 19,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "douyin",
+            "feature": "title_len",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 0,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "douyin",
+            "feature": "hashtag_count",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 0,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "douyin",
+            "feature": "body_len",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 0,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "douyin",
+            "feature": "publish_hour",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 0,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "douyin",
+            "feature": "rank",
+            "status": "insufficient",
+            "controllable": false,
+            "negative_control": false,
+            "n": 0,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "douyin",
+            "feature": "pattern_number",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 0,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "douyin",
+            "feature": "pattern_question",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 0,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "douyin",
+            "feature": "pattern_contrast",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 0,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "douyin",
+            "feature": "pattern_benefit",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 0,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "douyin",
+            "feature": "pattern_emotion",
+            "status": "insufficient",
+            "controllable": true,
+            "negative_control": false,
+            "n": 0,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "douyin",
+            "feature": "nc_title_len_parity",
+            "status": "insufficient",
+            "controllable": false,
+            "negative_control": true,
+            "n": 0,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          },
+          {
+            "platform": "douyin",
+            "feature": "nc_rank_parity",
+            "status": "insufficient",
+            "controllable": false,
+            "negative_control": true,
+            "n": 0,
+            "rho": null,
+            "ci_low": null,
+            "ci_high": null,
+            "q_value": null,
+            "direction_agree": null,
+            "oos_rho": null,
+            "qualified": false
+          }
+        ]
+      }
+    },
+    "G3": {
+      "pass": false,
+      "evidence": {
+        "criterion": "≥1 个可控特征对应确定性改写规则，最高/最低 25% 分位相对差 ≥10%",
+        "qualified_features": [],
+        "operationalization": "仅统计通过 G2 的可控特征，避免把噪声当可行动信号"
+      }
+    },
+    "G4": {
+      "pass": true,
+      "evidence": {
+        "log_entries": 4,
+        "violations": 0,
+        "timeouts": 1,
+        "note": "collection_log.jsonl 中无违规/账号警告/限频记录；timeout 计为通道异常，非合规违规",
+        "source": "collection_log.jsonl"
+      }
+    },
+    "G5": {
+      "pass": false,
+      "evidence": {
+        "criterion": "第二个时间窗或第二赛道复现 ≥1 个特征方向",
+        "available_windows": 1,
+        "note": "全部样本 collected_at 均为 2026-11-24 单日快照，无第二时间窗；赛道仅 5 个 query 且同源采集，不构成独立复现"
+      }
+    }
+  },
+  "verdict": "No-Go",
+  "verdict_reason": [
+    "G2 未达判据：无 2 个及以上可控特征同时满足 |rho|/CI/q/方向一致率/OOS",
+    "G1 未达标：公开可用样本（去重后）137 < 300；自有样本 0 < 30；关键字段缺失率最高 36.73% ≥ 30%",
+    "G5 未通过：仅单日单批样本，无第二时间窗/独立赛道复现"
+  ]
+}
