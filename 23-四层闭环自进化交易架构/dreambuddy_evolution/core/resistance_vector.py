@@ -407,13 +407,9 @@ class ResistanceVector:
         )  # 效率越高(price_move/effort大) → 阻力低；effort大result小 → R_flow大
         return R_flow
 
-    def _calc_reflexivity_inner(self, _symbol: str, data: dict, flags: dict[str, Any]) -> float:
-        """Soros 反射性 4:3:3（price-sent correlation / 流动性质量 / sentiment 绝对位）
-        注意：这个方法故意命名成"_inner"以便 TR-RV-08/10 monkeypatch 时替换模拟异常，触发 FO-3 兜底。"""
-        W = self.weights["R_REFL"]  # 4:3:3 (corr/liq/sent)
-
-        # --- 40% price vs sentiment 相关性 ---
-        close = _to_float_arr(data.get("close"))
+    # ---------------------------------------------------- 反射性分项（legacy / v2 共用输入）
+    def _resolve_sentiment_score(self, data: dict, flags: dict[str, Any]) -> float:
+        """情绪分解析：NaN / FO-1 → FALLBACK_VALUES['SENTIMENT_L1']；并懒加载 SentimentEngine。"""
         sent_score_raw = data.get("news_sentiment_score", float("nan"))
         # FO-1 强制降级 sent → 0.5
         if self._sent_fo1 or (isinstance(sent_score_raw, float) and math.isnan(sent_score_raw)):
@@ -426,48 +422,155 @@ class ResistanceVector:
 
         # 懒加载 SentimentEngine：若 FO-1 激活（USE_FINBERT=0）就不用了
         if self.sentiment_engine is None and self._sent_fo1 is None:
-            # 只初始化一次
             self.sentiment_engine, self._sent_fo1 = _load_sentiment_engine()
+        return sent_score
 
-        # Price vs sentiment trend correlation：简化解：价格 10 期差 vs sent_score 的乘积
+    def _refl_legacy_corr(
+        self, close: np.ndarray, sent_score: float, flags: dict[str, Any]
+    ) -> tuple[float, float]:
+        """legacy corr：tanh(mean(Δclose)/(std×100)×5×(sent-0.5)×4)。sent=0.5 时恒 0（默认口径，原样保留）。"""
         if close.size >= 10:
             diff = np.diff(close[-10:])
             if np.std(diff) > 1e-9 and not math.isnan(sent_score):
-                # 用 price_diff 线性回归斜率 vs sent_dev = sent-0.5 的乘积作为方向一致性 proxy ∈ [-1, +1]
+                # price_diff 线性回归斜率 vs sent_dev = sent-0.5 的乘积作为方向一致性 proxy
                 price_slope = (
                     float(np.polyfit(np.arange(len(diff)), diff, 0)[0]) if diff.size else 0.0
                 )
                 slope_std = max(1e-9, float(np.std(diff) * 100))  # 缩放
-                corr_proxy = math.tanh(
-                    price_slope / slope_std * 5 * (sent_score - 0.5) * 4
-                )  # [-1, +1]
+                corr_proxy = math.tanh(price_slope / slope_std * 5 * (sent_score - 0.5) * 4)
             else:
                 corr_proxy = 0.0
         else:
             flags["REFL_INSUF_CLOSE"] = True
             corr_proxy = 0.0
-        corr_term = 0.5 + 0.5 * corr_proxy  # → [0, 1]
+        return corr_proxy, 0.5 + 0.5 * corr_proxy
 
-        # --- 30% 流动性质量（bid-ask spread 越小越好；无数据 → 中性）---
-        spread_bps = data.get("bid_ask_spread_bps", float("nan"))
+    @staticmethod
+    def _refl_legacy_liq(spread_bps: Any) -> float:
         if not isinstance(spread_bps, (int, float)) or math.isnan(spread_bps):
-            liq_term = 0.5  # 中性
-        else:
-            liq_term = max(0.0, min(1.0, 1.0 - float(spread_bps) / 50.0))  # 0bps→1.0；50bps→0
+            return 0.5  # 中性
+        return max(0.0, min(1.0, 1.0 - float(spread_bps) / 50.0))  # 0bps→1.0；50bps→0
 
-        # --- 30% sentiment absolute 位 ---
+    def _refl_v2_cfg(self) -> dict[str, float]:
+        """v2 参数（唯一源 weights.WEIGHTS['R_REFL_V2']；缺失时回退内置默认，fail-open）。"""
+        cfg: Any = None
+        if isinstance(self.weights, dict):
+            cfg = self.weights.get("R_REFL_V2")
+        if not isinstance(cfg, dict):
+            cfg = WEIGHTS.get("R_REFL_V2", {})
+        return {
+            "momentum_window": int(cfg.get("momentum_window", 10)),
+            "momentum_gain": float(cfg.get("momentum_gain", 5.0)),
+            "sent_neutral_eps": float(cfg.get("sent_neutral_eps", 0.02)),
+            "momentum_only_damp": float(cfg.get("momentum_only_damp", 0.75)),
+            "liq_degraded_scale": float(cfg.get("liq_degraded_scale", 0.5)),
+            "spread_zero_eps": float(cfg.get("spread_zero_eps", 1e-9)),
+        }
+
+    @staticmethod
+    def _refl_momentum(close: np.ndarray, cfg: dict[str, float]) -> float:
+        """价格动量方向与强度 m ∈ [-1,1]（不依赖情绪单点值，方案 2 的 corr 第一因子）。"""
+        window = int(cfg["momentum_window"])
+        if close.size < max(5, window):
+            return 0.0
+        diff = np.diff(close[-window:])
+        diff = diff[~np.isnan(diff)]
+        if diff.size < 3:
+            return 0.0
+        mean = float(np.mean(diff))
+        std = float(np.std(diff))
+        if std <= 1e-12:  # 完全匀速 → 方向饱和
+            if mean > 1e-9:
+                return 1.0
+            return -1.0 if mean < -1e-9 else 0.0
+        return float(math.tanh(mean / (std * 100.0) * float(cfg["momentum_gain"])))
+
+    @staticmethod
+    def _refl_corr_v2(m: float, sent_score: float, cfg: dict[str, float]) -> tuple[float, str]:
+        """动量方向 × 情绪偏离的同向性；中性情绪走 momentum_only，避免被 (sent-0.5)=0 归零。"""
+        sent_dev = sent_score - 0.5
+        if abs(sent_dev) < cfg["sent_neutral_eps"]:
+            corr_proxy = m * cfg["momentum_only_damp"]
+            mode = "momentum_only"
+        else:
+            amp = 0.5 + 0.5 * min(1.0, abs(sent_dev) / 0.5)
+            same_dir = (m >= 0.0) == (sent_dev >= 0.0)
+            corr_proxy = m * amp * (1.0 if same_dir else -1.0)
+            mode = "aligned" if same_dir else "divergent"
+        return max(-1.0, min(1.0, corr_proxy)), mode
+
+    @staticmethod
+    def _refl_liq_v2(spread_bps: Any, cfg: dict[str, float]) -> tuple[float, str]:
+        """spread 为 0/负/NaN 视为数据缺失（生产占位值）→ 中性 0.5，不再固定送满分。"""
+        if (
+            not isinstance(spread_bps, (int, float))
+            or math.isnan(spread_bps)
+            or float(spread_bps) <= cfg["spread_zero_eps"]
+        ):
+            return 0.5, "degraded"
+        return max(0.0, min(1.0, 1.0 - float(spread_bps) / 50.0)), "normal"
+
+    def _refl_v2_weights(self, liq_mode: str, cfg: dict[str, float]) -> tuple[float, float, float]:
+        """v2 有效权重；liq 缺失时降权，释放部分按 corr:sent 原比例补偿。"""
+        W = self.weights["R_REFL"]
+        wc, wl, ws = float(W["corr"]), float(W["liq"]), float(W["sent"])
+        if liq_mode == "degraded":
+            eff_wl = wl * cfg["liq_degraded_scale"]
+            freed = wl - eff_wl
+            base = wc + ws
+            if base > 0:
+                wc += freed * wc / base
+                ws += freed * ws / base
+            else:  # pragma: no cover — 权重表被清空的极端情况
+                wc += freed / 2.0
+                ws += freed / 2.0
+            wl = eff_wl
+        return wc, wl, ws
+
+    def _calc_reflexivity_inner(self, _symbol: str, data: dict, flags: dict[str, Any]) -> float:
+        """Soros 反射性 4:3:3。默认 legacy；ENABLE_RV_REFLEXIVITY_V2=1 启用 v2（方案 2）。
+        注意：这个方法故意命名成"_inner"以便 TR-RV-08/10 monkeypatch 时替换模拟异常，触发 FO-3 兜底。"""
+        W = self.weights["R_REFL"]  # 4:3:3 (corr/liq/sent)
+        sent_score = self._resolve_sentiment_score(data, flags)
+        close = _to_float_arr(data.get("close"))
+        spread_bps = data.get("bid_ask_spread_bps", float("nan"))
         sent_term = max(0.0, min(1.0, float(sent_score)))
 
-        raw = W["corr"] * corr_term + W["liq"] * liq_term + W["sent"] * sent_term
+        # --- legacy 分项（默认口径，行为逐位保持）---
+        corr_proxy_legacy, corr_term_legacy = self._refl_legacy_corr(close, sent_score, flags)
+        liq_term_legacy = self._refl_legacy_liq(spread_bps)
+
+        # --- v2 分项（无论开关都算 → 影子对比，不改变默认输出）---
+        cfg = self._refl_v2_cfg()
+        momentum_m = self._refl_momentum(close, cfg)
+        corr_proxy_v2, corr_mode = self._refl_corr_v2(momentum_m, sent_score, cfg)
+        corr_term_v2 = 0.5 + 0.5 * corr_proxy_v2
+        liq_term_v2, liq_mode = self._refl_liq_v2(spread_bps, cfg)
+        wc, wl, ws = self._refl_v2_weights(liq_mode, cfg)
+        raw_v2 = wc * corr_term_v2 + wl * liq_term_v2 + ws * sent_term
+
+        use_v2 = get_switch("enable_rv_reflexivity_v2", False)
+        if use_v2:
+            formula = "v2"
+            corr_proxy, corr_term, liq_term = corr_proxy_v2, corr_term_v2, liq_term_v2
+            raw = raw_v2
+        else:
+            formula = "legacy"
+            corr_proxy, corr_term, liq_term = corr_proxy_legacy, corr_term_legacy, liq_term_legacy
+            raw = W["corr"] * corr_term + W["liq"] * liq_term + W["sent"] * sent_term
+
         R_refl = max(0.0, min(1.0, raw))
-        # FO-1 激活 → reflexivity 额外 clamp 上限 0.66（保证 RV-06 断言 ≤0.66）
+        R_refl_v2 = max(0.0, min(1.0, raw_v2))
+        # FO-1 激活 → reflexivity 额外 clamp 上限 0.66（保证 RV-06 断言 ≤0.66；v2 同样受约束）
         if self._sent_fo1:
             R_refl = min(R_refl, 0.66)
+            R_refl_v2 = min(R_refl_v2, 0.66)
 
         # 诊断上下文（可观测性：N2 r_inputs.refl_components；threading.local 保证并发不串扰）
         _tl = getattr(self, "_tl", None)
         if _tl is not None:
             _tl.refl_detail = {
+                "formula": formula,
                 "corr_term": corr_term,
                 "liq_term": liq_term,
                 "sent_term": sent_term,
@@ -480,6 +583,14 @@ class ResistanceVector:
                 ),
                 "clamped_fo1": bool(self._sent_fo1),
                 "R_reflexivity": R_refl,
+                # --- v2 影子 / 诊断（不进 9 字段 Gold Schema）---
+                "R_reflexivity_v2": R_refl_v2,
+                "corr_mode": corr_mode,
+                "momentum_m": momentum_m,
+                "corr_term_v2": corr_term_v2,
+                "liq_term_v2": liq_term_v2,
+                "liq_mode": liq_mode,
+                "v2_weights": {"corr": wc, "liq": wl, "sent": ws},
             }
         return R_refl
 

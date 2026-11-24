@@ -34,6 +34,15 @@ WEIGHTS: dict = {
         "liq": 0.3,  # 流动性（反馈环持续通道保障）
         "sent": 0.3,  # 情绪（FinBERT + 社交，羊群效应放大器）
     },
+    # R_REFL v2（方案2：动量方向×情绪偏离同向性；liq 缺失降权）。开关 ENABLE_RV_REFLEXIVITY_V2，默认 legacy
+    "R_REFL_V2": {
+        "momentum_window": 10,  # 动量窗口（bar 数，与 legacy 一致）
+        "momentum_gain": 5.0,  # 动量标准化放大系数
+        "sent_neutral_eps": 0.02,  # 情绪偏离中性带（|sent-0.5|<eps → momentum_only）
+        "momentum_only_damp": 0.75,  # 中性情绪下的动量阻尼
+        "liq_degraded_scale": 0.5,  # spread 缺失时 liq 权重保留比例（0.3→0.15）
+        "spread_zero_eps": 1e-9,  # ≤ 此值视为 spread 数据缺失
+    },
     "CS": {
         "Level0": 0.4,  # 解析计算 Level0（无训练偏差，可重复可解释 → 最高）
         "ESS_top": 0.3,  # ESS 统计最优（历史样本过拟合风险中等）

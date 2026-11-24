@@ -438,3 +438,187 @@ def test_reflexivity_detail_exposes_components():
     # 诊断字段不得进入 Gold Schema（additionalProperties=False）
     assert "refl_components" not in out
     assert "r_inputs" not in out
+
+
+# ----------------------------------------------------------------------------
+# TR-RV-12 ~ TR-RV-18：反射性公式 v2（方案 2）
+#   corr 项 = 价格动量方向 × 情绪偏离同向性（不再被 sent=0.5 归零）
+#   liq 项 = spread 缺失(≤0/NaN) → 中性 0.5 且权重 ×0.5，释放权重按 4:3 补给 corr/sent
+#   纪律：默认 legacy 不变；v2 由 ENABLE_RV_REFLEXIVITY_V2 启用；影子字段只走 thread-local
+# ----------------------------------------------------------------------------
+_REFL_V2_ENV = "ENABLE_RV_REFLEXIVITY_V2"
+
+
+def _make_refl_data(
+    direction: str = "flat", spread_bps: float = 2.0, sent: float = 0.5, n: int = 120
+) -> dict:
+    """构造纯净反射性输入：明确趋势 + 小幅噪声（保证 std(diff)>0 且方向可辨）。"""
+    rng = np.random.default_rng(7)
+    t = np.arange(n)
+    if direction == "up":
+        close = 30000.0 + 5.0 * t + rng.normal(0, 0.2, n)
+    elif direction == "down":
+        close = 30000.0 - 5.0 * t + rng.normal(0, 0.2, n)
+    else:
+        close = 30000.0 + rng.normal(0, 0.2, n)
+    mid = float(np.mean(close))
+    return dict(  # noqa: C408
+        close=close,
+        volume=np.full(n, 1000.0),
+        okx_positions={"long": 0.5, "short": 0.5},
+        liquidation_buy=np.zeros(n),
+        liquidation_sell=np.zeros(n),
+        ma_200=mid,
+        fib_retrace_0786=mid * 1.05,
+        fib_retrace_0618=mid * 1.03,
+        fib_retrace_0500=mid * 1.02,
+        bid_ask_spread_bps=spread_bps,
+        news_sentiment_score=sent,
+        symbol="BTC-USDT",
+    )
+
+
+def _refl_rv(monkeypatch, v2: bool | None, weights_module=None):
+    """构造 RV 并隔离 FO-1 全局标志；v2=None 表示不设置 env（走默认 legacy）。"""
+    from dreambuddy_evolution.core import resistance_vector as rf
+
+    monkeypatch.setattr(rf, "_SENTIMENT_FO1_ACTIVE", False, raising=False)
+    if v2 is None:
+        monkeypatch.delenv(_REFL_V2_ENV, raising=False)
+    else:
+        monkeypatch.setenv(_REFL_V2_ENV, "1" if v2 else "0")
+    rv = rf.ResistanceVector(weights_module=weights_module)
+    rv._sent_fo1 = None  # noqa: SLF001 — 避免上一测试残留
+    return rv
+
+
+def test_rv12_v2_corr_uses_momentum_not_sent_single_point(monkeypatch):
+    """TR-RV-12：sent=0.5（FO-1 兜底）但价格有动量时，v2 的 corr 项不再恒 0.5。"""
+    rv_v2 = _refl_rv(monkeypatch, v2=True)
+    out_v2 = rv_v2.calculate("BTC-USDT", _make_refl_data("up", spread_bps=2.0, sent=0.5))
+    d_v2 = rv_v2.last_reflexivity_detail()
+
+    assert d_v2["formula"] == "v2", f"开关开启后应为 v2 口径，实际={d_v2.get('formula')}"
+    assert (
+        d_v2["corr_mode"] == "momentum_only"
+    ), f"sent=0.5 应走 momentum_only，实际={d_v2.get('corr_mode')}"
+    assert d_v2["corr_term"] > 0.55, (
+        f"上行动量 + 中性情绪 corr_term={d_v2['corr_term']:.4f} 应 >0.55"
+        "（旧式 (sent-0.5) 乘子把它恒定为 0.5）"
+    )
+
+    rv_legacy = _refl_rv(monkeypatch, v2=False)
+    out_legacy = rv_legacy.calculate("BTC-USDT", _make_refl_data("up", spread_bps=2.0, sent=0.5))
+    assert rv_legacy.last_reflexivity_detail()["corr_term"] == pytest.approx(
+        0.5
+    ), "legacy 在 sent=0.5 时 corr_term 必须仍为 0.5（保持默认口径）"
+    assert out_v2["R_reflexivity"] > out_legacy["R_reflexivity"] + 0.05, (
+        f"v2 应高于 legacy：v2={out_v2['R_reflexivity']:.4f} "
+        f"legacy={out_legacy['R_reflexivity']:.4f}"
+    )
+
+
+def test_rv13_v2_corr_term_tracks_momentum_sign(monkeypatch):
+    """TR-RV-13：上行动量 corr_term>0.6、下行动量 <0.4，差值 ≥0.2（方向可区分）。"""
+    rv_up = _refl_rv(monkeypatch, v2=True)
+    rv_up.calculate("BTC-USDT", _make_refl_data("up", spread_bps=2.0, sent=0.5))
+    corr_up = rv_up.last_reflexivity_detail()["corr_term"]
+
+    rv_down = _refl_rv(monkeypatch, v2=True)
+    rv_down.calculate("BTC-USDT", _make_refl_data("down", spread_bps=2.0, sent=0.5))
+    corr_down = rv_down.last_reflexivity_detail()["corr_term"]
+
+    assert corr_up > 0.60, f"上行动量 corr_term={corr_up:.4f} 应 >0.60"
+    assert corr_down < 0.40, f"下行动量 corr_term={corr_down:.4f} 应 <0.40"
+    assert corr_up - corr_down >= 0.20, f"方向区分度不足：Δ={corr_up - corr_down:.4f}"
+
+
+def test_rv14_v2_spread_zero_liq_degraded_not_free_score(monkeypatch):
+    """TR-RV-14：spread=0 在 legacy 固定送 0.3 分；v2 应判缺失 → liq_term=0.5 且权重降至 0.15。"""
+    data = _make_refl_data("flat", spread_bps=0.0, sent=0.5)
+
+    rv_legacy = _refl_rv(monkeypatch, v2=False)
+    out_legacy = rv_legacy.calculate("BTC-USDT", dict(data))
+    d_legacy = rv_legacy.last_reflexivity_detail()
+    assert d_legacy["liq_term"] == pytest.approx(1.0), "legacy spread=0 仍按 1-0/50=1.0（现状保留）"
+    assert out_legacy["R_reflexivity"] == pytest.approx(
+        0.65
+    ), f"legacy 中性常量应仍为 0.65，实际={out_legacy['R_reflexivity']:.4f}"
+
+    rv_v2 = _refl_rv(monkeypatch, v2=True)
+    out_v2 = rv_v2.calculate("BTC-USDT", dict(data))
+    d_v2 = rv_v2.last_reflexivity_detail()
+    assert d_v2["liq_mode"] == "degraded", f"spread=0 应判 degraded，实际={d_v2.get('liq_mode')}"
+    assert d_v2["liq_term"] == pytest.approx(0.5), f"缺失流动性应中性 0.5，实际={d_v2['liq_term']}"
+    weights = d_v2["v2_weights"]
+    assert weights["liq"] == pytest.approx(0.15), f"liq 权重应降权到 0.15，实际={weights['liq']}"
+    assert weights["corr"] + weights["liq"] + weights["sent"] == pytest.approx(
+        1.0
+    ), f"有效权重和必须为 1，实际={weights}"
+    assert (
+        out_v2["R_reflexivity"] < 0.60
+    ), f"spread=0 不应再送分：v2={out_v2['R_reflexivity']:.4f} 应明显低于 0.65"
+
+
+def test_rv15_legacy_default_unchanged_with_shadow_v2(monkeypatch):
+    """TR-RV-15：未设置 env → legacy 逐位不变（0.65），但 detail 必须带 v2 影子值。"""
+    rv = _refl_rv(monkeypatch, v2=None)
+    out = rv.calculate("BTC-USDT", _make_refl_data("flat", spread_bps=0.0, sent=0.5))
+    detail = rv.last_reflexivity_detail()
+
+    assert detail["formula"] == "legacy", f"默认必须 legacy，实际={detail.get('formula')}"
+    assert out["R_reflexivity"] == pytest.approx(
+        0.65, abs=1e-9
+    ), f"legacy 默认口径被破坏：{out['R_reflexivity']}"
+    assert "R_reflexivity_v2" in detail, "legacy 模式下也必须输出 v2 影子值用于对比"
+    assert 0.0 <= float(detail["R_reflexivity_v2"]) <= 1.0
+    _validate_gold(out)
+
+
+def test_rv16_v2_output_keeps_9_field_gold_schema(monkeypatch):
+    """TR-RV-16：v2 启用时返回 dict 仍严格 9 字段，诊断不污染 Gold Schema。"""
+    rv = _refl_rv(monkeypatch, v2=True)
+    out = rv.calculate("BTC-USDT", _make_refl_data("up", spread_bps=2.0, sent=0.7))
+    _validate_gold(out)
+    assert set(out) == {
+        "R_up",
+        "R_down",
+        "R_smooth",
+        "R_flow",
+        "R_reflexivity",
+        "quality_score",
+        "fallback_flags",
+        "schema_version",
+        "timestamp_ms",
+    }, f"v2 不得新增返回字段，实际={sorted(out)}"
+    detail = rv.last_reflexivity_detail()
+    for key in ("formula", "corr_mode", "momentum_m", "liq_mode", "v2_weights", "R_reflexivity_v2"):
+        assert key in detail, f"v2 诊断缺少 {key}"
+
+
+def test_rv17_v2_still_clamped_under_sentiment_fo1(monkeypatch):
+    """TR-RV-17：FO-1 激活时 v2 仍受 ≤0.66 clamp 约束（不放大降级情绪）。"""
+    from dreambuddy_evolution.core import resistance_vector as rf
+
+    monkeypatch.setenv(_REFL_V2_ENV, "1")
+    monkeypatch.setattr(rf, "_SENTIMENT_FO1_ACTIVE", True, raising=False)
+    rv = rf.ResistanceVector()
+    rv._sent_fo1 = None  # noqa: SLF001
+    out = rv.calculate("BTC-USDT", _make_refl_data("up", spread_bps=2.0, sent=0.9))
+    detail = rv.last_reflexivity_detail()
+    assert detail["formula"] == "v2"
+    assert detail["clamped_fo1"] is True
+    assert out["R_reflexivity"] <= 0.66 + 1e-9, f"FO-1 clamp 失效：{out['R_reflexivity']}"
+
+
+def test_rv18_v2_missing_config_falls_back_to_defaults(monkeypatch):
+    """TR-RV-18：权重表缺 R_REFL_V2 组时回退内置默认值，计算不崩（fail-open）。"""
+    from dreambuddy_evolution.weights import WEIGHTS
+
+    w = {k: v for k, v in WEIGHTS.items() if k != "R_REFL_V2"}
+    rv = _refl_rv(monkeypatch, v2=True, weights_module=w)
+    out = rv.calculate("BTC-USDT", _make_refl_data("up", spread_bps=0.0, sent=0.5))
+    detail = rv.last_reflexivity_detail()
+    assert detail["formula"] == "v2"
+    assert 0.0 <= out["R_reflexivity"] <= 1.0
+    assert detail["liq_mode"] == "degraded"
