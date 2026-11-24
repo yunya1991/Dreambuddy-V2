@@ -652,6 +652,15 @@ gate_status = "evidence"    # G1 ∧ G2 ∧ G5 全通过 → 允许使用统计�
 | drift 记录 | 新增/删除规则、权重变化、样本增量，写入 history 便于回溯 |
 | 生效方式 | **只记录不生效**：权重要求 `gate_status="evidence"` 才被 `score()` 使用；否则仅留档 |
 
+```bash
+cd platform/lab/content-optimizer-p0
+python3 scripts/build_model.py        # 首次构建
+python3 scripts/retrain_daily.py      # 每日重训（幂等；no_change 不写盘）
+python3 scripts/retrain_daily.py --dry-run   # 只比对
+```
+
+调度口径：每日反思（顺风车 `reflect_hours=[10]`）之后由外部定时调用，失败不影响发布。
+
 ### 17.7 与 P0 / 生产代码的边界
 
 - P0 目录（`platform/lab/content-optimizer-p0/`）仍是**验证与离线脚本**，新增 `build_model.py` / `retrain_daily.py` 只写 `model/` 与 `analysis/`，不被任何组件 import；
