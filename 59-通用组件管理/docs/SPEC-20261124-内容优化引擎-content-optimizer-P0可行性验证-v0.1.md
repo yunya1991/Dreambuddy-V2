@@ -579,10 +579,10 @@ samples.csv ──build_model──▶ optimizer_model.json ──load_model─�
 |---|---|---|---|---|
 | S0 | 模型构建 / 每日重训 | `scripts/build_model.py`、`scripts/retrain_daily.py` | `model/optimizer_model.json`、`model/history/YYYYMMDD.json` | **只写模型文件**，不直接改线上打分逻辑 |
 | S1 | 发布前优化 | `skill/scripts/content_optimize.py`、`mra fixed optimize`、`compose` 规则注入 | `{score, grade, findings, suggestions, evidence_status}` | **只建议不阻断**；发布仍人工确认 |
-| S2 | 发布 + 回流 | `skill/scripts/published.py` 台账 + `fixed/metrics.json` | 发布记录、按标题索引的流量 | 不自动发布 |
+| S2 | 发布 + 回流 | `skill/scripts/published.py` 台账 + `fixed/metrics.json` → `scripts/ingest_own.py` | 发布记录、按标题索引的流量、`samples.csv` 的 `source_type=own` 行 | 不自动发布；回流只写样本，不改发布流程、不自动录流量 |
 | S3 | 每日反思 | `skill/scripts/content_reflect.py`（`reflect_hours=[10]`） | `fixed/reflections/YYYYMMDD.json` | 反思建议只作参考，需过 G3 才可执行 |
 
-**闭环判定**：S0 产物被 S1 读取 → S1 建议影响 S2 发布 → S2 数据进入 S3 反思 → S3/S0 重训回注，四段缺一即为断链。当前断链点：**S2 自有样本 0 条、`metrics.json` 为空**，因此 S0 只能产出 `prior` 权重，S3 的 `confidence` 是 LLM 自评而非统计证据。
+**闭环判定**：S0 产物被 S1 读取 → S1 建议影响 S2 发布 → S2 数据进入 S3 反思 → S3/S0 重训回注，四段缺一即为断链。S2 回流入口已落地（§17.8 `ingest_own.py`，台账 + `metrics.json` → `samples.csv`）；剩余缺口是**真实自有样本尚未跑过一次回流**，且 `metrics.json` 需人工录入流量，因此在 own 样本数量与观测窗口达标前，S0 仍只产出 `prior` 权重，S3 的 `confidence` 仍是 LLM 自评。
 
 ### 17.3 门禁降级：从「功能上线门禁」到「权重启用门禁」
 
@@ -666,6 +666,26 @@ python3 scripts/retrain_daily.py --dry-run   # 只比对
 - P0 目录（`platform/lab/content-optimizer-p0/`）仍是**验证与离线脚本**，新增 `build_model.py` / `retrain_daily.py` 只写 `model/` 与 `analysis/`，不被任何组件 import；
 - 生产侧改动只在顺风车仓库（`mobile-reservation-assist/skill/scripts/`），不进主仓 `components/`、`contracts/`、`tools/dreambuddy.py`；
 - 抖音视频的 `first3s_text_present` / `duration_sec` 在公开样本中结构性缺失，因此抖音打分**不得**复用小红书的图文权重，必须按平台独立给规则。
+
+---
+
+### 17.8 S2 回流口径（`scripts/ingest_own.py`，v0.2.1）
+
+把顺风车已发布内容与流量快照转成 P0 样本，打通「发布后数据 → 样本库」这一段。
+
+| 项 | 口径 |
+|---|---|
+| 输入 | `$MRA_STATE_DIR/fixed/published.jsonl`（台账）+ `$MRA_STATE_DIR/fixed/metrics.json`（按标题索引的流量） |
+| 平台判定 | 只取 `channels` 中 `state=="done"` 的渠道；`xiaohongshu`/`xhs` → `xiaohongshu`，`douyin` → `douyin`；一条台账最多产出两行（每平台一行），无 done 渠道则跳过 |
+| 固定列 | `source_type="own"`、`collector="creator_export"`、`rank_bucket="unknown"`、`cover_type="unknown"`、`media_type`（小红书 `image` / 抖音 `video`）；`url_hash`/`query`/`body_len`/`duration_sec`/`first3s_text_present`/`author_followers_bucket` 记 `null` |
+| 派生列 | `published_at` 由 `ts` 转 Asia/Shanghai ISO；`publish_hour`/`weekday` 由 `ts` 派生；`title_len=len(title)`；`title_pattern` 复用 `analyze_p0b.derive_title_pattern()`；`topic_count=hashtag_count=len(topics)` |
+| 指标映射 | `likes←likes`、`saves←collects`、`comments`、`shares`、`views`、`impressions`、`cover_ctr`、`avg_watch_sec`、`completion_rate`、`two_sec_bounce`、`follows`；`metrics_at←updated_at`；metrics 缺键一律 `null` 并记入 `missing_flags`，**禁止补 0** |
+| `sample_id` | `own-` + `sha256("{platform}|{run_id}|{title}|{published_at}")[:12]`；不写 `run_id`/`profile`（schema `additionalProperties=false`） |
+| 幂等 | 保留全部 `source_type=public` 行；旧 own 行整批删除后按台账重建；同一 `(run_id, platform)` 只取 `ts` 最新一条；先写同目录临时文件再 `os.replace`，重复执行结果不变 |
+| `is_censored` | `ts` 在最近 7 天内 → `true`（观测窗口未成熟），否则 `false`；`ts` 缺失时记 `false` 并写入 `missing_flags` |
+| 调用 | `python3 scripts/ingest_own.py [--state-dir <dir>] [--samples samples.csv] [--dry-run]`；输出 `{added, replaced, skipped, samples, own_total, ledger, metrics, dry_run}` |
+
+边界：本脚本只写 `samples.csv`，不改 `analyze_p0b` / `build_model` / `retrain_daily` 的生效逻辑，也不自动发布或自动采流量。
 
 ---
 
