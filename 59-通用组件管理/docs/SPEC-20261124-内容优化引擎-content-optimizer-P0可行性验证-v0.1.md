@@ -1,6 +1,7 @@
 # SPEC — 内容优化引擎（content-optimizer）P0 可行性验证 v0.1
 
-> **更新日期**：2026-11-24 ｜ **版本**：v0.1 ｜ **状态**：已确认；P0-A 抖音滚动采集补齐 1-50 排名分层，**G0 复核恢复通过**（抖音去重后 103 条、适用覆盖 63.4%）；P0-B 去重后 137 条（小红书 34 + 抖音 103）探索性分析 → **No-Go**（G1/G2/G5 未达标）
+> **更新日期**：2026-11-24 ｜ **版本**：v0.2 ｜ **状态**：已确认；P0-A 抖音滚动采集补齐 1-50 排名分层，**G0 复核恢复通过**（抖音去重后 103 条、适用覆盖 63.4%）；P0-B 去重后 137 条（小红书 34 + 抖音 103）探索性分析 → **No-Go**（G1/G2/G5 未达标）
+> **v0.2 变更（2026-11-24）**：① G0/G1/G2/G5 从「功能上线门禁」降级为「**权重启用门禁**」——功能（建议/打分/留痕）先上线，证据未达标时权重全为 `prior`、`gate_status=no_signal`，输出自报证据不足；② 新增 §17 目标架构与闭环（S0 重训 → S1 发布前优化 → S2 发布回流 → S3 每日反思）；③ 新增 §18 CLI 契约层决策（不注册 59 组件，走路径注入）。
 > **上游**：[SPEC-B 59 域全生命周期 · 框架与操作流程](./SPEC-20261121-59域全生命周期-框架与操作流程-v0.1.md)
 > **关联**：[33-REA 逆向解析工程](../../33-REA逆向解析工程/README.md)、[手机内容发布参考](../components/mobile-reservation-assist/skill/references/xiaohongshu-publishing.md)、[抖音发布参考](../components/mobile-reservation-assist/skill/references/jianying-douyin-publishing.md)
 > **一句话**：用“行为级逆向 + 自身账号实验闭环”验证小红书/抖音的内容可控特征是否存在稳定、可复现、可行动的信号；P0 只做验证，不建组件、不改生产代码。
@@ -305,7 +306,13 @@ platform/lab/content-optimizer-p0/
   scripts/                    # 一次性采集/分析脚本（不进入组件）
                               #   collect_p0a.py      通道自检 + 抖音 scout 采集
                               #   collect_xhs_u2.py   小红书只读 u2 采集（P0-A 兜底）
-  tests/                      # 采集器单测（不进入组件）
+                              #   analyze_p0b.py      小样本探索性分析 → go_no_go.json
+                              #   build_model.py      samples + 门禁 → model/optimizer_model.json
+                              #   retrain_daily.py    幂等重训 → model/ + model/history/
+  model/
+    optimizer_model.json      # 优化模型（P0 结论 No-Go → gate_status=no_signal）
+    history/YYYYMMDD.json     # 每日重训留档（drift + 模型快照）
+  tests/                      # 采集器 / 分析 / 建模 / 重训单测（不进入组件）
 ```
 
 ### 10.2 工程约束
@@ -546,3 +553,148 @@ mra xhs chain / douyin chain
 1. P0 结论（特征方向 + 效应量）作为 `content_reflect` 的**只读输入**，让建议由统计结论支撑，而不是纯 LLM 生成；
 2. `content_reflect` 的 `published` 台账补 `content_id/url_hash`，与 `samples.csv` 的 own 行对齐，形成“发布→回流→反思→改写”闭环；
 3. 反思建议进入改写规则前，必须先过 P0 的 G3 判据（最高/最低分位相对差 ≥10%），否则只作参考不作执行。
+
+---
+
+## 17. 目标架构与闭环（v0.2 新增）
+
+> 目标：顺风车业务在**发布前**对小红书笔记 / 抖音视频做算法优化；**发布后**回流数据；**每天反思**并按积累数据重训；重训产物回注优化入口，形成闭环。
+
+### 17.1 一句话架构
+
+```text
+samples.csv ──build_model──▶ optimizer_model.json ──load_model──▶ content_optimize.score()
+      ▲                                    │                                  │
+      │                                    │                         发布前建议（不阻断）
+      │                                    │                                  ▼
+      │                              retrain_daily                     mra fixed optimize
+      │                                    ▲                          compose 注入规则
+      │                                    │                                  ▼
+      └── published 台账 + metrics.json ── content_reflect（每日反思） ◀── 发布 + 回流
+```
+
+### 17.2 闭环四段（S0–S3）
+
+| 段 | 名称 | 入口 | 产物 | 生效边界 |
+|---|---|---|---|---|
+| S0 | 模型构建 / 每日重训 | `scripts/build_model.py`、`scripts/retrain_daily.py` | `model/optimizer_model.json`、`model/history/YYYYMMDD.json` | **只写模型文件**，不直接改线上打分逻辑 |
+| S1 | 发布前优化 | `skill/scripts/content_optimize.py`、`mra fixed optimize`、`compose` 规则注入 | `{score, grade, findings, suggestions, evidence_status}` | **只建议不阻断**；发布仍人工确认 |
+| S2 | 发布 + 回流 | `skill/scripts/published.py` 台账 + `fixed/metrics.json` | 发布记录、按标题索引的流量 | 不自动发布 |
+| S3 | 每日反思 | `skill/scripts/content_reflect.py`（`reflect_hours=[10]`） | `fixed/reflections/YYYYMMDD.json` | 反思建议只作参考，需过 G3 才可执行 |
+
+**闭环判定**：S0 产物被 S1 读取 → S1 建议影响 S2 发布 → S2 数据进入 S3 反思 → S3/S0 重训回注，四段缺一即为断链。当前断链点：**S2 自有样本 0 条、`metrics.json` 为空**，因此 S0 只能产出 `prior` 权重，S3 的 `confidence` 是 LLM 自评而非统计证据。
+
+### 17.3 门禁降级：从「功能上线门禁」到「权重启用门禁」
+
+P0-B 结论为 `No-Go`（G1/G2/G5 未达标）。v0.2 明确：**No-Go 否决的是"证据权重"，不是"功能"**。
+
+| 门禁 | v0.1 含义 | v0.2 含义 |
+|---|---|---|
+| G0 通道可行 | 功能上线前置条件 | 采集通道可用性；不影响功能上线 |
+| G1 数据充足 | 功能上线前置条件 | **权重启用**前置条件：样本不足 → 权重全 0 |
+| G2 信号存在 | 功能上线前置条件 | **权重启用**前置条件：无稳定信号 → 权重全 0 |
+| G3 可行动 | 功能上线前置条件 | 规则是否可执行；规则始终输出，但标注 `prior` |
+| G4 合规 | 硬门禁 | **仍为硬门禁**：违规即停采、停用 |
+| G5 可复现 | 功能上线前置条件 | **权重启用**前置条件：未复现 → 权重全 0 |
+
+判定口径：
+
+```text
+gate_status = "evidence"    # G1 ∧ G2 ∧ G5 全通过 → 允许使用统计权重
+            | "no_signal"   # 任一未通过（当前状态）→ 全部特征 weight=0、source=prior
+```
+
+**硬约束**：`gate_status="no_signal"` 时，任何输出**禁止**声称"该特征能提升流量"，必须显式返回 `evidence_status="insufficient"`。
+
+### 17.4 No-Go 默认行为（功能上线后的表现）
+
+| 能力 | No-Go 时行为 |
+|---|---|
+| 打分 `score()` | 仍返回 0–100 分，但分值只由**先验规则**决定，与统计权重无关 |
+| 建议 `suggestions[]` | 只输出确定性改写建议（标题长度、问句/数字开头、话题数、前 3 秒字幕、发布时段），全部标注 `source=prior` |
+| 证据 `evidence_status` | 固定 `"insufficient"`，附带未通过门禁列表 |
+| 发布阻断 | **不阻断**；`mra composed` 只在提示词中追加规则，不改变发布流程 |
+| 重训 | 照常运行并按幂等写 `history`，但因权重全 0，产物与线上一致 → 记 `no_change` |
+
+### 17.5 模型文件契约（`optimizer_model.json`）
+
+```json
+{
+  "schema_version": "1.0",
+  "version": 1,
+  "generated_at": "2026-11-24T23:00:00+08:00",
+  "gate_status": "no_signal",
+  "verdict": "No-Go",
+  "source": {"rows": 175, "deduped": 137, "by_platform": {"xiaohongshu": 34, "douyin": 103}},
+  "platforms": {
+    "xiaohongshu": {"n": 34, "features": [{"name": "title_len", "n": 19, "rho": null, "status": "insufficient", "weight": 0.0, "source": "prior"}], "rules": []},
+    "douyin": {"n": 103, "features": [], "rules": []}
+  },
+  "rules": []
+}
+```
+
+字段口径：
+
+- `gate_status ∈ {no_signal, evidence}`；`evidence` 才允许 `weight ≠ 0`；
+- `source ∈ {prior, evidence}`；`no_signal` 时强制全 `prior`；
+- `rules[]` 与 `platforms.<p>.rules[]` **始终存在**，与统计权重解耦；
+- 缺失特征记 `null`，禁止用 0 填充（沿用 P0 §6.3）。
+
+### 17.6 每日重训口径
+
+| 项 | 口径 |
+|---|---|
+| 输入 | `samples.csv`（公开）+ 台账/`metrics.json`（自有，P1 接入后） |
+| 确定性 | 同输入必得同输出（忽略 `generated_at`）；禁止随机种子漂移 |
+| 幂等 | 与现模型比对（忽略 `generated_at` / `version`）；相同 → `no_change` 不写盘 |
+| 有变化 | `version += 1`，写 `model/optimizer_model.json` + `model/history/YYYYMMDD.json` |
+| drift 记录 | 新增/删除规则、权重变化、样本增量，写入 history 便于回溯 |
+| 生效方式 | **只记录不生效**：权重要求 `gate_status="evidence"` 才被 `score()` 使用；否则仅留档 |
+
+### 17.7 与 P0 / 生产代码的边界
+
+- P0 目录（`platform/lab/content-optimizer-p0/`）仍是**验证与离线脚本**，新增 `build_model.py` / `retrain_daily.py` 只写 `model/` 与 `analysis/`，不被任何组件 import；
+- 生产侧改动只在顺风车仓库（`mobile-reservation-assist/skill/scripts/`），不进主仓 `components/`、`contracts/`、`tools/dreambuddy.py`；
+- 抖音视频的 `first3s_text_present` / `duration_sec` 在公开样本中结构性缺失，因此抖音打分**不得**复用小红书的图文权重，必须按平台独立给规则。
+
+---
+
+## 18. CLI 契约层决策：不注册 + 路径注入（v0.2 新增）
+
+### 18.1 问题
+
+是否要先把内容优化能力注册到 `59-通用组件管理` 的 CLI 契约层（`contracts/` + `tools/dreambuddy.py`），再实现顺风车两域打通？
+
+### 18.2 结论：**不注册**
+
+| 判断维度 | 事实 | 结论 |
+|---|---|---|
+| 组件族枚举 | `family` 为封闭枚举，内容优化无对应族 | 注册需改契约 schema |
+| 输出契约 | `output_contract` 只允许 4 个白名单 profile | 打分结果无匹配 profile |
+| 复用范围 | 目前只有顺风车一个业务域使用 | 不满足跨域复用前提 |
+| 现状约束 | P0 SPEC §2.2 明确 P0 不改 `components/`、`contracts/`、`tools/dreambuddy.py` | 注册与 P0 约束冲突 |
+| 收益/成本 | 注册需改枚举+契约+CI `make check`，收益仅"统一入口" | 成本高于收益 |
+
+### 18.3 采用方案：路径注入
+
+```text
+mra.py（顺风车）
+  └── import skill/scripts/content_optimize.py
+        └── load_model(state_dir) 优先级：
+              1. env CONTENT_OPTIMIZER_MODEL
+              2. config  p0_model_path
+              3. state_dir/fixed/optimizer_model.json
+```
+
+- 主仓 59 域**不新增组件、不改契约**；
+- 模型文件由 P0 离线脚本生成，顺风车通过本地路径读取；
+- 跨域调用（如未来其他业务域需要）再走注册流程。
+
+### 18.4 未来触发注册的条件（满足任一）
+
+1. ≥2 个业务域需要同一份内容优化能力；
+2. 需要被 `tools/dreambuddy.py` 统一编排或写入 `output_contract`；
+3. 需要跨机器/跨语言调用（此时才值得付出契约改造成本）。
+
+届时按 §11.4 扩展 `family` 枚举与 `output_contract` 白名单，并跑 `make check` 验收。

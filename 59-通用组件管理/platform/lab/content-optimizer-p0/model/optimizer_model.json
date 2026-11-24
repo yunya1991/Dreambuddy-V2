@@ -1,0 +1,267 @@
+{
+  "schema_version": "1.0",
+  "version": 1,
+  "generated_at": "2026-11-24T22:55:17+08:00",
+  "gate_status": "no_signal",
+  "verdict": "No-Go",
+  "source": {
+    "rows": 175,
+    "deduped": 137,
+    "by_platform": {
+      "xiaohongshu": 34,
+      "douyin": 103
+    }
+  },
+  "platforms": {
+    "xiaohongshu": {
+      "n": 34,
+      "features": [
+        {
+          "name": "title_len",
+          "n": 19,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        },
+        {
+          "name": "hashtag_count",
+          "n": 19,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        },
+        {
+          "name": "body_len",
+          "n": 18,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        },
+        {
+          "name": "publish_hour",
+          "n": 14,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        },
+        {
+          "name": "pattern_number",
+          "n": 19,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        },
+        {
+          "name": "pattern_question",
+          "n": 19,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        },
+        {
+          "name": "pattern_contrast",
+          "n": 19,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        },
+        {
+          "name": "pattern_benefit",
+          "n": 19,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        },
+        {
+          "name": "pattern_emotion",
+          "n": 19,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        }
+      ],
+      "rules": [
+        {
+          "id": "title_len",
+          "platform": "xiaohongshu",
+          "source": "prior",
+          "text": "标题 16–24 字，前 8 字放冲突或数字"
+        },
+        {
+          "id": "title_hook",
+          "platform": "xiaohongshu",
+          "source": "prior",
+          "text": "标题用问句或数字开头"
+        },
+        {
+          "id": "hashtag_band",
+          "platform": "xiaohongshu",
+          "source": "prior",
+          "text": "话题 3–6 个，命中赛道关键词"
+        },
+        {
+          "id": "body_len",
+          "platform": "xiaohongshu",
+          "source": "prior",
+          "text": "正文 ≥300 字，首段先给结论"
+        },
+        {
+          "id": "publish_window",
+          "platform": "all",
+          "source": "prior",
+          "text": "优先 08–12 点或 20–22 点发布"
+        }
+      ]
+    },
+    "douyin": {
+      "n": 103,
+      "features": [
+        {
+          "name": "title_len",
+          "n": 0,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        },
+        {
+          "name": "hashtag_count",
+          "n": 0,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        },
+        {
+          "name": "body_len",
+          "n": 0,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        },
+        {
+          "name": "publish_hour",
+          "n": 0,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        },
+        {
+          "name": "pattern_number",
+          "n": 0,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        },
+        {
+          "name": "pattern_question",
+          "n": 0,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        },
+        {
+          "name": "pattern_contrast",
+          "n": 0,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        },
+        {
+          "name": "pattern_benefit",
+          "n": 0,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        },
+        {
+          "name": "pattern_emotion",
+          "n": 0,
+          "rho": null,
+          "status": "insufficient",
+          "weight": 0.0,
+          "source": "prior"
+        }
+      ],
+      "rules": [
+        {
+          "id": "douyin_first3s",
+          "platform": "douyin",
+          "source": "prior",
+          "text": "视频前 3 秒必须有字幕或口播钩子"
+        },
+        {
+          "id": "douyin_hashtag",
+          "platform": "douyin",
+          "source": "prior",
+          "text": "话题 ≤3 个，优先视频而非图文"
+        },
+        {
+          "id": "publish_window",
+          "platform": "all",
+          "source": "prior",
+          "text": "优先 08–12 点或 20–22 点发布"
+        }
+      ]
+    }
+  },
+  "rules": [
+    {
+      "id": "title_len",
+      "platform": "xiaohongshu",
+      "source": "prior",
+      "text": "标题 16–24 字，前 8 字放冲突或数字"
+    },
+    {
+      "id": "title_hook",
+      "platform": "xiaohongshu",
+      "source": "prior",
+      "text": "标题用问句或数字开头"
+    },
+    {
+      "id": "hashtag_band",
+      "platform": "xiaohongshu",
+      "source": "prior",
+      "text": "话题 3–6 个，命中赛道关键词"
+    },
+    {
+      "id": "body_len",
+      "platform": "xiaohongshu",
+      "source": "prior",
+      "text": "正文 ≥300 字，首段先给结论"
+    },
+    {
+      "id": "douyin_first3s",
+      "platform": "douyin",
+      "source": "prior",
+      "text": "视频前 3 秒必须有字幕或口播钩子"
+    },
+    {
+      "id": "douyin_hashtag",
+      "platform": "douyin",
+      "source": "prior",
+      "text": "话题 ≤3 个，优先视频而非图文"
+    },
+    {
+      "id": "publish_window",
+      "platform": "all",
+      "source": "prior",
+      "text": "优先 08–12 点或 20–22 点发布"
+    }
+  ]
+}
