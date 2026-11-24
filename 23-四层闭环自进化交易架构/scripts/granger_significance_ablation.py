@@ -17,8 +17,12 @@
 指标：G 可用率、G 维度分布、降级模式分布、双链路一致率、策略 Sharpe/胜率。
 
 用法：
+  # 单品种
   python3 scripts/granger_significance_ablation.py \
       --csv "11-易经推理系统/scripts/data/klines/BTC_1H.csv" --window 500 --step 24
+  # 多品种 × 多时段（落地前验证用）
+  python3 scripts/granger_significance_ablation.py \
+      --csvs BTC_1H ETH_1H SOL_1H BTC_1D --folds 3 --window 500 --step 24
 """
 
 from __future__ import annotations
@@ -216,61 +220,132 @@ def run_variant(prices: np.ndarray, window: int, step: int, significance: float,
     }
 
 
+def run_matrix(csv_paths: list[Path], window: int, step: int, folds: int) -> dict:
+    """多品种 × 多时段矩阵：每个 (csv, fold) 独立跑三变体。"""
+    detail = {}
+    for csv_path in csv_paths:
+        prices = load_closes(csv_path)
+        detail[csv_path.stem] = {}
+        for fold in range(folds):
+            lo = fold * len(prices) // folds
+            hi = (fold + 1) * len(prices) // folds
+            seg = prices[lo:hi]
+            if len(seg) < window + step * 5:
+                continue
+            detail[csv_path.stem][f"fold{fold + 1}"] = {
+                v: {"config": cfg, **run_variant(seg, window, step, **cfg)}
+                for v, cfg in VARIANTS.items()
+            }
+    return detail
+
+
+def aggregate(detail: dict) -> dict:
+    agg: dict[str, dict] = {}
+    for variant in VARIANTS:
+        rows = [r[variant] for sym in detail.values() for r in sym.values() if variant in r]
+        agreements = [r["agreement_rate"] for r in rows if r["agreement_rate"] is not None]
+        agg[variant] = {
+            "n_cases": len(rows),
+            "g_available_rate": (
+                round(float(np.mean([r["g_available_rate"] for r in rows])), 4) if rows else 0.0
+            ),
+            "agreement_rate": round(float(np.mean(agreements)), 4) if agreements else None,
+            "sharpe": round(float(np.mean([r["sharpe"] for r in rows])), 4) if rows else 0.0,
+            "winrate": round(float(np.mean([r["winrate"] for r in rows])), 4) if rows else 0.0,
+        }
+    for variant, res in agg.items():
+        if variant == "V0_current":
+            res["sharpe_win_vs_V0"] = "-"
+            continue
+        wins = sum(
+            1
+            for sym in detail.values()
+            for r in sym.values()
+            if r[variant]["sharpe"] > r["V0_current"]["sharpe"]
+        )
+        res["sharpe_win_vs_V0"] = f"{wins}/{res['n_cases']}"
+    return agg
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--csv",
         default=str(ROOT.parent / "11-易经推理系统/scripts/data/klines/BTC_1H.csv"),
     )
+    parser.add_argument(
+        "--csvs",
+        nargs="*",
+        default=None,
+        help="多品种对照（优先于 --csv），如 BTC_1H ETH_1H SOL_1H BTC_1D",
+    )
     parser.add_argument("--window", type=int, default=500)
     parser.add_argument("--step", type=int, default=24, help="评估步长（bar 数）")
+    parser.add_argument("--folds", type=int, default=1, help="每个品种按时间切分的独立时段数")
     parser.add_argument("--out", default=str(ROOT / "data/granger_significance_ablation.json"))
     args = parser.parse_args()
 
-    prices = load_closes(Path(args.csv))
-    print(f"数据: {args.csv} | bars={len(prices)} | window={args.window} step={args.step}")
+    if args.csvs:
+        kline_dir = ROOT.parent / "11-易经推理系统/scripts/data/klines"
+        csv_paths = [kline_dir / (c if c.endswith(".csv") else f"{c}.csv") for c in args.csvs]
+    else:
+        csv_paths = [Path(args.csv)]
 
-    results = {}
-    for name, cfg in VARIANTS.items():
-        print(f"运行 {name} ...")
-        results[name] = {
-            "config": {
-                "significance": cfg["significance"],
-                "bonferroni": cfg["bonferroni"],
-                "effective_alpha": (
-                    cfg["significance"] / (len(DIMS) * MAX_LAG)
-                    if cfg["bonferroni"]
-                    else cfg["significance"]
-                ),
-            },
-            **run_variant(prices, args.window, args.step, cfg["significance"], cfg["bonferroni"]),
-        }
-
-    print("\n=== Granger 显著性对照 ===")
-    header = (
-        f"{'variant':<16}{'alpha':>9}{'G可用率':>9}{'一致率':>8}"
-        f"{'both_none':>10}{'no_rel':>8}{'Sharpe':>8}{'胜率':>7}"
+    print(
+        f"数据集: {[p.name for p in csv_paths]} | window={args.window} step={args.step} folds={args.folds}"
     )
-    print(header)
-    for name, res in results.items():
-        modes = res["degraded_mode_distribution"]
+
+    if args.folds > 1 or len(csv_paths) > 1:
+        detail = run_matrix(csv_paths, args.window, args.step, args.folds)
+        summary = aggregate(detail)
+        print("\n=== 多品种/多时段聚合 ===")
         print(
-            f"{name:<16}{res['config']['effective_alpha']:>9.4f}"
-            f"{res['g_available_rate']:>9.2%}{(res['agreement_rate'] or 0):>8.2%}"
-            f"{modes.get('both_none', 0):>10}{modes.get('no_reliable_link', 0):>8}"
-            f"{res['sharpe']:>8.2f}{res['winrate']:>7.2%}"
+            f"{'variant':<16}{'cases':>6}{'G可用率':>9}{'一致率':>8}{'Sharpe':>8}{'胜率':>7}{'跑赢V0':>9}"
         )
+        for name, res in summary.items():
+            print(
+                f"{name:<16}{res['n_cases']:>6}{res['g_available_rate']:>9.2%}"
+                f"{(res['agreement_rate'] or 0):>8.2%}{res['sharpe']:>8.2f}"
+                f"{res['winrate']:>7.2%}{res['sharpe_win_vs_V0']:>9}"
+            )
+        payload = {
+            "window": args.window,
+            "step": args.step,
+            "folds": args.folds,
+            "datasets": [p.name for p in csv_paths],
+            "aggregate": summary,
+            "detail": detail,
+        }
+    else:
+        prices = load_closes(csv_paths[0])
+        print(f"数据: {csv_paths[0]} | bars={len(prices)}")
+        results = {
+            name: {"config": cfg, **run_variant(prices, args.window, args.step, **cfg)}
+            for name, cfg in VARIANTS.items()
+        }
+        print("\n=== Granger 显著性对照 ===")
+        print(
+            f"{'variant':<16}{'alpha':>9}{'G可用率':>9}{'一致率':>8}"
+            f"{'both_none':>10}{'no_rel':>8}{'Sharpe':>8}{'胜率':>7}"
+        )
+        for name, res in results.items():
+            modes = res["degraded_mode_distribution"]
+            print(
+                f"{name:<16}{res['config']['effective_alpha']:>9.4f}"
+                f"{res['g_available_rate']:>9.2%}{(res['agreement_rate'] or 0):>8.2%}"
+                f"{modes.get('both_none', 0):>10}{modes.get('no_reliable_link', 0):>8}"
+                f"{res['sharpe']:>8.2f}{res['winrate']:>7.2%}"
+            )
+        payload = {
+            "data": str(csv_paths[0]),
+            "window": args.window,
+            "step": args.step,
+            "results": results,
+        }
 
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(
-        json.dumps(
-            {"data": str(args.csv), "window": args.window, "step": args.step, "results": results},
-            indent=2,
-            ensure_ascii=False,
-        ),
-        encoding="utf-8",
-    )
+    out_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"\n结果已保存: {out_path}")
 
 

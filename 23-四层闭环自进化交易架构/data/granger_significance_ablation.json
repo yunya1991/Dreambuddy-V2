@@ -1,91 +1,1006 @@
 {
-  "data": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/data/klines/BTC_1H.csv",
   "window": 500,
   "step": 24,
-  "results": {
+  "folds": 3,
+  "datasets": [
+    "BTC_1H.csv",
+    "ETH_1H.csv",
+    "SOL_1H.csv",
+    "BTC_1D.csv"
+  ],
+  "aggregate": {
     "V0_current": {
-      "config": {
-        "significance": 0.05,
-        "bonferroni": true,
-        "effective_alpha": 0.0033333333333333335
-      },
-      "n_evals": 303,
-      "g_available_rate": 0.3102,
-      "g_dim_distribution": {
-        "None": 209,
-        "technical": 52,
-        "fundamental": 35,
-        "macro": 7
-      },
-      "degraded_mode_distribution": {
-        "attention_only": 209,
-        "both_available": 94
-      },
-      "agreement_rate": 0.5532,
-      "median_min_p": 0.013339,
-      "p10_min_p": 0.00011,
-      "boost_rate": 0.1716,
-      "penalty_rate": 0.1386,
-      "quality_change_count": 6,
-      "sharpe": 0.6931,
-      "winrate": 0.4785,
-      "total_return": 0.301616
+      "n_cases": 12,
+      "g_available_rate": 0.4847,
+      "agreement_rate": 0.3597,
+      "sharpe": 4.1364,
+      "winrate": 0.5913,
+      "sharpe_win_vs_V0": "-"
     },
     "V1_uncorrected": {
-      "config": {
-        "significance": 0.05,
-        "bonferroni": false,
-        "effective_alpha": 0.05
-      },
-      "n_evals": 303,
-      "g_available_rate": 0.7063,
-      "g_dim_distribution": {
-        "None": 89,
-        "fundamental": 75,
-        "technical": 124,
-        "macro": 15
-      },
-      "degraded_mode_distribution": {
-        "attention_only": 89,
-        "both_available": 214
-      },
-      "agreement_rate": 0.5794,
-      "median_min_p": 0.013339,
-      "p10_min_p": 0.00011,
-      "boost_rate": 0.4092,
-      "penalty_rate": 0.297,
-      "quality_change_count": 12,
-      "sharpe": 1.2122,
-      "winrate": 0.4851,
-      "total_return": 0.534135
+      "n_cases": 12,
+      "g_available_rate": 0.7804,
+      "agreement_rate": 0.3981,
+      "sharpe": 4.1622,
+      "winrate": 0.5869,
+      "sharpe_win_vs_V0": "5/12"
     },
     "V2_uncorrected": {
-      "config": {
-        "significance": 0.1,
-        "bonferroni": false,
-        "effective_alpha": 0.1
+      "n_cases": 12,
+      "g_available_rate": 0.8805,
+      "agreement_rate": 0.3993,
+      "sharpe": 4.1616,
+      "winrate": 0.5863,
+      "sharpe_win_vs_V0": "5/12"
+    }
+  },
+  "detail": {
+    "BTC_1H": {
+      "fold1": {
+        "V0_current": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": true
+          },
+          "n_evals": 87,
+          "g_available_rate": 0.2644,
+          "g_dim_distribution": {
+            "None": 64,
+            "technical": 10,
+            "fundamental": 12,
+            "macro": 1
+          },
+          "degraded_mode_distribution": {
+            "attention_only": 64,
+            "both_available": 23
+          },
+          "agreement_rate": 0.4348,
+          "median_min_p": 0.019388,
+          "p10_min_p": 1.5e-05,
+          "boost_rate": 0.1149,
+          "penalty_rate": 0.1494,
+          "quality_change_count": 1,
+          "sharpe": 0.321,
+          "winrate": 0.5172,
+          "total_return": 0.040858
+        },
+        "V1_uncorrected": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": false
+          },
+          "n_evals": 87,
+          "g_available_rate": 0.6207,
+          "g_dim_distribution": {
+            "None": 33,
+            "fundamental": 23,
+            "technical": 28,
+            "macro": 3
+          },
+          "degraded_mode_distribution": {
+            "attention_only": 33,
+            "both_available": 54
+          },
+          "agreement_rate": 0.5185,
+          "median_min_p": 0.019388,
+          "p10_min_p": 1.5e-05,
+          "boost_rate": 0.3218,
+          "penalty_rate": 0.2989,
+          "quality_change_count": 1,
+          "sharpe": 0.9122,
+          "winrate": 0.5172,
+          "total_return": 0.114273
+        },
+        "V2_uncorrected": {
+          "config": {
+            "significance": 0.1,
+            "bonferroni": false
+          },
+          "n_evals": 87,
+          "g_available_rate": 0.7931,
+          "g_dim_distribution": {
+            "technical": 39,
+            "None": 18,
+            "fundamental": 25,
+            "macro": 5
+          },
+          "degraded_mode_distribution": {
+            "both_available": 69,
+            "attention_only": 18
+          },
+          "agreement_rate": 0.5652,
+          "median_min_p": 0.019388,
+          "p10_min_p": 1.5e-05,
+          "boost_rate": 0.4483,
+          "penalty_rate": 0.3448,
+          "quality_change_count": 5,
+          "sharpe": 0.1491,
+          "winrate": 0.4943,
+          "total_return": 0.019219
+        }
       },
-      "n_evals": 303,
-      "g_available_rate": 0.8383,
-      "g_dim_distribution": {
-        "technical": 147,
-        "None": 49,
-        "fundamental": 87,
-        "macro": 20
+      "fold2": {
+        "V0_current": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": true
+          },
+          "n_evals": 87,
+          "g_available_rate": 0.2184,
+          "g_dim_distribution": {
+            "technical": 10,
+            "None": 68,
+            "macro": 5,
+            "fundamental": 4
+          },
+          "degraded_mode_distribution": {
+            "both_available": 19,
+            "attention_only": 68
+          },
+          "agreement_rate": 0.5263,
+          "median_min_p": 0.028559,
+          "p10_min_p": 0.00035,
+          "boost_rate": 0.1149,
+          "penalty_rate": 0.1034,
+          "quality_change_count": 1,
+          "sharpe": 1.2697,
+          "winrate": 0.5517,
+          "total_return": 0.112358
+        },
+        "V1_uncorrected": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": false
+          },
+          "n_evals": 87,
+          "g_available_rate": 0.5977,
+          "g_dim_distribution": {
+            "technical": 26,
+            "macro": 14,
+            "fundamental": 12,
+            "None": 35
+          },
+          "degraded_mode_distribution": {
+            "both_available": 52,
+            "attention_only": 35
+          },
+          "agreement_rate": 0.5,
+          "median_min_p": 0.028559,
+          "p10_min_p": 0.00035,
+          "boost_rate": 0.2989,
+          "penalty_rate": 0.2989,
+          "quality_change_count": 3,
+          "sharpe": -0.4835,
+          "winrate": 0.5057,
+          "total_return": -0.043112
+        },
+        "V2_uncorrected": {
+          "config": {
+            "significance": 0.1,
+            "bonferroni": false
+          },
+          "n_evals": 87,
+          "g_available_rate": 0.7126,
+          "g_dim_distribution": {
+            "technical": 31,
+            "macro": 18,
+            "fundamental": 13,
+            "None": 25
+          },
+          "degraded_mode_distribution": {
+            "both_available": 62,
+            "attention_only": 25
+          },
+          "agreement_rate": 0.5,
+          "median_min_p": 0.028559,
+          "p10_min_p": 0.00035,
+          "boost_rate": 0.3563,
+          "penalty_rate": 0.3563,
+          "quality_change_count": 5,
+          "sharpe": -0.2618,
+          "winrate": 0.5057,
+          "total_return": -0.023304
+        }
       },
-      "degraded_mode_distribution": {
-        "both_available": 254,
-        "attention_only": 49
+      "fold3": {
+        "V0_current": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": true
+          },
+          "n_evals": 87,
+          "g_available_rate": 0.3333,
+          "g_dim_distribution": {
+            "macro": 3,
+            "technical": 18,
+            "None": 58,
+            "fundamental": 8
+          },
+          "degraded_mode_distribution": {
+            "both_available": 29,
+            "attention_only": 58
+          },
+          "agreement_rate": 0.6207,
+          "median_min_p": 0.01859,
+          "p10_min_p": 0.000227,
+          "boost_rate": 0.2069,
+          "penalty_rate": 0.1264,
+          "quality_change_count": 1,
+          "sharpe": -2.8046,
+          "winrate": 0.4138,
+          "total_return": -0.409954
+        },
+        "V1_uncorrected": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": false
+          },
+          "n_evals": 87,
+          "g_available_rate": 0.7816,
+          "g_dim_distribution": {
+            "macro": 4,
+            "technical": 45,
+            "fundamental": 19,
+            "None": 19
+          },
+          "degraded_mode_distribution": {
+            "both_available": 68,
+            "attention_only": 19
+          },
+          "agreement_rate": 0.6618,
+          "median_min_p": 0.01859,
+          "p10_min_p": 0.000227,
+          "boost_rate": 0.5172,
+          "penalty_rate": 0.2644,
+          "quality_change_count": 1,
+          "sharpe": -3.1799,
+          "winrate": 0.3908,
+          "total_return": -0.470644
+        },
+        "V2_uncorrected": {
+          "config": {
+            "significance": 0.1,
+            "bonferroni": false
+          },
+          "n_evals": 87,
+          "g_available_rate": 0.8851,
+          "g_dim_distribution": {
+            "macro": 4,
+            "technical": 51,
+            "fundamental": 22,
+            "None": 10
+          },
+          "degraded_mode_distribution": {
+            "both_available": 77,
+            "attention_only": 10
+          },
+          "agreement_rate": 0.6623,
+          "median_min_p": 0.01859,
+          "p10_min_p": 0.000227,
+          "boost_rate": 0.5862,
+          "penalty_rate": 0.2989,
+          "quality_change_count": 1,
+          "sharpe": -3.1535,
+          "winrate": 0.3908,
+          "total_return": -0.467253
+        }
+      }
+    },
+    "ETH_1H": {
+      "fold1": {
+        "V0_current": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": true
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.3016,
+          "g_dim_distribution": {
+            "None": 44,
+            "fundamental": 11,
+            "technical": 6,
+            "macro": 2
+          },
+          "degraded_mode_distribution": {
+            "attention_only": 44,
+            "both_available": 19
+          },
+          "agreement_rate": 0.3158,
+          "median_min_p": 0.030645,
+          "p10_min_p": 4.6e-05,
+          "boost_rate": 0.0952,
+          "penalty_rate": 0.2063,
+          "quality_change_count": 1,
+          "sharpe": -0.1299,
+          "winrate": 0.4921,
+          "total_return": -0.013648
+        },
+        "V1_uncorrected": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": false
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.619,
+          "g_dim_distribution": {
+            "None": 24,
+            "fundamental": 21,
+            "technical": 14,
+            "macro": 4
+          },
+          "degraded_mode_distribution": {
+            "attention_only": 24,
+            "both_available": 39
+          },
+          "agreement_rate": 0.359,
+          "median_min_p": 0.030645,
+          "p10_min_p": 4.6e-05,
+          "boost_rate": 0.2222,
+          "penalty_rate": 0.3968,
+          "quality_change_count": 3,
+          "sharpe": 0.4995,
+          "winrate": 0.4921,
+          "total_return": 0.051291
+        },
+        "V2_uncorrected": {
+          "config": {
+            "significance": 0.1,
+            "bonferroni": false
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.7778,
+          "g_dim_distribution": {
+            "None": 14,
+            "fundamental": 23,
+            "technical": 19,
+            "macro": 7
+          },
+          "degraded_mode_distribution": {
+            "attention_only": 14,
+            "both_available": 49
+          },
+          "agreement_rate": 0.3878,
+          "median_min_p": 0.030645,
+          "p10_min_p": 4.6e-05,
+          "boost_rate": 0.3016,
+          "penalty_rate": 0.4762,
+          "quality_change_count": 2,
+          "sharpe": 0.5798,
+          "winrate": 0.5079,
+          "total_return": 0.06026
+        }
       },
-      "agreement_rate": 0.5787,
-      "median_min_p": 0.013339,
-      "p10_min_p": 0.00011,
-      "boost_rate": 0.4851,
-      "penalty_rate": 0.3531,
-      "quality_change_count": 20,
-      "sharpe": 0.9968,
-      "winrate": 0.4785,
-      "total_return": 0.441491
+      "fold2": {
+        "V0_current": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": true
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.4127,
+          "g_dim_distribution": {
+            "technical": 16,
+            "macro": 3,
+            "None": 37,
+            "fundamental": 7
+          },
+          "degraded_mode_distribution": {
+            "both_available": 26,
+            "attention_only": 37
+          },
+          "agreement_rate": 0.6154,
+          "median_min_p": 0.008144,
+          "p10_min_p": 0.000121,
+          "boost_rate": 0.254,
+          "penalty_rate": 0.1587,
+          "quality_change_count": 1,
+          "sharpe": 1.3874,
+          "winrate": 0.5556,
+          "total_return": 0.154282
+        },
+        "V1_uncorrected": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": false
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.8095,
+          "g_dim_distribution": {
+            "technical": 35,
+            "macro": 6,
+            "None": 12,
+            "fundamental": 10
+          },
+          "degraded_mode_distribution": {
+            "both_available": 51,
+            "attention_only": 12
+          },
+          "agreement_rate": 0.6863,
+          "median_min_p": 0.008144,
+          "p10_min_p": 0.000121,
+          "boost_rate": 0.5556,
+          "penalty_rate": 0.254,
+          "quality_change_count": 1,
+          "sharpe": 1.8602,
+          "winrate": 0.5873,
+          "total_return": 0.213163
+        },
+        "V2_uncorrected": {
+          "config": {
+            "significance": 0.1,
+            "bonferroni": false
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.9048,
+          "g_dim_distribution": {
+            "technical": 40,
+            "macro": 6,
+            "fundamental": 11,
+            "None": 6
+          },
+          "degraded_mode_distribution": {
+            "both_available": 57,
+            "attention_only": 6
+          },
+          "agreement_rate": 0.7018,
+          "median_min_p": 0.008144,
+          "p10_min_p": 0.000121,
+          "boost_rate": 0.6349,
+          "penalty_rate": 0.2698,
+          "quality_change_count": 1,
+          "sharpe": 2.0318,
+          "winrate": 0.5873,
+          "total_return": 0.235468
+        }
+      },
+      "fold3": {
+        "V0_current": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": true
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.1746,
+          "g_dim_distribution": {
+            "None": 52,
+            "fundamental": 7,
+            "macro": 2,
+            "technical": 2
+          },
+          "degraded_mode_distribution": {
+            "attention_only": 52,
+            "both_available": 11
+          },
+          "agreement_rate": 0.1818,
+          "median_min_p": 0.026316,
+          "p10_min_p": 0.001022,
+          "boost_rate": 0.0317,
+          "penalty_rate": 0.1429,
+          "quality_change_count": 0,
+          "sharpe": 2.1895,
+          "winrate": 0.5079,
+          "total_return": 0.183215
+        },
+        "V1_uncorrected": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": false
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.6984,
+          "g_dim_distribution": {
+            "technical": 24,
+            "fundamental": 17,
+            "None": 19,
+            "macro": 3
+          },
+          "degraded_mode_distribution": {
+            "both_available": 44,
+            "attention_only": 19
+          },
+          "agreement_rate": 0.5455,
+          "median_min_p": 0.026316,
+          "p10_min_p": 0.001022,
+          "boost_rate": 0.381,
+          "penalty_rate": 0.3175,
+          "quality_change_count": 0,
+          "sharpe": 2.2832,
+          "winrate": 0.5079,
+          "total_return": 0.195727
+        },
+        "V2_uncorrected": {
+          "config": {
+            "significance": 0.1,
+            "bonferroni": false
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.7778,
+          "g_dim_distribution": {
+            "technical": 26,
+            "fundamental": 19,
+            "macro": 4,
+            "None": 14
+          },
+          "degraded_mode_distribution": {
+            "both_available": 49,
+            "attention_only": 14
+          },
+          "agreement_rate": 0.5306,
+          "median_min_p": 0.026316,
+          "p10_min_p": 0.001022,
+          "boost_rate": 0.4127,
+          "penalty_rate": 0.3651,
+          "quality_change_count": 1,
+          "sharpe": 2.4603,
+          "winrate": 0.5238,
+          "total_return": 0.211203
+        }
+      }
+    },
+    "SOL_1H": {
+      "fold1": {
+        "V0_current": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": true
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.381,
+          "g_dim_distribution": {
+            "None": 39,
+            "fundamental": 15,
+            "technical": 9
+          },
+          "degraded_mode_distribution": {
+            "attention_only": 39,
+            "both_available": 24
+          },
+          "agreement_rate": 0.375,
+          "median_min_p": 0.013381,
+          "p10_min_p": 2.5e-05,
+          "boost_rate": 0.1429,
+          "penalty_rate": 0.2381,
+          "quality_change_count": 2,
+          "sharpe": 1.2876,
+          "winrate": 0.5079,
+          "total_return": 0.136152
+        },
+        "V1_uncorrected": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": false
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.7302,
+          "g_dim_distribution": {
+            "None": 17,
+            "fundamental": 31,
+            "technical": 13,
+            "macro": 2
+          },
+          "degraded_mode_distribution": {
+            "attention_only": 17,
+            "both_available": 46
+          },
+          "agreement_rate": 0.2826,
+          "median_min_p": 0.013381,
+          "p10_min_p": 2.5e-05,
+          "boost_rate": 0.2063,
+          "penalty_rate": 0.5238,
+          "quality_change_count": 8,
+          "sharpe": 0.986,
+          "winrate": 0.4762,
+          "total_return": 0.101526
+        },
+        "V2_uncorrected": {
+          "config": {
+            "significance": 0.1,
+            "bonferroni": false
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.873,
+          "g_dim_distribution": {
+            "None": 8,
+            "fundamental": 38,
+            "technical": 14,
+            "macro": 3
+          },
+          "degraded_mode_distribution": {
+            "attention_only": 8,
+            "both_available": 55
+          },
+          "agreement_rate": 0.2545,
+          "median_min_p": 0.013381,
+          "p10_min_p": 2.5e-05,
+          "boost_rate": 0.2222,
+          "penalty_rate": 0.6508,
+          "quality_change_count": 11,
+          "sharpe": 0.496,
+          "winrate": 0.4603,
+          "total_return": 0.050865
+        }
+      },
+      "fold2": {
+        "V0_current": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": true
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.2857,
+          "g_dim_distribution": {
+            "None": 45,
+            "fundamental": 7,
+            "macro": 4,
+            "technical": 7
+          },
+          "degraded_mode_distribution": {
+            "attention_only": 45,
+            "both_available": 18
+          },
+          "agreement_rate": 0.3889,
+          "median_min_p": 0.012394,
+          "p10_min_p": 0.000432,
+          "boost_rate": 0.1111,
+          "penalty_rate": 0.1746,
+          "quality_change_count": 1,
+          "sharpe": 2.7428,
+          "winrate": 0.6032,
+          "total_return": 0.314524
+        },
+        "V1_uncorrected": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": false
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.8095,
+          "g_dim_distribution": {
+            "technical": 23,
+            "fundamental": 20,
+            "macro": 8,
+            "None": 12
+          },
+          "degraded_mode_distribution": {
+            "both_available": 51,
+            "attention_only": 12
+          },
+          "agreement_rate": 0.451,
+          "median_min_p": 0.012394,
+          "p10_min_p": 0.000432,
+          "boost_rate": 0.3651,
+          "penalty_rate": 0.4444,
+          "quality_change_count": 1,
+          "sharpe": 4.0284,
+          "winrate": 0.6349,
+          "total_return": 0.45029
+        },
+        "V2_uncorrected": {
+          "config": {
+            "significance": 0.1,
+            "bonferroni": false
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.9206,
+          "g_dim_distribution": {
+            "technical": 28,
+            "fundamental": 21,
+            "macro": 9,
+            "None": 5
+          },
+          "degraded_mode_distribution": {
+            "both_available": 58,
+            "attention_only": 5
+          },
+          "agreement_rate": 0.4828,
+          "median_min_p": 0.012394,
+          "p10_min_p": 0.000432,
+          "boost_rate": 0.4444,
+          "penalty_rate": 0.4762,
+          "quality_change_count": 1,
+          "sharpe": 4.0703,
+          "winrate": 0.6349,
+          "total_return": 0.45982
+        }
+      },
+      "fold3": {
+        "V0_current": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": true
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.4444,
+          "g_dim_distribution": {
+            "None": 35,
+            "macro": 1,
+            "fundamental": 3,
+            "technical": 24
+          },
+          "degraded_mode_distribution": {
+            "attention_only": 35,
+            "both_available": 28
+          },
+          "agreement_rate": 0.8571,
+          "median_min_p": 0.005865,
+          "p10_min_p": 1.6e-05,
+          "boost_rate": 0.381,
+          "penalty_rate": 0.0635,
+          "quality_change_count": 0,
+          "sharpe": 4.1123,
+          "winrate": 0.5714,
+          "total_return": 0.395065
+        },
+        "V1_uncorrected": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": false
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.6984,
+          "g_dim_distribution": {
+            "fundamental": 8,
+            "None": 19,
+            "macro": 2,
+            "technical": 34
+          },
+          "degraded_mode_distribution": {
+            "both_available": 44,
+            "attention_only": 19
+          },
+          "agreement_rate": 0.7727,
+          "median_min_p": 0.005865,
+          "p10_min_p": 1.6e-05,
+          "boost_rate": 0.5397,
+          "penalty_rate": 0.1587,
+          "quality_change_count": 1,
+          "sharpe": 3.7796,
+          "winrate": 0.5556,
+          "total_return": 0.371796
+        },
+        "V2_uncorrected": {
+          "config": {
+            "significance": 0.1,
+            "bonferroni": false
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.9206,
+          "g_dim_distribution": {
+            "fundamental": 14,
+            "None": 5,
+            "technical": 41,
+            "macro": 3
+          },
+          "degraded_mode_distribution": {
+            "both_available": 58,
+            "attention_only": 5
+          },
+          "agreement_rate": 0.7069,
+          "median_min_p": 0.005865,
+          "p10_min_p": 1.6e-05,
+          "boost_rate": 0.6508,
+          "penalty_rate": 0.2698,
+          "quality_change_count": 3,
+          "sharpe": 4.3055,
+          "winrate": 0.5556,
+          "total_return": 0.416787
+        }
+      }
+    },
+    "BTC_1D": {
+      "fold1": {
+        "V0_current": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": true
+          },
+          "n_evals": 8,
+          "g_available_rate": 1.0,
+          "g_dim_distribution": {
+            "fundamental": 8
+          },
+          "degraded_mode_distribution": {
+            "both_available": 8
+          },
+          "agreement_rate": 0.0,
+          "median_min_p": 0.0,
+          "p10_min_p": 0.0,
+          "boost_rate": 0.0,
+          "penalty_rate": 1.0,
+          "quality_change_count": 1,
+          "sharpe": 18.4251,
+          "winrate": 0.875,
+          "total_return": 0.737031
+        },
+        "V1_uncorrected": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": false
+          },
+          "n_evals": 8,
+          "g_available_rate": 1.0,
+          "g_dim_distribution": {
+            "fundamental": 8
+          },
+          "degraded_mode_distribution": {
+            "both_available": 8
+          },
+          "agreement_rate": 0.0,
+          "median_min_p": 0.0,
+          "p10_min_p": 0.0,
+          "boost_rate": 0.0,
+          "penalty_rate": 1.0,
+          "quality_change_count": 1,
+          "sharpe": 18.4251,
+          "winrate": 0.875,
+          "total_return": 0.737031
+        },
+        "V2_uncorrected": {
+          "config": {
+            "significance": 0.1,
+            "bonferroni": false
+          },
+          "n_evals": 8,
+          "g_available_rate": 1.0,
+          "g_dim_distribution": {
+            "fundamental": 8
+          },
+          "degraded_mode_distribution": {
+            "both_available": 8
+          },
+          "agreement_rate": 0.0,
+          "median_min_p": 0.0,
+          "p10_min_p": 0.0,
+          "boost_rate": 0.0,
+          "penalty_rate": 1.0,
+          "quality_change_count": 1,
+          "sharpe": 18.4251,
+          "winrate": 0.875,
+          "total_return": 0.737031
+        }
+      },
+      "fold2": {
+        "V0_current": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": true
+          },
+          "n_evals": 8,
+          "g_available_rate": 1.0,
+          "g_dim_distribution": {
+            "fundamental": 8
+          },
+          "degraded_mode_distribution": {
+            "both_available": 8
+          },
+          "agreement_rate": 0.0,
+          "median_min_p": 4.4e-05,
+          "p10_min_p": 3e-06,
+          "boost_rate": 0.0,
+          "penalty_rate": 1.0,
+          "quality_change_count": 1,
+          "sharpe": 5.514,
+          "winrate": 0.625,
+          "total_return": 0.205857
+        },
+        "V1_uncorrected": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": false
+          },
+          "n_evals": 8,
+          "g_available_rate": 1.0,
+          "g_dim_distribution": {
+            "fundamental": 8
+          },
+          "degraded_mode_distribution": {
+            "both_available": 8
+          },
+          "agreement_rate": 0.0,
+          "median_min_p": 4.4e-05,
+          "p10_min_p": 3e-06,
+          "boost_rate": 0.0,
+          "penalty_rate": 1.0,
+          "quality_change_count": 1,
+          "sharpe": 5.514,
+          "winrate": 0.625,
+          "total_return": 0.205857
+        },
+        "V2_uncorrected": {
+          "config": {
+            "significance": 0.1,
+            "bonferroni": false
+          },
+          "n_evals": 8,
+          "g_available_rate": 1.0,
+          "g_dim_distribution": {
+            "fundamental": 8
+          },
+          "degraded_mode_distribution": {
+            "both_available": 8
+          },
+          "agreement_rate": 0.0,
+          "median_min_p": 4.4e-05,
+          "p10_min_p": 3e-06,
+          "boost_rate": 0.0,
+          "penalty_rate": 1.0,
+          "quality_change_count": 1,
+          "sharpe": 5.514,
+          "winrate": 0.625,
+          "total_return": 0.205857
+        }
+      },
+      "fold3": {
+        "V0_current": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": true
+          },
+          "n_evals": 8,
+          "g_available_rate": 1.0,
+          "g_dim_distribution": {
+            "fundamental": 8
+          },
+          "degraded_mode_distribution": {
+            "both_available": 8
+          },
+          "agreement_rate": 0.0,
+          "median_min_p": 0.0,
+          "p10_min_p": 0.0,
+          "boost_rate": 0.0,
+          "penalty_rate": 1.0,
+          "quality_change_count": 1,
+          "sharpe": 15.322,
+          "winrate": 0.875,
+          "total_return": 0.444908
+        },
+        "V1_uncorrected": {
+          "config": {
+            "significance": 0.05,
+            "bonferroni": false
+          },
+          "n_evals": 8,
+          "g_available_rate": 1.0,
+          "g_dim_distribution": {
+            "fundamental": 8
+          },
+          "degraded_mode_distribution": {
+            "both_available": 8
+          },
+          "agreement_rate": 0.0,
+          "median_min_p": 0.0,
+          "p10_min_p": 0.0,
+          "boost_rate": 0.0,
+          "penalty_rate": 1.0,
+          "quality_change_count": 1,
+          "sharpe": 15.322,
+          "winrate": 0.875,
+          "total_return": 0.444908
+        },
+        "V2_uncorrected": {
+          "config": {
+            "significance": 0.1,
+            "bonferroni": false
+          },
+          "n_evals": 8,
+          "g_available_rate": 1.0,
+          "g_dim_distribution": {
+            "fundamental": 8
+          },
+          "degraded_mode_distribution": {
+            "both_available": 8
+          },
+          "agreement_rate": 0.0,
+          "median_min_p": 0.0,
+          "p10_min_p": 0.0,
+          "boost_rate": 0.0,
+          "penalty_rate": 1.0,
+          "quality_change_count": 1,
+          "sharpe": 15.322,
+          "winrate": 0.875,
+          "total_return": 0.444908
+        }
+      }
     }
   }
 }
