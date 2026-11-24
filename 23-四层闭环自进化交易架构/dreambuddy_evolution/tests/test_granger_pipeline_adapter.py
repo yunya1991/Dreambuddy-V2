@@ -88,3 +88,44 @@ def test_insufficient_data_returns_none():
     result = adapter.evaluate(factors_by_dim, returns)
     assert result["G_dim"] is None
     assert result["G_confidence"] == 0.0
+
+
+def test_correction_thresholds():
+    """默认 per_dim（0.05/3）；bonferroni=0.05/15；none=0.05。"""
+    from dreambuddy_evolution.core.granger_pipeline_adapter import GrangerPipelineAdapter
+
+    assert abs(GrangerPipelineAdapter()._alpha_threshold - 0.05 / 3) < 1e-12
+    assert abs(GrangerPipelineAdapter(correction="bonferroni")._alpha_threshold - 0.05 / 15) < 1e-12
+    assert abs(GrangerPipelineAdapter(correction="none")._alpha_threshold - 0.05) < 1e-12
+
+
+def test_correction_env_override(monkeypatch):
+    """GRANGER_CORRECTION 可覆盖默认校正方式。"""
+    from dreambuddy_evolution.core.granger_pipeline_adapter import GrangerPipelineAdapter
+
+    monkeypatch.setenv("GRANGER_CORRECTION", "bonferroni")
+    assert abs(GrangerPipelineAdapter()._alpha_threshold - 0.05 / 15) < 1e-12
+
+
+def test_per_dim_accepts_borderline_p():
+    """p=0.01 在 per_dim(0.0167) 下成立，在 bonferroni(0.0033) 下不成立。"""
+
+    class _StubChecker:
+        _max_lag = 5
+
+        @staticmethod
+        def check(factor, returns):
+            return {"p_value": 0.01}
+
+    from dreambuddy_evolution.core.granger_pipeline_adapter import GrangerPipelineAdapter
+
+    factors = {d: np.arange(120, dtype=float) for d in ("technical", "fundamental", "macro")}
+    returns = np.arange(120, dtype=float) * 0.001
+
+    per_dim = GrangerPipelineAdapter()
+    per_dim._checker = _StubChecker()
+    assert per_dim.evaluate(factors, returns)["G_dim"] is not None
+
+    bonferroni = GrangerPipelineAdapter(correction="bonferroni")
+    bonferroni._checker = _StubChecker()
+    assert bonferroni.evaluate(factors, returns)["G_dim"] is None

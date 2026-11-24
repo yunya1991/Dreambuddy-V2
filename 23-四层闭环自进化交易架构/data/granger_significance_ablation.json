@@ -17,6 +17,14 @@
       "winrate": 0.5913,
       "sharpe_win_vs_V0": "-"
     },
+    "V1b_per_dim": {
+      "n_cases": 12,
+      "g_available_rate": 0.6233,
+      "agreement_rate": 0.3682,
+      "sharpe": 4.2855,
+      "winrate": 0.5954,
+      "sharpe_win_vs_V0": "5/12"
+    },
     "V1_uncorrected": {
       "n_cases": 12,
       "g_available_rate": 0.7804,
@@ -40,7 +48,7 @@
         "V0_current": {
           "config": {
             "significance": 0.05,
-            "bonferroni": true
+            "correction": "bonferroni"
           },
           "n_evals": 87,
           "g_available_rate": 0.2644,
@@ -64,10 +72,37 @@
           "winrate": 0.5172,
           "total_return": 0.040858
         },
+        "V1b_per_dim": {
+          "config": {
+            "significance": 0.05,
+            "correction": "per_dim"
+          },
+          "n_evals": 87,
+          "g_available_rate": 0.4943,
+          "g_dim_distribution": {
+            "None": 44,
+            "fundamental": 18,
+            "technical": 23,
+            "macro": 2
+          },
+          "degraded_mode_distribution": {
+            "attention_only": 44,
+            "both_available": 43
+          },
+          "agreement_rate": 0.5349,
+          "median_min_p": 0.019388,
+          "p10_min_p": 1.5e-05,
+          "boost_rate": 0.2644,
+          "penalty_rate": 0.2299,
+          "quality_change_count": 1,
+          "sharpe": 0.9789,
+          "winrate": 0.5172,
+          "total_return": 0.12343
+        },
         "V1_uncorrected": {
           "config": {
             "significance": 0.05,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 87,
           "g_available_rate": 0.6207,
@@ -94,7 +129,7 @@
         "V2_uncorrected": {
           "config": {
             "significance": 0.1,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 87,
           "g_available_rate": 0.7931,
@@ -123,7 +158,7 @@
         "V0_current": {
           "config": {
             "significance": 0.05,
-            "bonferroni": true
+            "correction": "bonferroni"
           },
           "n_evals": 87,
           "g_available_rate": 0.2184,
@@ -147,10 +182,37 @@
           "winrate": 0.5517,
           "total_return": 0.112358
         },
+        "V1b_per_dim": {
+          "config": {
+            "significance": 0.05,
+            "correction": "per_dim"
+          },
+          "n_evals": 87,
+          "g_available_rate": 0.4828,
+          "g_dim_distribution": {
+            "technical": 22,
+            "macro": 12,
+            "fundamental": 8,
+            "None": 45
+          },
+          "degraded_mode_distribution": {
+            "both_available": 42,
+            "attention_only": 45
+          },
+          "agreement_rate": 0.5238,
+          "median_min_p": 0.028559,
+          "p10_min_p": 0.00035,
+          "boost_rate": 0.2529,
+          "penalty_rate": 0.2299,
+          "quality_change_count": 2,
+          "sharpe": -0.4462,
+          "winrate": 0.5172,
+          "total_return": -0.039874
+        },
         "V1_uncorrected": {
           "config": {
             "significance": 0.05,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 87,
           "g_available_rate": 0.5977,
@@ -177,7 +239,7 @@
         "V2_uncorrected": {
           "config": {
             "significance": 0.1,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 87,
           "g_available_rate": 0.7126,
@@ -206,7 +268,7 @@
         "V0_current": {
           "config": {
             "significance": 0.05,
-            "bonferroni": true
+            "correction": "bonferroni"
           },
           "n_evals": 87,
           "g_available_rate": 0.3333,
@@ -230,10 +292,37 @@
           "winrate": 0.4138,
           "total_return": -0.409954
         },
+        "V1b_per_dim": {
+          "config": {
+            "significance": 0.05,
+            "correction": "per_dim"
+          },
+          "n_evals": 87,
+          "g_available_rate": 0.4713,
+          "g_dim_distribution": {
+            "macro": 3,
+            "technical": 24,
+            "fundamental": 14,
+            "None": 46
+          },
+          "degraded_mode_distribution": {
+            "both_available": 41,
+            "attention_only": 46
+          },
+          "agreement_rate": 0.5854,
+          "median_min_p": 0.01859,
+          "p10_min_p": 0.000227,
+          "boost_rate": 0.2759,
+          "penalty_rate": 0.1954,
+          "quality_change_count": 2,
+          "sharpe": -3.3997,
+          "winrate": 0.4023,
+          "total_return": -0.49231
+        },
         "V1_uncorrected": {
           "config": {
             "significance": 0.05,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 87,
           "g_available_rate": 0.7816,
@@ -260,7 +349,7 @@
         "V2_uncorrected": {
           "config": {
             "significance": 0.1,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 87,
           "g_available_rate": 0.8851,
@@ -291,7 +380,7 @@
         "V0_current": {
           "config": {
             "significance": 0.05,
-            "bonferroni": true
+            "correction": "bonferroni"
           },
           "n_evals": 63,
           "g_available_rate": 0.3016,
@@ -315,10 +404,37 @@
           "winrate": 0.4921,
           "total_return": -0.013648
         },
+        "V1b_per_dim": {
+          "config": {
+            "significance": 0.05,
+            "correction": "per_dim"
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.4286,
+          "g_dim_distribution": {
+            "None": 36,
+            "fundamental": 14,
+            "technical": 10,
+            "macro": 3
+          },
+          "degraded_mode_distribution": {
+            "attention_only": 36,
+            "both_available": 27
+          },
+          "agreement_rate": 0.3704,
+          "median_min_p": 0.030645,
+          "p10_min_p": 4.6e-05,
+          "boost_rate": 0.1587,
+          "penalty_rate": 0.2698,
+          "quality_change_count": 1,
+          "sharpe": -0.0647,
+          "winrate": 0.4921,
+          "total_return": -0.006775
+        },
         "V1_uncorrected": {
           "config": {
             "significance": 0.05,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 63,
           "g_available_rate": 0.619,
@@ -345,7 +461,7 @@
         "V2_uncorrected": {
           "config": {
             "significance": 0.1,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 63,
           "g_available_rate": 0.7778,
@@ -374,7 +490,7 @@
         "V0_current": {
           "config": {
             "significance": 0.05,
-            "bonferroni": true
+            "correction": "bonferroni"
           },
           "n_evals": 63,
           "g_available_rate": 0.4127,
@@ -398,10 +514,37 @@
           "winrate": 0.5556,
           "total_return": 0.154282
         },
+        "V1b_per_dim": {
+          "config": {
+            "significance": 0.05,
+            "correction": "per_dim"
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.5556,
+          "g_dim_distribution": {
+            "technical": 22,
+            "macro": 6,
+            "None": 28,
+            "fundamental": 7
+          },
+          "degraded_mode_distribution": {
+            "both_available": 35,
+            "attention_only": 28
+          },
+          "agreement_rate": 0.6286,
+          "median_min_p": 0.008144,
+          "p10_min_p": 0.000121,
+          "boost_rate": 0.3492,
+          "penalty_rate": 0.2063,
+          "quality_change_count": 1,
+          "sharpe": 0.9843,
+          "winrate": 0.5556,
+          "total_return": 0.110341
+        },
         "V1_uncorrected": {
           "config": {
             "significance": 0.05,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 63,
           "g_available_rate": 0.8095,
@@ -428,7 +571,7 @@
         "V2_uncorrected": {
           "config": {
             "significance": 0.1,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 63,
           "g_available_rate": 0.9048,
@@ -457,7 +600,7 @@
         "V0_current": {
           "config": {
             "significance": 0.05,
-            "bonferroni": true
+            "correction": "bonferroni"
           },
           "n_evals": 63,
           "g_available_rate": 0.1746,
@@ -481,10 +624,37 @@
           "winrate": 0.5079,
           "total_return": 0.183215
         },
+        "V1b_per_dim": {
+          "config": {
+            "significance": 0.05,
+            "correction": "per_dim"
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.3333,
+          "g_dim_distribution": {
+            "None": 42,
+            "fundamental": 15,
+            "macro": 2,
+            "technical": 4
+          },
+          "degraded_mode_distribution": {
+            "attention_only": 42,
+            "both_available": 21
+          },
+          "agreement_rate": 0.1905,
+          "median_min_p": 0.026316,
+          "p10_min_p": 0.001022,
+          "boost_rate": 0.0635,
+          "penalty_rate": 0.2698,
+          "quality_change_count": 3,
+          "sharpe": 3.4259,
+          "winrate": 0.5556,
+          "total_return": 0.284601
+        },
         "V1_uncorrected": {
           "config": {
             "significance": 0.05,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 63,
           "g_available_rate": 0.6984,
@@ -511,7 +681,7 @@
         "V2_uncorrected": {
           "config": {
             "significance": 0.1,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 63,
           "g_available_rate": 0.7778,
@@ -542,7 +712,7 @@
         "V0_current": {
           "config": {
             "significance": 0.05,
-            "bonferroni": true
+            "correction": "bonferroni"
           },
           "n_evals": 63,
           "g_available_rate": 0.381,
@@ -565,10 +735,37 @@
           "winrate": 0.5079,
           "total_return": 0.136152
         },
+        "V1b_per_dim": {
+          "config": {
+            "significance": 0.05,
+            "correction": "per_dim"
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.5238,
+          "g_dim_distribution": {
+            "None": 30,
+            "fundamental": 19,
+            "technical": 12,
+            "macro": 2
+          },
+          "degraded_mode_distribution": {
+            "attention_only": 30,
+            "both_available": 33
+          },
+          "agreement_rate": 0.3636,
+          "median_min_p": 0.013381,
+          "p10_min_p": 2.5e-05,
+          "boost_rate": 0.1905,
+          "penalty_rate": 0.3333,
+          "quality_change_count": 3,
+          "sharpe": 1.5382,
+          "winrate": 0.5238,
+          "total_return": 0.161172
+        },
         "V1_uncorrected": {
           "config": {
             "significance": 0.05,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 63,
           "g_available_rate": 0.7302,
@@ -595,7 +792,7 @@
         "V2_uncorrected": {
           "config": {
             "significance": 0.1,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 63,
           "g_available_rate": 0.873,
@@ -624,7 +821,7 @@
         "V0_current": {
           "config": {
             "significance": 0.05,
-            "bonferroni": true
+            "correction": "bonferroni"
           },
           "n_evals": 63,
           "g_available_rate": 0.2857,
@@ -648,10 +845,37 @@
           "winrate": 0.6032,
           "total_return": 0.314524
         },
+        "V1b_per_dim": {
+          "config": {
+            "significance": 0.05,
+            "correction": "per_dim"
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.5873,
+          "g_dim_distribution": {
+            "None": 26,
+            "fundamental": 15,
+            "technical": 15,
+            "macro": 7
+          },
+          "degraded_mode_distribution": {
+            "attention_only": 26,
+            "both_available": 37
+          },
+          "agreement_rate": 0.4054,
+          "median_min_p": 0.012394,
+          "p10_min_p": 0.000432,
+          "boost_rate": 0.2381,
+          "penalty_rate": 0.3492,
+          "quality_change_count": 1,
+          "sharpe": 5.0728,
+          "winrate": 0.6349,
+          "total_return": 0.561159
+        },
         "V1_uncorrected": {
           "config": {
             "significance": 0.05,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 63,
           "g_available_rate": 0.8095,
@@ -678,7 +902,7 @@
         "V2_uncorrected": {
           "config": {
             "significance": 0.1,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 63,
           "g_available_rate": 0.9206,
@@ -707,7 +931,7 @@
         "V0_current": {
           "config": {
             "significance": 0.05,
-            "bonferroni": true
+            "correction": "bonferroni"
           },
           "n_evals": 63,
           "g_available_rate": 0.4444,
@@ -731,10 +955,37 @@
           "winrate": 0.5714,
           "total_return": 0.395065
         },
+        "V1b_per_dim": {
+          "config": {
+            "significance": 0.05,
+            "correction": "per_dim"
+          },
+          "n_evals": 63,
+          "g_available_rate": 0.6032,
+          "g_dim_distribution": {
+            "None": 25,
+            "fundamental": 6,
+            "macro": 1,
+            "technical": 31
+          },
+          "degraded_mode_distribution": {
+            "attention_only": 25,
+            "both_available": 38
+          },
+          "agreement_rate": 0.8158,
+          "median_min_p": 0.005865,
+          "p10_min_p": 1.6e-05,
+          "boost_rate": 0.4921,
+          "penalty_rate": 0.1111,
+          "quality_change_count": 0,
+          "sharpe": 4.0759,
+          "winrate": 0.5714,
+          "total_return": 0.398662
+        },
         "V1_uncorrected": {
           "config": {
             "significance": 0.05,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 63,
           "g_available_rate": 0.6984,
@@ -761,7 +1012,7 @@
         "V2_uncorrected": {
           "config": {
             "significance": 0.1,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 63,
           "g_available_rate": 0.9206,
@@ -792,7 +1043,30 @@
         "V0_current": {
           "config": {
             "significance": 0.05,
-            "bonferroni": true
+            "correction": "bonferroni"
+          },
+          "n_evals": 8,
+          "g_available_rate": 1.0,
+          "g_dim_distribution": {
+            "fundamental": 8
+          },
+          "degraded_mode_distribution": {
+            "both_available": 8
+          },
+          "agreement_rate": 0.0,
+          "median_min_p": 0.0,
+          "p10_min_p": 0.0,
+          "boost_rate": 0.0,
+          "penalty_rate": 1.0,
+          "quality_change_count": 1,
+          "sharpe": 18.4251,
+          "winrate": 0.875,
+          "total_return": 0.737031
+        },
+        "V1b_per_dim": {
+          "config": {
+            "significance": 0.05,
+            "correction": "per_dim"
           },
           "n_evals": 8,
           "g_available_rate": 1.0,
@@ -815,7 +1089,7 @@
         "V1_uncorrected": {
           "config": {
             "significance": 0.05,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 8,
           "g_available_rate": 1.0,
@@ -838,7 +1112,7 @@
         "V2_uncorrected": {
           "config": {
             "significance": 0.1,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 8,
           "g_available_rate": 1.0,
@@ -863,7 +1137,30 @@
         "V0_current": {
           "config": {
             "significance": 0.05,
-            "bonferroni": true
+            "correction": "bonferroni"
+          },
+          "n_evals": 8,
+          "g_available_rate": 1.0,
+          "g_dim_distribution": {
+            "fundamental": 8
+          },
+          "degraded_mode_distribution": {
+            "both_available": 8
+          },
+          "agreement_rate": 0.0,
+          "median_min_p": 4.4e-05,
+          "p10_min_p": 3e-06,
+          "boost_rate": 0.0,
+          "penalty_rate": 1.0,
+          "quality_change_count": 1,
+          "sharpe": 5.514,
+          "winrate": 0.625,
+          "total_return": 0.205857
+        },
+        "V1b_per_dim": {
+          "config": {
+            "significance": 0.05,
+            "correction": "per_dim"
           },
           "n_evals": 8,
           "g_available_rate": 1.0,
@@ -886,7 +1183,7 @@
         "V1_uncorrected": {
           "config": {
             "significance": 0.05,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 8,
           "g_available_rate": 1.0,
@@ -909,7 +1206,7 @@
         "V2_uncorrected": {
           "config": {
             "significance": 0.1,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 8,
           "g_available_rate": 1.0,
@@ -934,7 +1231,30 @@
         "V0_current": {
           "config": {
             "significance": 0.05,
-            "bonferroni": true
+            "correction": "bonferroni"
+          },
+          "n_evals": 8,
+          "g_available_rate": 1.0,
+          "g_dim_distribution": {
+            "fundamental": 8
+          },
+          "degraded_mode_distribution": {
+            "both_available": 8
+          },
+          "agreement_rate": 0.0,
+          "median_min_p": 0.0,
+          "p10_min_p": 0.0,
+          "boost_rate": 0.0,
+          "penalty_rate": 1.0,
+          "quality_change_count": 1,
+          "sharpe": 15.322,
+          "winrate": 0.875,
+          "total_return": 0.444908
+        },
+        "V1b_per_dim": {
+          "config": {
+            "significance": 0.05,
+            "correction": "per_dim"
           },
           "n_evals": 8,
           "g_available_rate": 1.0,
@@ -957,7 +1277,7 @@
         "V1_uncorrected": {
           "config": {
             "significance": 0.05,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 8,
           "g_available_rate": 1.0,
@@ -980,7 +1300,7 @@
         "V2_uncorrected": {
           "config": {
             "significance": 0.1,
-            "bonferroni": false
+            "correction": "none"
           },
           "n_evals": 8,
           "g_available_rate": 1.0,

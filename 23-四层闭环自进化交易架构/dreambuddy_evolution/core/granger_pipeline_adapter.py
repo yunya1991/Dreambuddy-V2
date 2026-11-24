@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import logging
+import os
 
 import numpy as np
 
@@ -18,17 +19,40 @@ from dreambuddy_evolution.core.granger_causality_checker import GrangerCausality
 logger = logging.getLogger(__name__)
 
 VALID_DIMS = ("technical", "fundamental", "macro")
+VALID_CORRECTIONS = ("bonferroni", "per_dim", "none")
+DEFAULT_CORRECTION = "per_dim"
 
 
 class GrangerPipelineAdapter:
     """Granger 因果链适配器 — 输出过去主矛盾维度 G_dim."""
 
-    def __init__(self, max_lag: int = 5, significance: float = 0.05) -> None:
+    def __init__(
+        self,
+        max_lag: int = 5,
+        significance: float = 0.05,
+        correction: str | None = None,
+    ) -> None:
         self._checker = GrangerCausalityChecker(max_lag=max_lag, significance=significance)
         self._max_lag = max_lag
-        # Bonferroni 校正：3 维度 × max_lag 个 lag 检验
-        self._alpha = significance
-        self._alpha_corrected = significance / (len(VALID_DIMS) * max_lag)
+        self._significance = significance
+        # 多重比较校正：2026-11-25 用户决策「适当放宽，先让 G 可用率有用」
+        # 默认 per_dim（0.05/3≈0.0167）；可用 GRANGER_CORRECTION 覆盖为 bonferroni|per_dim|none
+        resolved = (
+            correction or os.environ.get("GRANGER_CORRECTION") or DEFAULT_CORRECTION
+        ).lower()
+        if resolved not in VALID_CORRECTIONS:
+            logger.warning("[FO] 未知 GRANGER_CORRECTION=%s，回退 %s", resolved, DEFAULT_CORRECTION)
+            resolved = DEFAULT_CORRECTION
+        self._correction = resolved
+        self._alpha_threshold = self._resolve_alpha(significance, max_lag, resolved)
+
+    @staticmethod
+    def _resolve_alpha(significance: float, max_lag: int, correction: str) -> float:
+        if correction == "bonferroni":
+            return significance / (len(VALID_DIMS) * max_lag)
+        if correction == "per_dim":
+            return significance / len(VALID_DIMS)
+        return significance
 
     def evaluate(
         self,
@@ -78,14 +102,14 @@ class GrangerPipelineAdapter:
         if not p_values:
             return {"G_dim": None, "G_confidence": 0.0, "p_values": {}}
 
-        # 取 p 值最小的维度，需通过 Bonferroni 校正阈值
+        # 取 p 值最小的维度，需通过多重比较校正后的阈值
         g_dim = min(p_values, key=p_values.get)
         min_p = p_values[g_dim]
 
-        if min_p >= self._alpha_corrected:
+        if min_p >= self._alpha_threshold:
             return {"G_dim": None, "G_confidence": 0.0, "p_values": p_values}
 
-        g_confidence = max(0.0, 1.0 - min_p / self._alpha_corrected)
+        g_confidence = max(0.0, 1.0 - min_p / self._alpha_threshold)
 
         return {
             "G_dim": g_dim,

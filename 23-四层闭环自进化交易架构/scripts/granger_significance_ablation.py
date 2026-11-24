@@ -4,7 +4,8 @@
 目的：G 侧（Granger 因果）在真实行情上长期 `no_significant_granger`，
 导致 23 交叉验证长期停留在单链路降级 / SPRT 中性。本实验对比三种显著性阈值：
 
-  V0_current     : significance=0.05 + Bonferroni（3 维 × 5 lag = 0.00333），生产现状
+  V0_current     : significance=0.05 + Bonferroni（3 维 × 5 lag = 0.00333），旧生产口径
+  V1b_per_dim    : significance=0.05，按维度校正（0.0167），2026-11-25 起生产默认
   V1_uncorrected : significance=0.05（不做多重比较校正）
   V2_uncorrected : significance=0.10（不做多重比较校正）
 
@@ -48,10 +49,19 @@ DIMS = ("technical", "fundamental", "macro")
 MAX_LAG = 5
 
 VARIANTS = {
-    "V0_current": {"significance": 0.05, "bonferroni": True},
-    "V1_uncorrected": {"significance": 0.05, "bonferroni": False},
-    "V2_uncorrected": {"significance": 0.10, "bonferroni": False},
+    "V0_current": {"significance": 0.05, "correction": "bonferroni"},
+    "V1b_per_dim": {"significance": 0.05, "correction": "per_dim"},
+    "V1_uncorrected": {"significance": 0.05, "correction": "none"},
+    "V2_uncorrected": {"significance": 0.10, "correction": "none"},
 }
+
+
+def effective_alpha(significance: float, correction: str) -> float:
+    if correction == "bonferroni":
+        return significance / (len(DIMS) * MAX_LAG)
+    if correction == "per_dim":
+        return significance / len(DIMS)
+    return significance
 
 
 def load_closes(csv_path: Path) -> np.ndarray:
@@ -80,11 +90,11 @@ def production_factors(prices: np.ndarray) -> tuple[dict[str, np.ndarray], np.nd
 
 
 def granger_g_dim(
-    factors: dict[str, np.ndarray], returns: np.ndarray, significance: float, bonferroni: bool
+    factors: dict[str, np.ndarray], returns: np.ndarray, significance: float, correction: str
 ) -> tuple[str | None, dict[str, float], float]:
-    """与 GrangerPipelineAdapter 同口径，但可切换 Bonferroni。"""
+    """与 GrangerPipelineAdapter 同口径，但可切换多重比较校正方式。"""
     checker = GrangerCausalityChecker(max_lag=MAX_LAG, significance=significance)
-    alpha = significance / (len(DIMS) * MAX_LAG) if bonferroni else significance
+    alpha = effective_alpha(significance, correction)
     p_values: dict[str, float] = {}
     for dim in DIMS:
         factor = factors.get(dim)
@@ -152,7 +162,7 @@ def momentum_direction(prices: np.ndarray, dim: str, span: int = 60) -> float:
     return 1.0 if np.mean(f[-span:]) - f[-span - 1] > 0 else -1.0
 
 
-def run_variant(prices: np.ndarray, window: int, step: int, significance: float, bonferroni: bool):
+def run_variant(prices: np.ndarray, window: int, step: int, significance: float, correction: str):
     gate = CrossValidationGate(
         persistence_threshold=5,
         structural_break_threshold=1.0,
@@ -168,7 +178,7 @@ def run_variant(prices: np.ndarray, window: int, step: int, significance: float,
     for end in range(window, len(prices) - step, step):
         seg = prices[end - window : end]
         factors, returns = production_factors(seg)
-        g_dim, p_values, _alpha = granger_g_dim(factors, returns, significance, bonferroni)
+        g_dim, p_values, _alpha = granger_g_dim(factors, returns, significance, correction)
         a_dim, a_strength = attention_proxy(seg)
 
         result = gate.compare(
@@ -331,7 +341,7 @@ def main() -> None:
         for name, res in results.items():
             modes = res["degraded_mode_distribution"]
             print(
-                f"{name:<16}{res['config']['effective_alpha']:>9.4f}"
+                f"{name:<16}{effective_alpha(res['config']['significance'], res['config']['correction']):>9.4f}"
                 f"{res['g_available_rate']:>9.2%}{(res['agreement_rate'] or 0):>8.2%}"
                 f"{modes.get('both_none', 0):>10}{modes.get('no_reliable_link', 0):>8}"
                 f"{res['sharpe']:>8.2f}{res['winrate']:>7.2%}"

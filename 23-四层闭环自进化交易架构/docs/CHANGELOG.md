@@ -1,7 +1,22 @@
 # 23-四层闭环自进化交易架构 — 变更日志
 
-> **版本**: v1.23 | **更新日期**: 2026-11-20
+> **版本**: v1.24 | **更新日期**: 2026-11-25
 > **定位**: 模块级变更日志，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+
+---
+
+## [v1.24] - 2026-11-25 (Granger 多重比较校正适当放宽：Bonferroni → per-dim)
+
+### 变更
+
+- **背景**：`Bonferroni(α=0.05/(3×5)≈0.00333)` 使 G 链路长期 `no_significant_granger`，
+  多品种×多时段对照实验 G 可用率仅 48.5%。
+- **对照实验**（BTC/ETH/SOL 1H + BTC 1D，3 折，`scripts/granger_significance_ablation.py`）：
+  per-dim(α≈0.0167) G 可用率 **62.3%**、一致率 36.8%、Sharpe **4.29**；
+  不校正@0.05/0.10 可用率 78.0%/88.1% 但 Sharpe 4.16 无优势，故取 per-dim 作为"适当放宽"。
+- **实现**：`GrangerPipelineAdapter(..., correction="per_dim")` 为默认；
+  `GRANGER_CORRECTION=bonferroni|per_dim|none` 可按环境覆盖；`G_confidence` 按新阈值归一。
+- **测试**：新增 4 条单测（阈值解析 / 环境覆盖 / 边界 p 值行为）。
 
 ---
 

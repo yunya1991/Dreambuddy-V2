@@ -1426,7 +1426,7 @@ Granger 重估 → 新的过去              ① granger_reestimate_trigger
 
 | §5.1 步骤 | §10 工程组件 | 落地状态 |
 |----------|------------|---------|
-| Step 1: Granger 路径输出 G_dim | GrangerPipelineAdapter | ✅ 已落地（v1.10，含 Bonferroni 多重比较校正） |
+| Step 1: Granger 路径输出 G_dim | GrangerPipelineAdapter | ✅ 已落地（v1.10；2026-11-25 起多重比较校正默认 per_dim α/3，可用 `GRANGER_CORRECTION=bonferroni\|per_dim\|none` 切换） |
 | Step 2: Attention 路径输出 A_dim | AttentionAggregator | ✅ 已落地（v1.10） |
 | Step 3: 交叉比对 | CrossValidationGate.compare() | ✅ 已落地（v1.10，含 Q1~Q5 优化） |
 | Step 4: 质变判定 | CrossValidationGate + StructuralBreakDetector | ✅ 已落地（v1.10） |
