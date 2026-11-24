@@ -1,6 +1,6 @@
 # 变更记录 — 15-监控告警系统
 
-> **版本**: v2.24 | **更新日期**: 2026-11-22
+> **版本**: v2.25 | **更新日期**: 2026-11-25
 
 ---
 
@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 变更内容 | 影响范围 |
 |------|------|----------|----------|
+| v2.25 | 2026-11-25 | `CrossValidationDegraded` 误报治理：① 23 `CrossValidationGate` 在 SPRT `accept_h1` 时改标 `degraded_mode=no_reliable_link`（A 链路仍可用、仅判不可信），`both_none` 仅保留给两路均无输出；② 导出器 `semantic_metrics` 增加决策时效窗口（`signals.state_window_seconds`，默认 43200s），超窗旧决策不再产生 `cv_degraded_mode`/`cv_present_ratio`，避免告警永不恢复；③ 同步 TD §10.5/§13.9.5 与告警 summary，新增 2 项单测 | 代码+配置+规则+测试+文档 |
 | v2.24 | 2026-11-22 | `ArtifactStale` 口径纠偏：`execution_decisions.jsonl` 仅在真实 submit 时追加、WAIT 不写（近 24h 实测最长自然间隔 6.6h），原 1800s/P1 在 43 `war_state=FREEZE` 期间必然误报。新增 `entry23_heartbeat`（`23/runtime/event_driven_state.json`，900s/P1）作为存活心跳；决策审计改为 43200s/P2 仅兜底决策沉默。TD §10.5 同步 | 配置+文档 |
 | v2.23 | 2026-11-20 | `GhostPositionCleaned` 归因纠偏：复盘发现 24h 内 12 次 `ghost_exchange_flat` 全部是 50-nn 实盘 1.5%/3% 交易所 OCO 成交后的正常回填（回填发生在成交同一分钟），24h 滚动计数恒 >0 导致 P2 自 11-17 长期 firing。改为 23 `exit_loop._resolve_ghost_exit()` 回填时归因：真实成交价 → `exchange_sltp`（新增 `ledger_exchange_sltp_24h`，仅观察不告警）；无成交/脏价 → `ghost_exchange_flat`（保留 P2）。规则表达式不变；另修复 close/reduce 成交索引延迟导致落账 px=0（2 次重试 + camelCase 字段兜底） | 代码+规则+测试+文档 |
 | v2.22 | 2026-11-18 | 补齐最后两项任务打点：① `bus_42` 在 `48/bus/run_shadow_probe.py` 每轮成功后 `push_job.sh bus_42 success`（FAIL-OPEN）；② 核查 `shadow-driver.timer` active+enabled（每 10min、exit 0，未退役），补 `ExecStopPost` → `shadow_50`。至此 5 个 job 全部有 series | 代码+配置+文档 |

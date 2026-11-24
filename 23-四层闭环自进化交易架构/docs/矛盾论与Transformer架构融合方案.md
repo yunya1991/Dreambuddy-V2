@@ -1693,7 +1693,7 @@ SPRT 参数:
 决策逻辑:
   每期记录单链路输出是否与"最近一次双链路可用时的主矛盾维度"一致
   计算似然比 Λ = [p1^k * (1-p1)^(n-k)] / [p0^k * (1-p0)^(n-k)]
-  if Λ > (1-β)/α: 接受 H1 → 切换至完全中性（both_none 降级）
+  if Λ > (1-β)/α: 接受 H1 → 切换至完全中性（no_reliable_link 降级）
   if Λ < β/(1-α): 接受 H0 → 保持单链路降级
   else: 继续采样
 ```
@@ -1759,7 +1759,7 @@ if self._divergence_count >= self._persistence_threshold:
 | Q1 persistence_threshold 校准 | Bayesian 后验更新 + 启动期保护 | `persistence_threshold` 自动校准 | `[3, 20]` |
 | Q2 head_multipliers 收敛性 | floor + ceiling + mean reversion | `enable_head_multipliers_mean_reversion` | floor=0.1, ceiling=2.0, reversion_rate=0.15 |
 | Q3 Granger 重估冷却 | 时间冷却 24h + 样本冷却 2×persistence | 无开关（默认启用） | TIME_COOLDOWN=24h, SAMPLE_COOLDOWN=2×persistence |
-| Q4 双 None 处理 | 三级降级模式（attention_only/granger_only/both_none） | `enable_degraded_mode` | 默认 True |
+| Q4 双 None 处理 | 三级降级模式（attention_only/granger_only/both_none）；SPRT 判单链路不可信时记 no_reliable_link（链路仍产出 primary_dim，非双链路缺失） | `enable_degraded_mode` | 默认 True |
 | Q5 structural_break 区分 | 类型加权（Hurst=1.0, Welch's t-test=0.6, vol=0.4）+ 共识阈值 | `structural_break_threshold` | `[0.4, 1.6]`，临时默认 0.4 |
 
 **所有新增开关默认值**（除 `enable_degraded_mode=True`）均为 `False`，保证 v0.5 现状完全不变——可回退性不变。
@@ -1790,7 +1790,7 @@ class CrossValidationGate:
     def compare(self, G_dim, G_conf, A_dim, A_strength, structural_break):
         # Q4: 三级降级模式
         if G_dim is None and A_dim is None:
-            return self._neutral_result_with_degradation("both_none")
+            return self._neutral_result_with_degradation("no_reliable_link")
         if G_dim is None:
             return self._degraded_result("attention_only", A_dim)
         if A_dim is None:

@@ -265,7 +265,7 @@ groups:
           severity: P2
           channel: alert
         annotations:
-          summary: "23 交叉验证双链路均不可用（both_none）；attention_only/granger_only 属设计内单链路降级，不再告警"
+          summary: "23 交叉验证双链路均不可用（both_none）；attention_only/granger_only 属设计内单链路降级，SPRT 判定单链路不可信记为 no_reliable_link，均不告警"
 
       # 2026-11-18 下线：universe_snapshot 由 11 polling_trader 写入，11 交易循环已退役且 23 未接管，
       # 继续保留会导致 EvolutionScanStalled/Failed/PoolShrunk 永久误报（见 15 TD §13.8.2）。

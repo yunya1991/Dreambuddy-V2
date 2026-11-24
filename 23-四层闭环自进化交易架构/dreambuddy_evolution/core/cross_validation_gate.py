@@ -296,11 +296,15 @@ class CrossValidationGate:
         """单链路降级 + SPRT 一致性监测.
 
         若 SPRT 判定一致率 < 50%（accept_h1），切换至完全中性。
+        注意：此时链路本身仍可产出 primary_dim，只是被判"不可信"，
+        并非双链路缺失，故标记 no_reliable_link（与 both_none 区分，避免监控误报）。
         """
         if self._baseline_dim is not None:
             decision = self._sprt.update(is_consistent=(primary_dim == self._baseline_dim))
             if decision == "accept_h1":
-                return self._neutral_result(degraded_mode="both_none")
+                return self._neutral_result(
+                    degraded_mode="no_reliable_link", primary_dim=primary_dim
+                )
         return self._degraded_result(mode, primary_dim)
 
     def _degraded_result(self, mode: str, primary_dim: str) -> dict:
@@ -318,9 +322,11 @@ class CrossValidationGate:
             "structural_break_score": None,
         }
 
-    def _neutral_result(self, degraded_mode: Optional[str] = None) -> dict:
+    def _neutral_result(
+        self, degraded_mode: Optional[str] = None, primary_dim: Optional[str] = None
+    ) -> dict:
         """FAIL-OPEN 完全中性返回."""
-        return {
+        result = {
             "confidence_mult": 1.0,
             "shift_signal": False,
             "divergence_count": self._divergence_count,
@@ -331,3 +337,6 @@ class CrossValidationGate:
             "degraded_mode": degraded_mode,
             "structural_break_score": None,
         }
+        if primary_dim is not None:
+            result["primary_dim"] = primary_dim
+        return result

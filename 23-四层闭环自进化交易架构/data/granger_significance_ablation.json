@@ -1,0 +1,91 @@
+{
+  "data": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/data/klines/BTC_1H.csv",
+  "window": 500,
+  "step": 24,
+  "results": {
+    "V0_current": {
+      "config": {
+        "significance": 0.05,
+        "bonferroni": true,
+        "effective_alpha": 0.0033333333333333335
+      },
+      "n_evals": 303,
+      "g_available_rate": 0.3102,
+      "g_dim_distribution": {
+        "None": 209,
+        "technical": 52,
+        "fundamental": 35,
+        "macro": 7
+      },
+      "degraded_mode_distribution": {
+        "attention_only": 209,
+        "both_available": 94
+      },
+      "agreement_rate": 0.5532,
+      "median_min_p": 0.013339,
+      "p10_min_p": 0.00011,
+      "boost_rate": 0.1716,
+      "penalty_rate": 0.1386,
+      "quality_change_count": 6,
+      "sharpe": 0.6931,
+      "winrate": 0.4785,
+      "total_return": 0.301616
+    },
+    "V1_uncorrected": {
+      "config": {
+        "significance": 0.05,
+        "bonferroni": false,
+        "effective_alpha": 0.05
+      },
+      "n_evals": 303,
+      "g_available_rate": 0.7063,
+      "g_dim_distribution": {
+        "None": 89,
+        "fundamental": 75,
+        "technical": 124,
+        "macro": 15
+      },
+      "degraded_mode_distribution": {
+        "attention_only": 89,
+        "both_available": 214
+      },
+      "agreement_rate": 0.5794,
+      "median_min_p": 0.013339,
+      "p10_min_p": 0.00011,
+      "boost_rate": 0.4092,
+      "penalty_rate": 0.297,
+      "quality_change_count": 12,
+      "sharpe": 1.2122,
+      "winrate": 0.4851,
+      "total_return": 0.534135
+    },
+    "V2_uncorrected": {
+      "config": {
+        "significance": 0.1,
+        "bonferroni": false,
+        "effective_alpha": 0.1
+      },
+      "n_evals": 303,
+      "g_available_rate": 0.8383,
+      "g_dim_distribution": {
+        "technical": 147,
+        "None": 49,
+        "fundamental": 87,
+        "macro": 20
+      },
+      "degraded_mode_distribution": {
+        "both_available": 254,
+        "attention_only": 49
+      },
+      "agreement_rate": 0.5787,
+      "median_min_p": 0.013339,
+      "p10_min_p": 0.00011,
+      "boost_rate": 0.4851,
+      "penalty_rate": 0.3531,
+      "quality_change_count": 20,
+      "sharpe": 0.9968,
+      "winrate": 0.4785,
+      "total_return": 0.441491
+    }
+  }
+}

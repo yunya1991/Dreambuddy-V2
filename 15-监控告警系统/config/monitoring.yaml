@@ -175,6 +175,9 @@ signals:
   max_duplicate_rate: 0.01
   outbox_stuck_seconds: 300
   min_fill_join_ratio: 0.95
+  # 语义状态（primary_contradiction / cross_validation）时效窗口：
+  # 超过窗口的旧决策不再参与"当前态"指标，避免 cv_degraded_mode 等告警永不恢复。
+  state_window_seconds: 43200
 
 # 11 交易循环退役后的执行链监控（2026-11-18，见 TD §13.8）
 execution:

@@ -1083,7 +1083,7 @@ SLO 建议：信号 schema 一致率 ≥99%；信号→网关 p95 ≤2s；成交
 | N3 | `high_order_applied_ratio` | gauge | 仅观察 | P3 | — |
 | N4 | `paths_discovered`、`paths_valid_ratio` | gauge | `PathsEmpty`：连续 10 次 0 路径 | P2 | ≥1 路径率 ≥95% |
 | N5 | `contradiction_present_ratio`、`contradiction_strength`、`contradiction_dimension{dimension}` | gauge | `ContradictionMissing`：present=0 持续 30min | P1 | present ≥99% |
-| N6 | `cv_present_ratio`、`cv_degraded{degraded_mode}`、`cv_shift_signal`、`cv_confidence_mult`、`cv_divergence_count` | gauge | `CrossValidationMissing`（30min）、`CrossValidationDegraded`（仅 `both_none`，attention_only/granger_only 属设计内单链路降级） | P1/P2 | present ≥99%，degraded <10% |
+| N6 | `cv_present_ratio`、`cv_degraded{degraded_mode}`、`cv_shift_signal`、`cv_confidence_mult`、`cv_divergence_count` | gauge | `CrossValidationMissing`（30min）、`CrossValidationDegraded`（仅 `both_none`；attention_only/granger_only 属设计内单链路降级，SPRT 判单链路不可信记 `no_reliable_link`） | P1/P2 | present ≥99%，degraded <10% |
 | N7 | `path_validated_ratio`、`path_score_gap`、`low_conviction_ratio` | gauge | `ValidationCollapse`：validated=0 持续 2h（且 N4 有路径） | P2 | validated 5%–60% 合理带 |
 | N8 | `decision_action_total{action}`、`wait_ratio`、`aligned_ratio` | counter | `WaitRatioAnomaly`：WAIT=100% 且 N5/N7 正常，持续 2h | P2 | WAIT 比例有历史基线 |
 | N9 | `l3_sample_count`、`l4_v` | gauge | 仅观察（样本不增长时并入 B 类告警） | P3 | — |
@@ -1408,7 +1408,7 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 |---|---|---|
 | `ArtifactStale` | 真实问题，但根因是**运行时产物被 git 跟踪**：部署 `git pull` 会把 40/48 新生成的 `cycle_state.json`、`sector_transmission.json`、`40_feedback.json` 覆盖回仓库旧版本（三文件 mtime 同一秒），下一次日更前必然 stale | 告警保留；部署后需重跑 `40/scripts/run_daily_pipeline.sh`（crontab `2 0 * * *` 亦可自愈）。长期建议将这些产物从 git 索引移除 |
 | `GhostPositionCleaned` | 2026-11-20 复盘：规则本身工作，但把「交易所侧 SL/TP 正常回填」也算作幽灵仓——50-nn 实盘 1.5%/3% OCO 每天触发 12 次，24h 计数永远 >0，告警自 11-17 起长期 firing；回填实际发生在成交同一分钟内 | 23 回填时归因：真实成交价 → `exchange_sltp`（仅 `ledger_exchange_sltp_24h` 观察，不告警）；无成交/脏价 → `ghost_exchange_flat`（保留 P2）。规则表达式不变，命中范围收敛为「无法解释的残留」 |
-| `CrossValidationDegraded` | `attention_only`/`granger_only` 是设计内单链路降级（`enable_degraded_mode` 默认 True），不是故障；仅 `both_none` 才是双链路失效 | 规则改为 `count(dreambuddy_cv_degraded_mode{mode="both_none"}) > 0` |
+| `CrossValidationDegraded` | `attention_only`/`granger_only` 是设计内单链路降级（`enable_degraded_mode` 默认 True），不是故障；`no_reliable_link` 是 SPRT 判定单链路不可信后的中性态（链路仍可产出 `primary_dim`）；仅 `both_none`（两路均无输出）才是双链路失效。状态指标受 `signals.state_window_seconds`（默认 12h）约束，超窗旧决策不再产生 `cv_degraded_mode`，避免永不恢复 | 规则改为 `count(dreambuddy_cv_degraded_mode{mode="both_none"}) > 0` |
 | `Watchdog` | `expr: vector(1)` 是刻意常驻，供外部死手开关读取 Prometheus；但会按 P3 每日推送飞书 | 保留规则；Alertmanager 新增 `channel="meta"` → `blackhole` 路由，不再进飞书 |
 
 #### 13.9.6 任务打点覆盖（v2.21，2026-11-18）

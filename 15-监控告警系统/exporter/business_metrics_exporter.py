@@ -558,9 +558,18 @@ class Collector:
     # ---------- 矛盾 / 交叉验证语义 ----------
     def semantic_metrics(self) -> list[str]:
         path = self.repo / "23-四层闭环自进化交易架构/runtime/execution_decisions.jsonl"
+        # 状态指标只反映"当前态"：决策超过时效窗口即视为陈旧，
+        # 不参与 contradiction/cv 状态统计（审计记录本身仍保留）。
+        # 否则已停止决策的 symbol 会把 both_none/空 cross_validation 永久留在指标里，
+        # 导致 CrossValidationDegraded / CrossValidationMissing 永不恢复。
+        window = float(self.signals.get("state_window_seconds", 43200))
+        cutoff = _now() - window
         latest: dict[str, dict] = {}
-        for rec in _tail_jsonl(path, limit=500):
+        for rec in _tail_jsonl(path, limit=2000):
             sig = _signal_of(rec)
+            ts = _iso_to_ts(str(sig.get("ts") or rec.get("ts") or ""))
+            if not ts or ts < cutoff:
+                continue
             if isinstance(sig.get("payload"), dict):
                 latest[str(sig.get("symbol") or rec.get("symbol") or "?")] = sig
         out: list[str] = []
@@ -752,7 +761,7 @@ def _metrics_text(collector_provider) -> str:
             except Exception as exc:  # noqa: BLE001 - exporter 不能因单点异常整体 5xx
                 print(f"[exporter] collect failed: {exc}", file=sys.stderr)
                 _cache["text"] = (
-                    "# TYPE dreambuddy_exporter_error gauge\n" "dreambuddy_exporter_error 1\n"
+                    "# TYPE dreambuddy_exporter_error gauge\ndreambuddy_exporter_error 1\n"
                 )
                 _cache["ts"] = _now()
         return str(_cache["text"])

@@ -123,7 +123,7 @@ def test_structural_break_score():
 
 
 def test_sprt_switches_to_neutral_on_low_consistency():
-    """单链路持续与 baseline 不一致 → SPRT accept_h1 → 切换 both_none。"""
+    """单链路持续与 baseline 不一致 → SPRT accept_h1 → 中性且标记 no_reliable_link。"""
     from dreambuddy_evolution.core.cross_validation_gate import CrossValidationGate
 
     gate = CrossValidationGate()
@@ -139,7 +139,9 @@ def test_sprt_switches_to_neutral_on_low_consistency():
         r = gate.compare(
             G_dim=None, G_conf=None, A_dim="macro", A_strength=0.7, structural_break={}
         )
-        if r.get("degraded_mode") == "both_none":
+        if r.get("degraded_mode") == "no_reliable_link":
             switched = True
+            assert r["confidence_mult"] == 1.0
+            assert r["primary_dim"] == "macro"
             break
-    assert switched, "SPRT 应在持续不一致后切换到 both_none"
+    assert switched, "SPRT 应在持续不一致后切换为 no_reliable_link"
