@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.dreambuddy.content-optimizer-retrain</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/sh</string>
+		<string>-c</string>
+		<string>set -e
+cd "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/59-通用组件管理/platform/lab/content-optimizer-p0"
+/usr/bin/python3 scripts/ingest_own.py
+/usr/bin/python3 scripts/retrain_daily.py
+/bin/cp -f model/optimizer_model.json "/Users/zhangjiangtao/.mobile-reservation-assist/fixed/optimizer_model.json"</string>
+	</array>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>10</integer>
+		<key>Minute</key>
+		<integer>35</integer>
+	</dict>
+	<key>RunAtLoad</key>
+	<false/>
+	<key>ProcessType</key>
+	<string>Background</string>
+	<key>StandardOutPath</key>
+	<string>/Users/zhangjiangtao/Library/Logs/content-optimizer-retrain.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/zhangjiangtao/Library/Logs/content-optimizer-retrain.err.log</string>
+</dict>
+</plist>

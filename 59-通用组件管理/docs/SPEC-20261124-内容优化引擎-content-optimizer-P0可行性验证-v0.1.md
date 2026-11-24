@@ -659,7 +659,17 @@ python3 scripts/retrain_daily.py      # 每日重训（幂等；no_change 不写
 python3 scripts/retrain_daily.py --dry-run   # 只比对
 ```
 
-调度口径：每日反思（顺风车 `reflect_hours=[10]`）之后由外部定时调用，失败不影响发布。
+调度口径：每日反思（顺风车 `reflect_hours=[10]`）之后执行，失败不影响发布。本机已挂 launchd 任务 `com.dreambuddy.content-optimizer-retrain`（每日 10:35），按顺序做三件事：
+
+```text
+scripts/ingest_own.py        # S2 回流：台账 + metrics → samples.csv own 行
+scripts/retrain_daily.py     # S0 重训：幂等，no_change 不写盘
+cp model/optimizer_model.json $MRA_STATE_DIR/fixed/optimizer_model.json   # 部署给 S1/S3 读取
+```
+
+- plist 版本化在 `ops/com.dreambuddy.content-optimizer-retrain.plist`，日志在 `~/Library/Logs/content-optimizer-retrain.log`；
+- 安装：`cp ops/com.dreambuddy.content-optimizer-retrain.plist ~/Library/LaunchAgents/ && launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.dreambuddy.content-optimizer-retrain.plist`；
+- 部署目标必须是 `$MRA_STATE_DIR`，否则 S1 `load_model()` 与 S3 `model_evidence()` 都会落空并退回内置先验。
 
 ### 17.7 与 P0 / 生产代码的边界
 
