@@ -49,6 +49,8 @@ liq_term = 0.5（中性），liq 权重 × liq_degraded_scale(0.5) → 0.15
 | R7 | `calculate()` 9 字段 Gold Schema 不能加 key | `additionalProperties=False` | 诊断只走 thread-local detail；v2 不新增返回字段 | 单测：v2 模式下 `jsonschema` 校验通过，key 集合仍为 9 | `[x]` |
 | R8 | v2 生效后 `ReflexivityConstant` 仍 firing（MSTR/BTC） | exporter `_tail_jsonl` 只读文件尾部 512KB（≈3068 行），`distinct_24h` 实际只有几分钟窗口，每 symbol 仅 1~2 点 → distinct 恒 1 | 新增 `_iter_jsonl_since`（全文件流式 + ts 过滤 + stage 预筛），`signal_calibration_metrics` 改用它；补跨 512KB 回归测试 | 指标复算与真实 24h 全量一致（distinct 3~13）；单测/ruff 通过；单次扫描 0.11s | `[x]` |
 | R9 | 切换前已停更的 symbol（COIN/WIF）仍报恒定 | 24h 窗口内只剩 legacy 0.65 样本 | 非代码缺陷；样本滚出 24h 窗口后序列消失，告警自动恢复 | COIN 17:01Z / WIF 13:50Z 后 `ReflexivityConstant` 消失 | `[-]` |
+| R10 | legacy 样本与 v2 样本混算：停更 symbol 恒 1 假告警 + 混合 symbol 被 legacy 抬高 distinct（掩盖真实恒定） | `refl_series` 不区分公式口径 | 只聚合与窗口内最新样本同公式的 N2 记录（`refl_components.formula`），legacy-only symbol 不再导出反射性指标 | 单测：COIN 全指标不导出；BTC（legacy 0.65 + v2 0.50）distinct=1 | `[x]` |
+| R11 | 停更的 v2 symbol（LTC 24h 内仅 2 个同值样本）仍报恒定 | 样本量不足时 distinct=1 无统计意义 | 每 symbol 最新样本早于 3h（`_REFLEXIVITY_FRESH_SECONDS`）即不导出反射性指标 | 单测：LTC 不导出；云端活跃 17 symbol distinct 均 3~12 | `[x]` |
 
 ## 执行记录
 
@@ -66,3 +68,6 @@ liq_term = 0.5（中性），liq 权重 × liq_degraded_scale(0.5) → 0.15
 | 2026-11-25 | R8 | `52b3406c9`→`502177e41`：新增 `_iter_jsonl_since` + 回归测试，15 域 37 tests / ruff 通过 | `[x]` |
 | 2026-11-25 | 部署 | 云端 ff-only 至 `502177e41`，重启 `dreambuddy-metrics-exporter`（18:16:02 CST） | `[x]` distinct_24h 恢复 3~13 |
 | 2026-11-25 | 复验 | MSTR/BTC 等 12 个 firing/pending 告警消除；仅 COIN/WIF 剩 pending（切换前停更样本，到期自动消失） | `[x]` |
+| 2026-11-25 | R10 | `8363bc3fa`：口径隔离（只聚合当前公式样本），38 tests / ruff / black 通过 | `[x]` COIN/WIF 告警消除 |
+| 2026-11-25 | R11 | `411cdc8bb`：3h 新鲜度门槛；云端 dry-run 17 个活跃 symbol distinct 3~12 | `[x]` |
+| 2026-11-25 | 部署复验 | 云端 ff-only 至 `411cdc8bb`，重启 exporter（18:22:46 CST）；`ReflexivityConstant` 全清（0 条） | `[x]` |
