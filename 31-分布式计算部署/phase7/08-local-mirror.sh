@@ -96,9 +96,10 @@ else
     echo "[$(ts)] skip cognitive merge (snapshot pull failed)" >> "${LOG}"
 fi
 
-# ── 4) 核心库：远端快照 → 本地只读镜像（就绪检查 + 临时落盘 + 校验 + 原子替换）──
+# ── 4) 核心库：远端快照 → 本地只读镜像（就绪检查 + 空间预检 + 临时落盘 + 校验 + 原子替换）──
 #   快照 .tmp 存在说明云端 snapshot_dbs.sh 正在生成/校验，此时拉取会得到残缺文件。
-#   因此：先查就绪 → rsync 到 .incoming → 校验表数/关键表 → 通过才覆盖。
+#   因此：先查就绪与体积 → 本地空间预检（需 1.1× 快照大小）→ rsync 到 .incoming →
+#   校验表数/关键表 → 通过才覆盖。
 CORE_INCOMING="${LOCAL_DAL}/dreambuddy_core.db.incoming"
 CORE_MIN_TABLES="${CORE_MIN_TABLES:-29}"
 REQUIRED_TABLES="cv_config_versions tr_trades po_positions rs_state mm_metrics kg_triples"
@@ -115,8 +116,16 @@ verify_core_db() {
     return 0
 }
 
-if ${RSH} "${SSH_ALIAS}" "test -e '${SNAP_REMOTE}/dreambuddy_core.db.tmp'" >/dev/null 2>&1; then
+SNAP_STATE="$(${RSH} "${SSH_ALIAS}" "test -e '${SNAP_REMOTE}/dreambuddy_core.db.tmp' && echo BUSY || stat -c%s '${SNAP_REMOTE}/dreambuddy_core.db' 2>/dev/null" 2>/dev/null | tail -1)"
+SNAP_FREE_KB="$(df -Pk "${LOCAL_DAL}" | awk 'NR==2 {print $4}')"
+if [ "${SNAP_STATE}" = "BUSY" ]; then
     echo "[$(ts)] skip core mirror: snapshot busy (.tmp exists)，保留旧镜像" >> "${LOG}"
+    FAILED=1
+elif ! printf '%s' "${SNAP_STATE}" | grep -qE '^[0-9]+$'; then
+    echo "[$(ts)] skip core mirror: 无法获取远端快照体积 (${SNAP_STATE:-empty})，保留旧镜像" >> "${LOG}"
+    FAILED=1
+elif [ $(( ${SNAP_STATE} / 1024 * 11 / 10 )) -gt "${SNAP_FREE_KB}" ]; then
+    echo "[$(ts)] skip core mirror: 本地空间不足（快照 $(( ${SNAP_STATE} / 1048576 ))M，需 1.1×，可用 ${SNAP_FREE_KB}K），保留旧镜像" >> "${LOG}"
     FAILED=1
 else
     rm -f "${CORE_INCOMING}"
