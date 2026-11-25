@@ -163,7 +163,7 @@ systemctl status dal-backup.service --no-pager -l
 
 29 张表，`PRAGMA freelist_count = 0`（非碎片问题），膨胀集中于 `mm_metric_vintages`（WITHOUT ROWID 指标历史表，全表 COUNT 超过 2 分钟）。其余表合计不足 1G。
 
-处置方向：按 `source` 设保留窗口清理历史分区，采集侧改幂等 upsert（`observed_at` 用数据时间而非采集时间，避免重复累积），清理后执行一次 `VACUUM INTO` 重建库。
+处置方向：按 `source` 设保留窗口清理历史分区，采集侧改幂等 upsert（`observed_at` 用数据时间而非采集时间，避免重复累积），清理后执行一次 `VACUUM INTO` 重建库。实测结论与最终方案见 §7.7（真因是「同值重复观测」，不是保留窗口）。
 
 ### 7.5 WAL 膨胀与长事务冲突（2026-11-25 事故）
 
@@ -199,6 +199,41 @@ sqlite3 <db> "PRAGMA wal_checkpoint(TRUNCATE);"        # 手动回收（需无�
 - `cleanup-cloud-backups.sh` 对 `sync-snapshots/*.tmp*`、`*.db.new` 的回收阈值从「>1 天」收紧到「>2 小时」。
 
 因此核心库本地镜像的新鲜度取决于每日 dal-backup（最长约 24h），认知库仍为 10 分钟级。
+
+### 7.7 mm_metric_vintages 去重收敛（2026-11-25 实测）
+
+根因：`upsert_metric` 历史上每轮采集都追加一条 vintage，而 fred / panewslab / odaily 等源每轮重采整段历史，同一 `(period_ts, value)` 被反复记录。
+
+云端 11-23 静态副本实测（114,925,184 行）：
+
+| 源 | 行数 | 与上一条取值相同的重复 | 保留 |
+|---|---|---|---|
+| fred | 48,739,619 | 48,638,123 | 101,496 |
+| panewslab | 21,499,317 | 21,453,410 | 45,907 |
+| odaily_newsflash | 15,214,419 | 15,032,630 | 181,789 |
+| stablecoin_transparency | 7,578,306 | 7,551,958 | 26,348 |
+| ccxt | 3,354,232 | 3,340,642 | 13,590 |
+| blockchain_info | 2,595,815 | 2,586,054 | 9,761 |
+| 其余 29 源 | 15,943,476 | 15,512,896 | 845,610 |
+| **合计** | **114,925,184** | **113,615,713** | **1,309,471** |
+
+处置：
+
+1. 写入侧幂等（`upsert_metric`）：最近一条 vintage 取值与本轮相同就不再追加，值变化（真实修订）仍落新观测；
+2. 历史收敛 `19-数据访问层/scripts/retain_metric_vintages.py`：按「同序列取值未变即非新观测」重建表，保留首条与每次真实修订，`observed_at <= 0` 的脏数据原样保留；
+3. 常态化 `deploy/systemd/mm-metric-retention.{service,timer}`（每日 04:20，无 `--vacuum`）。
+
+演练（11-23 副本 12G）：114.9M 行 → 1.31M 行，库 12.16G → 243M，`quick_check=ok`，耗时 12m42s。生产执行时以 `--vacuum` 回收空间：
+
+```bash
+sudo -n -u luke -H /home/luke/venv-trading/bin/python \
+  "/home/luke/dreambuddy/19-数据访问层/scripts/retain_metric_vintages.py" \
+  --db /home/luke/dreambuddy/19-数据访问层/data/dreambuddy_core.db --apply --vacuum
+```
+
+> `VACUUM` 需要独占连接（无其他进程持有库），否则 `database is locked`；建议在 02:00–06:00 窗口、采集任务间隙执行。压缩本身是 DDL 事务，在线执行只会让并发写入短暂等锁。
+> 压缩对 As-Of 回放无影响：读方（`34-前端应用训练系统/core/l0_foundation.py`）取 `observed_at <= as_of` 的最后一条，删掉同值重复不会改变任何时点的取值。
+
 
 
 ## 八、硬性禁止
