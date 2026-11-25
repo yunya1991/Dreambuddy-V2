@@ -3,8 +3,9 @@
 # 幂等，可重复执行；由 dreambuddy-backup-retention.timer 每天调用。
 set -u
 
-KEEP_DAILY=3
-KEEP_CORE_DUMPS=3
+KEEP_DAILY=1
+KEEP_CORE_DUMPS=2
+KEEP_COGNITIVE_DUMPS=1
 KEEP_NEXT_BUILDS=2
 JOURNAL_MAX=200M
 
@@ -27,6 +28,18 @@ if [ -d "$CORE_DIR" ]; then
     ls -1t dreambuddy_core_*.db 2>/dev/null | tail -n +$((KEEP_CORE_DUMPS + 1)) | while read -r f; do
         echo "  rm core/$f"
         rm -f -- "$f" "$f.sha256"
+    done
+    # 备份失败残留的 .tmp / .tmp-journal（>1 天且无进程占用），否则会永久滞留
+    find . -maxdepth 1 -name 'dreambuddy_core_*.db.tmp*' -mtime +1 2>/dev/null | while read -r f; do
+        if ! fuser -s "$f" 2>/dev/null; then
+            echo "  rm core-tmp/$f"
+            rm -f -- "$f"
+        fi
+    done
+    # 认知库一次性 pre-* 备份：只保留最新 N 份
+    ls -1t cognitive_memory*.db 2>/dev/null | tail -n +$((KEEP_COGNITIVE_DUMPS + 1)) | while read -r f; do
+        echo "  rm cognitive/$f"
+        rm -f -- "$f"
     done
 fi
 

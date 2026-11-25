@@ -17,10 +17,14 @@ from __future__ import annotations
 
 import hashlib
 import os
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
 from dreambuddy_dal.connection import get_sqlite_connection
+
+# 备份需要与源库等量的额外空间（VACUUM INTO 写全新副本），留 20% 余量
+_REQUIRED_FREE_RATIO = 1.2
 
 
 def _aes256_encrypt(plaintext: bytes, passphrase: str) -> bytes:
@@ -59,24 +63,45 @@ def backup_database(
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     Path(backup_dir).mkdir(parents=True, exist_ok=True)
 
+    # Step 0: 空间预检（不足时明确失败，避免写半截副本残留占满磁盘）
+    db_size = os.path.getsize(db_path)
+    free = shutil.disk_usage(backup_dir).free
+    required = int(db_size * _REQUIRED_FREE_RATIO)
+    if free < required:
+        raise RuntimeError(
+            f"磁盘空间不足，无法备份: 需要约 {required / 2**30:.1f}G，"
+            f"可用 {free / 2**30:.1f}G（库 {db_size / 2**30:.1f}G）。"
+            f"请先执行 deploy/ops/cleanup-cloud-backups.sh 清理旧备份。"
+        )
+
     # Step 1: VACUUM INTO 做明文备份
     plain_path = os.path.join(backup_dir, f"dreambuddy_core_{ts}.db.tmp")
-    with get_sqlite_connection(db_path) as conn:
-        conn.execute(f"VACUUM INTO '{plain_path}'")
+    try:
+        with get_sqlite_connection(db_path) as conn:
+            conn.execute(f"VACUUM INTO '{plain_path}'")
 
-    with open(plain_path, "rb") as f:
-        plain_data = f.read()
+        with open(plain_path, "rb") as f:
+            plain_data = f.read()
 
-    # Step 2: 加密 or 明文
-    if encrypt and passphrase:
-        enc_data = _aes256_encrypt(plain_data, passphrase)
-        final_path = plain_path.replace(".db.tmp", ".db.enc")
-        with open(final_path, "wb") as f:
-            f.write(enc_data)
-        os.unlink(plain_path)
-    else:
-        final_path = plain_path.replace(".db.tmp", ".db")
-        os.rename(plain_path, final_path)
+        # Step 2: 加密 or 明文
+        if encrypt and passphrase:
+            enc_data = _aes256_encrypt(plain_data, passphrase)
+            final_path = plain_path.replace(".db.tmp", ".db.enc")
+            with open(final_path, "wb") as f:
+                f.write(enc_data)
+            os.unlink(plain_path)
+        else:
+            final_path = plain_path.replace(".db.tmp", ".db")
+            os.rename(plain_path, final_path)
+    except BaseException:
+        # 失败时清理残留的 .tmp 与其 journal，避免 disk-full 循环恶化
+        for leftover in (plain_path, plain_path + "-journal"):
+            if os.path.exists(leftover):
+                try:
+                    os.unlink(leftover)
+                except OSError:
+                    pass
+        raise
 
     # Step 3: SHA256 sidecar
     with open(final_path, "rb") as f:

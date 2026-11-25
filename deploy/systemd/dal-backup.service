@@ -1,0 +1,21 @@
+[Unit]
+Description=Dreambuddy DAL SQLite backup
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=luke
+Group=luke
+WorkingDirectory=/home/luke/dreambuddy/19-数据访问层
+Environment="HOME=/home/luke"
+Environment="PYTHONPATH=/home/luke/dreambuddy/19-数据访问层"
+Environment="DATA_DIR=/home/luke/dreambuddy/19-数据访问层/data"
+Environment="DAL_DB_PATH=/home/luke/dreambuddy/19-数据访问层/data/dreambuddy_core.db"
+Environment="BACKUP_DIR=/home/luke/dreambuddy/19-数据访问层/data/backups"
+Environment="BACKUP_KEEP=7"
+# 备份前先按保留策略腾空间：VACUUM INTO 需要与源库等量的额外空间，
+# 否则会在磁盘吃紧时失败并留下 .tmp 残留（2026-11-25 事故）。
+ExecStartPre=-/home/luke/dreambuddy/deploy/ops/cleanup-cloud-backups.sh
+ExecStart=/home/luke/venv-trading/bin/python -m dreambuddy_dal.cron_runner backup --no-encrypt
+StandardOutput=append:/home/luke/logs/datacenter/dal-backup.log
+StandardError=append:/home/luke/logs/datacenter/dal-backup.err.log

@@ -25,7 +25,7 @@ description: Connect to and operate the DreamBuddy cloud host 43.160.201.117 ove
 | Python 解释器 | `/home/luke/venv-trading/bin/python` |
 | 前端 systemd 环境 | 仅 `COGNITIVE_PYTHON=/home/luke/venv-trading/bin/python`；**未配** `DSH_API_BASE`、`NEXT_PUBLIC_BRIDGE_URL` |
 | 51 venue bridge | `okx-venue-bridge.service`，`127.0.0.1:8097`，token 在 `51-OKX CLI 系统/runtime/audit/bridge_token` |
-| 备份目录 | `/home/luke/deploy-backups/` |
+| 备份目录 | 前端构建 `/home/luke/deploy-backups/`；DAL 库 `/home/luke/dreambuddy/19-数据访问层/data/backups/`；运行时数据 `/home/luke/runtime-data-backup/daily/`；只读快照 `/home/luke/sync-snapshots/` |
 | 旧模块 | `31-分布式计算部署`、`update.sh`、PM2 流程**已过时**，不要照旧文档执行 |
 
 权限写法固定：
@@ -115,13 +115,63 @@ cd /home/luke/dreambuddy/3.1-FRONTEND && /home/luke/venv-trading/bin/python scri
 - **venue 503 `bridge_token_missing`**：先 `systemctl status okx-venue-bridge.service`，再确认 token 文件存在。
 - **systemd unit 写入失败**：不要用 heredoc 经 ssh 写 unit；本地生成文件 → `scp` 到 `/tmp` → `sudo -n cp` 到 `/etc/systemd/system/` → `daemon-reload`。
 
-## 七、硬性禁止
+## 七、磁盘与备份治理
+
+### 8.1 空间大户（178G 根分区 baseline）
+
+| 路径 | 量级 | 管控方式 |
+|---|---|---|
+| `19-数据访问层/data/dreambuddy_core.db` | 15~20G | 主库；膨胀见 §8.4 |
+| `19-数据访问层/data/backups/` | 每日 core dump + 一次性认知库备份 | `cleanup-cloud-backups.sh` 轮转 |
+| `runtime-data-backup/daily/` | 每份约 12G | 只保留最新 1 份 |
+| `sync-snapshots/` | 旧 core 快照 + 认知库副本 | 保留 1 份 + 清理 >1 天 `.tmp*` |
+
+### 8.2 保留策略（`deploy/ops/cleanup-cloud-backups.sh`）
+
+| 常量 | 值 | 含义 |
+|---|---|---|
+| `KEEP_DAILY` | 1 | runtime-data-backup/daily 份数 |
+| `KEEP_CORE_DUMPS` | 2 | 每日 DAL core dump 份数（含 sha256） |
+| `KEEP_COGNITIVE_DUMPS` | 1 | `backups/` 中一次性 `cognitive_memory*.db` 份数 |
+| `KEEP_NEXT_BUILDS` | 2 | 前端可回滚构建 |
+| `JOURNAL_MAX` | 200M | systemd journal 上限 |
+
+脚本同时清理 `backups/*.db.tmp*`（>1 天且无进程占用）——**失败备份残留的主要来源**。
+由 `dreambuddy-backup-retention.timer` 每日 04:30 执行；`dal-backup.service` 也会在备份前以其作为 `ExecStartPre` 先腾空间。
+
+### 8.3 备份失败防护（2026-11-25 事故复盘）
+
+事故链：主库涨到 18G → `VACUUM INTO` 需要额外等量空间 → 根分区剩余不足 → `sqlite3.OperationalError: database or disk is full` → 遗留 3.5G `.tmp` 残留 → 清理脚本不匹配 `.tmp` → 空间只减不增 → 分区 99%。
+
+已落地三道防线：
+1. `backup.py` 备份前做空间预检（需 `库大小 × 1.2` 可用空间），不足时明确报错并提示先跑 cleanup；
+2. 备份失败时 `finally` 清理 `.tmp` 与 `-journal`，不再留垃圾；
+3. `dal-backup.service` 增加 `ExecStartPre` 调用 cleanup，先按保留策略腾空间。
+
+排障命令：
+
+```bash
+# 空间大户
+sudo du -x -d1 / | sort -rn | head
+sudo du -x -d1 /home/luke | sort -rn | head
+# 备份失败原因
+sudo tail -30 /home/luke/logs/datacenter/dal-backup.err.log
+systemctl status dal-backup.service --no-pager -l
+```
+
+### 8.4 主库膨胀定位
+
+29 张表，`PRAGMA freelist_count = 0`（非碎片问题），膨胀集中于 `mm_metric_vintages`（WITHOUT ROWID 指标历史表，全表 COUNT 超过 2 分钟）。其余表合计不足 1G。
+
+处置方向：按 `source` 设保留窗口清理历史分区，采集侧改幂等 upsert（`observed_at` 用数据时间而非采集时间，避免重复累积），清理后执行一次 `VACUUM INTO` 重建库。
+
+## 八、硬性禁止
 
 - 不在云端 `git reset --hard`、`git clean -f`、`push --force`。
 - 不把其他工作区的脏文件一起提交；云端不 `git add -A`。
 - 不在验证前宣称「已上线」。必须给出：新 SHA、BUILD_ID、`ActiveEnterTimestamp`、端点状态码。
 - 不泄露 token / 密钥内容，只报告是否存在。
 
-## 八、与既有 SKILL 的关系
+## 九、与既有 SKILL 的关系
 
 `dream-code-deploy-pipeline` 中的 PM2、`31-分布式计算部署`、`update.sh` 部分已过时；云端现状以本 SKILL 为准，该 SKILL 仅保留 GitHub CI 与回滚思路参考。
