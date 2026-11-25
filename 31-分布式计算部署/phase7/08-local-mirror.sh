@@ -118,14 +118,16 @@ verify_core_db() {
 
 SNAP_STATE="$(${RSH} "${SSH_ALIAS}" "test -e '${SNAP_REMOTE}/dreambuddy_core.db.tmp' && echo BUSY || stat -c%s '${SNAP_REMOTE}/dreambuddy_core.db' 2>/dev/null" 2>/dev/null | tail -1)"
 SNAP_FREE_KB="$(df -Pk "${LOCAL_DAL}" | awk 'NR==2 {print $4}')"
+# 需 1.3× 快照体积，且拉完后本地至少保留 10G 余量（macOS 系统盘不能贴满）
+SNAP_NEED_KB=$(( ${SNAP_STATE:-0} / 1024 * 13 / 10 + 10485760 ))
 if [ "${SNAP_STATE}" = "BUSY" ]; then
     echo "[$(ts)] skip core mirror: snapshot busy (.tmp exists)，保留旧镜像" >> "${LOG}"
     FAILED=1
 elif ! printf '%s' "${SNAP_STATE}" | grep -qE '^[0-9]+$'; then
     echo "[$(ts)] skip core mirror: 无法获取远端快照体积 (${SNAP_STATE:-empty})，保留旧镜像" >> "${LOG}"
     FAILED=1
-elif [ $(( ${SNAP_STATE} / 1024 * 11 / 10 )) -gt "${SNAP_FREE_KB}" ]; then
-    echo "[$(ts)] skip core mirror: 本地空间不足（快照 $(( ${SNAP_STATE} / 1048576 ))M，需 1.1×，可用 ${SNAP_FREE_KB}K），保留旧镜像" >> "${LOG}"
+elif [ "${SNAP_NEED_KB}" -gt "${SNAP_FREE_KB}" ]; then
+    echo "[$(ts)] skip core mirror: 本地空间不足（快照 $(( ${SNAP_STATE} / 1048576 ))M，需 1.3×+10G，可用 ${SNAP_FREE_KB}K），保留旧镜像" >> "${LOG}"
     FAILED=1
 else
     rm -f "${CORE_INCOMING}"
