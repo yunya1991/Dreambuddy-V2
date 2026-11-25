@@ -189,3 +189,40 @@ def test_reflexivity_distinct_covers_full_24h_beyond_tail(tmp_path: Path) -> Non
     text = "\n".join(collector.signal_calibration_metrics())
 
     assert 'dreambuddy_r_reflexivity_distinct_24h{symbol="CL"} 2' in text
+
+
+def test_reflexivity_isolates_stale_formula(tmp_path: Path) -> None:
+    """v2 生效后：停更的 legacy-only symbol 不再导出（消除恒 1 假告警），混合 symbol 只按 v2 去重。"""
+    runtime = tmp_path / "23-四层闭环自进化交易架构/runtime"
+    runtime.mkdir(parents=True)
+    now = datetime.now(timezone.utc)
+
+    def _iso(hours_ago: float) -> str:
+        return (now - __import__("datetime").timedelta(hours=hours_ago)).isoformat()
+
+    def _row(symbol: str, value: float, hours_ago: float, formula: str | None) -> dict:
+        data: dict = {"R_reflexivity": value}
+        if formula is not None:
+            data["r_inputs"] = {"refl_components": {"formula": formula, "corr_term": 0.5}}
+        return {"ts": _iso(hours_ago), "stage": "N2", "symbol": symbol, "data": data}
+
+    rows = [
+        _row("COIN-USDT-SWAP", 0.65, 8, None),  # 切换前停更的 legacy-only symbol
+        _row("BTC-USDT-SWAP", 0.65, 3, None),  # 混合：切换前的 legacy 样本
+        _row("BTC-USDT-SWAP", 0.50, 2, "v2"),
+        _row("CL-USDT-SWAP", 0.52, 1, "v2"),
+    ]
+    (runtime / "chain_events-20261125.jsonl").write_text(
+        "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n", encoding="utf-8"
+    )
+
+    collector = Collector(tmp_path, BASE / "config/monitoring.yaml", BASE / "config/domains.yaml")
+    text = "\n".join(collector.signal_calibration_metrics())
+
+    # 停更 symbol 不再产生恒值序列 → ReflexivityConstant 不再误报
+    assert 'dreambuddy_r_reflexivity{symbol="COIN"}' not in text
+    assert 'dreambuddy_r_reflexivity_distinct_24h{symbol="COIN"}' not in text
+    # 混合 symbol 只按当前口径（v2）去重，legacy 0.65 不计入
+    assert 'dreambuddy_r_reflexivity{symbol="BTC"} 0.5' in text
+    assert 'dreambuddy_r_reflexivity_distinct_24h{symbol="BTC"} 1' in text
+    assert 'dreambuddy_r_reflexivity_distinct_24h{symbol="CL"} 1' in text

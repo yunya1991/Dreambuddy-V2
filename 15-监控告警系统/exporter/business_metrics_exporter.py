@@ -713,6 +713,7 @@ class Collector:
         latest_sent: dict[str, float] = {}
         latest_spread: dict[str, float] = {}
         latest_liq: dict[str, float] = {}
+        n2_rows: list[tuple[str, float, float, str, dict]] = []
 
         for rec in rows:
             ts = _iso_to_ts(str(rec.get("ts") or ""))
@@ -722,27 +723,28 @@ class Collector:
             data = rec.get("data") if isinstance(rec.get("data"), dict) else {}
             sym = str(rec.get("symbol") or "?").split("-")[0] or "?"
             if stage == "N2":
-                # 反射性可观测：24h 窗口（用于恒定检测）
+                # 反射性可观测：24h 窗口（用于恒定检测），口径隔离延后到循环后处理
                 try:
                     refl = float(data["R_reflexivity"])
                 except (KeyError, TypeError, ValueError):
-                    refl = None
-                if refl is not None:
-                    latest_refl[sym] = refl
-                    refl_series.setdefault(sym, set()).add(round(refl, 6))
-                    r_inputs = data.get("r_inputs")
-                    if isinstance(r_inputs, dict):
-                        comp = r_inputs.get("refl_components")
-                        comp = comp if isinstance(comp, dict) else {}
-                        for key, bucket in (
-                            ("news_sentiment_score", latest_sent),
-                            ("bid_ask_spread_bps", latest_spread),
-                        ):
-                            val = r_inputs.get(key)
-                            if isinstance(val, (int, float)):
-                                bucket[sym] = float(val)
-                        if isinstance(comp.get("liq_term"), (int, float)):
-                            latest_liq[sym] = float(comp["liq_term"])
+                    continue
+                r_inputs = data.get("r_inputs")
+                r_inputs = r_inputs if isinstance(r_inputs, dict) else {}
+                comp = r_inputs.get("refl_components")
+                comp = comp if isinstance(comp, dict) else {}
+                n2_rows.append(
+                    (
+                        sym,
+                        ts,
+                        refl,
+                        str(comp.get("formula") or "legacy"),
+                        {
+                            "sent": r_inputs.get("news_sentiment_score"),
+                            "spread": r_inputs.get("bid_ask_spread_bps"),
+                            "liq": comp.get("liq_term"),
+                        },
+                    )
+                )
                 continue
             if ts < cutoff_1h:
                 continue
@@ -773,6 +775,24 @@ class Collector:
                     ess_empty += 1
                 if data.get("reflection_eligible"):
                     refl_ok += 1
+
+        # 口径隔离：只保留与最新样本同公式的 N2 记录
+        #   1) 切换前 legacy 样本污染 distinct，会掩盖当前公式的真实恒定（假阴性）
+        #   2) 已停更 symbol 的窗口内只剩 legacy 样本 → distinct 恒 1（假阳性）
+        active_formula = max(n2_rows, key=lambda r: r[1])[3] if n2_rows else ""
+        for sym, _ts, refl, formula, extra in n2_rows:
+            if formula != active_formula:
+                continue
+            latest_refl[sym] = refl
+            refl_series.setdefault(sym, set()).add(round(refl, 6))
+            for key, bucket in (
+                ("sent", latest_sent),
+                ("spread", latest_spread),
+                ("liq", latest_liq),
+            ):
+                val = extra[key]
+                if isinstance(val, (int, float)):
+                    bucket[sym] = float(val)
 
         out = [
             _metric("dstar_calibrated_enabled", 1 if mode == "calibrated" else 0),
