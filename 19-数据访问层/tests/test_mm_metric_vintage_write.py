@@ -83,6 +83,42 @@ def test_vintage_table_autocreates_and_is_idempotent(tmp_path):
     assert count == 2
 
 
+def test_repeated_same_value_does_not_grow_vintage(tmp_path):
+    """周期型指标重复采到同一个值时不追加 vintage（幂等写入）。
+
+    云端膨胀根因：fred 等源每轮轮询都为同一 (period, value) 落一条 vintage，
+    180 天内单序列可达数百条。值未变 = 非修订，不构成新观测。
+    """
+    db, repo = _repo(tmp_path)
+    period = datetime.datetime(2026, 10, 1, tzinfo=datetime.timezone.utc)
+    for _ in range(5):
+        repo.upsert_metric("fred", "macro", "m2_sl", 21.5, period)
+    conn = sqlite3.connect(db)
+    try:
+        vintages = conn.execute("SELECT metric_value FROM mm_metric_vintages").fetchall()
+        main = conn.execute("SELECT metric_value FROM mm_metrics").fetchall()
+    finally:
+        conn.close()
+    assert [row[0] for row in vintages] == [21.5]
+    assert [row[0] for row in main] == [21.5]
+
+
+def test_same_value_after_revision_still_appends(tmp_path):
+    """值变化后即使回到旧值，也必须记为新观测（修订不可合并）。"""
+    db, repo = _repo(tmp_path)
+    period = datetime.datetime(2026, 10, 1, tzinfo=datetime.timezone.utc)
+    for value in (2.9, 2.9, 3.1, 3.1, 2.9):
+        repo.upsert_metric("fred", "cpi", "us_cpi_yoy", value, period)
+    conn = sqlite3.connect(db)
+    try:
+        vintages = conn.execute(
+            "SELECT metric_value FROM mm_metric_vintages ORDER BY observed_at ASC"
+        ).fetchall()
+    finally:
+        conn.close()
+    assert [row[0] for row in vintages] == [2.9, 3.1, 2.9]
+
+
 def test_as_of_replay_reads_only_observations_before_cutoff(tmp_path):
     db, repo = _repo(tmp_path)
     period = datetime.datetime(2026, 10, 1, tzinfo=datetime.timezone.utc)

@@ -436,15 +436,22 @@ class SqliteMarketMacroRepository(MarketMacroRepository):
             # 追加到 vintage 表（PK 含 observed_at），As-Of 回放只读 observed_at ≤ as_of。
             ensure_vintage_table(conn)
             observed_at = int(datetime.now(_tz_utc.utc).timestamp())
-            # 同一周期同一秒内多次修订时，observed_at 单调递增（+1s），
-            # 避免 PK 冲突把旧观测吞掉；As-Of 仍按秒比较，语义不变。
+            # 周期型指标每轮轮询都会重采同一 (period, value)：值未变时不再追加 vintage，
+            # 否则行数随轮询线性膨胀（云端 mm_metric_vintages 膨胀根因）。
+            # 只在 value 变化（真实修订）时落新 vintage，As-Of 语义不变。
             last = conn.execute(
-                "SELECT MAX(observed_at) FROM mm_metric_vintages "
-                "WHERE source = ? AND sub_category = ? AND metric_name = ? AND period_ts = ?",
+                "SELECT observed_at, metric_value FROM mm_metric_vintages "
+                "WHERE source = ? AND sub_category = ? AND metric_name = ? AND period_ts = ? "
+                "ORDER BY observed_at DESC LIMIT 1",
                 (source, sub_category, metric_name, unix),
-            ).fetchone()[0]
-            if last is not None and observed_at <= int(last):
-                observed_at = int(last) + 1
+            ).fetchone()
+            if last is not None:
+                if last[1] is not None and float(last[1]) == float(metric_value):
+                    return True
+                # 同一周期同一秒内多次修订时，observed_at 单调递增（+1s），
+                # 避免 PK 冲突把旧观测吞掉；As-Of 仍按秒比较，语义不变。
+                if observed_at <= int(last[0]):
+                    observed_at = int(last[0]) + 1
             conn.execute(
                 """
                 INSERT OR IGNORE INTO mm_metric_vintages
