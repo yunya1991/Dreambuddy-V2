@@ -97,7 +97,7 @@
 │   │       ├── import_runner.py           # P1 三批 Import 幂等脚本（INSERT OR IGNORE + ma_migration_audit）
 │   │       ├── audit_summary.py           # P2 门禁测量引擎（G-1 双写差异率 + G-3 影子读一致率）
 │   │       ├── gate_check.py              # P2 五项门禁一键检查（G-1~G-5 → all_pass）
-│   │       ├── backup.py                  # P3 全量备份（VACUUM INTO + SHA256 + AES256-GCM）
+│   │       ├── backup.py                  # P3 全量备份（空间预检 + VACUUM INTO + SHA256 + AES256-GCM，失败清 .tmp）
 │   │       ├── integrity.py               # P3 PRAGMA integrity_check + ma_integrity_log
 │   │       └── rotate.py                  # P3 WAL checkpoint + 备份轮转保留 N 份
 │   │
@@ -189,6 +189,10 @@ trade_repo.add_trade(my_trade_record)
 
 > 部署：`cp launchd/com.dreambuddy.dal.*.plist ~/Library/LaunchAgents/ && launchctl load ~/Library/LaunchAgents/com.dreambuddy.dal.*.plist`
 > 卸载：`launchctl unload ~/Library/LaunchAgents/com.dreambuddy.dal.*.plist`
+>
+> **云端（systemd）差异**：云端使用 `dal-backup.service` / `dal-integrity.service` / `dreambuddy-backup-retention.timer`，单元定义入库在 `deploy/systemd/`。
+> 备份前由 `ExecStartPre=cleanup-cloud-backups.sh` 先按保留策略腾空间；备份/完整性检查结束后由 `ExecStartPost=checkpoint-wal.sh` 回收 WAL。
+> `backup.py` 在 `VACUUM INTO` 前做空间预检（需 `库大小 × 1.2` 可用空间），不足直接失败并提示先清理，避免写半截 `.tmp`。详见 `deploy/CLOUD-OPS.md` §7。
 
 ---
 
