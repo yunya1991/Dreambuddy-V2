@@ -117,16 +117,16 @@ cd /home/luke/dreambuddy/3.1-FRONTEND && /home/luke/venv-trading/bin/python scri
 
 ## 七、磁盘与备份治理
 
-### 8.1 空间大户（178G 根分区 baseline）
+### 7.1 空间大户（178G 根分区 baseline）
 
 | 路径 | 量级 | 管控方式 |
 |---|---|---|
-| `19-数据访问层/data/dreambuddy_core.db` | 15~20G | 主库；膨胀见 §8.4 |
+| `19-数据访问层/data/dreambuddy_core.db` | 15~20G | 主库；膨胀见 §7.4 |
 | `19-数据访问层/data/backups/` | 每日 core dump + 一次性认知库备份 | `cleanup-cloud-backups.sh` 轮转 |
 | `runtime-data-backup/daily/` | 每份约 12G | 只保留最新 1 份 |
 | `sync-snapshots/` | 旧 core 快照 + 认知库副本 | 保留 1 份 + 清理 >1 天 `.tmp*` |
 
-### 8.2 保留策略（`deploy/ops/cleanup-cloud-backups.sh`）
+### 7.2 保留策略（`deploy/ops/cleanup-cloud-backups.sh`）
 
 | 常量 | 值 | 含义 |
 |---|---|---|
@@ -139,7 +139,7 @@ cd /home/luke/dreambuddy/3.1-FRONTEND && /home/luke/venv-trading/bin/python scri
 脚本同时清理 `backups/*.db.tmp*`（>1 天且无进程占用）——**失败备份残留的主要来源**。
 由 `dreambuddy-backup-retention.timer` 每日 04:30 执行；`dal-backup.service` 也会在备份前以其作为 `ExecStartPre` 先腾空间。
 
-### 8.3 备份失败防护（2026-11-25 事故复盘）
+### 7.3 备份失败防护（2026-11-25 事故复盘）
 
 事故链：主库涨到 18G → `VACUUM INTO` 需要额外等量空间 → 根分区剩余不足 → `sqlite3.OperationalError: database or disk is full` → 遗留 3.5G `.tmp` 残留 → 清理脚本不匹配 `.tmp` → 空间只减不增 → 分区 99%。
 
@@ -159,11 +159,32 @@ sudo tail -30 /home/luke/logs/datacenter/dal-backup.err.log
 systemctl status dal-backup.service --no-pager -l
 ```
 
-### 8.4 主库膨胀定位
+### 7.4 主库膨胀定位
 
 29 张表，`PRAGMA freelist_count = 0`（非碎片问题），膨胀集中于 `mm_metric_vintages`（WITHOUT ROWID 指标历史表，全表 COUNT 超过 2 分钟）。其余表合计不足 1G。
 
 处置方向：按 `source` 设保留窗口清理历史分区，采集侧改幂等 upsert（`observed_at` 用数据时间而非采集时间，避免重复累积），清理后执行一次 `VACUUM INTO` 重建库。
+
+### 7.5 WAL 膨胀与长事务冲突（2026-11-25 事故）
+
+现象：主库 18G 之外，`dreambuddy_core.db-wal` 累积到 **12G**，且每日备份 `VACUUM INTO` 耗时 40 分钟仍不结束；`dal-integrity`（`PRAGMA integrity_check` 全库扫描）单次运行超过 40 分钟。
+
+因果：WAL 模式下，长读事务会阻止 checkpoint。`dal-integrity` 对 18G 主库做全库校验时长时间持有读快照，自动 checkpoint（`wal_autocheckpoint=1000` 页）持续失败 → WAL 只增不减 → 备份 `VACUUM INTO` 又要在同盘再写一份 → IO 三方竞争（integrity / backup / 每 10 分钟一次的全量 snapshot）。
+
+已落地：
+1. `deploy/ops/checkpoint-wal.sh` — 对库执行 `PRAGMA wal_checkpoint(TRUNCATE)`；作为 `dal-backup.service` 与 `dal-integrity.service` 的 `ExecStartPost`，任务结束即回收 WAL；
+2. `31-分布式计算部署/phase7/snapshot_dbs.sh` — 增加空间预检，可用空间不足（< 源大小 ×1.3）时跳过本轮，避免写半截 18G `.tmp`；
+3. 三者的 systemd 单元统一入库到 `deploy/systemd/`，禁止在云端直建改配置。
+
+排障命令：
+
+```bash
+sudo ls -lh 19-数据访问层/data/dreambuddy_core.db*   # 看 -wal 是否异常膨胀
+sudo lsof 19-数据访问层/data/dreambuddy_core.db       # 谁在长事务持库
+sqlite3 <db> "PRAGMA wal_checkpoint(TRUNCATE);"        # 手动回收（需无活跃读者）
+```
+
+> 注意：大库上 `integrity_check` 与 `VACUUM INTO` 都要独占大量 IO，二者不可与全量快照并发；后续如需彻底解耦，应让 `dal-integrity` 改查只读快照副本而非主库。
 
 ## 八、硬性禁止
 

@@ -18,7 +18,7 @@
 | `hermes/channel_directory.json` | 频道目录 |
 | `ops/` | 运维：launchd plist、master_daemon.py、install_all_launchd.{sh,py} |
 | `ops/state/` | 守护进程状态文件（pid/json） |
-| `systemd/` | systemd 服务定义（cognitive-daemon.service、dreambuddy-backup-retention.{service,timer}、dal-backup.service） |
+| `systemd/` | systemd 服务定义（cognitive-daemon.service、dreambuddy-backup-retention.{service,timer}、dal-backup.service、dal-integrity.service） |
 | `01-install-deps.sh` ~ `04-hermes-config.sh` | 分步部署脚本 |
 | `deploy.sh` | 一键部署入口 |
 | `git-sync.sh` / `git-setup-tracking.sh` | Git 同步 / 追踪配置 |
@@ -31,3 +31,4 @@
 - [preflight-eval-gate.sh](preflight-eval-gate.sh) — 45 评测系统 — 部署前置门禁（P3-2 / SPEC §4 §13.4）
 - [quarterly-baseline.sh](quarterly-baseline.sh) — 45 评测系统 — 季度 golden set 回归（P4-6 / SPEC §8.3 §8.5）
 - [ops/cleanup-cloud-backups.sh](ops/cleanup-cloud-backups.sh) — 云端磁盘治理 — 备份轮转（daily 1 份 / core dump 2 份 / 认知库备份 1 份 / next 构建 / `.tmp` 残留 / journal），由 `dreambuddy-backup-retention.timer` 每日 04:30 调用，并作为 `dal-backup.service` 的 `ExecStartPre`
+- [ops/checkpoint-wal.sh](ops/checkpoint-wal.sh) — WAL 回收 — `PRAGMA wal_checkpoint(TRUNCATE)`，作为 `dal-backup.service` / `dal-integrity.service` 的 `ExecStartPost`
