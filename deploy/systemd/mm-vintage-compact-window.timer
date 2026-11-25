@@ -1,0 +1,10 @@
+[Unit]
+Description=Trigger mm_metric_vintages compaction on 2026-11-28 02:00 (one-off)
+
+[Timer]
+OnCalendar=2026-11-28 02:00:00
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

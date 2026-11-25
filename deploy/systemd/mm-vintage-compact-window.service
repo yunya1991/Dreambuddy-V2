@@ -1,0 +1,10 @@
+[Unit]
+Description=One-shot mm_metric_vintages compaction (2026-11-28 02:00 window)
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /home/luke/dreambuddy/deploy/ops/compact-metric-vintages.sh
+TimeoutStartSec=10800
+Nice=10
+IOSchedulingClass=idle

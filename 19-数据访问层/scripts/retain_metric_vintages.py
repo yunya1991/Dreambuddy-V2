@@ -100,6 +100,20 @@ def survey(db_path: str) -> dict:
     }
 
 
+def _vacuum_with_retry(conn: sqlite3.Connection, attempts: int = 6, wait: int = 60) -> None:
+    """VACUUM 需要独占连接：后台采集可能在窗口内短暂持库，失败则等下一轮重试。"""
+    for i in range(attempts):
+        try:
+            conn.execute("VACUUM")
+            return
+        except sqlite3.OperationalError as exc:
+            if "locked" not in str(exc) and "busy" not in str(exc):
+                raise
+            if i == attempts - 1:
+                raise
+            time.sleep(wait)
+
+
 def compress(db_path: str, vacuum: bool = False) -> dict:
     started = time.time()
     size_before = _db_size(db_path)
@@ -120,7 +134,7 @@ def compress(db_path: str, vacuum: bool = False) -> dict:
         conn.execute("COMMIT")
         conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
         if vacuum:
-            conn.execute("VACUUM")
+            _vacuum_with_retry(conn)
         check = conn.execute("PRAGMA quick_check").fetchone()[0]
         after = conn.execute(f"SELECT COUNT(*) FROM {TABLE}").fetchone()[0]
     finally:
