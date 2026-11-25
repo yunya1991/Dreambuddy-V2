@@ -116,7 +116,8 @@ verify_core_db() {
     return 0
 }
 
-SNAP_STATE="$(${RSH} "${SSH_ALIAS}" "test -e '${SNAP_REMOTE}/dreambuddy_core.db.tmp' && echo BUSY || stat -c%s '${SNAP_REMOTE}/dreambuddy_core.db' 2>/dev/null" 2>/dev/null | tail -1)"
+# /home/luke 权限受限，远端查询统一 sudo -n -u luke
+SNAP_STATE="$(${RSH} "${SSH_ALIAS}" "sudo -n -u luke bash -c \"test -e '${SNAP_REMOTE}/dreambuddy_core.db.tmp' && echo BUSY || stat -c%s '${SNAP_REMOTE}/dreambuddy_core.db'\" 2>/dev/null" 2>/dev/null | tail -1)"
 SNAP_FREE_KB="$(df -Pk "${LOCAL_DAL}" | awk 'NR==2 {print $4}')"
 # 需 1.3× 快照体积，且拉完后本地至少保留 10G 余量（macOS 系统盘不能贴满）
 SNAP_NEED_KB=$(( ${SNAP_STATE:-0} / 1024 * 13 / 10 + 10485760 ))
