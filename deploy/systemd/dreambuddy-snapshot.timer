@@ -1,0 +1,9 @@
+[Unit]
+Description=Periodic Dreambuddy DB snapshot
+
+[Timer]
+OnCalendar=*:0/10
+Persistent=true
+
+[Install]
+WantedBy=timers.target

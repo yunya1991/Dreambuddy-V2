@@ -1,0 +1,17 @@
+[Unit]
+Description=Dreambuddy DB snapshot (core=hardlink of DAL backup, cognitive=sqlite3 .backup)
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=luke
+Group=luke
+Environment="HOME=/home/luke"
+Environment="REPO_DIR=/home/luke/dreambuddy"
+Environment="OUT_DIR=/home/luke/sync-snapshots"
+# 方案 B：核心库只做硬链接，认知库 ~1.3G，正常秒级完成；
+# 30min 兜底，避免异常时长时间占住服务。
+TimeoutStartSec=1800
+ExecStart=/bin/bash /home/luke/dreambuddy/31-分布式计算部署/phase7/snapshot_dbs.sh
+StandardOutput=append:/home/luke/logs/redundant/snapshot.log
+StandardError=append:/home/luke/logs/redundant/snapshot.err.log

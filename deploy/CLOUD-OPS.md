@@ -186,6 +186,21 @@ sqlite3 <db> "PRAGMA wal_checkpoint(TRUNCATE);"        # 手动回收（需无�
 
 > 注意：大库上 `integrity_check` 与 `VACUUM INTO` 都要独占大量 IO，二者不可与全量快照并发；后续如需彻底解耦，应让 `dal-integrity` 改查只读快照副本而非主库。
 
+### 7.6 快照改为「硬链接静止副本」（方案 B，2026-11-25）
+
+原实现 `snapshot_dbs.sh` 对 18G 主库直连 `sqlite3 .backup`，而单元 `TimeoutStartSec=600`；跑不完被 TERM 后脚本无机会清理，每轮在 `sync-snapshots/` 留下 18.5G `.tmp`，10 分钟一轮 → 根分区被打满（本次 P2 告警根因）。
+
+现行实现：
+
+- 核心库：取 `backups/` 下最新一份 `dreambuddy_core_*.db`（dal-backup 的 `VACUUM INTO` 静止副本），`ln` 硬链接到 `sync-snapshots/dreambuddy_core.db`——同盘零 IO、零额外空间；同名文件只在每日新备份产出时变化，本地 rsync 才真正是增量；
+- 认知库：仍用 `sqlite3 .backup`（~1.3G，秒级）+ `quick_check`；
+- 脚本 `trap ... EXIT INT TERM` 清理本轮 `.tmp`，退出/被杀都不留残留；
+- 单元统一入库 `deploy/systemd/dreambuddy-snapshot.{service,timer}`（每 10 分钟，`TimeoutStartSec=1800`）；
+- `cleanup-cloud-backups.sh` 对 `sync-snapshots/*.tmp*`、`*.db.new` 的回收阈值从「>1 天」收紧到「>2 小时」。
+
+因此核心库本地镜像的新鲜度取决于每日 dal-backup（最长约 24h），认知库仍为 10 分钟级。
+
+
 ## 八、硬性禁止
 
 - 不在云端 `git reset --hard`、`git clean -f`、`push --force`。

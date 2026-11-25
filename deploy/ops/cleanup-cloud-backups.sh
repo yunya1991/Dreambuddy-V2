@@ -53,10 +53,10 @@ if [ -d "$BUILD_DIR" ]; then
     done
 fi
 
-# 4) 清理被中断的临时快照副本（>1 天且无进程占用）
+# 4) 清理被中断的临时快照副本（>2 小时且无进程占用；正常一轮仅数秒，超过即残留）
 SNAP_DIR=/home/luke/sync-snapshots
 if [ -d "$SNAP_DIR" ]; then
-    find "$SNAP_DIR" -maxdepth 1 -name '*.tmp*' -mtime +1 2>/dev/null | while read -r f; do
+    find "$SNAP_DIR" -maxdepth 1 \( -name '*.tmp*' -o -name '*.db.new' \) -mmin +120 2>/dev/null | while read -r f; do
         if ! fuser -s "$f" 2>/dev/null; then
             echo "  rm snapshot/$f"
             rm -f -- "$f"
