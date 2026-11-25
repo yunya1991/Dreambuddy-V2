@@ -74,11 +74,19 @@ artifacts:
     timestamp_field: null
     ttl_seconds: 900         # 3 轮（900s）无心跳即 P1，替代原先用决策审计判存活
     severity: P1
-  # 决策审计仅在真实 submit 时追加（WAIT 不写），不能当存活心跳；仅兜底"决策沉默"
+  # 决策流心跳：每次 K 线收盘都会产出 pipeline.decision（WAIT 也写），
+  # 直接从 chain_events 取最近一条决策时间，真正的"决策沉默"判定
+  - name: decision_flow_23
+    path: 23-四层闭环自进化交易架构/runtime/chain_events-*.jsonl
+    chain_event_node: pipeline.decision
+    ttl_seconds: 1800        # 实测最大自然间隔 804s（近 2 日），30min 留 2 倍余量
+    severity: P1
+  # 决策审计仅在真实 submit 时追加（WAIT 不写、去重拦截不写），已不承担存活/沉默信号；
+  # 48h 仅作"长期零下单"粗粒度兜底
   - name: execution_decisions_23
     path: 23-四层闭环自进化交易架构/runtime/execution_decisions.jsonl
     timestamp_field: null
-    ttl_seconds: 43200       # 12h：近 24h 实测最长自然间隔 6.6h（FREEZE/无信号期）
+    ttl_seconds: 172800      # 48h
     severity: P2
 
 # 任务调度新鲜度：由 push_job.sh 推送 dreambuddy_job_last_success_timestamp_seconds

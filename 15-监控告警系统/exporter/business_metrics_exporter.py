@@ -87,6 +87,35 @@ def _tail_jsonl(path: Path, limit: int = 500) -> list[dict]:
     return rows
 
 
+def _last_node_ts(path: Path, node: str, max_bytes: int = 2 * 1024 * 1024) -> float:
+    """从文件尾部向前扫描，返回匹配 node 的最新事件 ts（0 表示未找到）。"""
+    if not path.exists():
+        return 0.0
+    try:
+        with path.open("rb") as fh:
+            fh.seek(0, os.SEEK_END)
+            size = fh.tell()
+            block = min(size, max_bytes)
+            fh.seek(size - block)
+            chunk = fh.read().decode("utf-8", errors="ignore")
+    except OSError:
+        return 0.0
+    for line in reversed(chunk.splitlines()):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            continue
+        if str(rec.get("node") or "") != node:
+            continue
+        ts = _iso_to_ts(str(rec.get("ts") or ""))
+        if ts:
+            return ts
+    return 0.0
+
+
 def _iter_jsonl_since(path: Path, cutoff_ts: float, stages: tuple[str, ...] = ()) -> Iterator[dict]:
     """流式读取 JSONL 并按 ts 过滤（替代 _tail_jsonl 的 512KB 截断，覆盖完整窗口）。
 
@@ -658,16 +687,36 @@ class Collector:
         return out
 
     # ---------- 产物 / 单元 ----------
+    def _chain_event_age(self, pattern: str, node: str) -> float | None:
+        """按 chain_events 中指定 node 的最新 ts 计算新鲜度（判"决策沉默"而非"未下单"）。"""
+        for path in sorted(self.repo.glob(pattern))[-2:][::-1]:
+            ts = _last_node_ts(path, node)
+            if ts:
+                return max(0.0, _now() - ts)
+        return None
+
     def artifact_metrics(self) -> list[str]:
         out = []
         for item in self.config.get("artifacts", []):
-            path = self.repo / item["path"]
             name = item.get("name", item["path"])
             ttl = float(item.get("ttl_seconds", 0))
+            labels = {"artifact": name}
+            if item.get("severity"):
+                labels["severity"] = str(item["severity"])
+            node = item.get("chain_event_node")
+            if node:
+                age = self._chain_event_age(str(item["path"]), str(node))
+                out.append(_metric("artifact_present", 0 if age is None else 1, **labels))
+                out.append(
+                    _metric("artifact_age_seconds", 0 if age is None else round(age, 1), **labels)
+                )
+                out.append(_metric("artifact_ttl_seconds", ttl, **labels))
+                continue
+            path = self.repo / item["path"]
             if not path.exists():
-                out.append(_metric("artifact_present", 0, artifact=name))
-                out.append(_metric("artifact_age_seconds", 0, artifact=name))
-                out.append(_metric("artifact_ttl_seconds", ttl, artifact=name))
+                out.append(_metric("artifact_present", 0, **labels))
+                out.append(_metric("artifact_age_seconds", 0, **labels))
+                out.append(_metric("artifact_ttl_seconds", ttl, **labels))
                 continue
             field = item.get("timestamp_field")
             age = _now() - path.stat().st_mtime
@@ -679,9 +728,9 @@ class Collector:
                         age = max(0.0, _now() - ts)
                 except (OSError, ValueError):
                     pass
-            out.append(_metric("artifact_present", 1, artifact=name))
-            out.append(_metric("artifact_age_seconds", round(age, 1), artifact=name))
-            out.append(_metric("artifact_ttl_seconds", ttl, artifact=name))
+            out.append(_metric("artifact_present", 1, **labels))
+            out.append(_metric("artifact_age_seconds", round(age, 1), **labels))
+            out.append(_metric("artifact_ttl_seconds", ttl, **labels))
         return out
 
     def cell_metrics(self) -> list[str]:

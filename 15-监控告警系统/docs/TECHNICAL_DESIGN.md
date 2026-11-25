@@ -763,7 +763,7 @@ business-metrics-exporter（只读 JSON）──┘        │
 | 43 承接 | 30min | 90min | 连续 2 周期无产物 → P1 |
 | 50 影子 | 15min | 60min | 连续 2 周期无决策 → P1 |
 | 50 live + 22 | 5min | 15min | 连续 3 轮无运行 → P0 |
-| 23 entry 开仓巡检 | 5min | 15min | `event_driven_state.json` 心跳连续 3 轮缺失 → P1；`execution_decisions.jsonl` 仅在真实 submit 时追加（WAIT 不写），12h TTL 只兜底决策沉默 → P2 |
+| 23 entry 开仓巡检 | 5min | 15min | `event_driven_state.json` 心跳连续 3 轮缺失 → P1；决策沉默取 `chain_events-*.jsonl` 中 `pipeline.decision` 最新 ts（WAIT 也计），30min 无新决策 → P1；`execution_decisions.jsonl` 仅真实 submit 追加，48h TTL 只兜底长期零下单 → P2 |
 | 健康检查 | 5min | 15min | 心跳缺失 → P0 |
 | 48 指标 | 每日 06:10 | 26h | 缺更 → P2 |
 
