@@ -10,6 +10,7 @@
 		<string>-c</string>
 		<string>set -e
 cd "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/59-通用组件管理/platform/lab/content-optimizer-p0"
+/opt/anaconda3/bin/python3 "/Users/zhangjiangtao/Documents/顺风车业务/mobile-reservation-assist/skill/scripts/metrics_collector.py" --source web || true
 /usr/bin/python3 scripts/ingest_own.py
 /usr/bin/python3 scripts/retrain_daily.py
 /bin/cp -f model/optimizer_model.json "/Users/zhangjiangtao/.mobile-reservation-assist/fixed/optimizer_model.json"</string>
