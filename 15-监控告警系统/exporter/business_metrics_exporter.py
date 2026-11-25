@@ -33,6 +33,9 @@ import yaml
 DEFAULT_CONFIG = Path(__file__).resolve().parent.parent / "config/monitoring.yaml"
 DEFAULT_DOMAINS = Path(__file__).resolve().parent.parent / "config/domains.yaml"
 METRIC_PREFIX = "dreambuddy_"
+# 反射性指标新鲜度门槛：停更 symbol（含夜间无行情的股票）不再导出当前值/恒定序列，
+# 否则 24h 窗口内残存的少量样本会触发恒 1 的假告警
+_REFLEXIVITY_FRESH_SECONDS = 3 * 3600
 MATURITY = {"M0": 0, "M1": 1, "M2": 2, "M3": 3, "M4": 4, "M5": 5}
 _cache = {"text": "", "ts": 0.0, "lock": threading.Lock()}
 _provider = None
@@ -778,19 +781,26 @@ class Collector:
 
         # 口径隔离：只保留与最新样本同公式的 N2 记录
         #   1) 切换前 legacy 样本污染 distinct，会掩盖当前公式的真实恒定（假阴性）
-        #   2) 已停更 symbol 的窗口内只剩 legacy 样本 → distinct 恒 1（假阳性）
+        #   2) 已停更 symbol 的窗口内只剩少量旧样本 → distinct 恒 1（假阳性）
         active_formula = max(n2_rows, key=lambda r: r[1])[3] if n2_rows else ""
-        for sym, _ts, refl, formula, extra in n2_rows:
+        fresh_after = _now() - _REFLEXIVITY_FRESH_SECONDS
+        by_symbol: dict[str, list[tuple[float, float, dict]]] = {}
+        for sym, ts, refl, formula, extra in n2_rows:
             if formula != active_formula:
                 continue
-            latest_refl[sym] = refl
-            refl_series.setdefault(sym, set()).add(round(refl, 6))
+            by_symbol.setdefault(sym, []).append((ts, refl, extra))
+        for sym, items in by_symbol.items():
+            latest_ts, latest_val, latest_extra = max(items, key=lambda it: it[0])
+            if latest_ts < fresh_after:  # 停更 symbol：不导出当前值与恒定序列
+                continue
+            latest_refl[sym] = latest_val
+            refl_series[sym] = {round(val, 6) for _, val, _ in items}
             for key, bucket in (
                 ("sent", latest_sent),
                 ("spread", latest_spread),
                 ("liq", latest_liq),
             ):
-                val = extra[key]
+                val = latest_extra[key]
                 if isinstance(val, (int, float)):
                     bucket[sym] = float(val)
 

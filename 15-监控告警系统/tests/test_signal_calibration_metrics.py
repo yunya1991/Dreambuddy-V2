@@ -208,6 +208,7 @@ def test_reflexivity_isolates_stale_formula(tmp_path: Path) -> None:
 
     rows = [
         _row("COIN-USDT-SWAP", 0.65, 8, None),  # 切换前停更的 legacy-only symbol
+        _row("LTC-USDT-SWAP", 0.51, 10, "v2"),  # 停更的 v2 symbol（同一值、仅 1 个样本）
         _row("BTC-USDT-SWAP", 0.65, 3, None),  # 混合：切换前的 legacy 样本
         _row("BTC-USDT-SWAP", 0.50, 2, "v2"),
         _row("CL-USDT-SWAP", 0.52, 1, "v2"),
@@ -222,6 +223,9 @@ def test_reflexivity_isolates_stale_formula(tmp_path: Path) -> None:
     # 停更 symbol 不再产生恒值序列 → ReflexivityConstant 不再误报
     assert 'dreambuddy_r_reflexivity{symbol="COIN"}' not in text
     assert 'dreambuddy_r_reflexivity_distinct_24h{symbol="COIN"}' not in text
+    # 停更的 v2 symbol 同样不导出（新鲜度门槛 3h）
+    assert 'dreambuddy_r_reflexivity{symbol="LTC"}' not in text
+    assert 'dreambuddy_r_reflexivity_distinct_24h{symbol="LTC"}' not in text
     # 混合 symbol 只按当前口径（v2）去重，legacy 0.65 不计入
     assert 'dreambuddy_r_reflexivity{symbol="BTC"} 0.5' in text
     assert 'dreambuddy_r_reflexivity_distinct_24h{symbol="BTC"} 1' in text
