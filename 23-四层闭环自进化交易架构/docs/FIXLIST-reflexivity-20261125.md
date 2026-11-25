@@ -47,6 +47,8 @@ liq_term = 0.5（中性），liq 权重 × liq_degraded_scale(0.5) → 0.15
 | R5 | 无法观测 v2 与 legacy 的差值 | `last_reflexivity_detail()` 只有旧分项 | 影子字段：始终计算 `R_reflexivity_v2`，并输出 `formula/corr_mode/momentum_m/liq_mode/v2_weights` | 单测：legacy 模式下 detail 仍含 `R_reflexivity_v2` | `[x]` |
 | R6 | 新常量有散落硬编码风险 | R-1 硬约束：权重唯一源 `weights.py` | 新增 `WEIGHTS["R_REFL_V2"]` 承载 window/gain/eps/damp/scale | 单测：缺配置时走默认值仍可算（fail-open） | `[x]` |
 | R7 | `calculate()` 9 字段 Gold Schema 不能加 key | `additionalProperties=False` | 诊断只走 thread-local detail；v2 不新增返回字段 | 单测：v2 模式下 `jsonschema` 校验通过，key 集合仍为 9 | `[x]` |
+| R8 | v2 生效后 `ReflexivityConstant` 仍 firing（MSTR/BTC） | exporter `_tail_jsonl` 只读文件尾部 512KB（≈3068 行），`distinct_24h` 实际只有几分钟窗口，每 symbol 仅 1~2 点 → distinct 恒 1 | 新增 `_iter_jsonl_since`（全文件流式 + ts 过滤 + stage 预筛），`signal_calibration_metrics` 改用它；补跨 512KB 回归测试 | 指标复算与真实 24h 全量一致（distinct 3~13）；单测/ruff 通过；单次扫描 0.11s | `[x]` |
+| R9 | 切换前已停更的 symbol（COIN/WIF）仍报恒定 | 24h 窗口内只剩 legacy 0.65 样本 | 非代码缺陷；样本滚出 24h 窗口后序列消失，告警自动恢复 | COIN 17:01Z / WIF 13:50Z 后 `ReflexivityConstant` 消失 | `[-]` |
 
 ## 执行记录
 
@@ -60,3 +62,7 @@ liq_term = 0.5（中性），liq 权重 × liq_degraded_scale(0.5) → 0.15
 | 2026-11-25 | 回归 | `test_weights.py` + `test_kline_event_handler.py` | `[x]` 57 passed |
 | 2026-11-25 | 提交 | `52b3406c94` 推送 GitHub；云端快进 `52b3406c9`，重启 entry23（01:30:04 CST） | `[x]` 默认 legacy 实测 0.65 / 影子 v2=0.682 |
 | 2026-11-25 | 切换 | 云端 drop-in `/etc/systemd/system/dreambuddy-entry23.service.d/10-refl-v2.conf` 设 `ENABLE_RV_REFLEXIVITY_V2=1`，daemon-reload + 重启（01:36:15 CST） | `[x]` 进程 env 已含该变量 |
+| 2026-11-25 | 复诊 | 告警仍 firing：云端 N2 全量 1612 条，v2 有 205 个不同取值（最新 0.4983，momentum_only / liq degraded），确认公式正常；定位为 exporter 指标窗口 bug | `[x]` 尾部截断复算与 Prometheus 逐项一致 |
+| 2026-11-25 | R8 | `52b3406c9`→`502177e41`：新增 `_iter_jsonl_since` + 回归测试，15 域 37 tests / ruff 通过 | `[x]` |
+| 2026-11-25 | 部署 | 云端 ff-only 至 `502177e41`，重启 `dreambuddy-metrics-exporter`（18:16:02 CST） | `[x]` distinct_24h 恢复 3~13 |
+| 2026-11-25 | 复验 | MSTR/BTC 等 12 个 firing/pending 告警消除；仅 COIN/WIF 剩 pending（切换前停更样本，到期自动消失） | `[x]` |
