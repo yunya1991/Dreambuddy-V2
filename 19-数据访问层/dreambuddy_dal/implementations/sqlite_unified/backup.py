@@ -25,20 +25,33 @@ from dreambuddy_dal.connection import get_sqlite_connection
 
 # 备份需要与源库等量的额外空间（VACUUM INTO 写全新副本），留 20% 余量
 _REQUIRED_FREE_RATIO = 1.2
+# 流式处理块大小：避免把整库读进内存（18G 库曾导致 6.4G 内存峰值被 oomd 杀）
+_CHUNK_SIZE = 8 * 1024 * 1024
 
 
-def _aes256_encrypt(plaintext: bytes, passphrase: str) -> bytes:
-    """AES256-GCM 加密；返回 nonce + ciphertext + tag。"""
+def _sha256_file(path: str) -> str:
+    """流式计算文件 SHA256。"""
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(_CHUNK_SIZE), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
-    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-    # 派生 32 字节密钥（SHA256）
+def _aes256_encrypt_file(src: str, dst: str, passphrase: str) -> None:
+    """流式 AES256-GCM 加密文件；输出格式 nonce(12) + ciphertext + tag(16)。"""
+
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
     key = hashlib.sha256(passphrase.encode("utf-8")).digest()
-    aesgcm = AESGCM(key)
     nonce = os.urandom(12)
-    ct = aesgcm.encrypt(nonce, plaintext, None)
-    # 格式: nonce(12) + ct
-    return nonce + ct
+    encryptor = Cipher(algorithms.AES(key), modes.GCM(nonce)).encryptor()
+    with open(src, "rb") as fin, open(dst, "wb") as fout:
+        fout.write(nonce)
+        for chunk in iter(lambda: fin.read(_CHUNK_SIZE), b""):
+            fout.write(encryptor.update(chunk))
+        fout.write(encryptor.finalize())
+        fout.write(encryptor.tag)
 
 
 def _aes256_decrypt(ciphertext: bytes, passphrase: str) -> bytes:
@@ -80,15 +93,10 @@ def backup_database(
         with get_sqlite_connection(db_path) as conn:
             conn.execute(f"VACUUM INTO '{plain_path}'")
 
-        with open(plain_path, "rb") as f:
-            plain_data = f.read()
-
-        # Step 2: 加密 or 明文
+        # Step 2: 加密 or 明文（均为流式，不整库读入内存）
         if encrypt and passphrase:
-            enc_data = _aes256_encrypt(plain_data, passphrase)
             final_path = plain_path.replace(".db.tmp", ".db.enc")
-            with open(final_path, "wb") as f:
-                f.write(enc_data)
+            _aes256_encrypt_file(plain_path, final_path, passphrase)
             os.unlink(plain_path)
         else:
             final_path = plain_path.replace(".db.tmp", ".db")
@@ -104,8 +112,7 @@ def backup_database(
         raise
 
     # Step 3: SHA256 sidecar
-    with open(final_path, "rb") as f:
-        sha256 = hashlib.sha256(f.read()).hexdigest()
+    sha256 = _sha256_file(final_path)
     sha_path = final_path + ".sha256"
     with open(sha_path, "w") as f:
         f.write(sha256)
@@ -125,8 +132,7 @@ def verify_backup(backup_path: str, *, passphrase: str | None = None) -> bool:
         return False
     with open(sha_path, "r") as f:
         expected_sha = f.read().strip()
-    with open(backup_path, "rb") as f:
-        actual_sha = hashlib.sha256(f.read()).hexdigest()
+    actual_sha = _sha256_file(backup_path)
     if actual_sha != expected_sha:
         return False
 
