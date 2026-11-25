@@ -140,3 +140,30 @@ def test_as_of_replay_reads_only_observations_before_cutoff(tmp_path):
     finally:
         conn.close()
     assert value == 2.9
+
+
+def test_append_vintages_skips_unchanged_replay(tmp_path):
+    """回填脚本整段重放时，取值未变的行不得重复追加。
+
+    云端每 600s 跑一次 18→19 回填，每次把 18 data_center.db 的全部指标重放一遍；
+    不做幂等就会每轮都为同一 (period_ts, value) 追加一条，单日约 2000 万行。
+    """
+    from dreambuddy_dal.implementations.sqlite_unified.vintage import append_vintages
+
+    db, _repo_obj = _repo(tmp_path)
+    rows = [("fred", "macro", "m2_sl", 21.5, 1000), ("fred", "macro", "m2_sl", 21.7, 2000)]
+    conn = sqlite3.connect(db)
+    try:
+        assert append_vintages(conn, rows, observed_at=100) == 2
+        conn.commit()
+        assert append_vintages(conn, rows, observed_at=200) == 0  # 整段重放：全部同值
+        conn.commit()
+        changed = [("fred", "macro", "m2_sl", 21.5, 1000), ("fred", "macro", "m2_sl", 21.9, 2000)]
+        assert append_vintages(conn, changed, observed_at=300) == 1  # 只有真实修订
+        conn.commit()
+        got = conn.execute(
+            "SELECT period_ts, metric_value FROM mm_metric_vintages ORDER BY period_ts, observed_at"
+        ).fetchall()
+    finally:
+        conn.close()
+    assert got == [(1000, 21.5), (2000, 21.7), (2000, 21.9)]
