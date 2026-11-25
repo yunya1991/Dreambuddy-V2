@@ -26,6 +26,15 @@ for item in "${SRCS[@]}"; do
     fi
     dst="${OUT_DIR}/${name}"
     tmp="${dst}.tmp"
+    # 空间预检：全量副本需与源文件等量空间（×1.3 含余量），不足则跳过本轮
+    free_kb="$(df -Pk "${OUT_DIR}" | awk 'NR==2 {print $4}')"
+    src_kb="$(du -k "${src}" | awk '{print $1}')"
+    need_kb=$((src_kb * 13 / 10))
+    if [ "${free_kb}" -lt "${need_kb}" ]; then
+        echo "[SKIP] 空间不足: 需 ${need_kb}K, 可用 ${free_kb}K: ${src}"
+        rc=1
+        continue
+    fi
     rm -f "${tmp}"
     backup_ok=0
     for attempt in 1 2 3; do
