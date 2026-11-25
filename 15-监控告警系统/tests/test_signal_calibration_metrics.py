@@ -153,3 +153,39 @@ def test_reflexivity_observability_metrics(tmp_path: Path) -> None:
     # BTC spread 缺失 → 不导出该 symbol 的 spread 指标
     assert 'dreambuddy_r_refl_spread_bps{symbol="BTC"}' not in text
     assert 'dreambuddy_r_refl_spread_bps{symbol="ETH"} 3.0' in text
+
+
+def test_reflexivity_distinct_covers_full_24h_beyond_tail(tmp_path: Path) -> None:
+    """distinct_24h 必须覆盖完整 24h，不能被 _tail_jsonl 的 512KB 尾部截断压成几分钟窗口。"""
+    runtime = tmp_path / "23-四层闭环自进化交易架构/runtime"
+    runtime.mkdir(parents=True)
+    now = datetime.now(timezone.utc)
+
+    def _iso(hours_ago: float) -> str:
+        return (now - __import__("datetime").timedelta(hours=hours_ago)).isoformat()
+
+    def _n2(value: float, hours_ago: float) -> str:
+        return json.dumps(
+            {
+                "ts": _iso(hours_ago),
+                "stage": "N2",
+                "symbol": "CL-USDT-SWAP",
+                "data": {"R_reflexivity": value},
+            },
+            ensure_ascii=False,
+        )
+
+    # 6h 前的 N2 值 + 中间 >512KB 填充 + 最近的 N2 值（尾部截断只能看到后者）
+    filler = "\n".join(
+        json.dumps(
+            {"ts": _iso(5), "stage": "N1", "symbol": "CL-USDT-SWAP", "data": {"pad": "x" * 200}}
+        )
+        for _ in range(3000)
+    )
+    content = "\n".join([_n2(0.40, 6), filler, _n2(0.60, 1)]) + "\n"
+    (runtime / "chain_events-20261125.jsonl").write_text(content, encoding="utf-8")
+
+    collector = Collector(tmp_path, BASE / "config/monitoring.yaml", BASE / "config/domains.yaml")
+    text = "\n".join(collector.signal_calibration_metrics())
+
+    assert 'dreambuddy_r_reflexivity_distinct_24h{symbol="CL"} 2' in text

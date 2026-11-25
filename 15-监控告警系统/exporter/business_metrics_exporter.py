@@ -23,6 +23,7 @@ import subprocess
 import sys
 import threading
 import time
+from collections.abc import Iterator
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -81,6 +82,36 @@ def _tail_jsonl(path: Path, limit: int = 500) -> list[dict]:
     except OSError:
         return []
     return rows
+
+
+def _iter_jsonl_since(path: Path, cutoff_ts: float, stages: tuple[str, ...] = ()) -> Iterator[dict]:
+    """流式读取 JSONL 并按 ts 过滤（替代 _tail_jsonl 的 512KB 截断，覆盖完整窗口）。
+
+    _tail_jsonl 只读文件尾部 512KB（≈3000 行），24h 指标会被压成几分钟窗口，
+    导致 r_reflexivity_distinct_24h 恒为 1（ReflexivityConstant 误报）。
+    """
+    if not path.exists():
+        return
+    markers = tuple(f'"{s}"' for s in stages)
+    try:
+        with path.open("r", encoding="utf-8", errors="ignore") as fh:
+            for line in fh:
+                if markers and not any(m in line for m in markers):
+                    continue
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                if stages and str(rec.get("stage") or "") not in stages:
+                    continue
+                if _iso_to_ts(str(rec.get("ts") or "")) < cutoff_ts:
+                    continue
+                yield rec
+    except OSError:
+        return
 
 
 def _signal_of(rec: dict) -> dict:
@@ -669,7 +700,7 @@ class Collector:
         cutoff_24h = _now() - 86400
         rows: list[dict] = []
         for path in sorted(runtime.glob("chain_events-*.jsonl"))[-2:]:
-            rows.extend(_tail_jsonl(path, limit=8000))
+            rows.extend(_iter_jsonl_since(path, cutoff_24h, ("N2", "N4", "N9")))
 
         mode = ""
         cal_wait = cal_trade = flip = 0
