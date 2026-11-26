@@ -68,3 +68,47 @@
 2. wait 公式修法二选一：①对 `R_reflexivity` 做历史分位归一化后再乘；②改为机会成本形式
    `wait = R_smooth × (1 - R_reflexivity)`。两者都需真实分布回归后定。
 
+## 5. 最终裁决（2026-11-26，用户批准后已上云）
+
+### 5.1 margin
+drop-in 0.10 已收编进仓库 unit（`EVOLUTION_DSTAR_WAIT_MARGIN=0.10`），消除漂移。
+
+### 5.2 R_reflexivity 历史分位归一化（方案①）
+实现：`core/reflexivity_normalizer.py`
+- 因果 ECDF（滚动 2000 样本，`runtime/reflexivity_history.json` 持久化，写盘节流）
+- 样本 <50 时线性回退（0.35→0，0.85→1），冷启动可用
+- calibrated wait = `(1-R_smooth) × pct × WAIT_SCALE`，`WAIT_SCALE` 默认 2.0
+- 开关 `EVOLUTION_DSTAR_REFL_NORM=1`（仓库默认关，保持旧行为；云端 drop-in 开启）
+- N4 事件新增 `R_reflexivity_pct` / `wait_scale` 可观测字段
+
+### 5.3 回测（云端真实 1H K 线，BTC/ETH/SOL × 1000 bars）
+`scripts/backtest_ri_gate.py --klines-norm`（因果滚动 ECDF，h=4h/24h）：
+
+| 口径 | h=4h 成交率 | h=4h 每样本 | h=4h MDD |
+| --- | --- | --- | --- |
+| legacy | 0.0% | 0 | 0 |
+| flip raw +10% | 0.0% | 0 | 0 |
+| norm ×1.0 ~ ×1.5 | 0.0% | 0 | 0 |
+| norm ×1.75 | 3.8% | -0.036% | 10.5% |
+| norm ×2.0 +10% | 14.2% | -0.125% | 33.4% |
+| norm ×2.0 +15% | 8.0% | -0.093% | 24.4% |
+
+说明与取舍：
+- 该回测的 `R_smooth = 1-r²` 在趋势段≈0.05，远低于生产实测 p50≈0.58，
+  因此“解锁阈值”被推到 ×1.75 以上；**不能直接用其收益结论定 scale**。
+- 按生产 `R_smooth` p50=0.58、`R_reflexivity` 分位中位 0.5 计算：
+  ×2.0 → wait≈0.42，与方向代价中位≈0.45 同尺度，符合“可比”目标，故取 **scale=2.0**。
+- 该窗口（288/228 样本、3 品种、仅趋势方向代理）呈负期望，尚不足以证明策略 edge；
+  本次定位是**结构性量纲校准**，用于让 N8 不再恒 WAIT 并开始积累真实分布。
+- 复评条件：`runtime/reflexivity_history.json` ≥500 条且 N8 实际成交 ≥30 笔后，
+  用真实 `R_reflexivity`/`R_smooth` 分布重跑网格，再决定 scale 与 margin。
+
+### 5.4 Quantum 放量门槛
+`RippleEngine` 对 `scale_class=Quantum` 取 `min(调用门槛, 1.5)`，
+环境变量 `EVOLUTION_RIPPLE_QUANTUM_VOL_RATIO`（默认 1.5）可覆盖；
+`EVOLUTION_RIPPLE_INCLUDE_QUANTUM=0` 可回退旧排除口径。
+
+### 5.5 云端生效状态
+drop-in：`10-dstar.conf`(calibrated/0.10)、`10-refl-v2.conf`、`20-datacenter-pg.conf`、
+`30-dstar-refnorm.conf`(REFL_NORM=1, WAIT_SCALE=2.0)；entry23 已重启并 active。
+
