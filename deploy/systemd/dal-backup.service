@@ -17,7 +17,9 @@ Environment="BACKUP_KEEP=7"
 # 否则会在磁盘吃紧时失败并留下 .tmp 残留（2026-11-25 事故）。
 ExecStartPre=-/home/luke/dreambuddy/deploy/ops/cleanup-cloud-backups.sh
 ExecStart=/home/luke/venv-trading/bin/python -m dreambuddy_dal.cron_runner backup --no-encrypt
-# 备份（VACUUM INTO）期间的读事务会阻塞 WAL checkpoint，结束后立刻回收
-ExecStartPost=-/home/luke/dreambuddy/deploy/ops/checkpoint-wal.sh
+# 备份（VACUUM INTO）期间的读事务会阻塞 WAL checkpoint，结束后立刻回收。
+# 不加 `-`：脚本对库缺失/WAL 忙已返回 0，真正的失败（无执行位/python 缺失）
+# 必须让 unit 变 failed，否则会重演 2026-11-25 WAL 涨到 12G 的静默故障。
+ExecStartPost=/home/luke/dreambuddy/deploy/ops/checkpoint-wal.sh
 StandardOutput=append:/home/luke/logs/datacenter/dal-backup.log
 StandardError=append:/home/luke/logs/datacenter/dal-backup.err.log

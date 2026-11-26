@@ -14,6 +14,7 @@ Environment="DAL_DB_PATH=/home/luke/dreambuddy/19-数据访问层/data/dreambudd
 ExecStart=/home/luke/venv-trading/bin/python -m dreambuddy_dal.cron_runner integrity
 # 全库 integrity_check 会长时间持读事务，期间 WAL 无法 checkpoint；
 # 结束后立刻回收，避免 -wal 累积（2026-11-25 曾涨到 12G）。
-ExecStartPost=-/home/luke/dreambuddy/deploy/ops/checkpoint-wal.sh
+# 不加 `-`：脚本对库缺失/WAL 忙已返回 0，真正的失败必须让 unit 变 failed。
+ExecStartPost=/home/luke/dreambuddy/deploy/ops/checkpoint-wal.sh
 StandardOutput=append:/home/luke/logs/datacenter/dal-integrity.log
 StandardError=append:/home/luke/logs/datacenter/dal-integrity.err.log
