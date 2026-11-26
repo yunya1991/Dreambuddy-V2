@@ -35,6 +35,12 @@ _LEDGER = _LEDGER_DIR / "x1_live_fills.jsonl"
 _STATE = _MODULE_DIR / "runtime" / "x1_live_processed.json"
 
 _SYMBOL_REGISTRY = _MODULE_DIR / "config" / "live_symbols.json"
+_RUNTIME = _MODULE_DIR / "runtime"
+_42_ROOT = _REPO_ROOT / "42-神经网络交易协调层"
+if str(_42_ROOT) not in sys.path:
+    sys.path.insert(0, str(_42_ROOT))
+
+from chain_events import emit_stage  # noqa: E402
 
 
 def _load_registry() -> dict[str, Any]:
@@ -83,6 +89,30 @@ def _notional_floor(inst_id: str) -> float:
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _emit(
+    stage: str,
+    decision: dict[str, Any],
+    status: str,
+    *,
+    reason_category: str | None = None,
+    data: dict[str, Any] | None = None,
+) -> None:
+    """22 执行链 stage event（15 TD §14 M13/M14，FAIL-OPEN）。"""
+    payload = decision.get("payload") if isinstance(decision.get("payload"), dict) else {}
+    emit_stage(
+        stage,
+        "x1_live_executor",
+        str(decision.get("symbol") or "?"),
+        status,
+        trace_id=str(payload.get("trace_id") or ""),
+        decision_id=str(decision.get("decision_id") or decision.get("signal_id") or ""),
+        mode="live",
+        reason_category=reason_category,
+        data=data,
+        runtime=_RUNTIME,
+    )
 
 
 def _kill_switch_on() -> bool:
@@ -266,11 +296,25 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
             continue
         if decision_id in processed:
             result["skipped"] += 1
+            _emit(
+                "M13",
+                decision,
+                "skip",
+                reason_category="wait_trigger_not_fired",
+                data={"reason": "duplicate_decision"},
+            )
             continue
         reason = _check(decision)
         if reason:
             processed[decision_id] = {"status": "skipped", "reason": reason, "ts": _now()}
             result["skipped"] += 1
+            _emit(
+                "M13",
+                decision,
+                "skip",
+                reason_category="wait_evidence_missing",
+                data={"reason": reason},
+            )
             continue
 
         # 冷静期：同标的距上次成功开仓不足 COOLDOWN_HOURS 则不再建仓
@@ -285,6 +329,13 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
             result["skipped"] += 1
             result.setdefault("cooldown_rejected", []).append(
                 {"decision_id": decision_id, "symbol": symbol, "remaining_sec": int(remain)}
+            )
+            _emit(
+                "M13",
+                decision,
+                "skip",
+                reason_category="wait_trigger_not_fired",
+                data={"reason": "cooldown", "remaining_sec": int(remain)},
             )
             continue
 
@@ -301,6 +352,13 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
             result.setdefault("risk_rejected", []).append(
                 {"decision_id": decision_id, "reason_code": code, "reason": risk.get("reason")}
             )
+            _emit(
+                "M13",
+                decision,
+                "skip",
+                reason_category="wait_constraint_freeze",
+                data={"reason": code},
+            )
             continue
 
         if not dry_run:
@@ -316,6 +374,13 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
                 result["skipped"] += 1
                 result.setdefault("position_guard_rejected", []).append(
                     {"decision_id": decision_id, "reason": guard}
+                )
+                _emit(
+                    "M13",
+                    decision,
+                    "skip",
+                    reason_category="wait_constraint_freeze",
+                    data={"reason": guard},
                 )
                 continue
 
@@ -369,6 +434,27 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
         }
         _append_ledger(record)
         _record_position_ledger(record)
+        _emit(
+            "M13",
+            decision,
+            "pass" if outcome.get("ok") else "failed",
+            data={
+                "order_placed": bool(outcome.get("ok") and not outcome.get("dry_run")),
+                "dry_run": bool(dry_run),
+                "reason": None if outcome.get("ok") else str(outcome.get("error_code") or ""),
+            },
+        )
+        if outcome.get("ok"):
+            _emit(
+                "M14",
+                decision,
+                "pass",
+                data={
+                    "order_id": outcome.get("order_id"),
+                    "fill_px": outcome.get("reference_px"),
+                    "order_placed": bool(not outcome.get("dry_run")),
+                },
+            )
         if not dry_run:
             processed[decision_id] = {
                 "status": "executed" if outcome.get("ok") else "failed",

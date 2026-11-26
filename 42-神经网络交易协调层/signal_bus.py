@@ -311,6 +311,28 @@ class SignalBus:
             with open(tmp, "w", encoding="utf-8") as f:
                 json.dump(state, f, ensure_ascii=False, indent=2)
             os.replace(tmp, self.state_path)
+            # M5 总线归一化事件（15 TD §14，FAIL-OPEN）
+            try:
+                import sys as _sys
+
+                _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                from chain_events import emit_stage
+
+                emit_stage(
+                    "M5",
+                    "signal_bus.flush",
+                    "MACRO",
+                    "pass",
+                    data={
+                        "bus_id": state.get("bus_id"),
+                        "bus_sources_ok": len(state.get("sources") or []),
+                        "signal_count": state.get("signal_count", 0),
+                        "rejected_count": state.get("rejected_count", 0),
+                    },
+                    runtime=os.path.dirname(self.state_path),
+                )
+            except Exception:  # noqa: BLE001  观测失败不影响总线
+                pass
         except Exception:  # noqa: BLE001
             pass
         if os.environ.get("SIGNAL_BUS_METRICS") == "1":

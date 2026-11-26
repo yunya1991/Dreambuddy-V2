@@ -1,6 +1,6 @@
 # 文档索引
 
-> **更新日期**：2026-11-17（v2.0：新增云端全链路监控目标架构与调研文档）
+> **更新日期**：2026-11-26（v2.1：新增主神经网络监控模块规格）
 > **模块定位**：监控告警系统 — 为 Dreambuddy 全链路提供监控、告警与仓位同步能力
 
 > **口径提醒**：云端监控以 [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) 第 10 章为准；第 1–9 章为本地 v1.0 适配器现状（仅覆盖 5 个老系统）。
@@ -14,6 +14,12 @@
 | [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) | 模块技术设计（v2.0：第 10 章为云端权威口径） |
 | [API_SPEC.md](./API_SPEC.md) | 模块接口规格 |
 | [CHANGELOG.md](./CHANGELOG.md) | 模块变更记录 |
+
+## 模块规格（Module SPEC）
+
+| 文档 | 说明 |
+|------|------|
+| [SPEC-MAIN-NN-MONITOR-v0.1.md](./SPEC-MAIN-NN-MONITOR-v0.1.md) | 主神经网络监控模块（`source=main-nn`）：M0–M14 节点表、`chain_event` 扩展、指标与告警复用映射、锚定索引、P0–P3 路线。**已并入 [TECHNICAL_DESIGN.md §14](./TECHNICAL_DESIGN.md)，仅存档**；节点定义以 TD §14 为准 |
 
 ## 调研与决策
 

@@ -31,6 +31,12 @@ _50_ROOT = _REPO_ROOT / "50-NN主矛盾评估器"
 _42_ROOT = _REPO_ROOT / "42-神经网络交易协调层"
 if str(_50_ROOT) not in sys.path:
     sys.path.insert(0, str(_50_ROOT))
+if str(_42_ROOT) not in sys.path:
+    sys.path.insert(0, str(_42_ROOT))
+
+from chain_events import emit_stage, new_trace_id  # noqa: E402
+
+_RUNTIME = _50_ROOT / "runtime"
 
 from adapters.audit_logger import log_decision  # noqa: E402
 from adapters.bus_reader import load_evidences  # noqa: E402
@@ -82,17 +88,53 @@ def run(bus_state: Path, out_dir: Path) -> dict[str, Any]:
     if is_kill_switch_on():
         result["status"] = "skipped"
         result["reason"] = "50_KILL_SWITCH=1（kill switch 开启，跳过 shadow 决策）"
+        emit_stage(
+            "M6",
+            "bus_reader.load_evidences",
+            "MULTI",
+            "skip",
+            reason_category="wait_constraint_freeze",
+            mode="shadow",
+            runtime=_RUNTIME,
+            ts=now,
+        )
         return result
 
     evidences = load_evidences(str(bus_state))
     result["evidence_count"] = len(evidences)
+    trace = new_trace_id("MULTI", now)
     if not evidences:
         result["status"] = "skipped"
         result["reason"] = "no_evidences（42 总线无信号，fail-open 跳过）"
+        emit_stage(
+            "M6",
+            "bus_reader.load_evidences",
+            "MULTI",
+            "skip",
+            reason_category="wait_evidence_missing",
+            trace_id=trace,
+            mode="shadow",
+            data={"evidence_count": 0},
+            runtime=_RUNTIME,
+            ts=now,
+        )
         return result
+    emit_stage(
+        "M6",
+        "bus_reader.load_evidences",
+        "MULTI",
+        "pass",
+        trace_id=trace,
+        mode="shadow",
+        data={"evidence_count": len(evidences)},
+        runtime=_RUNTIME,
+        ts=now,
+    )
 
     constraints = load_constraints()
     decision = make_shadow_decision(evidences, constraints, now=now)
+    if isinstance(decision.get("payload"), dict):
+        decision["payload"]["trace_id"] = trace
 
     # M4-7：与主决策入口一致，提取 trigger 并做防振荡裁决（写 runtime/trigger_flap.jsonl）
     proposed_trigger = _extract_trigger(evidences)
@@ -117,6 +159,22 @@ def run(bus_state: Path, out_dir: Path) -> dict[str, Any]:
     # 40 域 decision_id 回写：组合级决策 symbol=MULTI 无法按标的索引，
     # 这里额外产出 per-symbol 决策（同批 path 分组聚合，不新增推断）。
     result["symbol_decisions"] = build_symbol_decisions(evidences, constraints, now=now)
+    emit_stage(
+        "M11",
+        "shadow_decision.make_shadow_decision",
+        str(decision.get("symbol") or "MULTI"),
+        "pass",
+        trace_id=trace,
+        decision_id=str(decision.get("decision_id") or ""),
+        mode="shadow",
+        data={
+            "direction": decision.get("direction"),
+            "confidence": decision.get("confidence"),
+            "symbol_decisions": len(result["symbol_decisions"]),
+        },
+        runtime=_RUNTIME,
+        ts=now,
+    )
     return result
 
 

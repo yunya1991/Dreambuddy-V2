@@ -521,3 +521,38 @@ groups:
           channel: alert
         annotations:
           summary: "根分区预计 24h 内写满"
+
+  # 主神经网络链（15 TD §14，source=main-nn）
+  - name: main_nn
+    rules:
+      # 三条件由导出器 main_nn_strategic_fallback_dominant 一次判定：
+      # bridge 开关打开 + 40 产物新鲜 + shadow 未解除；单独 total==51 不告警。
+      - alert: MainNNStrategicFallbackDominant
+        expr: max(dreambuddy_main_nn_strategic_fallback_dominant) == 1
+        for: 30m
+        labels:
+          severity: P1
+          channel: alert
+        annotations:
+          summary: "43 五维总分恒 51 且 bridge 开、40 产物新鲜、shadow 未解除（承接失效退化）"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#14-主神经网络监控模块main-nnv2282026-11-26"
+
+      - alert: MainNNConstraintDegraded
+        expr: dreambuddy_main_nn_constraint_degraded_1h > 0
+        for: 5m
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "40/43 约束字段缺失或方向泄漏，50 按保守默认钳位"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#14-主神经网络监控模块main-nnv2282026-11-26"
+
+      - alert: MainNNExecutionRightsMismatch
+        expr: dreambuddy_main_nn_execution_rights_ok == 0
+        for: 1m
+        labels:
+          severity: P0
+          channel: alert
+        annotations:
+          summary: "存在 mode=live 但 execution_rights/mandate_id 不符，单出口契约被破坏"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#14-主神经网络监控模块main-nnv2282026-11-26"

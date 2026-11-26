@@ -886,6 +886,236 @@ class Collector:
             out.append(_metric("r_refl_liq_term", round(v, 4), symbol=sym))
         return out
 
+    # ---------- 主神经网络链（TD §14，M0–M14） ----------
+    def main_nn_metrics(self) -> list[str]:
+        """48→40→43→42→50→22 主神经网络链的语义快照与链路指标（只读旁路）。"""
+        cfg = self.signals.get("main_nn", {}) or {}
+        ex = (self.config.get("execution", {}) or {}).get("main_nn", {}) or {}
+        src = str(cfg.get("source", "main-nn"))
+        out: list[str] = [_metric("main_nn_export_timestamp_seconds", _now())]
+
+        # M1/M2 周期判定（40）
+        cs = _read_json(self.repo / "40-周期神经网络系统/cycle_state.json")
+        out.append(_metric("main_nn_cycle_present", 1 if cs else 0))
+        stale = 1
+        if cs:
+            rc = cs.get("real_cycle") if isinstance(cs.get("real_cycle"), dict) else {}
+            level = str(rc.get("confidence") or "unknown")
+            out.append(
+                _metric(
+                    "main_nn_cycle_confidence",
+                    {"high": 2.0, "medium": 1.0, "low": 0.0}.get(level, -1.0),
+                    level=level,
+                )
+            )
+            out.append(_metric("main_nn_cycle_state", 1, state=str(rc.get("state") or "unknown")))
+            stale_after = float(cfg.get("cycle_stale_seconds", 93600))
+            stamp = _iso_to_ts(str(cs.get("generated_at") or "")) if cs.get("generated_at") else 0.0
+            age = max(0.0, _now() - stamp) if stamp else stale_after + 1
+            stale = 1 if age > stale_after else 0
+        out.append(_metric("main_nn_cycle_stale", stale))
+
+        # M3/M4 战略承接与发布（43）
+        sig = _read_json(self.repo / "43-战略承接推演层/runtime/strategic_extension_signal.json")
+        out.append(_metric("main_nn_strategic_present", 1 if sig else 0))
+        if sig:
+            payload = sig.get("payload") if isinstance(sig.get("payload"), dict) else {}
+            shadow = 1 if sig.get("shadow") else 0
+            bridge = 1 if payload.get("bridge_switch") else 0
+            out.append(_metric("main_nn_strategic_shadow", shadow))
+            out.append(_metric("main_nn_strategic_bridge", bridge))
+            per = (
+                payload.get("per_asset_class")
+                if isinstance(payload.get("per_asset_class"), dict)
+                else {}
+            )
+            totals = []
+            for cls, item in sorted(per.items()):
+                if not isinstance(item, dict):
+                    continue
+                total = int(item.get("total") or 0)
+                totals.append(total)
+                out.append(_metric("main_nn_strategic_total", total, asset_class=str(cls)))
+                out.append(
+                    _metric(
+                        "main_nn_strategic_war_state",
+                        1,
+                        asset_class=str(cls),
+                        state=str(item.get("war_state") or "unknown"),
+                    )
+                )
+            # 三条件同时满足（bridge 开 + 40 产物新鲜 + shadow 未解除）才具备告警资格；
+            # 单独 strategic_total==51 不是异常，规则侧只看本指标。
+            flat = bool(totals) and all(t == 51 for t in totals)
+            out.append(
+                _metric(
+                    "main_nn_strategic_fallback_dominant",
+                    1 if (flat and bridge and not stale and shadow == 1) else 0,
+                )
+            )
+
+        # M5 总线归一化（42）
+        bus = _read_json(self.repo / "42-神经网络交易协调层/runtime/bus_state.json")
+        out.append(_metric("main_nn_bus_present", 1 if bus else 0))
+        if bus:
+            sources = bus.get("sources") if isinstance(bus.get("sources"), list) else []
+            sig_n = int(bus.get("signal_count") or 0)
+            rej_n = int(bus.get("rejected_count") or 0)
+            denom = sig_n + rej_n
+            out.append(_metric("main_nn_bus_sources_ok", len(sources)))
+            out.append(_metric("main_nn_bus_signal_count", sig_n))
+            out.append(
+                _metric("main_nn_bus_reject_ratio", round(rej_n / denom, 4) if denom else 0.0)
+            )
+
+        # M11 决策（50 decisions.jsonl）
+        dec_path = self.repo / str(ex.get("decisions", "50-NN主矛盾评估器/runtime/decisions.jsonl"))
+        window = float(cfg.get("state_window_seconds", 86400))
+        cutoff = _now() - window
+        latest: dict[str, dict] = {}
+        modes: dict[str, int] = {}
+        if dec_path.exists():
+            for rec in _tail_jsonl(dec_path, limit=2000):
+                ts = _iso_to_ts(str(rec.get("ts") or ""))
+                if ts and ts < cutoff:
+                    continue
+                latest[str(rec.get("symbol") or rec.get("inst_id") or "?")] = rec
+                payload = rec.get("payload") if isinstance(rec.get("payload"), dict) else {}
+                mode = str(rec.get("mode") or payload.get("mode") or "unknown")
+                modes[mode] = modes.get(mode, 0) + 1
+            out.append(
+                _metric(
+                    "main_nn_decisions_age_seconds",
+                    round(max(0.0, _now() - dec_path.stat().st_mtime), 1),
+                )
+            )
+        out.append(_metric("main_nn_decision_samples", len(latest)))
+        for sym, rec in sorted(latest.items()):
+            try:
+                conf = float(rec.get("confidence"))
+            except (TypeError, ValueError):
+                continue
+            out.append(_metric("main_nn_decision_confidence", round(conf, 4), symbol=sym))
+        for mode, n in sorted(modes.items()):
+            out.append(_metric("main_nn_decision_mode_total", n, mode=mode))
+
+        # M12 live 出箱（50 outbox.jsonl）
+        ob_path = self.repo / str(ex.get("outbox", "50-NN主矛盾评估器/runtime/live/outbox.jsonl"))
+        ob_rows: list[dict] = []
+        if ob_path.exists():
+            ob_age = max(0.0, _now() - ob_path.stat().st_mtime)
+            out.append(_metric("main_nn_outbox_age_seconds", round(ob_age, 1)))
+            out.append(
+                _metric(
+                    "main_nn_outbox_stale",
+                    1 if ob_age > float(cfg.get("outbox_stale_seconds", 900)) else 0,
+                )
+            )
+            ob_rows = _tail_jsonl(ob_path, limit=200)
+        # 单出口契约：live 决策必须是 execution=live:50-bypass 且带 mandate_id
+        if ob_rows:
+            bad = 0
+            for d in ob_rows:
+                mode = str(d.get("mode") or "")
+                execution = d.get("execution") if isinstance(d.get("execution"), dict) else {}
+                outcome = str(execution.get("outcome") or "")
+                if mode == "live" and (outcome != "live:50-bypass" or not d.get("mandate_id")):
+                    bad += 1
+            out.append(_metric("main_nn_execution_rights_ok", 0 if bad else 1))
+
+        # M6/M11 约束降级（42 统一降级审计流，layer=50/source=constraint_loader）
+        dg_path = self.repo / "42-神经网络交易协调层/runtime/degraded_events.jsonl"
+        if dg_path.exists():
+            degraded_n = sum(
+                1
+                for rec in _iter_jsonl_since(dg_path, _now() - 3600)
+                if str(rec.get("layer")) == "50" and str(rec.get("source")) == "constraint_loader"
+            )
+            out.append(_metric("main_nn_constraint_degraded_1h", degraded_n))
+
+        # M13 执行复核（22 x1_live_processed.json 幂等状态）
+        st = _read_json(
+            self.repo / str(ex.get("x1_state", "22-执行引擎中心/runtime/x1_live_processed.json"))
+        )
+        processed = st.get("processed") if isinstance(st.get("processed"), dict) else {}
+        reasons: dict[str, int] = {}
+        for item in processed.values():
+            if not isinstance(item, dict):
+                continue
+            status = str(item.get("status") or "unknown")
+            reason = str(item.get("reason") or "")
+            key = status if not reason else f"{status}:{reason}"
+            reasons[key] = reasons.get(key, 0) + 1
+        for key, n in sorted(reasons.items()):
+            out.append(_metric("main_nn_x1_skip_total", n, reason=key))
+
+        # M0–M14 链路事件（仅 source=main-nn）
+        cutoff_24h = _now() - 86400
+        stage_counts: dict[tuple[str, str], int] = {}
+        chains: dict[str, set[str]] = {}
+        wait_total = wait_broken = 0
+        for rel in (
+            "50-NN主矛盾评估器/runtime",
+            "22-执行引擎中心/runtime",
+            "43-战略承接推演层/runtime",
+            "42-神经网络交易协调层/runtime",
+            "40-周期神经网络系统/runtime",
+        ):
+            folder = self.repo / rel
+            if not folder.exists():
+                continue
+            for path in sorted(folder.glob("chain_events-*.jsonl"))[-2:]:
+                for rec in _iter_jsonl_since(path, cutoff_24h):
+                    if str(rec.get("source") or "") != src:
+                        continue
+                    stage = str(rec.get("stage") or "?")
+                    status = str(rec.get("status") or "?")
+                    stage_counts[(stage, status)] = stage_counts.get((stage, status), 0) + 1
+                    cid = str(
+                        rec.get("chain_id") or rec.get("trace_id") or rec.get("decision_id") or ""
+                    )
+                    if cid:
+                        chains.setdefault(cid, set()).add(stage)
+                    if status == "skip":
+                        wait_total += 1
+                        data = rec.get("data") if isinstance(rec.get("data"), dict) else {}
+                        reason = str(
+                            rec.get("reason_category") or data.get("reason_category") or ""
+                        )
+                        if not reason.strip():
+                            wait_broken += 1
+        # 独立命名：23 的 chain_* series 无 source 标签，复用同名会导致既有规则串台
+        for (stage, status), n in sorted(stage_counts.items()):
+            out.append(
+                _metric("main_nn_chain_stage_total", n, source=src, stage=stage, status=status)
+            )
+        signal_chains = [stages for stages in chains.values() if "M6" in stages]
+        if signal_chains:
+            complete = sum(1 for stages in signal_chains if {"M12", "M13"} <= stages)
+            out.append(
+                _metric(
+                    "main_nn_chain_completion_ratio",
+                    round(complete / len(signal_chains), 4),
+                    source=src,
+                    segment="M6-M13",
+                )
+            )
+            for required in ("M7", "M11", "M13"):
+                missing = sum(1 for stages in signal_chains if required not in stages)
+                out.append(
+                    _metric(
+                        "main_nn_chain_missing_stage_total", missing, source=src, stage=required
+                    )
+                )
+        if wait_total:
+            out.append(
+                _metric(
+                    "main_nn_wait_vs_broken_ratio", round(wait_broken / wait_total, 4), source=src
+                )
+            )
+            out.append(_metric("main_nn_chain_broken_total", wait_broken, source=src))
+        return out
+
     def collect(self) -> str:
         lines = [
             "# HELP dreambuddy_monitor_heartbeat_timestamp_seconds exporter heartbeat",
@@ -901,6 +1131,7 @@ class Collector:
             self.execution_metrics(),
             self.chain_metrics(),
             self.signal_calibration_metrics(),
+            self.main_nn_metrics(),
             self.artifact_metrics(),
             self.cell_metrics(),
         ):

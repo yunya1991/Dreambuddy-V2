@@ -49,9 +49,11 @@ from adapters.factor_priors_provider import (  # noqa: E402
     is_overlay_enabled,
     resolve_coef,
 )
+from chain_events import emit_stage, new_trace_id  # noqa: E402
 from core.decision import make_decision  # noqa: E402
 from core.resonance_propagator import propagate as propagate_resonance  # noqa: E402
 
+_RUNTIME = _50_ROOT / "runtime"
 DEFAULT_BUS_STATE = _42_ROOT / "runtime" / "bus_state.json"
 DEFAULT_OUT_DIR = _50_ROOT / "runtime" / "live"
 DEFAULT_MANDATE = os.environ.get("50_LIVE_MANDATE", "mandate-20261114-50-live-multi")
@@ -219,6 +221,16 @@ def run(
     if is_kill_switch_on():
         result["status"] = "skipped"
         result["reason"] = "50_KILL_SWITCH=1（kill switch 开启）"
+        emit_stage(
+            "M6",
+            "bus_reader.load_evidences",
+            "MACRO",
+            "skip",
+            reason_category="wait_constraint_freeze",
+            mode="live",
+            runtime=_RUNTIME,
+            ts=now,
+        )
         return result
 
     evidences = load_evidences(str(bus_state))
@@ -228,7 +240,28 @@ def run(
     if not fresh:
         result["status"] = "skipped"
         result["reason"] = "no_fresh_evidences（42 总线无可用的未过期信号）"
+        emit_stage(
+            "M6",
+            "bus_reader.load_evidences",
+            "MACRO",
+            "skip",
+            reason_category="wait_evidence_missing",
+            mode="live",
+            data={"evidence_count": len(evidences), "fresh_evidence_count": 0},
+            runtime=_RUNTIME,
+            ts=now,
+        )
         return result
+    emit_stage(
+        "M6",
+        "bus_reader.load_evidences",
+        "MACRO",
+        "pass",
+        mode="live",
+        data={"evidence_count": len(evidences), "fresh_evidence_count": len(fresh)},
+        runtime=_RUNTIME,
+        ts=now,
+    )
 
     # 显式 --symbols 时按指定清单；否则按总线高置信度动态选取
     allow = {s.strip().upper() for s in symbols if s.strip()} or _dynamic_allowlist(fresh)
@@ -268,6 +301,7 @@ def run(
         )
         # 龙头共振传导：只调 confidence，不改 direction；矩阵不可用时原样返回
         propagate_resonance(decision, fresh, _asset_class_of(inst_id))
+        trace = new_trace_id(inst_id, now)
         outcome = (decision.get("execution") or {}).get("outcome")
         if outcome != "live:50-bypass" or decision.get("direction") not in ("long", "short"):
             result["skipped"].append(
@@ -276,9 +310,40 @@ def run(
                     "reason": f"not_executable:{outcome}:{decision.get('direction')}",
                 }
             )
+            emit_stage(
+                "M11",
+                "decision.make_decision",
+                inst_id,
+                "skip",
+                trace_id=trace,
+                mode="live",
+                reason_category="wait_constraint_freeze",
+                data={"outcome": outcome, "direction": decision.get("direction")},
+                runtime=_RUNTIME,
+                ts=now,
+            )
             continue
         decision["decision_id"] = stable_decision_id(inst_id, group)
         decision["mandate_id"] = mandate
+        if isinstance(decision.get("payload"), dict):
+            decision["payload"]["trace_id"] = trace
+        emit_stage(
+            "M11",
+            "decision.make_decision",
+            inst_id,
+            "pass",
+            trace_id=trace,
+            decision_id=decision["decision_id"],
+            mode="live",
+            data={
+                "direction": decision.get("direction"),
+                "confidence": decision.get("confidence"),
+                "execution_rights": outcome,
+                "mandate_id": mandate,
+            },
+            runtime=_RUNTIME,
+            ts=now,
+        )
         # M4-4：50 侧声明单笔名义上限，22 执行层取 min(13 定容, 本值)
         decision["notional_usdt"] = result["notional_usdt"]
         if isinstance(decision.get("payload"), dict):
@@ -301,6 +366,20 @@ def run(
     for decision in result["decisions"]:
         lines.append(json.dumps(decision, ensure_ascii=False))
     _atomic_write_text(outbox, "\n".join(lines[-500:]) + "\n")
+    for decision in result["decisions"]:
+        payload = decision.get("payload") if isinstance(decision.get("payload"), dict) else {}
+        emit_stage(
+            "M12",
+            "run_live.outbox",
+            str(decision.get("symbol") or "?"),
+            "pass",
+            trace_id=str(payload.get("trace_id") or ""),
+            decision_id=str(decision.get("decision_id") or ""),
+            mode="live",
+            data={"outbox": str(outbox.name)},
+            runtime=_RUNTIME,
+            ts=now,
+        )
     return result
 
 

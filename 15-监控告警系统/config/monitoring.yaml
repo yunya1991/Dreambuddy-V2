@@ -88,6 +88,22 @@ artifacts:
     timestamp_field: null
     ttl_seconds: 172800      # 48h
     severity: P2
+  # ---- 主神经网络链（TD §14，source=main-nn）----
+  - name: decisions_50
+    path: 50-NN主矛盾评估器/runtime/decisions.jsonl
+    timestamp_field: null
+    ttl_seconds: 86400       # 50 为批处理，24h 无决策即 P2
+    severity: P2
+  - name: outbox_50
+    path: 50-NN主矛盾评估器/runtime/live/outbox.jsonl
+    timestamp_field: null
+    ttl_seconds: 900         # 与 link 周期一致（15min）
+    severity: P1
+  - name: nn_feedback_consumption_40
+    path: 40-周期神经网络系统/nn_feedback_consumption.json
+    timestamp_field: null
+    ttl_seconds: 93600       # 26h
+    severity: P2
 
 # 任务调度新鲜度：由 push_job.sh 推送 dreambuddy_job_last_success_timestamp_seconds
 jobs:
@@ -186,6 +202,16 @@ signals:
   # 语义状态（primary_contradiction / cross_validation）时效窗口：
   # 超过窗口的旧决策不再参与"当前态"指标，避免 cv_degraded_mode 等告警永不恢复。
   state_window_seconds: 43200
+  # 主神经网络链（TD §14，M0–M14）。strategic_total 告警三条件之一：
+  # bridge 开关 + 40 产物新鲜 + shadow 未解除，缺一不告警。
+  main_nn:
+    source: main-nn
+    evidence_min_sources: 6
+    decision_silence_minutes: 1440
+    strategic_total_flat_minutes: 120
+    cycle_stale_seconds: 93600
+    state_window_seconds: 86400
+    outbox_stale_seconds: 900
 
 # 11 交易循环退役后的执行链监控（2026-11-18，见 TD §13.8）
 execution:
@@ -195,6 +221,13 @@ execution:
   sltp_audit: 22-执行引擎中心/audit/sltp_reconcile.jsonl
   reconcile_drift_alert_per_hour: 3
   sltp_stale_seconds: 600
+  # 主神经网络链（TD §14，M12–M14）：live 出箱与 22 执行/归因
+  main_nn:
+    decisions: 50-NN主矛盾评估器/runtime/decisions.jsonl
+    outbox: 50-NN主矛盾评估器/runtime/live/outbox.jsonl
+    x1_state: 22-执行引擎中心/runtime/x1_live_processed.json
+    live_stale_minutes: 15
+    sltp_coverage_min: 1.0
 
 # 11 已下线，universe_snapshot 无写入方（23 未接管）；
 # 保持关闭以避免 EvolutionScanStalled/Failed/PoolShrunk 永久误报。23 接管后改 true。

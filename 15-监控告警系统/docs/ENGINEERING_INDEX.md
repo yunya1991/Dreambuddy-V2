@@ -1,6 +1,6 @@
 # 工程索引 — 15-监控告警系统
 
-> **版本**: v1.1 | **更新日期**: 2026-11-18
+> **版本**: v1.2 | **更新日期**: 2026-11-26
 > **定位**: 模块级工程索引（L3 辅助模块），对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.1 / §4
 
 ---
@@ -43,7 +43,7 @@
 ├── adapters/                    # 适配器层（本地 v1：11/12/14/AgentA/AgentB）
 │   └── __init__.py              # 5 个系统监控适配器实现
 ├── exporter/                    # 云端 v2 业务指标导出器（:9101，只读）
-│   └── business_metrics_exporter.py # 23 信号/链路、22 账本/SLTP、entry23/exit23 存活
+│   └── business_metrics_exporter.py # 23 信号/链路、22 账本/SLTP、entry23/exit23 存活、主神经网络 main_nn_metrics()
 ├── deploy/                      # 云端 v2 部署产物
 │   ├── prometheus/              # 采集与告警规则（含 execution group）
 │   ├── alertmanager/            # 告警路由
@@ -53,8 +53,8 @@
 │   └── watchdog.py              # entry23/exit23 存活、日志/账本新鲜度、磁盘
 ├── config/                      # 配置文件
 │   ├── monitor_config.json      # 本地 v1 主配置（yijing 已 disabled）
-│   ├── monitoring.yaml          # 云端 v2 阈值（signals/execution/universe）
-│   └── domains.yaml             # 3+3 监控格注册表
+│   ├── monitoring.yaml          # 云端 v2 阈值（signals/execution/universe/main_nn）
+│   └── domains.yaml             # 3+3 监控格注册表（L1.trade 含 main-nn 探针）
 ├── memory/                      # 事件记忆模块（AM-OPS-001）
 │   ├── app_memory_interface.py  # 运维应用记忆接口
 │   ├── memory_index.json        # 记忆索引
@@ -313,7 +313,7 @@ python -m pytest tests/ -v
 | 目标 | 路径 |
 |------|------|
 | 用户文档 | [../README.md](../README.md) |
-| 技术设计 | [./TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md)（v2.8；云端口径见第 10 章，23 分类/链路监控见第 13 章） |
+| 技术设计 | [./TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md)（v2.28；云端口径见第 10 章，23 分类/链路监控见第 13 章，主神经网络监控见第 14 章） |
 | 全链路调研与 D1–D6 决策 | [./RESEARCH-全链路监控体系调研-v0.2.md](./RESEARCH-全链路监控体系调研-v0.2.md) |
 | 项目文档索引 | [../../../0-系统文档管理/INDEX.md](../../0-系统文档管理/INDEX.md) |
 | 文档规范 | [../../../0-系统文档管理/1-规范体系/DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) |
@@ -357,5 +357,5 @@ python -m pytest tests/ -v
 
 ---
 
-**文档版本**: v1.0
-**最后更新**: 2026-08-02
+**文档版本**: v1.2
+**最后更新**: 2026-11-26

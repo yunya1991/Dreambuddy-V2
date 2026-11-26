@@ -1,6 +1,6 @@
 # 变更记录 — 15-监控告警系统
 
-> **版本**: v2.27 | **更新日期**: 2026-11-26
+> **版本**: v2.28 | **更新日期**: 2026-11-26
 
 ---
 
@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 变更内容 | 影响范围 |
 |------|------|----------|----------|
+| v2.28 | 2026-11-26 | 新增 TD §14「主神经网络监控模块（main-nn）」并归档原 SPEC-MAIN-NN-MONITOR v0.1：M0–M14 节点表（48 保持 B 类、作为 M0 上游门禁）、`chain_event.v1` 扩展（`source/mode/reason_category`）、指标族、告警复用映射 + 3 条新增规则（`MainNNStrategicFallbackDominant` 三条件由 `main_nn_strategic_fallback_dominant` 一次判定、`MainNNConstraintDegraded`、`MainNNExecutionRightsMismatch`）；导出器新增 `main_nn_metrics()`；`monitoring.yaml` 新增 3 个 artifacts + `signals.main_nn`/`execution.main_nn`；`domains.yaml` L1.trade 登记 main-nn + 4 探针 | 文档+代码+配置+规则 |
 | v2.27 | 2026-11-26 | `SltpReconcileFailed` P1 误报治理：11-26 19:24–19:30 CST 每轮 `failed=1` 实为 AMZN 的 `50011 Too Many Requests` 查询失败（保护状态未知 ≠ 缺保护）。22 `reconcile_sltp` 拆分 `failed`（下单/去重失败）与 `query_failed`（algo 查询失败，落 `kind=algo_query_fail` 明细）；导出器新增 `sltp_reconcile_query_failed_1h` 并新增 P2 `SltpAlgoQueryFailed`（>0 for 30m）；P1 只看真实补挂失败。TD §13.8.3/§13.8.5/§13.9.2 同步，新增 2 项单测 | 代码+规则+测试+文档 |
 | v2.26 | 2026-11-25 | `ArtifactStale` 二次口径纠偏（11-25 实测 19h 无 submit 误报：OP 已持仓被 `duplicate_position` 拦下，其余 525 条决策全 WAIT）：① 新增 `decision_flow_23` 产物探针，直接取 `chain_events-*.jsonl` 中 `pipeline.decision` 最新 ts（WAIT 也算决策），1800s/P1 真正判"决策沉默"；② `execution_decisions_23` TTL 43200→172800（仅粗粒度兜底零下单）；③ 导出器 artifact 指标补 `severity` 标签，修复规则 `{{ $labels.severity }}` 恒空、卡片"级别 -"、P2 误路由到 P1 通道；新增 3 项单测，TD §10.5 同步 | 代码+配置+测试+文档 |
 | v2.25 | 2026-11-25 | `CrossValidationDegraded` 误报治理：① 23 `CrossValidationGate` 在 SPRT `accept_h1` 时改标 `degraded_mode=no_reliable_link`（A 链路仍可用、仅判不可信），`both_none` 仅保留给两路均无输出；② 导出器 `semantic_metrics` 增加决策时效窗口（`signals.state_window_seconds`，默认 43200s），超窗旧决策不再产生 `cv_degraded_mode`/`cv_present_ratio`，避免告警永不恢复；③ 同步 TD §10.5/§13.9.5 与告警 summary，新增 2 项单测 | 代码+配置+规则+测试+文档 |

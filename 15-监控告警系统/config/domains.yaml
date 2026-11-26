@@ -3,7 +3,7 @@
 # 作用：每个监控格(cell)的唯一登记处；新增覆盖只改本文件 + 对应探针，不改告警代码。
 # 状态机：draft → active → paused → retired；成熟度：M0 未接入 / M1 存活 / M2 新鲜度 / M3 契约 / M4 业务SLO / M5 模型与进化
 version: 1
-updated_at: "2026-11-17"
+updated_at: "2026-11-26"
 
 conventions:
   cell_id: "<layer>.<chain>"          # 例：L1.trade
@@ -40,7 +40,7 @@ cells:
     owner: trading-core
     criticality: P0
     maturity: M2
-    modules: [23, 13, 16, 22, 51, 11, 12, 14, 17, 29, 40, 43, 42, 50]
+    modules: [23, 13, 16, 22, 51, 11, 12, 14, 17, 29, 40, 43, 42, 50, main-nn]
     probes:
       - signal_schema          # v1.1 必填字段/来源/模式
       - signal_emission        # 信号产出与静默
@@ -50,6 +50,11 @@ cells:
       - artifact_freshness
       - order_health
       - reconcile
+      # 主神经网络链（TD §14，M0–M14；source=main-nn）
+      - main_nn_stage          # M0–M14 四态
+      - main_nn_completion     # 链路完整率
+      - main_nn_semantics      # 周期/战略/主矛盾快照
+      - main_nn_execution      # outbox/执行/join/SLTP
     slo:
       signal_schema_valid: 99%
       signal_to_gateway_p95_ms: 2000
