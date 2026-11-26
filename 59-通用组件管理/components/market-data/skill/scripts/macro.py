@@ -4,6 +4,7 @@
 用法:
     python3 macro.py --series DGS10,CPIAUCSL,UNRATE
     python3 macro.py --series DGS10 --window 250 --json
+    python3 macro.py --series DGS10,CPIAUCSL,UNRATE --history 60 --json
     python3 macro.py --version
 
 数据源:
@@ -65,9 +66,9 @@ def err_code(exc):
     return "E_SCHEMA"
 
 
-def fetch(series, timeout=25):
+def fetch(series, timeout=25, attempts=3):
     req = urllib.request.Request(FRED.format(series), headers=UA)
-    for attempt in range(3):  # 最多重试 2 次，指数退避应对 TLS 抖动
+    for attempt in range(max(1, attempts)):  # 最多重试 attempts-1 次，指数退避应对 TLS 抖动
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 text = resp.read().decode("utf-8", errors="replace")
@@ -75,7 +76,7 @@ def fetch(series, timeout=25):
         except urllib.error.HTTPError:
             raise
         except Exception:
-            if attempt == 2:
+            if attempt == attempts - 1:
                 raise
             time.sleep(0.8 * (attempt + 1))
     rows = list(csv.reader(io.StringIO(text)))
@@ -122,7 +123,20 @@ def vol(values, window=20):
     return math.sqrt(var) * math.sqrt(252)
 
 
-def build_row(series, obs, window):
+def build_history(obs, points):
+    """最近 points 个观测的历史序列；不足 2 个点时返回 None。"""
+    points = int(points or 0)
+    if points <= 0 or len(obs) < 2:
+        return None
+    sample = obs[-min(points, 400) :]
+    return {
+        "dates": [d for d, _ in sample],
+        "values": [v for _, v in sample],
+        "points": len(sample),
+    }
+
+
+def build_row(series, obs, window, history=0):
     dates = [d for d, _ in obs]
     vals = [v for _, v in obs]
     n = len(vals)
@@ -143,6 +157,7 @@ def build_row(series, obs, window):
         "pctile": p,
         "pctile_n": min(n, window),
         "vol": vol(vals),
+        "history": build_history(obs, history),
     }
 
 
@@ -194,10 +209,40 @@ def render(rows, missing, window, data_date, channel="local"):
     return "\n".join(lines)
 
 
+def _fill_history(rows, points):
+    """云端行缺历史时用本地 FRED 补齐；失败静默降级，不影响原有统计字段。"""
+    filled = 0
+    for row in rows or []:
+        if not isinstance(row, dict) or row.get("history"):
+            if isinstance(row, dict) and row.get("history"):
+                filled += 1
+            continue
+        series = str(row.get("series") or "").strip()
+        if not series:
+            continue
+        try:
+            payload = build_history(fetch(series, timeout=10, attempts=1), points)
+        except Exception:  # noqa: BLE001 - 历史只是增强，失败保留分位降级
+            continue
+        if payload:
+            row["history"] = payload
+            filled += 1
+    return filled
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(description="海外宏观事实（D1）")
     p.add_argument("--series", default="DGS10,CPIAUCSL,UNRATE")
     p.add_argument("--window", type=int, default=250)
+    p.add_argument(
+        "--history",
+        type=int,
+        nargs="?",
+        const=60,
+        default=0,
+        metavar="N",
+        help="附带最近 N 个观测的历史序列（不带值默认 60，最多 400）",
+    )
     p.add_argument("--json", action="store_true")
     p.add_argument(
         "--endpoint",
@@ -213,13 +258,22 @@ def main(argv=None):
         return 2
 
     rows, missing, data_date, used = [], [], None, "local"
+    history_route = "none"
     if a.endpoint != "local":
-        payload = cloud.call("macro", {"series": a.series, "window": a.window})
+        params = {"series": a.series, "window": a.window}
+        if a.history:
+            params["history"] = a.history
+        payload = cloud.call("macro", params)
         if payload:
             rows = payload.get("rows", [])
             missing = payload.get("missing", [])
             data_date = payload.get("data_date")
             used = "cloud"
+            if a.history:
+                filled = _fill_history(rows, a.history)
+                history_route = (
+                    "cloud" if filled == len(rows) and rows else ("local" if filled else "none")
+                )
         elif a.endpoint == "cloud":
             print("数据不可用：云端通道不可用（{}）".format(cloud.describe()))
             return 1
@@ -227,10 +281,11 @@ def main(argv=None):
     if used == "local":
         for s in [x.strip() for x in a.series.split(",") if x.strip()]:
             try:
-                rows.append(build_row(s, fetch(s), a.window))
+                rows.append(build_row(s, fetch(s), a.window, a.history))
             except Exception as exc:
                 missing.append({"key": s, "code": err_code(exc), "detail": type(exc).__name__})
         data_date = max([r["date"] for r in rows], default=None)
+        history_route = "local" if a.history and any(r.get("history") for r in rows) else "none"
 
     if a.json:
         print(
@@ -242,6 +297,8 @@ def main(argv=None):
                     "generated_at": datetime.now().isoformat(timespec="seconds"),
                     "data_date": data_date,
                     "data_route": used,
+                    "history_points": a.history,
+                    "history_route": history_route,
                     "window": a.window,
                     "rows": rows,
                     "missing": missing,

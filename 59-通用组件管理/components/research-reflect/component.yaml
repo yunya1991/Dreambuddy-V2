@@ -1,0 +1,59 @@
+name: research-reflect
+display_name: 反思进化（候选/评审/缺口）
+version: 0.1.0
+family: research
+lifecycle: active
+summary: 从 OKA 真实日记与决策生成回测候选、生成评审证据包、执行三模型评审，并扫描组件回放缺口；只读交易库，不直接下单。
+entrypoints:
+  - scripts/reflect.py
+kernel_deps: [endpoint, headers]
+output_contract: data.v1
+products: []
+tests:
+  dir: tests
+  entry: python3 -m unittest discover -s tests -v
+actions:
+  - name: status
+    description: "反思资产状态：最近候选与回测门禁结果"
+    when_to_use: "查看 R4 候选/评审资产是否就绪"
+    not_for: "不用于下单或修改交易配置"
+    script: scripts/reflect.py
+    args: [status]
+    safety: read
+    output: json
+    mcp: {expose: true, tier: cold}
+    params:
+      - {name: limit, flag: "--limit", type: integer, default: 5, description: 候选条数}
+  - name: propose
+    description: "从真实平仓日记与历史决策生成可回测候选"
+    when_to_use: "需要生成交易策略候选（置信度/方向/标的过滤）"
+    not_for: "不直接应用候选、不改实盘配置"
+    script: scripts/reflect.py
+    args: [propose]
+    safety: write
+    output: json
+    mcp: {expose: true, tier: cold}
+    params:
+      - {name: window, flag: "--window", type: string, default: "90d", description: 归因窗口}
+      - {name: symbols, flag: "--symbols", type: string, description: 逗号分隔标的}
+  - name: gaps
+    description: "组件声明 vs 回放缺口扫描（缺样本/契约失败/样本不足）"
+    when_to_use: "R1 组件回放前定位能力缺口"
+    not_for: "不修复组件、不重新调用云端"
+    script: scripts/reflect.py
+    args: [gaps]
+    safety: read
+    output: json
+    mcp: {expose: true, tier: cold}
+  - name: review
+    description: "生成评审证据包并执行三模型评审（CLI/千问/Trae）"
+    when_to_use: "候选回测通过后进入评审闭环"
+    not_for: "不代替人工授权，不执行 promotion"
+    script: scripts/reflect.py
+    args: [review]
+    safety: write
+    output: json
+    mcp: {expose: true, tier: cold}
+    params:
+      - {name: opt_id, flag: "--opt-id", type: string, required: true, description: 候选 ID}
+      - {name: no_llm, flag: "--no-llm", type: boolean, default: false, description: 跳过 LLM 评审}

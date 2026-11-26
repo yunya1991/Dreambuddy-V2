@@ -320,7 +320,11 @@ def cmd_run(args) -> int:
     head, rest = split_globals(action, rest)
     cmd = apply_endpoint(endpoint, params, [sys.executable, str(script)] + head + pre + rest)
     print("[dreambuddy] {} → {}".format(comp.get("name"), " ".join(cmd)), file=sys.stderr)
-    proc = subprocess.run(cmd, cwd=str(action_cwd(comp, action)), env=domain_env("59"))
+    env = domain_env("59")
+    if allow_write:
+        # 统一门禁已授权；--allow-write 被本层消费，组件通过环境变量确认
+        env["DREAMBUDDY_ALLOW_WRITE"] = "1"
+    proc = subprocess.run(cmd, cwd=str(action_cwd(comp, action)), env=env)
     return proc.returncode
 
 
@@ -473,6 +477,29 @@ def cmd_domains(args) -> int:
     return 0
 
 
+def mobile_workspace() -> Path | None:
+    """定位手机 AGENT 主仓根目录（用于校验 docs/cli 能力目录是否漂移）。"""
+    cfg = Path.home() / ".config" / "dreambuddy" / "mobile_agent.path"
+    candidates = []
+    env = os.environ.get("MOBILE_AGENT_CLI")
+    if env:
+        candidates.append(Path(env).expanduser())
+    if cfg.is_file():
+        try:
+            candidates.append(Path(cfg.read_text(encoding="utf-8").strip()).expanduser())
+        except OSError:
+            pass
+    candidates.append(
+        Path.home() / "Documents" / "顺风车业务" / "mobile-reservation-assist" / "skill" / "scripts" / "mra.py"
+    )
+    for candidate in candidates:
+        if candidate.is_file() and len(candidate.parents) >= 4:
+            root = candidate.parents[3]
+            if (root / "scripts" / "gen_cli_catalog.py").is_file():
+                return root
+    return None
+
+
 def cmd_doctor(args) -> int:
     comps = load_components()
     print("组件：{} 个（{}）".format(len(comps), ", ".join(c.get("name", "?") for c in comps)))
@@ -497,6 +524,30 @@ def cmd_doctor(args) -> int:
         if not ok:
             tail = (proc.stdout + proc.stderr).strip().splitlines()[-8:]
             for line in tail:
+                print("      " + line)
+    workspace = mobile_workspace()
+    if workspace is None:
+        print("  [SKIP] CLI 能力目录（未定位到手机主仓）")
+    else:
+        proc = subprocess.run(
+            [sys.executable, "scripts/gen_cli_catalog.py", "--check"],
+            cwd=str(workspace), capture_output=True, text=True,
+        )
+        ok = proc.returncode == 0
+        failed += 0 if ok else 1
+        print("  [{}] CLI 能力目录（docs/cli）".format("PASS" if ok else "FAIL"))
+        if not ok:
+            for line in (proc.stdout + proc.stderr).strip().splitlines()[-8:]:
+                print("      " + line)
+        cases = subprocess.run(
+            [sys.executable, "scripts/check_routing_cases.py"],
+            cwd=str(workspace), capture_output=True, text=True,
+        )
+        ok_cases = cases.returncode == 0
+        failed += 0 if ok_cases else 1
+        print("  [{}] CLI 路由用例".format("PASS" if ok_cases else "FAIL"))
+        if not ok_cases:
+            for line in (cases.stdout + cases.stderr).strip().splitlines()[-8:]:
                 print("      " + line)
     print("\n结果：{}".format("全部通过" if failed == 0 else "{} 项失败".format(failed)))
     print("云端通道：{}".format(cloud_status()))
@@ -628,7 +679,14 @@ ROUTER_SYSTEM = """你是 dreambuddy 统一操作台路由器。只能从能力�
    reservation-assist.* 只负责余票/号源监控与通知，不要混用。
 7) 文件/目录治理（扫描登记、索引、代码-文档对应、上下文打包）归 cogsteward.*；
    cogsteward.index/map/doctor 没有位置参数，按关键词定位文件用 cogsteward.pack。
-8) 不确定或能力不在表内时用 answer/unknown，不要硬编参数。"""
+8) 不确定或能力不在表内时用 answer/unknown，不要硬编参数。
+9) 欧易/OKX 交易助手是独立 okx-assistant CLI，不在本域能力表内；以下话题一律用 answer 指引，不要用 59 能力代答：
+   - 运行状态/定时任务/持仓/链路告警：oka status、oka positions、oka monitor trading status、launchctl list | grep oka
+   - 内容链路（四渠道发文/小红书/抖音/推特/博客发布、内容 run 为什么没发出去、这条内容能否直接发布）：
+     oka content status / list / show（看溯源与合规结果）
+   - 回测门禁/冻结数据/参数对比：oka backtest ...
+   - 反思/逆向优化/候选参数能否上线：oka reverse backtest ...
+   能力注册表或能力索引漂移：dreambuddy caps sync；CLI 能力目录漂移：scripts/gen_cli_catalog.py。"""
 
 # 组件脚本的参数前缀：模型若只给裸值，这里补上 flag
 ARG_FLAG = {
@@ -682,6 +740,14 @@ def rule_plan(text: str) -> dict:
             "reason": "按日报工作流 dry-run 预演",
         }
 
+    if has("欧易", "okx", "oka"):
+        return {
+            "kind": "answer",
+            "text": "欧易交易助手是独立 CLI（okx-assistant），不在 59 域定时任务台账里。\n"
+            "查看运行状态：oka status  ·  查看 launchd 定时任务：launchctl list | grep oka\n"
+            "监控日志：~/.oka/monitor/trading.log、~/.oka/monitor/content.log",
+        }
+
     if has("定时任务", "定时", "schedule", "cron"):
         return {
             "kind": "answer",
@@ -713,6 +779,12 @@ def rule_plan(text: str) -> dict:
         return {"kind": "trading", "tool": tool, "args": {}, "reason": "6-TRADING 只读状态"}
 
     if has("比特币", "btc", "以太坊", "eth", "链上", "区块"):
+        if has("多少钱", "价格", "行情", "币价", "报价"):
+            return {
+                "kind": "answer",
+                "text": "加密货币价格不在本域能力内（行情仅覆盖 A 股）。"
+                "链上指标（不含价格）可用：dreambuddy run market-data onchain",
+            }
         return {
             "kind": "run",
             "component": "market-data",
@@ -1165,6 +1237,12 @@ def cmd_chat(args) -> int:
         tokens, endpoint = take_endpoint(line.split())
         text = " ".join(tokens)
         plan, _source = nl_plan(text, history=history)
+        entry = plan.get("capability") or (
+            "{}.{}".format(plan.get("component"), plan.get("action")) if plan.get("component") else "-"
+        )
+        print("[路由] 来源={} 类型={} 入口={} 理由={}".format(
+            _source, plan.get("kind", "?"), entry,
+            str(plan.get("reason") or plan.get("text") or "")[:60]))
         code = execute_plan(
             plan, allow_write=getattr(args, "allow_write", False), endpoint=endpoint
         )

@@ -100,6 +100,10 @@ def _http_status(url: str, retries: int = 3) -> int:
 
 
 def main() -> int:
+    # 统一 CLI（dreambuddy run site-blog publish ...）不会重复传子命令，
+    # 直接调脚本时仍保留 publish 子命令；两种入口都兼容。
+    if len(sys.argv) > 1 and sys.argv[1] != "publish":
+        sys.argv.insert(1, "publish")
     parser = argparse.ArgumentParser(description="发布一篇研究博客到 59 站点")
     sub = parser.add_subparsers(dest="action", required=True)
     pub = sub.add_parser("publish", help="写 md + 拷图 + build + check + rsync + HTTP 校验")
@@ -119,7 +123,7 @@ def main() -> int:
     pub.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
-    if not args.allow_write:
+    if not (args.allow_write or os.environ.get("DREAMBUDDY_ALLOW_WRITE") == "1"):
         return _fail("E_GATE: 缺少 --allow-write", 2)
     source = Path(args.file)
     if not source.is_file():

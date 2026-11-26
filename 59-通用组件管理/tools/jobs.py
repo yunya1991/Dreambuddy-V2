@@ -317,7 +317,13 @@ def main(argv: List[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.cmd == "list":
-        for row in list_jobs():
+        rows = list_jobs()
+        if not rows:
+            print(
+                '（暂无 59 域定时任务）添加：dreambuddy schedule add <workflow> --cron "0 8 * * *"'
+            )
+            return 0
+        for row in rows:
             print(
                 "{job_key}  {workflow}  {cron}  next={next_run_at}  enabled={enabled}  last={last_status}".format(
                     **row

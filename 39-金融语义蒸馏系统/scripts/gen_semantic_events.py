@@ -455,6 +455,7 @@ def build_hot_news(
                 "published_at": row.get("timestamp"),
                 "origin": row.get("origin"),
                 "source_url": row.get("source_url"),
+                "body_ref": row.get("body_ref"),
                 "source_count": source_count,
                 "dup_count": len(cluster["members"]) - 1,
                 "recomputed": not all(
@@ -518,6 +519,31 @@ def _atomic_write_json(path, payload):
     os.replace(tmp, path)
 
 
+def _load_event_body_refs(path=None):
+    """事件 id → body_ref 映射；用于回填历史语义行（缺失返回空 dict，FAIL-OPEN）。"""
+    path = path or os.environ.get("EMERGENCE_EVENTS_PATH") or EVENTS_PATH
+    out = {}
+    if not os.path.isfile(path):
+        return out
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    ev = json.loads(line)
+                except Exception:
+                    continue
+                eid = ev.get("event_id")
+                ref = ev.get("body_ref")
+                if eid and ref:
+                    out[str(eid)] = str(ref)
+    except OSError:
+        return {}
+    return out
+
+
 def write_hot_news(semantic_path=None, out_path=None, now=None):
     """每轮无条件重写 hot_news.json（recency 才会衰减、generated_at 才会滚动）。"""
     semantic_path = semantic_path or OUT_PATH
@@ -533,6 +559,14 @@ def write_hot_news(semantic_path=None, out_path=None, now=None):
                     rows.append(json.loads(line))
                 except Exception:
                     continue
+    # 幂等回填：历史语义行没有 body_ref，从 events.jsonl 关联补上
+    refs = _load_event_body_refs()
+    if refs:
+        for row in rows:
+            if not row.get("body_ref"):
+                ref = refs.get(str(row.get("trace_id") or ""))
+                if ref:
+                    row["body_ref"] = ref
     payload = build_hot_news(rows, now=now)
     _atomic_write_json(out_path, payload)
     return payload
@@ -730,6 +764,7 @@ def _event_to_line(ev, scorer=_score_text, bodies=None):
         # 榜单字段（SPEC §4.4）：origin 修复 P-H5 来源丢失；sentiment_missing 禁止 0 冒充
         "origin": origin,
         "source_url": ev.get("source_url"),
+        "body_ref": ev.get("body_ref"),
         "topic": topic_of(title),
         "importance": imp,
         "importance_parts": parts,

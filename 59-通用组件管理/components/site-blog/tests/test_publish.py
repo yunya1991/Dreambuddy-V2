@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -67,6 +68,19 @@ class GateTest(unittest.TestCase):
         buffer = StringIO()
         argv = ["publish.py", "publish", "--file", "/nonexistent.md", "--allow-write"]
         with mock.patch.object(sys, "argv", argv), redirect_stdout(buffer):
+            code = publish.main()
+        self.assertEqual(code, 2)
+        self.assertIn("不存在", json.loads(buffer.getvalue())["error"])
+
+    def test_unified_cli_env_authorization_without_subcommand(self):
+        """dreambuddy run 会消费 --allow-write 并通过环境变量授权；子命令可省略。"""
+        buffer = StringIO()
+        argv = ["publish.py", "--file", "/nonexistent.md", "--json"]
+        with (
+            mock.patch.dict(os.environ, {"DREAMBUDDY_ALLOW_WRITE": "1"}),
+            mock.patch.object(sys, "argv", argv),
+            redirect_stdout(buffer),
+        ):
             code = publish.main()
         self.assertEqual(code, 2)
         self.assertIn("不存在", json.loads(buffer.getvalue())["error"])
