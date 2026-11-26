@@ -20,7 +20,8 @@ logger = logging.getLogger(__name__)
 
 VALID_DIMS = ("technical", "fundamental", "macro")
 VALID_CORRECTIONS = ("bonferroni", "per_dim", "none")
-DEFAULT_CORRECTION = "per_dim"
+# 2026-11-26 用户决策：放宽为 none（原始 α=0.05）。云端实测可用率 per_dim 28.7% → none 47.4%。
+DEFAULT_CORRECTION = "none"
 
 
 class GrangerPipelineAdapter:
@@ -35,8 +36,8 @@ class GrangerPipelineAdapter:
         self._checker = GrangerCausalityChecker(max_lag=max_lag, significance=significance)
         self._max_lag = max_lag
         self._significance = significance
-        # 多重比较校正：2026-11-25 用户决策「适当放宽，先让 G 可用率有用」
-        # 默认 per_dim（0.05/3≈0.0167）；可用 GRANGER_CORRECTION 覆盖为 bonferroni|per_dim|none
+        # 多重比较校正：2026-11-26 用户决策「从 per_dim 放宽」→ 默认 none（α=0.05）
+        # 可用 GRANGER_CORRECTION 覆盖为 bonferroni|per_dim|none
         resolved = (
             correction or os.environ.get("GRANGER_CORRECTION") or DEFAULT_CORRECTION
         ).lower()

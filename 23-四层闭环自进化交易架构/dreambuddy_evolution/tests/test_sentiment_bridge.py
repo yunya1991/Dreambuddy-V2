@@ -85,6 +85,35 @@ class TestSentimentBridge:
         # 没有可用 engine → 0.5
         assert score == 0.5
 
+    def test_odaily_newsflash_description_html(self, tmp_path):
+        """云端实际形态: source=odaily_newsflash + metrics.description(HTML)"""
+        import json
+        import sqlite3
+
+        db_path = tmp_path / "pg_shape.db"
+        conn = sqlite3.connect(str(db_path))
+        c = conn.cursor()
+        c.execute(
+            "CREATE TABLE records (id INTEGER PRIMARY KEY, source TEXT, category TEXT, "
+            "sub_category TEXT, timestamp TEXT, metrics TEXT, timeseries TEXT)"
+        )
+        metrics = json.dumps(
+            {"description": "<p>比特币大涨，市场情绪升温</p>", "od_event_type": "market_sentiment"}
+        )
+        c.execute(
+            "INSERT INTO records (source, category, sub_category, timestamp, metrics) "
+            "VALUES ('odaily_newsflash', 'news', 'newsflash_1', '2026-11-26T01:00:00Z', ?)",
+            (metrics,),
+        )
+        conn.commit()
+        conn.close()
+
+        engine = MockSentimentEngine(scores=[("大涨", 0.6)])
+        bridge = SentimentBridge(data_center_db=str(db_path), sentiment_engine=engine, cache_ttl=0)
+        bridge.invalidate_cache()
+        # (0.6+1)/2 = 0.8；若 HTML 未剥离，引擎拿不到“大涨” → 0.5
+        assert abs(bridge.get_sentiment_score() - 0.8) < 0.01
+
     def test_empty_newsflash_fo(self, tmp_path):
         """空快讯 → score=0.5"""
         db_path = make_mock_db(tmp_path, [])

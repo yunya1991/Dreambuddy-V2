@@ -13,15 +13,12 @@ FAIL-OPEN 三级（对齐硬约束 VM-1788443193342）:
 
 from __future__ import annotations
 
-import json
 import logging
-import sqlite3
 import time
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
-_DB_TIMEOUT = 2.0
 _CACHE_TTL = 6 * 3600  # 6 小时
 
 
@@ -33,8 +30,12 @@ class SentimentBridge:
         data_center_db: str | None = None,
         sentiment_engine: Any = None,
         cache_ttl: int = _CACHE_TTL,
+        pg_dsn: str | None = None,
     ) -> None:
+        from .data_center import DataCenterAdapter
+
         self._db_path = data_center_db
+        self._data_center = DataCenterAdapter(data_center_db, pg_dsn=pg_dsn)
         self._engine = sentiment_engine
         self._cache_ttl = cache_ttl
         self._cached_score: float = 0.5
@@ -117,41 +118,11 @@ class SentimentBridge:
             return None
 
     def _fetch_recent_newsflash(self, count: int = 5) -> list[str]:
-        """从 data_center.db 查询最近 N 条 odaily 快讯文本"""
-        if not self._db_path:
-            return []
-
+        """查询最近 N 条 odaily 快讯文本（PG records / sqlite 兼容，已去 HTML）。"""
         try:
-            conn = sqlite3.connect(self._db_path, timeout=_DB_TIMEOUT)
-            cursor = conn.cursor()
-
-            # 尝试查询 odaily newsflash
-            try:
-                cursor.execute(
-                    "SELECT metrics FROM records "
-                    "WHERE source = 'odaily' AND sub_category = 'newsflash' "
-                    "ORDER BY timestamp DESC LIMIT ?",
-                    (count,),
-                )
-                rows = cursor.fetchall()
-            except sqlite3.OperationalError:
-                # 表不存在或字段不匹配
-                conn.close()
-                return []
-
-            conn.close()
-
-            texts = []
-            for row in rows:
-                try:
-                    d = json.loads(row[0]) if isinstance(row[0], str) else row[0]
-                    text = d.get("title") or d.get("content") or d.get("text") or ""
-                    if text:
-                        texts.append(text)
-                except Exception:
-                    continue
-            return texts
-
+            return [
+                r["text"] for r in self._data_center.query_recent_newsflash(limit=max(count, 5))
+            ]
         except Exception as e:
             logger.debug("[FO] newsflash fetch fail: %s", e)
             return []

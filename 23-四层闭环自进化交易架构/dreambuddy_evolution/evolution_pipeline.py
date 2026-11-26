@@ -43,13 +43,20 @@ def _normalize_close_key(market_data: dict | None) -> None:
     口径缺失会导致 L1 阻力维度全部回退 0.5、G_dim 恒为 None（Granger 无法取到序列），
     因此入口处一次性归一，不在各消费点分别兼容别名。
     """
-    if not isinstance(market_data, dict) or market_data.get("close"):
+    if not isinstance(market_data, dict):
+        return
+    _close = market_data.get("close")
+    # numpy/pandas 序列不能直接做真值判断（ambiguous truth value）
+    if _close is not None and not (hasattr(_close, "__len__") and len(_close) == 0):
         return
     for _alias in ("closes", "kline_close"):
         _series = market_data.get(_alias)
-        if _series:
-            market_data["close"] = _series
-            return
+        if _series is None:
+            continue
+        if hasattr(_series, "__len__") and len(_series) == 0:
+            continue
+        market_data["close"] = _series
+        return
 
 
 class EvolutionPipeline:

@@ -45,13 +45,12 @@ class TestRippleEngine:
         is_source = re.detect_ripple_source(source)
         assert is_source is True
 
-    def test_TR_RE_02_ripple_source_reject_quantum(self):
-        """Quantum 档龙头排除 (§0.7.5)"""
+    def test_TR_RE_02_ripple_source_include_quantum(self, monkeypatch):
+        """Quantum 档龙头默认纳入；EVOLUTION_RIPPLE_INCLUDE_QUANTUM=0 时排除"""
         from dreambuddy_evolution.engines.ripple_engine import RippleEngine
 
-        re = RippleEngine()
         source = {
-            "symbol": "PEPE",
+            "symbol": "COIN",
             "r_vector": {
                 "R_up": 0.1,
                 "R_down": 0.9,
@@ -63,9 +62,13 @@ class TestRippleEngine:
             "vol_5": 10000.0,
             "vol_20": 3000.0,
             "liq_index_change": 0.5,
-            "scale_class": "Quantum",  # Quantum 排除
+            "scale_class": "Quantum",
         }
-        assert re.detect_ripple_source(source) is False
+        monkeypatch.delenv("EVOLUTION_RIPPLE_INCLUDE_QUANTUM", raising=False)
+        assert RippleEngine().detect_ripple_source(source) is True
+
+        monkeypatch.setenv("EVOLUTION_RIPPLE_INCLUDE_QUANTUM", "0")
+        assert RippleEngine().detect_ripple_source(source) is False
 
     def test_TR_RE_03_ripple_source_reject_low_volume(self):
         """vol_5/vol_20 < 2.0 → 不是真石头"""

@@ -32,6 +32,11 @@ class RippleEngine:
         self._liq_change_threshold = float(
             os.getenv("EVOLUTION_RIPPLE_LIQ_CHANGE", liq_change_threshold)
         )
+        # 2026-11-26 用户决策：ripple 龙头扩展到 Quantum 档（代币化股票等）。
+        # 默认纳入；EVOLUTION_RIPPLE_INCLUDE_QUANTUM=0 可恢复 §0.7.5 旧排除口径。
+        self._include_quantum = os.getenv(
+            "EVOLUTION_RIPPLE_INCLUDE_QUANTUM", "1"
+        ).strip().lower() not in ("0", "false", "off", "no")
 
     def calibrate_vol_threshold(self, close: Any, lookback_days: int = 20) -> float:
         """按 20 日已实现波动率动态校准放量门槛。
@@ -58,7 +63,8 @@ class RippleEngine:
     ) -> bool:
         """
         §0.7.2 Phase 0: 龙头检测
-        条件: S_up簇(ESS_top方向一致) + vol_5/vol_20≥门槛 + liq_index↑≥门槛 + Scale∈{Classical,Meso}
+        条件: S_up簇(ESS_top方向一致) + vol_5/vol_20≥门槛 + liq_index↑≥门槛
+              + Scale 默认含 {Classical,Meso,Quantum}（Quantum 排除可用环境变量恢复）
 
         vol_ratio_threshold: 调用方按 20 日波动率动态校准后的门槛；None 用实例默认值
         """
@@ -92,8 +98,8 @@ class RippleEngine:
             if liq_change < self._liq_change_threshold:
                 return False
 
-            # 4. Scale: Quantum 排除 (§0.7.5)
-            if scale == "Quantum":
+            # 4. Scale: Quantum 默认纳入（2026-11-26）；EVOLUTION_RIPPLE_INCLUDE_QUANTUM=0 时排除
+            if scale == "Quantum" and not self._include_quantum:
                 return False
 
             return True

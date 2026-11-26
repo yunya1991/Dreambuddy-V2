@@ -69,36 +69,55 @@ class TestDataCenterAdapter:
         assert result == {}
 
     def test_liq_index_change(self, tmp_path):
-        """liq_index_change: 两次查询之间的变化比"""
-        db_path = _make_test_db(
-            tmp_path,
-            metrics={
-                "fut_liq_long_24h_usd": 1e8,
-                "fut_liq_short_24h_usd": 1e8,
-                "fut_liq_total_24h_usd": 2e8,
-                "fut_open_interest_usd": 5e10,
-            },
-        )
-        adapter = DataCenterAdapter(db_path)
-
-        # 第一次查询
-        result1 = adapter.query_latest_derivatives()
-        # 同一条记录 → change = 0
-        if "liq_index_change" in result1:
-            assert result1["liq_index_change"] == 0.0
-
-        # 更新 DB 中的 total
-        conn = sqlite3.connect(db_path)
+        """liq_index_change: 最新记录 vs 上一条采集记录（跨进程确定）"""
+        db_path = tmp_path / "data_center.db"
+        conn = sqlite3.connect(str(db_path))
         c = conn.cursor()
-        c.execute("UPDATE records SET metrics = ?", (json.dumps({"fut_liq_total_24h_usd": 4e8}),))
+        c.execute(
+            "CREATE TABLE records (id INTEGER PRIMARY KEY, source TEXT, category TEXT, "
+            "sub_category TEXT, timestamp TEXT, metrics TEXT, timeseries TEXT)"
+        )
+        rows = [
+            ("2026-09-05T06:00:00Z", {"fut_liq_total_24h_usd": 2e8}),
+            ("2026-09-05T10:00:00Z", {"fut_liq_total_24h_usd": 4e8}),
+        ]
+        for ts, m in rows:
+            c.execute(
+                "INSERT INTO records (source, category, sub_category, timestamp, metrics, timeseries) "
+                "VALUES ('panewslab', 'chain', 'derivatives_spot', ?, ?, '[]')",
+                (ts, json.dumps(m)),
+            )
         conn.commit()
         conn.close()
 
-        # 第二次查询 → 应检测到变化
-        result2 = adapter.query_latest_derivatives()
-        assert "liq_index_change" in result2
+        adapter = DataCenterAdapter(str(db_path))
+        result = adapter.query_latest_derivatives()
         # (4e8 - 2e8) / 2e8 = 1.0
-        assert abs(result2["liq_index_change"] - 1.0) < 0.01
+        assert abs(result["liq_index_change"] - 1.0) < 0.01
+
+        # 仅一条记录 → 冷启动 change=0（不再依赖进程内上一次查询）
+        single_dir = tmp_path / "single"
+        single_dir.mkdir()
+        single = _make_test_db(single_dir)
+        assert DataCenterAdapter(single).query_latest_derivatives()["liq_index_change"] == 0.0
+
+    def test_per_coin_from_flat_metrics(self, tmp_path):
+        """云端 PG 扁平键 fut1_BTC_liq24 / fut1_BTC_oi → 按全局多空占比拆分"""
+        db_path = _make_test_db(
+            tmp_path,
+            metrics={
+                "fut_liq_long_24h_usd": 3e8,
+                "fut_liq_short_24h_usd": 1e8,
+                "fut_liq_total_24h_usd": 4e8,
+                "fut_open_interest_usd": 5e10,
+                "fut1_BTC_liq24": 2e8,
+                "fut1_BTC_oi": 4e10,
+            },
+        )
+        result = DataCenterAdapter(db_path).query_latest_derivatives(symbol="BTC")
+        assert result["liquidation_buy"] == [1.5e8]
+        assert result["liquidation_sell"] == [0.5e8]
+        assert result["open_interest"] == 4e10
 
     def test_per_coin_match(self, tmp_path):
         """per-coin 清算数据匹配"""

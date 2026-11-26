@@ -7,8 +7,11 @@ FAIL-OPEN: 查询失败/表不存在/无数据 → 返回空 dict
 
 from __future__ import annotations
 
+import html
 import json
 import logging
+import os
+import re
 import sqlite3
 import time
 from typing import Any
@@ -20,14 +23,93 @@ logger = logging.getLogger(__name__)
 # 查询超时 2s
 _DB_TIMEOUT = 2.0
 
+_TAG_RE = re.compile(r"<[^>]+>")
+
+# panewslab 在 metrics 中扁平化出的 per-coin 键：fut1_BTC_liq24 / fut1_BTC_oi
+_COIN_METRIC_RE = re.compile(r"^fut\d+_([A-Z0-9]+)_(liq24|oi)$")
+
+
+def _read_pg_password() -> str:
+    """读取 18 域 PostgreSQL 密码（与 sink_postgres 同一来源）。"""
+    for path in ("/home/luke/.dreambuddy-pg.env", os.path.expanduser("~/.dreambuddy-pg.env")):
+        try:
+            with open(path, encoding="utf-8") as f:
+                for line in f:
+                    if line.startswith("DATA_CENTER_PG_PASSWORD="):
+                        return line.split("=", 1)[1].strip()
+        except OSError:
+            continue
+    return ""
+
+
+def resolve_pg_dsn() -> str | None:
+    """解析 PostgreSQL DSN；未启用或缺少密码时返回 None（回退 sqlite）。"""
+    dsn = os.environ.get("DATA_CENTER_PG_DSN", "").strip()
+    if dsn:
+        return dsn
+    flag = os.environ.get("EVOLUTION_DATA_CENTER_PG", "").strip().lower()
+    if flag not in ("1", "true", "on", "yes"):
+        return None
+    pwd = os.environ.get("DATA_CENTER_PG_PASSWORD", "").strip() or _read_pg_password()
+    if not pwd:
+        logger.warning("[FO] EVOLUTION_DATA_CENTER_PG 开启但缺少密码，回退 sqlite")
+        return None
+    host = os.environ.get("DATA_CENTER_PG_HOST", "127.0.0.1")
+    port = os.environ.get("DATA_CENTER_PG_PORT", "5432")
+    user = os.environ.get("DATA_CENTER_PG_USER", "dreambuddy")
+    db = os.environ.get("DATA_CENTER_PG_DB", "data_center")
+    return f"postgresql://{user}:{pwd}@{host}:{port}/{db}"
+
+
+def _parse_metrics(record: dict) -> dict:
+    """metrics/timeseries 字段 JSON 解析（TEXT 列），失败保留原值。"""
+    for key in ("metrics", "timeseries"):
+        if key in record and isinstance(record[key], str):
+            record[key] = safe_call(json.loads, record[key], record[key])
+    return record
+
+
+def _strip_html(text: str) -> str:
+    return html.unescape(_TAG_RE.sub(" ", text)).strip()
+
 
 class DataCenterAdapter:
-    """data_center.db 衍生品数据适配器"""
+    """data_center 数据适配器（PostgreSQL records 表 / sqlite 兼容回退）"""
 
-    def __init__(self, db_path: str) -> None:
+    def __init__(self, db_path: str | None = None, pg_dsn: str | None = None) -> None:
         self._db_path = db_path
-        self._last_liq_total: float | None = None  # 上次清算总额（计算 liq_index_change）
+        self._dsn = pg_dsn if pg_dsn is not None else resolve_pg_dsn()
+        self._last_liq_total: float | None = None  # 兼容旧调用方（DB 双记录优先）
         self._last_query_ts: float = 0.0
+
+    # ------------------------------------------------------------------
+    # 连接与查询（postgres 走 %s 占位符，sqlite 走 ?）
+    # ------------------------------------------------------------------
+    def _connect(self) -> tuple[Any, bool]:
+        if self._dsn:
+            import psycopg2
+
+            return psycopg2.connect(self._dsn, connect_timeout=int(_DB_TIMEOUT)), True
+        if not self._db_path:
+            raise sqlite3.OperationalError("no data_center backend configured")
+        conn = sqlite3.connect(self._db_path, timeout=_DB_TIMEOUT)
+        conn.row_factory = sqlite3.Row
+        return conn, False
+
+    def _query(self, sql: str, params: tuple = ()) -> list[dict]:
+        conn, is_pg = self._connect()
+        try:
+            if is_pg:
+                from psycopg2.extras import RealDictCursor
+
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                cur.execute(sql.replace("?", "%s"), params)
+                return [dict(r) for r in cur.fetchall()]
+            cur = conn.cursor()
+            cur.execute(sql, params)
+            return [dict(r) for r in cur.fetchall()]
+        finally:
+            conn.close()
 
     def query_latest_derivatives(self, symbol: str | None = None) -> dict[str, Any]:
         """
@@ -44,10 +126,11 @@ class DataCenterAdapter:
         """
         out: dict[str, Any] = {}
         try:
-            record = self._query_latest_record()
-            if record is None:
+            records = self._query_latest_records(limit=2)
+            if not records:
                 return out
 
+            record = records[0]
             metrics = record.get("metrics", {}) if isinstance(record, dict) else {}
 
             # 全局清算
@@ -59,9 +142,12 @@ class DataCenterAdapter:
             # per-coin 匹配（如果提供了 symbol）
             if symbol:
                 coin_data = self._extract_per_coin(record, symbol)
-                if coin_data:
-                    liq_long = coin_data.get("long_liq", liq_long)
-                    liq_short = coin_data.get("short_liq", liq_short)
+                if coin_data.get("long_liq") is not None:
+                    liq_long = coin_data["long_liq"]
+                if coin_data.get("short_liq") is not None:
+                    liq_short = coin_data["short_liq"]
+                if coin_data.get("oi"):
+                    oi = coin_data["oi"]
 
             if liq_long is not None:
                 out["liquidation_buy"] = [float(liq_long)]
@@ -70,89 +156,151 @@ class DataCenterAdapter:
             if oi is not None:
                 out["open_interest"] = float(oi)
 
-            # liq_index_change: 当前 vs 上次的变化比
+            # liq_index_change: 与上一条采集记录比较（跨进程确定，冷启动即有值）
             if liq_total is not None:
                 total = float(liq_total)
-                now = time.time()
-                if self._last_liq_total is not None and self._last_liq_total > 0:
-                    change = (total - self._last_liq_total) / self._last_liq_total
+                prev_total = None
+                if len(records) > 1:
+                    prev_metrics = records[1].get("metrics", {}) or {}
+                    if isinstance(prev_metrics, dict):
+                        prev_total = prev_metrics.get("fut_liq_total_24h_usd")
+                if prev_total is None:
+                    prev_total = self._last_liq_total
+                if prev_total is not None and float(prev_total) > 0:
+                    change = (total - float(prev_total)) / float(prev_total)
                     out["liq_index_change"] = max(-1.0, min(2.0, change))
+                else:
+                    out["liq_index_change"] = 0.0
                 self._last_liq_total = total
-                self._last_query_ts = now
+                self._last_query_ts = time.time()
 
         except Exception as e:
             logger.warning("[FO] DataCenterAdapter query crash: %s", e)
 
         return out
 
-    def _query_latest_record(self) -> dict | None:
-        """查询最新 panewslab derivatives 记录"""
+    def _query_latest_records(self, limit: int = 1) -> list[dict]:
+        """查询最近 N 条 panewslab derivatives 记录（PG records / sqlite 兼容）"""
         try:
-            conn = sqlite3.connect(self._db_path, timeout=_DB_TIMEOUT)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-
-            # data_center.db 表名可能是 records 或 data_records
-            cursor.execute(
+            rows = self._query(
                 "SELECT * FROM records "
                 "WHERE source = 'panewslab' AND sub_category = 'derivatives_spot' "
-                "ORDER BY timestamp DESC LIMIT 1"
+                "ORDER BY timestamp DESC LIMIT ?",
+                (limit,),
             )
-            row = cursor.fetchone()
-            conn.close()
-
-            if row is None:
-                return None
-
-            # 将 Row 转为 dict，解析 metrics/timeseries JSON
-            d = dict(row)
-            for key in ("metrics", "timeseries"):
-                if key in d and isinstance(d[key], str):
-                    # FAIL-OPEN: JSON 解析失败时 safe_call 返回 fallback（保留原字符串）
-                    d[key] = safe_call(json.loads, d[key], d[key])
-            return d
-
-        except sqlite3.OperationalError as e:
-            logger.debug("[FO] data_center DB query fail: %s", e)
-            return None
+            return [_parse_metrics(dict(r)) for r in rows]
         except Exception as e:
-            logger.warning("[FO] data_center DB unexpected: %s", e)
-            return None
+            logger.debug("[FO] data_center query fail: %s", e)
+            return []
+
+    def _query_latest_record(self) -> dict | None:
+        """查询最新 panewslab derivatives 记录"""
+        recs = self._query_latest_records(limit=1)
+        return recs[0] if recs else None
 
     @staticmethod
-    def _extract_per_coin(record: dict, symbol: str) -> dict[str, float]:
-        """从 timeseries 中提取特定币种的清算数据"""
+    def _extract_per_coin(record: dict, symbol: str) -> dict[str, float | None]:
+        """提取特定币种的清算/持仓数据。
+
+        优先 timeseries.futures_markets（含多空拆分）；
+        回退 metrics 扁平键 fut{N}_{SYM}_liq24 / fut{N}_{SYM}_oi（云端 PG 实际形态，
+        仅含总额 → 按全局多空占比拆分）。
+        """
         try:
-            timeseries = record.get("timeseries", [])
-            if not isinstance(timeseries, list):
-                return {}
-
             sym_upper = symbol.upper()
-            for ts in timeseries:
-                if not isinstance(ts, dict):
-                    continue
-                if ts.get("name") != "futures_markets":
-                    continue
-
-                items = ts.get("items", [])
-                if not isinstance(items, list):
-                    continue
-
-                for item in items:
-                    if not isinstance(item, dict):
+            timeseries = record.get("timeseries", [])
+            if isinstance(timeseries, list):
+                for ts in timeseries:
+                    if not isinstance(ts, dict) or ts.get("name") != "futures_markets":
                         continue
-                    if item.get("symbol", "").upper() == sym_upper or sym_upper in (
-                        item.get("symbol", "").upper()
-                    ):
-                        return {
-                            "long_liq": float(item.get("long_liq_usd_24h", 0) or 0),
-                            "short_liq": float(item.get("short_liq_usd_24h", 0) or 0),
-                            "oi": float(item.get("open_interest_usd", 0) or 0),
-                        }
+                    items = ts.get("items", [])
+                    if not isinstance(items, list):
+                        continue
+                    for item in items:
+                        if not isinstance(item, dict):
+                            continue
+                        item_sym = str(item.get("symbol", "")).upper()
+                        if item_sym == sym_upper or (item_sym and sym_upper in item_sym):
+                            return {
+                                "long_liq": float(item.get("long_liq_usd_24h", 0) or 0),
+                                "short_liq": float(item.get("short_liq_usd_24h", 0) or 0),
+                                "oi": float(item.get("open_interest_usd", 0) or 0),
+                            }
+
+            metrics = record.get("metrics", {}) if isinstance(record, dict) else {}
+            if not isinstance(metrics, dict):
+                return {}
+            coin: dict[str, float | None] = {}
+            for key, val in metrics.items():
+                m = _COIN_METRIC_RE.match(str(key))
+                if not m or m.group(1) != sym_upper:
+                    continue
+                try:
+                    coin["oi" if m.group(2) == "oi" else "total_liq"] = float(val)
+                except (TypeError, ValueError):
+                    continue
+            if not coin:
+                return {}
+            # 仅有总额时按全局多空占比拆分（panewslab 不提供 per-coin 多空）
+            if "total_liq" in coin:
+                total_liq = coin["total_liq"] or 0.0
+                g_long = float(metrics.get("fut_liq_long_24h_usd", 0) or 0)
+                g_short = float(metrics.get("fut_liq_short_24h_usd", 0) or 0)
+                denom = g_long + g_short
+                share = g_long / denom if denom > 0 else 0.5
+                coin["long_liq"] = total_liq * share
+                coin["short_liq"] = total_liq * (1.0 - share)
+            return coin
         except Exception as e:
             logger.debug("[FO] per-coin extract fail: %s", e)
 
         return {}
+
+    def query_recent_newsflash(self, limit: int = 20, hours: int = 0) -> list[dict]:
+        """查询最近快讯（odaily_newsflash 为主，odaily/newsflash 为兼容回退）。
+
+        Returns: [{timestamp, text, event_type}]，text 已去 HTML 标签。
+        """
+        rows: list[dict] = []
+        try:
+            rows = self._query(
+                "SELECT timestamp, metrics FROM records "
+                "WHERE source = 'odaily_newsflash' ORDER BY timestamp DESC LIMIT ?",
+                (limit,),
+            )
+        except Exception as e:
+            logger.debug("[FO] newsflash query fail: %s", e)
+        if not rows:
+            try:
+                rows = self._query(
+                    "SELECT timestamp, metrics FROM records "
+                    "WHERE source = 'odaily' AND sub_category = 'newsflash' "
+                    "ORDER BY timestamp DESC LIMIT ?",
+                    (limit,),
+                )
+            except Exception as e:
+                logger.debug("[FO] legacy newsflash query fail: %s", e)
+
+        out: list[dict] = []
+        for row in rows:
+            rec = _parse_metrics(dict(row))
+            m = rec.get("metrics")
+            if isinstance(m, str):
+                m = safe_call(json.loads, m, {})
+            if not isinstance(m, dict):
+                continue
+            text = m.get("description") or m.get("title") or m.get("content") or m.get("text") or ""
+            text = _strip_html(str(text))
+            if not text:
+                continue
+            out.append(
+                {
+                    "timestamp": rec.get("timestamp", ""),
+                    "text": text,
+                    "event_type": m.get("od_event_type", ""),
+                }
+            )
+        return out
 
     # ================================================================
     # 🆕 P1: 扩展查询 — ETF/情绪/链上/期权/机构持仓
@@ -314,25 +462,17 @@ class DataCenterAdapter:
         # meeting_date 缺失时，查最近 5 条记录中含 meeting_date 的
         if "meeting_date" not in out or not out.get("meeting_date"):
             try:
-                conn = sqlite3.connect(self._db_path, timeout=_DB_TIMEOUT)
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
-                cursor.execute(
+                rows = self._query(
                     "SELECT * FROM records "
                     "WHERE source = 'cme' AND sub_category = 'fedwatch' "
                     "AND metrics LIKE '%meeting_date%' "
                     "ORDER BY timestamp DESC LIMIT 1"
                 )
-                row = cursor.fetchone()
-                conn.close()
-                if row:
-                    d = dict(row)
-                    m2 = d.get("metrics", "{}")
+                if rows:
+                    d = _parse_metrics(dict(rows[0]))
+                    m2 = d.get("metrics", {})
                     if isinstance(m2, str):
-                        try:
-                            m2 = json.loads(m2)
-                        except Exception:
-                            m2 = {}
+                        m2 = safe_call(json.loads, m2, {})
                     md = m2.get("meeting_date", "") if isinstance(m2, dict) else ""
                     if md:
                         out["meeting_date"] = md
@@ -348,24 +488,16 @@ class DataCenterAdapter:
         """
         out: list[dict[str, Any]] = []
         try:
-            conn = sqlite3.connect(self._db_path, timeout=_DB_TIMEOUT)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute(
+            rows = self._query(
                 "SELECT * FROM records "
                 "WHERE source = 'cme' AND sub_category = 'fomc_calendar' "
                 "ORDER BY timestamp ASC"
             )
-            rows = cursor.fetchall()
-            conn.close()
             for row in rows:
                 d = dict(row)
                 raw = d.get("raw", "{}")
                 if isinstance(raw, str):
-                    try:
-                        raw = json.loads(raw)
-                    except Exception:
-                        raw = {}
+                    raw = safe_call(json.loads, raw, {})
                 meeting_date = ""
                 if isinstance(raw, dict):
                     meeting_date = raw.get("meeting_date", "")
@@ -390,24 +522,16 @@ class DataCenterAdapter:
         """
         out: list[dict[str, Any]] = []
         try:
-            conn = sqlite3.connect(self._db_path, timeout=_DB_TIMEOUT)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute(
+            rows = self._query(
                 "SELECT * FROM records "
                 "WHERE source = 'coinmarketcal' AND sub_category = 'tech_upgrade' "
                 "ORDER BY timestamp DESC LIMIT 20"
             )
-            rows = cursor.fetchall()
-            conn.close()
             for row in rows:
                 d = dict(row)
                 m = d.get("metrics", "{}")
                 if isinstance(m, str):
-                    try:
-                        m = json.loads(m)
-                    except Exception:
-                        m = {}
+                    m = safe_call(json.loads, m, {})
                 if not isinstance(m, dict):
                     continue
                 event_date = m.get("date_event", "") or m.get("event_date", "")
@@ -437,24 +561,16 @@ class DataCenterAdapter:
         """
         out: list[dict[str, Any]] = []
         try:
-            conn = sqlite3.connect(self._db_path, timeout=_DB_TIMEOUT)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute(
+            rows = self._query(
                 "SELECT * FROM records "
                 "WHERE source = 'congress' AND sub_category = 'congressional_hearing' "
                 "ORDER BY timestamp DESC LIMIT 20"
             )
-            rows = cursor.fetchall()
-            conn.close()
             for row in rows:
                 d = dict(row)
                 m = d.get("metrics", "{}")
                 if isinstance(m, str):
-                    try:
-                        m = json.loads(m)
-                    except Exception:
-                        m = {}
+                    m = safe_call(json.loads, m, {})
                 if not isinstance(m, dict):
                     continue
                 event_date = m.get("date_event", "") or m.get("event_date", "")
@@ -494,33 +610,23 @@ class DataCenterAdapter:
     ) -> dict | None:
         """查询最新 record by source/category/sub_category。"""
         try:
-            conn = sqlite3.connect(self._db_path, timeout=_DB_TIMEOUT)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
             if sub_category:
-                cursor.execute(
+                rows = self._query(
                     "SELECT * FROM records "
                     "WHERE source = ? AND category = ? AND sub_category = ? "
                     "ORDER BY timestamp DESC LIMIT 1",
                     (source, category, sub_category),
                 )
             else:
-                cursor.execute(
+                rows = self._query(
                     "SELECT * FROM records "
                     "WHERE source = ? AND category = ? "
                     "ORDER BY timestamp DESC LIMIT 1",
                     (source, category),
                 )
-            row = cursor.fetchone()
-            conn.close()
-            if row is None:
+            if not rows:
                 return None
-            d = dict(row)
-            for key in ("metrics", "timeseries"):
-                if key in d and isinstance(d[key], str):
-                    # FAIL-OPEN: JSON 解析失败时 safe_call 返回 fallback（保留原字符串）
-                    d[key] = safe_call(json.loads, d[key], d[key])
-            return d
+            return _parse_metrics(dict(rows[0]))
         except Exception as e:
             logger.debug("[FO] query_latest_record_by_source fail: %s", e)
             return None

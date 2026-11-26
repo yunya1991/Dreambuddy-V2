@@ -91,10 +91,14 @@ def test_insufficient_data_returns_none():
 
 
 def test_correction_thresholds():
-    """默认 per_dim（0.05/3）；bonferroni=0.05/15；none=0.05。"""
+    """默认 none（0.05）；per_dim=0.05/3；bonferroni=0.05/15。
+
+    2026-11-26 用户决策：默认放宽为 none（云端可用率 28.7% → 47.4%）。
+    """
     from dreambuddy_evolution.core.granger_pipeline_adapter import GrangerPipelineAdapter
 
-    assert abs(GrangerPipelineAdapter()._alpha_threshold - 0.05 / 3) < 1e-12
+    assert abs(GrangerPipelineAdapter()._alpha_threshold - 0.05) < 1e-12
+    assert abs(GrangerPipelineAdapter(correction="per_dim")._alpha_threshold - 0.05 / 3) < 1e-12
     assert abs(GrangerPipelineAdapter(correction="bonferroni")._alpha_threshold - 0.05 / 15) < 1e-12
     assert abs(GrangerPipelineAdapter(correction="none")._alpha_threshold - 0.05) < 1e-12
 
@@ -122,7 +126,7 @@ def test_per_dim_accepts_borderline_p():
     factors = {d: np.arange(120, dtype=float) for d in ("technical", "fundamental", "macro")}
     returns = np.arange(120, dtype=float) * 0.001
 
-    per_dim = GrangerPipelineAdapter()
+    per_dim = GrangerPipelineAdapter(correction="per_dim")
     per_dim._checker = _StubChecker()
     assert per_dim.evaluate(factors, returns)["G_dim"] is not None
 
