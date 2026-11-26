@@ -1,6 +1,6 @@
 # 变更记录 — 15-监控告警系统
 
-> **版本**: v2.34 | **更新日期**: 2026-11-26
+> **版本**: v2.35 | **更新日期**: 2026-11-26
 
 ---
 
@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 变更内容 | 影响范围 |
 |------|------|----------|----------|
+| v2.35 | 2026-11-26 | 成交回溯全集补入 `22-执行引擎中心/runtime/x1_live_processed.json`（执行器台账，保留全部历史 `decision_id` 与 symbol/direction/notional 等下单属性），覆盖 outbox 500 行滚动淘汰后的存量成交；导出器与日报告同步口径，云端实测当日 join 由 30.77%（4/13）收敛至 100%；新增 1 项单测 | 代码+测试+文档 |
 | v2.34 | 2026-11-26 | P2 链路口径补强（收敛两项 SLO）：① `run_live` 每标的 M6 生成 `trace_id` 并贯穿 M6→M13（此前 M6 无 id、M12 另生成 trace，实测 M6∩M12=0 导致完整率恒 0）；② `make_decision` 新增 `trace_id` 入参并在落盘前写入 `payload.trace_id`，M11 skip 分支补 `decision_id`；③ 完整率分母改为「已出箱 M12 的 live 决策链」，WAIT/未出箱不再被误计为断链；④ 成交回溯 live 全集改为 `decisions.jsonl(live) ∪ outbox(live)`；导出器与日报告同步口径，新增 2 项单测 | 代码+测试+文档 |
 | v2.33 | 2026-11-26 | P3 复盘脚本落地：新增 `scripts/main_nn_daily_report.py`（仅 stdlib），按 Asia/Shanghai 自然日输出 6 项 SLO（链路完整率/WAIT 可归因/wait_vs_broken/决策→成交 join/SL-TP 附带/单出口违约）+ 链路与执行证据 + Prometheus `query_range` 的 MainNN* firing 段数（不可达 fail-open）；误报台账 `fp_ledger.json`（`--mark-fp/--note/--list-fp`，(alert,date) 去重）；报告落 `runtime/reports/YYYYMMDD-main-nn.{md,json}`；新增 `dreambuddy-main-nn-report.{service,timer}`（每日 08:10 Asia/Shanghai）与 4 项单测 | 代码+运维+测试+文档 |
 | v2.32 | 2026-11-26 | P3 看板落地：新增 `deploy/grafana/dashboards/main-nn-monitor.json`（uid `main-nn-monitor`，11 面板：周期/战略/总线/出箱/心跳 + 链路漏斗 + 断链 WAIT + 执行归因 + 语义快照），Grafana provisioning 30s 自动加载 | 部署资产 |

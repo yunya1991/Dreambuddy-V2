@@ -3,8 +3,7 @@
 
 按 Asia/Shanghai 自然日聚合 main-nn 链路证据，输出：
   ① SLO：链路完整率(M12 出箱→M13 执行)、WAIT 可归因率、wait_vs_broken、
-     决策→成交 join、SL/TP 附带率、单出口违约；
-  ② 链路：M0–M14 事件计数、缺失阶段、WAIT 原因 Top；
+     决策→成交 join、SL/TP 附带率、单出口违约；  ② 链路：M0–M14 事件计数、缺失阶段、WAIT 原因 Top；
   ③ 告警：Prometheus `query_range` 统计当日 MainNN* firing 段数（不可达则 fail-open 跳过）；
   ④ 误报台账：`fp_ledger.json`，支持 `--mark-fp/--note/--list-fp`。
 
@@ -237,13 +236,13 @@ def collect_chain(repo: Path, start_ts: float, end_ts: float) -> Dict[str, Any]:
 
 # ------------------------------ 执行证据 ------------------------------
 def collect_execution(repo: Path, start_ts: float, end_ts: float) -> Dict[str, Any]:
-    live_ids: set[str] = set()
+    decision_ids: set[str] = set()
     dec_path = repo / "50-NN主矛盾评估器/runtime/decisions.jsonl"
     for rec in _iter_jsonl_window(dec_path, start_ts, end_ts):
         payload = rec.get("payload") if isinstance(rec.get("payload"), dict) else {}
         mode = str(rec.get("mode") or payload.get("mode") or "")
         if mode == "live" and rec.get("decision_id"):
-            live_ids.add(str(rec["decision_id"]))
+            decision_ids.add(str(rec["decision_id"]))
 
     placed = attached = 0
     filled_ids: set[str] = set()
@@ -262,26 +261,39 @@ def collect_execution(repo: Path, start_ts: float, end_ts: float) -> Dict[str, A
             continue
 
     live_outbox = violations = 0
+    outbox_ids: set[str] = set()
     outbox_path = repo / "50-NN主矛盾评估器/runtime/live/outbox.jsonl"
     for rec in _iter_jsonl_window(outbox_path, start_ts, end_ts):
         if str(rec.get("mode") or "") != "live":
             continue
         live_outbox += 1
-        # 可回溯 live 决策全集 = decisions.jsonl(live) ∪ outbox(live)
         if rec.get("decision_id"):
-            live_ids.add(str(rec["decision_id"]))
+            outbox_ids.add(str(rec["decision_id"]))
         execution = rec.get("execution") if isinstance(rec.get("execution"), dict) else {}
         outcome = str(execution.get("outcome") or rec.get("execution_rights") or "")
         if outcome != "live:50-bypass" or not rec.get("mandate_id"):
             violations += 1
 
+    # 执行器台账：x1_live_processed 保留全部历史 decision_id 与下单属性，
+    # 用于覆盖 outbox 仅存 500 行导致的存量成交不可回溯
+    processed_state = _read_json(repo / "22-执行引擎中心/runtime/x1_live_processed.json")
+    processed = (
+        processed_state.get("processed")
+        if isinstance(processed_state.get("processed"), dict)
+        else {}
+    )
+    processed_ids = {str(k) for k in processed}
+
+    universe = decision_ids | outbox_ids | processed_ids
+    matched = filled_ids & universe
     return {
-        "live_decisions": len(live_ids),
+        "live_decisions": len(decision_ids | outbox_ids),
+        "executor_processed": len(processed_ids),
         "placed_orders": placed,
         "sltp_attached": attached,
         "filled_with_decision_id": len(filled_ids),
-        "join_matched": len(filled_ids & live_ids),
-        "decision_fill_join_ratio": _ratio(len(filled_ids & live_ids), len(filled_ids)),
+        "join_matched": len(matched),
+        "decision_fill_join_ratio": _ratio(len(matched), len(filled_ids)),
         "sltp_attach_ratio": _ratio(attached, placed),
         "live_outbox": live_outbox,
         "single_exit_violations": violations,
@@ -555,7 +567,8 @@ def render_markdown(report: Dict[str, Any]) -> str:
         "",
         "## 执行",
         "",
-        f"- live 决策 {execution['live_decisions']} 条，live 出箱 {execution['live_outbox']} 条",
+        f"- live 决策 {execution['live_decisions']} 条，live 出箱 {execution['live_outbox']} 条，"
+        f"执行器台账 {execution['executor_processed']} 条",
         f"- 下单 {execution['placed_orders']} 笔，SL/TP 附带 {execution['sltp_attached']} 笔"
         f"（{_fmt_ratio(execution['sltp_attach_ratio'])}）",
         f"- 可按 decision_id 回溯：{execution['join_matched']} / "

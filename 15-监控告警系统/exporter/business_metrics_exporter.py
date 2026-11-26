@@ -1078,11 +1078,23 @@ class Collector:
                 outcome = str(execution.get("outcome") or "")
                 if mode == "live" and (outcome != "live:50-bypass" or not d.get("mandate_id")):
                     bad += 1
-                # 成交可回溯的 live 决策全集 = decisions.jsonl(live) ∪ outbox(live)：
-                # outbox 是实盘决策的实际出口，仅看 decisions.jsonl 会漏掉未落账本的出口
+                # 成交可回溯的 live 决策全集 = decisions.jsonl(live) ∪ outbox(live)
+                # ∪ x1 processed（执行器台账，保留全部 decision_id 与下单属性，
+                # 用于覆盖 outbox 500 行滚动淘汰后的存量成交）
                 if mode == "live" and d.get("decision_id"):
                     live_ids.add(str(d["decision_id"]))
             out.append(_metric("main_nn_execution_rights_ok", 0 if bad else 1))
+
+        processed_state = _read_json(
+            self.repo / str(ex.get("x1_state", "22-执行引擎中心/runtime/x1_live_processed.json"))
+        )
+        processed = (
+            processed_state.get("processed")
+            if isinstance(processed_state.get("processed"), dict)
+            else {}
+        )
+        for did in processed:
+            live_ids.add(str(did))
 
         # M6/M11 约束降级（42 统一降级审计流，layer=50/source=constraint_loader）
         # direction_leak_check 是加载器的设计动作（主动剥离方向字段），不是降级，排除
@@ -1098,11 +1110,7 @@ class Collector:
             )
             out.append(_metric("main_nn_constraint_degraded_1h", degraded_n))
 
-        # M13 执行复核（22 x1_live_processed.json 幂等状态）
-        st = _read_json(
-            self.repo / str(ex.get("x1_state", "22-执行引擎中心/runtime/x1_live_processed.json"))
-        )
-        processed = st.get("processed") if isinstance(st.get("processed"), dict) else {}
+        # M13 执行复核（22 x1_live_processed.json 幂等状态；已在上方读取）
         reasons: dict[str, int] = {}
         for item in processed.values():
             if not isinstance(item, dict):

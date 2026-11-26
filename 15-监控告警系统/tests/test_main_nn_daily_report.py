@@ -139,6 +139,7 @@ def test_slo_metrics_and_markdown(tmp_path: Path) -> None:
 
     ex = rep["execution"]
     assert ex["live_decisions"] == 2
+    assert ex["executor_processed"] == 0
     assert ex["placed_orders"] == 3
     assert ex["sltp_attached"] == 2
     assert ex["decision_fill_join_ratio"] == 0.6667
@@ -184,6 +185,31 @@ def test_join_uses_outbox_when_decisions_ledger_lags(tmp_path: Path) -> None:
     )
     rep = build_report(tmp_path, _DAY, prometheus=None)
     assert rep["execution"]["live_decisions"] == 1
+    assert rep["execution"]["decision_fill_join_ratio"] == 1.0
+
+
+def test_join_falls_back_to_executor_processed(tmp_path: Path) -> None:
+    """outbox 滚动淘汰后，执行器台账仍应支撑存量成交回溯。"""
+    _write_jsonl(
+        tmp_path / "22-执行引擎中心/audit" / "x1_live_fills.jsonl",
+        [
+            {
+                "ts": _now_iso(),
+                "decision_id": "d-hist",
+                "order_placed": True,
+                "request": {"sl_pct": 1.5, "tp_pct": 3.0},
+            }
+        ],
+    )
+    state = tmp_path / "22-执行引擎中心/runtime" / "x1_live_processed.json"
+    state.parent.mkdir(parents=True, exist_ok=True)
+    state.write_text(
+        json.dumps({"processed": {"d-hist": {"status": "executed", "ts": _now_iso()}}}),
+        encoding="utf-8",
+    )
+    rep = build_report(tmp_path, _DAY, prometheus=None)
+    assert rep["execution"]["live_decisions"] == 0
+    assert rep["execution"]["executor_processed"] == 1
     assert rep["execution"]["decision_fill_join_ratio"] == 1.0
 
 

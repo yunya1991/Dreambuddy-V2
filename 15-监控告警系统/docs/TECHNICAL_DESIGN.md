@@ -1,6 +1,6 @@
 # 技术设计 — 15-监控告警系统
 
-> **版本**: v2.34 | **更新日期**: 2026-11-26
+> **版本**: v2.35 | **更新日期**: 2026-11-26
 > **定位**: 子系统技术架构设计，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.2
 > **v2.2 说明**: 一期范围收敛为「23 推理信号链」；新增第 12 章：23 模块全景、信号契约差异、8 步生命周期、信号 SLO 与落地审计。40 神经网络顺延二期。
 > **v2.0 说明**: 新增第 10 章「云端全链路监控目标架构」。第 1–9 章保留为本地 v1.0 适配器实现（仅覆盖 5 个老系统），**不再作为云端监控的权威口径**；云端架构以第 10 章为准。调研证据与选型过程见 [RESEARCH-全链路监控体系调研-v0.2.md](./RESEARCH-全链路监控体系调研-v0.2.md)。
@@ -1682,7 +1682,9 @@ trace_id（M6 生成，贯穿 M6→M11）
 （同一 `(alert, date)` 去重），CLI 支持 `--date/--repo-root/--prometheus/--out/--mark-fp/--note/--list-fp`。
 云端由 `dreambuddy-main-nn-report.timer` 每日 08:10 Asia/Shanghai 触发。链路完整率与 WAIT 口径与
 `business_metrics_exporter.main_nn_metrics()` 一致（分母含 M12、完整需含 M13；skip 事件按
-`reason_category` 判可归因）；成交回溯的 live 决策全集为 `decisions.jsonl(live) ∪ outbox(live)`。
+`reason_category` 判可归因）；成交回溯的 live 决策全集为
+`decisions.jsonl(live) ∪ outbox(live) ∪ x1_live_processed`（执行器台账保留全部历史
+`decision_id` 与下单属性，覆盖 outbox 500 行滚动淘汰后的存量成交）。
 
 **四步定位**：
 
@@ -1798,6 +1800,7 @@ promtool check rules 15-监控告警系统/deploy/prometheus/rules/dreambuddy-mo
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v2.35 | 2026-11-26 | 成交回溯全集补入 `x1_live_processed`（执行器台账，6542 条保留全部历史 `decision_id`），解决 outbox 仅存 500 行导致的存量成交不可回溯；实测当日 join 由 30.77% 收敛至 100% |
 | v2.34 | 2026-11-26 | P2 链路口径补强：`run_live` 在每标的 M6 生成 `trace_id` 并贯穿 M6→M13（此前 M6 无 id、M12 另生成 trace，M6∩M12=0）；`make_decision` 新增 `trace_id` 入参并在落盘前写入 payload；完整率分母改为「已出箱 M12 的 live 决策链」（WAIT/未出箱不再被误计为断链）；成交回溯 live 全集改为 `decisions.jsonl(live) ∪ outbox(live)` |
 | v2.33 | 2026-11-26 | P3 复盘脚本落地：`scripts/main_nn_daily_report.py` 按日聚合 6 项 SLO + 链路/执行证据，Prometheus `query_range` 统计 MainNN* firing 段数（fail-open），误报台账 `fp_ledger.json`（`--mark-fp/--list-fp`）；新增 `dreambuddy-main-nn-report.{service,timer}`（每日 08:10 Asia/Shanghai）与 4 项单测 |
 | v2.32 | 2026-11-26 | P3 看板落地：`deploy/grafana/dashboards/main-nn-monitor.json`（11 面板：漏斗/断链 WAIT/执行归因/语义快照/心跳），由 Grafana provisioning 自动加载 |
@@ -1818,5 +1821,5 @@ promtool check rules 15-监控告警系统/deploy/prometheus/rules/dreambuddy-mo
 
 ---
 
-**文档版本**: v2.34
+**文档版本**: v2.35
 **最后更新**: 2026-11-26
