@@ -229,6 +229,19 @@ def build_bridge_inputs(
     if encoder:
         out.update(encoder)
 
+    # M3 战略承接事件（15 TD §14，FAIL-OPEN）
+    try:
+        from strategic_extension.chain_emit import emit as _emit_mnn
+
+        _emit_mnn(
+            "M3",
+            "cycle_state_adapter.build_bridge_inputs",
+            "pass" if out else "skip",
+            data={"bridge_fields": len(out)},
+            reason_category=None if out else "wait_evidence_missing",
+        )
+    except Exception:  # noqa: BLE001  观测失败不影响桥接
+        pass
     return out
 
 

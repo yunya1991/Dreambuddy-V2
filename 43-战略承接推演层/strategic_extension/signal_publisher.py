@@ -391,6 +391,35 @@ def publish(
     except Exception:  # noqa: BLE001  落盘失败不阻断信号返回
         pass
     _append_elements_history(signal)
+    # M4 战略发布事件（15 TD §14，FAIL-OPEN）
+    try:
+        from strategic_extension.chain_emit import emit as _emit_mnn
+
+        payload = signal.get("payload") if isinstance(signal.get("payload"), dict) else {}
+        per = (
+            payload.get("per_asset_class")
+            if isinstance(payload.get("per_asset_class"), dict)
+            else {}
+        )
+        _emit_mnn(
+            "M4",
+            "signal_publisher.publish",
+            "pass",
+            data={
+                "shadow": bool(signal.get("shadow")),
+                "bridge_switch": bool(payload.get("bridge_switch")),
+                "per_asset_class": {
+                    str(k): {
+                        "total": (v or {}).get("total"),
+                        "war_state": (v or {}).get("war_state"),
+                    }
+                    for k, v in per.items()
+                    if isinstance(v, dict)
+                },
+            },
+        )
+    except Exception:  # noqa: BLE001  观测失败不影响发布
+        pass
     return signal
 
 

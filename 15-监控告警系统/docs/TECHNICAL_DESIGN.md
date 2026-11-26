@@ -1,6 +1,6 @@
 # 技术设计 — 15-监控告警系统
 
-> **版本**: v2.28 | **更新日期**: 2026-11-26
+> **版本**: v2.29 | **更新日期**: 2026-11-26
 > **定位**: 子系统技术架构设计，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.2
 > **v2.2 说明**: 一期范围收敛为「23 推理信号链」；新增第 12 章：23 模块全景、信号契约差异、8 步生命周期、信号 SLO 与落地审计。40 神经网络顺延二期。
 > **v2.0 说明**: 新增第 10 章「云端全链路监控目标架构」。第 1–9 章保留为本地 v1.0 适配器实现（仅覆盖 5 个老系统），**不再作为云端监控的权威口径**；云端架构以第 10 章为准。调研证据与选型过程见 [RESEARCH-全链路监控体系调研-v0.2.md](./RESEARCH-全链路监控体系调研-v0.2.md)。
@@ -1434,7 +1434,7 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 
 ---
 
-## 14. 主神经网络监控模块（main-nn，v2.28，2026-11-26）
+## 14. 主神经网络监控模块（main-nn，v2.29，2026-11-26）
 
 > **来源**：原 `docs/SPEC-MAIN-NN-MONITOR-v0.1.md` 评审通过后并入本章；该 SPEC 已归档（头部标注「已并入 TD §14，仅存档」），**不再 active**。
 > **监控对象**：`48 → 40 → 43 →（49 契约）→ 42 → 50 → 22` 主神经网络闭环链。
@@ -1503,8 +1503,8 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 | M6 | 证据就绪 | `50/adapters/bus_reader.py`、`prior_reader.py`、`constraint_loader.py` | 总线快照、40 先验、40/43 约束 | evidence 列表、约束包络 | `trace_id`（**起点**） | 可用源 <6、TTL 过期、先验陈旧 |
 | M7 | 触发/防抖 | `50/core/trigger_flap.py` | evidence、时间窗 | 是否进入裁决 | `trace_id` | 长期不触发且无计数 |
 | M8 | 路径合成 | `50/core/path_synthesis.py`、`factor_priors_overlay` | evidence | `paths[]` | `trace_id` | path=0、confidence=0 |
-| M9 | 维度力量/宏观传导 | `50/core/dimension_forces.py`、`macro_force.py`、`resonance_sensor.py` | paths、40 宏观 | 维度排序、力量值 | `trace_id` | 全 neutral/NaN、降级不上报 |
-| M10 | 主矛盾与支配 | `50/core/contradiction.py`、`dominance.py` | 维度力量 | `primary_contradiction`、dominance 矩阵 | `trace_id` | unknown、仅单一维度可解释 |
+| M9 | 四维裁决 | `50/core/w4.py:adjudicate`（`dimension_forces/macro_force/resonance_sensor` 为 WP-R1 预留，**未接入主链、权重 0**） | paths、reconciliation | `w4{force,urgency,consistency,impact,total,direction,conflict_flag}` | 决策 payload | 全 neutral/NaN、`conflict_flag` 恒 false |
+| M10 | 支配与主矛盾 | `50/core/dominance.py:resolve_dominance` + `w4.conflict_flag`（`contradiction.py` 为 WP-R1 预留） | paths | `overall_leader`、`overall_fallback_argmax`、`conflict_flag` | 决策 payload | leader 为空、长期 `fallback_argmax` |
 | M11 | 约束钳位与决策 | `50/core/constraints.py`、`core/decision.py`、`shadow_decision.py` | paths、约束 | `FinalDecisionSignal` → `runtime/decisions.jsonl` | `decision_id`（**chain_id 起点**） | 约束缺字段 → 过度放开；mode 错标 |
 | M12 | live 过滤与出箱 | `50/tools/run_live.py` | shadow 决策 | `runtime/live/outbox.jsonl`、`latest.json` | `decision_id` | 过期证据静默丢、只产 `MULTI` 级 |
 | M13 | 执行复核 | `22/x1_live_executor.py`、`22/risk_bridge.py` | outbox 决策 | execute / skip（含归因） | `decision_id` | skip 无归因、`size_zero`、幂等误吞 |
@@ -1595,17 +1595,20 @@ trace_id（M6 生成，贯穿 M6→M11）
 | `dreambuddy_main_nn_strategic_shadow` | 43 信号 | 影子门禁是否长期 true |
 | `dreambuddy_main_nn_bus_sources_ok` | `42/runtime/bus_state.json` | 可用源数（应 ≥6） |
 | `dreambuddy_main_nn_bus_reject_ratio` | 同上 | 过滤器拒绝率 |
-| `dreambuddy_main_nn_evidence_sources_ok` | 50 bus_reader | 参与裁决的源数 |
-| `dreambuddy_main_nn_path_count` | 50 path_synthesis | 路径是否为 0 |
-| `dreambuddy_main_nn_dimension_neutral_ratio` | 50 dimension_forces | 是否全 neutral |
-| `dreambuddy_main_nn_contradiction_present` | 50 contradiction | 主矛盾是否为 unknown |
+| `dreambuddy_main_nn_evidence_sources_ok` | decisions payload 的 paths 去重 `source`（聚合取 max） | 参与裁决的源数 |
+| `dreambuddy_main_nn_path_count` | decisions payload `path_count`（聚合取 max） | 路径是否为 0 |
+| `dreambuddy_main_nn_dimension_neutral_ratio` | decisions payload paths `confidence<0.1` 占比 | 是否大面积 neutral |
+| `dreambuddy_main_nn_contradiction_present` | decisions payload `w4.conflict_flag`（任一为真=1） | 是否存在主矛盾 |
+| `dreambuddy_main_nn_dominance_fallback_ratio` | decisions payload `dominance.overall_fallback_argmax` 占比 | 支配是否长期退化 |
+| `dreambuddy_main_nn_trigger_flap_locked_ratio` | decisions payload `trigger_flap.locked` 占比 | 防抖是否长期锁死 |
+| `dreambuddy_main_nn_constraint_freeze_ratio` | decisions payload `constraint_freeze` 占比 | 约束是否长期冻结 |
 | `dreambuddy_main_nn_constraint_degraded_1h` | 42 degraded_events（layer=50/source=constraint_loader） | 1h 内非 `direction_leak_check` 的约束降级次数 |
 | `dreambuddy_main_nn_decision_confidence{symbol}` | decisions.jsonl | 置信度是否退化 |
 | `dreambuddy_main_nn_decision_mode_total{mode}` | decisions.jsonl | `shadow/live` 比例 |
 | `dreambuddy_main_nn_execution_rights_ok` | 50 live outbox + 22 幂等状态 | 单出口是否守约 |
 | `dreambuddy_main_nn_x1_skip_total{reason}` | `22/runtime/x1_live_processed.json` | 跳过归因分布 |
-| `dreambuddy_main_nn_sltp_coverage{scope}` | `22/audit/sltp_reconcile.jsonl` | 50 持仓保护覆盖率 |
-| `dreambuddy_main_nn_decision_fill_join_ratio` | 22 账本 + 归因 | 决策→成交 join |
+| `dreambuddy_main_nn_sltp_coverage{scope}` | `22/audit/sltp_reconcile.jsonl` | **P2 待落地**：50 持仓保护覆盖率（当前由 22 `sltp_*` 既有指标覆盖，复查后决定是否单列） |
+| `dreambuddy_main_nn_decision_fill_join_ratio` | 22 账本 + 归因 | **P2 待落地**：决策→成交 join（当前复用 `DecisionFillJoinLow`） |
 
 **命名与标签纪律**：前缀 `dreambuddy_`；业务指标带 `chain=trade, layer=L1, cell=L1.trade, module=main-nn`；链路指标额外 `source="main-nn"`、`stage="M0"…"M14"`；禁止 `chain_id / decision_id / signal_id` 做 label；高频中间量只保留最新值与分位摘要。
 
@@ -1743,7 +1746,7 @@ execution:
 | 阶段 | 内容 | 退出标准 |
 |---|---|---|
 | P0 基座（观测可见） | `source` 字段与 `trace_id`（M6 生成）；M5/M6/M11/M14 最小事件；`artifacts.main_nn`；`domains.yaml` 登记；导出器 `main_nn_metrics()` | 能复盘一笔 shadow 决策的 M5→M11 时间线 |
-| P1 决策语义 | M3/M4/M7/M8/M9/M10 事件与语义指标；`MainNNStrategicFallbackDominant`、`MainNNConstraintDegraded` | 能回答「为什么 WAIT / 主矛盾是什么」 |
+| P1 决策语义 | M3/M4 事件 + M7–M10 语义快照（**取自 decisions payload，不在核心裁决里加事件**，避免侵入）；`MainNNStrategicFallbackDominant`、`MainNNConstraintDegraded` | 能回答「为什么 WAIT / 主矛盾是什么 / 支配是否退化」 |
 | P2 执行与资金安全 | M12/M13 事件；`x1_skip_total`；`sltp_coverage`；`MainNNExecutionRightsMismatch` | 一笔 live 决策可按 chain_id 还原到成交 |
 | P3 看板与观察期 | 四面板看板；2 周 `alert_only`；复盘脚本 | 误报 <5%，SLO 达标 |
 
@@ -1783,6 +1786,7 @@ promtool check rules 15-监控告警系统/deploy/prometheus/rules/dreambuddy-mo
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v2.29 | 2026-11-26 | main-nn P1：43 侧 `chain_emit` + M3/M4 事件；导出器 M7–M10 语义快照（path/conflict/dominance/flap/freeze/neutral/evidence，取自 decisions payload）；校正 M9/M10 节点代码入口为 `w4.adjudicate`/`dominance.resolve_dominance` |
 | v2.28 | 2026-11-26 | 新增第 14 章「主神经网络监控模块（main-nn）」：并入原 SPEC-MAIN-NN-MONITOR v0.1；M0–M14 节点表（48 保持 B 类并作为 M0 上游门禁）、chain_event 扩展、指标族、告警复用映射 + 3 条新增规则（`strategic_total` 告警限定三条件同时满足）、看板/SLO、M0–M14 锚定索引、配置与 P0–P3 路线；SPEC 归档 |
 | v1.0 | 2026-08-02 | 初始版本：按 DOC_STANDARD §3.2 补建技术设计文档，覆盖概述/架构/算法/数据流/接口/状态/配置/错误处理/扩展性 9 章节 |
 | v2.23 | 2026-11-20 | 幽灵仓归因拆分：`exchange_sltp`（交易所 SL/TP 正常回填，仅观察）与 `ghost_exchange_flat`（无成交可回填，P2）；新增 `ledger_exchange_sltp_24h`；更新 §13.8.3/§13.8.5/§13.8.7/§13.9.5 |
@@ -1797,5 +1801,5 @@ promtool check rules 15-监控告警系统/deploy/prometheus/rules/dreambuddy-mo
 
 ---
 
-**文档版本**: v2.28
+**文档版本**: v2.29
 **最后更新**: 2026-11-26

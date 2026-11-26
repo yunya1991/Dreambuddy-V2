@@ -1,6 +1,6 @@
 # 工程索引 — 15-监控告警系统
 
-> **版本**: v1.2 | **更新日期**: 2026-11-26
+> **版本**: v1.3 | **更新日期**: 2026-11-26
 > **定位**: 模块级工程索引（L3 辅助模块），对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.1 / §4
 
 ---
@@ -43,7 +43,7 @@
 ├── adapters/                    # 适配器层（本地 v1：11/12/14/AgentA/AgentB）
 │   └── __init__.py              # 5 个系统监控适配器实现
 ├── exporter/                    # 云端 v2 业务指标导出器（:9101，只读）
-│   └── business_metrics_exporter.py # 23 信号/链路、22 账本/SLTP、entry23/exit23 存活、主神经网络 main_nn_metrics()
+│   └── business_metrics_exporter.py # 23 信号/链路、22 账本/SLTP、entry23/exit23 存活、主神经网络 main_nn_metrics()（含 M7–M10 语义快照）
 ├── deploy/                      # 云端 v2 部署产物
 │   ├── prometheus/              # 采集与告警规则（含 execution group）
 │   ├── alertmanager/            # 告警路由

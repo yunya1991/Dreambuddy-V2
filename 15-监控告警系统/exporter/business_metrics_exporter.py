@@ -999,6 +999,59 @@ class Collector:
         for mode, n in sorted(modes.items()):
             out.append(_metric("main_nn_decision_mode_total", n, mode=mode))
 
+        # M7–M10 语义快照（聚合，低基数）：全部取自 decisions payload，不新增推断
+        if latest:
+            path_counts: list[int] = []
+            neutral = total_paths = conflicted = fallback = locked = frozen = 0
+            source_sets: list[set[str]] = []
+            for rec in latest.values():
+                payload = rec.get("payload") if isinstance(rec.get("payload"), dict) else {}
+                w4 = payload.get("w4") if isinstance(payload.get("w4"), dict) else {}
+                dom = payload.get("dominance") if isinstance(payload.get("dominance"), dict) else {}
+                flap = (
+                    payload.get("trigger_flap")
+                    if isinstance(payload.get("trigger_flap"), dict)
+                    else {}
+                )
+                paths = payload.get("paths") if isinstance(payload.get("paths"), list) else []
+                path_counts.append(int(payload.get("path_count") or 0))
+                conflicted += 1 if w4.get("conflict_flag") else 0
+                fallback += 1 if dom.get("overall_fallback_argmax") else 0
+                locked += 1 if flap.get("locked") else 0
+                frozen += 1 if payload.get("constraint_freeze") else 0
+                srcs: set[str] = set()
+                for p in paths:
+                    if not isinstance(p, dict):
+                        continue
+                    total_paths += 1
+                    try:
+                        if float(p.get("confidence") or 0) < 0.1:
+                            neutral += 1
+                    except (TypeError, ValueError):
+                        neutral += 1
+                    if p.get("source"):
+                        srcs.add(str(p["source"]))
+                source_sets.append(srcs)
+            out.append(_metric("main_nn_path_count", max(path_counts or [0])))
+            out.append(_metric("main_nn_contradiction_present", 1 if conflicted else 0))
+            out.append(
+                _metric("main_nn_dominance_fallback_ratio", round(fallback / len(latest), 4))
+            )
+            out.append(_metric("main_nn_trigger_flap_locked_ratio", round(locked / len(latest), 4)))
+            out.append(_metric("main_nn_constraint_freeze_ratio", round(frozen / len(latest), 4)))
+            out.append(
+                _metric(
+                    "main_nn_dimension_neutral_ratio",
+                    round(neutral / total_paths, 4) if total_paths else 0.0,
+                )
+            )
+            out.append(
+                _metric(
+                    "main_nn_evidence_sources_ok",
+                    max((len(s) for s in source_sets), default=0),
+                )
+            )
+
         # M12 live 出箱（50 outbox.jsonl）
         ob_path = self.repo / str(ex.get("outbox", "50-NN主矛盾评估器/runtime/live/outbox.jsonl"))
         ob_rows: list[dict] = []
