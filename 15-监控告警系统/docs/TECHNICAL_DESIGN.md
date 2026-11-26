@@ -1599,7 +1599,7 @@ trace_id（M6 生成，贯穿 M6→M11）
 | `dreambuddy_main_nn_path_count` | 50 path_synthesis | 路径是否为 0 |
 | `dreambuddy_main_nn_dimension_neutral_ratio` | 50 dimension_forces | 是否全 neutral |
 | `dreambuddy_main_nn_contradiction_present` | 50 contradiction | 主矛盾是否为 unknown |
-| `dreambuddy_main_nn_constraint_degraded` | 50 constraint_loader | 约束字段缺失数 |
+| `dreambuddy_main_nn_constraint_degraded_1h` | 42 degraded_events（layer=50/source=constraint_loader） | 1h 内非 `direction_leak_check` 的约束降级次数 |
 | `dreambuddy_main_nn_decision_confidence{symbol}` | decisions.jsonl | 置信度是否退化 |
 | `dreambuddy_main_nn_decision_mode_total{mode}` | decisions.jsonl | `shadow/live` 比例 |
 | `dreambuddy_main_nn_execution_rights_ok` | 50 live outbox + 22 幂等状态 | 单出口是否守约 |
@@ -1634,7 +1634,7 @@ trace_id（M6 生成，贯穿 M6→M11）
 | 告警 | 级别 | 表达式（示意） | 语义 | Runbook 锚点 |
 |---|---|---|---|---|
 | `MainNNStrategicFallbackDominant` | P1 | 见下方三条件 | 43 承接失效（40 产物过期/字段不匹配），五维退化为全 fallback | TD §14 M3/M4 |
-| `MainNNConstraintDegraded` | P2 | `dreambuddy_main_nn_constraint_degraded_1h > 0` | 40/43 约束字段缺失，50 按更保守默认钳位，需核对字段契约 | TD §14 M6/M11 |
+| `MainNNConstraintDegraded` | P2 | `dreambuddy_main_nn_constraint_degraded_1h > 0` | 40/43 约束字段缺失，50 按更保守默认钳位，需核对字段契约；**排除 `direction_leak_check`**（加载器主动剥离方向字段属设计动作，非降级） | TD §14 M6/M11 |
 | `MainNNExecutionRightsMismatch` | P0 | 存在 `mode="live"` 且 (`execution_rights != "live:50-bypass"` 或 `mandate_id=""`) | 单出口契约被破坏，立即停 live | TD §14 M11/M13 |
 
 **`MainNNStrategicFallbackDominant` 的三条件（用户确认，硬约束）**：必须**三条件同时满足**才告警——

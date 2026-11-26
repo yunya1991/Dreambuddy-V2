@@ -1024,12 +1024,16 @@ class Collector:
             out.append(_metric("main_nn_execution_rights_ok", 0 if bad else 1))
 
         # M6/M11 约束降级（42 统一降级审计流，layer=50/source=constraint_loader）
+        # direction_leak_check 是加载器的设计动作（主动剥离方向字段），不是降级，排除
+        benign = {"direction_leak_check"}
         dg_path = self.repo / "42-神经网络交易协调层/runtime/degraded_events.jsonl"
         if dg_path.exists():
             degraded_n = sum(
                 1
                 for rec in _iter_jsonl_since(dg_path, _now() - 3600)
-                if str(rec.get("layer")) == "50" and str(rec.get("source")) == "constraint_loader"
+                if str(rec.get("layer")) == "50"
+                and str(rec.get("source")) == "constraint_loader"
+                and str(rec.get("reason") or "") not in benign
             )
             out.append(_metric("main_nn_constraint_degraded_1h", degraded_n))
 
