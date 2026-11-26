@@ -1196,7 +1196,7 @@ class Collector:
                     "main_nn_chain_completion_ratio",
                     round(complete / len(signal_chains), 4),
                     source=src,
-                    segment="M6-M13",
+                    segment="M12-M13",
                 )
             )
             for required in ("M7", "M11", "M13"):
