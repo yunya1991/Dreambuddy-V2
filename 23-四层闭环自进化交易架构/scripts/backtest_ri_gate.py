@@ -241,10 +241,139 @@ def part_klines(symbols=("BTC", "ETH", "SOL"), bars: int = 1000) -> None:
             )
 
 
+def refl_proxy(close, i: int, win: int = 48) -> float:
+    """R_reflexivity 代理：近期 1H 收益 lag-1 自相关（趋势自我强化程度）。"""
+    seg = close[max(0, i - win * 2 + 1) : i + 1]
+    if len(seg) < win + 2:
+        return 0.5
+    lr = np.diff(np.log(np.clip(seg, 1e-12, None)))
+    a, b = lr[:-1], lr[1:]
+    if a.std() < 1e-12 or b.std() < 1e-12:
+        return 0.5
+    ac = float(np.corrcoef(a, b)[0, 1])
+    if not math.isfinite(ac):
+        return 0.5
+    return max(0.0, min(1.0, 0.5 + 0.5 * ac))
+
+
+def _fallback_pct(v: float) -> float:
+    return max(0.0, min(1.0, (v - 0.35) / 0.50))
+
+
+def part_klines_norm(symbols=("BTC", "ETH", "SOL"), bars: int = 1000) -> None:
+    """E. R_reflexivity 历史分位归一化对照（真实 1H K 线，因果 ECDF）。
+
+    对照：legacy / calibrated 原始 / 归一化 scale∈{1.0,1.5,2.0,2.5} / margin∈{0.05,0.10,0.15}
+    """
+    import bisect
+
+    try:
+        import ccxt
+    except ImportError:
+        print("== E. 归一化回测 ==\nccxt 不可用（请在云端 venv 执行）")
+        return
+
+    def r_dims(close, i, win=200):
+        seg = close[max(0, i - win + 1) : i + 1]
+        if len(seg) < 60:
+            return None
+        ma200 = float(seg.mean())
+        trend_bias = max(-1.0, min(1.0, (close[i] / ma200 - 1.0) / 0.08))
+        x = np.arange(len(seg), dtype=float)
+        slope, intercept = np.polyfit(x, seg, 1)
+        yhat = slope * x + intercept
+        ss_res = float(((seg - yhat) ** 2).sum())
+        ss_tot = float(((seg - seg.mean()) ** 2).sum())
+        r2 = 0.0 if ss_tot < 1e-18 else max(0.0, min(1.0, 1 - ss_res / ss_tot))
+        combined = 0.2 * trend_bias
+        return (
+            max(0.0, min(1.0, 0.5 - 0.38 * combined)),
+            max(0.0, min(1.0, 0.5 + 0.38 * combined)),
+            1.0 - r2,
+        )
+
+    grid = [
+        ("legacy sm*rf", "A", 0.0, 1.0, False),
+        ("flip raw +10%", "B", 0.10, 1.0, False),
+        ("norm x1.0 +10%", "B", 0.10, 1.0, True),
+        ("norm x1.5 +10%", "B", 0.10, 1.5, True),
+        ("norm x2.0 +5%", "B", 0.05, 2.0, True),
+        ("norm x2.0 +10%", "B", 0.10, 2.0, True),
+        ("norm x2.0 +15%", "B", 0.15, 2.0, True),
+        ("norm x2.5 +10%", "B", 0.10, 2.5, True),
+    ]
+    fee = 0.0005
+    ex = ccxt.okx({"enableRateLimit": True, "timeout": 20000})
+
+    for h in (4, 24):
+        agg = {
+            g[0]: {"n": 0, "wait": 0, "long": 0, "short": 0, "p": [], "eq": 1.0, "mdd": 0.0}
+            for g in grid
+        }
+        base = []
+        for s in symbols:
+            rows = ex.fetch_ohlcv(f"{s}/USDT:USDT", "1h", limit=bars)
+            c = np.array([r[4] for r in rows], dtype=float)
+            hist: list[float] = []  # 因果历史（当前 bar 之后才入池）
+            for i in range(200, len(c) - h):
+                d = r_dims(c, i)
+                if d is None:
+                    continue
+                up, dn, sm = d
+                raw = refl_proxy(c, i)
+                pct = (
+                    bisect.bisect_right(hist, raw) / len(hist)
+                    if len(hist) >= 50
+                    else _fallback_pct(raw)
+                )
+                bisect.insort(hist, raw)
+                if len(hist) > 500:  # 滚动 500 bar 窗口，避免早期 regime 永久主导分位
+                    hist.pop(0)
+                ret = c[i + h] / c[i] - 1.0
+                base.append(ret)
+                bc = min(up, dn)
+                best = "long" if up < dn else "short"
+                for label, mode, mg, scale, use_norm in grid:
+                    if mode == "A":
+                        w = sm * raw
+                        act = "wait" if w <= bc else best
+                    else:
+                        w = min((1.0 - sm) * (pct * scale if use_norm else raw), 0.99)
+                        act = best if bc <= w * (1.0 - mg) else "wait"
+                    a = agg[label]
+                    a["n"] += 1
+                    if act == "wait":
+                        a["wait"] += 1
+                        a["p"].append(0.0)
+                    else:
+                        a[act] += 1
+                        pnl = ret - 2 * fee if act == "long" else -ret - 2 * fee
+                        a["p"].append(pnl)
+                        a["eq"] *= 1 + pnl
+                        a["mdd"] = max(a["mdd"], 1 - a["eq"] / max(a["eq"], 1e-12))
+
+        n = len(base)
+        print(
+            f"\n== E. 分位归一化 walk-forward h={h}h | n={n} | 基准 {np.mean(base) * 100:+.3f}% =="
+        )
+        for label, *_ in grid:
+            a = agg[label]
+            nn = max(a["n"], 1)
+            p = np.array(a["p"])
+            tr = p[p != 0.0]
+            print(
+                f"{label:<15} | WAIT {100 * a['wait'] / nn:5.1f}% L {100 * a['long'] / nn:5.1f}% "
+                f"S {100 * a['short'] / nn:5.1f}% | 每样本 {100 * p.mean():+7.4f}% "
+                f"| 胜率 {100 * float((tr > 0).mean()) if tr.size else 0:5.1f}% "
+                f"| 累计 {100 * (a['eq'] - 1):+9.2f}% | MDD {100 * a['mdd']:5.2f}%"
+            )
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--events", action="store_true", help="叠加实际 chain_events N2 分布")
     ap.add_argument("--klines", action="store_true", help="真实 K 线 walk-forward（需外网）")
+    ap.add_argument("--klines-norm", action="store_true", help="R_reflexivity 分位归一化对照")
     args = ap.parse_args()
     part_a()
     part_b()
@@ -252,3 +381,5 @@ if __name__ == "__main__":
         part_events(os.path.join(os.path.dirname(__file__), "..", "runtime"))
     if args.klines:
         part_klines()
+    if args.klines_norm:
+        part_klines_norm()

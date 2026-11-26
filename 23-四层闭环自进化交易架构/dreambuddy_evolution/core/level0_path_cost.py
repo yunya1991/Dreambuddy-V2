@@ -28,6 +28,9 @@ import numpy as np
 _WAIT_MODE_ENV = "EVOLUTION_DSTAR_WAIT_MODE"
 _WAIT_MARGIN_ENV = "EVOLUTION_DSTAR_WAIT_MARGIN"
 _DEFAULT_WAIT_MARGIN = 0.30
+_REFL_NORM_ENV = "EVOLUTION_DSTAR_REFL_NORM"
+_WAIT_SCALE_ENV = "EVOLUTION_DSTAR_WAIT_SCALE"
+_DEFAULT_WAIT_SCALE = 2.0
 
 
 def _wait_mode() -> str:
@@ -41,6 +44,19 @@ def _wait_margin() -> float:
     except (TypeError, ValueError):
         return _DEFAULT_WAIT_MARGIN
     return max(0.0, min(0.9, v))
+
+
+def _refl_norm_enabled() -> bool:
+    """R_reflexivity 历史分位归一化开关（默认 0，保持旧口径）。"""
+    return os.getenv(_REFL_NORM_ENV, "0").strip().lower() in ("1", "true", "on", "yes")
+
+
+def _wait_scale() -> float:
+    try:
+        v = float(os.getenv(_WAIT_SCALE_ENV, _DEFAULT_WAIT_SCALE))
+    except (TypeError, ValueError):
+        return _DEFAULT_WAIT_SCALE
+    return max(0.1, min(5.0, v))
 
 
 def compute_g_diag(r_vector: dict[str, Any]) -> np.ndarray:
@@ -111,10 +127,22 @@ def compute_d_star(
         "wait": R_smooth * R_refl,  # §1.5.5 WAIT代价 = R_smooth × R_reflexivity
     }
     # F4 校准口径：等待成本随趋势强度上升（R_smooth 低 = 趋势纯 = 等待更贵）
+    # F4.1（2026-11-26）：R_reflexivity 历史分位归一化 + 尺度放大，使其与方向代价可比
+    refl_pct: float | None = None
+    wait_scale = _wait_scale() if _refl_norm_enabled() else 1.0
+    if _refl_norm_enabled():
+        from .reflexivity_normalizer import get_normalizer
+
+        norm = get_normalizer()
+        refl_pct = norm.percentile(R_refl)
+        norm.observe(R_refl)
+        wait_cal_val = min(0.99, (1.0 - min(R_smooth, 0.99)) * refl_pct * wait_scale)
+    else:
+        wait_cal_val = (1.0 - min(R_smooth, 0.99)) * R_refl
     costs_cal = {
         "long": R_up,
         "short": R_down,
-        "wait": (1.0 - min(R_smooth, 0.99)) * R_refl,
+        "wait": wait_cal_val,
     }
 
     d_star = _pick(costs_cal if mode == "calibrated" else costs, mode, margin)
@@ -134,4 +162,6 @@ def compute_d_star(
         "costs_calibrated": costs_cal,
         "wait_mode": mode,
         "wait_margin": round(float(margin), 4),
+        "R_reflexivity_pct": None if refl_pct is None else round(refl_pct, 4),
+        "wait_scale": round(float(wait_scale), 4),
     }
