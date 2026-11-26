@@ -1065,7 +1065,8 @@ class Collector:
                     1 if ob_age > float(cfg.get("outbox_stale_seconds", 900)) else 0,
                 )
             )
-            ob_rows = _tail_jsonl(ob_path, limit=200)
+            # outbox 只保留最近 500 条；join/契约校验需覆盖整个窗口，不能只取尾部 200
+            ob_rows = _tail_jsonl(ob_path, limit=5000)
         # 单出口契约：live 决策必须是 execution=live:50-bypass 且带 mandate_id
         if ob_rows:
             bad = 0
