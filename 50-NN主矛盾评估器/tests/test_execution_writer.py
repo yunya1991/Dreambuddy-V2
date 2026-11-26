@@ -44,6 +44,24 @@ def test_symbol_override(tmp_path):
     assert resolve_outcome("BTC-USDT-SWAP", rights) == "paper"
 
 
+def test_shared_outcomes_do_not_change_50_resolution():
+    """23/50 竞争标的：50 仍按 domain symbols 解析 live:50-bypass。"""
+    rights = {
+        "fifty_nn_domain": {
+            "default_outcome": "paper",
+            "symbols": {"AVAX-USDT-SWAP": {"outcome": "live:50-bypass"}},
+        },
+        "symbols": {
+            "AVAX-USDT-SWAP": {
+                "outcome": "live:50-bypass",
+                "shared_outcomes": {"23-evolution": "live:23-gateway"},
+            }
+        },
+        "classes": {"crypto": {"outcome": "live:23-gateway"}},
+    }
+    assert resolve_outcome("AVAX-USDT-SWAP", rights) == "live:50-bypass"
+
+
 def test_kill_switch_blocks(monkeypatch, tmp_path):
     monkeypatch.setenv("50_KILL_SWITCH", "1")
     rights = {"fifty_nn_domain": {"default_outcome": "paper"}}
@@ -146,10 +164,12 @@ def test_registry_covers_all_40_tradable_assets():
     registry = json.loads(
         (root / "22-执行引擎中心" / "config" / "live_symbols.json").read_text(encoding="utf-8")
     )
+    # BTC/ETH/SOL 自 2026-11-18 起移交 23 单出口，不在 50 live 注册表内。
+    _exclusive_23 = {"BTC", "ETH", "SOL"}
     want = {
         f"{sym}-USDT-SWAP": cls
         for sym, cls in ac.SYMBOL_CLASS.items()
-        if ac.ASSET_CLASSES[cls].get("session") != "macro_series_only"
+        if sym not in _exclusive_23 and ac.ASSET_CLASSES[cls].get("session") != "macro_series_only"
     }
     got = {v["inst_id"]: v["asset_class"] for v in registry["symbols"].values()}
     assert not set(want) - set(got), f"未接入 live: {sorted(set(want) - set(got))}"

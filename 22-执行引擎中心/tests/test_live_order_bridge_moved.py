@@ -117,7 +117,9 @@ def test_kill_switch_blocks_before_network(tmp_path):
 
 def test_registry_drives_allowed_symbols_and_max_positions(monkeypatch):
     """多资产白名单与并发上限来自 config/live_symbols.json，环境变量可覆盖上限。"""
-    assert {"BTC-USDT-SWAP", "XAU-USDT-SWAP", "NVDA-USDT-SWAP"} <= bridge.ALLOWED_SYMBOLS
+    assert {"XAU-USDT-SWAP", "NVDA-USDT-SWAP"} <= bridge.ALLOWED_SYMBOLS
+    # BTC/ETH/SOL 自 2026-11-18 起移交 23 单出口，不再属于 22 注册表白名单
+    assert "BTC-USDT-SWAP" not in bridge.ALLOWED_SYMBOLS
     assert bridge._load_max_positions() == bridge._REGISTRY.get("max_positions_default")
     assert bridge._load_max_positions() == 12
 
@@ -150,5 +152,6 @@ def test_position_scope_registry_excludes_other_domains():
         ],
     }
     assert bridge._count_positions(positions, "all") == 10
-    assert bridge._count_positions(positions, "registry") == 2
+    # BTC 为 23 独占，不计入 22 registry scope
+    assert bridge._count_positions(positions, "registry") == 1
     assert bridge._count_positions({"ok": True, "positions": []}, "registry") == 0

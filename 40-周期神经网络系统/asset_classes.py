@@ -81,11 +81,12 @@ ASSET_CLASSES: dict[str, dict] = {
             "UNI",
             "AAVE",
             "NEAR",
+            "HYPE",
         ],
         "layers": {
             "L1_anchor": ["BTC"],
             "L2_major": ["ETH", "SOL"],
-            "L3_growth": ["AVAX", "LINK", "ADA"],
+            "L3_growth": ["AVAX", "LINK", "ADA", "HYPE"],
             "L4_meme": ["DOGE", "PEPE", "WIF"],
         },
     },

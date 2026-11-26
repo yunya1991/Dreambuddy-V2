@@ -61,6 +61,24 @@ def _load_dc_pg():
     return _dc_pg_module
 
 
+def _connect_ro(db_path: str) -> "sqlite3.Connection":
+    """打开本地 DAL 镜像的只读连接。
+
+    镜像库为 WAL 模式；当 `-shm` 缺失（如刚完成 rsync 替换）时，`mode=ro` 无法
+    建 shm，会报 `attempt to write a readonly database`。此时退化为 `immutable=1`：
+    没有 WAL 待回放数据，按快照读是安全的，且不需要对目录写权限。
+    """
+    conn = sqlite3.connect("file:{}?mode=ro".format(db_path), uri=True, timeout=5)
+    try:
+        conn.execute("SELECT 1 FROM sqlite_master LIMIT 1").fetchall()
+        return conn
+    except sqlite3.OperationalError as exc:
+        conn.close()
+        if "readonly" not in str(exc):
+            raise
+    return sqlite3.connect("file:{}?mode=ro&immutable=1".format(db_path), uri=True, timeout=5)
+
+
 # G0-2：41 外部部署路径外置为配置（环境变量 FIS_P0_HOME，本地/云端差异只在配置）
 _FIS_P0_HOME = os.environ.get("FIS_P0_HOME", "/home/ubuntu/fis-p0")
 _EVOLUTION_LOG = (
@@ -407,7 +425,7 @@ class L0Foundation:
         source: Optional[str] = None,
     ) -> List[Tuple[str, float, int]]:
         """只读区间查询（命中 idx_mm_metrics_lookup），跨源同 ts 去重保留 source 字典序最小。"""
-        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=5)
+        conn = _connect_ro(db_path)
         try:
             sql = (
                 "SELECT source, metric_value, timestamp FROM mm_metrics "
@@ -446,7 +464,7 @@ class L0Foundation:
         表不存在时抛 sqlite3.OperationalError，由调用方降级为 `vintage_unavailable`，
         **绝不回落到 mm_metrics**——那会读到修订后的值（前视）。
         """
-        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=5)
+        conn = _connect_ro(db_path)
         try:
             sql = (
                 "SELECT source, metric_value, period_ts FROM mm_metric_vintages "
@@ -588,7 +606,7 @@ class L0Foundation:
         start_ts = now_ts - past_days * 86400
         end_ts = now_ts + future_days * 86400
         try:
-            conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=5)
+            conn = _connect_ro(db_path)
             try:
                 rows = conn.execute(
                     "SELECT event_time, event_type, subtype, source, title, confidence, quality "
