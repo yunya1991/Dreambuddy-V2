@@ -125,6 +125,59 @@ class _FakeOKX:
         return {"ok": True}
 
 
+class _RateLimitedOKX(_FakeOKX):
+    """首查命中 50011 限流，重试成功；用于验证限流不误记为补挂失败。"""
+
+    def __init__(self, positions, algos):
+        super().__init__(positions, algos)
+        self.query_count = 0
+
+    def get_algo_orders(self, inst_id=None):
+        self.query_count += 1
+        if self.query_count == 1:
+            return {
+                "ok": True,
+                "query_ok": False,
+                "errors": ["conditional:50011:Too Many Requests"],
+                "orders": [],
+                "count": 0,
+            }
+        return super().get_algo_orders(inst_id)
+
+
+def test_reconcile_retries_on_rate_limit_without_counting_failure(tmp_path, monkeypatch):
+    """50011 限流应退避重试一次，重试成功不计 failed（防 P1 误报）。"""
+    monkeypatch.setattr(sltp_reconcile, "QUERY_RETRY_SLEEP_SEC", 0)
+    pos = {
+        "inst_id": "AMZN-USDT-SWAP",
+        "pos_side": "long",
+        "pos": 0.38,
+        "avg_px": 257.26,
+        "mark_px": 247.19,
+        "upl_ratio": -0.117,
+    }
+    algos = [
+        {
+            "inst_id": "AMZN-USDT-SWAP",
+            "algo_id": "4121721655176310785",
+            "pos_side": "long",
+            "ord_type": "oco",
+            "sl_trigger_px": 235.52,
+            "tp_trigger_px": 295.85,
+            "sz": 0.38,
+            "state": "live",
+        }
+    ]
+    okx = _RateLimitedOKX([pos], algos)
+
+    res = sltp_reconcile.reconcile_sltp(okx, audit_path=tmp_path / "audit.jsonl")
+
+    assert res["failed"] == 0, res
+    assert res["skipped"] == 1, res
+    assert okx.query_count == 2, "首次限流后应重试一次"
+    assert okx.placed == [], "重试拿到已挂 OCO 后不得再补挂"
+
+
 def test_reconcile_cancels_duplicate_algos_keeps_newest(tmp_path):
     """巡检应清理同持仓重复 OCO，只保留最新一条。"""
     pos = {

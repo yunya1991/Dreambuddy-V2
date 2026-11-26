@@ -30,6 +30,11 @@ TP_PCT = 0.08
 BREAKEVEN_UPL_PCT = 3.0
 # 审计来源标签：区分「22 全局兜底补挂」与 11/23 主动挂单
 SOURCE_TAG = "22-sltp_reconcile"
+# 逐持仓查询 OKX algo 单的节流与限流重试：持仓多时连续查询会在尾部触发
+# 50011 Too Many Requests（实测 AMZN 作为最后一个 inst 每轮必失败、误报 P1）。
+POSITION_PACE_SEC = 0.2
+QUERY_RETRY_SLEEP_SEC = 1.0
+QUERY_RATE_LIMIT_CODE = "50011"
 
 
 def _audit(record: dict[str, Any], audit_path: Path | None) -> None:
@@ -99,19 +104,35 @@ def _positions(okx_client: Any) -> list[dict[str, Any]]:
 def _algo_snapshot(
     okx_client: Any, inst_id: str, pos_side: str
 ) -> tuple[list[dict[str, Any]], str]:
-    """返回同方向 algo 单与查询错误；查询失败绝不能当作"无挂单"处理。"""
-    algo = okx_client.get_algo_orders(inst_id=inst_id)
-    if not isinstance(algo, dict):
-        return [], "algo_query_invalid"
-    if algo.get("query_ok") is False:
-        return [], "; ".join(algo.get("errors") or []) or "algo_query_failed"
-    out = []
-    for o in algo.get("orders") or algo.get("data") or []:
-        _side = o.get("pos_side") or o.get("posSide") or ""
-        if _side and _side != pos_side:
-            continue
-        out.append(o)
-    return out, ""
+    """返回同方向 algo 单与查询错误；查询失败绝不能当作"无挂单"处理。
+
+    命中 50011（限流）时退避重试一次，避免连续查询尾部被限流误记为补挂失败。
+    """
+    err = ""
+    for attempt in range(2):
+        algo = okx_client.get_algo_orders(inst_id=inst_id)
+        if not isinstance(algo, dict):
+            err = "algo_query_invalid"
+        elif algo.get("query_ok") is False:
+            err = "; ".join(algo.get("errors") or []) or "algo_query_failed"
+        else:
+            out = []
+            for o in algo.get("orders") or algo.get("data") or []:
+                _side = o.get("pos_side") or o.get("posSide") or ""
+                if _side and _side != pos_side:
+                    continue
+                out.append(o)
+            return out, ""
+        if QUERY_RATE_LIMIT_CODE not in err or attempt:
+            break
+        logger.info(
+            "[SLTP-Reconcile] %s(%s) algo查询限流，%.1fs 后重试",
+            inst_id,
+            pos_side,
+            QUERY_RETRY_SLEEP_SEC,
+        )
+        time.sleep(QUERY_RETRY_SLEEP_SEC)
+    return [], err
 
 
 def _dedupe_algo_orders(
@@ -195,7 +216,9 @@ def reconcile_sltp(
         return {"patched": 0, "skipped": 0, "failed": 0}
 
     patched = skipped = failed = deduped = 0
-    for pos in positions:
+    for idx, pos in enumerate(positions):
+        if idx:
+            time.sleep(POSITION_PACE_SEC)
         inst_id = pos["inst_id"]
         pos_side = pos["pos_side"]
         avg_px = pos["avg_px"]
