@@ -4,7 +4,9 @@
 set -u
 
 KEEP_DAILY=1
-KEEP_CORE_DUMPS=2
+# 只保留最新 1 份未压缩 dump：仓库外已有 sync-snapshots/dreambuddy_core.db 硬链接
+# 指向同一 inode（git clean 删不到），单份 + 硬链已满足回滚兜底。
+KEEP_CORE_DUMPS=1
 KEEP_COGNITIVE_DUMPS=1
 KEEP_NEXT_BUILDS=2
 JOURNAL_MAX=200M

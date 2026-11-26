@@ -123,7 +123,7 @@ cd /home/luke/dreambuddy/3.1-FRONTEND && /home/luke/venv-trading/bin/python scri
 |---|---|---|
 | `19-数据访问层/data/dreambuddy_core.db` | 15~20G | 主库；膨胀见 §7.4 |
 | `19-数据访问层/data/backups/` | 每日 core dump + 一次性认知库备份 | `cleanup-cloud-backups.sh` 轮转 |
-| `runtime-data-backup/daily/` | 每份约 12G | 只保留最新 1 份 |
+| `runtime-data-backup/daily/` | 每份约 4G（2026-11-26 起已排除 core db） | 只保留最新 1 份 |
 | `sync-snapshots/` | 旧 core 快照 + 认知库副本 | 保留 1 份 + 清理 >1 天 `.tmp*` |
 
 ### 7.2 保留策略（`deploy/ops/cleanup-cloud-backups.sh`）
@@ -131,7 +131,7 @@ cd /home/luke/dreambuddy/3.1-FRONTEND && /home/luke/venv-trading/bin/python scri
 | 常量 | 值 | 含义 |
 |---|---|---|
 | `KEEP_DAILY` | 1 | runtime-data-backup/daily 份数 |
-| `KEEP_CORE_DUMPS` | 2 | 每日 DAL core dump 份数（含 sha256） |
+| `KEEP_CORE_DUMPS` | 1 | 每日 DAL core dump 份数（含 sha256）；仓库外 `sync-snapshots/dreambuddy_core.db` 硬链接指向同一 inode 兜底 |
 | `KEEP_COGNITIVE_DUMPS` | 1 | `backups/` 中一次性 `cognitive_memory*.db` 份数 |
 | `KEEP_NEXT_BUILDS` | 2 | 前端可回滚构建 |
 | `JOURNAL_MAX` | 200M | systemd journal 上限 |
@@ -234,7 +234,21 @@ sudo -n -u luke -H /home/luke/venv-trading/bin/python \
 > `VACUUM` 需要独占连接（无其他进程持有库），否则 `database is locked`；建议在 02:00–06:00 窗口、采集任务间隙执行。压缩本身是 DDL 事务，在线执行只会让并发写入短暂等锁。
 > 压缩对 As-Of 回放无影响：读方（`34-前端应用训练系统/core/l0_foundation.py`）取 `observed_at <= as_of` 的最后一条，删掉同值重复不会改变任何时点的取值。
 
+### 7.8 去重复制 + 单份 dump（2026-11-26，P2 `HostDiskWillFillIn24h` 复盘）
 
+现象：11-26 04:33（备份链 03:30 每日快照 → 04:00 `VACUUM INTO` → 04:30 轮转之后 3 分钟）触发 P2 告警。实测 04:30 与 08:33 均为 `119G used / 51G avail / 71%`，**4 小时净增为 0**，属备份窗口陡斜率导致的趋势误报，不是泄漏。
+
+同时发现三处真实冗余/缺陷：
+
+| 项 | 问题 | 处置 |
+|---|---|---|
+| `runtime-data-backup.sh` | 每日 `cp -a` **运行中**的 18.8G 主库 → 撕裂副本（不一致，无恢复价值），且构成 04:00 最大写入尖峰 | 从 `CRITICAL_PATHS` 移除 core db；脚本入库 `deploy/ops/runtime-data-backup.sh`，单元入库 `deploy/systemd/runtime-data-backup.{service,timer}`（原先只存在于云端 `/home/luke/bin/`，属漂移） |
+| `KEEP_CORE_DUMPS=2` | 两份未压缩 dump 共 30.7G | 收紧为 1：仓库外 `sync-snapshots/dreambuddy_core.db` 是指向同一 inode 的硬链接（`git clean -fdx` 删不到），单份 + 硬链已够兜底 |
+| `checkpoint-wal.sh` | 只回收 DAL 主库，认知库 `-wal` 单日涨到 1.37G | 扩展为同时 checkpoint `4-MEMORY/data/cognitive_memory.db`（`COG_DB_PATH` 可覆盖） |
+
+未采纳 `zstd` 压缩 dump：`snapshot_dbs.sh` 依赖 `dreambuddy_core_*.db` 文件名做硬链接、`cleanup-cloud-backups.sh` 依赖同后缀轮转，改后缀会静默让本地只读镜像停止更新且压缩包永不清理；收紧到 1 份后空间收益已被覆盖，不引入该联动风险。
+
+另：`/tmp` 中 794 个 9.2MB `tmpXXXXXXX` 残留（近 1 个月累积 5G）已按「>1 天且 `fuser` 无占用」清理；该类文件每日仍新增约 26 个，属未定位的生产者泄漏，待单独跟进。
 
 ## 八、硬性禁止
 

@@ -1,0 +1,14 @@
+[Unit]
+Description=Dreambuddy runtime data daily backup (core DB excluded, see deploy/ops/runtime-data-backup.sh)
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=luke
+Group=luke
+Environment="HOME=/home/luke"
+Environment="REPO_DIR=/home/luke/dreambuddy"
+Environment="BACKUP_ROOT=/home/luke/runtime-data-backup/daily"
+ExecStart=/bin/bash /home/luke/dreambuddy/deploy/ops/runtime-data-backup.sh
+StandardOutput=append:/home/luke/logs/redundant/runtime-data-backup.log
+StandardError=append:/home/luke/logs/redundant/runtime-data-backup.err.log
