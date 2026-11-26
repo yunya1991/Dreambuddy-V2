@@ -70,6 +70,34 @@ class TestRippleEngine:
         monkeypatch.setenv("EVOLUTION_RIPPLE_INCLUDE_QUANTUM", "0")
         assert RippleEngine().detect_ripple_source(source) is False
 
+    def test_TR_RE_02b_quantum_lower_volume_threshold(self, monkeypatch):
+        """Quantum 放量门槛降到 1.5×；同一 1.6× 在 Classical 仍被拒"""
+        from dreambuddy_evolution.engines.ripple_engine import RippleEngine
+
+        base = {
+            "symbol": "COIN",
+            "r_vector": {
+                "R_up": 0.1,
+                "R_down": 0.9,
+                "R_smooth": 0.2,
+                "R_flow": 0.7,
+                "R_reflexivity": 0.3,
+            },
+            "ess_top_direction": "long",
+            "vol_5": 1600.0,
+            "vol_20": 1000.0,  # 1.6×
+            "liq_index_change": 0.5,
+        }
+        monkeypatch.delenv("EVOLUTION_RIPPLE_VOL_RATIO", raising=False)
+        monkeypatch.delenv("EVOLUTION_RIPPLE_QUANTUM_VOL_RATIO", raising=False)
+        re = RippleEngine()
+        assert re.detect_ripple_source({**base, "scale_class": "Quantum"}) is True
+        assert re.detect_ripple_source({**base, "scale_class": "Classical"}) is False
+
+        # 环境变量可覆盖 Quantum 门槛
+        monkeypatch.setenv("EVOLUTION_RIPPLE_QUANTUM_VOL_RATIO", "1.8")
+        assert RippleEngine().detect_ripple_source({**base, "scale_class": "Quantum"}) is False
+
     def test_TR_RE_03_ripple_source_reject_low_volume(self):
         """vol_5/vol_20 < 2.0 → 不是真石头"""
         from dreambuddy_evolution.engines.ripple_engine import RippleEngine

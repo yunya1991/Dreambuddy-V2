@@ -37,6 +37,9 @@ class RippleEngine:
         self._include_quantum = os.getenv(
             "EVOLUTION_RIPPLE_INCLUDE_QUANTUM", "1"
         ).strip().lower() not in ("0", "false", "off", "no")
+        # 2026-11-26 用户决策：Quantum 档放量门槛降至 1.5×（代币化股票波动结构不同，
+        # 2.0× 几乎不触发）。EVOLUTION_RIPPLE_QUANTUM_VOL_RATIO 可覆盖。
+        self._quantum_vol_ratio = float(os.getenv("EVOLUTION_RIPPLE_QUANTUM_VOL_RATIO", 1.5))
 
     def calibrate_vol_threshold(self, close: Any, lookback_days: int = 20) -> float:
         """按 20 日已实现波动率动态校准放量门槛。
@@ -65,6 +68,7 @@ class RippleEngine:
         §0.7.2 Phase 0: 龙头检测
         条件: S_up簇(ESS_top方向一致) + vol_5/vol_20≥门槛 + liq_index↑≥门槛
               + Scale 默认含 {Classical,Meso,Quantum}（Quantum 排除可用环境变量恢复）
+              + Quantum 档放量门槛取 min(调用门槛, 1.5×)，避免代币化股票永不触发
 
         vol_ratio_threshold: 调用方按 20 日波动率动态校准后的门槛；None 用实例默认值
         """
@@ -82,6 +86,10 @@ class RippleEngine:
             vol_20 = float(source.get("vol_20", 1e-9))
             liq_change = float(source.get("liq_index_change", 0))
             scale = str(source.get("scale_class", ""))
+
+            # Quantum 档使用更低放量门槛（只降不升，尊重调用方更严/更松的校准）
+            if scale == "Quantum":
+                threshold = min(threshold, self._quantum_vol_ratio)
 
             # 1. 方向: R_up < R_down = 上涨有利 → ess_dir=long 一致
             is_up = r_up < r_down
