@@ -2,7 +2,7 @@
 """main-nn 每日复盘与观察期 SLO / 误报统计（TD §14.7 / §14.9 P3）。
 
 按 Asia/Shanghai 自然日聚合 main-nn 链路证据，输出：
-  ① SLO：链路完整率(M6→M13)、WAIT 可归因率、wait_vs_broken、
+  ① SLO：链路完整率(M12 出箱→M13 执行)、WAIT 可归因率、wait_vs_broken、
      决策→成交 join、SL/TP 附带率、单出口违约；
   ② 链路：M0–M14 事件计数、缺失阶段、WAIT 原因 Top；
   ③ 告警：Prometheus `query_range` 统计当日 MainNN* firing 段数（不可达则 fail-open 跳过）；
@@ -45,8 +45,8 @@ CHAIN_DIRS = (
     "42-神经网络交易协调层/runtime",
     "40-周期神经网络系统/runtime",
 )
-CHAIN_REQUIRED_STAGE = "M6"
-CHAIN_COMPLETE_STAGES = ("M12", "M13")
+CHAIN_DECISION_STAGE = "M12"
+CHAIN_COMPLETE_STAGES = ("M13",)
 ALERT_QUERY = 'ALERTS{alertstate="firing",alertname=~"MainNN.+"}'
 ALERT_STEP_SECONDS = 300
 LIMITS = {
@@ -208,7 +208,7 @@ def collect_chain(repo: Path, start_ts: float, end_ts: float) -> Dict[str, Any]:
                     else:
                         wait_broken += 1
 
-    signal_chains = [stages for stages in chains.values() if CHAIN_REQUIRED_STAGE in stages]
+    signal_chains = [stages for stages in chains.values() if CHAIN_DECISION_STAGE in stages]
     complete = sum(1 for stages in signal_chains if set(CHAIN_COMPLETE_STAGES) <= stages)
     missing = {
         stage: sum(1 for stages in signal_chains if stage not in stages)
@@ -267,6 +267,9 @@ def collect_execution(repo: Path, start_ts: float, end_ts: float) -> Dict[str, A
         if str(rec.get("mode") or "") != "live":
             continue
         live_outbox += 1
+        # 可回溯 live 决策全集 = decisions.jsonl(live) ∪ outbox(live)
+        if rec.get("decision_id"):
+            live_ids.add(str(rec["decision_id"]))
         execution = rec.get("execution") if isinstance(rec.get("execution"), dict) else {}
         outcome = str(execution.get("outcome") or rec.get("execution_rights") or "")
         if outcome != "live:50-bypass" or not rec.get("mandate_id"):
@@ -423,7 +426,7 @@ def evaluate_slo(chain: Dict[str, Any], execution: Dict[str, Any]) -> List[Dict[
     return [
         entry(
             "chain_completion",
-            "链路完整率(M6→M13)",
+            "链路完整率(决策→执行)",
             ">= 99%",
             completion,
             None if completion is None else completion >= LIMITS["chain_completion"],
@@ -538,8 +541,8 @@ def render_markdown(report: Dict[str, Any]) -> str:
         "",
         "## 链路",
         "",
-        f"- main-nn 事件 {chain['events']} 条，链路 {chain['chains']} 条（含 M6 的 {chain['signal_chains']} 条）",
-        f"- 完整链（M12+M13）：{chain['complete_chains']} / {chain['signal_chains']}"
+        f"- main-nn 事件 {chain['events']} 条，链路 {chain['chains']} 条（已出箱 M12 的 {chain['signal_chains']} 条）",
+        f"- 完整链（M13 已执行）：{chain['complete_chains']} / {chain['signal_chains']}"
         f"（{_fmt_ratio(chain['completion_ratio'])}）",
         "- 缺失阶段：" + "，".join(f"{k}={v}" for k, v in chain["missing_stage"].items()),
         f"- WAIT(skip) 事件 {chain['wait_total']} 条，不可归因 {chain['wait_broken']} 条",

@@ -1078,6 +1078,10 @@ class Collector:
                 outcome = str(execution.get("outcome") or "")
                 if mode == "live" and (outcome != "live:50-bypass" or not d.get("mandate_id")):
                     bad += 1
+                # 成交可回溯的 live 决策全集 = decisions.jsonl(live) ∪ outbox(live)：
+                # outbox 是实盘决策的实际出口，仅看 decisions.jsonl 会漏掉未落账本的出口
+                if mode == "live" and d.get("decision_id"):
+                    live_ids.add(str(d["decision_id"]))
             out.append(_metric("main_nn_execution_rights_ok", 0 if bad else 1))
 
         # M6/M11 约束降级（42 统一降级审计流，layer=50/source=constraint_loader）
@@ -1182,7 +1186,9 @@ class Collector:
             out.append(
                 _metric("main_nn_chain_stage_total", n, source=src, stage=stage, status=status)
             )
-        signal_chains = [stages for stages in chains.values() if "M6" in stages]
+        # 口径：分母只取"已出箱(M12)的 live 决策链"。M6 只是总线读证据，WAIT/未出箱
+        # 属主动终止（由 wait_vs_broken 单独度量），计入分母会把正常 WAIT 误判为断链。
+        signal_chains = [stages for stages in chains.values() if "M12" in stages]
         if signal_chains:
             complete = sum(1 for stages in signal_chains if {"M12", "M13"} <= stages)
             out.append(

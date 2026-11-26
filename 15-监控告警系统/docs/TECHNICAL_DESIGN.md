@@ -1,6 +1,6 @@
 # 技术设计 — 15-监控告警系统
 
-> **版本**: v2.33 | **更新日期**: 2026-11-26
+> **版本**: v2.34 | **更新日期**: 2026-11-26
 > **定位**: 子系统技术架构设计，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.2
 > **v2.2 说明**: 一期范围收敛为「23 推理信号链」；新增第 12 章：23 模块全景、信号契约差异、8 步生命周期、信号 SLO 与落地审计。40 神经网络顺延二期。
 > **v2.0 说明**: 新增第 10 章「云端全链路监控目标架构」。第 1–9 章保留为本地 v1.0 适配器实现（仅覆盖 5 个老系统），**不再作为云端监控的权威口径**；云端架构以第 10 章为准。调研证据与选型过程见 [RESEARCH-全链路监控体系调研-v0.2.md](./RESEARCH-全链路监控体系调研-v0.2.md)。
@@ -1567,7 +1567,9 @@ trace_id（M6 生成，贯穿 M6→M11）
             └─ order_id / fill_id（M14 回报）
 ```
 
-必须补的缺口：50 的 live `decision_id` 由证据批次 sha1 生成（幂等设计正确），但当前无 `trace_id`。M6 生成 `trace_id` 并写入 `payload.trace_id`，`run_live.py` 透传，否则复盘只能看到结果、看不到当时的维度力量。
+缺口已闭合（v2.34）：`run_live` 在每标的 M6 处生成 `trace_id` 并以 `trace_id=trace` 调
+`make_decision`，`payload.trace_id` 与 `decision_id` 在落盘前写入，M6/M11/M12/M13 共用同一对
+`(trace_id, decision_id)`；`decisions.jsonl(live)` 与 `outbox(live)` 均为可回溯决策全集。
 
 ### 14.5 指标族
 
@@ -1578,7 +1580,7 @@ trace_id（M6 生成，贯穿 M6→M11）
 | 指标 | 标签 | 说明 |
 |---|---|---|
 | `dreambuddy_main_nn_chain_stage_total` | `source,stage,status` | 各节点四态计数 |
-| `dreambuddy_main_nn_chain_completion_ratio` | `source,segment` | 完整走完 M6→M13 的比例 |
+| `dreambuddy_main_nn_chain_completion_ratio` | `source,segment` | 已出箱(M12)决策中走完 M13 的比例 |
 | `dreambuddy_main_nn_chain_missing_stage_total` | `source,stage` | 应出现但缺失的节点 |
 | `dreambuddy_main_nn_wait_vs_broken_ratio` | `source` | 主动 WAIT / 断链导致 WAIT |
 | `dreambuddy_main_nn_chain_broken_total` | `source` | 无 `reason_category` 的 skip 计数 |
@@ -1667,7 +1669,7 @@ trace_id（M6 生成，贯穿 M6→M11）
 
 | SLO | 目标 | 判定 |
 |---|---|---|
-| 链路完整率（M6→M13，24h） | ≥99% | `main_nn_chain_completion_ratio` |
+| 链路完整率（已出箱 M12 → 执行 M13，24h） | ≥99% | `main_nn_chain_completion_ratio`（分母只含 M12 的 live 决策链；WAIT 未出箱由下两行单独度量） |
 | WAIT 可归因率 | ≥95%，`main_nn_wait_vs_broken_ratio ≤ 0.05` | 事件 `reason_category` |
 | 决策→成交 join | ≥95% | `decision_fill_join_ratio` |
 | 有持仓 SL/TP 覆盖 | 100% | `sltp_coverage` |
@@ -1679,7 +1681,8 @@ trace_id（M6 生成，贯穿 M6→M11）
 报告落 `runtime/reports/YYYYMMDD-main-nn.{md,json}` + `latest-main-nn.md`；误报台账 `runtime/reports/fp_ledger.json`
 （同一 `(alert, date)` 去重），CLI 支持 `--date/--repo-root/--prometheus/--out/--mark-fp/--note/--list-fp`。
 云端由 `dreambuddy-main-nn-report.timer` 每日 08:10 Asia/Shanghai 触发。链路完整率与 WAIT 口径与
-`business_metrics_exporter.main_nn_metrics()` 一致（M12+M13 判完整、skip 事件按 `reason_category` 判可归因）。
+`business_metrics_exporter.main_nn_metrics()` 一致（分母含 M12、完整需含 M13；skip 事件按
+`reason_category` 判可归因）；成交回溯的 live 决策全集为 `decisions.jsonl(live) ∪ outbox(live)`。
 
 **四步定位**：
 
@@ -1795,6 +1798,7 @@ promtool check rules 15-监控告警系统/deploy/prometheus/rules/dreambuddy-mo
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v2.34 | 2026-11-26 | P2 链路口径补强：`run_live` 在每标的 M6 生成 `trace_id` 并贯穿 M6→M13（此前 M6 无 id、M12 另生成 trace，M6∩M12=0）；`make_decision` 新增 `trace_id` 入参并在落盘前写入 payload；完整率分母改为「已出箱 M12 的 live 决策链」（WAIT/未出箱不再被误计为断链）；成交回溯 live 全集改为 `decisions.jsonl(live) ∪ outbox(live)` |
 | v2.33 | 2026-11-26 | P3 复盘脚本落地：`scripts/main_nn_daily_report.py` 按日聚合 6 项 SLO + 链路/执行证据，Prometheus `query_range` 统计 MainNN* firing 段数（fail-open），误报台账 `fp_ledger.json`（`--mark-fp/--list-fp`）；新增 `dreambuddy-main-nn-report.{service,timer}`（每日 08:10 Asia/Shanghai）与 4 项单测 |
 | v2.32 | 2026-11-26 | P3 看板落地：`deploy/grafana/dashboards/main-nn-monitor.json`（11 面板：漏斗/断链 WAIT/执行归因/语义快照/心跳），由 Grafana provisioning 自动加载 |
 | v2.31 | 2026-11-26 | 修复 `decision_id` 复盘键断点：`make_decision(decision_id=...)` 落盘前写入；`run_live` 提前生成稳定 id；join 指标改为 decisions.jsonl(live)×fills 的成交可回溯率；outbox 窗口放宽至全量 | 
@@ -1814,5 +1818,5 @@ promtool check rules 15-监控告警系统/deploy/prometheus/rules/dreambuddy-mo
 
 ---
 
-**文档版本**: v2.33
+**文档版本**: v2.34
 **最后更新**: 2026-11-26

@@ -142,6 +142,7 @@ def make_decision(
     now: datetime | None = None,
     mode: str = "shadow",
     decision_id: str | None = None,
+    trace_id: str | None = None,
 ) -> dict[str, Any]:
     # 50 决策主入口：evidence -> path -> w4 裁决 -> dominance -> 约束钳位 -> 执行权校验。
     # mode: shadow（默认，仅审计）/ live（需 execution_rights + Mandate + kill-switch 同时放行）
@@ -249,6 +250,9 @@ def make_decision(
     # 复盘键：live 决策的 decision_id 必须在落盘前写入，否则 decisions.jsonl 无法与成交 join
     if decision_id:
         decision["decision_id"] = decision_id
+    # 链路键：trace_id 同样在落盘前写入，保证 decisions.jsonl 与 chain_events(M11/M12/M13) 同源
+    if trace_id and isinstance(decision.get("payload"), dict):
+        decision["payload"]["trace_id"] = trace_id
     # M3-2：决策落盘（fail-open，为 G4 PIT 数据底座积累）
     record_decision(decision)
     return decision

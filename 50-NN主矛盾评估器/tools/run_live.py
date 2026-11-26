@@ -289,6 +289,21 @@ def run(
             result["skipped"].append({"symbol": inst_id, "reason": "not_in_allowlist"})
             continue
         did = stable_decision_id(inst_id, group)
+        # 链路键必须在本标的 M6 处生成并贯穿 M6→M13（M12/M13 同用该 trace，
+        # 否则链路口径各段各生成 id，完整率永远为 0）
+        trace = new_trace_id(inst_id, now)
+        emit_stage(
+            "M6",
+            "bus_reader.load_evidences",
+            inst_id,
+            "pass",
+            trace_id=trace,
+            decision_id=did,
+            mode="live",
+            data={"evidence_count": len(group)},
+            runtime=_RUNTIME,
+            ts=now,
+        )
         decision = make_decision(
             group,
             symbol=inst_id,
@@ -297,13 +312,13 @@ def run(
             rights=rights,
             mandate=mandate,
             decision_id=did,
+            trace_id=trace,
             kill_switch=False,
             now=now,
             mode="live",
         )
         # 龙头共振传导：只调 confidence，不改 direction；矩阵不可用时原样返回
         propagate_resonance(decision, fresh, _asset_class_of(inst_id))
-        trace = new_trace_id(inst_id, now)
         outcome = (decision.get("execution") or {}).get("outcome")
         if outcome != "live:50-bypass" or decision.get("direction") not in ("long", "short"):
             result["skipped"].append(
@@ -318,6 +333,7 @@ def run(
                 inst_id,
                 "skip",
                 trace_id=trace,
+                decision_id=did,
                 mode="live",
                 reason_category="wait_constraint_freeze",
                 data={"outcome": outcome, "direction": decision.get("direction")},

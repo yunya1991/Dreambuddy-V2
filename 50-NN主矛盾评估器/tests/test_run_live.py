@@ -154,6 +154,54 @@ def test_dynamic_allowlist_uses_bus_confidence_and_registry():
     assert run_live._dynamic_allowlist(fresh) == {"ARB-USDT-SWAP", "XAG-USDT-SWAP"}
 
 
+def test_live_chain_shares_trace_across_m6_m11_m12(monkeypatch, tmp_path):
+    """M6/M11/M12 必须共用同一 trace_id+decision_id，否则链路完整率恒为 0。"""
+    now = datetime.now(timezone.utc)
+    monkeypatch.setattr(
+        run_live, "load_evidences", lambda _: [_evidence("BTC", now + timedelta(hours=1))]
+    )
+    monkeypatch.setattr(run_live, "load_rights", lambda: {"symbols": {}})
+    monkeypatch.setattr(run_live, "load_constraints", lambda: {})
+    monkeypatch.setattr(run_live, "is_kill_switch_on", lambda: False)
+    monkeypatch.setattr(run_live, "propagate_resonance", lambda d, e, c: d)
+
+    captured: list[tuple] = []
+    monkeypatch.setattr(
+        run_live,
+        "emit_stage",
+        lambda stage, node, symbol, status="pass", **kw: captured.append(
+            (stage, status, symbol, kw)
+        ),
+    )
+    seen: dict = {}
+
+    def fake_decision(evidences, **kwargs):
+        seen.update(kwargs)
+        return {
+            "signal_id": "50-nn|x",
+            "symbol": kwargs["symbol"],
+            "direction": "long",
+            "confidence": 0.9,
+            "payload": {},
+            "execution": {"outcome": "live:50-bypass", "allowed": True},
+        }
+
+    monkeypatch.setattr(run_live, "make_decision", fake_decision)
+    result = run_live.run(tmp_path / "bus.json", tmp_path / "out", ("BTC-USDT-SWAP",), "m-1")
+
+    did = result["decisions"][0]["decision_id"]
+    by_stage = {
+        stage: next(c for c in captured if c[0] == stage and c[3].get("decision_id") == did)
+        for stage in ("M6", "M11", "M12")
+    }
+    trace = by_stage["M6"][3]["trace_id"]
+    assert trace
+    assert by_stage["M11"][3]["trace_id"] == trace
+    assert by_stage["M12"][3]["trace_id"] == trace
+    assert seen.get("trace_id") == trace
+    assert result["decisions"][0]["payload"]["trace_id"] == trace
+
+
 def test_run_uses_dynamic_allowlist_when_symbols_empty(monkeypatch, tmp_path):
     now = datetime.now(timezone.utc)
     monkeypatch.setattr(

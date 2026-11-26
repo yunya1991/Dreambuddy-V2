@@ -126,9 +126,11 @@ def test_slo_metrics_and_markdown(tmp_path: Path) -> None:
 
     chain = rep["chain"]
     assert chain["events"] == 10
-    assert chain["signal_chains"] == 4
+    # 分母只算已出箱(M12)的链：a(完整) + b(缺 M13)；c/d 为 skip 主动终止，不计入
+    assert chain["signal_chains"] == 2
     assert chain["complete_chains"] == 1
-    assert chain["completion_ratio"] == 0.25
+    assert chain["completion_ratio"] == 0.5
+    assert chain["missing_stage"] == {"M7": 1, "M11": 0, "M13": 1}
     assert chain["wait_total"] == 2
     assert chain["wait_broken"] == 1
     assert chain["wait_attributable_ratio"] == 0.5
@@ -151,8 +153,38 @@ def test_slo_metrics_and_markdown(tmp_path: Path) -> None:
 
     md = render_markdown(rep)
     assert "## SLO" in md and "## 链路" in md and "## 执行" in md and "## 误报台账" in md
-    assert "25.00%" in md
+    assert "50.00%" in md
     assert "✅ SLO 达标" not in md
+
+
+def test_join_uses_outbox_when_decisions_ledger_lags(tmp_path: Path) -> None:
+    """decisions.jsonl 未落 live 决策时，outbox 的 decision_id 仍应支撑成交回溯。"""
+    _write_jsonl(
+        tmp_path / "50-NN主矛盾评估器/runtime/live" / "outbox.jsonl",
+        [
+            {
+                "ts": _now_iso(),
+                "mode": "live",
+                "decision_id": "d-outbox",
+                "mandate_id": "mandate-x",
+                "execution": {"outcome": "live:50-bypass"},
+            }
+        ],
+    )
+    _write_jsonl(
+        tmp_path / "22-执行引擎中心/audit" / "x1_live_fills.jsonl",
+        [
+            {
+                "ts": _now_iso(),
+                "decision_id": "d-outbox",
+                "order_placed": True,
+                "request": {"sl_pct": 1.5, "tp_pct": 3.0},
+            }
+        ],
+    )
+    rep = build_report(tmp_path, _DAY, prometheus=None)
+    assert rep["execution"]["live_decisions"] == 1
+    assert rep["execution"]["decision_fill_join_ratio"] == 1.0
 
 
 def test_prometheus_fail_open(tmp_path: Path) -> None:
