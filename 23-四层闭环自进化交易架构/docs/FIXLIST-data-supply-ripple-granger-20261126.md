@@ -45,8 +45,26 @@
 3. 重启 `dreambuddy-entry23.service`；观察 N2 `liq_mode`、`news_sentiment_score` 不再恒 0.5、
    `ripple_is_source_ratio` 上升。
 
-## 4. 未决（需用户裁决）
-- **d_star margin 漂移**：仓库/服务文件写 0.30，drop-in `10-dstar.conf` 覆盖为 0.10。
-  本次不改线上口径；待数据修复后跑 `scripts/backtest_ri_gate.py --klines margin` 网格，
-  对照 0.10 / 0.30 的成交数与收益再裁决，并将结论收编进仓库 unit 文件。
-- R_reflexivity 是否恢复需在数据链路生效后复测（liq + sentiment 不再缺失）。
+## 4. d_star 重裁决证据（云端 `backtest_ri_gate.py --klines`，2026-11-26）
+
+真实 1H K 线 walk-forward（BTC/ETH/SOL × 1000 bars，R_reflexivity 按脚本代理固定 0.65）：
+
+| 口径 | h=4h WAIT | h=4h 每样本 | h=24h WAIT | h=24h 每样本 | h=24h MDD |
+| --- | --- | --- | --- | --- | --- |
+| legacy `sm×rf` | 71.2% | +0.0087% | 66.7% | -0.5825% | 83.30% |
+| calibrated margin 0 | 89.6% | -0.0553% | 86.8% | -0.3446% | 55.02% |
+| calibrated margin 0.10 | 96.5% | -0.0266% | 95.6% | -0.1299% | 26.01% |
+| calibrated margin ≥0.20 | 100% | 0 | 100% | 0 | 0 |
+
+结论：
+- 在当前 wait 公式 `(1-R_smooth)×R_reflexivity` 下，margin ≥0.20 会把全部样本判为 WAIT；
+  云端 0.30 与实测 0 成交一致，0.10 也仅剩零星成交 —— **问题在 wait 量纲，不在 margin 数值**。
+- 该脚本的 R_reflexivity 是固定代理（不含真实 liq/sentiment），无法用于重拟公式。
+  正确顺序：先部署本次数据修复 → 采集 1–2 天真实 N2 `R_reflexivity` 分布 → 再重拟 wait
+  归一化并重跑网格。
+
+待裁决：
+1. 临时是否把 drop-in 的 0.10 收编进仓库 unit（消除配置漂移），或恢复 0.30？
+2. wait 公式修法二选一：①对 `R_reflexivity` 做历史分位归一化后再乘；②改为机会成本形式
+   `wait = R_smooth × (1 - R_reflexivity)`。两者都需真实分布回归后定。
+
