@@ -48,7 +48,7 @@
 │   ├── prometheus/              # 采集与告警规则（含 execution group）
 │   ├── alertmanager/            # 告警路由
 │   ├── blackbox/                # HTTP/TCP 探针（含 yijing-data-server:8765）
-│   └── grafana/                 # 看板与数据源
+│   └── grafana/                 # 看板与数据源（dashboards/main-nn-monitor.json）
 ├── scripts/
 │   └── watchdog.py              # entry23/exit23 存活、日志/账本新鲜度、磁盘
 ├── config/                      # 配置文件
@@ -336,7 +336,7 @@ python -m pytest tests/ -v
 │   ├── prometheus/prometheus.yml + rules/dreambuddy-monitoring.yml
 │   ├── alertmanager/alertmanager.yml
 │   ├── blackbox/blackbox.yml
-│   ├── grafana/provisioning/ + dashboards/
+│   ├── grafana/provisioning/ + dashboards/（main-nn-monitor.json）
 │   └── systemd/*.service
 ├── scripts/push_job.sh        # 任务运行/成功/耗时/记录数推送
 ├── scripts/watchdog.py        # 2 周 alert_only：服务/日志/磁盘，5min 一次

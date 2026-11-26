@@ -1,0 +1,138 @@
+{
+  "uid": "main-nn-monitor",
+  "title": "主神经网络监控（main-nn）",
+  "tags": ["dreambuddy", "main-nn", "trade-chain"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": {"from": "now-24h", "to": "now"},
+  "templating": {"list": []},
+  "annotations": {"list": []},
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "周期判定置信档（2=high 1=medium 0=low）",
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "value"},
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "orange", "value": 1}, {"color": "green", "value": 2}]}
+        },
+        "overrides": []
+      },
+      "targets": [{"refId": "A", "expr": "max(dreambuddy_main_nn_cycle_confidence)", "legendFormat": "cycle"}]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "战略总分（各资产类）",
+      "gridPos": {"h": 4, "w": 5, "x": 4, "y": 0},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "value", "textMode": "auto"},
+      "fieldConfig": {"defaults": {"unit": "none", "thresholds": {"mode": "absolute", "steps": [{"color": "text", "value": null}]}}, "overrides": []},
+      "targets": [{"refId": "A", "expr": "dreambuddy_main_nn_strategic_total", "legendFormat": "{{asset_class}}"}]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "42 总线可用源（应 ≥6）",
+      "gridPos": {"h": 4, "w": 4, "x": 9, "y": 0},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "value"},
+      "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 6}]}}, "overrides": []},
+      "targets": [{"refId": "A", "expr": "dreambuddy_main_nn_bus_sources_ok", "legendFormat": "sources"}]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "live outbox 年龄（s）",
+      "gridPos": {"h": 4, "w": 4, "x": 13, "y": 0},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "value"},
+      "fieldConfig": {"defaults": {"unit": "s", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "orange", "value": 900}]}}, "overrides": []},
+      "targets": [{"refId": "A", "expr": "dreambuddy_main_nn_outbox_age_seconds", "legendFormat": "outbox"}]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "导出器心跳",
+      "gridPos": {"h": 4, "w": 7, "x": 17, "y": 0},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "value"},
+      "fieldConfig": {"defaults": {"unit": "dateTimeAsIso"}, "overrides": []},
+      "targets": [{"refId": "A", "expr": "dreambuddy_main_nn_export_timestamp_seconds", "legendFormat": "export"}]
+    },
+    {
+      "id": 10,
+      "type": "bargauge",
+      "title": "链路漏斗：各节点 1h 计数（M3–M14）",
+      "gridPos": {"h": 7, "w": 12, "x": 0, "y": 4},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "displayMode": "gradient", "orientation": "horizontal"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (stage, status) (increase(dreambuddy_main_nn_chain_stage_total[1h]))",
+          "legendFormat": "{{stage}} {{status}}"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "断链与 WAIT",
+      "gridPos": {"h": 7, "w": 12, "x": 12, "y": 4},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "targets": [
+        {"refId": "A", "expr": "sum by (stage) (dreambuddy_main_nn_chain_missing_stage_total)", "legendFormat": "missing {{stage}}"},
+        {"refId": "B", "expr": "dreambuddy_main_nn_wait_vs_broken_ratio", "legendFormat": "wait_vs_broken"},
+        {"refId": "C", "expr": "dreambuddy_main_nn_chain_broken_total", "legendFormat": "broken"}
+      ]
+    },
+    {
+      "id": 20,
+      "type": "bargauge",
+      "title": "22 执行跳过归因（M13）",
+      "gridPos": {"h": 7, "w": 12, "x": 0, "y": 11},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "displayMode": "gradient", "orientation": "horizontal"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "targets": [{"refId": "A", "expr": "dreambuddy_main_nn_x1_skip_total", "legendFormat": "{{reason}}"}]
+    },
+    {
+      "id": 21,
+      "type": "stat",
+      "title": "成交可回溯率 / 下单保护附带率",
+      "gridPos": {"h": 7, "w": 12, "x": 12, "y": 11},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "colorMode": "value", "textMode": "auto"},
+      "fieldConfig": {"defaults": {"unit": "percentunit", "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 0.95}]}}, "overrides": []},
+      "targets": [
+        {"refId": "A", "expr": "dreambuddy_main_nn_decision_fill_join_ratio", "legendFormat": "fill join"},
+        {"refId": "B", "expr": "dreambuddy_main_nn_fill_sltp_attach_ratio", "legendFormat": "sltp attach"}
+      ]
+    },
+    {
+      "id": 30,
+      "type": "timeseries",
+      "title": "语义快照：路径/证据/中性比",
+      "gridPos": {"h": 7, "w": 12, "x": 0, "y": 18},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "targets": [
+        {"refId": "A", "expr": "dreambuddy_main_nn_path_count", "legendFormat": "path_count"},
+        {"refId": "B", "expr": "dreambuddy_main_nn_evidence_sources_ok", "legendFormat": "evidence_sources"},
+        {"refId": "C", "expr": "dreambuddy_main_nn_dimension_neutral_ratio", "legendFormat": "neutral_ratio"}
+      ]
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "语义快照：矛盾/支配/防抖/冻结",
+      "gridPos": {"h": 7, "w": 12, "x": 12, "y": 18},
+      "fieldConfig": {"defaults": {"unit": "short", "min": 0, "max": 1}, "overrides": []},
+      "targets": [
+        {"refId": "A", "expr": "dreambuddy_main_nn_contradiction_present", "legendFormat": "contradiction"},
+        {"refId": "B", "expr": "dreambuddy_main_nn_dominance_fallback_ratio", "legendFormat": "dominance_fallback"},
+        {"refId": "C", "expr": "dreambuddy_main_nn_trigger_flap_locked_ratio", "legendFormat": "flap_locked"},
+        {"refId": "D", "expr": "dreambuddy_main_nn_constraint_freeze_ratio", "legendFormat": "constraint_freeze"},
+        {"refId": "E", "expr": "dreambuddy_main_nn_constraint_degraded_1h", "legendFormat": "constraint_degraded_1h"}
+      ]
+    }
+  ]
+}
