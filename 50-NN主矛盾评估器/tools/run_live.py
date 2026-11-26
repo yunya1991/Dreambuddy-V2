@@ -288,6 +288,7 @@ def run(
         if inst_id not in allow:
             result["skipped"].append({"symbol": inst_id, "reason": "not_in_allowlist"})
             continue
+        did = stable_decision_id(inst_id, group)
         decision = make_decision(
             group,
             symbol=inst_id,
@@ -295,6 +296,7 @@ def run(
             constraints=constraints,
             rights=rights,
             mandate=mandate,
+            decision_id=did,
             kill_switch=False,
             now=now,
             mode="live",
@@ -323,7 +325,7 @@ def run(
                 ts=now,
             )
             continue
-        decision["decision_id"] = stable_decision_id(inst_id, group)
+        decision["decision_id"] = did
         decision["mandate_id"] = mandate
         if isinstance(decision.get("payload"), dict):
             decision["payload"]["trace_id"] = trace

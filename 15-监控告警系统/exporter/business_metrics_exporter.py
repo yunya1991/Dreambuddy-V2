@@ -984,6 +984,8 @@ class Collector:
                 payload = rec.get("payload") if isinstance(rec.get("payload"), dict) else {}
                 mode = str(rec.get("mode") or payload.get("mode") or "unknown")
                 modes[mode] = modes.get(mode, 0) + 1
+                if mode == "live" and rec.get("decision_id"):
+                    live_ids.add(str(rec["decision_id"]))
             out.append(
                 _metric(
                     "main_nn_decisions_age_seconds",
@@ -1109,12 +1111,7 @@ class Collector:
             out.append(_metric("main_nn_x1_skip_total", n, reason=key))
 
         # P2 资金安全：决策→成交 join 与下单保护附带率（离线可算，不查交易所）
-        # decisions.jsonl 由 make_decision 内部落盘、不含 decision_id；join 必须用 outbox 决策
-        live_ids = {
-            str(d["decision_id"])
-            for d in ob_rows
-            if d.get("mode") == "live" and d.get("decision_id")
-        }
+        # live_ids 来自 decisions.jsonl（v2.31 起 make_decision 落盘即带 decision_id）
         fills_path = self.repo / str(ex.get("fills", "22-执行引擎中心/audit/x1_live_fills.jsonl"))
         filled_ids: set[str] = set()
         placed = attached = 0

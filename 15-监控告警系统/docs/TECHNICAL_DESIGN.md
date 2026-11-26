@@ -1,6 +1,6 @@
 # 技术设计 — 15-监控告警系统
 
-> **版本**: v2.30 | **更新日期**: 2026-11-26
+> **版本**: v2.31 | **更新日期**: 2026-11-26
 > **定位**: 子系统技术架构设计，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.2
 > **v2.2 说明**: 一期范围收敛为「23 推理信号链」；新增第 12 章：23 模块全景、信号契约差异、8 步生命周期、信号 SLO 与落地审计。40 神经网络顺延二期。
 > **v2.0 说明**: 新增第 10 章「云端全链路监控目标架构」。第 1–9 章保留为本地 v1.0 适配器实现（仅覆盖 5 个老系统），**不再作为云端监控的权威口径**；云端架构以第 10 章为准。调研证据与选型过程见 [RESEARCH-全链路监控体系调研-v0.2.md](./RESEARCH-全链路监控体系调研-v0.2.md)。
@@ -1608,7 +1608,7 @@ trace_id（M6 生成，贯穿 M6→M11）
 | `dreambuddy_main_nn_execution_rights_ok` | 50 live outbox + 22 幂等状态 | 单出口是否守约 |
 | `dreambuddy_main_nn_x1_skip_total{reason}` | `22/runtime/x1_live_processed.json` | 跳过归因分布 |
 | `dreambuddy_main_nn_fill_sltp_attach_ratio` | `22/audit/x1_live_fills.jsonl`（24h，`order_placed`） | 下单即附带 SL/TP 的比例（离线代理；真实持仓覆盖率需交易所查询，仍由 22 `sltp_reconcile` + `sltp_*` 指标负责） |
-| `dreambuddy_main_nn_decision_fill_join_ratio` | 50 live outbox 决策 × 24h fills（按 `decision_id`） | **成交可回溯率**：24h 成交中能回溯到 50 live 决策的占比（分母是 fills，不是全部决策；`decisions.jsonl` 由 make_decision 内部落盘、不含 `decision_id`，不能作 join 源） |
+| `dreambuddy_main_nn_decision_fill_join_ratio` | `decisions.jsonl`（live，含 `decision_id`）× 24h fills | **成交可回溯率**：24h 成交中能回溯到 50 live 决策的占比（分母是 fills）。v2.31 起 `make_decision` 落盘前写入 `decision_id`；历史记录无 id，需 24h 自然收敛 |
 
 **命名与标签纪律**：前缀 `dreambuddy_`；业务指标带 `chain=trade, layer=L1, cell=L1.trade, module=main-nn`；链路指标额外 `source="main-nn"`、`stage="M0"…"M14"`；禁止 `chain_id / decision_id / signal_id` 做 label；高频中间量只保留最新值与分位摘要。
 
@@ -1786,6 +1786,7 @@ promtool check rules 15-监控告警系统/deploy/prometheus/rules/dreambuddy-mo
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v2.31 | 2026-11-26 | 修复 `decision_id` 复盘键断点：`make_decision(decision_id=...)` 落盘前写入；`run_live` 提前生成稳定 id；join 指标改为 decisions.jsonl(live)×fills 的成交可回溯率；outbox 窗口放宽至全量 | 
 | v2.30 | 2026-11-26 | main-nn P2：新增 `decision_fill_join_ratio`（24h live 决策×成交按 decision_id）与 `fill_sltp_attach_ratio`（24h 下单附带 SL/TP 比例，离线代理）；§14 标题去版本号，runbook 锚点稳定为 `#14-主神经网络监控模块main-nn` |
 | v2.29 | 2026-11-26 | main-nn P1：43 侧 `chain_emit` + M3/M4 事件；导出器 M7–M10 语义快照（path/conflict/dominance/flap/freeze/neutral/evidence，取自 decisions payload）；校正 M9/M10 节点代码入口为 `w4.adjudicate`/`dominance.resolve_dominance` |
 | v2.28 | 2026-11-26 | 新增第 14 章「主神经网络监控模块（main-nn）」：并入原 SPEC-MAIN-NN-MONITOR v0.1；M0–M14 节点表（48 保持 B 类并作为 M0 上游门禁）、chain_event 扩展、指标族、告警复用映射 + 3 条新增规则（`strategic_total` 告警限定三条件同时满足）、看板/SLO、M0–M14 锚定索引、配置与 P0–P3 路线；SPEC 归档 |
@@ -1802,5 +1803,5 @@ promtool check rules 15-监控告警系统/deploy/prometheus/rules/dreambuddy-mo
 
 ---
 
-**文档版本**: v2.30
+**文档版本**: v2.31
 **最后更新**: 2026-11-26
