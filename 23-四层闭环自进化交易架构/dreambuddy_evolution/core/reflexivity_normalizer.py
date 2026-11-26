@@ -11,6 +11,11 @@
 环境变量：
   EVOLUTION_DSTAR_REFL_NORM=1   启用（默认 0，保持旧口径）
   EVOLUTION_DSTAR_WAIT_SCALE    缩放系数（默认 2.0）
+  EVOLUTION_DSTAR_REFL_MIN_REL_IQR
+                                历史离散度门槛（默认 0 = 关闭）。经验分布 IQR/|p50|
+                                低于该值时，ECDF 会把 0.1% 量级的抖动放大成 0~1 分位
+                                （实测云端 rel_iqr=0.0024），此时退化为线性锚点映射，
+                                消除按秩抖动。建议 0.02。
   EVOLUTION_REFL_HISTORY_PATH   历史文件路径（测试/隔离用）
 """
 
@@ -28,6 +33,17 @@ logger = logging.getLogger(__name__)
 _DEFAULT_PATH = os.path.normpath(
     os.path.join(os.path.dirname(__file__), "..", "runtime", "reflexivity_history.json")
 )
+
+_MIN_REL_IQR_ENV = "EVOLUTION_DSTAR_REFL_MIN_REL_IQR"
+
+
+def _min_rel_iqr() -> float:
+    """历史离散度门槛：0 表示关闭（沿用纯 ECDF 行为）。"""
+    try:
+        v = float(os.getenv(_MIN_REL_IQR_ENV, "0") or 0)
+    except (TypeError, ValueError):
+        return 0.0
+    return max(0.0, v)
 
 
 class ReflexivityNormalizer:
@@ -77,12 +93,26 @@ class ReflexivityNormalizer:
             logger.debug("[FO] reflexivity history save fail: %s", e)
 
     # ------------------------------------------------------------------
+    def _dispersion_ok_locked(self) -> bool:
+        """历史样本的相对离散度是否足以支撑分位映射（否则按秩即噪声）。"""
+        threshold = _min_rel_iqr()
+        if threshold <= 0:
+            return True
+        n = len(self._sorted)
+        if n < self._min_samples:
+            return False
+        q25 = self._sorted[int(0.25 * (n - 1))]
+        q50 = self._sorted[int(0.50 * (n - 1))]
+        q75 = self._sorted[int(0.75 * (n - 1))]
+        rel = (q75 - q25) / max(abs(q50), 1e-9)
+        return rel >= threshold
+
     def percentile(self, value: float) -> float:
-        """返回 value 在历史样本中的经验分位；样本不足走线性映射。"""
+        """返回 value 在历史样本中的经验分位；样本不足或离散度不足走线性映射。"""
         v = float(value)
         with self._lock:
             n = len(self._sorted)
-            if n >= self._min_samples:
+            if n >= self._min_samples and self._dispersion_ok_locked():
                 return bisect.bisect_right(self._sorted, v) / n
         span = max(self._fallback_hi - self._fallback_lo, 1e-9)
         return max(0.0, min(1.0, (v - self._fallback_lo) / span))

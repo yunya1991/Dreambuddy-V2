@@ -112,3 +112,21 @@ drop-in 0.10 已收编进仓库 unit（`EVOLUTION_DSTAR_WAIT_MARGIN=0.10`），�
 drop-in：`10-dstar.conf`(calibrated/0.10)、`10-refl-v2.conf`、`20-datacenter-pg.conf`、
 `30-dstar-refnorm.conf`(REFL_NORM=1, WAIT_SCALE=2.0)；entry23 已重启并 active。
 
+### 5.6 分位映射去噪（2026-11-26 追加）
+
+现象：entry23 11-26 03:00–11:55 CST 连续 8.5h 全 WAIT 触发 `DstarCalibratedAllWait`(P2)，
+重启（03:55Z）后恢复。实测 `R_reflexivity` 24h 分布 n=370：
+`p25=0.54658 / p50=0.54702 / p75=0.54787`，**IQR/|p50| = 0.0024（0.24%）**。
+
+判定：ECDF 会把 0.1% 量级的抖动放大成 0~1 的秩，wait 因此近乎按秩随机 → d_star 抖动。
+去噪实现（默认关闭，行为不变）：
+- `reflexivity_normalizer.percentile` 增加离散度门槛 `EVOLUTION_DSTAR_REFL_MIN_REL_IQR`（默认 0=关）；
+  当 `IQR/|p50| < 门槛` 时退化为**线性锚点映射**（沿用冷启动 0.35→0 / 0.85→1），
+  即 0.547→0.394，wait=(1-R_smooth)×0.788——与 03:55Z 重启后实际恢复成交的口径一致且无秩抖动。
+- 建议云端取 **0.02**（当前实测 0.0024 必然触发退化），观察 N4 `d_star_calibrated` 抖动率后再定。
+- 未做：`R_reflexivity` 本身近乎常数（AVGO/XPT 触发 `ReflexivityConstant`），根因在
+  sentiment/spread/corr 分项输入，属上游数据问题，不在本次口径调整范围。
+
+可观测量补齐：N4 `d_star_shadow` 之前只写 5 字段，已补 `R_reflexivity_pct` / `wait_scale`
+（`kline_event_handler.py`），与 §5.2 描述一致。
+

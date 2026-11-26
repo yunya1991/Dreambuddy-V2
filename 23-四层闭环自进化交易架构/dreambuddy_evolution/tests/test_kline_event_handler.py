@@ -46,6 +46,33 @@ class TestKlineEventHandler:
         assert "d_star" in result
         assert result["d_star"] in ("long", "short", "WAIT")
 
+    def test_n4_shadow_exposes_refl_norm_fields(self):
+        """N4 影子字段必须透出 F4.1 的 R_reflexivity_pct / wait_scale（可观测性）"""
+        from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
+        handler = KlineEventHandler(mode="Phase2")
+        handler._compute_d_star = lambda rv: {
+            "d_star": "long",
+            "costs": {"long": 0.40, "short": 0.55, "wait": 0.30},
+            "d_star_calibrated": "long",
+            "costs_calibrated": {"long": 0.40, "short": 0.55, "wait": 0.30},
+            "wait_mode": "calibrated",
+            "wait_margin": 0.10,
+            "R_reflexivity_pct": 0.394,
+            "wait_scale": 2.0,
+        }
+        kline_data = {
+            "symbol": "BTC-USDT-SWAP",
+            "close": [100.0] * 20,
+            "high": [105.0] * 20,
+            "low": [95.0] * 20,
+            "volume": [1000.0] * 20,
+        }
+        result = handler.on_kline_close(kline_data)
+        shadow = result["path_info"]["d_star_shadow"]
+        assert shadow["R_reflexivity_pct"] == pytest.approx(0.394)
+        assert shadow["wait_scale"] == pytest.approx(2.0)
+
     def test_kline_close_triggers_ripple_engine(self):
         """K线收盘 → 触发 RippleEngine 检测"""
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler

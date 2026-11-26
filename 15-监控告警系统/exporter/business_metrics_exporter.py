@@ -490,9 +490,10 @@ class Collector:
                 _metric("sltp_reconcile_age_seconds", 86400),
                 _metric("sltp_reconcile_patched_1h", 0),
                 _metric("sltp_reconcile_failed_1h", 0),
+                _metric("sltp_reconcile_query_failed_1h", 0),
             ]
         age = max(0.0, _now() - path.stat().st_mtime)
-        patched = failed = 0
+        patched = failed = query_failed = 0
         cutoff = _now() - 3600
         _summaries = []
         _details = []
@@ -502,18 +503,21 @@ class Collector:
                 continue
             if rec.get("kind") == "summary":
                 _summaries.append(rec)
-            elif "ok" in rec:
+            elif "ok" in rec or rec.get("kind") == "algo_query_fail":
                 _details.append(rec)
         if _summaries:
             patched = sum(int(r.get("patched") or 0) for r in _summaries)
             failed = sum(int(r.get("failed") or 0) for r in _summaries)
+            query_failed = sum(int(r.get("query_failed") or 0) for r in _summaries)
         else:
             patched = sum(1 for r in _details if r.get("ok"))
-            failed = sum(1 for r in _details if not r.get("ok"))
+            failed = sum(1 for r in _details if r.get("ok") is False)
+            query_failed = sum(1 for r in _details if r.get("kind") == "algo_query_fail")
         return [
             _metric("sltp_reconcile_age_seconds", round(age, 1)),
             _metric("sltp_reconcile_patched_1h", patched),
             _metric("sltp_reconcile_failed_1h", failed),
+            _metric("sltp_reconcile_query_failed_1h", query_failed),
         ]
 
     # ---------- A 类交易链路事件（TD §13.4） ----------

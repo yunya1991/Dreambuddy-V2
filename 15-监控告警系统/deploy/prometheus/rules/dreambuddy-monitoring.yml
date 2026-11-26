@@ -436,6 +436,15 @@ groups:
           channel: alert
         annotations:
           summary: "存量持仓 SL/TP 补挂失败，部分仓位缺少止损保护"
+
+      - alert: SltpAlgoQueryFailed
+        expr: dreambuddy_sltp_reconcile_query_failed_1h > 0
+        for: 30m
+        labels:
+          severity: P3
+          channel: alert
+        annotations:
+          summary: "SL/TP 巡检的 algo 查询失败（多为 OKX 50011 限流），保护状态未知但不等于缺保护；查 22 audit 的 algo_query_fail 记录"
           runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#138-11-交易循环退役后的监控对齐v210-2026-11-18"
 
       - alert: SltpReconcileStale

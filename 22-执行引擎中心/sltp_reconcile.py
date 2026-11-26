@@ -55,6 +55,7 @@ def _summary(
     skipped: int = 0,
     failed: int = 0,
     deduped: int = 0,
+    query_failed: int = 0,
     reason: str = "",
 ) -> None:
     """每轮写一条汇总审计：供监控判断巡检新鲜度，即使无补挂动作也留痕。"""
@@ -66,6 +67,7 @@ def _summary(
             "skipped": skipped,
             "failed": failed,
             "deduped": deduped,
+            "query_failed": query_failed,
             "reason": reason,
         },
         Path(audit_path) if audit_path else None,
@@ -198,24 +200,30 @@ def reconcile_sltp(
     log_fn: Callable[[str], None] | None = None,
     audit_path: str | Path | None = None,
 ) -> dict[str, int]:
-    """对全部持仓补挂缺失的 SL/TP。返回 {patched, skipped, failed, deduped}。"""
+    """对全部持仓补挂缺失的 SL/TP。
+
+    返回 {patched, skipped, failed, deduped, query_failed}。
+    `failed` 只统计「确认需要保护却没补上」（下单/去重失败），供 P1 使用；
+    `query_failed` 是「查不到、无法判断」的 algo 查询失败（多为 50011 限流），
+    单独计数并落审计，避免把限流误报成「仓位缺少止损保护」。
+    """
     _log = log_fn or (lambda msg: logger.info(msg))
     _t0 = time.time()
     if not (okx_client and hasattr(okx_client, "get_positions")):
         _summary(audit_path, reason="no_client")
-        return {"patched": 0, "skipped": 0, "failed": 0}
+        return {"patched": 0, "skipped": 0, "failed": 0, "deduped": 0, "query_failed": 0}
     try:
         positions = _positions(okx_client)
     except Exception as exc:  # noqa: BLE001
         _log(f"[SLTP-Reconcile] 持仓拉取失败: {exc}")
         _summary(audit_path, reason="fetch_failed")
-        return {"patched": 0, "skipped": 0, "failed": 0}
+        return {"patched": 0, "skipped": 0, "failed": 0, "deduped": 0, "query_failed": 0}
     if not positions:
         _log(f"[SLTP-Reconcile] 无持仓，跳过 耗时={time.time() - _t0:.1f}s")
         _summary(audit_path, reason="no_positions")
-        return {"patched": 0, "skipped": 0, "failed": 0}
+        return {"patched": 0, "skipped": 0, "failed": 0, "deduped": 0, "query_failed": 0}
 
-    patched = skipped = failed = deduped = 0
+    patched = skipped = failed = deduped = query_failed = 0
     for idx, pos in enumerate(positions):
         if idx:
             time.sleep(POSITION_PACE_SEC)
@@ -229,12 +237,32 @@ def reconcile_sltp(
             algo_orders, algo_err = _algo_snapshot(okx_client, inst_id, pos_side)
         except Exception as exc:  # noqa: BLE001
             _log(f"[SLTP-Reconcile] {inst_id}({pos_side}) algo查询异常: {exc}")
-            failed += 1
+            _audit(
+                {
+                    "kind": "algo_query_fail",
+                    "source": SOURCE_TAG,
+                    "inst_id": inst_id,
+                    "pos_side": pos_side,
+                    "error": f"exception: {exc}",
+                },
+                Path(audit_path) if audit_path else None,
+            )
+            query_failed += 1
             continue
         if algo_err:
-            # 查询失败不能当作"无 SL/TP"，否则会重复补挂
+            # 查询失败不能当作"无 SL/TP"，否则会重复补挂；但也不等于缺保护（P1）
             _log(f"[SLTP-Reconcile] {inst_id}({pos_side}) algo查询失败: {algo_err}")
-            failed += 1
+            _audit(
+                {
+                    "kind": "algo_query_fail",
+                    "source": SOURCE_TAG,
+                    "inst_id": inst_id,
+                    "pos_side": pos_side,
+                    "error": algo_err,
+                },
+                Path(audit_path) if audit_path else None,
+            )
+            query_failed += 1
             continue
 
         algo_orders, n_deduped, dedupe_err = _dedupe_algo_orders(
@@ -320,7 +348,20 @@ def reconcile_sltp(
 
     _log(
         f"[SLTP-Reconcile] 补挂={patched} 跳过={skipped} 失败={failed} 去重={deduped} "
-        f"耗时={time.time() - _t0:.1f}s"
+        f"查询失败={query_failed} 耗时={time.time() - _t0:.1f}s"
     )
-    _summary(audit_path, patched=patched, skipped=skipped, failed=failed, deduped=deduped)
-    return {"patched": patched, "skipped": skipped, "failed": failed, "deduped": deduped}
+    _summary(
+        audit_path,
+        patched=patched,
+        skipped=skipped,
+        failed=failed,
+        deduped=deduped,
+        query_failed=query_failed,
+    )
+    return {
+        "patched": patched,
+        "skipped": skipped,
+        "failed": failed,
+        "deduped": deduped,
+        "query_failed": query_failed,
+    }

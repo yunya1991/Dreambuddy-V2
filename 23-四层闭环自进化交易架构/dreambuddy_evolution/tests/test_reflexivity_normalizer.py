@@ -76,3 +76,36 @@ def test_norm_wait_clipped_at_099(monkeypatch, tmp_path):
     rv = {"R_up": 0.45, "R_down": 0.55, "R_smooth": 0.10, "R_flow": 0.5, "R_reflexivity": 0.9}
     r = compute_d_star(rv, wait_mode="calibrated", wait_margin=0.0)
     assert r["costs_calibrated"]["wait"] <= 0.99
+
+
+def test_dispersion_gate_falls_back_to_linear(monkeypatch, tmp_path):
+    """历史几乎无离散度（云端实测 rel_iqr≈0.0024）时 ECDF 会把抖动放大成 0~1 分位，
+    门槛开启后必须退化为线性锚点，消除按秩抖动。"""
+    hist = tmp_path / "h.json"
+    hist.write_text(json.dumps([0.5460 + i * 0.0001 for i in range(150)]), encoding="utf-8")
+    monkeypatch.setenv("EVOLUTION_DSTAR_REFL_MIN_REL_IQR", "0.02")
+    n = ReflexivityNormalizer(path=str(hist), min_samples=50)
+
+    p1 = n.percentile(0.54650)
+    p2 = n.percentile(0.54651)
+    assert abs(p2 - p1) < 0.01, (p1, p2)
+    assert p1 == pytest.approx((0.54650 - 0.35) / 0.5, abs=1e-6)
+
+
+def test_dispersion_gate_keeps_ecdf_when_spread(monkeypatch, tmp_path):
+    """历史离散度足够（0~0.99）时不干预，仍用 ECDF。"""
+    hist = tmp_path / "h.json"
+    hist.write_text(json.dumps([i / 100 for i in range(100)]), encoding="utf-8")
+    monkeypatch.setenv("EVOLUTION_DSTAR_REFL_MIN_REL_IQR", "0.02")
+    n = ReflexivityNormalizer(path=str(hist), min_samples=50)
+    assert n.percentile(0.50) == pytest.approx(0.51, abs=0.02)
+
+
+def test_dispersion_gate_off_by_default(monkeypatch, tmp_path):
+    """默认不设门槛 → 保持纯 ECDF（行为不变）。"""
+    hist = tmp_path / "h.json"
+    hist.write_text(json.dumps([0.5460 + i * 0.0001 for i in range(150)]), encoding="utf-8")
+    monkeypatch.delenv("EVOLUTION_DSTAR_REFL_MIN_REL_IQR", raising=False)
+    n = ReflexivityNormalizer(path=str(hist), min_samples=50)
+    # 纯 ECDF 下紧密簇内的值直接落到低分位（按秩），与线性锚点(≈0.39)明显不同
+    assert n.percentile(0.54670) == pytest.approx(0.047, abs=0.02)

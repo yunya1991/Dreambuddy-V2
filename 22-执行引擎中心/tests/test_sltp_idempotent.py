@@ -178,6 +178,46 @@ def test_reconcile_retries_on_rate_limit_without_counting_failure(tmp_path, monk
     assert okx.placed == [], "重试拿到已挂 OCO 后不得再补挂"
 
 
+class _AlwaysLimitedOKX(_FakeOKX):
+    """algo 查询持续 50011 限流（含重试）；用于验证查询失败不计入补挂失败。"""
+
+    def get_algo_orders(self, inst_id=None):
+        return {
+            "ok": True,
+            "query_ok": False,
+            "errors": ["conditional:50011:Too Many Requests"],
+            "orders": [],
+            "count": 0,
+        }
+
+
+def test_algo_query_failure_is_not_reported_as_missing_protection(tmp_path, monkeypatch):
+    """查询失败 ≠ 缺 SL/TP：应计入 query_failed 并落 algo_query_fail 审计，不触发 P1。"""
+    import json
+
+    monkeypatch.setattr(sltp_reconcile, "QUERY_RETRY_SLEEP_SEC", 0)
+    pos = {
+        "inst_id": "AMZN-USDT-SWAP",
+        "pos_side": "long",
+        "pos": 0.38,
+        "avg_px": 257.26,
+        "mark_px": 247.19,
+        "upl_ratio": -0.117,
+    }
+    audit = tmp_path / "audit.jsonl"
+    okx = _AlwaysLimitedOKX([pos], [])
+
+    res = sltp_reconcile.reconcile_sltp(okx, audit_path=audit)
+
+    assert res["failed"] == 0, res
+    assert res["query_failed"] == 1, res
+    assert okx.placed == [], "查询失败时不得盲目补挂"
+    records = [json.loads(line) for line in audit.read_text(encoding="utf-8").splitlines()]
+    assert any(r.get("kind") == "algo_query_fail" for r in records), records
+    summary = [r for r in records if r.get("kind") == "summary"][-1]
+    assert summary["query_failed"] == 1 and summary["failed"] == 0, summary
+
+
 def test_reconcile_cancels_duplicate_algos_keeps_newest(tmp_path):
     """巡检应清理同持仓重复 OCO，只保留最新一条。"""
     pos = {

@@ -453,6 +453,9 @@ class KlineEventHandler:
                 "wait_margin": d_star_result.get("wait_margin"),
                 "costs": d_star_result.get("costs"),
                 "costs_calibrated": d_star_result.get("costs_calibrated"),
+                # F4.1 量纲归一化可观测（未启用时为 None / 1.0）
+                "R_reflexivity_pct": d_star_result.get("R_reflexivity_pct"),
+                "wait_scale": d_star_result.get("wait_scale"),
             }
             # ============ 3b. 路径发现层 ============
             path_info: dict[str, Any] = {

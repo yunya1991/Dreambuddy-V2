@@ -196,7 +196,11 @@ breakeven_upl_pct=3.0, log_fn=None, audit_path=None)`：
   `Order would immediately trigger`。
 - 浮盈超过 `breakeven_upl_pct` 时止损上移至保本。
 - 审计落 `22-执行引擎中心/audit/sltp_reconcile.jsonl`：每次补挂写明细，**每轮另写一条
-  `kind=summary`（patched/skipped/failed/reason）**，无持仓或全部跳过时也留痕，供 15 监控判断巡检新鲜度；
+  `kind=summary`（patched/skipped/failed/deduped/query_failed/reason）**，无持仓或全部跳过时也留痕，供 15 监控判断巡检新鲜度；
+- **失败口径拆分（2026-11-26）**：`failed` 只统计「确认缺保护却没补上」（下单失败/去重撤单失败）；
+  `algo` 查询失败（多为 OKX `50011 Too Many Requests`，实测每轮末位 inst 如 AMZN 必现）计入
+  `query_failed` 并写 `kind=algo_query_fail` 明细（inst_id/error）。查询失败只代表「保护状态未知」，
+  不等于缺保护，因此不再喂 P1，改由 P3 `SltpAlgoQueryFailed` 观察。
 - FAIL-OPEN，任何异常只记录不抛。
 - 调用方：23 `exit_runner` 每轮入口。11 交易循环下线后这是存量持仓条件单的统一兜底。
 
