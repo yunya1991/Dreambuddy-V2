@@ -1133,11 +1133,12 @@ class Collector:
                         attached += 1
                 except (TypeError, ValueError):
                     pass
-        if live_ids:
+        # 口径：24h 成交中可按 decision_id 回溯到 50 live outbox 的占比（可回溯率）
+        if filled_ids:
             out.append(
                 _metric(
                     "main_nn_decision_fill_join_ratio",
-                    round(len(live_ids & filled_ids) / len(live_ids), 4),
+                    round(len(filled_ids & live_ids) / len(filled_ids), 4),
                 )
             )
         if placed:
