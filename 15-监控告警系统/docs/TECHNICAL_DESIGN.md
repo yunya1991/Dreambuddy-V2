@@ -1269,7 +1269,8 @@ python -m pytest tests/test_chain_events_and_signal_params.py tests/test_decisio
 | `ledger_ghost_closed_24h` | `cooldowns.exit_reason ∈ {ghost_stale,ghost_exchange_flat}` | 24h 内清理的无法解释残留/陈旧仓 |
 | `ledger_exchange_sltp_24h` | `cooldowns.exit_reason=exchange_sltp` | 24h 内交易所 SL/TP 成交的账本回填数（正常路径，仅观察） |
 | `sltp_reconcile_age_seconds` | `22/audit/sltp_reconcile.jsonl` mtime | SL/TP 补挂巡检新鲜度（每轮写 `kind=summary`，无补挂动作也更新） |
-| `sltp_reconcile_patched_1h` / `_failed_1h` | 同上 `kind=summary` 行；无 summary 时回退逐条明细 | 近 1h 补挂成功/失败数 |
+| `sltp_reconcile_patched_1h` / `_failed_1h` | 同上 `kind=summary` 行；无 summary 时回退逐条明细 | 近 1h 补挂成功数 / 真实补挂（下单、去重）失败数 |
+| `sltp_reconcile_query_failed_1h` | 同上 `kind=summary.query_failed`；无 summary 时回退 `kind=algo_query_fail` 明细 | 近 1h algo 查询失败数（保护状态未知，不等于缺保护） |
 
 判定口径（避免「稳定持仓、无写入」被误判为停摆）：
 
@@ -1280,7 +1281,7 @@ python -m pytest tests/test_chain_events_and_signal_params.py tests/test_decisio
 4. `ledger_ghost_exchange_flat_24h > 0` → P2 通知（无成交可回填的账本残留，需人工核对）；
    `ledger_exchange_sltp_24h` 只观察不告警（交易所 SL/TP 正常回填）。
 5. `sltp_reconcile_failed_1h > 0` → P1（存量仓缺少止损保护）。**只计下单/去重失败**；
-   algo 查询失败（50011 限流等，保护状态未知）改由 `sltp_reconcile_query_failed_1h > 0` for 30m → P3
+   algo 查询失败（50011 限流等，保护状态未知）改由 `sltp_reconcile_query_failed_1h > 0` for 30m → P2
    （2026-11-26 拆分，避免 AMZN 每轮限流误报 P1）。
 6. `exit23_active=1 且 ledger_positions>0 且 sltp_reconcile_age_seconds>600` → P2（有持仓但补挂巡检停摆）。
 
@@ -1304,7 +1305,7 @@ python -m pytest tests/test_chain_events_and_signal_params.py tests/test_decisio
 | `GhostPositionCleaned` | `dreambuddy_ledger_ghost_exchange_flat_24h > 0` for 10m | P2 |
 | `GhostStaleBulkCleanup` | `dreambuddy_ledger_ghost_stale_24h > 20` for 30m | P2 |
 | `SltpReconcileFailed` | `dreambuddy_sltp_reconcile_failed_1h > 0` for 10m | P1 |
-| `SltpAlgoQueryFailed` | `dreambuddy_sltp_reconcile_query_failed_1h > 0` for 30m | P3 |
+| `SltpAlgoQueryFailed` | `dreambuddy_sltp_reconcile_query_failed_1h > 0` for 30m | P2 |
 | `SltpReconcileStale` | `dreambuddy_exit23_active == 1 and dreambuddy_ledger_positions > 0 and dreambuddy_sltp_reconcile_age_seconds > 600` for 15m | P2 |
 
 **幽灵仓归因口径（v2.23，2026-11-20）**：`ghost_exchange_flat` 曾把「交易所侧 SL/TP 成交后的正常回填」与
@@ -1376,7 +1377,7 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 | E5 提交/成交 | `exit_close_failed_total{reason_code}` | `ExitCloseFailed`(**P0**) | `22/audit/gateway.jsonl`；`exit23.log` 逐条失败归因 |
 | E6 落账/清理 | `ledger_*` | `GhostPositionCleaned`(P2) | `position_ledger.db` → `fills`/`cooldowns` |
 | 进程存活 | `entry23_active`、`exit23_active` | `Entry23Down`(P1)、`Exit23Down`(**P0**) | `systemctl status dreambuddy-{entry23,exit23}` |
-| SL/TP 兜底（22） | `sltp_reconcile_age_seconds`、`_patched_1h`、`_failed_1h`、`_query_failed_1h` | `SltpReconcileFailed`(P1)、`SltpAlgoQueryFailed`(P3)、`SltpReconcileStale`(P2) | `22/audit/sltp_reconcile.jsonl`（`kind=summary` 为每轮心跳；`kind=algo_query_fail` 为查询失败明细） |
+| SL/TP 兜底（22） | `sltp_reconcile_age_seconds`、`_patched_1h`、`_failed_1h`、`_query_failed_1h` | `SltpReconcileFailed`(P1)、`SltpAlgoQueryFailed`(P2)、`SltpReconcileStale`(P2) | `22/audit/sltp_reconcile.jsonl`（`kind=summary` 为每轮心跳；`kind=algo_query_fail` 为查询失败明细） |
 
 #### 13.9.3 四步定位法
 

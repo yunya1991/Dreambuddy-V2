@@ -65,7 +65,7 @@ def _write_sltp_summary(root: Path, *, failed: int, query_failed: int) -> None:
 
 
 def test_sltp_query_failures_do_not_feed_p1_patch_failures(tmp_path: Path) -> None:
-    """50011 查询失败只进 query_failed（P3），不得计入 failed（P1 缺保护）。"""
+    """50011 查询失败只进 query_failed（P2），不得计入 failed（P1 缺保护）。"""
     _write_sltp_summary(tmp_path, failed=0, query_failed=6)
     collector = Collector(tmp_path, BASE / "config/monitoring.yaml", BASE / "config/domains.yaml")
     text = "\n".join(collector.execution_metrics())
