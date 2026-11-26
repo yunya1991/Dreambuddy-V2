@@ -1,6 +1,6 @@
 # 工程索引 — 15-监控告警系统
 
-> **版本**: v1.3 | **更新日期**: 2026-11-26
+> **版本**: v1.4 | **更新日期**: 2026-11-26
 > **定位**: 模块级工程索引（L3 辅助模块），对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.1 / §4
 
 ---
@@ -50,7 +50,10 @@
 │   ├── blackbox/                # HTTP/TCP 探针（含 yijing-data-server:8765）
 │   └── grafana/                 # 看板与数据源（dashboards/main-nn-monitor.json）
 ├── scripts/
-│   └── watchdog.py              # entry23/exit23 存活、日志/账本新鲜度、磁盘
+│   ├── watchdog.py              # entry23/exit23 存活、日志/账本新鲜度、磁盘
+│   ├── main_nn_daily_report.py  # main-nn 每日复盘：SLO + 告警触发段 + 误报台账（TD §14.7/§14.9 P3）
+│   ├── ledger_attribution_report.py # 22/23/50 持仓标签日巡检
+│   └── daily_insight.py         # 23 链日报（规则 + LLM 归因 + 飞书推送）
 ├── config/                      # 配置文件
 │   ├── monitor_config.json      # 本地 v1 主配置（yijing 已 disabled）
 │   ├── monitoring.yaml          # 云端 v2 阈值（signals/execution/universe/main_nn）
@@ -126,6 +129,15 @@
 | 文件 | 函数数 | 职责 | 关键函数 |
 |------|--------|------|----------|
 | `config/monitor_config.json` | — (JSON) | 全量运行配置：systems / alert / scheduler / position_sync / logging 五大节 | — |
+
+### 3.9 报表脚本层
+
+| 文件 | 函数数 | 职责 | 关键函数 |
+|------|--------|------|----------|
+| `scripts/main_nn_daily_report.py` | 21 | main-nn 每日复盘（TD §14.7/§14.9 P3）：6 项 SLO、链路证据（完整率/缺失阶段/WAIT 原因）、执行证据（join/SL-TP/单出口）、Prometheus firing 段统计（fail-open）、误报台账 | `build_report()`, `collect_chain()`, `collect_execution()`, `collect_alerts()`, `evaluate_slo()`, `render_markdown()`, `mark_fp()`, `load_ledger()`, `main()` |
+
+**运行方式**：`python3 scripts/main_nn_daily_report.py [--date YYYY-MM-DD] [--prometheus URL] [--out DIR]`；
+云端 `dreambuddy-main-nn-report.timer` 每日 08:10 Asia/Shanghai 触发，报告落 `runtime/reports/`。
 
 ---
 
@@ -357,5 +369,5 @@ python -m pytest tests/ -v
 
 ---
 
-**文档版本**: v1.2
+**文档版本**: v1.4
 **最后更新**: 2026-11-26

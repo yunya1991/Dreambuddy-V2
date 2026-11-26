@@ -1,0 +1,16 @@
+[Unit]
+Description=Dreambuddy main-nn daily review (SLO + false-positive stats)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=luke
+Group=luke
+WorkingDirectory=/home/luke/dreambuddy/15-监控告警系统
+EnvironmentFile=-/etc/dreambuddy-monitoring/monitoring.env
+Environment=DREAMBUDDY_REPO_ROOT=/home/luke/dreambuddy
+Environment=MAIN_NN_PROMETHEUS=http://127.0.0.1:9090
+ExecStart=/home/luke/venv-trading/bin/python -B scripts/main_nn_daily_report.py
+TimeoutStartSec=300
+# 报告落 runtime/reports/YYYYMMDD-main-nn.{md,json} 与 latest-main-nn.md；
+# Prometheus 不可达时告警统计 fail-open，不影响 SLO 报告生成。

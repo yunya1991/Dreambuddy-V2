@@ -1,0 +1,11 @@
+[Unit]
+Description=Run dreambuddy main-nn daily review at 08:10 Asia/Shanghai
+
+[Timer]
+OnCalendar=*-*-* 08:10:00 Asia/Shanghai
+Persistent=true
+AccuracySec=1min
+Unit=dreambuddy-main-nn-report.service
+
+[Install]
+WantedBy=timers.target
