@@ -239,6 +239,7 @@ def build_bridge_inputs(
             "pass" if out else "skip",
             data={"bridge_fields": len(out)},
             reason_category=None if out else "wait_evidence_missing",
+            min_interval_sec=60,
         )
     except Exception:  # noqa: BLE001  观测失败不影响桥接
         pass
