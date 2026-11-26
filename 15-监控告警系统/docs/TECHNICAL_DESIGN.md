@@ -1,6 +1,6 @@
 # 技术设计 — 15-监控告警系统
 
-> **版本**: v2.29 | **更新日期**: 2026-11-26
+> **版本**: v2.30 | **更新日期**: 2026-11-26
 > **定位**: 子系统技术架构设计，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.2
 > **v2.2 说明**: 一期范围收敛为「23 推理信号链」；新增第 12 章：23 模块全景、信号契约差异、8 步生命周期、信号 SLO 与落地审计。40 神经网络顺延二期。
 > **v2.0 说明**: 新增第 10 章「云端全链路监控目标架构」。第 1–9 章保留为本地 v1.0 适配器实现（仅覆盖 5 个老系统），**不再作为云端监控的权威口径**；云端架构以第 10 章为准。调研证据与选型过程见 [RESEARCH-全链路监控体系调研-v0.2.md](./RESEARCH-全链路监控体系调研-v0.2.md)。
@@ -1434,7 +1434,7 @@ SL/TP 补挂新鲜度不进 watchdog（无持仓时本就不写审计），由 P
 
 ---
 
-## 14. 主神经网络监控模块（main-nn，v2.29，2026-11-26）
+## 14. 主神经网络监控模块（main-nn）
 
 > **来源**：原 `docs/SPEC-MAIN-NN-MONITOR-v0.1.md` 评审通过后并入本章；该 SPEC 已归档（头部标注「已并入 TD §14，仅存档」），**不再 active**。
 > **监控对象**：`48 → 40 → 43 →（49 契约）→ 42 → 50 → 22` 主神经网络闭环链。
@@ -1607,8 +1607,8 @@ trace_id（M6 生成，贯穿 M6→M11）
 | `dreambuddy_main_nn_decision_mode_total{mode}` | decisions.jsonl | `shadow/live` 比例 |
 | `dreambuddy_main_nn_execution_rights_ok` | 50 live outbox + 22 幂等状态 | 单出口是否守约 |
 | `dreambuddy_main_nn_x1_skip_total{reason}` | `22/runtime/x1_live_processed.json` | 跳过归因分布 |
-| `dreambuddy_main_nn_sltp_coverage{scope}` | `22/audit/sltp_reconcile.jsonl` | **P2 待落地**：50 持仓保护覆盖率（当前由 22 `sltp_*` 既有指标覆盖，复查后决定是否单列） |
-| `dreambuddy_main_nn_decision_fill_join_ratio` | 22 账本 + 归因 | **P2 待落地**：决策→成交 join（当前复用 `DecisionFillJoinLow`） |
+| `dreambuddy_main_nn_fill_sltp_attach_ratio` | `22/audit/x1_live_fills.jsonl`（24h，`order_placed`） | 下单即附带 SL/TP 的比例（离线代理；真实持仓覆盖率需交易所查询，仍由 22 `sltp_reconcile` + `sltp_*` 指标负责） |
+| `dreambuddy_main_nn_decision_fill_join_ratio` | 24h live decisions × fills（按 `decision_id`） | 决策→成交 join 率 |
 
 **命名与标签纪律**：前缀 `dreambuddy_`；业务指标带 `chain=trade, layer=L1, cell=L1.trade, module=main-nn`；链路指标额外 `source="main-nn"`、`stage="M0"…"M14"`；禁止 `chain_id / decision_id / signal_id` 做 label；高频中间量只保留最新值与分位摘要。
 
@@ -1747,7 +1747,7 @@ execution:
 |---|---|---|
 | P0 基座（观测可见） | `source` 字段与 `trace_id`（M6 生成）；M5/M6/M11/M14 最小事件；`artifacts.main_nn`；`domains.yaml` 登记；导出器 `main_nn_metrics()` | 能复盘一笔 shadow 决策的 M5→M11 时间线 |
 | P1 决策语义 | M3/M4 事件 + M7–M10 语义快照（**取自 decisions payload，不在核心裁决里加事件**，避免侵入）；`MainNNStrategicFallbackDominant`、`MainNNConstraintDegraded` | 能回答「为什么 WAIT / 主矛盾是什么 / 支配是否退化」 |
-| P2 执行与资金安全 | M12/M13 事件；`x1_skip_total`；`sltp_coverage`；`MainNNExecutionRightsMismatch` | 一笔 live 决策可按 chain_id 还原到成交 |
+| P2 执行与资金安全 | M12/M13 事件；`x1_skip_total`；`decision_fill_join_ratio`、`fill_sltp_attach_ratio`（离线）；`MainNNExecutionRightsMismatch` | 一笔 live 决策可按 chain_id 还原到成交，且可量化下单保护附带率 |
 | P3 看板与观察期 | 四面板看板；2 周 `alert_only`；复盘脚本 | 误报 <5%，SLO 达标 |
 
 **验收门禁（复用 §13 G1–G5）**：
@@ -1786,6 +1786,7 @@ promtool check rules 15-监控告警系统/deploy/prometheus/rules/dreambuddy-mo
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v2.30 | 2026-11-26 | main-nn P2：新增 `decision_fill_join_ratio`（24h live 决策×成交按 decision_id）与 `fill_sltp_attach_ratio`（24h 下单附带 SL/TP 比例，离线代理）；§14 标题去版本号，runbook 锚点稳定为 `#14-主神经网络监控模块main-nn` |
 | v2.29 | 2026-11-26 | main-nn P1：43 侧 `chain_emit` + M3/M4 事件；导出器 M7–M10 语义快照（path/conflict/dominance/flap/freeze/neutral/evidence，取自 decisions payload）；校正 M9/M10 节点代码入口为 `w4.adjudicate`/`dominance.resolve_dominance` |
 | v2.28 | 2026-11-26 | 新增第 14 章「主神经网络监控模块（main-nn）」：并入原 SPEC-MAIN-NN-MONITOR v0.1；M0–M14 节点表（48 保持 B 类并作为 M0 上游门禁）、chain_event 扩展、指标族、告警复用映射 + 3 条新增规则（`strategic_total` 告警限定三条件同时满足）、看板/SLO、M0–M14 锚定索引、配置与 P0–P3 路线；SPEC 归档 |
 | v1.0 | 2026-08-02 | 初始版本：按 DOC_STANDARD §3.2 补建技术设计文档，覆盖概述/架构/算法/数据流/接口/状态/配置/错误处理/扩展性 9 章节 |
@@ -1801,5 +1802,5 @@ promtool check rules 15-监控告警系统/deploy/prometheus/rules/dreambuddy-mo
 
 ---
 
-**文档版本**: v2.29
+**文档版本**: v2.30
 **最后更新**: 2026-11-26

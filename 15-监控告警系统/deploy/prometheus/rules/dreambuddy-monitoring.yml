@@ -535,7 +535,7 @@ groups:
           channel: alert
         annotations:
           summary: "43 五维总分恒 51 且 bridge 开、40 产物新鲜、shadow 未解除（承接失效退化）"
-          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#14-主神经网络监控模块main-nnv2282026-11-26"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#14-主神经网络监控模块main-nn"
 
       - alert: MainNNConstraintDegraded
         expr: dreambuddy_main_nn_constraint_degraded_1h > 0
@@ -545,7 +545,7 @@ groups:
           channel: alert
         annotations:
           summary: "40/43 约束字段缺失或方向泄漏，50 按保守默认钳位"
-          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#14-主神经网络监控模块main-nnv2282026-11-26"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#14-主神经网络监控模块main-nn"
 
       - alert: MainNNExecutionRightsMismatch
         expr: dreambuddy_main_nn_execution_rights_ok == 0
@@ -555,4 +555,4 @@ groups:
           channel: alert
         annotations:
           summary: "存在 mode=live 但 execution_rights/mandate_id 不符，单出口契约被破坏"
-          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#14-主神经网络监控模块main-nnv2282026-11-26"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#14-主神经网络监控模块main-nn"

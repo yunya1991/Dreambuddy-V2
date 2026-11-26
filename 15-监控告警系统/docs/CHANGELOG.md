@@ -1,6 +1,6 @@
 # 变更记录 — 15-监控告警系统
 
-> **版本**: v2.29 | **更新日期**: 2026-11-26
+> **版本**: v2.30 | **更新日期**: 2026-11-26
 
 ---
 
@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 变更内容 | 影响范围 |
 |------|------|----------|----------|
+| v2.30 | 2026-11-26 | main-nn P2 资金安全：`decision_fill_join_ratio`（24h live 决策×成交按 decision_id）+ `fill_sltp_attach_ratio`（24h 下单附带 SL/TP 比例，离线代理）；`execution.main_nn.fills` 配置项；§14 标题去版本号，runbook 锚点稳定（不再随版本失效） | 文档+代码+配置 |
 | v2.29 | 2026-11-26 | main-nn P1 决策语义落地：43 `chain_emit` 薄封装 + M3（cycle_state_adapter）/M4（signal_publisher）事件；导出器新增 M7–M10 语义快照（path_count / conflict_flag / dominance fallback / flap locked / constraint freeze / neutral ratio / evidence sources，全部取自 decisions payload，不侵入核心裁决）；TD §14 节点表 M9/M10 校正为 `w4.adjudicate`/`dominance.resolve_dominance`（dimension_forces/contradiction 为 WP-R1 预留未接入）；新增单测 | 文档+代码 |
 | v2.28 | 2026-11-26 | 新增 TD §14「主神经网络监控模块（main-nn）」并归档原 SPEC-MAIN-NN-MONITOR v0.1：M0–M14 节点表（48 保持 B 类、作为 M0 上游门禁）、`chain_event.v1` 扩展（`source/mode/reason_category`）、指标族、告警复用映射 + 3 条新增规则（`MainNNStrategicFallbackDominant` 三条件由 `main_nn_strategic_fallback_dominant` 一次判定、`MainNNConstraintDegraded`、`MainNNExecutionRightsMismatch`）；导出器新增 `main_nn_metrics()`；`monitoring.yaml` 新增 3 个 artifacts + `signals.main_nn`/`execution.main_nn`；`domains.yaml` L1.trade 登记 main-nn + 4 探针 | 文档+代码+配置+规则 |
 | v2.27 | 2026-11-26 | `SltpReconcileFailed` P1 误报治理：11-26 19:24–19:30 CST 每轮 `failed=1` 实为 AMZN 的 `50011 Too Many Requests` 查询失败（保护状态未知 ≠ 缺保护）。22 `reconcile_sltp` 拆分 `failed`（下单/去重失败）与 `query_failed`（algo 查询失败，落 `kind=algo_query_fail` 明细）；导出器新增 `sltp_reconcile_query_failed_1h` 并新增 P2 `SltpAlgoQueryFailed`（>0 for 30m）；P1 只看真实补挂失败。TD §13.8.3/§13.8.5/§13.9.2 同步，新增 2 项单测 | 代码+规则+测试+文档 |

@@ -974,6 +974,7 @@ class Collector:
         cutoff = _now() - window
         latest: dict[str, dict] = {}
         modes: dict[str, int] = {}
+        live_ids: set[str] = set()
         if dec_path.exists():
             for rec in _tail_jsonl(dec_path, limit=2000):
                 ts = _iso_to_ts(str(rec.get("ts") or ""))
@@ -983,6 +984,8 @@ class Collector:
                 payload = rec.get("payload") if isinstance(rec.get("payload"), dict) else {}
                 mode = str(rec.get("mode") or payload.get("mode") or "unknown")
                 modes[mode] = modes.get(mode, 0) + 1
+                if mode == "live" and rec.get("decision_id"):
+                    live_ids.add(str(rec["decision_id"]))
             out.append(
                 _metric(
                     "main_nn_decisions_age_seconds",
@@ -1051,6 +1054,36 @@ class Collector:
                     max((len(s) for s in source_sets), default=0),
                 )
             )
+
+        # P2 资金安全：决策→成交 join 与下单保护附带率（离线可算，不查交易所）
+        fills_path = self.repo / str(ex.get("fills", "22-执行引擎中心/audit/x1_live_fills.jsonl"))
+        filled_ids: set[str] = set()
+        placed = attached = 0
+        if fills_path.exists():
+            for rec in _iter_jsonl_since(fills_path, _now() - 86400):
+                if not rec.get("order_placed"):
+                    continue
+                placed += 1
+                if rec.get("decision_id"):
+                    filled_ids.add(str(rec["decision_id"]))
+                request = rec.get("request") if isinstance(rec.get("request"), dict) else {}
+                try:
+                    if (
+                        float(request.get("sl_pct") or 0) > 0
+                        and float(request.get("tp_pct") or 0) > 0
+                    ):
+                        attached += 1
+                except (TypeError, ValueError):
+                    pass
+        if live_ids:
+            out.append(
+                _metric(
+                    "main_nn_decision_fill_join_ratio",
+                    round(len(live_ids & filled_ids) / len(live_ids), 4),
+                )
+            )
+        if placed:
+            out.append(_metric("main_nn_fill_sltp_attach_ratio", round(attached / placed, 4)))
 
         # M12 live 出箱（50 outbox.jsonl）
         ob_path = self.repo / str(ex.get("outbox", "50-NN主矛盾评估器/runtime/live/outbox.jsonl"))

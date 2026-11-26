@@ -71,3 +71,54 @@ def test_semantic_snapshot_from_decisions(tmp_path: Path) -> None:
     assert "dreambuddy_main_nn_constraint_freeze_ratio 0.5" in text
     assert "dreambuddy_main_nn_dimension_neutral_ratio 0.5" in text
     assert "dreambuddy_main_nn_evidence_sources_ok 2" in text
+
+
+def test_p2_join_and_attach_ratios(tmp_path: Path) -> None:
+    runtime = tmp_path / "50-NN主矛盾评估器" / "runtime"
+    runtime.mkdir(parents=True)
+    rows = []
+    for sym, did, mode in (
+        ("A", "D1", "live"),
+        ("B", "D2", "live"),
+        ("C", "D3", "shadow"),
+        ("D", "D4", "live"),
+    ):
+        rec = _decision(sym, path_count=1, conflict=False, locked=False, freeze=False)
+        rec["decision_id"] = did
+        rec["mode"] = mode
+        rows.append(rec)
+    (runtime / "decisions.jsonl").write_text(
+        "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n", encoding="utf-8"
+    )
+
+    audit = tmp_path / "22-执行引擎中心" / "audit"
+    audit.mkdir(parents=True)
+    now = datetime.now(timezone.utc).isoformat()
+    fills = [
+        {
+            "ts": now,
+            "decision_id": "D1",
+            "order_placed": True,
+            "request": {"sl_pct": 1.5, "tp_pct": 3.0},
+        },
+        {
+            "ts": now,
+            "decision_id": "D2",
+            "order_placed": True,
+            "request": {"sl_pct": 0, "tp_pct": 0},
+        },
+        {
+            "ts": now,
+            "decision_id": "D3",
+            "order_placed": True,
+            "request": {"sl_pct": 1.5, "tp_pct": 3.0},
+        },
+    ]
+    (audit / "x1_live_fills.jsonl").write_text(
+        "\n".join(json.dumps(r) for r in fills) + "\n", encoding="utf-8"
+    )
+
+    text = "\n".join(Collector(tmp_path, _CFG, _DOMAINS).main_nn_metrics())
+
+    assert "dreambuddy_main_nn_decision_fill_join_ratio 0.6667" in text
+    assert "dreambuddy_main_nn_fill_sltp_attach_ratio 0.6667" in text
