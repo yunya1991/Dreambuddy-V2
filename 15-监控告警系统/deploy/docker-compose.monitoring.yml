@@ -40,9 +40,13 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set in /etc/dreambuddy-monitoring/monitoring.env}
-      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-https://example.com/monitor/}
-      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      # 交易系统看板只对本机开放（SSH 隧道访问），默认根路径；如需反代再覆盖两个变量
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://127.0.0.1:3000/}
+      GF_SERVER_SERVE_FROM_SUB_PATH: ${GRAFANA_SERVE_SUBPATH:-false}
       GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
