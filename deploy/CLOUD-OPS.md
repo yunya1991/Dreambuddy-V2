@@ -248,7 +248,7 @@ sudo -n -u luke -H /home/luke/venv-trading/bin/python \
 
 未采纳 `zstd` 压缩 dump：`snapshot_dbs.sh` 依赖 `dreambuddy_core_*.db` 文件名做硬链接、`cleanup-cloud-backups.sh` 依赖同后缀轮转，改后缀会静默让本地只读镜像停止更新且压缩包永不清理；收紧到 1 份后空间收益已被覆盖，不引入该联动风险。
 
-另：`/tmp` 中 794 个 9.2MB `tmpXXXXXXX` 残留（近 1 个月累积 5G）已按「>1 天且 `fuser` 无占用」清理；该类文件每日仍新增约 26 个，属未定位的生产者泄漏，待单独跟进。
+另：`/tmp` 中 794 个 9.2MB `tmpXXXXXXX` 残留（近 1 个月累积 5G）已按「>1 天且 `fuser` 无占用」清理。生产者已定位并修复：`index-reconcile.service`（以 `ubuntu` 运行）→ `41-文件索引系统/core/tokenizer.py` 导入 jieba，jieba 在 `/tmp` 建 9MB 临时 cache 后 rename 到 `/tmp/jieba.cache`，而该文件属 `luke`（600），`/tmp` sticky 位使 `ubuntu` 无法覆盖 → `PermissionError: Operation not permitted` 被 jieba 吞掉，每轮留一个临时文件。修复：`tokenizer.py` 把 `jieba.dt.tmp_dir` 指到每用户 `~/.cache/jieba`（可用 `JIEBA_CACHE_DIR` 覆盖）。
 
 ## 八、硬性禁止
 

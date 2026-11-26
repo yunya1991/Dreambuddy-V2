@@ -12,10 +12,23 @@ SPEC-41-文件索引系统 v0.6 §2.2（v0.4 闭环 C1）
 
 from __future__ import annotations
 
+import os
 import re
+from pathlib import Path
 from typing import List, Protocol
 
 import jieba
+
+# jieba 默认把分词缓存写到 /tmp/jieba.cache，并先在 /tmp 落一个 ~9MB 临时文件再 rename。
+# /tmp 带 sticky 位，跨用户 rename 会 PermissionError，缓存永远建不起来，于是每个
+# 非属主进程每次运行都泄漏一个 /tmp/tmpXXXXXXXX（2026-11-26 定位：index-reconcile
+# 以 ubuntu 运行，而 /tmp/jieba.cache 属 luke）。改为每用户独立缓存目录，避开共享 /tmp。
+_JIEBA_CACHE_DIR = Path(os.environ.get("JIEBA_CACHE_DIR") or (Path.home() / ".cache" / "jieba"))
+try:
+    _JIEBA_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    jieba.dt.tmp_dir = str(_JIEBA_CACHE_DIR)
+except OSError:  # HOME 不可写等场景，退回 jieba 默认行为
+    pass
 
 # 全角 → 半角（ASCII 可见字符区间）
 _FULLWIDTH_RE = re.compile(r"[\uff01-\uff5e]")
