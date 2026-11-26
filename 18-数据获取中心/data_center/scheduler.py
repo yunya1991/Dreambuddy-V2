@@ -22,6 +22,7 @@
 from __future__ import annotations
 
 import os
+import random
 import sys
 import threading
 import time
@@ -165,8 +166,9 @@ class CollectionScheduler:
     # 39 语义事件流水线（P1：由调度器自动产出，不依赖人工 CLI）
     # ------------------------------------------------------------------
     def _semantic_loop(self) -> None:
-        """每 DC_SEMANTIC_INTERVAL_SEC 跑一次：18 事件流采集 → 9 FinBERT 打分 → 39 语义事件；
-        同轮补跑经济日历日程（calendar_schedule.jsonl）并同步 19-DAL mm_events。"""
+        """主循环（默认 1800s）：主采金十快讯 + 华尔街见闻深度 → 39 语义事件 + 热榜，
+        主采无结果时用新浪/财联社后备；同轮补跑经济日历并同步 19-DAL mm_events。
+        金十 5 分钟快车道由 mobile-reservation-assist/news_pipeline 负责，此处不再高频采集。"""
         import logging
         import subprocess
         from pathlib import Path
@@ -175,13 +177,21 @@ class CollectionScheduler:
         if os.environ.get("DC_SEMANTIC_AUTO", "1") != "1":
             return
         interval = int(os.environ.get("DC_SEMANTIC_INTERVAL_SEC", "1800"))
+        events_interval = int(os.environ.get("DC_EVENTS_INTERVAL_SEC", "1800"))
+        jitter = float(os.environ.get("DC_EVENTS_JITTER_SEC", "20"))
         self._stop_flag.wait(180)  # 避开启动错峰
         root = Path(__file__).resolve().parents[1]  # 18-数据获取中心
         repo = root.parent
         gen_script = repo / "39-金融语义蒸馏系统" / "scripts" / "gen_semantic_events.py"
         sync_script = repo / "19-数据访问层" / "scripts" / "sync_events_to_dal.py"
+        next_slow = 0.0
         while not self._stop_flag.is_set():
             try:
+                if jitter > 0:
+                    # 0–jitter 秒抖动，避免整点集中请求
+                    self._stop_flag.wait(random.uniform(0, jitter))
+                if self._stop_flag.is_set():
+                    break
                 ev = subprocess.run(
                     [
                         sys.executable,
@@ -189,6 +199,10 @@ class CollectionScheduler:
                         "data_center.cli.collect_events",
                         "--source",
                         "cn",
+                        "--sources",
+                        "jin10,wallstreetcn",
+                        "--fallback-sources",
+                        "sina_finance,cls",
                         "--days",
                         "1",
                     ],
@@ -215,43 +229,45 @@ class CollectionScheduler:
                         gen.returncode,
                         (gen.stderr or gen.stdout).strip()[-200:],
                     )
-                # 经济日历：未来已公布日程独立落 calendar_schedule.jsonl（不污染事件流）
-                cal = subprocess.run(
-                    [
-                        sys.executable,
-                        "-m",
-                        "data_center.cli.collect_calendar",
-                        "--ahead-days",
-                        "90",
-                    ],
-                    cwd=str(root),
-                    capture_output=True,
-                    text=True,
-                    timeout=600,
-                )
-                log.info(
-                    "calendar collect rc=%s %s",
-                    cal.returncode,
-                    (cal.stderr or cal.stdout).strip()[-200:],
-                )
-                # 事件流 → 19-DAL mm_events（前端经济日历数据源）
-                if sync_script.is_file():
-                    syn = subprocess.run(
-                        [sys.executable, str(sync_script)],
-                        cwd=str(sync_script.parent.parent),
+                if time.time() >= next_slow:
+                    # 经济日历：未来已公布日程独立落 calendar_schedule.jsonl（不污染事件流）
+                    cal = subprocess.run(
+                        [
+                            sys.executable,
+                            "-m",
+                            "data_center.cli.collect_calendar",
+                            "--ahead-days",
+                            "90",
+                        ],
+                        cwd=str(root),
                         capture_output=True,
                         text=True,
-                        timeout=300,
+                        timeout=600,
                     )
                     log.info(
-                        "dal sync rc=%s %s",
-                        syn.returncode,
-                        (syn.stderr or syn.stdout).strip()[-200:],
+                        "calendar collect rc=%s %s",
+                        cal.returncode,
+                        (cal.stderr or cal.stdout).strip()[-200:],
                     )
+                    # 事件流 → 19-DAL mm_events（前端经济日历数据源）
+                    if sync_script.is_file():
+                        syn = subprocess.run(
+                            [sys.executable, str(sync_script)],
+                            cwd=str(sync_script.parent.parent),
+                            capture_output=True,
+                            text=True,
+                            timeout=300,
+                        )
+                        log.info(
+                            "dal sync rc=%s %s",
+                            syn.returncode,
+                            (syn.stderr or syn.stdout).strip()[-200:],
+                        )
+                    next_slow = time.time() + interval
             except Exception:
                 # FAIL-OPEN：语义流水线失败不影响采集主循环
                 log.error("39 语义流水线失败", exc_info=True)
-            self._stop_flag.wait(interval)
+            self._stop_flag.wait(events_interval)
 
     def _run_loop(self) -> None:
         """主循环：每秒检查各 task 是否到期；每 backfill_interval_sec 执行 18→19 回填。

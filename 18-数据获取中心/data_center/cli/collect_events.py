@@ -43,7 +43,18 @@ COLLECTORS = {
     "odaily_newsflash": odaily_newsflash_adapter,
 }
 
-CN_SOURCES = ("sina_finance", "wallstreetcn", "cls", "jin10")
+# 主采：金十（快讯）+ 华尔街见闻（深度）；后备：新浪、财联社。四源都保留，可按需切换。
+CN_PRIMARY_SOURCES = ("jin10", "wallstreetcn")
+CN_BACKUP_SOURCES = ("sina_finance", "cls")
+CN_SOURCES = CN_PRIMARY_SOURCES + CN_BACKUP_SOURCES
+
+
+def _parse_source_list(raw: str, field: str) -> list[str]:
+    names = [item.strip() for item in str(raw or "").split(",") if item.strip()]
+    unknown = [name for name in names if name not in CN_SOURCES]
+    if unknown:
+        raise SystemExit(f"[FAIL] {field} 含非 CN 源：{','.join(unknown)}")
+    return names
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -54,6 +65,16 @@ def main(argv: list[str] | None = None) -> int:
         choices=["all", "cn", *COLLECTORS],
         default="all",
         help="采集源（cn = 四个中文财经源）",
+    )
+    parser.add_argument(
+        "--sources",
+        default="",
+        help="逗号分隔的主采源（仅 CN 源），如 jin10,wallstreetcn；优先于 --source",
+    )
+    parser.add_argument(
+        "--fallback-sources",
+        default="",
+        help="主采无结果时的后备源（仅 CN 源），如 sina_finance,cls",
     )
     parser.add_argument("--output", default=str(EVENTS_PATH), help="events.jsonl 路径")
     parser.add_argument("--bodies-output", default=str(BODIES_PATH), help="bodies.jsonl 路径")
@@ -66,32 +87,54 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     now = datetime.now(timezone.utc)
-    if args.source == "cn":
-        names = list(CN_SOURCES)
+    if args.sources:
+        primary_names = _parse_source_list(args.sources, "--sources")
+    elif args.source == "cn":
+        primary_names = list(CN_SOURCES)
     elif args.source == "all":
-        names = list(COLLECTORS)
+        primary_names = list(COLLECTORS)
     else:
-        names = [args.source]
+        primary_names = [args.source]
+    fallback_names = (
+        _parse_source_list(args.fallback_sources, "--fallback-sources")
+        if args.fallback_sources
+        else []
+    )
 
     known_bodies = set(load_bodies(args.bodies_output))
     collected: dict[str, list[dict]] = {}
     bodies: list[dict] = []
-    for name in names:
-        module = COLLECTORS[name]
-        try:
-            kwargs = {"days": args.days, "now": now}
-            if name == "wallstreetcn":
-                kwargs["known_body_ids"] = known_bodies
-            result = module.fetch(**kwargs)
-        except Exception as e:  # noqa: BLE001 — 单源失败不影响其他源
-            print(f"[WARN] {name} 采集失败：{e}", file=sys.stderr)
-            result = CollectResult()
+    attempted: list[str] = []
 
-        if isinstance(result, CollectResult):
-            collected[name] = result.events
-            bodies.extend(result.bodies)
-        else:
-            collected[name] = result
+    def _collect(names_to_run: list[str]) -> None:
+        for name in names_to_run:
+            if name in attempted:
+                continue
+            attempted.append(name)
+            module = COLLECTORS[name]
+            try:
+                kwargs = {"days": args.days, "now": now}
+                if name == "wallstreetcn":
+                    kwargs["known_body_ids"] = known_bodies
+                result = module.fetch(**kwargs)
+            except Exception as e:  # noqa: BLE001 — 单源失败不影响其他源
+                print(f"[WARN] {name} 采集失败：{e}", file=sys.stderr)
+                result = CollectResult()
+
+            if isinstance(result, CollectResult):
+                collected[name] = result.events
+                bodies.extend(result.bodies)
+            else:
+                collected[name] = result
+
+    _collect(primary_names)
+    primary_events = sum(len(collected.get(name) or []) for name in primary_names)
+    if fallback_names and primary_events == 0:
+        print(
+            f"[WARN] 主采源无结果，切换后备源：{','.join(fallback_names)}",
+            file=sys.stderr,
+        )
+        _collect(fallback_names)
 
     merged = [row for rows in collected.values() for row in rows]
 
@@ -107,7 +150,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"[collect_events] window={args.days}d end={now.isoformat()} output={args.output}")
     total_req = total_fail = 0
-    for name in names:
+    for name in attempted:
         stats = _guard_stats(COLLECTORS[name])
         total_req += stats.get("requests", 0)
         total_fail += stats.get("failures", 0)
