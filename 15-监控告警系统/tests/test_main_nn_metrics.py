@@ -76,19 +76,18 @@ def test_semantic_snapshot_from_decisions(tmp_path: Path) -> None:
 def test_p2_join_and_attach_ratios(tmp_path: Path) -> None:
     runtime = tmp_path / "50-NN主矛盾评估器" / "runtime"
     runtime.mkdir(parents=True)
-    rows = []
-    for sym, did, mode in (
-        ("A", "D1", "live"),
-        ("B", "D2", "live"),
-        ("C", "D3", "shadow"),
-        ("D", "D4", "live"),
-    ):
-        rec = _decision(sym, path_count=1, conflict=False, locked=False, freeze=False)
-        rec["decision_id"] = did
-        rec["mode"] = mode
-        rows.append(rec)
+    rows = [
+        _decision(sym, path_count=1, conflict=False, locked=False, freeze=False)
+        for sym in ("A", "B", "C", "D")
+    ]
     (runtime / "decisions.jsonl").write_text(
         "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n", encoding="utf-8"
+    )
+    # join 源是 outbox（decisions.jsonl 不含 decision_id）
+    (runtime / "live").mkdir(parents=True)
+    outbox = [{"mode": "live", "decision_id": did} for did in ("D1", "D2", "D4")]
+    (runtime / "live" / "outbox.jsonl").write_text(
+        "\n".join(json.dumps(r) for r in outbox) + "\n", encoding="utf-8"
     )
 
     audit = tmp_path / "22-执行引擎中心" / "audit"

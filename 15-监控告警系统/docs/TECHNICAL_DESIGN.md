@@ -1608,7 +1608,7 @@ trace_id（M6 生成，贯穿 M6→M11）
 | `dreambuddy_main_nn_execution_rights_ok` | 50 live outbox + 22 幂等状态 | 单出口是否守约 |
 | `dreambuddy_main_nn_x1_skip_total{reason}` | `22/runtime/x1_live_processed.json` | 跳过归因分布 |
 | `dreambuddy_main_nn_fill_sltp_attach_ratio` | `22/audit/x1_live_fills.jsonl`（24h，`order_placed`） | 下单即附带 SL/TP 的比例（离线代理；真实持仓覆盖率需交易所查询，仍由 22 `sltp_reconcile` + `sltp_*` 指标负责） |
-| `dreambuddy_main_nn_decision_fill_join_ratio` | 24h live decisions × fills（按 `decision_id`） | 决策→成交 join 率 |
+| `dreambuddy_main_nn_decision_fill_join_ratio` | 50 live outbox 决策 × 24h fills（按 `decision_id`） | 决策→成交 join 率（`decisions.jsonl` 由 make_decision 内部落盘、不含 `decision_id`，不能作为 join 源） |
 
 **命名与标签纪律**：前缀 `dreambuddy_`；业务指标带 `chain=trade, layer=L1, cell=L1.trade, module=main-nn`；链路指标额外 `source="main-nn"`、`stage="M0"…"M14"`；禁止 `chain_id / decision_id / signal_id` 做 label；高频中间量只保留最新值与分位摘要。
 

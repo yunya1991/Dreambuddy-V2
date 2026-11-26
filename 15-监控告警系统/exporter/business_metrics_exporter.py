@@ -984,8 +984,6 @@ class Collector:
                 payload = rec.get("payload") if isinstance(rec.get("payload"), dict) else {}
                 mode = str(rec.get("mode") or payload.get("mode") or "unknown")
                 modes[mode] = modes.get(mode, 0) + 1
-                if mode == "live" and rec.get("decision_id"):
-                    live_ids.add(str(rec["decision_id"]))
             out.append(
                 _metric(
                     "main_nn_decisions_age_seconds",
@@ -1055,36 +1053,6 @@ class Collector:
                 )
             )
 
-        # P2 资金安全：决策→成交 join 与下单保护附带率（离线可算，不查交易所）
-        fills_path = self.repo / str(ex.get("fills", "22-执行引擎中心/audit/x1_live_fills.jsonl"))
-        filled_ids: set[str] = set()
-        placed = attached = 0
-        if fills_path.exists():
-            for rec in _iter_jsonl_since(fills_path, _now() - 86400):
-                if not rec.get("order_placed"):
-                    continue
-                placed += 1
-                if rec.get("decision_id"):
-                    filled_ids.add(str(rec["decision_id"]))
-                request = rec.get("request") if isinstance(rec.get("request"), dict) else {}
-                try:
-                    if (
-                        float(request.get("sl_pct") or 0) > 0
-                        and float(request.get("tp_pct") or 0) > 0
-                    ):
-                        attached += 1
-                except (TypeError, ValueError):
-                    pass
-        if live_ids:
-            out.append(
-                _metric(
-                    "main_nn_decision_fill_join_ratio",
-                    round(len(live_ids & filled_ids) / len(live_ids), 4),
-                )
-            )
-        if placed:
-            out.append(_metric("main_nn_fill_sltp_attach_ratio", round(attached / placed, 4)))
-
         # M12 live 出箱（50 outbox.jsonl）
         ob_path = self.repo / str(ex.get("outbox", "50-NN主矛盾评估器/runtime/live/outbox.jsonl"))
         ob_rows: list[dict] = []
@@ -1138,6 +1106,42 @@ class Collector:
             reasons[key] = reasons.get(key, 0) + 1
         for key, n in sorted(reasons.items()):
             out.append(_metric("main_nn_x1_skip_total", n, reason=key))
+
+        # P2 资金安全：决策→成交 join 与下单保护附带率（离线可算，不查交易所）
+        # decisions.jsonl 由 make_decision 内部落盘、不含 decision_id；join 必须用 outbox 决策
+        live_ids = {
+            str(d["decision_id"])
+            for d in ob_rows
+            if d.get("mode") == "live" and d.get("decision_id")
+        }
+        fills_path = self.repo / str(ex.get("fills", "22-执行引擎中心/audit/x1_live_fills.jsonl"))
+        filled_ids: set[str] = set()
+        placed = attached = 0
+        if fills_path.exists():
+            for rec in _iter_jsonl_since(fills_path, _now() - 86400):
+                if not rec.get("order_placed"):
+                    continue
+                placed += 1
+                if rec.get("decision_id"):
+                    filled_ids.add(str(rec["decision_id"]))
+                request = rec.get("request") if isinstance(rec.get("request"), dict) else {}
+                try:
+                    if (
+                        float(request.get("sl_pct") or 0) > 0
+                        and float(request.get("tp_pct") or 0) > 0
+                    ):
+                        attached += 1
+                except (TypeError, ValueError):
+                    pass
+        if live_ids:
+            out.append(
+                _metric(
+                    "main_nn_decision_fill_join_ratio",
+                    round(len(live_ids & filled_ids) / len(live_ids), 4),
+                )
+            )
+        if placed:
+            out.append(_metric("main_nn_fill_sltp_attach_ratio", round(attached / placed, 4)))
 
         # M0–M14 链路事件（仅 source=main-nn）
         cutoff_24h = _now() - 86400
