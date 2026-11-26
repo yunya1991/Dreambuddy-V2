@@ -241,7 +241,7 @@ trace_id（N1 生成，贯穿推理段）
 
 | 进程 | unit | 参数 | 日志 |
 |---|---|---|---|
-| 23 开仓 | `dreambuddy-entry23` | `--interval 300 --symbols BTC,ETH,SOL`，`EVOLUTION_ENTRY23_ENABLED=on` | `/home/luke/logs/yijing/entry23.log` |
+| 23 开仓 | `dreambuddy-entry23` | `--interval 300 --pool-mode dynamic --scan-top 8`，`EVOLUTION_ENTRY23_ENABLED=on` | `/home/luke/logs/yijing/entry23.log` |
 | 23 平仓 | `dreambuddy-exit23` | `--interval 60` | `/home/luke/logs/yijing/exit23.log` |
 | 11 数据服务 | `yijing-data-server` | 8765，保留 | 前端趋势面板依赖 |
 | 11 交易循环 | `yijing-polling-trader` | **已停用并 disable** | 不再写交易 |

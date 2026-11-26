@@ -201,7 +201,7 @@
 | `execution/outbox.py` | `default_outbox()` | `decision_id` 幂等、重试、卡单检测 | SQLite 状态机 |
 | `execution/chain_events.py` | `emit_stage()` | N/E 节点时间线 | `new_trace_id()`, `emit_stage()` |
 | `execution/ledger_guards.py` | 账本一致性守卫 | 开仓前账本/交易所一致性检查 | — |
-| `scripts/entry_runner.py` | `main()` | 独立开仓进程（`--interval 300 --symbols BTC,ETH,SOL`） | `entry23` service |
+| `scripts/entry_runner.py` | `main()` | 独立开仓进程（`--interval 300 --pool-mode dynamic --scan-top 8`） | `entry23` service |
 | `scripts/exit_runner.py` | `main()` | 独立离场进程（`--interval 60`）：SL/TP 补挂 → 22 对账 → 巡检 → 结算反馈 | `exit23` service |
 
 > 部署与单一 owner 语义见 [TRADING_FRAMEWORK_AND_SIGNAL_FLOW.md §6.4](./TRADING_FRAMEWORK_AND_SIGNAL_FLOW.md#64-部署与单一-owner)；
@@ -286,7 +286,7 @@ L1 状态空间 → Level0 路径代价 → L2 策略匹配 → 【交叉识别�
 | `reflection_scanner.py` | 反思学习门槛 | `MIN_WIN_RATE=0.55`, `MAX_HISTORY_DAYS=90` |
 | `trade_index_builder.py` | 索引库配置 | `CACHE_TTL=300`, `DISCOVERY_CACHE_TTL=3600`, `MAX_SCAN_DEPTH=5`；成交源为 22 `runtime/position_ledger.db` 的 `fills`（`close/reduce/reduce_only`） |
 | `adapters/subsystem_bridge.py` | 自产因子开关 | `EVOLUTION_INDIGENOUS_FACTORS`（默认 on） |
-| `deploy/dreambuddy-entry23.service` | 开仓进程 | `--interval 300 --symbols BTC,ETH,SOL`, `EVOLUTION_ENTRY23_ENABLED=on` |
+| `deploy/dreambuddy-entry23.service` | 开仓进程 | `--interval 300 --pool-mode dynamic --scan-top 8`, `EVOLUTION_ENTRY23_ENABLED=on` |
 | `deploy/dreambuddy-exit23.service` | 平仓进程 | `--interval 60`；每轮 SL/TP 补挂 + 22 对账 |
 
 ---
