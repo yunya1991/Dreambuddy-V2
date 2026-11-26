@@ -296,18 +296,30 @@ def part_klines_norm(symbols=("BTC", "ETH", "SOL"), bars: int = 1000) -> None:
         ("legacy sm*rf", "A", 0.0, 1.0, False),
         ("flip raw +10%", "B", 0.10, 1.0, False),
         ("norm x1.0 +10%", "B", 0.10, 1.0, True),
+        ("norm x1.1 +10%", "B", 0.10, 1.1, True),
+        ("norm x1.2 +10%", "B", 0.10, 1.2, True),
+        ("norm x1.3 +10%", "B", 0.10, 1.3, True),
         ("norm x1.5 +10%", "B", 0.10, 1.5, True),
+        ("norm x1.75 +10%", "B", 0.10, 1.75, True),
         ("norm x2.0 +5%", "B", 0.05, 2.0, True),
         ("norm x2.0 +10%", "B", 0.10, 2.0, True),
         ("norm x2.0 +15%", "B", 0.15, 2.0, True),
-        ("norm x2.5 +10%", "B", 0.10, 2.5, True),
     ]
     fee = 0.0005
     ex = ccxt.okx({"enableRateLimit": True, "timeout": 20000})
 
     for h in (4, 24):
         agg = {
-            g[0]: {"n": 0, "wait": 0, "long": 0, "short": 0, "p": [], "eq": 1.0, "mdd": 0.0}
+            g[0]: {
+                "n": 0,
+                "wait": 0,
+                "long": 0,
+                "short": 0,
+                "p": [],
+                "eq": 1.0,
+                "peak": 1.0,
+                "mdd": 0.0,
+            }
             for g in grid
         }
         base = []
@@ -350,7 +362,8 @@ def part_klines_norm(symbols=("BTC", "ETH", "SOL"), bars: int = 1000) -> None:
                         pnl = ret - 2 * fee if act == "long" else -ret - 2 * fee
                         a["p"].append(pnl)
                         a["eq"] *= 1 + pnl
-                        a["mdd"] = max(a["mdd"], 1 - a["eq"] / max(a["eq"], 1e-12))
+                        a["peak"] = max(a["peak"], a["eq"])
+                        a["mdd"] = max(a["mdd"], 1 - a["eq"] / a["peak"])
 
         n = len(base)
         print(
