@@ -1048,6 +1048,7 @@ class PositionLedger:
         - 已存在但数量与交易所不一致 → 以交易所为准校正数量（真实流水保留原均价）；
         - 账本有、交易所已无 → 仅关闭本对账源（source）写入的陈旧行，避免每轮重复报幽灵仓；
           传 fill_lookup 时按交易所真实平仓成交价落账（否则回退均价，realized_pnl 记 0）；
+          查到真实成交时按 exchange_sltp 落账并保留原归属 source/domain（OCO 止损/止盈回写）；
         - 无开仓流水时 realized_pnl 保持 0，不臆造盈亏；
         - 每次校正/关闭都写一条 fills 审计，便于追溯。
         """
@@ -1194,16 +1195,21 @@ class PositionLedger:
                     )
                 except (OSError, OverflowError, ValueError):
                     _exit_ts = ts
+            # OCO（SL/TP）成交回写：查到真实平仓成交时按「交易所止损/止盈」落账，
+            # 并保留原归属 source/domain（50-nn 等），避免误判为幽灵仓/对账清理。
+            _row_src = str(row["source"] or "")
+            _has_fill = _fill_px > _EPS
+            _attr_source = _row_src if (_has_fill and is_managed_source(_row_src)) else source
             self.apply_partial_close(
                 inst_id=row["inst_id"],
                 pos_side=row["pos_side"],
                 qty=float(row["qty"]),
                 px=_exit_px,
                 ratio=1.0,
-                source=source,
+                source=_attr_source,
                 fee=float(_fill.get("fee") or 0.0),
                 ts=_exit_ts,
-                exit_reason="ghost_stale",
+                exit_reason="exchange_sltp" if _has_fill else "ghost_stale",
             )
             closed.append(f"{row['inst_id']}:{row['pos_side']}")
         # 自愈：修复历史 qty/status 不一致的幽灵行（幂等，每轮对账都跑）

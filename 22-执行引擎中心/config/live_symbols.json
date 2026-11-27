@@ -16,6 +16,69 @@
     "apac_index": 150,
     "us_etf": 150
   },
+  "sl_tp": {
+    "description": "50 域开仓 OCO 间距（百分比）。优先级：决策自带 sl_pct/tp_pct > symbols 覆盖 > asset_class > default；用于替代 x1 执行器全局硬编码 1.5%/3.0%。数值按类别日内波动率设定，避免噪音扫损。",
+    "default": {
+      "sl_pct": 2.5,
+      "tp_pct": 5.0
+    },
+    "asset_class": {
+      "crypto": {
+        "sl_pct": 3.0,
+        "tp_pct": 6.0
+      },
+      "precious_metal": {
+        "sl_pct": 2.5,
+        "tp_pct": 5.0
+      },
+      "industrial_metal": {
+        "sl_pct": 3.0,
+        "tp_pct": 6.0
+      },
+      "energy": {
+        "sl_pct": 3.0,
+        "tp_pct": 6.0
+      },
+      "rates_credit": {
+        "sl_pct": 2.0,
+        "tp_pct": 4.0
+      },
+      "us_index": {
+        "sl_pct": 2.0,
+        "tp_pct": 4.0
+      },
+      "apac_index": {
+        "sl_pct": 2.0,
+        "tp_pct": 4.0
+      },
+      "us_etf": {
+        "sl_pct": 2.5,
+        "tp_pct": 5.0
+      },
+      "us_stock": {
+        "sl_pct": 3.0,
+        "tp_pct": 6.0
+      }
+    },
+    "symbols": {
+      "HYPE-USDT-SWAP": {
+        "sl_pct": 4.0,
+        "tp_pct": 8.0
+      },
+      "MU-USDT-SWAP": {
+        "sl_pct": 4.0,
+        "tp_pct": 8.0
+      },
+      "MSTR-USDT-SWAP": {
+        "sl_pct": 4.0,
+        "tp_pct": 8.0
+      },
+      "COIN-USDT-SWAP": {
+        "sl_pct": 4.0,
+        "tp_pct": 8.0
+      }
+    }
+  },
   "classes": {
     "crypto": {
       "leader": "BTC",

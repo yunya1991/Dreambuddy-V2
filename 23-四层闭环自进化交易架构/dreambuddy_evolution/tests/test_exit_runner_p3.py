@@ -178,6 +178,61 @@ def test_build_runtime_wires_23_writes_through_gateway(monkeypatch):
     assert loop._dispatcher._gateway is gateway
 
 
+class _GatewayKnown(_Gateway):
+    """账本已收录标的（含已平仓）的网关替身。"""
+
+    def __init__(self, rows, known):
+        super().__init__(rows)
+        self._known = known
+
+    def list_known_symbols(self):
+        return list(self._known)
+
+
+def test_collect_positions_does_not_take_over_other_domain_symbols():
+    """--symbols 不得接管其他域（如 50-nn）持有的仓位，避免跨域双重离场。"""
+    gw = _GatewayKnown(
+        [
+            {
+                "inst_id": "BNB-USDT-SWAP",
+                "pos_side": "short",
+                "qty": 54,
+                "avg_entry": 546.55,
+                "source": "50-nn",
+            },
+            {
+                "inst_id": "XAG-USDT-SWAP",
+                "pos_side": "short",
+                "qty": 226,
+                "avg_entry": 44.22,
+                "source": "50-nn",
+            },
+        ],
+        known=["BNB-USDT-SWAP", "XAG-USDT-SWAP"],
+    )
+    out = collect_positions(
+        gw, _Okx(), ["BNB-USDT-SWAP", "XAG-USDT-SWAP"], ("23-evolution", "22-reconciled")
+    )
+    assert out == []
+
+
+def test_collect_positions_keeps_own_domain_symbols():
+    """来源命中 --tags 的仓位仍正常纳管（不因移除 --symbols 兜底而漏管）。"""
+    gw = _Gateway(
+        [
+            {
+                "inst_id": "BNB-USDT-SWAP",
+                "pos_side": "short",
+                "qty": 54,
+                "avg_entry": 546.55,
+                "source": "23-evolution",
+            }
+        ]
+    )
+    out = collect_positions(gw, _Okx(), ["BNB-USDT-SWAP"], ("23-evolution",))
+    assert [p["inst_id"] for p in out] == ["BNB-USDT-SWAP"]
+
+
 def test_collect_positions_skips_exchange_for_ledger_known_closed():
     """账本已知（含已平仓）的标的不在 effective 时，不应从交易所补录/告警。
 

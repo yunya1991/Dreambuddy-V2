@@ -70,9 +70,53 @@ NOTIONAL_FLOOR_BY_CLASS: dict[str, float] = {
 MAX_LEVERAGE = 3
 # 单笔最低保证金（USDT）：名义 = 保证金 × 杠杆。0 表示不启用。
 MIN_MARGIN_USDT = float(_REGISTRY.get("min_margin_usdt") or 0)
+# SL/TP 最终兜底：仅当注册表 sl_tp 配置缺失时生效。
 DEFAULT_SL_PCT = 1.5
 DEFAULT_TP_PCT = 3.0
 COOLDOWN_HOURS = float(os.environ.get("22_LIVE_COOLDOWN_HOURS", "8"))
+
+# SL/TP 间距按标的类别/标的配置（live_symbols.json sl_tp），避免固定 1.5% 被日内噪音扫损
+_SL_TP_CFG = _REGISTRY.get("sl_tp") or {}
+
+
+def _sl_tp_pair(raw: Any) -> tuple[float, float] | None:
+    """解析 {sl_pct, tp_pct} 配置片段；缺项或非法返回 None。"""
+    if not isinstance(raw, dict):
+        return None
+    try:
+        sl = float(raw.get("sl_pct") or 0)
+        tp = float(raw.get("tp_pct") or 0)
+    except (TypeError, ValueError):
+        return None
+    if sl <= 0 or tp <= 0:
+        return None
+    return sl, tp
+
+
+_SL_TP_DEFAULT = _sl_tp_pair(_SL_TP_CFG.get("default")) or (DEFAULT_SL_PCT, DEFAULT_TP_PCT)
+_SL_TP_BY_CLASS: dict[str, Any] = {
+    str(k): v for k, v in (_SL_TP_CFG.get("asset_class") or {}).items() if _sl_tp_pair(v)
+}
+_SL_TP_BY_SYMBOL: dict[str, Any] = {
+    str(k).upper(): v for k, v in (_SL_TP_CFG.get("symbols") or {}).items() if _sl_tp_pair(v)
+}
+
+
+def _resolve_sl_tp(decision: dict[str, Any], inst_id: str) -> tuple[float, float]:
+    """SL/TP 间距（百分比）：决策声明 > 标的覆盖 > 类别 > 注册表默认 > 兜底。"""
+    own = _sl_tp_pair({"sl_pct": decision.get("sl_pct"), "tp_pct": decision.get("tp_pct")})
+    if own:
+        return own
+    symbol = str(inst_id or "").upper()
+    for candidate in (
+        _SL_TP_BY_SYMBOL.get(symbol),
+        _SL_TP_BY_CLASS.get(_class_of(symbol)),
+    ):
+        pair = _sl_tp_pair(candidate)
+        if pair:
+            return pair
+    return _SL_TP_DEFAULT
+
 
 # 容量类拒单：并发持仓已达上限属正常业务拒绝，不能把整轮任务打成失败
 CAPACITY_REJECT_CODES = frozenset({"max_positions"})
@@ -435,6 +479,9 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
             )
             continue
 
+        # SL/TP 按标的类别/标的配置（不再全局固定 1.5%/3.0%）
+        sl_pct, tp_pct = _resolve_sl_tp(decision, symbol)
+
         payload = {
             "action": "order",
             "symbol": decision.get("symbol"),
@@ -442,8 +489,8 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
             "notional_usdt": notional,
             "margin_usdt": round(notional / leverage, 2) if leverage else None,
             "leverage": leverage,
-            "sl_pct": DEFAULT_SL_PCT,
-            "tp_pct": DEFAULT_TP_PCT,
+            "sl_pct": sl_pct,
+            "tp_pct": tp_pct,
             "decision_id": decision_id,
             "reason": f"50 live {decision.get('signal_id')}",
             # 50 域仓位额度只统计注册表内标的，避免被其他域的持仓挤占

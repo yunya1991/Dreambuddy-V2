@@ -438,3 +438,36 @@ def test_real_broker_error_still_degrades(monkeypatch, tmp_path):
     assert result["status"] == "degraded"
     assert result["executed"] == 0
     assert "capacity_rejected" not in result
+
+
+def test_resolve_sl_tp_by_class_and_symbol():
+    """SL/TP 间距按类别/标的配置解析，替代全局固定 1.5%/3.0%。"""
+    assert ex._resolve_sl_tp({}, "AVAX-USDT-SWAP") == (3.0, 6.0)  # crypto
+    assert ex._resolve_sl_tp({}, "MU-USDT-SWAP") == (4.0, 8.0)  # 标的覆盖优先于类别
+    assert ex._resolve_sl_tp({}, "US500-USDT-SWAP") == (2.0, 4.0)  # us_index
+    # 决策自带 sl/tp 优先
+    assert ex._resolve_sl_tp({"sl_pct": 1.2, "tp_pct": 2.4}, "MU-USDT-SWAP") == (1.2, 2.4)
+
+
+def test_entry_payload_carries_class_sl_tp(monkeypatch, tmp_path):
+    """下单 payload 的 sl_pct/tp_pct 来自类别配置，不再是固定 1.5/3.0。"""
+    monkeypatch.setattr(ex, "_LEDGER", tmp_path / "fills.jsonl")
+    monkeypatch.setattr(ex, "_LEDGER_DIR", tmp_path)
+    monkeypatch.setattr(ex, "_STATE", tmp_path / "processed.json")
+    monkeypatch.setattr(ex, "precheck", lambda decision, **kw: _stub_pass_risk())
+    captured = {}
+
+    def fake_bridge(payload, timeout=90):
+        if payload.get("action") == "status":
+            return {"ok": True, "positions": []}
+        captured.update(payload)
+        return {"ok": True, "order_id": "ord-1", "reference_px": 100.0}
+
+    monkeypatch.setattr(ex, "_bridge_call", fake_bridge)
+    outbox = tmp_path / "outbox.jsonl"
+    outbox.write_text(json.dumps(_live_decision(), ensure_ascii=False) + "\n", encoding="utf-8")
+
+    result = ex.run(outbox, dry_run=False, limit=10)
+    assert result["executed"] == 1
+    assert captured["sl_pct"] == 3.0
+    assert captured["tp_pct"] == 6.0

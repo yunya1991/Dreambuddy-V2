@@ -61,10 +61,12 @@ def tag_matches(source: str, tags: Iterable[str]) -> bool:
 def collect_positions(
     gateway: Any, okx: Any, symbols: List[str], tags: Iterable[str]
 ) -> List[Dict[str, Any]]:
-    """账本归属优先；--symbols 用于补录 P2 之前开的老仓。
+    """账本归属优先；--symbols 仅补录账本从未出现的老仓。
 
     P1-5：容量/离场口径读 effective 持仓（stale 不进入决策），
     网关无该 API 时回退 list_positions（兼容测试替身与旧版网关）。
+    归属隔离：只管理 source 命中 --tags 的仓位；--symbols 中的标的若已由
+    其他域（如 50-nn）持有，绝不由本 runner 接管，避免跨域双重离场。
     """
     _want = {s.strip().upper() for s in symbols if s and s.strip()}
     out: List[Dict[str, Any]] = []
@@ -76,7 +78,7 @@ def collect_positions(
         _inst = str(row.get("inst_id") or "")
         if not _inst:
             continue
-        if (_inst.upper() in _want) or tag_matches(row.get("source"), tags):
+        if tag_matches(row.get("source"), tags):
             _seen.add(_inst)
             out.append(
                 {

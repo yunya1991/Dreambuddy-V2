@@ -75,6 +75,48 @@ def test_reconcile_closes_23_evolution_ghost_position(tmp_path):
     assert _raw_l1(led, "UNI-USDT-SWAP", "long")["status"] == "closed"
 
 
+# ── OCO 止损/止盈成交回写：不得误记为幽灵仓，且保留原归属域 ──
+def test_reconcile_oco_fill_written_back_as_exchange_sltp(tmp_path):
+    led = _ledger(tmp_path)
+    led.record_fill("COIN-USDT-SWAP", "short", "open", 2.84, 105.61, source="50-nn", domain="50")
+
+    out = led.reconcile(
+        [],
+        source="22-reconciled",
+        fill_lookup=lambda _i, _s: {"fill_px": 107.24, "fee": 0.05, "ts": 1795798644000},
+        ghost_confirm=lambda _i, _s: True,
+    )
+    assert out["closed"] == 1
+    assert led.get_position("COIN-USDT-SWAP", "short") is None
+
+    cool = led.get_cooldown("COIN-USDT-SWAP")
+    assert cool["exit_reason"] == "exchange_sltp"
+    assert cool["source"] == "50-nn"
+    assert cool["realized_pnl"] < 0
+
+    with led._connect() as conn:
+        fill = conn.execute(
+            "SELECT source, domain, action, px, realized_pnl FROM fills"
+            " WHERE inst_id='COIN-USDT-SWAP' ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+    assert fill["source"] == "50-nn"
+    assert fill["domain"] == "50"
+    assert fill["action"] == "close"
+    assert fill["px"] == 107.24
+
+
+def test_reconcile_without_fill_keeps_ghost_stale(tmp_path):
+    """查不到真实成交时仍按 ghost_stale + 对账源落账（不臆造 exchange_sltp）。"""
+    led = _ledger(tmp_path)
+    led.record_fill("LINK-USDT-SWAP", "short", "open", 32.4, 9.234, source="50-nn", domain="50")
+
+    led.reconcile([], source="22-reconciled", ghost_confirm=lambda _i, _s: True)
+
+    cool = led.get_cooldown("LINK-USDT-SWAP")
+    assert cool["exit_reason"] == "ghost_stale"
+    assert cool["source"] == "22-reconciled"
+
+
 # ── 根因 A 之二：50-nn 数量漂移必须被校正 ──
 def test_reconcile_corrects_50_nn_qty_drift(tmp_path):
     led = _ledger(tmp_path)
