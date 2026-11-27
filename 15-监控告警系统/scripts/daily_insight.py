@@ -264,14 +264,27 @@ def collect_chain23(repo: Path, win: dict) -> dict:
         float(x["score_gap"]) for x in n7_data if isinstance(x.get("score_gap"), (int, float))
     ]
 
-    # 链路贯通率：有 N10 信号的 chain 是否继续到 N12/N14
+    # 链路贯通率：N10 信号只有真正通过 N11 闸门（进入派发）才应继续到 N12/N14；
+    # 被 N11 拦截（权限/黑名单/持仓/冷却/额度）的信号本就不会进执行段，
+    # 不能拿全部 N10 作分母，否则会把「策略主动过滤」误报成「chain 断链」。
     chain_stages: dict[str, set[str]] = {}
+    chain_status: dict[str, set[tuple[str, str]]] = {}
+    n11_blocked = Counter()
     for rec in rows:
         cid = str(rec.get("chain_id") or rec.get("trace_id") or rec.get("decision_id") or "")
+        stage = str(rec.get("stage"))
+        status = str(rec.get("status") or "")
         if cid:
-            chain_stages.setdefault(cid, set()).add(str(rec.get("stage")))
-    signal_chains = [st for st in chain_stages.values() if "N10" in st]
-    complete_chains = sum(1 for st in signal_chains if {"N12", "N14"} <= st)
+            chain_stages.setdefault(cid, set()).add(stage)
+            chain_status.setdefault(cid, set()).add((stage, status))
+        if stage == "N11" and status == "blocked":
+            n11_blocked[str((rec.get("data") or {}).get("gate") or "unknown")] += 1
+    signal_chains = [cid for cid, st in chain_stages.items() if "N10" in st]
+    dispatch_chains = [
+        cid for cid in signal_chains if ("N11", "pass") in chain_status.get(cid, set())
+    ]
+    # 贯通 = 已进入派发的 chain 有 N14 网关提交结果（真正的执行 join 点）
+    complete_chains = sum(1 for cid in dispatch_chains if "N14" in chain_stages.get(cid, set()))
     exec_stages = {"N12", "N13", "N14", "E4", "E5", "E6"}
     execution_events = sum(1 for r in rows if str(r.get("stage")) in exec_stages)
     n10_chains = sum(
@@ -341,6 +354,12 @@ def collect_chain23(repo: Path, win: dict) -> dict:
             "count": len(n6_data),
             "degraded_modes": _counts(degraded_modes),
             "degraded_ratio": ratio(sum(degraded_modes.values()), len(n6_data)),
+            # G 侧供给故障（真断链）与统计降级分离：no_significant_granger/short_history
+            # 属正常统计降级（1H 序列几乎不显著），只有查不到/异常才是供给故障
+            "g_dim_fault_count": g_states.get("no_price_series", 0) + g_states.get("error", 0),
+            "g_dim_fault_ratio": ratio(
+                g_states.get("no_price_series", 0) + g_states.get("error", 0), len(n6_data)
+            ),
             "g_dim_status": _counts(g_states),
             "shift_ratio": ratio(shifts, len(n6_data)),
             "divergence_ratio": ratio(divergent, len(n6_data)),
@@ -351,9 +370,14 @@ def collect_chain23(repo: Path, win: dict) -> dict:
             "score_gap": num_stats(score_gaps),
         },
         "chain_completion": {
+            # signal_chains：全部 N10 信号链；dispatch_chains：真正过闸门进入派发的链
             "signal_chains": len(signal_chains),
+            "dispatch_chains": len(dispatch_chains),
+            "dispatch_ratio": ratio(len(dispatch_chains), len(signal_chains)),
+            "n11_blocked": sum(n11_blocked.values()),
+            "n11_blocked_gates": _counts(n11_blocked),
             "complete_chains": complete_chains,
-            "ratio": ratio(complete_chains, len(signal_chains)),
+            "ratio": ratio(complete_chains, len(dispatch_chains)),
             "n10_chains": n10_chains,
             "execution_events": execution_events,
         },
@@ -366,6 +390,21 @@ def collect_chain23(repo: Path, win: dict) -> dict:
     }
 
 
+_EXPECTED_REJECT_MARKERS = (
+    "SYMBOL_ALREADY_OPEN",
+    "symbol_held_by_other_domain",
+    "single_outlet_denied",
+    "域互斥",
+    "单出口",
+)
+
+
+def _is_expected_reject(error: str) -> bool:
+    """跨域互斥拒绝属预期行为（他域在持），不算执行失败。"""
+    text = str(error or "")
+    return any(m in text for m in _EXPECTED_REJECT_MARKERS)
+
+
 def collect_outbox(repo: Path, win: dict, stuck_after: float) -> dict:
     db = repo / "23-四层闭环自进化交易架构/runtime/execution_outbox.db"
     if not db.exists():
@@ -376,7 +415,10 @@ def collect_outbox(repo: Path, win: dict, stuck_after: float) -> dict:
     try:
         conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=2)
         cur = conn.cursor()
-        rows = cur.execute("SELECT state, created_at, updated_at FROM execution_outbox").fetchall()
+        cols = {str(r[1]) for r in cur.execute("PRAGMA table_info(execution_outbox)").fetchall()}
+        has_err = "last_error" in cols
+        sel = "state, created_at, updated_at" + (", last_error" if has_err else "")
+        rows = cur.execute(f"SELECT {sel} FROM execution_outbox").fetchall()
         conn.close()
     except sqlite3.Error as exc:
         return {"present": True, "error": str(exc)}
@@ -392,6 +434,11 @@ def collect_outbox(repo: Path, win: dict, stuck_after: float) -> dict:
     # 窗口口径：只看本窗内已尝试（进入终态）的记录，避免历史存量污染当日判定
     window_attempts = sum(n for s, n in win_states.items() if s in terminal)
     window_failed = win_states.get("failed", 0)
+    # 域互斥拒绝是「他域已持该标的」的预期结果，单独拆出，避免污染失败率
+    window_failed_expected = sum(
+        1 for r in in_win if str(r[0]) == "failed" and has_err and _is_expected_reject(str(r[3]))
+    )
+    window_failed_real = max(0, window_failed - window_failed_expected)
     return {
         "present": True,
         "total": len(rows),
@@ -402,6 +449,9 @@ def collect_outbox(repo: Path, win: dict, stuck_after: float) -> dict:
         "window_attempts": window_attempts,
         "window_failed": window_failed,
         "window_failed_ratio": ratio(window_failed, window_attempts),
+        "window_failed_expected": window_failed_expected,
+        "window_failed_real": window_failed_real,
+        "window_failed_real_ratio": ratio(window_failed_real, window_attempts),
         "stuck": stuck,
     }
 
@@ -450,14 +500,19 @@ def collect_execution22(repo: Path, win: dict, ledger_stale_hours: float) -> dic
         if summaries:
             patched = sum(int(r.get("patched") or 0) for r in summaries)
             failed = sum(int(r.get("failed") or 0) for r in summaries)
+            query_failed = sum(int(r.get("query_failed") or 0) for r in summaries)
         else:
             details = [r for r in recs if "ok" in r]
             patched = sum(1 for r in details if r.get("ok"))
             failed = sum(1 for r in details if not r.get("ok"))
+            # 明细口径无法区分「查不到」与「真失败」，不臆造
+            query_failed = 0
         result["sltp"] = {
             "present": True,
             "patched": patched,
             "failed": failed,
+            # 查询失败（多为 50011 限流）不代表失保护，单独展示，不参与 P1 判定
+            "query_failed": query_failed,
             "records": len(recs),
             "age_hours": round(
                 max(0.0, datetime.now(timezone.utc).timestamp() - audit.stat().st_mtime) / 3600, 2
@@ -794,20 +849,28 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
         )
 
     cv = chain["n6"]
+    # 优先看 G 侧供给故障率（no_price_series/error）；统计降级
+    # （no_significant_granger/short_history）与开关关闭不算链路异常。
+    _cv_fault = cv.get("g_dim_fault_ratio")
+    _cv_ratio = _cv_fault if isinstance(_cv_fault, (int, float)) else cv.get("degraded_ratio", 0)
     if (
         chain_ok
         and cv.get("count", 0) >= th.get("ri_min_samples", 10)
-        and cv.get("degraded_ratio", 0) >= th.get("cv_degraded_ratio", 0.5)
+        and _cv_ratio >= th.get("cv_degraded_ratio", 0.5)
     ):
+        _fault_label = "G 侧供给故障率" if isinstance(_cv_fault, (int, float)) else "交叉验证降级率"
         findings.append(
             _finding(
                 "23_CV_DEGRADED",
                 "P2",
                 "23",
-                f"交叉验证降级率 {cv['degraded_ratio']}",
-                f"degraded_modes={cv.get('degraded_modes')}",
-                "价格序列/维度数据不足，交叉验证退化为单维注意力",
-                "检查 18/19 价格序列供给与 N6 输入完整性",
+                f"{_fault_label} {_cv_ratio}",
+                (
+                    f"degraded_modes={cv.get('degraded_modes')}，"
+                    f"g_dim_status={cv.get('g_dim_status')}"
+                ),
+                "价格序列缺失或 Granger 计算异常，交叉验证退化为单维注意力",
+                "检查 18/19 价格序列供给与 N6 输入完整性；统计性降级无需处理",
             )
         )
 
@@ -830,8 +893,13 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
         )
 
     completion = chain["chain_completion"]
+    _dispatch = completion.get("dispatch_chains")
+    # 新口径：分母只算真正进入派发的链；全被 N11 拦截时视为无可判定，不报断链
+    _completion_denom = (
+        _dispatch if isinstance(_dispatch, int) else completion.get("signal_chains", 0)
+    )
     if (
-        completion.get("signal_chains", 0)
+        _completion_denom
         and completion.get("execution_events", 0) > 0
         and completion.get("ratio", 1.0) < th.get("chain_completion_min", 0.95)
     ):
@@ -841,10 +909,15 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
                 "P2",
                 "23",
                 f"信号→执行链路无法按 chain_id 贯通（{completion['ratio']}）",
-                f"N10 信号 chain={completion['signal_chains']}，join 成功={completion['complete_chains']}，"
-                f"执行事件={completion['execution_events']}",
-                "N10 与执行段 chain_id 命名不一致（如 BTC 与 BTC-USDT-SWAP），或执行段未回填关联键",
-                "统一 N10 与 E 段的 chain_id/symbol 口径，便于逐单复盘",
+                f"N10 信号 chain={completion['signal_chains']}，"
+                f"进入派发(N11 pass)={completion.get('dispatch_chains', '-')}，"
+                f"join 成功={completion['complete_chains']}，"
+                f"执行事件={completion['execution_events']}，"
+                f"N11 拦截={completion.get('n11_blocked', 0)}",
+                "N10 与执行段 chain_id 命名不一致（如 BTC 与 BTC-USDT-SWAP），"
+                "或执行段未回填关联键",
+                "统一 N10 与 E 段的 chain_id/symbol 口径，便于逐单复盘；"
+                "被 N11 拦截的信号不计入分母",
             )
         )
 
@@ -909,8 +982,11 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
                         "检查 execution_gateway 与 outbox 消费循环",
                     )
                 )
-            # 优先用窗口口径；老实现无该字段时回退累计口径
-            win_ratio = outbox.get("window_failed_ratio", outbox.get("failed_ratio", 0))
+            # 优先用「剔除域互斥后的真实失败率」；老实现无该字段时回退窗口口径
+            win_ratio = outbox.get(
+                "window_failed_real_ratio",
+                outbox.get("window_failed_ratio", outbox.get("failed_ratio", 0)),
+            )
             if win_ratio > th.get("outbox_failed_ratio", 0.2):
                 findings.append(
                     _finding(
@@ -921,7 +997,8 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
                         (
                             f"window_failed={outbox.get('window_failed')}/"
                             f"{outbox.get('window_attempts')}，"
-                            f"window_states={outbox.get('window_states')}，"
+                            f"其中域互斥预期拒绝={outbox.get('window_failed_expected', 0)}，"
+                            f"窗口状态={outbox.get('window_states')}，"
                             f"累计 failed_ratio={outbox.get('failed_ratio')}"
                         ),
                         "网关拒单或参数不合法",
@@ -977,8 +1054,9 @@ def detect_findings(metrics: dict, cfg: dict) -> list[dict]:
                 "P1",
                 "22",
                 f"SL/TP 补挂失败 {sltp['failed']} 次",
-                f"patched={sltp.get('patched')}，records={sltp.get('records')}",
-                "交易所拒单或参数不合法",
+                f"patched={sltp.get('patched')}，query_failed={sltp.get('query_failed', 0)}，"
+                f"records={sltp.get('records')}",
+                "交易所拒单或参数不合法（查询失败/限流不计入真实补挂失败）",
                 "抽查 sltp_reconcile.jsonl 失败明细与交易所返回码",
             )
         )
@@ -1200,8 +1278,10 @@ def render_markdown(
         "## 三、23 推理链",
         "",
         f"- 事件总数：{chain['events']}；N10 信号：{chain['n10']['count']}；决策审计：{chain['decisions']['count']}",
-        f"- 链路贯通：{chain['chain_completion']['complete_chains']}/{chain['chain_completion']['signal_chains']}"
-        f"（ratio={chain['chain_completion']['ratio']}）",
+        f"- 链路贯通：{chain['chain_completion']['complete_chains']}/{chain['chain_completion'].get('dispatch_chains', '-')}"
+        f"（ratio={chain['chain_completion']['ratio']}，分母=进入派发 N11 pass；"
+        f"N11 拦截 {chain['chain_completion'].get('n11_blocked', 0)}）",
+        f"- N11 拦截分布：{chain['chain_completion'].get('n11_blocked_gates') or '-'}",
         "",
         "### 阶段分布",
         "",
@@ -1244,7 +1324,8 @@ def render_markdown(
         "",
         f"- N2 降级率：{chain['n2']['degraded_ratio']}；fallback flags：{chain['n2']['fallback_flags']}",
         f"- N5 主要矛盾维度：{chain['n5']['dimensions']}；方向：{chain['n5']['directions']}",
-        f"- N6 降级率：{chain['n6']['degraded_ratio']}；degraded_modes：{chain['n6']['degraded_modes']}；g_dim：{chain['n6']['g_dim_status']}",
+        f"- N6 降级率：{chain['n6']['degraded_ratio']}；degraded_modes：{chain['n6']['degraded_modes']}；"
+        f"g_dim：{chain['n6']['g_dim_status']}（供给故障率 {chain['n6'].get('g_dim_fault_ratio', '-')}）",
         f"- N7 通过率：{chain['n7']['validated_ratio']}",
     ]
 

@@ -348,6 +348,8 @@ class EvolutionSignalDispatcher:
             "NEUTRAL_NO_EXECUTION",
             "MISSING_DECISION_ID",
             "SIGNAL_EXPIRED",
+            # 他域已持有同标的：重试同一决策不会成功，作为终态避免刷出重复失败
+            "SYMBOL_ALREADY_OPEN",
         }
     )
 

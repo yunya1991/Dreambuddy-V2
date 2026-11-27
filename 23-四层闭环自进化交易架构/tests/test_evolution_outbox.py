@@ -238,3 +238,29 @@ def test_dispatcher_insufficient_margin_is_terminal(tmp_path):
     assert box.get(sig["decision_id"])["attempts"] == box.max_attempts
     assert d.dispatch(sig)["reason_code"] == "RETRY_EXHAUSTED"
     assert gw.calls == 1
+
+
+def test_dispatcher_symbol_already_open_is_terminal(tmp_path):
+    """他域已持有同标的（跨域互斥）重试无意义，应一次终态，不刷重复失败。"""
+    box = ExecutionOutbox(db_path=tmp_path / "ob.db", max_attempts=3)
+
+    class _MutexGateway:
+        def __init__(self):
+            self.calls = 0
+
+        def submit(self, decision):
+            self.calls += 1
+            return _FakeExecResult(
+                executed=False,
+                reason="symbol_held_by_other_domain symbol=XAU-USDT-SWAP holders=50",
+                reason_code="SYMBOL_ALREADY_OPEN",
+            )
+
+    gw = _MutexGateway()
+    d = EvolutionSignalDispatcher(gateway=gw, runtime_dir=tmp_path, outbox=box)
+    sig = _sig()
+
+    assert d.dispatch(sig)["reason_code"] == "SYMBOL_ALREADY_OPEN"
+    assert box.get(sig["decision_id"])["attempts"] == box.max_attempts
+    assert d.dispatch(sig)["reason_code"] == "RETRY_EXHAUSTED"
+    assert gw.calls == 1

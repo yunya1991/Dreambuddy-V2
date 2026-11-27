@@ -328,3 +328,175 @@ def test_dstar_all_wait_flagged_by_distribution():
     findings = {f["id"]: f for f in di.detect_findings(metrics, CFG)}
     assert "23_DSTAR_WAIT" in findings
     assert "全量 d_star=WAIT" in findings["23_DSTAR_WAIT"]["title"]
+
+
+def _chain_runtime(tmp_path: Path, rows: list[dict]) -> Path:
+    runtime = tmp_path / "23-四层闭环自进化交易架构/runtime"
+    runtime.mkdir(parents=True)
+    (runtime / "chain_events-20261117.jsonl").write_text(
+        "\n".join(json.dumps(r) for r in rows), encoding="utf-8"
+    )
+    return tmp_path
+
+
+def test_chain_completion_uses_dispatch_denominator(tmp_path: Path):
+    """被 N11 拦截的 N10 信号不计入贯通分母，避免把主动过滤误报成断链。"""
+    ts = "2026-11-17T02:00:00+00:00"
+    rows = [
+        {"stage": "N10", "status": "pass", "ts": ts, "chain_id": "c1"},
+        {"stage": "N11", "status": "pass", "ts": ts, "chain_id": "c1"},
+        {"stage": "N12", "status": "pass", "ts": ts, "chain_id": "c1"},
+        {"stage": "N14", "status": "pass", "ts": ts, "chain_id": "c1"},
+        {"stage": "N10", "status": "pass", "ts": ts, "chain_id": "c2"},
+        {
+            "stage": "N11",
+            "status": "blocked",
+            "ts": ts,
+            "chain_id": "c2",
+            "data": {"gate": "has_position"},
+        },
+        {"stage": "N10", "status": "pass", "ts": ts, "chain_id": "c3"},
+        {
+            "stage": "N11",
+            "status": "blocked",
+            "ts": ts,
+            "chain_id": "c3",
+            "data": {"gate": "cooldown"},
+        },
+    ]
+    repo = _chain_runtime(tmp_path, rows)
+    win = di.window_for(date(2026, 11, 17), "Asia/Shanghai")
+    out = di.collect_chain23(repo, win)["chain_completion"]
+    assert out["signal_chains"] == 3
+    assert out["dispatch_chains"] == 1
+    assert out["complete_chains"] == 1
+    assert out["ratio"] == 1.0
+    assert out["n11_blocked"] == 2
+    assert out["n11_blocked_gates"] == {"has_position": 1, "cooldown": 1}
+
+    metrics = base_metrics()
+    metrics["chain_23"]["chain_completion"] = out
+    metrics["chain_23"]["chain_completion"]["execution_events"] = 3
+    ids = {f["id"] for f in di.detect_findings(metrics, CFG)}
+    assert "23_CHAIN_ID_MISMATCH" not in ids
+
+
+def test_chain_completion_flags_real_mismatch(tmp_path: Path):
+    """真正进入派发但缺 N14 的链仍要报断链。"""
+    ts = "2026-11-17T02:00:00+00:00"
+    rows = [
+        {"stage": "N10", "status": "pass", "ts": ts, "chain_id": "c1"},
+        {"stage": "N11", "status": "pass", "ts": ts, "chain_id": "c1"},
+        {"stage": "N14", "status": "pass", "ts": ts, "chain_id": "c1"},
+        {"stage": "N10", "status": "pass", "ts": ts, "chain_id": "c2"},
+        {"stage": "N11", "status": "pass", "ts": ts, "chain_id": "c2"},
+    ]
+    repo = _chain_runtime(tmp_path, rows)
+    win = di.window_for(date(2026, 11, 17), "Asia/Shanghai")
+    out = di.collect_chain23(repo, win)["chain_completion"]
+    assert out["ratio"] == 0.5
+
+    metrics = base_metrics()
+    metrics["chain_23"]["chain_completion"] = out
+    metrics["chain_23"]["chain_completion"]["execution_events"] = 1
+    ids = {f["id"] for f in di.detect_findings(metrics, CFG)}
+    assert "23_CHAIN_ID_MISMATCH" in ids
+
+
+def test_chain_completion_all_blocked_no_false_alarm():
+    """全部 N10 被 N11 拦截（无派发）时无可判定，不应报断链。"""
+    metrics = base_metrics()
+    metrics["chain_23"]["chain_completion"] = {
+        "signal_chains": 310,
+        "dispatch_chains": 0,
+        "complete_chains": 0,
+        "ratio": 0.0,
+        "n11_blocked": 310,
+        "n11_blocked_gates": {"has_position": 310},
+        "execution_events": 9,
+    }
+    ids = {f["id"] for f in di.detect_findings(metrics, CFG)}
+    assert "23_CHAIN_ID_MISMATCH" not in ids
+
+
+def test_cv_degraded_ignores_statistical_degradation():
+    """G 侧统计不显著/短序列属正常降级，不应报 P2。"""
+    metrics = base_metrics()
+    metrics["chain_23"]["n6"] = {
+        "count": 100,
+        "degraded_ratio": 0.6,
+        "degraded_modes": {"attention_only": 60},
+        "g_dim_status": {"no_significant_granger": 100},
+        "g_dim_fault_ratio": 0.0,
+    }
+    ids = {f["id"] for f in di.detect_findings(metrics, CFG)}
+    assert "23_CV_DEGRADED" not in ids
+
+
+def test_cv_degraded_flags_supply_fault():
+    metrics = base_metrics()
+    metrics["chain_23"]["n6"] = {
+        "count": 100,
+        "degraded_ratio": 0.6,
+        "degraded_modes": {"attention_only": 60},
+        "g_dim_status": {"no_price_series": 60},
+        "g_dim_fault_ratio": 0.6,
+    }
+    findings = {f["id"]: f for f in di.detect_findings(metrics, CFG)}
+    assert "23_CV_DEGRADED" in findings
+    assert "供给故障率" in findings["23_CV_DEGRADED"]["title"]
+
+
+def _outbox_db_err(tmp_path: Path, rows: list[tuple]) -> Path:
+    import sqlite3
+
+    runtime = tmp_path / "23-四层闭环自进化交易架构/runtime"
+    runtime.mkdir(parents=True)
+    db = runtime / "execution_outbox.db"
+    conn = sqlite3.connect(str(db))
+    conn.execute(
+        "CREATE TABLE execution_outbox "
+        "(state TEXT, created_at TEXT, updated_at TEXT, last_error TEXT)"
+    )
+    conn.executemany("INSERT INTO execution_outbox VALUES (?,?,?,?)", rows)
+    conn.commit()
+    conn.close()
+    return tmp_path
+
+
+def test_outbox_expected_domain_mutex_not_counted_as_failure(tmp_path: Path):
+    """他域在持导致的 SYMBOL_ALREADY_OPEN 是预期拒绝，不算真实失败率。"""
+    ts = "2026-11-17T03:00:00+00:00"
+    rows = [
+        ("failed", ts, ts, "symbol_held_by_other_domain symbol=XAU-USDT-SWAP holders=50"),
+        ("failed", ts, ts, "SYMBOL_ALREADY_OPEN XAU-USDT-SWAP"),
+        ("filled", ts, ts, ""),
+        ("filled", ts, ts, ""),
+    ]
+    repo = _outbox_db_err(tmp_path, rows)
+    win = di.window_for(date(2026, 11, 17), "Asia/Shanghai")
+    out = di.collect_outbox(repo, win, 300)
+    assert out["window_failed"] == 2
+    assert out["window_failed_expected"] == 2
+    assert out["window_failed_real"] == 0
+    assert out["window_failed_ratio"] == 0.5
+    assert out["window_failed_real_ratio"] == 0.0
+
+    metrics = base_metrics()
+    metrics["outbox"] = out
+    ids = {f["id"] for f in di.detect_findings(metrics, CFG)}
+    assert "22_OUTBOX_FAILED" not in ids
+
+
+def test_sltp_query_failed_not_p1():
+    """查询失败/限流（query_failed）不等于补挂失败，不得升 P1。"""
+    metrics = base_metrics()
+    metrics["exec_22"]["sltp"] = {
+        "present": True,
+        "patched": 0,
+        "failed": 0,
+        "query_failed": 23,
+        "records": 1302,
+    }
+    ids = {f["id"] for f in di.detect_findings(metrics, CFG)}
+    assert "22_SLTP_FAILED" not in ids
