@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 _REPO = Path(__file__).resolve().parents[2]
@@ -29,9 +30,41 @@ from data_center.processing.validation_independence import (  # noqa: E402
 
 SRC = _REPO / "18-数据获取中心" / "backfill" / "newsflash_history.jsonl"
 OUT = _REPO / "18-数据获取中心" / "backfill" / "p3c1"
+CSV_1H = OUT / "btc_1h.csv"
 
 PRIMARY = SourceProfile("yfinance-btc-daily", "1d", "yfinance", 0.0)
 VALIDATOR = SourceProfile("yfinance-btc-daily", "1d", "yfinance", 0.0)  # 同源
+
+
+def _daily_returns_from_1h(csv_path: Path) -> dict[str, float]:
+    """从 btc_1h.csv 聚合 UTC 日收益。
+
+    云端 `18-数据获取中心/data_center.db` 的 yfinance BTC-USD 序列为空，
+    直接读库会 no_returns；1h 线（fetch_btc_1h.py 产出）覆盖 2023→当前，
+    按日取最后收盘再算收益，作为日线源的无缺口替代。
+    """
+    if not csv_path.exists():
+        return {}
+    closes: dict[str, float] = {}
+    with csv_path.open(encoding="utf-8") as fh:
+        for idx, line in enumerate(fh):
+            if idx == 0 or not line.strip():
+                continue
+            parts = line.strip().split(",")
+            if len(parts) < 5:
+                continue
+            try:
+                ts_ms, close = int(parts[0]), float(parts[4])
+            except ValueError:
+                continue
+            day = datetime.fromtimestamp(ts_ms / 1000, timezone.utc).strftime("%Y-%m-%d")
+            closes[day] = close  # 文件按时间升序，最后一条即当日收盘
+    days = sorted(closes)
+    return {
+        days[i]: closes[days[i]] / closes[days[i - 1]] - 1.0
+        for i in range(1, len(days))
+        if closes[days[i - 1]]
+    }
 
 
 def _stamp(rows: list[dict]) -> list[dict]:
@@ -49,8 +82,9 @@ def main() -> int:
         return 1
 
     n_records = sum(1 for line in SRC.open(encoding="utf-8") if line.strip())
-    v1 = run_event_study(newsflash_path=SRC, mapping="v1")
-    v2 = run_event_study(newsflash_path=SRC, mapping="v2")
+    returns = _daily_returns_from_1h(CSV_1H) or None
+    v1 = run_event_study(newsflash_path=SRC, mapping="v1", returns=returns)
+    v2 = run_event_study(newsflash_path=SRC, mapping="v2", returns=returns)
     rows1, rows2 = _stamp(v1["rows"]), _stamp(v2["rows"])
 
     rho = spearman(_dim_sens(rows1), _dim_sens(rows2))
@@ -77,7 +111,7 @@ def main() -> int:
             }
             for r in eligible1
         ],
-        "kline_gap": "2026-09-11..2026-10-28 无日线，事件日落入缺口即丢弃",
+        "kline_gap": f"日收益源 {CSV_1H.name}（1h 聚合，2023→当前，仅缺 1 小时）",
     }
 
     OUT.mkdir(parents=True, exist_ok=True)
