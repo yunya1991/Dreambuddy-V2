@@ -49,9 +49,11 @@ from adapters.factor_priors_provider import (  # noqa: E402
     is_overlay_enabled,
     resolve_coef,
 )
+from adapters.volatility_adapter import atr_pct_for  # noqa: E402
 from chain_events import emit_stage, new_trace_id  # noqa: E402
 from core.decision import make_decision  # noqa: E402
 from core.resonance_propagator import propagate as propagate_resonance  # noqa: E402
+from core.volatility import resolve_sl_tp_pct  # noqa: E402
 
 _RUNTIME = _50_ROOT / "runtime"
 DEFAULT_BUS_STATE = _42_ROOT / "runtime" / "bus_state.json"
@@ -345,8 +347,14 @@ def run(
             continue
         decision["decision_id"] = did
         decision["mandate_id"] = mandate
+        # SL/TP：50 按自身波动率（4H ATR%）声明，22 执行器优先级最高覆盖固定间距；
+        # 取数失败时退回类别下限，保证决策始终携带合法 sl_pct/tp_pct
+        sltp = resolve_sl_tp_pct(_asset_class_of(inst_id), atr_pct_for(inst_id))
+        decision["sl_pct"] = sltp["sl_pct"]
+        decision["tp_pct"] = sltp["tp_pct"]
         if isinstance(decision.get("payload"), dict):
             decision["payload"]["trace_id"] = trace
+            decision["payload"]["sl_tp"] = sltp
         emit_stage(
             "M11",
             "decision.make_decision",
@@ -360,6 +368,9 @@ def run(
                 "confidence": decision.get("confidence"),
                 "execution_rights": outcome,
                 "mandate_id": mandate,
+                "sl_pct": sltp["sl_pct"],
+                "tp_pct": sltp["tp_pct"],
+                "atr_pct": sltp["atr_pct"],
             },
             runtime=_RUNTIME,
             ts=now,

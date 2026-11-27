@@ -7,12 +7,20 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import pytest
+
 _50_ROOT = Path(__file__).resolve().parents[1]
 for p in (str(_50_ROOT), str(_50_ROOT / "tools")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
 import run_live  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _no_network_atr(monkeypatch):
+    """单测禁止真实访问 OKX：默认 ATR 取数返回 0（退回类别下限），个别用例自行覆盖。"""
+    monkeypatch.setattr(run_live, "atr_pct_for", lambda *_a, **_k: 0.0)
 
 
 def _evidence(symbol: str, expires_at: datetime) -> dict:
@@ -284,3 +292,67 @@ def test_run_declares_small_notional_and_records_overlay_meta(monkeypatch, tmp_p
     )
     assert row["notional_usdt"] == 20.0
     assert row["payload"]["notional_usdt"] == 20.0
+
+
+def test_decision_declares_volatility_sltp(monkeypatch, tmp_path):
+    """50 按自身波动率出 sl_pct/tp_pct（22 执行器最高优先级覆盖）。"""
+    now = datetime.now(timezone.utc)
+    monkeypatch.setattr(
+        run_live, "load_evidences", lambda _: [_evidence("ARB", now + timedelta(hours=1))]
+    )
+    monkeypatch.setattr(run_live, "load_rights", lambda: {"symbols": {}})
+    monkeypatch.setattr(run_live, "load_constraints", lambda: {})
+    monkeypatch.setattr(run_live, "is_kill_switch_on", lambda: False)
+    monkeypatch.setattr(run_live, "propagate_resonance", lambda d, e, c: d)
+    monkeypatch.setattr(run_live, "atr_pct_for", lambda inst_id, **_k: 2.5)
+    monkeypatch.setattr(
+        run_live,
+        "make_decision",
+        lambda evidences, **kwargs: {
+            "signal_id": "50-nn|ARB",
+            "symbol": kwargs["symbol"],
+            "direction": "long",
+            "payload": {},
+            "execution": {"outcome": "live:50-bypass", "allowed": True},
+        },
+    )
+
+    run_live.run(tmp_path / "bus.json", tmp_path / "out", ("ARB-USDT-SWAP",), "m-1")
+    row = json.loads(
+        (tmp_path / "out" / "outbox.jsonl").read_text(encoding="utf-8").splitlines()[0]
+    )
+    # crypto：sl=max(3, 2×2.5)=5.0，tp=2×5=10.0
+    assert row["sl_pct"] == 5.0
+    assert row["tp_pct"] == 10.0
+    assert row["payload"]["sl_tp"]["source"] == "atr"
+    assert row["payload"]["sl_tp"]["atr_pct"] == 2.5
+
+
+def test_decision_sltp_falls_back_to_class_floor(monkeypatch, tmp_path):
+    """ATR 取数失败（0）时仍输出合法 SL/TP，不出现 0 值被 22 拒单。"""
+    now = datetime.now(timezone.utc)
+    monkeypatch.setattr(
+        run_live, "load_evidences", lambda _: [_evidence("ARB", now + timedelta(hours=1))]
+    )
+    monkeypatch.setattr(run_live, "load_rights", lambda: {"symbols": {}})
+    monkeypatch.setattr(run_live, "load_constraints", lambda: {})
+    monkeypatch.setattr(run_live, "is_kill_switch_on", lambda: False)
+    monkeypatch.setattr(run_live, "propagate_resonance", lambda d, e, c: d)
+    monkeypatch.setattr(
+        run_live,
+        "make_decision",
+        lambda evidences, **kwargs: {
+            "signal_id": "50-nn|ARB",
+            "symbol": kwargs["symbol"],
+            "direction": "short",
+            "execution": {"outcome": "live:50-bypass", "allowed": True},
+        },
+    )
+
+    run_live.run(tmp_path / "bus.json", tmp_path / "out", ("ARB-USDT-SWAP",), "m-1")
+    row = json.loads(
+        (tmp_path / "out" / "outbox.jsonl").read_text(encoding="utf-8").splitlines()[0]
+    )
+    assert row["sl_pct"] == 3.0
+    assert row["tp_pct"] == 6.0
+    assert 0 < row["sl_pct"] < 10 and 0 < row["tp_pct"] < 20
