@@ -26,8 +26,9 @@ from .decision_signal import (
 
 _DEFAULT_CONFIG: dict[str, Any] = {
     "budget_per_coin": 2000.0,
-    "min_notional": 250.0,
-    "min_notional_probe": 100.0,
+    # 名义地板 500U = 100U 保证金 × 5x；probe 同受 500U 地板约束
+    "min_notional": 500.0,
+    "min_notional_probe": 500.0,
     "max_notional": 2000.0,
     "leverage": 5,
     "subpool_max": 5,
@@ -502,15 +503,18 @@ class EvolutionEntryLoop:
         }
 
     def _resolve_min_notional(self, tier: str, inst_id: str, price: float) -> tuple[float, str]:
-        """probe 用交易所 minSz×px×1.2；standard/trend 守配置地板。"""
+        """probe 用 max(交易所 minSz×px×1.2, 配置地板)；standard/trend 守配置地板。"""
         if tier != "probe":
             return float(self._cfg["min_notional"]), "config"
+        _floor = float(self._cfg["min_notional_probe"])
         if _env_on("EVOLUTION_PROBE_MIN_SZ_FLOOR", "on"):
             _min_sz = float(self._call(self.min_sz_fn, 0.0, "min_sz_fn", (inst_id,)) or 0.0)
             if _min_sz > 0 and price > 0:
                 _buffer = float(self._cfg["probe_min_sz_buffer"])
-                return _min_sz * price * _buffer, f"exchange({_min_sz}x{price:.6g}x{_buffer})"
-        return float(self._cfg["min_notional_probe"]), "probe_config"
+                _ex_floor = _min_sz * price * _buffer
+                if _ex_floor > _floor:
+                    return _ex_floor, f"exchange({_min_sz}x{price:.6g}x{_buffer})"
+        return _floor, "probe_config"
 
     def _apply_quota(
         self,

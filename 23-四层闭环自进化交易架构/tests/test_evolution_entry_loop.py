@@ -210,17 +210,30 @@ def test_track_multiplier_zero_blocks(tmp_path):
 
 def test_standard_floor_rejected(tmp_path):
     loop = _loop(tmp_path)
-    out = _run(loop, u_open=0.1)  # 200U < 250U
+    out = _run(loop, u_open=0.2)  # 400U < 500U（100U 保证金 @5x）
     assert out["gate"] == "floor_rejected"
 
+    out = _run(loop, u_open=0.25)  # 500U = 地板，放行
+    assert out["status"] == "opened"
 
-def test_probe_uses_exchange_min_sz_floor(tmp_path):
-    # minSz=0.1 × px=100 × 1.2 = 12U 地板；10U 被拒
+
+def test_probe_floor_never_below_config(tmp_path):
+    # 交易所地板 minSz=0.1 × px=100 × 1.2 = 12U < 配置 500U → 用 500U
     loop = _loop(tmp_path)
-    out = _run(loop, tier="probe", u_open=0.005)  # 10U
+    out = _run(loop, tier="probe", u_open=0.2)  # 400U < 500U
     assert out["gate"] == "floor_rejected"
 
-    out = _run(loop, tier="probe", u_open=0.01)  # 20U ≥ 12U
+    out = _run(loop, tier="probe", u_open=0.25)  # 500U ≥ 500U
+    assert out["status"] == "opened"
+
+
+def test_probe_exchange_floor_above_config(tmp_path):
+    # 交易所地板 minSz=10 × px=100 × 1.2 = 1200U > 配置 500U → 用 1200U
+    loop = _loop(tmp_path, min_sz_fn=lambda inst: 10.0)
+    out = _run(loop, tier="probe", u_open=0.5)  # 1000U < 1200U
+    assert out["gate"] == "floor_rejected"
+
+    out = _run(loop, tier="probe", u_open=0.65)  # 1300U ≥ 1200U
     assert out["status"] == "opened"
 
 
