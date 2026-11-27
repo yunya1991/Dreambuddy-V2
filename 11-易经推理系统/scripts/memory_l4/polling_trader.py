@@ -9756,6 +9756,33 @@ class PollingTrader:
             # FAIL-OPEN铁律：条件单清理失败绝不阻断交易记录
             self._log(f"[{coin}] 平仓后清理Algo条件单异常（FAIL-OPEN忽略）: {_ce}", "WARN")
 
+        # P0.5 零 pnl 记账修复：upl_ratio 在 OKX 回退/影子成交等路径上可能为 0，
+        # 而 entry/exit 价格是真实的。仅在「记录为 0 且价格确实变动」时按价格重算。
+        try:
+            from scripts.memory_l4.pnl_repair import repair_close_pnl
+
+            _open_rec = self.position_tracker.get_open_position(inst_id)
+            if _open_rec is not None:
+                _entry_px = float(getattr(_open_rec, "entry_price", 0.0) or 0.0)
+                _pnl_new, _pct_new, _repaired = repair_close_pnl(
+                    entry_price=_entry_px,
+                    exit_price=float(exit_price or 0.0),
+                    direction=str(getattr(_open_rec, "direction", "") or pos_side),
+                    pnl=float(pnl or 0.0),
+                    pnl_pct=float(pnl_pct or 0.0),
+                    position_usdt=float(getattr(_open_rec, "position_usdt", 0.0) or 0.0),
+                )
+                if _repaired:
+                    self._log(
+                        f"[{coin}] P0.5 零pnl修正 | reason={exit_reason} "
+                        f"记录=0 → 价格重算={_pct_new * 100:.4f}% "
+                        f"(entry={_entry_px} exit={exit_price})",
+                        "WARN",
+                    )
+                    pnl, pnl_pct = _pnl_new, _pct_new
+        except Exception as _pnl_exc:  # FAIL-OPEN：修复失败不影响平仓记账
+            self._log(f"[{coin}] P0.5 pnl 修正异常(fail-open): {_pnl_exc}", "DEBUG")
+
         trade_rec = self.position_tracker.close_position(
             inst_id=inst_id,
             exit_price=exit_price,
