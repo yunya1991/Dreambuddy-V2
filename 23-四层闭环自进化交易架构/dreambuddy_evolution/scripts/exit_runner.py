@@ -90,7 +90,14 @@ def collect_positions(
                 }
             )
 
+    # 仅对「账本从未出现过」的标的从交易所兜底补录（P2 之前开的老仓）；
+    # 账本已知但当前平仓的标的由 reconcile 负责重开，不在此重复补录告警——
+    # 否则 XAU 等已平仓标的会每轮从交易所补录并刷告警。
+    _known_fn = getattr(gateway, "list_known_symbols", None)
+    _known = {s.upper() for s in (_known_fn() if callable(_known_fn) else [])}
     for _inst in _want - _seen:
+        if _inst in _known:
+            continue
         _pos = _position_from_exchange(okx, _inst)
         if _pos:
             out.append(_pos)

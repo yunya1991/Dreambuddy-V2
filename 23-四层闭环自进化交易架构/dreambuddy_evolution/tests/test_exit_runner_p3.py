@@ -176,3 +176,24 @@ def test_build_runtime_wires_23_writes_through_gateway(monkeypatch):
     assert tagged._gateway is gateway
     assert gateway._okx is not tagged  # 网关持 raw，避免 tagged↔gateway 递归
     assert loop._dispatcher._gateway is gateway
+
+
+def test_collect_positions_skips_exchange_for_ledger_known_closed():
+    """账本已知（含已平仓）的标的不在 effective 时，不应从交易所补录/告警。
+
+    复现 XAU 类问题：XAU 在账本有已平仓行，exit23 不应每轮从交易所补录刷告警；
+    重开由 reconcile 负责。网关无 list_known_symbols 时回退旧行为（兼容老仓补录）。
+    """
+
+    class _KnownGateway:
+        def list_effective_positions(self):
+            return []  # 已平仓 → 不在有效口径
+
+        def list_known_symbols(self):
+            return ["XAU-USDT-SWAP"]  # 账本有 XAU 行（已平仓）
+
+        def list_positions(self):
+            return []
+
+    out = collect_positions(_KnownGateway(), _Okx(), ["XAU-USDT-SWAP"], ("23-evolution",))
+    assert out == []  # 不补录、不告警

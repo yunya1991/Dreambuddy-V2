@@ -48,6 +48,41 @@ def domain_of(source: Optional[str]) -> str:
     return "legacy"
 
 
+# 自动管理源：交易所是真相源，reconcile 可校正数量、关闭幽灵仓。
+# 空 source / legacy（人工补录）不在此列——避免对账覆盖人工流水。
+_MANAGED_SOURCES = frozenset(
+    {
+        "22-reconciled",
+        "22-janitor",
+        "22",
+        "sltp",
+        "23",
+        "23-evolution",
+        "evolution",
+        "bcrm",
+        "strategy",
+        "event_arbitrage",
+        "50",
+        "50-nn",
+        "11",
+        "11-yijing",
+        "6",
+        "6-trading",
+    }
+)
+_MANAGED_SOURCE_PREFIXES = ("22-reconciled", "22-janitor", "23-", "50-", "11-", "6-", "sltp")
+
+
+def is_managed_source(source: Optional[str]) -> bool:
+    """reconcile 允许校正数量/关闭幽灵仓的自动管理源判定。"""
+    s = str(source or "").strip()
+    if not s:
+        return False
+    if s in _MANAGED_SOURCES:
+        return True
+    return any(s.startswith(p) for p in _MANAGED_SOURCE_PREFIXES)
+
+
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
@@ -770,14 +805,17 @@ class PositionLedger:
                 " VALUES (?,?,0,0,0,0,?,?,?,NULL)",
                 (_inst, _side, source, _ts, _ts),
             )
+        _closed = remaining <= _EPS
         conn.execute(
-            "UPDATE positions SET qty=?, realized_pnl=?, updated_at=?, closed_at=?"
-            " WHERE inst_id=? AND pos_side=?",
+            "UPDATE positions SET qty=?, realized_pnl=?, updated_at=?, closed_at=?,"
+            " status=? WHERE inst_id=? AND pos_side=?",
             (
                 remaining,
                 realized + (pnl or 0.0),
                 _ts,
-                _ts if remaining <= _EPS else None,
+                _ts if _closed else None,
+                # 全平翻 closed；部分平仓回 open（成交在途即视为活跃，覆盖 stale 漂移）
+                "closed" if _closed else "open",
                 _inst,
                 _side,
             ),
@@ -1038,19 +1076,9 @@ class PositionLedger:
                     _old_qty = float(row["qty"])
                     _src = str(row["source"] or "")
                     _is_reconciled = _src.startswith(source)
-                    # 自动管理源（对账/23/策略）以交易所为准；历史手工流水不覆盖
-                    _is_managed = (
-                        _is_reconciled
-                        or _src.startswith("23-")
-                        or _src
-                        in (
-                            "23",
-                            "evolution",
-                            "bcrm",
-                            "strategy",
-                            "event_arbitrage",
-                        )
-                    )
+                    # 自动管理源（对账/23/50/11/6 策略）以交易所为准校正数量；
+                    # 历史手工流水（legacy / 空 source）不覆盖
+                    _is_managed = is_managed_source(_src)
                     _old_avg = float(row["avg_entry"] or 0)
                     _avg_drift = _is_reconciled and avg > _EPS and abs(_old_avg - avg) > _EPS
                     if (
@@ -1126,7 +1154,9 @@ class PositionLedger:
                 )
             written.append({"inst_id": inst_id, "pos_side": pos_side, "qty": qty, "avg_entry": avg})
 
-        # 交易所已无持仓，但账本仍开着：只关闭本对账源写入的陈旧行
+        # 交易所已无持仓，但账本仍开着：关闭所有自动管理源（22/23/50/11/6）的陈旧行，
+        # 不限于本对账源——50-nn/23 等域的 SL/TP 成交可能漏走 record_fill，由对账兜底。
+        # legacy / 空 source 的人工补录行不动；连续 N 轮确认缺失才关闭（ghost_confirm）。
         with self._lock, self._connect() as conn:
             _rows = conn.execute(
                 "SELECT inst_id, pos_side, qty, avg_entry, source FROM positions WHERE qty > ?",
@@ -1136,7 +1166,7 @@ class PositionLedger:
             _key = (row["inst_id"], row["pos_side"])
             if _key in _active:
                 continue
-            if not str(row["source"] or "").startswith(source):
+            if not is_managed_source(row["source"]):
                 continue
             # 连续 N 轮确认缺失才平仓：OKX 持仓快照可能瞬时返回不完整列表，
             # 单轮"没返回"不等于已平仓，误判会产生假幽灵仓并让开仓闸门看到空仓。
@@ -1176,6 +1206,9 @@ class PositionLedger:
                 exit_reason="ghost_stale",
             )
             closed.append(f"{row['inst_id']}:{row['pos_side']}")
+        # 自愈：修复历史 qty/status 不一致的幽灵行（幂等，每轮对账都跑）
+        with self._lock, self._connect() as conn:
+            self._heal_invariants(conn, _ts)
         return {
             "ok": True,
             "inserted": len(written),
@@ -1227,6 +1260,28 @@ class PositionLedger:
                 (inst_id, pos_side, _dom, qty, qty, avg, ts),
             )
         return _dom
+
+    def _heal_invariants(self, conn: sqlite3.Connection, ts: str) -> int:
+        """自愈（幂等）：修复 qty 与 status 不一致的历史幽灵行。
+
+        仅修复无歧义的违反——status='open' 但 qty<=0 且 closed_at 非空：
+        由旧版 record_fill reduce 漏翻 status 产生，直接翻 closed 安全。
+        不自动清零 status='closed' 但 qty>0 的行（需交易所确认，由 reconcile
+        校正/re-open 分支处理），避免误删真实持仓；该类由对账下一轮拉齐。
+        """
+        cur = conn.execute(
+            "UPDATE positions SET status='closed', updated_at=?"
+            " WHERE status='open' AND qty<=? AND closed_at IS NOT NULL",
+            (ts, _EPS),
+        )
+        _n = int(cur.rowcount)
+        # L2 同步：L1 已确认平仓的行，L2 若仍 open/stale 且 qty<=0 也翻 closed
+        conn.execute(
+            "UPDATE domain_positions SET status='closed', updated_at=?"
+            " WHERE status IN ('open','stale') AND qty<=? AND closed_at IS NOT NULL",
+            (ts, _EPS),
+        )
+        return _n
 
     # ── P1：域子账 / 批次 / 预占 / 对账工单 ─────────────────────────
     def list_domain_positions(
@@ -1526,6 +1581,16 @@ class PositionLedger:
             ).fetchall()
         return [dict(r) for r in rows]
 
+    def known_inst_ids(self) -> List[str]:
+        """账本中出现过的全部标的（含已平仓），用于判定是否为已知标的。
+
+        供 23 exit_runner 等区分「账本已知但当前平仓」（由 reconcile 负责重开，
+        不应反复从交易所补录告警）与「从未入账本的老仓」（--symbols 兜底补录）。
+        """
+        with self._lock, self._connect() as conn:
+            rows = conn.execute("SELECT DISTINCT inst_id FROM positions").fetchall()
+        return [str(r["inst_id"]) for r in rows if r["inst_id"]]
+
     # ── P0-5：对账心跳与有效持仓读口径 ──────────────────────────────
     def heartbeat(self, ts: Optional[str] = None) -> str:
         """由对账方每轮成功后写入；心跳异常时闸门回退 raw 口径。"""
@@ -1602,7 +1667,12 @@ class PositionLedger:
         ts: Optional[str] = None,
         domain: Optional[str] = None,
     ) -> bool:
-        """janitor 状态迁移（open→stale→closed）；同时作用于 L1 与 L2 对应行。"""
+        """janitor 状态迁移（open→stale→closed）；同时作用于 L1 与 L2 对应行。
+
+        未传 domain 时按 inst_id+pos_side 解析全部域行同步（一标的一域，通常 1 行），
+        避免 janitor 漏传 domain 导致 L2 滞后。closed 时同步清零 qty，消除
+        「status=closed 但 qty>0」的反向不一致（BNB 17 张同类）。
+        """
         _status = str(status)
         if _status not in ("open", "stale", "closed"):
             return False
@@ -1616,7 +1686,7 @@ class PositionLedger:
                 )
             elif _status == "closed":
                 cur = conn.execute(
-                    "UPDATE positions SET status='closed', updated_at=?, closed_at=?"
+                    "UPDATE positions SET status='closed', qty=0, updated_at=?, closed_at=?"
                     " WHERE inst_id=? AND pos_side=? AND status IN ('open','stale')",
                     (_ts, _ts, inst_id, pos_side),
                 )
@@ -1626,12 +1696,31 @@ class PositionLedger:
                     " updated_at=? WHERE inst_id=? AND pos_side=?",
                     (_ts, inst_id, pos_side),
                 )
+            # L2 同步：未传 domain 时解析该标的全部域行
             if domain:
-                conn.execute(
-                    "UPDATE domain_positions SET status=?, updated_at=? WHERE inst_id=?"
-                    " AND pos_side=? AND domain=? AND qty>?",
-                    (_status, _ts, inst_id, pos_side, str(domain), _EPS),
-                )
+                _doms = [str(domain)]
+            else:
+                _doms = [
+                    str(r["domain"])
+                    for r in conn.execute(
+                        "SELECT DISTINCT domain FROM domain_positions"
+                        " WHERE inst_id=? AND pos_side=?",
+                        (inst_id, pos_side),
+                    ).fetchall()
+                ]
+            for _d in _doms:
+                if _status == "closed":
+                    conn.execute(
+                        "UPDATE domain_positions SET status='closed', qty=0, updated_at=?,"
+                        " closed_at=? WHERE inst_id=? AND pos_side=? AND domain=?",
+                        (_ts, _ts, inst_id, pos_side, _d),
+                    )
+                else:
+                    conn.execute(
+                        "UPDATE domain_positions SET status=?, updated_at=? WHERE inst_id=?"
+                        " AND pos_side=? AND domain=? AND qty>?",
+                        (_status, _ts, inst_id, pos_side, _d, _EPS),
+                    )
             return bool(cur.rowcount)
 
     def set_feed_state(self, state: str, ts: Optional[str] = None) -> None:

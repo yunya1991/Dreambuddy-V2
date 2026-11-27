@@ -1205,6 +1205,15 @@ class TradeExecutionGateway:
             return []
         return ledger.list_effective_positions(max_heartbeat_age_seconds)
 
+    def list_known_symbols(self) -> list[str]:
+        """账本出现过的全部标的（含已平仓）。供 23 exit_runner 判定已知标的，
+        避免对已平仓标的反复从交易所补录告警（重开由 reconcile 负责）。"""
+        ledger = self._get_ledger()
+        if ledger is None:
+            return []
+        fn = getattr(ledger, "known_inst_ids", None)
+        return list(fn()) if callable(fn) else []
+
     def get_cooldown(self, inst_id: str) -> Optional[Dict[str, Any]]:
         """最近一次全平记录（含 close_ts/exit_reason/realized_pnl）。"""
         ledger = self._get_ledger()
