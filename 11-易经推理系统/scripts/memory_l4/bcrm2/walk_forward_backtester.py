@@ -196,6 +196,7 @@ class WalkForwardBacktester:
         # ---- P3-04 宏观特征 proxy 注入 ----
         enable_ohlcv_macro_proxy: bool = False,  # 是否启用 OHLCV 合成宏观 proxy + 形态修正
         macro_proxy_correction_strength: float = 0.6,  # 修正灵敏度 (0=关闭, 0.6=默认, 1.0=最灵敏)
+        sl_fixed_pct: Optional[float] = None,  # P2-a 固定止损开关（None=ATR，默认不变）
     ):
         self.symbol = symbol
         self.n_folds = n_folds
@@ -218,6 +219,7 @@ class WalkForwardBacktester:
         # ---- P3-04 宏观特征 proxy ----
         self.enable_ohlcv_macro_proxy = enable_ohlcv_macro_proxy
         self.macro_proxy_correction_strength = macro_proxy_correction_strength
+        self.sl_fixed_pct = sl_fixed_pct  # 固定止损研究开关（软止损 A/B）
         self.enable_pentagon = True  # 五角校验开关
 
         # 五角校验器
@@ -1081,6 +1083,12 @@ class WalkForwardBacktester:
                     pentagon_sl_applied = True
                 else:
                     pentagon_sl_applied = False
+
+                # P2-a 软止损对照：固定百分比止损（生产 soft_stop_loss 口径）。
+                # 仅在显式设置 sl_fixed_pct 时生效；覆盖五角收紧，保证止损严格固定。
+                if self.sl_fixed_pct is not None:
+                    sl_dist = entry_price * float(self.sl_fixed_pct)
+                    original_sl_dist = sl_dist
 
                 if direction == 1:
                     tp_price = entry_price + tp_dist
