@@ -431,3 +431,41 @@ G3 逐项复核：三币的 E>0、CI 下界>0、PF≥1.2、`MDD≤B3_MDD×1.10`�
 3. **P2-b s3_prep 退出条件复核**：评估 consistency=3/3、held≈29 的退出是否过早；用同一反事实框架验证。
 4. **保留 reverse 与生产 timeout 离场**，不做削弱。
 5. 专属胜率口径（P0-A）上线后，以上归因可按 source_system 重跑，不再混合 23 域/外部策略。
+
+---
+
+## 十八 · P0.5 零 pnl 记账修复（2026-11-27，已部署）
+
+### 18.1 根因
+
+多条平仓路径（S3 PREP_EXIT、trial 超时/反转、BDSM、易经强平等）把 `pos_info["upl_ratio"]`
+直接作为 `pnl_pct` 写库。而持仓信息存在**本地回退分支**：OKX 查询失败时返回
+`upl=0.0 / upl_ratio=0.0 / mark_px=0.0 / query_failed=True`（`polling_trader._get_position`），
+影子成交等路径同样可能给出 0。与此同时 `entry_price/exit_price` 由另一路径写入且是真实值，
+于是出现「价格已变动但 pnl=0」。
+
+### 18.2 修复
+
+新增 `scripts/memory_l4/pnl_repair.py::repair_close_pnl`，在 `_handle_close_position` 写库前调用：
+仅当 **记录值恰为 0 且入/出价确实变动** 时按 `方向 × (exit-entry)/entry` 重算；
+真实打平、已有非零值、缺价格三种情况一律不动；异常 fail-open 不阻断平仓记账。
+`position_usdt` 存在时同步补绝对 pnl。**不回填历史 11 笔**（保留为已知 artifact）。
+
+### 18.3 验证
+
+- 新增 `tests/test_pnl_repair.py` 7 项（多/空/绝对盈亏/真打平/不覆盖非零/缺价 fail-open/分钟级强平），
+  连同身份契约 7 项共 14 项通过；`py_compile` 通过。
+- 云端实证交叉验证：对 XAU 那笔（entry=4069.4 → exit=3892.6），修复函数给出 **-4.3446%**，
+  与 11-01 17:29 EvolutionExitEngine 日志的 `upl=-4.34%` 一致，而库中记录为 0。
+
+### 18.4 部署
+
+commit `56d2f42c34` → origin/main → 云端 HEAD `56d2f42c3`；
+`yijing-polling-trader.service` 于 **2026-11-27 13:32:39 CST** 重启，`is-active=active`。
+
+### 18.5 重要运行态发现：当前为影子模式
+
+云端 unit 存在第二个 `ExecStart` 覆盖，实际运行命令带 **`--shadow-mode`**（进程 cmdline 已核实）；
+日志明示「所有开仓/平仓/减仓将被 BLOCKED，仅推理+影子日志+监控正常运行」。
+因此：**新平仓短期不会产生**，P0-A 身份字段与 P0.5 修复的生产级验证，以及 11 专属胜率样本积累，
+都要等影子模式解除后才有增量数据。是否/何时解除影子模式属运行决策，需单独确认，本 SPEC 不代改。
