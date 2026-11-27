@@ -48,6 +48,9 @@ _ENTRY_CANDIDATES = [
 _PY_EXTS = (".py",)
 _TS_EXTS = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
 
+# 文件行数维度最多输出的 Evidence 条数（每个超限文件一条，防证据膨胀）
+_MAX_SIZE_EVIDENCE = 10
+
 
 class InvestigationWorkflow:
     """逆向调查工作流编排器。
@@ -538,12 +541,12 @@ class InvestigationWorkflow:
         """
         evidence: list[Evidence] = []
 
-        # 1. 文件行数（按目标语言扫描源码，报告行数最高的文件）
+        # 1. 文件行数（按目标语言扫描源码，报告行数最高的若干文件）
         language = phases.get("locate", {}).get("language", "python")
         scan_exts = _TS_EXTS if language == "typescript" else _PY_EXTS
         try:
             if os.path.isdir(target):
-                max_file, max_lines = "", 0
+                scanned: list[tuple[int, str]] = []
                 for root, _, files in os.walk(target):
                     if "__pycache__" in root or "node_modules" in root:
                         continue
@@ -556,14 +559,19 @@ class InvestigationWorkflow:
                                 lines = sum(1 for _ in fh)
                         except OSError:
                             continue
-                        if lines > max_lines:
-                            max_lines = lines
-                            max_file = os.path.relpath(fp, target)
-                if max_file:
+                        scanned.append((lines, os.path.relpath(fp, target)))
+                # 每条 Evidence 带具体文件，供 refactor 窗口精确落到文件（上限防证据膨胀）
+                for lines, rel_path in sorted(scanned, key=lambda x: x[0], reverse=True)[
+                    :_MAX_SIZE_EVIDENCE
+                ]:
                     evidence.append(
                         reverse_evidence(
-                            result=f"文件 {max_file}: {max_lines} 行",
-                            provenance={"target": target, "analysis": "line_count"},
+                            result=f"文件 {rel_path}: {lines} 行",
+                            provenance={
+                                "target": target,
+                                "file": rel_path,
+                                "analysis": "line_count",
+                            },
                             confidence=1.0,
                         )
                     )

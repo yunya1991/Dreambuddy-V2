@@ -339,7 +339,8 @@ _DIMENSION_RULES = {
     },
     "git_evolution": {
         "keywords": ("git_history",),
-        "threshold": 1.0,  # feat/(feat+refactor) 比值
+        # 最低 refactor 占比（SPEC 维度 E：每个 sprint 预留 20% 时间给 refactor）
+        "threshold": 0.20,
         "pattern": r"(\d+)\s*feat\s*/\s*(\d+)\s*refactor",
         "action": "增加 refactor 提交",
     },
@@ -389,21 +390,25 @@ class ArchitectureReverseDeriver:
                 eid = getattr(ev, "evidence_id", "unknown")
                 result.known_gaps.append(f"Evidence {eid} 解析失败: {e}")
 
-        # 聚合：每维度取最大债务评分
+        # 聚合：每维度债务取最大评分；每个超阈目标独立触发窗口（可逐项消除）
         for dim, entries in dim_scores.items():
             max_score = max(s for s, _ in entries)
-            max_target = next(t for s, t in entries if s == max_score)
             result.debt_dimensions[dim] = round(min(max_score, 1.0), 4)
 
-            if max_score >= 1.0:  # value >= threshold → 触发 refactor 窗口
-                window_id = f"refactor:{dim}:{max_target}"
-                result.triggered_windows.append(window_id)
-                priority = "P0" if max_score >= 1.0 else ("P1" if max_score >= 0.8 else "P2")
+            best_by_target: dict[str, float] = {}
+            for score, target in entries:
+                if score >= 1.0 and score > best_by_target.get(target, -1.0):
+                    best_by_target[target] = score
+
+            for target, score in best_by_target.items():
+                result.triggered_windows.append(f"refactor:{dim}:{target}")
+                priority = "P0" if score >= 1.0 else ("P1" if score >= 0.8 else "P2")
                 result.refactor_plan.append(
                     {
                         "dimension": dim,
-                        "target": max_target,
-                        "score": result.debt_dimensions[dim],
+                        "target": target,
+                        # plan 保留原始倍数（如 2.86），排序可区分严重度；维度评分按 SPEC clamp
+                        "score": round(score, 4),
                         "action": _DIMENSION_RULES[dim]["action"],
                         "priority": priority,
                     }
@@ -433,9 +438,25 @@ class ArchitectureReverseDeriver:
 
     @staticmethod
     def _get_target(ev: Any) -> str:
+        """提取债务目标：优先 evidence 自带 file，其次从 result 解析具体文件名。
+
+        post-commit 链路的 provenance 只写目录（target），若直接采用会把
+        refactor 窗口落到整个目录、无法执行也无法消除，故需回退解析 result。
+        """
         prov = getattr(ev, "provenance", None)
         if isinstance(prov, dict):
-            return str(prov.get("file") or prov.get("target") or "unknown")
+            file_name = prov.get("file")
+            if file_name:
+                return str(file_name)
+
+        res = getattr(ev, "result", None)
+        if res is not None:
+            m = re.search(r"文件\s*(\S+?)\s*[:：]\s*\d+\s*行", str(res))
+            if m:
+                return m.group(1)
+
+        if isinstance(prov, dict):
+            return str(prov.get("target") or "unknown")
         return "unknown"
 
     def _parse_dimension(self, analysis: str, result_str: str) -> tuple[str | None, float]:
@@ -451,7 +472,11 @@ class ArchitectureReverseDeriver:
                     total = feat + ref
                     if total == 0:
                         return None, 0.0
-                    return dim, feat / total
+                    # 债务 = refactor 占比相对最低要求的缺口，归一化到 [0,1]
+                    # 零 refactor → 1.0（触发窗口）；占比达标 → 0.0
+                    ref_ratio = ref / total
+                    min_ratio = rule["threshold"]
+                    return dim, max(0.0, (min_ratio - ref_ratio) / min_ratio)
                 m = re.search(rule["pattern"], result_str)
                 if not m:
                     return None, 0.0

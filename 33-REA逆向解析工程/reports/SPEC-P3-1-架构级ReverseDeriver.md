@@ -70,7 +70,9 @@ REA Evidence 通过 `provenance.analysis` 标识维度，`result` 字符串含�
 - 文件行数维度：`min(lines / 800, 1.0)`
 - 出度维度：`min(out_degree / 10, 1.0)`
 - 豁口维度：`min(gaps / 20, 1.0)`（20 为豁口密度阈值）
-- git 演化维度：`feat_count / (feat_count + refactor_count)`（无 refactor → 1.0）
+- git 演化维度：`max(0, (0.20 - refactor_ratio) / 0.20)`，其中 `refactor_ratio = refactor / (feat + refactor)`
+  - 0.20 为最低 refactor 占比（SPEC 维度 E："每个 sprint 预留 20% 时间给 refactor"）
+  - 零 refactor → 1.0（触发窗口）；占比达标 → 0.0；中间线性归一化，不再用未归一化的 `feat/(feat+refactor)`
 
 **refactor 窗口触发条件**：任一维度评分 ≥ 1.0（即达到或超过阈值）。
 

@@ -59,8 +59,7 @@ class TestReflectArchitecture:
             refactor_plan=[{"dimension": "file_size", "priority": "P0", "score": 1.0}],
         )
         report = self.engine.reflect_architecture(debt)
-        # 整体健康分 = 1 - 平均债务评分 = 1 - (1.0+1.0)/2 / 4维度?
-        # 实际实现：overall = 1 - mean(dimension_scores)
+        # 健康分 = 未超阈维度占比：(file_size, out_degree) 均超阈 → 0/2
         assert report.overall_score < 1.0
         assert report.health_level in ("critical", "warning")
         assert "refactor:file_size:big.py" in report.triggered_windows
@@ -72,6 +71,19 @@ class TestReflectArchitecture:
         assert self.engine._health_level(0.6) == "warning"
         # overall < 0.5 → critical
         assert self.engine._health_level(0.3) == "critical"
+
+    def test_untiggered_dimensions_do_not_drag_health_to_zero(self):
+        # 仅 file_size 超阈；known_gaps/git_evolution 未超阈只算余量，不应把健康度归零
+        debt = ArchitectureDebtResult(
+            debt_dimensions={"file_size": 1.0, "known_gaps": 0.5, "git_evolution": 0.9072},
+            triggered_windows=["refactor:file_size:evolution_pipeline.py"],
+            refactor_plan=[
+                {"dimension": "file_size", "target": "evolution_pipeline.py", "score": 2.86}
+            ],
+        )
+        report = self.engine.reflect_architecture(debt)
+        assert report.overall_score == pytest.approx(2 / 3, abs=1e-3)
+        assert report.health_level == "warning"
 
 
 # ---------------------------------------------------------------------------

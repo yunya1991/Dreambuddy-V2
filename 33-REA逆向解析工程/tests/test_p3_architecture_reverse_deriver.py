@@ -117,14 +117,32 @@ class TestDimensionParsing:
     def test_git_evolution_no_refactor(self):
         ev = _ev("演化: 8 feat / 0 refactor", analysis="git_history")
         r = self.d.derive_architecture_debt([ev])
-        # feat/(feat+refactor) = 8/8 = 1.0
+        # 零 refactor → 缺口占满 → 债务 1.0
         assert r.debt_dimensions.get("git_evolution", 0) == pytest.approx(1.0)
         assert any("git_evolution" in w for w in r.triggered_windows)
 
     def test_git_evolution_with_refactors(self):
         ev = _ev("演化: 4 feat / 4 refactor", analysis="git_history")
         r = self.d.derive_architecture_debt([ev])
+        # refactor 占比 50% ≥ 最低要求 20% → 无债务
+        assert r.debt_dimensions.get("git_evolution", 0) == pytest.approx(0.0)
+
+    def test_git_evolution_gap_normalized_against_min_ratio(self):
+        ev = _ev("演化: 90 feat / 10 refactor", analysis="git_history")
+        r = self.d.derive_architecture_debt([ev])
+        # refactor 占比 10%，最低要求 20% → 缺口归一化 (0.2-0.1)/0.2 = 0.5
         assert r.debt_dimensions.get("git_evolution", 0) == pytest.approx(0.5)
+        assert not any("git_evolution" in w for w in r.triggered_windows)
+
+    def test_file_size_target_falls_back_to_result_file_name(self):
+        # provenance 只带目录（post-commit 实际形态）时必须从 result 解析出具体文件
+        ev = reverse_evidence(
+            result="文件 evolution_pipeline.py: 2285 行",
+            provenance={"target": "/repo/dreambuddy_evolution", "analysis": "line_count"},
+        )
+        r = self.d.derive_architecture_debt([ev])
+        assert r.refactor_plan[0]["target"] == "evolution_pipeline.py"
+        assert r.triggered_windows == ["refactor:file_size:evolution_pipeline.py"]
 
 
 # ---------------------------------------------------------------------------
@@ -152,3 +170,18 @@ class TestRefactorPlan:
         r = d.derive_architecture_debt(evs)
         scores = [p["score"] for p in r.refactor_plan]
         assert scores == sorted(scores, reverse=True)
+
+    def test_each_oversized_file_gets_own_window(self):
+        d = ArchitectureReverseDeriver()
+        evs = [
+            _ev("文件 a.py: 1600 行", analysis="line_count", file="a.py"),
+            _ev("文件 b.py: 900 行", analysis="line_count", file="b.py"),
+        ]
+        r = d.derive_architecture_debt(evs)
+        targets = [p["target"] for p in r.refactor_plan]
+        assert sorted(targets) == ["a.py", "b.py"]
+        # 严重度用原始倍数（1600/800=2.0 > 900/800=1.125）排序，不再全部压到 1.0
+        assert r.refactor_plan[0]["target"] == "a.py"
+        assert r.refactor_plan[0]["score"] == pytest.approx(2.0)
+        # 维度评分按 SPEC 仍 clamp 到 1.0
+        assert r.debt_dimensions["file_size"] == pytest.approx(1.0)

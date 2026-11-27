@@ -334,14 +334,16 @@ class ReflectionEngine:
     def reflect_architecture(self, arch_debt_result: Any) -> "ArchitectureHealthReport":
         """架构健康度反思：消费 ArchitectureDebtResult → 健康度报告。
 
-        整体健康分 = 1 - 平均债务评分（无债务维度时记 1.0 健康）。
+        健康分 = 未超阈维度占比（debt < 1.0 记通过）。
+        单一维度超阈只扣 1/N，避免把"未超阈但接近阈值"的余量也算成 100% 债务
+        导致健康度被单维度永久归零；连续债务分仍在 dimension_scores 透明展示。
         健康分级：≥0.8 healthy / ≥0.5 warning / <0.5 critical。
         """
         try:
             debt_dims = getattr(arch_debt_result, "debt_dimensions", {}) or {}
             if debt_dims:
-                avg_debt = sum(debt_dims.values()) / len(debt_dims)
-                overall = max(0.0, 1.0 - avg_debt)
+                passed = sum(1 for v in debt_dims.values() if v < 1.0)
+                overall = passed / len(debt_dims)
             else:
                 overall = 1.0
 
