@@ -556,3 +556,38 @@ groups:
         annotations:
           summary: "存在 mode=live 但 execution_rights/mandate_id 不符，单出口契约被破坏"
           runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#14-主神经网络监控模块main-nn"
+
+  - name: training_chain
+    rules:
+      # 观察期规则（B 类结果导向）：训练→推理链路（48→40→50）静默断链检测。
+      # 产物新鲜度（stale/missing）已由 artifacts 组的 ArtifactStale/ArtifactMissing 通用覆盖，
+      # 此处补「量不增长 / 开了不生效 / 降级可见」三类产物新鲜度抓不到的断点。
+      - alert: TrainingSamplesNotGrowing
+        expr: dreambuddy_training_samples_total == (dreambuddy_training_samples_total offset 3d)
+        for: 30m
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "48 训练样本（{{ $labels.source }}）3 天无增长，训练→推理链路可能静默断更"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#14-主神经网络监控模块main-nn"
+
+      - alert: OverlayEnabledButNotModulating
+        expr: dreambuddy_50_overlay_audit_enabled == 1 and dreambuddy_50_overlay_modulation_rate == 0
+        for: 30m
+        labels:
+          severity: P2
+          channel: alert
+        annotations:
+          summary: "50 overlay 开关已开但 modulation_rate 恒 0（先验缺失/门禁拦截/path 全过滤），训练因子未生效"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#14-主神经网络监控模块main-nn"
+
+      - alert: FactorPrior18Degraded
+        expr: dreambuddy_factor_prior_18_degraded == 1
+        for: 1h
+        labels:
+          severity: P3
+          channel: alert
+        annotations:
+          summary: "18 域 factor_prior 降级（A5），50 overlay 的 18 透传先验不可用"
+          runbook_url: "15-监控告警系统/docs/TECHNICAL_DESIGN.md#14-主神经网络监控模块main-nn"

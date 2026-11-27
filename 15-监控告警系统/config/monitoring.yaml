@@ -104,6 +104,33 @@ artifacts:
     timestamp_field: null
     ttl_seconds: 93600       # 26h
     severity: P2
+  # —— 训练→推理链路（48→40→50）产物新鲜度 ——
+  - name: factor_contradiction_priors_40
+    path: 40-周期神经网络系统/factor_contradiction_priors.json
+    timestamp_field: generated_at
+    ttl_seconds: 93600       # 26h（40 日管线每日产出，50 overlay 直接输入）
+    severity: P2
+  - name: training_samples_p3a_48
+    path: 48-涌现架构/events/training_samples/p3a_samples.jsonl
+    timestamp_field: null
+    ttl_seconds: 93600       # 26h（training_ingest 每日 00:30 产出，A9 产物）
+    severity: P2
+  - name: training_samples_p3b_48
+    path: 48-涌现架构/events/training_samples/p3b_samples.jsonl
+    timestamp_field: null
+    ttl_seconds: 93600
+    severity: P2
+  # 上游源（根因层）：training_ingest 的输入，断更会静默导致 48 训练样本停更
+  - name: p3a_source_18
+    path: 18-数据获取中心/backfill/p3a/dominance_agreement.jsonl
+    timestamp_field: null
+    ttl_seconds: 93600
+    severity: P2
+  - name: p3b_source_18
+    path: 18-数据获取中心/backfill/p3b/news_agreement.jsonl
+    timestamp_field: null
+    ttl_seconds: 93600
+    severity: P2
 
 # 任务调度新鲜度：由 push_job.sh 推送 dreambuddy_job_last_success_timestamp_seconds
 jobs:

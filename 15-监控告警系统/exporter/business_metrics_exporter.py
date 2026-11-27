@@ -1223,6 +1223,138 @@ class Collector:
             out.append(_metric("main_nn_chain_broken_total", wait_broken, source=src))
         return out
 
+    def training_chain_metrics(self) -> list[str]:
+        """B 类（结果导向）：训练→推理链路（48→40→50）的开关状态、训练产物量与 overlay 生效审计。
+
+        只读旁路、FAIL-OPEN：任何读取异常不得影响主链与其余指标。覆盖三类静默断链：
+        ① 开关翻转不可见（50 overlay / 40 网关 / 快讯先验）；
+        ② 训练产物停更不增长（A9 曾 13 天静默断更）；
+        ③ overlay 开了但未生效（modulation_rate 恒 0）。
+        """
+        out: list[str] = []
+        repo = self.repo
+
+        # 1) 50 live/shadow overlay 开关与系数（run 级 latest.json 为权威来源）
+        for mode, rel in (
+            ("live", "50-NN主矛盾评估器/runtime/live/latest.json"),
+            ("shadow", "50-NN主矛盾评估器/runtime/shadow/latest.json"),
+        ):
+            ov = _read_json(repo / rel)
+            overlay = ov.get("overlay") if isinstance(ov.get("overlay"), dict) else {}
+            out.append(
+                _metric(
+                    "switch_enabled",
+                    1 if overlay.get("enabled") else 0,
+                    switch=f"50_overlay_{mode}",
+                )
+            )
+            coef = overlay.get("coef")
+            out.append(
+                _metric(
+                    "50_overlay_coef",
+                    float(coef) if isinstance(coef, (int, float)) else 0.0,
+                    mode=mode,
+                )
+            )
+
+        # 2) 40→48 网关开关（ENABLE_40_VIA_48 在消费端落盘）
+        cons = _read_json(repo / "40-周期神经网络系统/nn_feedback_consumption.json")
+        out.append(
+            _metric(
+                "switch_enabled",
+                1 if cons.get("enable_40_via_48") else 0,
+                switch="40_via_48",
+            )
+        )
+
+        # 3) 40 因子先验文件：样本量 + 18 域 factor_prior 降级标记
+        priors = _read_json(repo / "40-周期神经网络系统/factor_contradiction_priors.json")
+        fdp = (
+            priors.get("factor_direction_priors")
+            if isinstance(priors.get("factor_direction_priors"), dict)
+            else {}
+        )
+        out.append(_metric("40_priors_n_samples", float(fdp.get("n_samples") or 0)))
+        f18 = (
+            priors.get("factor_prior_18") if isinstance(priors.get("factor_prior_18"), dict) else {}
+        )
+        out.append(_metric("40_priors_18_degraded", 1 if f18.get("degraded") else 0))
+
+        # 4) 18 域 factor_prior（快讯先验载体）：降级 / 因子数 / 快讯开关
+        fp18 = _read_json(repo / "18-数据获取中心/backfill/p3c1/factor_prior.json")
+        out.append(_metric("factor_prior_18_degraded", 1 if fp18.get("degraded") else 0))
+        out.append(_metric("factor_prior_18_n_factors", float(fp18.get("n_factors") or 0)))
+        nf = fp18.get("newsflash") if isinstance(fp18.get("newsflash"), dict) else {}
+        out.append(_metric("newsflash_prior_enabled", 1 if nf.get("enabled") else 0))
+
+        # 5) 48 训练样本量（p3a/p3b 行数，-1 表示读取失败）
+        ts_dir = repo / "48-涌现架构/events/training_samples"
+        for src in ("p3a", "p3b"):
+            n = -1
+            try:
+                fpath = ts_dir / f"{src}_samples.jsonl"
+                if fpath.exists():
+                    with fpath.open("rb") as fh:
+                        n = sum(1 for _ in fh)
+            except OSError:
+                n = -1
+            out.append(_metric("training_samples_total", float(n), source=src))
+
+        # 6) overlay 生效审计：最新一条 live 决策的 payload.factor_priors_overlay
+        decisions = repo / "50-NN主矛盾评估器/runtime/decisions.jsonl"
+        audit: dict | None = None
+        for rec in reversed(_tail_jsonl(decisions, limit=500)):
+            if str(rec.get("mode") or "") != "live":
+                continue
+            payload = rec.get("payload") if isinstance(rec.get("payload"), dict) else {}
+            fpo = payload.get("factor_priors_overlay")
+            if isinstance(fpo, dict):
+                audit = fpo
+                break
+        if audit is not None:
+            out.append(_metric("50_overlay_audit_enabled", 1 if audit.get("enabled") else 0))
+            mr = audit.get("modulation_rate")
+            out.append(
+                _metric(
+                    "50_overlay_modulation_rate",
+                    float(mr) if isinstance(mr, (int, float)) else 0.0,
+                )
+            )
+            mp = audit.get("modulated_paths")
+            out.append(
+                _metric(
+                    "50_overlay_modulated_paths",
+                    float(mp) if isinstance(mp, (int, float)) else 0.0,
+                )
+            )
+            tp = audit.get("total_paths")
+            out.append(
+                _metric(
+                    "50_overlay_total_paths",
+                    float(tp) if isinstance(tp, (int, float)) else 0.0,
+                )
+            )
+            out.append(
+                _metric(
+                    "50_overlay_unmapped_factor_count",
+                    float(audit.get("unmapped_factor_count") or 0),
+                )
+            )
+            out.append(
+                _metric(
+                    "50_overlay_priors_n_samples",
+                    float(audit.get("priors_n_samples") or 0),
+                )
+            )
+            degraded = audit.get("degraded")
+            out.append(
+                _metric(
+                    "50_overlay_degraded",
+                    1 if isinstance(degraded, list) and degraded else (1 if degraded else 0),
+                )
+            )
+        return out
+
     def collect(self) -> str:
         lines = [
             "# HELP dreambuddy_monitor_heartbeat_timestamp_seconds exporter heartbeat",
@@ -1240,6 +1372,7 @@ class Collector:
             self.signal_calibration_metrics(),
             self.main_nn_metrics(),
             self.artifact_metrics(),
+            self.training_chain_metrics(),
             self.cell_metrics(),
         ):
             lines.extend(group)
