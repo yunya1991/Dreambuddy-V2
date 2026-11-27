@@ -359,9 +359,33 @@ G3 逐项复核：三币的 E>0、CI 下界>0、PF≥1.2、`MDD≤B3_MDD×1.10`�
 - **回测外离场普遍存在**：`bdsm_exit`、`s3_prep_exit` 不在回测栈内；8 笔原因族一致率 0%（含 1 笔生产 tp 但回测先触发其他离场）。
 - 结论方向与 §2 一致：共享库混合多套离场，不能与三币回测直接比较。
 
-### 16.3 尚未闭合（G0/G1 未通过）
+### 16.3 部署与云端执行记录（2026-11-27）
 
-1. **云端全样本 parity 未跑**：本地 `bcrm_trades.db` 快照止于 2026-11-13（50 笔），云端 86 笔需 SSH；本次 SSH 被微信扫码登录拦截。全样本重放待授权后执行同一脚本。
-2. **身份字段只在部署后的新成交出现**：历史 86 笔永久 UNKNOWN；`config_hash`/`signal_id` 目前无可靠来源，按契约留空并计为缺口。
-3. **部署未执行**：需用户确认后 `commit → push → 云端 pull`；部署后下一次写库自动迁移，专属指标从 0 开始积累，达到 `min_trades` 前保持 `INSUFFICIENT`。
-4. 平仓 `trade_data` 的 `model_version` 仍为空（TradeRecord 无该字段），需后续在推理侧补齐模型版本快照。
+| 项 | 证据 |
+|---|---|
+| 提交 / 推送 | `ad8dd78750` → `origin/main`（pre-commit ruff/black/secret 全过） |
+| 云端同步 | `/home/luke/dreambuddy` `merge --ff-only` 后 HEAD=`ad8dd7875`；云端运行期脏文件未被触碰 |
+| 服务重启 | `yijing-polling-trader.service`：旧实例 11-25 18:00:06 启动 → 11-27 12:50:33 CST 停止并启动；`is-active=active` |
+| 迁移生效 | 云端 `trades` 表 `PRAGMA` 已含 `source_system/mode/git_sha/config_hash/signal_id/trade_id` 六列 |
+| 双口径守卫实测 | `data/eval/winrate_guard_dual_20261127.json`：共享 N=86 WR=45.35%（非零 52.00%，CI[35.25%,55.84%]，PF=1.0725）；11 专属 N=0 `INSUFFICIENT`；未归属=86 |
+
+### 16.4 全样本 parity 结果（86/86 重放）
+
+`data/eval/parity_probe_cloud_20261127.json`（两次云端运行合并，覆盖 30 天 86 笔、28 个标的，全部可重放，0 跳过）：
+
+| 指标 | 结果 | 含义 |
+|---|---|---|
+| 离场原因族一致率 | **31.4%（27/86）** | 近七成生产平仓的离场原因与回测栈不一致 |
+| 原因族 + 时间（±2h）一致率 | **7.0%（6/86）** | 即使原因族相同，离场时点也几乎不重合 |
+| 回测外离场 | reverse 9、s3_prep_exit 9、bdsm_exit 4、evolution_exit 1（共 23 笔） | 回测栈（tp/sl/timeout）根本没有这些离场 |
+| 回测内离场的匹配 | timeout 9/40、tp 7/11、sl 11/12 | 即便同名原因，触发条件/时点也不同 |
+| 身份覆盖 | source/trade_id/signal_id/git_sha 全部 0/86 | 历史样本无法做信号级 replay |
+
+**结论**：共享生产胜率与三币回测胜率**不可直接比较**的主因已量化——离场栈不同源（约 69% 原因族不一致、93% 时点不一致）。这支持 §5 H3/H4（离场与 parity 缺陷），并再次说明当前 45.35% 告警不能解读为 11 模型能力。
+
+### 16.5 仍未闭合
+
+1. **身份字段只作用于部署后的新成交**：历史 86 笔永久 UNKNOWN；专属指标需积累至 `min_trades` 才出结论。
+2. `config_hash`/`signal_id`/`model_version` 无可靠来源，按契约留空计为缺口；信号级 replay 需在推理侧补信号持久化。
+3. parity 探针仅对齐离场规则，未对齐入场（生产市价 vs 回测下一根开盘）与费用；`family+time` 口径已含 ±2h 容差。
+4. 下一步：P1 回撤/离场归因（§8）应以本次 86 笔重放为基线，优先评估 reverse/s3_prep/bdsm 三类回测外离场对胜率与 MDD 的贡献。
