@@ -42,6 +42,7 @@ from adapters.audit_logger import log_decision  # noqa: E402
 from adapters.bus_reader import load_evidences  # noqa: E402
 from adapters.constraint_loader import load_constraints  # noqa: E402
 from adapters.execution_writer import is_kill_switch_on  # noqa: E402
+from adapters.factor_priors_provider import is_overlay_enabled, resolve_coef  # noqa: E402
 from adapters.prior_reader import load_priors_summary  # noqa: E402
 from core.decision import _extract_trigger, record_decision  # noqa: E402
 from core.shadow_decision import build_symbol_decisions, make_shadow_decision  # noqa: E402
@@ -83,7 +84,19 @@ def _append_history(path: Path, record: dict[str, Any], cap: int = SHADOW_HISTOR
 def run(bus_state: Path, out_dir: Path) -> dict[str, Any]:
     now = datetime.now(timezone.utc)
     run_ts = now.isoformat().replace("+00:00", "Z")
-    result: dict[str, Any] = {"run_ts": run_ts, "status": "ok", "reason": None}
+    overlay_enabled = is_overlay_enabled()
+    coef, coef_source = resolve_coef()
+    result: dict[str, Any] = {
+        "run_ts": run_ts,
+        "status": "ok",
+        "reason": None,
+        # M4-4：run 级 overlay 开关留档（与 live 对齐，供 exporter 采集开关状态）
+        "overlay": {
+            "enabled": overlay_enabled,
+            "coef": coef if overlay_enabled else 0.0,
+            "coef_source": coef_source if overlay_enabled else "disabled",
+        },
+    }
 
     if is_kill_switch_on():
         result["status"] = "skipped"
