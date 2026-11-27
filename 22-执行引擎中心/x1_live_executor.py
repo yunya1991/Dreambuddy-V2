@@ -68,6 +68,8 @@ NOTIONAL_FLOOR_BY_CLASS: dict[str, float] = {
     str(k): float(v) for k, v in (_REGISTRY.get("notional_floor_by_class") or {}).items()
 }
 MAX_LEVERAGE = 3
+# 单笔最低保证金（USDT）：名义 = 保证金 × 杠杆。0 表示不启用。
+MIN_MARGIN_USDT = float(_REGISTRY.get("min_margin_usdt") or 0)
 DEFAULT_SL_PCT = 1.5
 DEFAULT_TP_PCT = 3.0
 COOLDOWN_HOURS = float(os.environ.get("22_LIVE_COOLDOWN_HOURS", "8"))
@@ -407,12 +409,39 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
         if floor and notional < floor:
             notional = min(floor, _notional_cap(symbol))
 
+        # 单笔保证金下限：名义须 ≥ min_margin × 杠杆，否则抬到该值；仍不足则 fail-closed 拒单
+        leverage = int(risk.get("leverage") or MAX_LEVERAGE)
+        req_notional = MIN_MARGIN_USDT * leverage if MIN_MARGIN_USDT > 0 else 0.0
+        if req_notional and notional < req_notional:
+            notional = min(req_notional, _notional_cap(symbol))
+        if req_notional and notional + 1e-9 < req_notional:
+            code = "SIZING_BELOW_MIN_MARGIN"
+            processed[decision_id] = {"status": "risk_blocked", "reason": code, "ts": _now()}
+            result["skipped"] += 1
+            result.setdefault("risk_rejected", []).append(
+                {
+                    "decision_id": decision_id,
+                    "reason_code": code,
+                    "reason": f"名义上限 {_notional_cap(symbol):.0f} < 保证金下限 "
+                    f"{MIN_MARGIN_USDT:.0f}×{leverage}x 所需 {req_notional:.0f}",
+                }
+            )
+            _emit(
+                "M13",
+                decision,
+                "skip",
+                reason_category="wait_constraint_freeze",
+                data={"reason": code},
+            )
+            continue
+
         payload = {
             "action": "order",
             "symbol": decision.get("symbol"),
             "direction": decision.get("direction"),
             "notional_usdt": notional,
-            "leverage": int(risk.get("leverage") or MAX_LEVERAGE),
+            "margin_usdt": round(notional / leverage, 2) if leverage else None,
+            "leverage": leverage,
             "sl_pct": DEFAULT_SL_PCT,
             "tp_pct": DEFAULT_TP_PCT,
             "decision_id": decision_id,

@@ -128,10 +128,10 @@ def test_registry_drives_allowed_symbols_and_max_positions(monkeypatch):
 
 
 def test_registry_drives_class_notional_caps():
-    """指数/高价 ETF 名义上限抬到 300U，其余类别维持 100U。"""
-    assert bridge.MAX_NOTIONAL_USDT == 100
-    assert bridge._max_notional_for("BTC-USDT-SWAP") == 100
-    assert bridge._max_notional_for("CL-USDT-SWAP") == 100
+    """名义上限统一 300U（= 单笔保证金下限 100U × 3x 杠杆）。"""
+    assert bridge.MAX_NOTIONAL_USDT == 300
+    assert bridge._max_notional_for("BTC-USDT-SWAP") == 300
+    assert bridge._max_notional_for("CL-USDT-SWAP") == 300
     assert bridge._max_notional_for("US500-USDT-SWAP") == 300
     assert bridge._max_notional_for("JP225-USDT-SWAP") == 300
     assert bridge._max_notional_for("SPY-USDT-SWAP") == 300

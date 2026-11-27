@@ -40,7 +40,7 @@ def test_check_rejects_denied_rights():
 
 
 def test_check_rejects_over_limit_notional():
-    assert ex._check(_live_decision(notional_usdt=200)) == "notional_limit"
+    assert ex._check(_live_decision(notional_usdt=400)) == "notional_limit"
 
 
 def test_dry_run_records_without_bridge(monkeypatch, tmp_path):
@@ -174,7 +174,8 @@ def test_position_guard_allows_flat_symbol(monkeypatch, tmp_path):
     result = ex.run(outbox, dry_run=False, limit=10)
     assert result["executed"] == 1
     row = json.loads((tmp_path / "fills.jsonl").read_text(encoding="utf-8").splitlines()[0])
-    assert row["request"]["notional_usdt"] == 100.0
+    assert row["request"]["notional_usdt"] == 300.0
+    assert row["request"]["margin_usdt"] == 100.0
     assert row["order_placed"] is True
 
 
@@ -233,18 +234,18 @@ def test_cooldown_expires_after_8h_and_records_entry(monkeypatch, tmp_path):
 
 
 def test_check_uses_class_notional_cap():
-    """指数类上限 300U，crypto 仍 100U；未声明名义时按全局默认。"""
+    """指数类上限 300U；crypto 上限 300U（= 保证金下限 100U × 3x 杠杆）。"""
     assert ex._notional_cap("US500-USDT-SWAP") == 300
     assert ex._notional_floor("US500-USDT-SWAP") == 150
-    assert ex._notional_cap("BTC-USDT-SWAP") == 100
+    assert ex._notional_cap("BTC-USDT-SWAP") == 300
     assert ex._notional_floor("BTC-USDT-SWAP") == 100
     assert ex._notional_floor("CL-USDT-SWAP") == 100
-    assert ex._check(_live_decision(notional_usdt=200)) == "notional_limit"
+    assert ex._check(_live_decision(notional_usdt=400)) == "notional_limit"
     assert ex._check(_live_decision(symbol="US500-USDT-SWAP", notional_usdt=250)) is None
 
 
 def test_index_class_applies_floor_and_registry_scope(monkeypatch, tmp_path):
-    """指数类 13 定容 73U → 抬到类别下限 150U，并携带 position_scope=registry。"""
+    """指数类 13 定容 73U → 抬到保证金下限 100U×3x=300U，并携带 position_scope=registry。"""
     monkeypatch.setattr(ex, "_LEDGER", tmp_path / "fills.jsonl")
     monkeypatch.setattr(ex, "_LEDGER_DIR", tmp_path)
     monkeypatch.setattr(ex, "_STATE", tmp_path / "processed.json")
@@ -284,12 +285,13 @@ def test_index_class_applies_floor_and_registry_scope(monkeypatch, tmp_path):
     result = ex.run(outbox, dry_run=False, limit=10)
     assert result["executed"] == 1
     assert seen_kwargs == {"notional_cap": 300.0, "notional_floor": 150.0}
-    assert captured["notional_usdt"] == 150.0
+    assert captured["notional_usdt"] == 300.0
+    assert captured["margin_usdt"] == 100.0
     assert captured["position_scope"] == "registry"
 
 
-def test_crypto_uses_default_floor_100(monkeypatch, tmp_path):
-    """非指数类按注册表默认下限 100U 下单（13 定容 73U 被抬回）。"""
+def test_crypto_min_margin_floor_300(monkeypatch, tmp_path):
+    """非指数类按单笔保证金下限 100U×3x=300U 下单（13 定容 73U 被抬回）。"""
     monkeypatch.setattr(ex, "_LEDGER", tmp_path / "fills.jsonl")
     monkeypatch.setattr(ex, "_LEDGER_DIR", tmp_path)
     monkeypatch.setattr(ex, "_STATE", tmp_path / "processed.json")
@@ -308,7 +310,7 @@ def test_crypto_uses_default_floor_100(monkeypatch, tmp_path):
 
     result = ex.run(outbox, dry_run=False, limit=10)
     assert result["executed"] == 1
-    assert captured["notional_usdt"] == 100.0
+    assert captured["notional_usdt"] == 300.0
     assert captured["position_scope"] == "registry"
 
 
