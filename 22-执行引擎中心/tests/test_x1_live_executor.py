@@ -382,3 +382,57 @@ def test_record_skips_unfilled_or_dry_run():
     ex._record_position_ledger(
         {"symbol": "AVAX-USDT-SWAP", "order_placed": True, "result": {"contracts": 0}}
     )
+
+
+def _stub_capacity_bridge(payload, timeout=90):
+    if payload.get("action") == "status":
+        return {"ok": True, "positions": []}
+    return {
+        "ok": False,
+        "error_code": "max_positions",
+        "reason": "max positions reached: 12/12 (scope=registry)",
+    }
+
+
+def test_capacity_reject_is_skip_not_failure(monkeypatch, tmp_path):
+    """并发持仓满（max_positions）属正常容量拒绝，整轮仍判 ok，不得触发 JobFailed。"""
+    monkeypatch.setattr(ex, "_LEDGER", tmp_path / "fills.jsonl")
+    monkeypatch.setattr(ex, "_LEDGER_DIR", tmp_path)
+    monkeypatch.setattr(ex, "_STATE", tmp_path / "processed.json")
+    monkeypatch.setattr(ex, "precheck", lambda decision, **kw: _stub_pass_risk())
+    monkeypatch.setattr(ex, "_bridge_call", _stub_capacity_bridge)
+    outbox = tmp_path / "outbox.jsonl"
+    outbox.write_text(json.dumps(_live_decision(), ensure_ascii=False) + "\n", encoding="utf-8")
+
+    result = ex.run(outbox, dry_run=False, limit=10)
+    assert result["status"] == "ok"
+    assert result["executed"] == 0
+    assert result["skipped"] == 1
+    assert result["capacity_rejected"][0]["reason"] == "max_positions"
+    # 容量拒绝仍落幂等状态，但状态为 capacity 而非 failed
+    state = json.loads((tmp_path / "processed.json").read_text(encoding="utf-8"))
+    assert state["processed"]["50-nn|AVAX-USDT-SWAP|1"]["status"] == "capacity"
+
+
+def test_real_broker_error_still_degrades(monkeypatch, tmp_path):
+    """非容量类下单错误仍判 degraded（退出码 1），避免误修复掩盖真实故障。"""
+    monkeypatch.setattr(ex, "_LEDGER", tmp_path / "fills.jsonl")
+    monkeypatch.setattr(ex, "_LEDGER_DIR", tmp_path)
+    monkeypatch.setattr(ex, "_STATE", tmp_path / "processed.json")
+    monkeypatch.setattr(ex, "precheck", lambda decision, **kw: _stub_pass_risk())
+    monkeypatch.setattr(
+        ex,
+        "_bridge_call",
+        lambda payload, timeout=90: (
+            {"ok": True, "positions": []}
+            if payload.get("action") == "status"
+            else {"ok": False, "error_code": "ticker_unavailable", "reason": "ticker down"}
+        ),
+    )
+    outbox = tmp_path / "outbox.jsonl"
+    outbox.write_text(json.dumps(_live_decision(), ensure_ascii=False) + "\n", encoding="utf-8")
+
+    result = ex.run(outbox, dry_run=False, limit=10)
+    assert result["status"] == "degraded"
+    assert result["executed"] == 0
+    assert "capacity_rejected" not in result

@@ -72,6 +72,14 @@ DEFAULT_SL_PCT = 1.5
 DEFAULT_TP_PCT = 3.0
 COOLDOWN_HOURS = float(os.environ.get("22_LIVE_COOLDOWN_HOURS", "8"))
 
+# 容量类拒单：并发持仓已达上限属正常业务拒绝，不能把整轮任务打成失败
+CAPACITY_REJECT_CODES = frozenset({"max_positions"})
+
+
+def _is_capacity_reject(outcome: dict[str, Any]) -> bool:
+    """下单被容量风控拒绝（如注册表并发 12/12）时返回 True。"""
+    return str(outcome.get("error_code") or "") in CAPACITY_REJECT_CODES
+
 
 def _class_of(inst_id: str) -> str:
     return _SYMBOL_CLASS.get(str(inst_id).upper(), "")
@@ -434,10 +442,12 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
         }
         _append_ledger(record)
         _record_position_ledger(record)
+        capacity_reject = _is_capacity_reject(outcome)
         _emit(
             "M13",
             decision,
-            "pass" if outcome.get("ok") else "failed",
+            "skip" if capacity_reject else ("pass" if outcome.get("ok") else "failed"),
+            reason_category="wait_constraint_freeze" if capacity_reject else None,
             data={
                 "order_placed": bool(outcome.get("ok") and not outcome.get("dry_run")),
                 "dry_run": bool(dry_run),
@@ -456,16 +466,34 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
                 },
             )
         if not dry_run:
-            processed[decision_id] = {
-                "status": "executed" if outcome.get("ok") else "failed",
-                "ts": _now(),
-                "result": outcome,
-            }
+            if capacity_reject:
+                processed[decision_id] = {
+                    "status": "capacity",
+                    "reason": str(outcome.get("error_code") or ""),
+                    "ts": _now(),
+                    "result": outcome,
+                }
+            else:
+                processed[decision_id] = {
+                    "status": "executed" if outcome.get("ok") else "failed",
+                    "ts": _now(),
+                    "result": outcome,
+                }
             if outcome.get("ok"):
                 last_entry[symbol] = time.time()
         result["results"].append(record)
         if outcome.get("ok"):
             result["executed"] += 1
+        elif capacity_reject:
+            # 容量满跳过：保持 status=ok，避免 JobFailed 告警抖动；拒单明细仍落账与事件
+            result["skipped"] += 1
+            result.setdefault("capacity_rejected", []).append(
+                {
+                    "decision_id": decision_id,
+                    "symbol": symbol,
+                    "reason": str(outcome.get("error_code") or ""),
+                }
+            )
         else:
             result["status"] = "degraded"
 
