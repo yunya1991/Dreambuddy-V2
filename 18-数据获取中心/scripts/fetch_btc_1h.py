@@ -25,7 +25,8 @@ CSV_PATH = OUT_DIR / "btc_1h.csv"
 META_PATH = OUT_DIR / "btc_1h_meta.json"
 
 SINCE_MS = int(datetime(2023, 1, 1, tzinfo=timezone.utc).timestamp() * 1000)
-UNTIL_MS = int(datetime(2026, 11, 10, tzinfo=timezone.utc).timestamp() * 1000)
+# 终点动态取运行时刻（原先硬编码日期会让小时级事件研究永久停在旧区间）
+UNTIL_MS = int(time.time() * 1000)
 HOUR_MS = 3_600_000
 EXCHANGES = ("binance", "okx", "bybit")
 
