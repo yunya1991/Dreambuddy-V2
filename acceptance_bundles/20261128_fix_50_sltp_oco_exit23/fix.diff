@@ -1,0 +1,399 @@
+commit 78d05dac9e372a2e5f9532eb122840b50c617f7f
+Author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+Date:   Sat Nov 28 01:18:11 2026 +0800
+
+    fix(22/23): 50域SL/TP按类别配置 + OCO成交回写 + exit23归属隔离
+    
+    - 22 x1_live_executor: SL/TP 由 live_symbols.sl_tp 按标的/类别解析（决策声明>标的>类别>默认），
+      替换全局硬编码 1.5%/3.0%，避免空单被日内噪音扫损
+    - 22 position_ledger.reconcile: 查到真实平仓成交时按 exchange_sltp 回写并保留原归属
+      source/domain（50-nn 不再被记成 ghost_stale/22-reconciled）
+    - 23 exit_runner.collect_positions: --symbols 仅补录账本未知老仓，不再接管其他域持仓
+    - 补测：类别SL/TP解析、OCO回写归因、跨域仓位不接管
+---
+ 22-执行引擎中心/config/live_symbols.json           | 63 ++++++++++++++++++++++
+ 22-执行引擎中心/position_ledger.py                 | 10 +++-
+ .../tests/test_position_ledger_consistency.py      | 42 +++++++++++++++
+ 22-执行引擎中心/tests/test_x1_live_executor.py     | 33 ++++++++++++
+ 22-执行引擎中心/x1_live_executor.py                | 51 +++++++++++++++++-
+ .../dreambuddy_evolution/scripts/exit_runner.py    |  6 ++-
+ .../dreambuddy_evolution/tests/test_exit_runner_p3.py | 55 +++++++++++++++++++
+ 7 files changed, 254 insertions(+), 6 deletions(-)
+
+diff --git a/22-执行引擎中心/config/live_symbols.json b/22-执行引擎中心/config/live_symbols.json
+index e2a03b558e..55ce662b8d 100644
+--- a/22-执行引擎中心/config/live_symbols.json
++++ b/22-执行引擎中心/config/live_symbols.json
+@@ -16,6 +16,69 @@
+     "apac_index": 150,
+     "us_etf": 150
+   },
++  "sl_tp": {
++    "description": "50 域开仓 OCO 间距（百分比）。优先级：决策自带 sl_pct/tp_pct > symbols 覆盖 > asset_class > default；用于替代 x1 执行器全局硬编码 1.5%/3.0%。数值按类别日内波动率设定，避免噪音扫损。",
++    "default": {
++      "sl_pct": 2.5,
++      "tp_pct": 5.0
++    },
++    "asset_class": {
++      "crypto": {
++        "sl_pct": 3.0,
++        "tp_pct": 6.0
++      },
++      "precious_metal": {
++        "sl_pct": 2.5,
++        "tp_pct": 5.0
++      },
++      "industrial_metal": {
++        "sl_pct": 3.0,
++        "tp_pct": 6.0
++      },
++      "energy": {
++        "sl_pct": 3.0,
++        "tp_pct": 6.0
++      },
++      "rates_credit": {
++        "sl_pct": 2.0,
++        "tp_pct": 4.0
++      },
++      "us_index": {
++        "sl_pct": 2.0,
++        "tp_pct": 4.0
++      },
++      "apac_index": {
++        "sl_pct": 2.0,
++        "tp_pct": 4.0
++      },
++      "us_etf": {
++        "sl_pct": 2.5,
++        "tp_pct": 5.0
++      },
++      "us_stock": {
++        "sl_pct": 3.0,
++        "tp_pct": 6.0
++      }
++    },
++    "symbols": {
++      "HYPE-USDT-SWAP": {
++        "sl_pct": 4.0,
++        "tp_pct": 8.0
++      },
++      "MU-USDT-SWAP": {
++        "sl_pct": 4.0,
++        "tp_pct": 8.0
++      },
++      "MSTR-USDT-SWAP": {
++        "sl_pct": 4.0,
++        "tp_pct": 8.0
++      },
++      "COIN-USDT-SWAP": {
++        "sl_pct": 4.0,
++        "tp_pct": 8.0
++      }
++    }
++  },
+   "classes": {
+     "crypto": {
+       "leader": "BTC",
+diff --git a/22-执行引擎中心/position_ledger.py b/22-执行引擎中心/position_ledger.py
+index cee2a702a0..78a0f9088f 100644
+--- a/22-执行引擎中心/position_ledger.py
++++ b/22-执行引擎中心/position_ledger.py
+@@ -1048,6 +1048,7 @@ class PositionLedger:
+         - 已存在但数量与交易所不一致 → 以交易所为准校正数量（真实流水保留原均价）；
+         - 账本有、交易所已无 → 仅关闭本对账源（source）写入的陈旧行，避免每轮重复报幽灵仓；
+           传 fill_lookup 时按交易所真实平仓成交价落账（否则回退均价，realized_pnl 记 0）；
++          查到真实成交时按 exchange_sltp 落账并保留原归属 source/domain（OCO 止损/止盈回写）；
+         - 无开仓流水时 realized_pnl 保持 0，不臆造盈亏；
+         - 每次校正/关闭都写一条 fills 审计，便于追溯。
+         """
+@@ -1194,16 +1195,21 @@ class PositionLedger:
+                     )
+                 except (OSError, OverflowError, ValueError):
+                     _exit_ts = ts
++            # OCO（SL/TP）成交回写：查到真实平仓成交时按「交易所止损/止盈」落账，
++            # 并保留原归属 source/domain（50-nn 等），避免误判为幽灵仓/对账清理。
++            _row_src = str(row["source"] or "")
++            _has_fill = _fill_px > _EPS
++            _attr_source = _row_src if (_has_fill and is_managed_source(_row_src)) else source
+             self.apply_partial_close(
+                 inst_id=row["inst_id"],
+                 pos_side=row["pos_side"],
+                 qty=float(row["qty"]),
+                 px=_exit_px,
+                 ratio=1.0,
+-                source=source,
++                source=_attr_source,
+                 fee=float(_fill.get("fee") or 0.0),
+                 ts=_exit_ts,
+-                exit_reason="ghost_stale",
++                exit_reason="exchange_sltp" if _has_fill else "ghost_stale",
+             )
+             closed.append(f"{row['inst_id']}:{row['pos_side']}")
+         # 自愈：修复历史 qty/status 不一致的幽灵行（幂等，每轮对账都跑）
+diff --git a/22-执行引擎中心/tests/test_position_ledger_consistency.py b/22-执行引擎中心/tests/test_position_ledger_consistency.py
+index 84bb22f93b..080b8c965f 100644
+--- a/22-执行引擎中心/tests/test_position_ledger_consistency.py
++++ b/22-执行引擎中心/tests/test_position_ledger_consistency.py
+@@ -75,6 +75,48 @@ def test_reconcile_closes_23_evolution_ghost_position(tmp_path):
+     assert _raw_l1(led, "UNI-USDT-SWAP", "long")["status"] == "closed"
+ 
+ 
++# ── OCO 止损/止盈成交回写：不得误记为幽灵仓，且保留原归属域 ──
++def test_reconcile_oco_fill_written_back_as_exchange_sltp(tmp_path):
++    led = _ledger(tmp_path)
++    led.record_fill("COIN-USDT-SWAP", "short", "open", 2.84, 105.61, source="50-nn", domain="50")
++
++    out = led.reconcile(
++        [],
++        source="22-reconciled",
++        fill_lookup=lambda _i, _s: {"fill_px": 107.24, "fee": 0.05, "ts": 1795798644000},
++        ghost_confirm=lambda _i, _s: True,
++    )
++    assert out["closed"] == 1
++    assert led.get_position("COIN-USDT-SWAP", "short") is None
++
++    cool = led.get_cooldown("COIN-USDT-SWAP")
++    assert cool["exit_reason"] == "exchange_sltp"
++    assert cool["source"] == "50-nn"
++    assert cool["realized_pnl"] < 0
++
++    with led._connect() as conn:
++        fill = conn.execute(
++            "SELECT source, domain, action, px, realized_pnl FROM fills"
++            " WHERE inst_id='COIN-USDT-SWAP' ORDER BY id DESC LIMIT 1"
++        ).fetchone()
++    assert fill["source"] == "50-nn"
++    assert fill["domain"] == "50"
++    assert fill["action"] == "close"
++    assert fill["px"] == 107.24
++
++
++def test_reconcile_without_fill_keeps_ghost_stale(tmp_path):
++    """查不到真实成交时仍按 ghost_stale + 对账源落账（不臆造 exchange_sltp）。"""
++    led = _ledger(tmp_path)
++    led.record_fill("LINK-USDT-SWAP", "short", "open", 32.4, 9.234, source="50-nn", domain="50")
++
++    led.reconcile([], source="22-reconciled", ghost_confirm=lambda _i, _s: True)
++
++    cool = led.get_cooldown("LINK-USDT-SWAP")
++    assert cool["exit_reason"] == "ghost_stale"
++    assert cool["source"] == "22-reconciled"
++
++
+ # ── 根因 A 之二：50-nn 数量漂移必须被校正 ──
+ def test_reconcile_corrects_50_nn_qty_drift(tmp_path):
+     led = _ledger(tmp_path)
+diff --git a/22-执行引擎中心/tests/test_x1_live_executor.py b/22-执行引擎中心/tests/test_x1_live_executor.py
+index 5da1ac6e91..d36720bebe 100644
+--- a/22-执行引擎中心/tests/test_x1_live_executor.py
++++ b/22-执行引擎中心/tests/test_x1_live_executor.py
+@@ -438,3 +438,36 @@ def test_real_broker_error_still_degrades(monkeypatch, tmp_path):
+     assert result["status"] == "degraded"
+     assert result["executed"] == 0
+     assert "capacity_rejected" not in result
++
++
++def test_resolve_sl_tp_by_class_and_symbol():
++    """SL/TP 间距按类别/标的配置解析，替代全局固定 1.5%/3.0%。"""
++    assert ex._resolve_sl_tp({}, "AVAX-USDT-SWAP") == (3.0, 6.0)  # crypto
++    assert ex._resolve_sl_tp({}, "MU-USDT-SWAP") == (4.0, 8.0)  # 标的覆盖优先于类别
++    assert ex._resolve_sl_tp({}, "US500-USDT-SWAP") == (2.0, 4.0)  # us_index
++    # 决策自带 sl/tp 优先
++    assert ex._resolve_sl_tp({"sl_pct": 1.2, "tp_pct": 2.4}, "MU-USDT-SWAP") == (1.2, 2.4)
++
++
++def test_entry_payload_carries_class_sl_tp(monkeypatch, tmp_path):
++    """下单 payload 的 sl_pct/tp_pct 来自类别配置，不再是固定 1.5/3.0。"""
++    monkeypatch.setattr(ex, "_LEDGER", tmp_path / "fills.jsonl")
++    monkeypatch.setattr(ex, "_LEDGER_DIR", tmp_path)
++    monkeypatch.setattr(ex, "_STATE", tmp_path / "processed.json")
++    monkeypatch.setattr(ex, "precheck", lambda decision, **kw: _stub_pass_risk())
++    captured = {}
++
++    def fake_bridge(payload, timeout=90):
++        if payload.get("action") == "status":
++            return {"ok": True, "positions": []}
++        captured.update(payload)
++        return {"ok": True, "order_id": "ord-1", "reference_px": 100.0}
++
++    monkeypatch.setattr(ex, "_bridge_call", fake_bridge)
++    outbox = tmp_path / "outbox.jsonl"
++    outbox.write_text(json.dumps(_live_decision(), ensure_ascii=False) + "\n", encoding="utf-8")
++
++    result = ex.run(outbox, dry_run=False, limit=10)
++    assert result["executed"] == 1
++    assert captured["sl_pct"] == 3.0
++    assert captured["tp_pct"] == 6.0
+diff --git a/22-执行引擎中心/x1_live_executor.py b/22-执行引擎中心/x1_live_executor.py
+index 860b4b8fe7..5d7ebcdb2d 100644
+--- a/22-执行引擎中心/x1_live_executor.py
++++ b/22-执行引擎中心/x1_live_executor.py
+@@ -70,10 +70,54 @@ NOTIONAL_FLOOR_BY_CLASS: dict[str, float] = {
+ MAX_LEVERAGE = 3
+ # 单笔最低保证金（USDT）：名义 = 保证金 × 杠杆。0 表示不启用。
+ MIN_MARGIN_USDT = float(_REGISTRY.get("min_margin_usdt") or 0)
++# SL/TP 最终兜底：仅当注册表 sl_tp 配置缺失时生效。
+ DEFAULT_SL_PCT = 1.5
+ DEFAULT_TP_PCT = 3.0
+ COOLDOWN_HOURS = float(os.environ.get("22_LIVE_COOLDOWN_HOURS", "8"))
+ 
++# SL/TP 间距按标的类别/标的配置（live_symbols.json sl_tp），避免固定 1.5% 被日内噪音扫损
++_SL_TP_CFG = _REGISTRY.get("sl_tp") or {}
++
++
++def _sl_tp_pair(raw: Any) -> tuple[float, float] | None:
++    """解析 {sl_pct, tp_pct} 配置片段；缺项或非法返回 None。"""
++    if not isinstance(raw, dict):
++        return None
++    try:
++        sl = float(raw.get("sl_pct") or 0)
++        tp = float(raw.get("tp_pct") or 0)
++    except (TypeError, ValueError):
++        return None
++    if sl <= 0 or tp <= 0:
++        return None
++    return sl, tp
++
++
++_SL_TP_DEFAULT = _sl_tp_pair(_SL_TP_CFG.get("default")) or (DEFAULT_SL_PCT, DEFAULT_TP_PCT)
++_SL_TP_BY_CLASS: dict[str, Any] = {
++    str(k): v for k, v in (_SL_TP_CFG.get("asset_class") or {}).items() if _sl_tp_pair(v)
++}
++_SL_TP_BY_SYMBOL: dict[str, Any] = {
++    str(k).upper(): v for k, v in (_SL_TP_CFG.get("symbols") or {}).items() if _sl_tp_pair(v)
++}
++
++
++def _resolve_sl_tp(decision: dict[str, Any], inst_id: str) -> tuple[float, float]:
++    """SL/TP 间距（百分比）：决策声明 > 标的覆盖 > 类别 > 注册表默认 > 兜底。"""
++    own = _sl_tp_pair({"sl_pct": decision.get("sl_pct"), "tp_pct": decision.get("tp_pct")})
++    if own:
++        return own
++    symbol = str(inst_id or "").upper()
++    for candidate in (
++        _SL_TP_BY_SYMBOL.get(symbol),
++        _SL_TP_BY_CLASS.get(_class_of(symbol)),
++    ):
++        pair = _sl_tp_pair(candidate)
++        if pair:
++            return pair
++    return _SL_TP_DEFAULT
++
++
+ # 容量类拒单：并发持仓已达上限属正常业务拒绝，不能把整轮任务打成失败
+ CAPACITY_REJECT_CODES = frozenset({"max_positions"})
+ 
+@@ -435,6 +479,9 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
+             )
+             continue
+ 
++        # SL/TP 按标的类别/标的配置（不再全局固定 1.5%/3.0%）
++        sl_pct, tp_pct = _resolve_sl_tp(decision, symbol)
++
+         payload = {
+             "action": "order",
+             "symbol": decision.get("symbol"),
+@@ -442,8 +489,8 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
+             "notional_usdt": notional,
+             "margin_usdt": round(notional / leverage, 2) if leverage else None,
+             "leverage": leverage,
+-            "sl_pct": DEFAULT_SL_PCT,
+-            "tp_pct": DEFAULT_TP_PCT,
++            "sl_pct": sl_pct,
++            "tp_pct": tp_pct,
+             "decision_id": decision_id,
+             "reason": f"50 live {decision.get('signal_id')}",
+             # 50 域仓位额度只统计注册表内标的，避免被其他域的持仓挤占
+diff --git a/23-四层闭环自进化交易架构/dreambuddy_evolution/scripts/exit_runner.py b/23-四层闭环自进化交易架构/dreambuddy_evolution/scripts/exit_runner.py
+index 73fe33c8ce..24c24d8136 100644
+--- a/23-四层闭环自进化交易架构/dreambuddy_evolution/scripts/exit_runner.py
++++ b/23-四层闭环自进化交易架构/dreambuddy_evolution/scripts/exit_runner.py
+@@ -61,10 +61,12 @@ def tag_matches(source: str, tags: Iterable[str]) -> bool:
+ def collect_positions(
+     gateway: Any, okx: Any, symbols: List[str], tags: Iterable[str]
+ ) -> List[Dict[str, Any]]:
+-    """账本归属优先；--symbols 用于补录 P2 之前开的老仓。
++    """账本归属优先；--symbols 仅补录账本从未出现的老仓。
+ 
+     P1-5：容量/离场口径读 effective 持仓（stale 不进入决策），
+     网关无该 API 时回退 list_positions（兼容测试替身与旧版网关）。
++    归属隔离：只管理 source 命中 --tags 的仓位；--symbols 中的标的若已由
++    其他域（如 50-nn）持有，绝不由本 runner 接管，避免跨域双重离场。
+     """
+     _want = {s.strip().upper() for s in symbols if s and s.strip()}
+     out: List[Dict[str, Any]] = []
+@@ -76,7 +78,7 @@ def collect_positions(
+         _inst = str(row.get("inst_id") or "")
+         if not _inst:
+             continue
+-        if (_inst.upper() in _want) or tag_matches(row.get("source"), tags):
++        if tag_matches(row.get("source"), tags):
+             _seen.add(_inst)
+             out.append(
+                 {
+diff --git a/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_exit_runner_p3.py b/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_exit_runner_p3.py
+index e3bfff2e58..d7f5696a4d 100644
+--- a/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_exit_runner_p3.py
++++ b/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_exit_runner_p3.py
+@@ -178,6 +178,61 @@ def test_build_runtime_wires_23_writes_through_gateway(monkeypatch):
+     assert loop._dispatcher._gateway is gateway
+ 
+ 
++class _GatewayKnown(_Gateway):
++    """账本已收录标的（含已平仓）的网关替身。"""
++
++    def __init__(self, rows, known):
++        super().__init__(rows)
++        self._known = known
++
++    def list_known_symbols(self):
++        return list(self._known)
++
++
++def test_collect_positions_does_not_take_over_other_domain_symbols():
++    """--symbols 不得接管其他域（如 50-nn）持有的仓位，避免跨域双重离场。"""
++    gw = _GatewayKnown(
++        [
++            {
++                "inst_id": "BNB-USDT-SWAP",
++                "pos_side": "short",
++                "qty": 54,
++                "avg_entry": 546.55,
++                "source": "50-nn",
++            },
++            {
++                "inst_id": "XAG-USDT-SWAP",
++                "pos_side": "short",
++                "qty": 226,
++                "avg_entry": 44.22,
++                "source": "50-nn",
++            },
++        ],
++        known=["BNB-USDT-SWAP", "XAG-USDT-SWAP"],
++    )
++    out = collect_positions(
++        gw, _Okx(), ["BNB-USDT-SWAP", "XAG-USDT-SWAP"], ("23-evolution", "22-reconciled")
++    )
++    assert out == []
++
++
++def test_collect_positions_keeps_own_domain_symbols():
++    """来源命中 --tags 的仓位仍正常纳管（不因移除 --symbols 兜底而漏管）。"""
++    gw = _Gateway(
++        [
++            {
++                "inst_id": "BNB-USDT-SWAP",
++                "pos_side": "short",
++                "qty": 54,
++                "avg_entry": 546.55,
++                "source": "23-evolution",
++            }
++        ]
++    )
++    out = collect_positions(gw, _Okx(), ["BNB-USDT-SWAP"], ("23-evolution",))
++    assert [p["inst_id"] for p in out] == ["BNB-USDT-SWAP"]
++
++
+ def test_collect_positions_skips_exchange_for_ledger_known_closed():
+     """账本已知（含已平仓）的标的不在 effective 时，不应从交易所补录/告警。
+ 
