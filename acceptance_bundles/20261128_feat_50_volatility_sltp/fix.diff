@@ -1,0 +1,419 @@
+commit 81a0cc44df36f13b98ca1c41e46182b130425c85
+Author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+Date:   Sat Nov 28 01:33:01 2026 +0800
+
+    feat(50): 决策按自身 ATR 波动率声明 sl_pct/tp_pct
+    
+    - 新增 core/volatility.py：Wilder ATR(14) → sl_pct=clamp(2×ATR%, 类别下限, 8)、
+      tp_pct=clamp(2×sl_pct, 2×类别下限, 16)；ATR 缺失/脏值退回 22 类别下限
+    - 新增 adapters/volatility_adapter.py：OKX 公开 K 线（4H×60，5s 超时）fail-open
+    - run_live：执行权通过后写入决策顶层 sl_pct/tp_pct + payload.sl_tp 归因；
+      22 _resolve_sl_tp 以「决策自带」为最高优先级，无需改 22
+    - 测试：新增 test_volatility.py（Wilder/上下限/兜底）+ run_live 注入用例，
+      单测禁网；50 全域 296 passed
+
+diff --git a/50-NN主矛盾评估器/adapters/volatility_adapter.py b/50-NN主矛盾评估器/adapters/volatility_adapter.py
+new file mode 100644
+index 0000000000..c2a070fcdb
+--- /dev/null
++++ b/50-NN主矛盾评估器/adapters/volatility_adapter.py
+@@ -0,0 +1,64 @@
++# 50 决策侧波动率取数适配器：OKX 公开 K 线（无凭据）→ ATR%。
++#
++# 只读公开接口，任何异常/超时一律 fail-open 返回 0.0，
++# 由 core.volatility.resolve_sl_tp_pct 退回类别下限，绝不阻塞决策链。
++from __future__ import annotations
++
++import json
++import os
++import urllib.parse
++import urllib.request
++from typing import Any
++
++from core.volatility import ATR_PERIOD, wilder_atr_pct
++
++_DEFAULT_BASE_URL = "https://www.okx.com"
++_DEFAULT_BAR = "4H"  # 4H×14 ≈ 2.3 天样本，与「hours」持有周期的间距量级匹配
++_DEFAULT_TIMEOUT = 5.0
++_DEFAULT_LIMIT = 60
++
++
++def _base_url() -> str:
++    return os.environ.get("50_OKX_BASE_URL") or _DEFAULT_BASE_URL
++
++
++def fetch_candles(
++    inst_id: str,
++    bar: str | None = None,
++    limit: int = _DEFAULT_LIMIT,
++    timeout: float | None = None,
++) -> list[dict[str, float]]:
++    """拉取 OKX K 线并按时间正序（旧→新）返回 [{h,l,c}]；失败抛异常由调用方兜底。"""
++    _bar = bar or os.environ.get("50_LIVE_ATR_BAR") or _DEFAULT_BAR
++    _timeout = float(
++        timeout
++        if timeout is not None
++        else os.environ.get("50_LIVE_ATR_TIMEOUT") or _DEFAULT_TIMEOUT
++    )
++    url = (
++        f"{_base_url()}/api/v5/market/candles"
++        f"?instId={urllib.parse.quote(str(inst_id))}&bar={_bar}&limit={int(limit)}"
++    )
++    req = urllib.request.Request(url, headers={"User-Agent": "dreambuddy-50/1.0"})
++    with urllib.request.urlopen(req, timeout=_timeout) as resp:  # noqa: S310 - 固定 https 公开行情
++        data: dict[str, Any] = json.loads(resp.read().decode("utf-8"))
++    if str(data.get("code")) != "0":
++        raise RuntimeError(f"okx candles code={data.get('code')} msg={data.get('msg')}")
++    rows: list[dict[str, float]] = []
++    for d in data.get("data") or []:
++        rows.append({"h": float(d[2]), "l": float(d[3]), "c": float(d[4])})
++    rows.reverse()  # OKX 倒序（最新在前）→ 旧→新
++    return rows
++
++
++def atr_pct_for(
++    inst_id: str,
++    bar: str | None = None,
++    period: int = ATR_PERIOD,
++    timeout: float | None = None,
++) -> float:
++    """标的 ATR%（百分比）；取数失败返回 0.0（fail-open）。"""
++    try:
++        return wilder_atr_pct(fetch_candles(inst_id, bar=bar, timeout=timeout), period=period)
++    except Exception:  # noqa: BLE001 - 波动率只作间距依据，不得阻断决策
++        return 0.0
+diff --git a/50-NN主矛盾评估器/core/volatility.py b/50-NN主矛盾评估器/core/volatility.py
+new file mode 100644
+index 0000000000..a8bab71de8
+--- /dev/null
++++ b/50-NN主矛盾评估器/core/volatility.py
+@@ -0,0 +1,105 @@
++# 50 决策侧 SL/TP 波动率口径：Wilder ATR(%) → 价格间距（百分比）。
++#
++# 为什么放在 50：22 执行器 `_resolve_sl_tp` 的优先级是
++#   decision.sl_pct/tp_pct > 注册表 symbols > asset_class > default，
++# 因此 50 只要在决策顶层声明 sl_pct/tp_pct 即可按自身波动率覆盖固定间距，
++# 22 无需改动（22 仍是唯一真实下单方）。
++#
++# 硬边界（22 `live_order_bridge._place_live_order`）：0 < sl_pct < 10、0 < tp_pct < 20；
++# 本模块上限 SL 8 / TP 16，留安全余量，避免高波动时被 22 直接拒单。
++from __future__ import annotations
++
++from typing import Any, Iterable
++
++ATR_PERIOD = 14
++# SL = 2×ATR%：约覆盖 1.5 个持有周期的正常噪音，避免被日内扫损
++SL_ATR_MULT = 2.0
++# 盈亏比 1:2（与 22 注册表 asset_class 配置的 sl:tp 比例一致）
++TP_SL_RATIO = 2.0
++SL_CAP_PCT = 8.0
++TP_CAP_PCT = 16.0
++
++# 类别 SL 下限（%）：与 22 `config/live_symbols.json` 的 sl_tp.asset_class 对齐；
++# ATR 缺失/低波动时退回该值，保证决策始终携带合法 SL/TP
++_CLASS_SL_FLOOR_PCT = {
++    "crypto": 3.0,
++    "precious_metal": 2.5,
++    "industrial_metal": 3.0,
++    "energy": 3.0,
++    "rates_credit": 2.0,
++    "us_index": 2.0,
++    "apac_index": 2.0,
++    "us_etf": 2.5,
++    "us_stock": 3.0,
++}
++_DEFAULT_SL_FLOOR_PCT = 2.5
++
++
++def sl_floor_pct(asset_class: str) -> float:
++    """类别 SL 下限（百分比）；未知类别回落 2.5%。"""
++    return _CLASS_SL_FLOOR_PCT.get(str(asset_class or "").strip().lower(), _DEFAULT_SL_FLOOR_PCT)
++
++
++def wilder_atr_pct(candles: Iterable[dict[str, Any]], period: int = ATR_PERIOD) -> float:
++    """Wilder ATR / 最新收盘，返回百分比（2.0 表示 2%）。
++
++    candles 按时间正序（旧→新），每项需含 h/l/c；样本不足 period+1 根返回 0.0。
++    异常数值一律按 0.0 处理，调用方据此退回类别下限。
++    """
++    rows = [r for r in candles if isinstance(r, dict)]
++    if len(rows) < period + 1:
++        return 0.0
++    try:
++        highs = [float(r["h"]) for r in rows]
++        lows = [float(r["l"]) for r in rows]
++        closes = [float(r["c"]) for r in rows]
++    except (KeyError, TypeError, ValueError):
++        return 0.0
++    trs: list[float] = []
++    for i in range(1, len(rows)):
++        trs.append(
++            max(
++                highs[i] - lows[i],
++                abs(highs[i] - closes[i - 1]),
++                abs(lows[i] - closes[i - 1]),
++            )
++        )
++    atr = sum(trs[:period]) / period
++    for tr in trs[period:]:
++        atr = (atr * (period - 1) + tr) / period
++    last = closes[-1]
++    if last <= 0 or atr <= 0:
++        return 0.0
++    return atr / last * 100.0
++
++
++def resolve_sl_tp_pct(asset_class: str, atr_pct: float) -> dict[str, Any]:
++    """按类别下限 + ATR 计算决策用 SL/TP 间距（百分比）。
++
++    - sl_pct = clamp(2×ATR%, 类别下限, 8)
++    - tp_pct = clamp(max(2×类别下限, 2×sl_pct), 6~, 16)
++    - atr_pct <= 0（取数失败/样本不足）时退回类别下限，source=atr_missing
++    """
++    floor = sl_floor_pct(asset_class)
++    try:
++        atr = max(0.0, float(atr_pct or 0.0))
++    except (TypeError, ValueError):
++        atr = 0.0
++    # 防御异常值：单根 ATR% 超过 30% 视为脏数据，退回类别下限
++    if atr > 30.0:
++        atr = 0.0
++    if atr > 0:
++        sl = max(floor, SL_ATR_MULT * atr)
++        source = "atr"
++    else:
++        sl = floor
++        source = "atr_missing"
++    sl = round(min(sl, SL_CAP_PCT), 2)
++    tp = round(min(max(TP_SL_RATIO * floor, TP_SL_RATIO * sl), TP_CAP_PCT), 2)
++    return {
++        "sl_pct": sl,
++        "tp_pct": tp,
++        "atr_pct": round(atr, 4),
++        "source": source,
++        "sl_floor_pct": floor,
++    }
+diff --git a/50-NN主矛盾评估器/tests/test_run_live.py b/50-NN主矛盾评估器/tests/test_run_live.py
+index 23e16a993c..d5ea142a65 100644
+--- a/50-NN主矛盾评估器/tests/test_run_live.py
++++ b/50-NN主矛盾评估器/tests/test_run_live.py
+@@ -7,6 +7,8 @@ import sys
+ from datetime import datetime, timedelta, timezone
+ from pathlib import Path
+ 
++import pytest
++
+ _50_ROOT = Path(__file__).resolve().parents[1]
+ for p in (str(_50_ROOT), str(_50_ROOT / "tools")):
+     if p not in sys.path:
+@@ -15,6 +17,12 @@ for p in (str(_50_ROOT), str(_50_ROOT / "tools")):
+ import run_live  # noqa: E402
+ 
+ 
++@pytest.fixture(autouse=True)
++def _no_network_atr(monkeypatch):
++    """单测禁止真实访问 OKX：默认 ATR 取数返回 0（退回类别下限），个别用例自行覆盖。"""
++    monkeypatch.setattr(run_live, "atr_pct_for", lambda *_a, **_k: 0.0)
++
++
+ def _evidence(symbol: str, expires_at: datetime) -> dict:
+     return {
+         "signal_id": f"sig-{symbol}",
+@@ -284,3 +292,67 @@ def test_run_declares_small_notional_and_records_overlay_meta(monkeypatch, tmp_p
+     )
+     assert row["notional_usdt"] == 20.0
+     assert row["payload"]["notional_usdt"] == 20.0
++
++
++def test_decision_declares_volatility_sltp(monkeypatch, tmp_path):
++    """50 按自身波动率出 sl_pct/tp_pct（22 执行器最高优先级覆盖）。"""
++    now = datetime.now(timezone.utc)
++    monkeypatch.setattr(
++        run_live, "load_evidences", lambda _: [_evidence("ARB", now + timedelta(hours=1))]
++    )
++    monkeypatch.setattr(run_live, "load_rights", lambda: {"symbols": {}})
++    monkeypatch.setattr(run_live, "load_constraints", lambda: {})
++    monkeypatch.setattr(run_live, "is_kill_switch_on", lambda: False)
++    monkeypatch.setattr(run_live, "propagate_resonance", lambda d, e, c: d)
++    monkeypatch.setattr(run_live, "atr_pct_for", lambda inst_id, **_k: 2.5)
++    monkeypatch.setattr(
++        run_live,
++        "make_decision",
++        lambda evidences, **kwargs: {
++            "signal_id": "50-nn|ARB",
++            "symbol": kwargs["symbol"],
++            "direction": "long",
++            "payload": {},
++            "execution": {"outcome": "live:50-bypass", "allowed": True},
++        },
++    )
++
++    run_live.run(tmp_path / "bus.json", tmp_path / "out", ("ARB-USDT-SWAP",), "m-1")
++    row = json.loads(
++        (tmp_path / "out" / "outbox.jsonl").read_text(encoding="utf-8").splitlines()[0]
++    )
++    # crypto：sl=max(3, 2×2.5)=5.0，tp=2×5=10.0
++    assert row["sl_pct"] == 5.0
++    assert row["tp_pct"] == 10.0
++    assert row["payload"]["sl_tp"]["source"] == "atr"
++    assert row["payload"]["sl_tp"]["atr_pct"] == 2.5
++
++
++def test_decision_sltp_falls_back_to_class_floor(monkeypatch, tmp_path):
++    """ATR 取数失败（0）时仍输出合法 SL/TP，不出现 0 值被 22 拒单。"""
++    now = datetime.now(timezone.utc)
++    monkeypatch.setattr(
++        run_live, "load_evidences", lambda _: [_evidence("ARB", now + timedelta(hours=1))]
++    )
++    monkeypatch.setattr(run_live, "load_rights", lambda: {"symbols": {}})
++    monkeypatch.setattr(run_live, "load_constraints", lambda: {})
++    monkeypatch.setattr(run_live, "is_kill_switch_on", lambda: False)
++    monkeypatch.setattr(run_live, "propagate_resonance", lambda d, e, c: d)
++    monkeypatch.setattr(
++        run_live,
++        "make_decision",
++        lambda evidences, **kwargs: {
++            "signal_id": "50-nn|ARB",
++            "symbol": kwargs["symbol"],
++            "direction": "short",
++            "execution": {"outcome": "live:50-bypass", "allowed": True},
++        },
++    )
++
++    run_live.run(tmp_path / "bus.json", tmp_path / "out", ("ARB-USDT-SWAP",), "m-1")
++    row = json.loads(
++        (tmp_path / "out" / "outbox.jsonl").read_text(encoding="utf-8").splitlines()[0]
++    )
++    assert row["sl_pct"] == 3.0
++    assert row["tp_pct"] == 6.0
++    assert 0 < row["sl_pct"] < 10 and 0 < row["tp_pct"] < 20
+diff --git a/50-NN主矛盾评估器/tests/test_volatility.py b/50-NN主矛盾评估器/tests/test_volatility.py
+new file mode 100644
+index 0000000000..d182f7e60a
+--- /dev/null
++++ b/50-NN主矛盾评估器/tests/test_volatility.py
+@@ -0,0 +1,83 @@
++"""50 决策侧 SL/TP 波动率口径测试（Wilder ATR% → 间距百分比）。"""
++
++from __future__ import annotations
++
++import sys
++from pathlib import Path
++
++_50_ROOT = Path(__file__).resolve().parents[1]
++if str(_50_ROOT) not in sys.path:
++    sys.path.insert(0, str(_50_ROOT))
++
++from core.volatility import (  # noqa: E402
++    SL_ATR_MULT,
++    TP_CAP_PCT,
++    TP_SL_RATIO,
++    resolve_sl_tp_pct,
++    sl_floor_pct,
++    wilder_atr_pct,
++)
++
++
++def _candles(*triples: tuple[float, float, float]) -> list[dict[str, float]]:
++    return [{"h": h, "l": low, "c": c} for h, low, c in triples]
++
++
++def test_wilder_atr_pct_matches_manual_average():
++    """period=2 且 TR 恒定时 ATR% = TR / last_close × 100。"""
++    rows = _candles((10, 8, 9), (11, 9, 10), (12, 10, 11), (13, 11, 12))
++    # TR 均为 2 → ATR=2，last close=12 → 2/12×100
++    assert round(wilder_atr_pct(rows, period=2), 4) == round(2 / 12 * 100, 4)
++
++
++def test_wilder_atr_pct_smooths_after_initial_period():
++    """超出前 period 根后按 Wilder 递推：(ATR×(n-1)+TR)/n。"""
++    rows = _candles((10, 8, 9), (11, 9, 10), (12, 10, 11), (20, 11, 19))
++    # 初始 ATR=(2+2)/2=2；第 4 根 TR=max(20-11,|20-11|,|11-11|)=9
++    # ATR=(2×1+9)/2=5.5；last close=19 → 5.5/19×100
++    assert round(wilder_atr_pct(rows, period=2), 4) == round(5.5 / 19 * 100, 4)
++
++
++def test_wilder_atr_pct_returns_zero_on_insufficient_sample():
++    rows = _candles((10, 8, 9), (11, 9, 10), (12, 10, 11))
++    assert wilder_atr_pct(rows, period=14) == 0.0
++    assert wilder_atr_pct([], period=14) == 0.0
++
++
++def test_resolve_sl_tp_uses_class_floor_when_atr_low():
++    out = resolve_sl_tp_pct("crypto", 0.5)  # 0.5% 低波动 → 2×ATR=1% < 下限 3%
++    assert out["sl_pct"] == 3.0
++    assert out["tp_pct"] == 6.0
++    assert out["source"] == "atr"
++
++
++def test_resolve_sl_tp_scales_with_atr_and_keeps_1_2_ratio():
++    out = resolve_sl_tp_pct("crypto", 2.5)
++    assert out["sl_pct"] == round(SL_ATR_MULT * 2.5, 2) == 5.0
++    assert out["tp_pct"] == round(TP_SL_RATIO * 5.0, 2) == 10.0
++
++
++def test_resolve_sl_tp_caps_stay_inside_22_bounds():
++    """极端波动也必须落在 22 的 0<sl<10 / 0<tp<20 边界内。"""
++    out = resolve_sl_tp_pct("crypto", 25.0)
++    assert 0 < out["sl_pct"] < 10
++    assert 0 < out["tp_pct"] < 20
++    assert out["tp_pct"] <= TP_CAP_PCT
++
++
++def test_resolve_sl_tp_falls_back_to_floor_when_atr_missing():
++    out = resolve_sl_tp_pct("us_index", 0.0)
++    assert out["source"] == "atr_missing"
++    assert out["sl_pct"] == sl_floor_pct("us_index") == 2.0
++    assert out["tp_pct"] == 4.0
++
++
++def test_resolve_sl_tp_ignores_dirty_atr_value():
++    """异常值（>30%）视为脏数据，退回类别下限而不是放大间距。"""
++    out = resolve_sl_tp_pct("crypto", 88.0)
++    assert out["source"] == "atr_missing"
++    assert out["sl_pct"] == 3.0
++
++
++def test_unknown_asset_class_uses_default_floor():
++    assert sl_floor_pct("unknown_class") == 2.5
+diff --git a/50-NN主矛盾评估器/tools/run_live.py b/50-NN主矛盾评估器/tools/run_live.py
+index 2cef9c1047..b8624dadaa 100644
+--- a/50-NN主矛盾评估器/tools/run_live.py
++++ b/50-NN主矛盾评估器/tools/run_live.py
+@@ -49,9 +49,11 @@ from adapters.factor_priors_provider import (  # noqa: E402
+     is_overlay_enabled,
+     resolve_coef,
+ )
++from adapters.volatility_adapter import atr_pct_for  # noqa: E402
+ from chain_events import emit_stage, new_trace_id  # noqa: E402
+ from core.decision import make_decision  # noqa: E402
+ from core.resonance_propagator import propagate as propagate_resonance  # noqa: E402
++from core.volatility import resolve_sl_tp_pct  # noqa: E402
+ 
+ _RUNTIME = _50_ROOT / "runtime"
+ DEFAULT_BUS_STATE = _42_ROOT / "runtime" / "bus_state.json"
+@@ -345,8 +347,14 @@ def run(
+             continue
+         decision["decision_id"] = did
+         decision["mandate_id"] = mandate
++        # SL/TP：50 按自身波动率（4H ATR%）声明，22 执行器优先级最高覆盖固定间距；
++        # 取数失败时退回类别下限，保证决策始终携带合法 sl_pct/tp_pct
++        sltp = resolve_sl_tp_pct(_asset_class_of(inst_id), atr_pct_for(inst_id))
++        decision["sl_pct"] = sltp["sl_pct"]
++        decision["tp_pct"] = sltp["tp_pct"]
+         if isinstance(decision.get("payload"), dict):
+             decision["payload"]["trace_id"] = trace
++            decision["payload"]["sl_tp"] = sltp
+         emit_stage(
+             "M11",
+             "decision.make_decision",
+@@ -360,6 +368,9 @@ def run(
+                 "confidence": decision.get("confidence"),
+                 "execution_rights": outcome,
+                 "mandate_id": mandate,
++                "sl_pct": sltp["sl_pct"],
++                "tp_pct": sltp["tp_pct"],
++                "atr_pct": sltp["atr_pct"],
+             },
+             runtime=_RUNTIME,
+             ts=now,
