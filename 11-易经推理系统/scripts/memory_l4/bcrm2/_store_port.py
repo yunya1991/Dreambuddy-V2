@@ -288,6 +288,12 @@ _LEARNER_DDL = (
         position_factor REAL,
         model_version TEXT,
         fold_id INTEGER,
+        source_system TEXT DEFAULT '',
+        mode TEXT DEFAULT '',
+        git_sha TEXT DEFAULT '',
+        config_hash TEXT DEFAULT '',
+        signal_id TEXT DEFAULT '',
+        trade_id TEXT DEFAULT '',
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(symbol, entry_time, direction)
     )
@@ -326,8 +332,9 @@ _TRADE_INSERT_SQL = """
         symbol, direction, entry_time, exit_time,
         entry_price, exit_price, pnl_pct, hold_bars,
         exit_reason, confidence, hexagram, upper_gua,
-        lower_gua, position_factor, model_version, fold_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        lower_gua, position_factor, model_version, fold_id,
+        source_system, mode, git_sha, config_hash, signal_id, trade_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 """
 
 
@@ -349,7 +356,37 @@ def _trade_params(trade: Dict[str, Any]) -> Tuple[Any, ...]:
         trade.get("position_factor", 1.0),
         trade.get("model_version", ""),
         trade.get("fold_id", 0),
+        trade.get("source_system", ""),
+        trade.get("mode", ""),
+        trade.get("git_sha", ""),
+        trade.get("config_hash", ""),
+        trade.get("signal_id", ""),
+        trade.get("trade_id", ""),
     )
+
+
+def migrate_trade_identity(db_path: str) -> list[str]:
+    """存量库幂等补身份列（P0-A）。返回本次新增的列名。
+
+    只 ADD COLUMN（SQLite 支持、带默认值），不改历史行内容：
+    历史行 source_system 保持 ''，由读取侧归为 UNKNOWN，禁止猜测回填。
+    """
+    from ..trade_identity import IDENTITY_COLUMNS
+
+    conn = sqlite3.connect(db_path)
+    try:
+        existing = {r[1] for r in conn.execute("PRAGMA table_info(trades)")}
+        if not existing:  # 表不存在时由 _LEARNER_DDL 建表，无需迁移
+            return []
+        added = []
+        for col in IDENTITY_COLUMNS:
+            if col not in existing:
+                conn.execute(f"ALTER TABLE trades ADD COLUMN {col} TEXT DEFAULT ''")
+                added.append(col)
+        conn.commit()
+        return added
+    finally:
+        conn.close()
 
 
 def init_learner_tables(db_path: str, switch: str = "BCRM_LEARNER_STORE_PORT") -> None:
@@ -367,6 +404,7 @@ def init_learner_tables(db_path: str, switch: str = "BCRM_LEARNER_STORE_PORT") -
                 conn.commit()
             finally:
                 conn.close()
+            migrate_trade_identity(db_path)  # P0-A：存量库补身份列（幂等）
             return
         except Exception:
             pass  # 回退 legacy 直写（fail-safe 保持久性）
@@ -376,6 +414,7 @@ def init_learner_tables(db_path: str, switch: str = "BCRM_LEARNER_STORE_PORT") -
         cursor.execute(ddl)
     conn.commit()
     conn.close()
+    migrate_trade_identity(db_path)  # P0-A：存量库补身份列（幂等）
 
 
 def insert_trade(

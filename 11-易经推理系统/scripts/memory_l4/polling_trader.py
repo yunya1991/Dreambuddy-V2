@@ -9850,6 +9850,18 @@ class PollingTrader:
                     "lower_gua": "",
                     "position_factor": 1.0,
                 }
+                # P0-A 成交身份契约：source/mode/git_sha/trade_id（缺失留空，不猜测回填）
+                try:
+                    from scripts.memory_l4.trade_identity import build_identity
+
+                    trade_data.update(
+                        build_identity(
+                            trade_rec,
+                            shadow_mode=bool(getattr(self, "shadow_mode", False)),
+                        )
+                    )
+                except Exception as _id_exc:
+                    self._log(f"[{coin}] 身份字段生成失败(fail-open): {_id_exc}", "DEBUG")
                 self.incremental_learner.log_trades_batch([trade_data])
 
                 should_retrain, reason = self.incremental_learner.should_retrain(coin)
